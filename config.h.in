@@ -270,10 +270,14 @@
 
 #endif /* !Config_H */
 
-/* $Log: config.h.in,v $
-/* Revision 1.1  1997/03/03 03:45:06  nop
-/* Initial revision
-/*
+/* 
+ * $Log: config.h.in,v $
+ * Revision 1.2  1998/12/29 05:26:51  nop
+ * Fixed one more Log keyword that slipped by.
+ *
+ * Revision 1.1.1.1  1997/03/03 03:45:06  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/02/11  00:41:40  pavel
  * Added check for matherr().  Release 1.8.0beta2.
  *
