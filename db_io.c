@@ -35,6 +35,7 @@
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "unparse.h"
 #include "version.h"
 
@@ -190,6 +191,20 @@ dbio_read_string(void)
 	return buffer;
 }
 
+const char *
+dbio_read_string_intern(void)
+{
+    const char *s, *r;
+
+    s = dbio_read_string();
+    r = str_intern(s);
+
+    /* puts(r); */
+
+    return r;
+}
+
+
 Var
 dbio_read_var(void)
 {
@@ -206,7 +221,7 @@ dbio_read_var(void)
     case TYPE_NONE:
 	break;
     case _TYPE_STR:
-	r.v.str = str_dup(dbio_read_string());
+	r.v.str = dbio_read_string_intern();
 	r.type |= TYPE_COMPLEX_FLAG;
 	break;
     case TYPE_OBJ:
@@ -401,12 +416,15 @@ dbio_write_forked_program(Program * program, int f_index)
     dbio_printf(".\n");
 }
 
-char rcsid_db_io[] = "$Id: db_io.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
+char rcsid_db_io[] = "$Id: db_io.c,v 1.4 1998/02/19 07:36:16 nop Exp $";
 
 /* $Log: db_io.c,v $
-/* Revision 1.3  1997/07/07 03:24:53  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
+/* Revision 1.4  1998/02/19 07:36:16  nop
+/* Initial string interning during db load.
 /*
+ * Revision 1.3  1997/07/07 03:24:53  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.2.2.1  1997/03/20 18:07:51  bjj
  * Add a flag to the in-memory type identifier so that inlines can cheaply
  * identify Vars that need actual work done to ref/free/dup them.  Add the

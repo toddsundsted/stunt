@@ -23,6 +23,7 @@
 #include "program.h"
 #include "storage.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "utils.h"
 #include "version.h"
 
@@ -235,7 +236,16 @@ add_literal(Var v, State * state)
 	    gstate->literals = new_literals;
 	    gstate->max_literals = new_max;
 	}
-	gstate->literals[i = gstate->num_literals++] = var_ref(v);
+        if (v.type == TYPE_STR) {
+            /* intern string if we can */
+            Var nv;
+
+            nv.type = TYPE_STR;
+            nv.v.str = str_intern(v.v.str);
+            gstate->literals[i = gstate->num_literals++] = nv;
+        } else {
+            gstate->literals[i = gstate->num_literals++] = var_ref(v);
+        }
     }
     add_fixup(FIXUP_LITERAL, i, state);
     state->num_literals++;
@@ -1200,12 +1210,15 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.4 1998/02/19 07:36:16 nop Exp $";
 
 /* $Log: code_gen.c,v $
-/* Revision 1.3  1997/07/07 03:24:53  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
+/* Revision 1.4  1998/02/19 07:36:16  nop
+/* Initial string interning during db load.
 /*
+ * Revision 1.3  1997/07/07 03:24:53  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.2.2.1  1997/05/29 15:50:01  nop
  * Make sure to clear prev_stacks to avoid referring to uninitialized memory
  * later.  (Usually multiplied by zero, so only a problem in weird circumstances.)

@@ -34,6 +34,7 @@
 #include "server.h"
 #include "storage.h"
 #include "streams.h"
+#include "str_intern.h"
 #include "tasks.h"
 #include "timers.h"
 #include "version.h"
@@ -51,7 +52,7 @@ DB_Version dbio_input_version;
 static void
 read_verbdef(Verbdef * v)
 {
-    v->name = str_dup(dbio_read_string());
+    v->name = dbio_read_string_intern();
     v->owner = dbio_read_objid();
     v->perms = dbio_read_num();
     v->prep = dbio_read_num();
@@ -71,7 +72,7 @@ write_verbdef(Verbdef * v)
 static Propdef
 read_propdef()
 {
-    char *name = str_dup(dbio_read_string());
+    const char *name = dbio_read_string_intern();
     return dbpriv_new_propdef(name);
 }
 
@@ -121,7 +122,7 @@ read_object(void)
 	return 0;
 
     o = dbpriv_new_object();
-    o->name = str_dup(dbio_read_string());
+    o->name = dbio_read_string_intern();
     (void) dbio_read_string();	/* discard old handles string */
     o->flags = dbio_read_num();
 
@@ -660,6 +661,8 @@ db_load(void)
 {
     dbpriv_set_dbio_input(input_db);
 
+    str_intern_open(0);
+
     oklog("LOADING: %s\n", input_db_name);
     if (!read_db_file()) {
 	errlog("DB_LOAD: Cannot load database!\n");
@@ -667,6 +670,8 @@ db_load(void)
     }
     oklog("LOADING: %s done, will dump new database on %s\n",
 	  input_db_name, dump_db_name);
+
+    str_intern_close();
 
     fclose(input_db);
     return 1;
@@ -713,12 +718,15 @@ db_shutdown()
     dump_database(DUMP_SHUTDOWN);
 }
 
-char rcsid_db_file[] = "$Id: db_file.c,v 1.2 1997/03/03 04:18:27 nop Exp $";
+char rcsid_db_file[] = "$Id: db_file.c,v 1.3 1998/02/19 07:36:16 nop Exp $";
 
 /* $Log: db_file.c,v $
-/* Revision 1.2  1997/03/03 04:18:27  nop
-/* GNU Indent normalization
+/* Revision 1.3  1998/02/19 07:36:16  nop
+/* Initial string interning during db load.
 /*
+ * Revision 1.2  1997/03/03 04:18:27  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

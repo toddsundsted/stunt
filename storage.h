@@ -33,6 +33,7 @@ typedef enum Memory_Type {
     M_RT_STACK, M_RT_ENV, M_BI_FUNC_DATA, M_VM,
 
     M_REF_ENTRY, M_REF_TABLE, M_VC_ENTRY, M_VC_TABLE, M_STRING_PTRS,
+    M_INTERN_POINTER, M_INTERN_ENTRY, M_INTERN_HUNK,
 
     Sizeof_Memory_Type
 
@@ -56,9 +57,12 @@ free_str(const char *s)
 #endif				/* Storage_h */
 
 /* $Log: storage.h,v $
-/* Revision 1.3  1997/07/07 03:24:55  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
+/* Revision 1.4  1998/02/19 07:36:17  nop
+/* Initial string interning during db load.
 /*
+ * Revision 1.3  1997/07/07 03:24:55  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.2.2.4  1997/05/29 20:47:33  nop
  * Stupid hack to allow non-gcc compilers to use -Dinline= to make the server
  * compile.

@@ -2620,8 +2620,8 @@ read_activ_as_pi(activation * a)
     dbio_read_string();		/* was dobjstr */
     dbio_read_string();		/* was iobjstr */
     dbio_read_string();		/* was prepstr */
-    a->verb = str_dup(dbio_read_string());
-    a->verbname = str_dup(dbio_read_string());
+    a->verb = dbio_read_string_intern();
+    a->verbname = dbio_read_string_intern();
     return 1;
 }
 
@@ -2651,7 +2651,7 @@ read_rt_env(const char ***old_names, Var ** rt_env, int *old_size)
     *rt_env = new_rt_env(*old_size);
 
     for (i = 0; i < *old_size; i++) {
-	(*old_names)[i] = str_dup(dbio_read_string());
+	(*old_names)[i] = dbio_read_string_intern();
 	(*rt_env)[i] = dbio_read_var();
     }
     return 1;
@@ -2816,12 +2816,15 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.8 1997/07/07 03:24:54 nop Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.9 1998/02/19 07:36:17 nop Exp $";
 
 /* $Log: execute.c,v $
-/* Revision 1.8  1997/07/07 03:24:54  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
+/* Revision 1.9  1998/02/19 07:36:17  nop
+/* Initial string interning during db load.
 /*
+ * Revision 1.8  1997/07/07 03:24:54  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.7  1997/03/21 13:23:23  bjj
  * Reorganize the top of run() slightly to make it slightly more efficient
  * (we do execute it billions of times, after all).  Later we'll want to
