@@ -29,9 +29,11 @@ typedef struct {
     Program *prog;
     Var *rt_env;		/* same length as prog.var_names */
     Var *base_rt_stack;
-    Var *top_rt_stack;		/* the stack has a fixed size equal to prog.num_var_names;
-				   top_rt_stack always points to next empty slot;
+    Var *top_rt_stack;		/* the stack has a fixed size equal to
+				   vector.max_stack.  top_rt_stack
+				   always points to next empty slot;
 				   there is no need to check bounds! */
+    int rt_stack_size;		/* size of stack allocated */
     unsigned pc;
     unsigned error_pc;
     Byte bi_func_pc;		/* next == 0 means a normal activation, which just
@@ -128,9 +130,14 @@ extern int read_activ(activation * a, int which_vector);
 #endif
 
 /* $Log: execute.h,v $
-/* Revision 1.2  1997/03/03 04:18:40  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/05 08:41:49  bjj
+/* A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+/* so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+/* Both revert to malloc/free for large requests.
 /*
+ * Revision 1.2  1997/03/03 04:18:40  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:03  nop
  * LambdaMOO 1.8.0p5
  *

@@ -22,11 +22,23 @@
 #include "sym_table.h"
 #include "utils.h"
 
+/*
+ * Keep a pool of rt_envs big enough to hold NUM_READY_VARS variables to
+ * avoid lots of malloc/free.
+ */
+static Var *ready_size_rt_envs;
+
 Var *
 new_rt_env(unsigned size)
 {
-    Var *ret = mymalloc(size * sizeof(Var), M_RT_ENV);
+    Var *ret;
     unsigned i;
+
+    if (size <= NUM_READY_VARS && ready_size_rt_envs) {
+	ret = ready_size_rt_envs;
+	ready_size_rt_envs = ret[0].v.list;
+    } else
+	ret = mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
 
     for (i = 0; i < size; i++)
 	ret[i].type = TYPE_NONE;
@@ -41,7 +53,12 @@ free_rt_env(Var * rt_env, unsigned size)
 
     for (i = 0; i < size; i++)
 	free_var(rt_env[i]);
-    myfree((void *) rt_env, M_RT_ENV);
+
+    if (size <= NUM_READY_VARS) {
+	rt_env[0].v.list = ready_size_rt_envs;
+	ready_size_rt_envs = rt_env;
+    } else
+	myfree((void *) rt_env, M_RT_ENV);
 }
 
 Var *
@@ -104,12 +121,17 @@ set_rt_env_var(Var * env, int slot, Var v)
     env[slot] = v;
 }
 
-char rcsid_rt_env[] = "$Id: eval_env.c,v 1.2 1997/03/03 04:18:35 nop Exp $";
+char rcsid_rt_env[] = "$Id: eval_env.c,v 1.3 1997/03/05 08:41:50 bjj Exp $";
 
 /* $Log: eval_env.c,v $
-/* Revision 1.2  1997/03/03 04:18:35  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/05 08:41:50  bjj
+/* A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+/* so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+/* Both revert to malloc/free for large requests.
 /*
+ * Revision 1.2  1997/03/03 04:18:35  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

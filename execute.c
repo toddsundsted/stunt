@@ -77,6 +77,43 @@ typedef enum {			/* Reasons for executing a FINALLY handler */
     FIN_EXIT
 } Finally_Reason;
 
+/*
+ * Keep a pool of the common size rt_stacks around to avoid beating up on
+ * malloc.  This doesn't really need tuning.  Most rt_stacks will be less
+ * than size 10.  I rounded up to a size which won't waste a lot of space
+ * with a powers-of-two malloc (while leaving some room for mymalloc
+ * overhead, if any).
+ */
+static Var *rt_stack_quick;
+#define RT_STACK_QUICKSIZE	15
+
+static void
+alloc_rt_stack(activation *a, int size)
+{
+    Var *res;
+
+    if (size <= RT_STACK_QUICKSIZE && rt_stack_quick) {
+	res = rt_stack_quick;
+	rt_stack_quick = rt_stack_quick[0].v.list;
+    } else {
+	res = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+    }
+    a->base_rt_stack = a->top_rt_stack = res;
+    a->rt_stack_size = size;
+}
+
+static void
+free_rt_stack(activation *a)
+{
+    Var *stack = a->base_rt_stack;
+
+    if (a->rt_stack_size <= RT_STACK_QUICKSIZE) {
+	stack[0].v.list = rt_stack_quick;
+	rt_stack_quick = stack;
+    } else
+	myfree(stack, M_RT_STACK);
+}
+
 void
 print_error_backtrace(const char *msg, void (*output) (const char *))
 {
@@ -480,7 +517,7 @@ free_activation(activation a, char data_too)
 
     for (i = a.base_rt_stack; i < a.top_rt_stack; i++)
 	free_var(*i);
-    myfree((void *) a.base_rt_stack, M_RT_STACK);
+    free_rt_stack(&a);
     free_var(a.temp);
     free_str(a.verb);
     free_str(a.verbname);
@@ -540,8 +577,7 @@ call_verb(Objid this, const char *vname, Var args, int do_pass)
     RUN_ACTIV.verbname = str_ref(db_verb_names(h));
     RUN_ACTIV.debug = (db_verb_flags(h) & VF_DEBUG);
 
-    RUN_ACTIV.top_rt_stack = RUN_ACTIV.base_rt_stack
-	= mymalloc(program->main_vector.max_stack * sizeof(Var), M_RT_STACK);
+    alloc_rt_stack(&RUN_ACTIV, program->main_vector.max_stack);
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
     RUN_ACTIV.bi_func_pc = 0;
@@ -634,7 +670,7 @@ bi_prop_protected(enum bi_prop prop, Objid progr)
 
     return server_flag_option(pname);
 }
-#endif                /* IGNORE_PROP_PROTECTED */
+#endif				/* IGNORE_PROP_PROTECTED */
 
 /** 
   the main interpreter -- run()
@@ -2089,11 +2125,9 @@ do_task(Program * prog, int which_vector, Var * result, int do_db_tracebacks)
     RUN_ACTIV.prog = program_ref(prog);
 
     root_activ_vector = which_vector;	/* main or which of the forked */
-    RUN_ACTIV.top_rt_stack = RUN_ACTIV.base_rt_stack
-	= mymalloc((which_vector == MAIN_VECTOR
-		    ? prog->main_vector.max_stack
-		    : prog->fork_vectors[which_vector].max_stack) *
-		   sizeof(Var), M_RT_STACK);
+    alloc_rt_stack(&RUN_ACTIV, (which_vector == MAIN_VECTOR
+				? prog->main_vector.max_stack
+			  : prog->fork_vectors[which_vector].max_stack));
 
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
@@ -2260,9 +2294,7 @@ setup_activ_for_eval(Program * prog)
     RUN_ACTIV.verb = str_dup("");
     RUN_ACTIV.verbname = str_dup("Input to EVAL");
     RUN_ACTIV.debug = 1;
-    RUN_ACTIV.top_rt_stack = RUN_ACTIV.base_rt_stack
-	= mymalloc(RUN_ACTIV.prog->main_vector.max_stack * sizeof(Var),
-		   M_RT_STACK);
+    alloc_rt_stack(&RUN_ACTIV, RUN_ACTIV.prog->main_vector.max_stack);
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
     RUN_ACTIV.temp.type = TYPE_NONE;
@@ -2730,7 +2762,7 @@ read_activ(activation * a, int which_vector)
     max_stack = (which_vector == MAIN_VECTOR
 		 ? a->prog->main_vector.max_stack
 		 : a->prog->fork_vectors[which_vector].max_stack);
-    a->base_rt_stack = mymalloc(max_stack * sizeof(Var), M_RT_STACK);
+    alloc_rt_stack(a, max_stack);
 
     if (dbio_scanf("%d rt_stack slots in use\n", &stack_in_use) != 1) {
 	errlog("READ_ACTIV: Bad stack_in_use number\n");
@@ -2780,24 +2812,29 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.4 1997/03/03 09:03:31 bjj Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.5 1997/03/05 08:41:47 bjj Exp $";
 
 /* $Log: execute.c,v $
-/* Revision 1.4  1997/03/03 09:03:31  bjj
-/* 3 opcode optimizations:
+/* Revision 1.5  1997/03/05 08:41:47  bjj
+/* A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+/* so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+/* Both revert to malloc/free for large requests.
 /*
-/* 1)  OP_IMM+OP_POP is "peephole optimized" away at runtime.  This makes
-/* verbdocs and other comments cheaper.
-/*
-/* 2)  OP_PUT_n+OP_POP is similarly optimized (PUT doesn't consume the
-/* top value on the stack but it is often used that way in statements like
-/* `var = expr;').  OP_G_PUT could use the same change but is rarely
-/* executed.
-/*
-/* 3)  OP_PUT_n, OP_PUSH_n which used to be in an if/else in the default
-/* case are split out into 32 cases each so the compiler can optimize it
-/* for us.  These ops account for a large percentage of those executed.
-/*
+ * Revision 1.4  1997/03/03 09:03:31  bjj
+ * 3 opcode optimizations:
+ *
+ * 1)  OP_IMM+OP_POP is "peephole optimized" away at runtime.  This makes
+ * verbdocs and other comments cheaper.
+ *
+ * 2)  OP_PUT_n+OP_POP is similarly optimized (PUT doesn't consume the
+ * top value on the stack but it is often used that way in statements like
+ * `var = expr;').  OP_G_PUT could use the same change but is rarely
+ * executed.
+ *
+ * 3)  OP_PUT_n, OP_PUSH_n which used to be in an if/else in the default
+ * case are split out into 32 cases each so the compiler can optimize it
+ * for us.  These ops account for a large percentage of those executed.
+ *
  * Revision 1.3  1997/03/03 06:14:44  nop
  * Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
  * the default.
