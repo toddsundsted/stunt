@@ -72,7 +72,7 @@ enum Opcode {
     /* final variable references, no tick: */
     OP_PUSH_CLEAR,
     OP_G_PUSH_CLEAR = OP_PUSH_CLEAR + NUM_READY_VARS,
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 
     /* expr-related opcodes with no tick: */
     OP_IMM, OP_MAKE_EMPTY_LIST, OP_LIST_ADD_TAIL, OP_LIST_APPEND,
@@ -97,7 +97,7 @@ enum Opcode {
 #define IS_PUSH_CLEAR_n(o)             ((o) >= (unsigned) OP_PUSH_CLEAR \
 				  && (o) < (unsigned) OP_G_PUSH_CLEAR)
 #define PUSH_CLEAR_n_INDEX(o)          ((o) - OP_PUSH_CLEAR)
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 #define IS_PUT_n(o)              ((o) >= (unsigned) OP_PUT \
 				  && (o) < (unsigned) OP_G_PUT)
 #define PUSH_n_INDEX(o)          ((o) - OP_PUSH)
@@ -124,6 +124,9 @@ typedef enum Extended_Opcode Extended_Opcode;
 
 /* 
  * $Log: opcode.h,v $
+ * Revision 1.4  2002/09/15 23:21:01  xplat
+ * GNU indent normalization.
+ *
  * Revision 1.3  1998/12/14 13:18:40  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

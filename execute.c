@@ -511,7 +511,7 @@ push_activation(void)
 }
 
 void
-free_activation(activation *ap, char data_too)
+free_activation(activation * ap, char data_too)
 {
     Var *i;
 
@@ -978,7 +978,7 @@ do {    						    	\
 			res = list;
 		    else {
 			res = var_dup(list);
-		        free_var(list);
+			free_var(list);
 		    }
 		    PUSH(listset(res, value, index.v.num));
 		} else {	/* TYPE_STR */
@@ -1533,7 +1533,7 @@ do {    						    	\
 		    enum error e;
 
 		    e = enqueue_forked_task2(RUN_ACTIV, f_index, time.v.num,
-			op == OP_FORK_WITH_ID ? id : -1);
+					op == OP_FORK_WITH_ID ? id : -1);
 		    if (e != E_NONE)
 			RAISE_ERROR(e);
 		}
@@ -1753,8 +1753,8 @@ do {    						    	\
 			    free_var(POP());	/* replace list with error code */
 			    PUSH_ERROR(e);
 			    for (i = 1; i <= nargs; i++) {
-			        SKIP_BYTES(bv, bc.numbytes_var_name);
-			        SKIP_BYTES(bv, bc.numbytes_label);
+				SKIP_BYTES(bv, bc.numbytes_var_name);
+				SKIP_BYTES(bv, bc.numbytes_label);
 			    }
 			} else {
 			    nopt_avail = len - nreq;
@@ -2010,7 +2010,7 @@ do {    						    	\
 		}
 	    }
 	    break;
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 
 	case OP_PUT:
 	case OP_PUT + 1:
@@ -2874,10 +2874,13 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.13 2002/08/18 09:47:26 bjj Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.14 2002/09/15 23:21:01 xplat Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.14  2002/09/15 23:21:01  xplat
+ * GNU indent normalization.
+ *
  * Revision 1.13  2002/08/18 09:47:26  bjj
  * Finally made free_activation() take a pointer after noticing how !$%^&
  * much time it was taking in a particular profiling run.

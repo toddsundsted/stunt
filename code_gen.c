@@ -78,7 +78,7 @@ struct state {
     Byte *pushmap;
     Byte *trymap;
     unsigned try_depth;
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
     unsigned cur_stack, max_stack;
     unsigned saved_stack;
     unsigned num_loops, max_loops;
@@ -97,10 +97,10 @@ typedef struct state State;
 				(1 << SLOT_IOBJ) | \
 				(1 << SLOT_IOBJSTR) | \
 				(1 << SLOT_PLAYER))
-#else /* no BYTECODE_REDUCE_REF */
+#else				/* no BYTECODE_REDUCE_REF */
 #define INCR_TRY_DEPTH(SSS)
 #define DECR_TRY_DEPTH(SSS)
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 
 static void
 init_gstate(GState * gstate)
@@ -140,7 +140,7 @@ init_state(State * state, GState * gstate)
     state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
     state->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
     state->try_depth = 0;
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 
     state->cur_stack = state->max_stack = 0;
     state->saved_stack = UINT_MAX;
@@ -160,7 +160,7 @@ free_state(State state)
 #ifdef BYTECODE_REDUCE_REF
     myfree(state.pushmap, M_BYTECODES);
     myfree(state.trymap, M_BYTECODES);
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
     myfree(state.loops, M_CODE_GEN);
 }
 
@@ -170,19 +170,19 @@ emit_byte(Byte b, State * state)
     if (state->num_bytes == state->max_bytes) {
 	unsigned new_max = 2 * state->max_bytes;
 	state->bytes = myrealloc(state->bytes, sizeof(Byte) * new_max,
-				   M_BYTECODES);
+				 M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
 	state->pushmap = myrealloc(state->pushmap, sizeof(Byte) * new_max,
 				   M_BYTECODES);
 	state->trymap = myrealloc(state->trymap, sizeof(Byte) * new_max,
-				   M_BYTECODES);
-#endif /* BYTECODE_REDUCE_REF */
+				  M_BYTECODES);
+#endif				/* BYTECODE_REDUCE_REF */
 	state->max_bytes = new_max;
     }
 #ifdef BYTECODE_REDUCE_REF
     state->pushmap[state->num_bytes] = 0;
     state->trymap[state->num_bytes] = state->try_depth;
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
     state->bytes[state->num_bytes++] = b;
 }
 
@@ -269,16 +269,16 @@ add_literal(Var v, State * state)
 	    gstate->literals = new_literals;
 	    gstate->max_literals = new_max;
 	}
-        if (v.type == TYPE_STR) {
-            /* intern string if we can */
-            Var nv;
+	if (v.type == TYPE_STR) {
+	    /* intern string if we can */
+	    Var nv;
 
-            nv.type = TYPE_STR;
-            nv.v.str = str_intern(v.v.str);
-            gstate->literals[i = gstate->num_literals++] = nv;
-        } else {
-            gstate->literals[i = gstate->num_literals++] = var_ref(v);
-        }
+	    nv.type = TYPE_STR;
+	    nv.v.str = str_intern(v.v.str);
+	    gstate->literals[i = gstate->num_literals++] = nv;
+	} else {
+	    gstate->literals[i = gstate->num_literals++] = var_ref(v);
+	}
     }
     add_fixup(FIXUP_LITERAL, i, state);
     state->num_literals++;
@@ -484,7 +484,7 @@ emit_call_verb_op(Opcode op, State * state)
     emit_byte(op, state);
 #ifdef BYTECODE_REDUCE_REF
     state->pushmap[state->num_bytes - 1] = OP_CALL_VERB;
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 }
 
 static void
@@ -493,7 +493,7 @@ emit_ending_op(Opcode op, State * state)
     emit_byte(op, state);
 #ifdef BYTECODE_REDUCE_REF
     state->pushmap[state->num_bytes - 1] = OP_DONE;
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 }
 
 static void
@@ -505,8 +505,8 @@ emit_var_op(Opcode op, unsigned slot, State * state)
     } else {
 	emit_byte(op + slot, state);
 #ifdef BYTECODE_REDUCE_REF
-        state->pushmap[state->num_bytes - 1] = op;
-#endif /* BYTECODE_REDUCE_REF */
+	state->pushmap[state->num_bytes - 1] = op;
+#endif				/* BYTECODE_REDUCE_REF */
     }
 }
 
@@ -1125,9 +1125,9 @@ ref_size(unsigned max)
 static int
 bbd_cmp(int *a, int *b)
 {
-	return *a - *b;
+    return *a - *b;
 }
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 
 static Bytecodes
 stmt_to_code(Stmt * stmt, GState * gstate)
@@ -1141,7 +1141,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 #if NUM_READY_VARS > 32
 #error assumed NUM_READY_VARS was 32
 #endif
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
     Fixup *fixup;
 
     init_state(&state, gstate);
@@ -1215,19 +1215,19 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     while (n_bbd-- > 1) {
 	varbits = 0;
 
-        for (old_i = bbd[n_bbd] - 1; old_i >= bbd[n_bbd - 1]; --old_i) {
+	for (old_i = bbd[n_bbd] - 1; old_i >= bbd[n_bbd - 1]; --old_i) {
 	    if (state.pushmap[old_i] == OP_PUSH) {
 		int id = PUSH_n_INDEX(state.bytes[old_i]);
 
 		if (varbits & (1 << id)) {
-			varbits &= ~(1 << id);
-			state.bytes[old_i] += OP_PUSH_CLEAR - OP_PUSH;
+		    varbits &= ~(1 << id);
+		    state.bytes[old_i] += OP_PUSH_CLEAR - OP_PUSH;
 		}
 	    } else if (state.trymap[old_i] > 0) {
 		/*
 		 * Operations inside of exception handling blocks might not
 		 * execute, so they can't set any bits.
-		 */;
+		 */ ;
 	    } else if (state.pushmap[old_i] == OP_PUT) {
 		int id = PUT_n_INDEX(state.bytes[old_i]);
 		varbits |= 1 << id;
@@ -1249,7 +1249,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 	}
     }
     myfree(bbd, M_CODE_GEN);
-#endif /* BYTECODE_REDUCE_REF */
+#endif				/* BYTECODE_REDUCE_REF */
 
     fixup = state.fixups;
     fix_i = 0;
@@ -1350,10 +1350,13 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.10 2002/08/23 13:00:18 bjj Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.11 2002/09/15 23:21:01 xplat Exp $";
 
 /* 
  * $Log: code_gen.c,v $
+ * Revision 1.11  2002/09/15 23:21:01  xplat
+ * GNU indent normalization.
+ *
  * Revision 1.10  2002/08/23 13:00:18  bjj
  * Removed a spurious EXPR_INDEX case left over from before x[$]
  *
