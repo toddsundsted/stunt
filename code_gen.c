@@ -76,6 +76,8 @@ struct state {
     Byte *bytes;
 #ifdef BYTECODE_REDUCE_REF
     Byte *pushmap;
+    Byte *trymap;
+    unsigned try_depth;
 #endif /* BYTECODE_REDUCE_REF */
     unsigned cur_stack, max_stack;
     unsigned saved_stack;
@@ -121,6 +123,8 @@ init_state(State * state, GState * gstate)
     state->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
     state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+    state->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+    state->try_depth = 0;
 #endif /* BYTECODE_REDUCE_REF */
 
     state->cur_stack = state->max_stack = 0;
@@ -140,6 +144,7 @@ free_state(State state)
     myfree(state.bytes, M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
     myfree(state.pushmap, M_BYTECODES);
+    myfree(state.trymap, M_BYTECODES);
 #endif /* BYTECODE_REDUCE_REF */
     myfree(state.loops, M_CODE_GEN);
 }
@@ -154,11 +159,14 @@ emit_byte(Byte b, State * state)
 #ifdef BYTECODE_REDUCE_REF
 	state->pushmap = myrealloc(state->pushmap, sizeof(Byte) * new_max,
 				   M_BYTECODES);
+	state->trymap = myrealloc(state->trymap, sizeof(Byte) * new_max,
+				   M_BYTECODES);
 #endif /* BYTECODE_REDUCE_REF */
 	state->max_bytes = new_max;
     }
 #ifdef BYTECODE_REDUCE_REF
     state->pushmap[state->num_bytes] = 0;
+    state->trymap[state->num_bytes] = state->try_depth;
 #endif /* BYTECODE_REDUCE_REF */
     state->bytes[state->num_bytes++] = b;
 }
@@ -454,6 +462,15 @@ exit_loop(State * state)
     return state->loops[--state->num_loops].bottom_label;
 }
 
+
+static void
+emit_ending_op(Opcode op, State * state)
+{
+    emit_byte(op, state);
+#ifdef BYTECODE_REDUCE_REF
+    state->pushmap[state->num_bytes - 1] = OP_DONE;
+#endif /* BYTECODE_REDUCE_REF */
+}
 
 static void
 emit_var_op(Opcode op, unsigned slot, State * state)
@@ -820,7 +837,9 @@ generate_expr(Expr * expr, State * state)
 	    push_stack(1, state);
 	    emit_extended_byte(EOP_CATCH, state);
 	    push_stack(1, state);
+	    state->try_depth++;
 	    generate_expr(expr->e.expr, state);
+	    state->try_depth--;
 	    emit_extended_byte(EOP_END_CATCH, state);
 	    end_label = add_label(state);
 	    pop_stack(3, state);	/* codes, label, catch */
@@ -964,10 +983,10 @@ generate_stmt(Stmt * stmt, State * state)
 	case STMT_RETURN:
 	    if (stmt->s.expr) {
 		generate_expr(stmt->s.expr, state);
-		emit_byte(OP_RETURN, state);
+		emit_ending_op(OP_RETURN, state);
 		pop_stack(1, state);
 	    } else
-		emit_byte(OP_RETURN0, state);
+		emit_ending_op(OP_RETURN0, state);
 	    break;
 	case STMT_TRY_EXCEPT:
 	    {
@@ -984,7 +1003,9 @@ generate_stmt(Stmt * stmt, State * state)
 		emit_extended_byte(EOP_TRY_EXCEPT, state);
 		emit_byte(arm_count, state);
 		push_stack(1, state);
+		state->try_depth++;
 		generate_stmt(stmt->s.catch.body, state);
+		state->try_depth--;
 		emit_extended_byte(EOP_END_EXCEPT, state);
 		end_label = add_label(state);
 		pop_stack(2 * arm_count + 1, state);	/* 2(codes,pc) + catch */
@@ -1011,7 +1032,9 @@ generate_stmt(Stmt * stmt, State * state)
 		emit_extended_byte(EOP_TRY_FINALLY, state);
 		handler_label = add_label(state);
 		push_stack(1, state);
+		state->try_depth++;
 		generate_stmt(stmt->s.finally.body, state);
+		state->try_depth--;
 		emit_extended_byte(EOP_END_FINALLY, state);
 		pop_stack(1, state);	/* FINALLY marker */
 		define_label(handler_label, state);
@@ -1092,7 +1115,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     Bytecodes bc;
     int old_i, new_i, fix_i;
 #ifdef BYTECODE_REDUCE_REF
-    int *bbd, n_bbd;	/* basic block delimiters */
+    int *bbd, n_bbd;		/* basic block delimiters */
     unsigned varbits;		/* variables we've seen */
 #if NUM_READY_VARS > 32
 #error assumed NUM_READY_VARS was 32
@@ -1103,7 +1126,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     init_state(&state, gstate);
 
     generate_stmt(stmt, &state);
-    emit_byte(OP_DONE, &state);
+    emit_ending_op(OP_DONE, &state);
 
     if (state.cur_stack != 0)
 	panic("Stack not entirely popped in STMT_TO_CODE()");
@@ -1179,9 +1202,21 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 			varbits &= ~(1 << id);
 			state.bytes[old_i] += OP_PUSH_CLEAR - OP_PUSH;
 		}
+	    } else if (state.trymap[old_i] > 0) {
+		/*
+		 * Operations inside of exception handling blocks might not
+		 * execute, so they can't set any bits.
+		 */;
 	    } else if (state.pushmap[old_i] == OP_PUT) {
 		int id = PUT_n_INDEX(state.bytes[old_i]);
 		varbits |= 1 << id;
+	    } else if (state.pushmap[old_i] == OP_DONE) {
+		/*
+		 * If the verb ends, all variables are unneeded.  This
+		 * means things like `return pass(@args)' will not hold
+		 * a ref to `args' during the called verb.
+		 */
+		varbits = ~0U;
 	    }
 	}
     }
@@ -1287,10 +1322,16 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.5 1998/12/14 13:17:30 nop Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.6 1999/07/15 01:34:11 bjj Exp $";
 
 /* 
  * $Log: code_gen.c,v $
+ * Revision 1.6  1999/07/15 01:34:11  bjj
+ * Bug fixes to v1.2.2.2, BYTECODE_REDUCE_REF.  Code analysis now takes
+ * into account what opcodes are running under try/catch protection and
+ * prevents them from becoming PUSH_CLEAR operations which may result
+ * in spurious undefined variable errors.
+ *
  * Revision 1.5  1998/12/14 13:17:30  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
