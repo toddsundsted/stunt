@@ -18,6 +18,9 @@ LIBRARIES = @LIBS@
 YACC = @YACC@
 
 CFLAGS = -O
+# If you're using GCC, you may prefer:
+# CFLAGS = -O2 -finline-functions
+
 YFLAGS = -d
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
@@ -139,11 +142,15 @@ depend: ${ALL_CSRCS}
 	echo '$$r makedep' >>eddep
 	echo 'w' >>eddep
 	cp Makefile.in Makefile.in.bak
-	ex - Makefile.in < eddep
+	ed - Makefile.in < eddep
 	rm -f eddep makedep
 
 ###############################################################################
 # $Log: Makefile.in,v $
+# Revision 1.3  1997/03/03 05:55:14  nop
+# Changed to ed for make depend, since ex is a cheap plastic imitation of ed
+# on many Linux systems.  Added better optimization suggestion.
+#
 # Revision 1.2  1997/03/03 04:40:46  nop
 # Avoid running autoconf automatically
 #
