@@ -87,6 +87,14 @@ struct state {
 };
 typedef struct state State;
 
+#ifdef BYTECODE_REDUCE_REF
+#define INCR_TRY_DEPTH(SSS)	(++(SSS)->try_depth)
+#define DECR_TRY_DEPTH(SSS)	(--(SSS)->try_depth)
+#else /* no BYTECODE_REDUCE_REF */
+#define INCR_TRY_DEPTH(SSS)
+#define DECR_TRY_DEPTH(SSS)
+#endif /* BYTECODE_REDUCE_REF */
+
 static void
 init_gstate(GState * gstate)
 {
@@ -837,9 +845,9 @@ generate_expr(Expr * expr, State * state)
 	    push_stack(1, state);
 	    emit_extended_byte(EOP_CATCH, state);
 	    push_stack(1, state);
-	    state->try_depth++;
+	    INCR_TRY_DEPTH(state);
 	    generate_expr(expr->e.expr, state);
-	    state->try_depth--;
+	    DECR_TRY_DEPTH(state);
 	    emit_extended_byte(EOP_END_CATCH, state);
 	    end_label = add_label(state);
 	    pop_stack(3, state);	/* codes, label, catch */
@@ -1003,9 +1011,9 @@ generate_stmt(Stmt * stmt, State * state)
 		emit_extended_byte(EOP_TRY_EXCEPT, state);
 		emit_byte(arm_count, state);
 		push_stack(1, state);
-		state->try_depth++;
+		INCR_TRY_DEPTH(state);
 		generate_stmt(stmt->s.catch.body, state);
-		state->try_depth--;
+		DECR_TRY_DEPTH(state);
 		emit_extended_byte(EOP_END_EXCEPT, state);
 		end_label = add_label(state);
 		pop_stack(2 * arm_count + 1, state);	/* 2(codes,pc) + catch */
@@ -1032,9 +1040,9 @@ generate_stmt(Stmt * stmt, State * state)
 		emit_extended_byte(EOP_TRY_FINALLY, state);
 		handler_label = add_label(state);
 		push_stack(1, state);
-		state->try_depth++;
+		INCR_TRY_DEPTH(state);
 		generate_stmt(stmt->s.finally.body, state);
-		state->try_depth--;
+		DECR_TRY_DEPTH(state);
 		emit_extended_byte(EOP_END_FINALLY, state);
 		pop_stack(1, state);	/* FINALLY marker */
 		define_label(handler_label, state);
@@ -1322,10 +1330,13 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.6 1999/07/15 01:34:11 bjj Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.7 1999/08/11 07:51:03 bjj Exp $";
 
 /* 
  * $Log: code_gen.c,v $
+ * Revision 1.7  1999/08/11 07:51:03  bjj
+ * Fix problem with last checkin which prevented compiling without B_R_R, duh.
+ *
  * Revision 1.6  1999/07/15 01:34:11  bjj
  * Bug fixes to v1.2.2.2, BYTECODE_REDUCE_REF.  Code analysis now takes
  * into account what opcodes are running under try/catch protection and
