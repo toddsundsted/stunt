@@ -1,0 +1,8 @@
+This is another interim release; no full Changelog available yet.
+
+r7 fixes BYTECODE_REDUCE_REF.  It's now safe to turn on.
+
+The default input and output buffer sizes in options.h are now 64k.
+
+Ben Jackson       ben@ben.com
+Jay Carlson       nop@nop.com
