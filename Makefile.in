@@ -149,6 +149,9 @@ depend: ${ALL_CSRCS}
 
 ###############################################################################
 # $Log: Makefile.in,v $
+# Revision 1.6  2000/01/11 01:39:14  nop
+# Long overdue make depend
+#
 # Revision 1.5  1998/02/19 07:36:16  nop
 # Initial string interning during db load.
 #
@@ -297,72 +300,75 @@ $(OPT_NET_OBJS):
 # DO NOT DELETE THIS LINE -- 'make depend' replaces everything below it.
 ast.o: ast.c my-string.h config.h ast.h parser.h program.h \
  structures.h my-stdio.h version.h sym_table.h list.h log.h storage.h \
- ref_count.h utils.h execute.h db.h opcode.h parse_cmd.h
+ ref_count.h utils.h execute.h db.h opcode.h options.h parse_cmd.h
 code_gen.o: code_gen.c ast.h config.h parser.h program.h structures.h \
- my-stdio.h version.h sym_table.h exceptions.h opcode.h storage.h \
- ref_count.h str_intern.h utils.h execute.h db.h parse_cmd.h
+ my-stdio.h version.h sym_table.h exceptions.h opcode.h options.h \
+ storage.h ref_count.h str_intern.h utils.h execute.h db.h parse_cmd.h \
+ my-stdlib.h
 db_file.o: db_file.c my-stat.h config.h my-stdio.h my-stdlib.h db.h \
  program.h structures.h version.h db_io.h db_private.h exceptions.h \
  list.h log.h options.h server.h network.h storage.h ref_count.h \
- streams.h tasks.h execute.h opcode.h parse_cmd.h timers.h my-time.h
+ streams.h str_intern.h tasks.h execute.h opcode.h parse_cmd.h \
+ timers.h my-time.h
 db_io.o: db_io.c my-ctype.h config.h my-stdarg.h my-stdio.h \
  my-stdlib.h db_io.h program.h structures.h version.h db_private.h \
  exceptions.h list.h log.h numbers.h parser.h storage.h ref_count.h \
  streams.h str_intern.h unparse.h
 db_objects.o: db_objects.c config.h db.h program.h structures.h \
  my-stdio.h version.h db_private.h exceptions.h list.h storage.h \
- ref_count.h utils.h execute.h opcode.h parse_cmd.h
+ ref_count.h utils.h execute.h opcode.h options.h parse_cmd.h
 db_properties.o: db_properties.c config.h db.h program.h structures.h \
  my-stdio.h version.h db_private.h exceptions.h list.h storage.h \
- ref_count.h utils.h execute.h opcode.h parse_cmd.h
+ ref_count.h utils.h execute.h opcode.h options.h parse_cmd.h
 db_verbs.o: db_verbs.c my-stdlib.h config.h my-string.h db.h program.h \
  structures.h my-stdio.h version.h db_private.h exceptions.h db_tune.h \
  list.h log.h parse_cmd.h storage.h ref_count.h utils.h execute.h \
- opcode.h
+ opcode.h options.h
 decompile.o: decompile.c ast.h config.h parser.h program.h \
  structures.h my-stdio.h version.h sym_table.h decompile.h \
- exceptions.h opcode.h storage.h ref_count.h utils.h execute.h db.h \
- parse_cmd.h
+ exceptions.h opcode.h options.h storage.h ref_count.h utils.h \
+ execute.h db.h parse_cmd.h
 disassemble.o: disassemble.c my-stdio.h config.h bf_register.h db.h \
  program.h structures.h version.h functions.h execute.h opcode.h \
- parse_cmd.h list.h storage.h ref_count.h streams.h unparse.h utils.h \
- verbs.h
+ options.h parse_cmd.h list.h storage.h ref_count.h streams.h \
+ unparse.h utils.h verbs.h
 eval_env.o: eval_env.c config.h eval_env.h structures.h my-stdio.h \
  version.h storage.h ref_count.h sym_table.h utils.h execute.h db.h \
- program.h opcode.h parse_cmd.h
+ program.h opcode.h options.h parse_cmd.h
 eval_vm.o: eval_vm.c config.h db_io.h program.h structures.h \
  my-stdio.h version.h decompile.h ast.h parser.h sym_table.h eval_vm.h \
- execute.h db.h opcode.h parse_cmd.h log.h options.h storage.h \
+ execute.h db.h opcode.h options.h parse_cmd.h log.h storage.h \
  ref_count.h tasks.h
 exceptions.o: exceptions.c exceptions.h config.h
 execute.o: execute.c my-string.h config.h db.h program.h structures.h \
  my-stdio.h version.h db_io.h decompile.h ast.h parser.h sym_table.h \
- eval_env.h eval_vm.h execute.h opcode.h parse_cmd.h exceptions.h \
- functions.h list.h log.h numbers.h options.h server.h network.h \
+ eval_env.h eval_vm.h execute.h opcode.h options.h parse_cmd.h \
+ exceptions.h functions.h list.h log.h numbers.h server.h network.h \
  storage.h ref_count.h streams.h tasks.h timers.h my-time.h utils.h
 extensions.o: extensions.c bf_register.h functions.h my-stdio.h \
  config.h execute.h db.h program.h structures.h version.h opcode.h \
- parse_cmd.h db_tune.h utils.h
+ options.h parse_cmd.h db_tune.h utils.h
 functions.o: functions.c my-stdarg.h config.h bf_register.h db_io.h \
  program.h structures.h my-stdio.h version.h functions.h execute.h \
- db.h opcode.h parse_cmd.h list.h log.h server.h network.h options.h \
+ db.h opcode.h options.h parse_cmd.h list.h log.h server.h network.h \
  storage.h ref_count.h streams.h unparse.h utils.h
 keywords.o: keywords.c my-ctype.h config.h my-string.h keywords.h \
  structures.h my-stdio.h version.h tokens.h ast.h parser.h program.h \
- sym_table.h y.tab.h utils.h execute.h db.h opcode.h parse_cmd.h
+ sym_table.h y.tab.h utils.h execute.h db.h opcode.h options.h \
+ parse_cmd.h
 list.o: list.c my-ctype.h config.h my-string.h bf_register.h \
  exceptions.h functions.h my-stdio.h execute.h db.h program.h \
- structures.h version.h opcode.h parse_cmd.h list.h log.h md5.h \
- options.h pattern.h random.h ref_count.h streams.h storage.h \
- unparse.h utils.h
+ structures.h version.h opcode.h options.h parse_cmd.h list.h log.h \
+ md5.h pattern.h random.h ref_count.h streams.h storage.h unparse.h \
+ utils.h
 log.o: log.c my-stdarg.h config.h my-stdio.h my-string.h my-time.h \
  bf_register.h functions.h execute.h db.h program.h structures.h \
- version.h opcode.h parse_cmd.h log.h options.h storage.h ref_count.h \
+ version.h opcode.h options.h parse_cmd.h log.h storage.h ref_count.h \
  streams.h utils.h
 malloc.o: malloc.c options.h config.h
 match.o: match.c my-stdlib.h config.h my-string.h db.h program.h \
  structures.h my-stdio.h version.h exceptions.h match.h parse_cmd.h \
- storage.h ref_count.h unparse.h utils.h execute.h opcode.h
+ storage.h ref_count.h unparse.h utils.h execute.h opcode.h options.h
 md5.o: md5.c my-string.h config.h md5.h
 name_lookup.o: name_lookup.c options.h config.h my-signal.h \
  my-stdlib.h my-unistd.h my-inet.h my-in.h my-types.h my-socket.h \
@@ -383,24 +389,25 @@ net_proto.o: net_proto.c options.h config.h net_bsd_tcp.c my-inet.h \
  db.h program.h version.h opcode.h parse_cmd.h
 numbers.o: numbers.c my-math.h my-stdlib.h config.h my-string.h \
  my-time.h functions.h my-stdio.h execute.h db.h program.h \
- structures.h version.h opcode.h parse_cmd.h log.h random.h storage.h \
- ref_count.h utils.h
+ structures.h version.h opcode.h options.h parse_cmd.h log.h random.h \
+ storage.h ref_count.h utils.h
 objects.o: objects.c db.h config.h program.h structures.h my-stdio.h \
- version.h db_io.h exceptions.h execute.h opcode.h parse_cmd.h \
- functions.h list.h numbers.h quota.h server.h network.h options.h \
+ version.h db_io.h exceptions.h execute.h opcode.h options.h \
+ parse_cmd.h functions.h list.h numbers.h quota.h server.h network.h \
  storage.h ref_count.h utils.h
 parse_cmd.o: parse_cmd.c my-ctype.h config.h my-stdio.h my-stdlib.h \
  my-string.h my-time.h db.h program.h structures.h version.h list.h \
- match.h parse_cmd.h storage.h ref_count.h utils.h execute.h opcode.h
+ match.h parse_cmd.h storage.h ref_count.h utils.h execute.h opcode.h \
+ options.h
 pattern.o: pattern.c my-ctype.h config.h my-stdlib.h my-string.h \
  pattern.h regexpr.h storage.h structures.h my-stdio.h ref_count.h \
  streams.h
 program.o: program.c ast.h config.h parser.h program.h structures.h \
  my-stdio.h version.h sym_table.h exceptions.h list.h storage.h \
- ref_count.h utils.h execute.h db.h opcode.h parse_cmd.h
+ ref_count.h utils.h execute.h db.h opcode.h options.h parse_cmd.h
 property.o: property.c db.h config.h program.h structures.h my-stdio.h \
- version.h functions.h execute.h opcode.h parse_cmd.h list.h storage.h \
- ref_count.h utils.h
+ version.h functions.h execute.h opcode.h options.h parse_cmd.h list.h \
+ storage.h ref_count.h utils.h
 quota.o: quota.c config.h db.h program.h structures.h my-stdio.h \
  version.h quota.h
 ref_count.o: ref_count.c config.h exceptions.h ref_count.h storage.h \
@@ -410,7 +417,7 @@ regexpr.o: regexpr.c my-stdio.h config.h regexpr.h my-stdlib.h \
 server.o: server.c my-types.h config.h my-signal.h my-stdarg.h \
  my-stdio.h my-stdlib.h my-string.h my-unistd.h my-wait.h db.h \
  program.h structures.h version.h db_io.h disassemble.h execute.h \
- opcode.h parse_cmd.h functions.h list.h log.h network.h options.h \
+ opcode.h options.h parse_cmd.h functions.h list.h log.h network.h \
  server.h parser.h random.h storage.h ref_count.h streams.h tasks.h \
  timers.h my-time.h unparse.h utils.h
 storage.o: storage.c my-stdlib.h config.h exceptions.h list.h \
@@ -420,30 +427,30 @@ streams.o: streams.c my-stdarg.h config.h my-string.h my-stdio.h log.h \
  structures.h storage.h ref_count.h streams.h
 str_intern.o: str_intern.c my-stdlib.h config.h log.h my-stdio.h \
  structures.h storage.h ref_count.h str_intern.h utils.h execute.h \
- db.h program.h version.h opcode.h parse_cmd.h
+ db.h program.h version.h opcode.h options.h parse_cmd.h
 sym_table.o: sym_table.c my-stdio.h config.h ast.h parser.h program.h \
  structures.h version.h sym_table.h exceptions.h log.h storage.h \
- ref_count.h utils.h execute.h db.h opcode.h parse_cmd.h
+ ref_count.h utils.h execute.h db.h opcode.h options.h parse_cmd.h
 tasks.o: tasks.c my-string.h config.h my-time.h db.h program.h \
  structures.h my-stdio.h version.h db_io.h decompile.h ast.h parser.h \
- sym_table.h eval_env.h eval_vm.h execute.h opcode.h parse_cmd.h \
- exceptions.h functions.h list.h log.h match.h options.h random.h \
+ sym_table.h eval_env.h eval_vm.h execute.h opcode.h options.h \
+ parse_cmd.h exceptions.h functions.h list.h log.h match.h random.h \
  server.h network.h storage.h ref_count.h streams.h tasks.h utils.h \
  verbs.h
 timers.o: timers.c my-signal.h config.h my-stdlib.h my-sys-time.h \
- options.h my-time.h my-unistd.h timers.h
+ options.h my-types.h my-time.h my-unistd.h timers.h
 unparse.o: unparse.c my-ctype.h config.h my-stdio.h ast.h parser.h \
  program.h structures.h version.h sym_table.h decompile.h exceptions.h \
- functions.h execute.h db.h opcode.h parse_cmd.h keywords.h list.h \
- log.h unparse.h storage.h ref_count.h streams.h utils.h
+ functions.h execute.h db.h opcode.h options.h parse_cmd.h keywords.h \
+ list.h log.h unparse.h storage.h ref_count.h streams.h utils.h
 utils.o: utils.c my-ctype.h config.h my-stdio.h my-string.h db.h \
  program.h structures.h version.h db_io.h exceptions.h list.h log.h \
  match.h numbers.h ref_count.h server.h network.h options.h storage.h \
  streams.h utils.h execute.h opcode.h parse_cmd.h
 verbs.o: verbs.c my-string.h config.h db.h program.h structures.h \
- my-stdio.h version.h exceptions.h execute.h opcode.h parse_cmd.h \
- functions.h list.h log.h match.h parser.h server.h network.h \
- options.h storage.h ref_count.h unparse.h utils.h verbs.h
+ my-stdio.h version.h exceptions.h execute.h opcode.h options.h \
+ parse_cmd.h functions.h list.h log.h match.h parser.h server.h \
+ network.h storage.h ref_count.h unparse.h utils.h verbs.h
 version.o: version.c config.h version.h
 gnu-malloc.o: gnu-malloc.c getpagesize.h
 net_single.o: net_single.c my-ctype.h config.h my-fcntl.h my-stdio.h \
