@@ -17,13 +17,27 @@
 
 #include "config.h"
 
+#if 0
 extern void addref(const void *p);
 extern unsigned int delref(const void *p);
+#else
+#define addref(X) (++((int *)(X))[-1])
+#define delref(X) (--((int *)(X))[-1])
+#define refcount(X) (((int *)(X))[-1])
+#endif
 
 /* $Log: ref_count.h,v $
-/* Revision 1.2  1997/03/03 04:19:21  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:55  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/03/20 18:59:25  bjj
+ * Allocate refcounts with objects that can be addref()'d (strings, lists,
+ * floats).  Use macros to manipulate those counts.  This completely replaces
+ * the external hash table addref and friends.
+ *
+ * Revision 1.2  1997/03/03 04:19:21  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:04  nop
  * LambdaMOO 1.8.0p5
  *

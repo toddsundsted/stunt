@@ -75,6 +75,28 @@ typedef struct Object {
     Pval *propval;
 } Object;
 
+/*********** Verb cache support ***********/
+
+#define VERB_CACHE 1
+
+#ifdef VERB_CACHE
+
+/* Whenever anything is modified that could influence callable verb
+ * lookup, this function must be called.
+ */
+
+#ifdef RONG
+#define db_priv_affected_callable_verb_lookup() (db_verb_generation++)  
+                                 /* The choice of a new generation. */
+extern unsigned int db_verb_generation;
+#endif
+
+extern void db_priv_affected_callable_verb_lookup(void);
+
+#else /* no cache */
+#define db_priv_affected_callable_verb_lookup() 
+#endif
+
 /*********** Objects ***********/
 
 extern void dbpriv_set_all_users(Var);
@@ -139,9 +161,15 @@ extern void dbpriv_set_dbio_input(FILE *);
 extern void dbpriv_set_dbio_output(FILE *);
 
 /* $Log: db_private.h,v $
-/* Revision 1.2  1997/03/03 04:18:30  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:53  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/03/20 07:26:03  nop
+ * First pass at the new verb cache.  Some ugly code inside.
+ *
+ * Revision 1.2  1997/03/03 04:18:30  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:02  nop
  * LambdaMOO 1.8.0p5
  *

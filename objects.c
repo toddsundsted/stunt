@@ -206,7 +206,7 @@ bf_typeof(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     r.type = TYPE_INT;
-    r.v.num = (int) arglist.v.list[1].type;
+    r.v.num = (int) arglist.v.list[1].type & TYPE_DB_MASK;
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -618,12 +618,21 @@ register_objects(void)
 				      TYPE_OBJ, TYPE_OBJ);
 }
 
-char rcsid_objects[] = "$Id: objects.c,v 1.2 1997/03/03 04:19:12 nop Exp $";
+char rcsid_objects[] = "$Id: objects.c,v 1.3 1997/07/07 03:24:54 nop Exp $";
 
 /* $Log: objects.c,v $
-/* Revision 1.2  1997/03/03 04:19:12  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:54  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/03/20 18:07:50  bjj
+ * Add a flag to the in-memory type identifier so that inlines can cheaply
+ * identify Vars that need actual work done to ref/free/dup them.  Add the
+ * appropriate inlines to utils.h and replace old functions in utils.c with
+ * complex_* functions which only handle the types with external storage.
+ *
+ * Revision 1.2  1997/03/03 04:19:12  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

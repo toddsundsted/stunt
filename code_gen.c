@@ -306,6 +306,9 @@ add_pseudo_label(unsigned value, State * state)
     f.value = value;
     f.prev_literals = f.prev_forks = 0;
     f.prev_var_refs = f.prev_labels = 0;
+
+    f.prev_stacks = 0;
+
     f.next = -1;
 
     add_known_fixup(f, state);
@@ -332,6 +335,7 @@ capture_label(State * state)
     f.prev_forks = state->num_forks;
     f.prev_var_refs = state->num_var_refs;
     f.prev_labels = state->num_labels;
+    f.prev_stacks = state->num_stacks;
     f.next = -1;
 
     return f;
@@ -350,6 +354,7 @@ define_label(int label, State * state)
 	fixup->prev_forks = state->num_forks;
 	fixup->prev_var_refs = state->num_var_refs;
 	fixup->prev_labels = state->num_labels;
+	fixup->prev_stacks = state->num_stacks;
 	label = fixup->next;
     }
 }
@@ -1195,12 +1200,19 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.2 1997/03/03 04:18:24 nop Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
 
 /* $Log: code_gen.c,v $
-/* Revision 1.2  1997/03/03 04:18:24  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:53  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/05/29 15:50:01  nop
+ * Make sure to clear prev_stacks to avoid referring to uninitialized memory
+ * later.  (Usually multiplied by zero, so only a problem in weird circumstances.)
+ *
+ * Revision 1.2  1997/03/03 04:18:24  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

@@ -40,7 +40,7 @@ parse_into_words(char *input, int *nwords)
 
     if (!words) {
 	max_words = 50;
-	words = mymalloc(max_words * sizeof(char *), M_STRING);
+	words = mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
     }
     while (*input == ' ')
 	input++;
@@ -48,13 +48,13 @@ parse_into_words(char *input, int *nwords)
     for (*nwords = 0; *input != '\0'; (*nwords)++) {
 	if (*nwords == max_words) {
 	    int new_max = max_words * 2;
-	    char **new = mymalloc(new_max * sizeof(char *), M_STRING);
+	    char **new = mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
 	    int i;
 
 	    for (i = 0; i < max_words; i++)
 		new[i] = words[i];
 
-	    myfree(words, M_STRING);
+	    myfree(words, M_STRING_PTRS);
 	    words = new;
 	    max_words = new_max;
 	}
@@ -249,12 +249,25 @@ free_parsed_command(Parsed_Command * pc)
 }
 
 
-char rcsid_parse_cmd[] = "$Id: parse_cmd.c,v 1.2 1997/03/03 04:19:14 nop Exp $";
+char rcsid_parse_cmd[] = "$Id: parse_cmd.c,v 1.3 1997/07/07 03:24:54 nop Exp $";
 
 /* $Log: parse_cmd.c,v $
-/* Revision 1.2  1997/03/03 04:19:14  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:54  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.2  1997/05/30 18:36:17  nop
+ * Oops, make sure to free words as M_STRING_PTRS, not M_STRING.  I crashed
+ * LambdaMOO for the first time with this!
+ *
+ * Revision 1.2.2.1  1997/05/20 03:01:34  nop
+ * parse_into_words was allocating pointers to strings as strings.  Predictably,
+ * the refcount prepend code was not prepared for this, causing unaligned memory
+ * access on the Alpha.  Added new M_STRING_PTRS allocation class that could
+ * be renamed to something better, perhaps.
+ *
+ * Revision 1.2  1997/03/03 04:19:14  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

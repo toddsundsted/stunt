@@ -1351,6 +1351,8 @@ do {    						    	\
 		    db_prop_handle h;
 
 		    h = db_find_property(obj.v.obj, propname.v.str, &prop);
+		    free_var(propname);
+		    free_var(obj);
 		    if (!h.ptr)
 			PUSH_ERROR(E_PROPNF);
 		    else if (h.built_in
@@ -1361,8 +1363,6 @@ do {    						    	\
 			PUSH(prop);	/* it's already freshly allocated */
 		    else
 			PUSH_REF(prop);
-		    free_var(propname);
-		    free_var(obj);
 		}
 	    }
 	    break;
@@ -1476,6 +1476,8 @@ do {    						    	\
 			}
 		    }
 
+		    free_var(propname);
+		    free_var(obj);
 		    if (err == E_NONE) {
 			db_set_property_value(h, var_ref(rhs));
 			PUSH(rhs);
@@ -1483,8 +1485,6 @@ do {    						    	\
 			free_var(rhs);
 			PUSH_ERROR(err);
 		    }
-		    free_var(propname);
-		    free_var(obj);
 		}
 	    }
 	    break;
@@ -2816,15 +2816,25 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.7 1997/03/21 13:23:23 bjj Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.8 1997/07/07 03:24:54 nop Exp $";
 
 /* $Log: execute.c,v $
-/* Revision 1.7  1997/03/21 13:23:23  bjj
-/* Reorganize the top of run() slightly to make it slightly more efficient
-/* (we do execute it billions of times, after all).  Later we'll want to
-/* get rid of if (task_killed) by introducing BI_KILL or by moving it into
-/* the BI_FUNC_CALL case, at least.
+/* Revision 1.8  1997/07/07 03:24:54  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.7  1997/03/21 13:23:23  bjj
+ * Reorganize the top of run() slightly to make it slightly more efficient
+ * (we do execute it billions of times, after all).  Later we'll want to
+ * get rid of if (task_killed) by introducing BI_KILL or by moving it into
+ * the BI_FUNC_CALL case, at least.
+ *
+ * Revision 1.6.2.2  1997/05/24 07:08:37  bjj
+ * Cleanup of Jay's last checkin to avoid some code duplication.
+ *
+ * Revision 1.6.2.1  1997/05/23 07:03:44  nop
+ * Failure during property lookups/stores sometimes fails to free the string
+ * containing the property name.  (PUSH_ERROR() may return immediately.)
+ *
  * Revision 1.6  1997/03/08 06:25:39  nop
  * 1.8.0p6 merge by hand.
  *

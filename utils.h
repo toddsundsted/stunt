@@ -37,9 +37,35 @@ extern int verbcasecmp(const char *verb, const char *word);
 
 extern unsigned str_hash(const char *);
 
-extern void free_var(Var);
-extern Var var_dup(Var);
-extern Var var_ref(Var);
+extern void complex_free_var(Var);
+extern Var complex_var_ref(Var);
+extern Var complex_var_dup(Var);
+extern int var_refcount(Var);
+
+static inline void
+free_var(Var v)
+{
+    if (v.type & TYPE_COMPLEX_FLAG)
+	complex_free_var(v);
+}
+
+static inline Var
+var_ref(Var v)
+{
+    if (v.type & TYPE_COMPLEX_FLAG)
+	return complex_var_ref(v);
+    else
+	return v;
+}
+
+static inline Var
+var_dup(Var v)
+{
+    if (v.type & TYPE_COMPLEX_FLAG)
+	return complex_var_dup(v);
+    else
+	return v;
+}
 
 extern int equality(Var lhs, Var rhs, int case_matters);
 extern int is_true(Var v);
@@ -59,10 +85,22 @@ extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
 #endif
 
 /* $Log: utils.h,v $
-/* Revision 1.4  1997/03/05 08:20:51  bjj
-/* With 1.2 (oops) add MIN/MAX macros that do the obvious thing, with undef to
-/* avoid clashing with system definitions.
+/* Revision 1.5  1997/07/07 03:24:55  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.4.2.2  1997/03/21 15:11:22  bjj
+ * add var_refcount interface
+ *
+ * Revision 1.4.2.1  1997/03/20 18:07:49  bjj
+ * Add a flag to the in-memory type identifier so that inlines can cheaply
+ * identify Vars that need actual work done to ref/free/dup them.  Add the
+ * appropriate inlines to utils.h and replace old functions in utils.c with
+ * complex_* functions which only handle the types with external storage.
+ *
+ * Revision 1.4  1997/03/05 08:20:51  bjj
+ * With 1.2 (oops) add MIN/MAX macros that do the obvious thing, with undef to
+ * avoid clashing with system definitions.
+ *
  * Revision 1.3  1997/03/05 08:15:55  bjj
  * *** empty log message ***
  *

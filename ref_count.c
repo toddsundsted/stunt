@@ -20,6 +20,8 @@
 #include "ref_count.h"
 #include "storage.h"
 
+#if 0
+
 typedef struct reftab_entry {
     struct reftab_entry *next;
     const void *p;
@@ -204,13 +206,22 @@ delref(const void *p)
     index = key(p);
     return ll_delete_value(&(ref_table[index]), p);
 }
+#endif
 
-char rcsid_ref_count[] = "$Id: ref_count.c,v 1.2 1997/03/03 04:19:21 nop Exp $";
+char rcsid_ref_count[] = "$Id: ref_count.c,v 1.3 1997/07/07 03:24:55 nop Exp $";
 
 /* $Log: ref_count.c,v $
-/* Revision 1.2  1997/03/03 04:19:21  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:55  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/03/20 18:59:24  bjj
+ * Allocate refcounts with objects that can be addref()'d (strings, lists,
+ * floats).  Use macros to manipulate those counts.  This completely replaces
+ * the external hash table addref and friends.
+ *
+ * Revision 1.2  1997/03/03 04:19:21  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

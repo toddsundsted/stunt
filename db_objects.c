@@ -136,6 +136,8 @@ db_destroy_object(Objid oid)
     Verbdef *v, *w;
     int i;
 
+    db_priv_affected_callable_verb_lookup();
+
     if (!o)
 	panic("DB_DESTROY_OBJECT: Invalid object!");
 
@@ -181,6 +183,8 @@ db_renumber_object(Objid old)
 {
     Objid new;
     Object *o;
+
+    db_priv_affected_callable_verb_lookup();
 
     for (new = 0; new < old; new++) {
 	if (objects[new] == 0) {
@@ -405,6 +409,19 @@ db_change_parent(Objid oid, Objid parent)
     if (!dbpriv_check_properties_for_chparent(oid, parent))
 	return 0;
 
+    if (objects[oid]->child == NOTHING && objects[oid]->verbdefs == NULL) {
+	/* Since this object has no children and no verbs, we know that it
+	   can't have had any part in affecting verb lookup, since we use first
+	   parent with verbs as a key in the verb lookup cache. */
+	/* The "no kids" rule is necessary because potentially one of the kids
+	   could have verbs on it--and that kid could have cache entries for
+	   THIS object's parentage. */
+	/* In any case, don't clear the cache. */
+	;
+    } else {
+	db_priv_affected_callable_verb_lookup();
+    }
+
     old_parent = objects[oid]->parent;
 
     if (old_parent != NOTHING)
@@ -533,12 +550,22 @@ dbpriv_set_all_users(Var v)
     all_users = v;
 }
 
-char rcsid_db_objects[] = "$Id: db_objects.c,v 1.2 1997/03/03 04:18:29 nop Exp $";
+char rcsid_db_objects[] = "$Id: db_objects.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
 
 /* $Log: db_objects.c,v $
-/* Revision 1.2  1997/03/03 04:18:29  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:53  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.2  1997/07/07 01:40:20  nop
+ * Because we use first-parent-with-verbs as a verb cache key, we can skip
+ * a generation bump if the target of a chparent has no kids and no verbs.
+ *
+ * Revision 1.2.2.1  1997/03/20 07:26:01  nop
+ * First pass at the new verb cache.  Some ugly code inside.
+ *
+ * Revision 1.2  1997/03/03 04:18:29  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

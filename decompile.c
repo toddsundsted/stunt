@@ -963,7 +963,12 @@ find_hot_node(Stmt * stmt)
 int
 find_line_number(Program * prog, int vector, int pc)
 {
-    Stmt *tree = program_to_tree(prog, MAIN_VECTOR, vector, pc);
+    Stmt *tree;
+
+    if (prog->cached_lineno_pc == pc)
+	return prog->cached_lineno;
+
+    tree = program_to_tree(prog, MAIN_VECTOR, vector, pc);
 
     lineno = prog->first_lineno;
     find_hot_node(tree);
@@ -972,15 +977,24 @@ find_line_number(Program * prog, int vector, int pc)
     if (!hot_node && hot_position != DONE)
 	panic("Can't do job in FIND_LINE_NUMBER!");
 
+    prog->cached_lineno_pc = pc;
+    prog->cached_lineno = lineno;
     return lineno;
 }
 
-char rcsid_decompile[] = "$Id: decompile.c,v 1.2 1997/03/03 04:18:32 nop Exp $";
+char rcsid_decompile[] = "$Id: decompile.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
 
 /* $Log: decompile.c,v $
-/* Revision 1.2  1997/03/03 04:18:32  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:53  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/06/05 09:00:00  bjj
+ * Cache one pc/lineno pair with each Program.  Hopefully most programs that
+ * fail multiple times usually do it on the same line!
+ *
+ * Revision 1.2  1997/03/03 04:18:32  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

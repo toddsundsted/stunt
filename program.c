@@ -31,6 +31,8 @@ new_program(void)
 
     p->ref_count = 1;
     p->first_lineno = 1;
+    p->cached_lineno = 1;
+    p->cached_lineno_pc = 0;
     return p;
 }
 
@@ -110,12 +112,19 @@ free_program(Program * p)
     }
 }
 
-char rcsid_program[] = "$Id: program.c,v 1.3 1997/03/08 06:25:42 nop Exp $";
+char rcsid_program[] = "$Id: program.c,v 1.4 1997/07/07 03:24:54 nop Exp $";
 
 /* $Log: program.c,v $
-/* Revision 1.3  1997/03/08 06:25:42  nop
-/* 1.8.0p6 merge by hand.
+/* Revision 1.4  1997/07/07 03:24:54  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.3.2.1  1997/06/05 09:00:00  bjj
+ * Cache one pc/lineno pair with each Program.  Hopefully most programs that
+ * fail multiple times usually do it on the same line!
+ *
+ * Revision 1.3  1997/03/08 06:25:42  nop
+ * 1.8.0p6 merge by hand.
+ *
  * Revision 1.2  1997/03/03 04:19:17  nop
  * GNU Indent normalization
  *

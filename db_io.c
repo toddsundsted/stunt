@@ -205,8 +205,9 @@ dbio_read_var(void)
     case TYPE_CLEAR:
     case TYPE_NONE:
 	break;
-    case TYPE_STR:
+    case _TYPE_STR:
 	r.v.str = str_dup(dbio_read_string());
+	r.type |= TYPE_COMPLEX_FLAG;
 	break;
     case TYPE_OBJ:
     case TYPE_ERR:
@@ -215,10 +216,10 @@ dbio_read_var(void)
     case TYPE_FINALLY:
 	r.v.num = dbio_read_num();
 	break;
-    case TYPE_FLOAT:
+    case _TYPE_FLOAT:
 	r = new_float(dbio_read_float());
 	break;
-    case TYPE_LIST:
+    case _TYPE_LIST:
 	l = dbio_read_num();
 	r = new_list(l);
 	for (i = 0; i < l; i++)
@@ -354,8 +355,8 @@ dbio_write_var(Var v)
 {
     int i;
 
-    dbio_write_num((int) v.type);
-    switch (v.type) {
+    dbio_write_num((int) v.type & TYPE_DB_MASK);
+    switch ((int) v.type) {
     case TYPE_CLEAR:
     case TYPE_NONE:
 	break;
@@ -400,12 +401,21 @@ dbio_write_forked_program(Program * program, int f_index)
     dbio_printf(".\n");
 }
 
-char rcsid_db_io[] = "$Id: db_io.c,v 1.2 1997/03/03 04:18:27 nop Exp $";
+char rcsid_db_io[] = "$Id: db_io.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
 
 /* $Log: db_io.c,v $
-/* Revision 1.2  1997/03/03 04:18:27  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:53  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.1  1997/03/20 18:07:51  bjj
+ * Add a flag to the in-memory type identifier so that inlines can cheaply
+ * identify Vars that need actual work done to ref/free/dup them.  Add the
+ * appropriate inlines to utils.h and replace old functions in utils.c with
+ * complex_* functions which only handle the types with external storage.
+ *
+ * Revision 1.2  1997/03/03 04:18:27  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

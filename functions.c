@@ -386,8 +386,9 @@ function_description(int i)
     nargs = entry.maxargs == -1 ? entry.minargs : entry.maxargs;
     vv = v.v.list[4] = new_list(nargs);
     for (j = 0; j < nargs; j++) {
+	int proto = entry.prototype[j];
 	vv.v.list[j + 1].type = TYPE_INT;
-	vv.v.list[j + 1].v.num = entry.prototype[j];
+	vv.v.list[j + 1].v.num = proto < 0 ? proto : (proto & TYPE_DB_MASK);
     }
 
     return v;
@@ -453,13 +454,23 @@ register_functions(void)
     register_function("load_server_options", 0, 0, bf_load_server_options);
 }
 
-char rcsid_functions[] = "$Id: functions.c,v 1.3 1997/03/03 05:03:50 nop Exp $";
+char rcsid_functions[] = "$Id: functions.c,v 1.4 1997/07/07 03:24:54 nop Exp $";
 
 /* $Log: functions.c,v $
-/* Revision 1.3  1997/03/03 05:03:50  nop
-/* steak2: move protectedness into builtin struct, load_server_options()
-/* now required for $server_options updates.
+/* Revision 1.4  1997/07/07 03:24:54  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.3.2.2  1997/05/12 04:03:21  bjj
+ * This time for sure!
+ *
+ * Revision 1.3.2.1  1997/05/11 04:31:54  bjj
+ * Missed the place in bf_function_info where TYPE_* constants make it into
+ * the database.  Masked off the complex flag in the obvious place.
+ *
+ * Revision 1.3  1997/03/03 05:03:50  nop
+ * steak2: move protectedness into builtin struct, load_server_options()
+ * now required for $server_options updates.
+ *
  * Revision 1.2  1997/03/03 04:18:42  nop
  * GNU Indent normalization
  *

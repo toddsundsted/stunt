@@ -133,7 +133,7 @@ str_hash(const char *s)
 }
 
 void
-free_var(Var v)
+complex_free_var(Var v)
 {
     int i;
 
@@ -144,8 +144,10 @@ free_var(Var v)
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
-	    for (i = 1; i <= v.v.list[0].v.num; i++)
-		free_var(v.v.list[i]);
+	    Var *pv;
+
+	    for (i = v.v.list[0].v.num, pv = v.v.list + 1; i > 0; i--, pv++)
+		free_var(*pv);
 	    myfree(v.v.list, M_LIST);
 	}
 	break;
@@ -153,22 +155,11 @@ free_var(Var v)
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
 	break;
-    case TYPE_INT:
-    case TYPE_OBJ:
-    case TYPE_ERR:
-    case TYPE_CLEAR:
-    case TYPE_NONE:
-    case TYPE_CATCH:
-    case TYPE_FINALLY:
-	break;
-    default:
-	panic("FREE_VAR: Unknown value type");
-	break;
     }
 }
 
 Var
-var_ref(Var v)
+complex_var_ref(Var v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
@@ -180,22 +171,12 @@ var_ref(Var v)
     case TYPE_FLOAT:
 	addref(v.v.fnum);
 	break;
-    case TYPE_INT:
-    case TYPE_OBJ:
-    case TYPE_ERR:
-    case TYPE_CLEAR:
-    case TYPE_NONE:
-    case TYPE_CATCH:
-    case TYPE_FINALLY:
-	break;
-    default:
-	panic("VAR_REF: Unknown value type");
     }
     return v;
 }
 
 Var
-var_dup(Var v)
+complex_var_dup(Var v)
 {
     int i;
     Var newlist;
@@ -214,17 +195,28 @@ var_dup(Var v)
     case TYPE_FLOAT:
 	v = new_float(*v.v.fnum);
 	break;
-    case TYPE_INT:
-    case TYPE_OBJ:
-    case TYPE_ERR:
-    case TYPE_NONE:
-    case TYPE_CATCH:
-    case TYPE_FINALLY:
-	break;
-    default:
-	panic("VAR_DUP: Unknown value type");
     }
     return v;
+}
+
+/* could be inlined and use complex_etc like the others, but this should
+ * usually be called in a context where we already konw the type.
+ */
+int
+var_refcount(Var v)
+{
+    switch ((int) v.type) {
+    case TYPE_STR:
+	return refcount(v.v.str);
+	break;
+    case TYPE_LIST:
+	return refcount(v.v.list);
+	break;
+    case TYPE_FLOAT:
+	return refcount(v.v.fnum);
+	break;
+    }
+    return 1;
 }
 
 int
@@ -441,12 +433,27 @@ binary_to_raw_bytes(const char *binary, int *buflen)
     return reset_stream(s);
 }
 
-char rcsid_utils[] = "$Id: utils.c,v 1.2 1997/03/03 04:19:36 nop Exp $";
+char rcsid_utils[] = "$Id: utils.c,v 1.3 1997/07/07 03:24:55 nop Exp $";
 
 /* $Log: utils.c,v $
-/* Revision 1.2  1997/03/03 04:19:36  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:55  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.3  1997/03/21 15:11:22  bjj
+ * add var_refcount interface
+ *
+ * Revision 1.2.2.2  1997/03/21 14:29:03  bjj
+ * Some code bumming in complex_free_var (3rd most expensive function!)
+ *
+ * Revision 1.2.2.1  1997/03/20 18:07:48  bjj
+ * Add a flag to the in-memory type identifier so that inlines can cheaply
+ * identify Vars that need actual work done to ref/free/dup them.  Add the
+ * appropriate inlines to utils.h and replace old functions in utils.c with
+ * complex_* functions which only handle the types with external storage.
+ *
+ * Revision 1.2  1997/03/03 04:19:36  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

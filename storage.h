@@ -20,6 +20,7 @@
 
 #include "config.h"
 #include "structures.h"
+#include "ref_count.h"
 
 typedef enum Memory_Type {
     M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,
@@ -31,7 +32,7 @@ typedef enum Memory_Type {
 
     M_RT_STACK, M_RT_ENV, M_BI_FUNC_DATA, M_VM,
 
-    M_REF_ENTRY, M_REF_TABLE,
+    M_REF_ENTRY, M_REF_TABLE, M_VC_ENTRY, M_VC_TABLE, M_STRING_PTRS,
 
     Sizeof_Memory_Type
 
@@ -39,18 +40,44 @@ typedef enum Memory_Type {
 
 extern char *str_dup(const char *);
 extern const char *str_ref(const char *);
-extern void free_str(const char *);
 extern Var memory_usage(void);
 
 extern void myfree(void *where, Memory_Type type);
 extern void *mymalloc(unsigned size, Memory_Type type);
+extern void *myrealloc(void *where, unsigned size, Memory_Type type);
+
+static inline void    /* XXX was extern, fix for non-gcc compilers */
+free_str(const char *s)
+{
+    if (delref(s) == 0)
+	myfree((void *) s, M_STRING);
+}
 
 #endif				/* Storage_h */
 
 /* $Log: storage.h,v $
-/* Revision 1.2  1997/03/03 04:19:27  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:55  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.4  1997/05/29 20:47:33  nop
+ * Stupid hack to allow non-gcc compilers to use -Dinline= to make the server
+ * compile.
+ *
+ * Revision 1.2.2.3  1997/05/20 03:01:34  nop
+ * parse_into_words was allocating pointers to strings as strings.  Predictably,
+ * the refcount prepend code was not prepared for this, causing unaligned memory
+ * access on the Alpha.  Added new M_STRING_PTRS allocation class that could
+ * be renamed to something better, perhaps.
+ *
+ * Revision 1.2.2.2  1997/03/21 15:19:24  bjj
+ * add myrealloc interface, inline free_str
+ *
+ * Revision 1.2.2.1  1997/03/20 07:26:04  nop
+ * First pass at the new verb cache.  Some ugly code inside.
+ *
+ * Revision 1.2  1997/03/03 04:19:27  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:04  nop
  * LambdaMOO 1.8.0p5
  *

@@ -34,6 +34,7 @@
 
 #include "bf_register.h"
 #include "functions.h"
+#include "db_tune.h"
 
 #if EXAMPLE
 
@@ -138,6 +139,40 @@ bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
 }
 #endif				/* EXAMPLE */
 
+#define STUPID_VERB_CACHE 1
+#ifdef STUPID_VERB_CACHE
+#include "utils.h"
+
+static package
+bf_verb_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+
+    free_var(arglist);
+
+    if (!is_wizard(progr)) {
+	return make_error_pack(E_PERM);
+    }
+    r = db_verb_cache_stats();
+
+    return make_var_pack(r);
+}
+
+static package
+bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr)) {
+	return make_error_pack(E_PERM);
+    }
+    db_log_cache_stats();
+
+    return no_var_pack();
+}
+#endif
+
+
 void
 register_extensions()
 {
@@ -145,14 +180,30 @@ register_extensions()
     register_task_queue(stdin_enumerator);
     register_function("read_stdin", 0, 0, bf_read_stdin);
 #endif
+#ifdef STUPID_VERB_CACHE
+    register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+    register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+#endif
 }
 
-char rcsid_extensions[] = "$Id: extensions.c,v 1.2 1997/03/03 04:18:41 nop Exp $";
+char rcsid_extensions[] = "$Id: extensions.c,v 1.3 1997/07/07 03:24:54 nop Exp $";
 
 /* $Log: extensions.c,v $
-/* Revision 1.2  1997/03/03 04:18:41  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/07/07 03:24:54  nop
+/* Merge UNSAFE_OPTS (r5) after extensive testing.
 /*
+ * Revision 1.2.2.3  1997/05/29 11:56:22  nop
+ * Added Jason Maltzen's builtin to return a list version of cache stats.
+ *
+ * Revision 1.2.2.2  1997/03/20 18:08:29  bjj
+ * add #include "utils.h" to get new inline free_var
+ *
+ * Revision 1.2.2.1  1997/03/20 07:26:04  nop
+ * First pass at the new verb cache.  Some ugly code inside.
+ *
+ * Revision 1.2  1997/03/03 04:18:41  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
  *
