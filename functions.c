@@ -302,6 +302,16 @@ read_bi_func_data(Byte f_id, void **bi_func_state, Byte * bi_func_pc)
 
 
 package
+make_kill_pack()
+{
+    package p;
+
+    p.kind = BI_KILL;
+
+    return p;
+}
+
+package
 make_error_pack(enum error err)
 {
     return make_raise_pack(err, unparse_error(err), zero);
@@ -454,10 +464,15 @@ register_functions(void)
     register_function("load_server_options", 0, 0, bf_load_server_options);
 }
 
-char rcsid_functions[] = "$Id: functions.c,v 1.5 1998/12/14 13:17:53 nop Exp $";
+char rcsid_functions[] = "$Id: functions.c,v 1.6 2001/03/12 03:25:16 bjj Exp $";
 
 /* 
  * $Log: functions.c,v $
+ * Revision 1.6  2001/03/12 03:25:16  bjj
+ * Added new package type BI_KILL which kills the task calling the builtin.
+ * Removed the static int task_killed in execute.c which wa tested on every
+ * loop through the interpreter to see if the task had been killed.
+ *
  * Revision 1.5  1998/12/14 13:17:53  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
