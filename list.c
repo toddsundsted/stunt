@@ -40,6 +40,19 @@ new_list(int size)
 {
     Var new;
 
+    if (size == 0) {
+	static Var emptylist;
+
+	if (emptylist.v.list == 0) {
+	    emptylist.type = TYPE_LIST;
+	    emptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);
+	    emptylist.v.list[0].type = TYPE_INT;
+	    emptylist.v.list[0].v.num = 0;
+	}
+	/* give the lucky winner a reference */
+	addref(emptylist.v.list);
+	return emptylist;
+    }
     new.type = TYPE_LIST;
     new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
     new.v.list[0].type = TYPE_INT;
@@ -1114,12 +1127,15 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.2 1997/03/03 04:18:46 nop Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.3 1997/03/03 06:20:04 bjj Exp $";
 
 /* $Log: list.c,v $
-/* Revision 1.2  1997/03/03 04:18:46  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/03 06:20:04  bjj
+/* new_list(0) now returns the same empty list to every caller
 /*
+ * Revision 1.2  1997/03/03 04:18:46  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
  *
