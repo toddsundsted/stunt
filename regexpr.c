@@ -461,11 +461,12 @@ re_compile_pattern(regex, size, bufp)
 	    abort();
 	    /*NOTREACHED */
 	case Rbol:
-	    if (!beginning_context)
+	    if (!beginning_context) {
 		if (regexp_context_indep_ops)
 		    goto op_error;
 		else
 		    goto normal_char;
+	    }
 	    opcode = Cbol;
 	    goto store_opcode;
 	case Reol:
@@ -477,21 +478,23 @@ re_compile_pattern(regex, size, bufp)
 		  ((regexp_syntax & RE_NO_BK_PARENS) ?
 		   (regex[pos] == ')') :
 		   (pos + 1 < size && regex[pos] == '\134' &&
-		    regex[pos + 1] == ')'))))
+		    regex[pos + 1] == ')')))) {
 		if (regexp_context_indep_ops)
 		    goto op_error;
 		else
 		    goto normal_char;
+	    }
 	    opcode = Ceol;
 	    goto store_opcode;
 	    /* NOTREACHED */
 	    break;
 	case Roptional:
-	    if (beginning_context)
+	    if (beginning_context) {
 		if (regexp_context_indep_ops)
 		    goto op_error;
 		else
 		    goto normal_char;
+	    }
 	    if (CURRENT_LEVEL_START == pattern_offset)
 		break;		/* ignore empty patterns for ? */
 	    ALLOC(3);
@@ -500,11 +503,12 @@ re_compile_pattern(regex, size, bufp)
 	    break;
 	case Rstar:
 	case Rplus:
-	    if (beginning_context)
+	    if (beginning_context) {
 		if (regexp_context_indep_ops)
 		    goto op_error;
 		else
 		    goto normal_char;
+	    }
 	    if (CURRENT_LEVEL_START == pattern_offset)
 		break;		/* ignore empty patterns for + and * */
 	    ALLOC(9);
@@ -1643,6 +1647,9 @@ char rcsid_regexpr[] = "$Id";
 
 /* 
  * $Log: regexpr.c,v $
+ * Revision 1.5  2001/03/12 03:44:19  bjj
+ * oops, more braces
+ *
  * Revision 1.4  2001/03/12 03:41:24  bjj
  * fix ambiguous else with braces
  *
