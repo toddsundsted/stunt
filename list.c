@@ -560,20 +560,24 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
 
 #if HAVE_CRYPT
     char salt[3];
+    const char *saltp;
     static char saltstuff[] =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
     extern const char *crypt(const char *, const char *);
 
     if (arglist.v.list[0].v.num == 1 || strlen(arglist.v.list[2].v.str) < 2) {
+	/* provide a random 2-letter salt, works with old and new crypts */
 	salt[0] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
 	salt[1] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
+	salt[2] = '\0';
+	saltp = salt;
     } else {
-	salt[0] = arglist.v.list[2].v.str[0];
-	salt[1] = arglist.v.list[2].v.str[1];
+	/* return the entire crypted password in the salt, this works
+	 * for all crypt versions */
+	saltp = arglist.v.list[2].v.str;
     }
-    salt[2] = '\0';
     r.type = TYPE_STR;
-    r.v.str = str_dup(crypt(arglist.v.list[1].v.str, salt));
+    r.v.str = str_dup(crypt(arglist.v.list[1].v.str, saltp));
 #else				/* !HAVE_CRYPT */
     r.type = TYPE_STR;
     r.v.str = str_ref(arglist.v.list[1].v.str);
@@ -1135,10 +1139,16 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.5 1998/12/14 13:17:57 nop Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.6 2001/03/12 00:16:29 bjj Exp $";
 
 /* 
  * $Log: list.c,v $
+ * Revision 1.6  2001/03/12 00:16:29  bjj
+ * bf_crypt now passes the entire second argument as the salt to
+ * the C crypt() routine.  This works fine for traditional DES crypts
+ * and supports modern modular crypts like FreeBSD's.  This just makes
+ * it possible to pass the entire salt:  the core still has to do it.
+ *
  * Revision 1.5  1998/12/14 13:17:57  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
