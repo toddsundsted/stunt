@@ -179,7 +179,7 @@
  *			   accepted by a given listener L.
  */
 
-#define MAX_QUEUED_OUTPUT	16384
+#define MAX_QUEUED_OUTPUT	65536
 #define MAX_QUEUED_INPUT	MAX_QUEUED_OUTPUT
 #define DEFAULT_CONNECT_TIMEOUT	300
 
@@ -319,6 +319,9 @@
 
 /* 
  * $Log: options.h,v $
+ * Revision 1.5  1999/08/09 04:09:54  nop
+ * Turn up the buffer sizes a notch.  They're still really too small...
+ *
  * Revision 1.4  1998/12/14 13:18:41  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
