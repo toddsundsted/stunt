@@ -763,26 +763,24 @@ do {    						    	\
     }
     for (;;) {
       next_opcode:
-	op = *bv;
 	error_bv = bv;
-	bv++;
+	op = *bv++;
 
-	if (COUNT_TICK(op))
-	    ticks_remaining--;
-
+	if (COUNT_TICK(op)) {
+	    if (--ticks_remaining <= 0) {
+		STORE_STATE_VARIABLES();
+		abort_task(1);
+		return OUTCOME_ABORTED;
+	    }
+	    if (task_timed_out) {
+		STORE_STATE_VARIABLES();
+		abort_task(0);
+		return OUTCOME_ABORTED;
+	    }
+	}
 	if (task_killed) {
 	    STORE_STATE_VARIABLES();
 	    unwind_stack(FIN_ABORT, zero, 0);
-	    return OUTCOME_ABORTED;
-	}
-	if (ticks_remaining <= 0) {
-	    STORE_STATE_VARIABLES();
-	    abort_task(1);
-	    return OUTCOME_ABORTED;
-	}
-	if (task_timed_out) {
-	    STORE_STATE_VARIABLES();
-	    abort_task(0);
 	    return OUTCOME_ABORTED;
 	}
 	switch (op) {
@@ -2818,12 +2816,18 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.6 1997/03/08 06:25:39 nop Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.7 1997/03/21 13:23:23 bjj Exp $";
 
 /* $Log: execute.c,v $
-/* Revision 1.6  1997/03/08 06:25:39  nop
-/* 1.8.0p6 merge by hand.
+/* Revision 1.7  1997/03/21 13:23:23  bjj
+/* Reorganize the top of run() slightly to make it slightly more efficient
+/* (we do execute it billions of times, after all).  Later we'll want to
+/* get rid of if (task_killed) by introducing BI_KILL or by moving it into
+/* the BI_FUNC_CALL case, at least.
 /*
+ * Revision 1.6  1997/03/08 06:25:39  nop
+ * 1.8.0p6 merge by hand.
+ *
  * Revision 1.5  1997/03/05 08:41:47  bjj
  * A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
  * so that we can keep a pool of them handy.  rt_envs are similarly pooled.
