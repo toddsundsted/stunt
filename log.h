@@ -30,8 +30,20 @@ extern void reset_command_history(void);
 extern void log_command_history(void);
 extern void add_command_to_history(Objid player, const char *command);
 
+
+#define log_report_progress()  ((--log_pcount <= 0) && log_report_progress_cktime())
+
+extern int log_pcount;
+extern int log_report_progress_cktime();
+
 /* 
  * $Log: log.h,v $
+ * Revision 1.4  2004/05/22 01:25:43  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.3.10.1  2003/06/03 12:19:27  wrog
+ * added log_report_progress()
+ *
  * Revision 1.3  1998/12/14 13:18:00  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

@@ -618,44 +618,19 @@ network_set_connection_binary(network_handle nh, int do_binary)
     h->binary = do_binary;
 }
 
-Var
-network_connection_options(network_handle nh, Var list)
+#if NETWORK_PROTOCOL == NP_LOCAL
+#  define NETWORK_CO_TABLE(DEFINE, nh, value, _)
+       /* No network-specific connection options */
+
+#elif NETWORK_PROTOCOL == NP_TCP
+#  define NETWORK_CO_TABLE(DEFINE, nh, value, _)		\
+       DEFINE(client-echo, _, TYPE_INT, num,			\
+	      ((nhandle *)nh.ptr)->client_echo,			\
+	      network_set_client_echo(nh, is_true(value));)	\
+
+void
+network_set_client_echo(network_handle nh, int is_on)
 {
-#if NETWORK_PROTOCOL == NP_TCP
-    nhandle *h = nh.ptr;
-    Var pair;
-
-    pair = new_list(2);
-    pair.v.list[1].type = TYPE_STR;
-    pair.v.list[1].v.str = str_dup("client-echo");
-    pair.v.list[2].type = TYPE_INT;
-    pair.v.list[2].v.num = h->client_echo;
-    list = listappend(list, pair);
-#endif
-
-    return list;
-}
-
-int
-network_connection_option(network_handle nh, const char *option, Var * value)
-{
-#if NETWORK_PROTOCOL == NP_TCP
-    nhandle *h = nh.ptr;
-
-    if (!mystrcasecmp(option, "client-echo")) {
-	value->type = TYPE_INT;
-	value->v.num = h->client_echo;
-	return 1;
-    }
-#endif
-
-    return 0;
-}
-
-int
-network_set_connection_option(network_handle nh, const char *option, Var value)
-{
-#if NETWORK_PROTOCOL == NP_TCP
     nhandle *h = nh.ptr;
 
     /* These values taken from RFC 854 and RFC 857. */
@@ -664,24 +639,23 @@ network_set_connection_option(network_handle nh, const char *option, Var value)
 #define TN_WONT	252
 #define TN_ECHO	1
 
-    {
-	static char telnet_cmd[4] =
+    static char telnet_cmd[4] =
 	{TN_IAC, 0, TN_ECHO, 0};
 
-	if (!mystrcasecmp(option, "client-echo")) {
-	    h->client_echo = is_true(value);
-	    if (h->client_echo)
-		telnet_cmd[1] = TN_WONT;
-	    else
-		telnet_cmd[1] = TN_WILL;
-	    enqueue_output(nh, telnet_cmd, 3, 0, 1);
-	    return 1;
-	}
-    }
-#endif
-
-    return 0;
+    h->client_echo = is_on;
+    if (is_on)
+	telnet_cmd[1] = TN_WONT;
+    else
+	telnet_cmd[1] = TN_WILL;
+    enqueue_output(nh, telnet_cmd, 3, 0, 1);
 }
+
+#else /* NETWORK_PROTOCOL == NP_SINGLE */
+
+#  error "NP_SINGLE ???"
+
+#endif /* NETWORK_PROTOCOL */
+
 
 #ifdef OUTBOUND_NETWORK
 
@@ -722,10 +696,16 @@ network_shutdown(void)
 	close_nlistener(all_nlisteners);
 }
 
-char rcsid_net_multi[] = "$Id: net_multi.c,v 1.3 1998/12/14 13:18:31 nop Exp $";
+char rcsid_net_multi[] = "$Id: net_multi.c,v 1.4 2004/05/22 01:25:43 wrog Exp $";
 
 /* 
  * $Log: net_multi.c,v $
+ * Revision 1.4  2004/05/22 01:25:43  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.3.10.1  2003/06/07 12:59:04  wrog
+ * introduced connection_option macros
+ *
  * Revision 1.3  1998/12/14 13:18:31  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

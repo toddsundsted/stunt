@@ -221,24 +221,22 @@ write_object(Objid oid)
 static int
 validate_hierarchies()
 {
-    Objid oid, log_oid;
+    Objid oid;
     Objid size = db_last_used_objid() + 1;
     int broken = 0;
     int fixed_nexts = 0;
 
     oklog("VALIDATING the object hierarchies ...\n");
 
-#   define PROGRESS_INTERVAL 10000
 #   define MAYBE_LOG_PROGRESS					\
     {								\
-        if (oid == log_oid) {					\
-	    log_oid += PROGRESS_INTERVAL;			\
+        if (log_report_progress()) {				\
 	    oklog("VALIDATE: Done through #%d ...\n", oid);	\
 	}							\
     }
 
     oklog("VALIDATE: Phase 1: Check for invalid objects ...\n");
-    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+    for (oid = 0; oid < size; oid++) {
 	Object *o = dbpriv_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
@@ -273,24 +271,28 @@ validate_hierarchies()
 	       fixed_nexts);
 
     oklog("VALIDATE: Phase 2: Check for cycles ...\n");
-    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+    for (oid = 0; oid < size; oid++) {
 	Object *o = dbpriv_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-#	    define CHECK(start, field, name)				\
-	    {								\
-	        Objid	oid2 = start;					\
-		int	count = 0;					\
-	        for (; oid2 != NOTHING					\
-		     ; oid2 = dbpriv_find_object(oid2)->field) {	\
-		    if (++count > size)	{				\
-			errlog("VALIDATE: Cycle in `%s' chain of #%d\n",\
-			       name, oid);				\
-			broken = 1;					\
-			break;						\
-		    }							\
-		}							\
+#	    define CHECK(start, field, name)			\
+	    {							\
+		Objid slower = start;				\
+		Objid faster = slower;				\
+		while (faster != NOTHING) {			\
+		    faster = dbpriv_find_object(faster)->field;	\
+		    if (faster == NOTHING)			\
+			break;					\
+		    faster = dbpriv_find_object(faster)->field;	\
+		    slower = dbpriv_find_object(slower)->field;	\
+		    if (faster == slower) {			\
+			errlog("VALIDATE: Cycle in `%s' chain of #%d\n", \
+			       name, oid);			\
+			broken = 1;				\
+			break;					\
+		    }						\
+		}						\
 	    }
 
 	    CHECK(o->parent, parent, "parent");
@@ -299,62 +301,72 @@ validate_hierarchies()
 	    CHECK(o->contents, next, "contents");
 
 #	    undef CHECK
+
+	    /* setup for phase 3:  set two temp flags on every object */
+	    o->flags |= (3<<FLAG_FIRST_TEMP);
 	}
     }
 
     if (broken)			/* Can't continue if cycles found */
 	return 0;
 
-    oklog("VALIDATE: Phase 3: Check for inconsistencies ...\n");
-    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+    oklog("VALIDATE: Phase 3a: Finding delusional parents ...\n");
+    for (oid = 0; oid < size; oid++) {
 	Object *o = dbpriv_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-#	    define CHECK(up, up_name, down, down_name, across)		\
-	    {								\
-		Objid	up = o->up;					\
-		Objid	oid2;						\
-									\
-		/* Is oid in its up's down list? */			\
-		if (up != NOTHING) {					\
-		    for (oid2 = dbpriv_find_object(up)->down;		\
-			 oid2 != NOTHING;				\
-			 oid2 = dbpriv_find_object(oid2)->across) {	\
-			if (oid2 == oid) /* found it */			\
-			    break;					\
-		    }							\
-		    if (oid2 == NOTHING) { /* didn't find it */		\
-			errlog("VALIDATE: #%d not in %s (#%d)'s %s list.\n", \
-			       oid, up_name, up, down_name);	        \
-			broken = 1;					\
-		    }							\
-		}							\
+#	    define CHECK(up, down, down_name, across, FLAG)	\
+	    {							\
+		Objid	oidkid;					\
+		Object *okid;					\
+								\
+		for (oidkid = o->down;				\
+		     oidkid != NOTHING;				\
+		     oidkid = okid->across) {			\
+								\
+		    okid = dbpriv_find_object(oidkid);		\
+		    if (okid->up != oid) {			\
+			errlog(					\
+			    "VALIDATE: #%d erroneously on #%d's %s list.\n", \
+			    oidkid, oid, down_name);		\
+			broken = 1;				\
+		    }						\
+		    else {					\
+			/* mark okid as properly claimed */	\
+			okid->flags &= ~(1<<(FLAG));		\
+		    }						\
+		}						\
 	    }
 
-	    CHECK(parent, "parent", child, "child", sibling);
-	    CHECK(location, "location", contents, "contents", next);
+	    CHECK(parent,   child,    "child",    sibling, FLAG_FIRST_TEMP);
+	    CHECK(location, contents, "contents", next,    FLAG_FIRST_TEMP+1);
 
 #	    undef CHECK
+	}
+    }
 
-#	    define CHECK(up, down, down_name, across)			\
+    oklog("VALIDATE: Phase 3b: Finding delusional children ...\n");
+    for (oid = 0; oid < size; oid++) {
+	Object *o = dbpriv_find_object(oid);
+
+	MAYBE_LOG_PROGRESS;
+	if (o) {
+#	    define CHECK(up, up_name, down_name, FLAG)			\
 	    {								\
-		Objid	oid2;						\
-									\
-		for (oid2 = o->down;					\
-		     oid2 != NOTHING;					\
-		     oid2 = dbpriv_find_object(oid2)->across) {		\
-		    if (dbpriv_find_object(oid2)->up != oid) {		\
-			errlog(						\
-			    "VALIDATE: #%d erroneously on #%d's %s list.\n", \
-			    oid2, oid, down_name);			\
-			broken = 1;					\
-		    }							\
+		/* If oid is unclaimed, up must be NOTHING */		\
+		if ((o->flags & (1<<(FLAG))) && o->up != NOTHING) {	\
+		    errlog("VALIDATE: #%d not in %s (#%d)'s %s list.\n", \
+			   oid, up_name, o->up, down_name);		\
+		    broken = 1;						\
 		}							\
 	    }
 
-	    CHECK(parent, child, "child", sibling);
-	    CHECK(location, contents, "contents", next);
+	    CHECK(parent,   "parent",   "child",    FLAG_FIRST_TEMP);
+	    CHECK(location, "location", "contents", FLAG_FIRST_TEMP+1);
+
+	    /* clear temp flags */
+	    o->flags &= ~(3<<FLAG_FIRST_TEMP);
 
 #	    undef CHECK
 	}
@@ -419,7 +431,7 @@ read_db_file(void)
 	    errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
 	    return 0;
 	}
-	if (i % 10000 == 0 || i == nobjs)
+	if (i == nobjs || log_report_progress())
 	    oklog("LOADING: Done reading %d objects ...\n", i);
     }
 
@@ -449,7 +461,7 @@ read_db_file(void)
 	    return 0;
 	}
 	db_set_verb_program(h, program);
-	if (i % 5000 == 0 || i == nprogs)
+	if (i == nprogs || log_report_progress())
 	    oklog("LOADING: Done reading %d verb programs...\n", i);
     }
 
@@ -489,38 +501,39 @@ write_db_file(const char *reason)
 
     user_list = db_all_users();
 
-    TRY
+    TRY {
 	dbio_printf(header_format_string, current_version);
-    dbio_printf("%d\n%d\n%d\n%d\n",
-		max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
-    for (i = 1; i <= user_list.v.list[0].v.num; i++)
-	dbio_write_objid(user_list.v.list[i].v.obj);
-    oklog("%s: Writing %d objects...\n", reason, max_oid + 1);
-    for (oid = 0; oid <= max_oid; oid++) {
-	write_object(oid);
-	if ((oid + 1) % 10000 == 0 || oid == max_oid)
-	    oklog("%s: Done writing %d objects...\n", reason, oid + 1);
-    }
-    oklog("%s: Writing %d MOO verb programs...\n", reason, nprogs);
-    for (i = 0, oid = 0; oid <= max_oid; oid++)
-	if (valid(oid)) {
-	    int vcount = 0;
-
-	    for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
-		if (v->program) {
-		    dbio_printf("#%d:%d\n", oid, vcount);
-		    dbio_write_program(v->program);
-		    if (++i % 5000 == 0 || i == nprogs)
-			oklog("%s: Done writing %d verb programs...\n",
-			      reason, i);
-		}
-		vcount++;
-	    }
+	dbio_printf("%d\n%d\n%d\n%d\n",
+		    max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+	for (i = 1; i <= user_list.v.list[0].v.num; i++)
+	    dbio_write_objid(user_list.v.list[i].v.obj);
+	oklog("%s: Writing %d objects...\n", reason, max_oid + 1);
+	for (oid = 0; oid <= max_oid; oid++) {
+	    write_object(oid);
+	    if (oid == max_oid || log_report_progress())
+		oklog("%s: Done writing %d objects...\n", reason, oid + 1);
 	}
-    oklog("%s: Writing forked and suspended tasks...\n", reason);
-    write_task_queue();
-    oklog("%s: Writing list of formerly active connections...\n", reason);
-    write_active_connections();
+	oklog("%s: Writing %d MOO verb programs...\n", reason, nprogs);
+	for (i = 0, oid = 0; oid <= max_oid; oid++)
+	    if (valid(oid)) {
+		int vcount = 0;
+
+		for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
+		    if (v->program) {
+			dbio_printf("#%d:%d\n", oid, vcount);
+			dbio_write_program(v->program);
+			if (++i == nprogs || log_report_progress())
+			    oklog("%s: Done writing %d verb programs...\n",
+				  reason, i);
+		    }
+		    vcount++;
+		}
+	    }
+	oklog("%s: Writing forked and suspended tasks...\n", reason);
+	write_task_queue();
+	oklog("%s: Writing list of formerly active connections...\n", reason);
+	write_active_connections();
+    }
     EXCEPT(dbpriv_dbio_failed)
 	success = 0;
     ENDTRY;
@@ -718,10 +731,19 @@ db_shutdown()
     dump_database(DUMP_SHUTDOWN);
 }
 
-char rcsid_db_file[] = "$Id: db_file.c,v 1.4 1998/12/14 13:17:33 nop Exp $";
+char rcsid_db_file[] = "$Id: db_file.c,v 1.5 2004/05/22 01:25:43 wrog Exp $";
 
 /* 
  * $Log: db_file.c,v $
+ * Revision 1.5  2004/05/22 01:25:43  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.4.8.2  2003/06/03 12:21:17  wrog
+ * new validation algorithms for cycle-detection and hierarchy checking
+ *
+ * Revision 1.4.8.1  2003/06/01 12:27:35  wrog
+ * added braces and fixed indentation on TRY
+ *
  * Revision 1.4  1998/12/14 13:17:33  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

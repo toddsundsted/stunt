@@ -54,6 +54,7 @@ extern size_t strlen(const char *);
 #    if NDECL_MEMCPY
 #      include "my-types.h"
 extern void *memcpy(void *, const void *, size_t);
+extern void *memmove(void *, const void *, size_t);
 extern int memcmp(const void *, const void *, size_t);
 #    endif
 #  endif
@@ -87,6 +88,12 @@ extern void *memset(void *, int, size_t);
 
 /* 
  * $Log: my-string.h,v $
+ * Revision 1.4  2004/05/22 01:25:43  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.3.10.1  2003/06/11 10:36:14  wrog
+ * added memmove()
+ *
  * Revision 1.3  1998/12/14 13:18:19  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

@@ -158,10 +158,97 @@ extern void boot_player(Objid player);
 extern void write_active_connections(void);
 extern int read_active_connections(void);
 
+
+
+/* Body for *_connection_option() */
+#define CONNECTION_OPTION_GET(TABLE,HANDLE,OPTION,VALUE)	\
+    _STATEMENT({						\
+	TABLE(_CONNECT_OPTION_GET_SINGLE, (HANDLE), @,		\
+	      _RMPAREN2((OPTION),(VALUE)))			\
+	return 0;						\
+    })
+
+/* Body for *_set_connection_option() */
+#define CONNECTION_OPTION_SET(TABLE,HANDLE,OPTION,VALUE)	\
+    _STATEMENT({						\
+	TABLE(_CONNECT_OPTION_SET_SINGLE, (HANDLE), (VALUE),	\
+	      _RMPAREN2((OPTION),(VALUE)))			\
+	return 0;						\
+    })
+
+/* Body for *_connection_options() */
+#define CONNECTION_OPTION_LIST(TABLE,HANDLE,LIST)	\
+    _STATEMENT({					\
+	TABLE(_CONNECT_OPTION_LIST_SINGLE, (HANDLE), @,	\
+	      (LIST))					\
+	return (LIST);					\
+    })
+
+/* All of the above require a TABLE of connection options #defined
+ * as follows
+ * 
+ * #define TABLE(DEFINE, HANDLE, VALUE, _)
+ *    DEFINE(<name>, _, TYPE_<foo>, <member>,
+ *           <get-value-expression>,
+ *           <set-value-statement>)
+ *    ...
+ *    
+ * where
+ *   <get-value-expression>
+ *     should extract from HANDLE a value for option <name>
+ *     of type suitable for assignment to Var.v.<member>
+ *   <set-value-expression>
+ *     should do whatever needs to be done to HANDLE
+ *     to reflect the new VALUE
+ */
+
+/*
+ * Helper macros for CONNECTION_OPTION_(GET|SET|LIST)
+ * (nothing should need to invoke these directly):
+ */
+#define _RMPAREN2(ARG1,ARG2) ARG1,ARG2
+#define _STATEMENT(STMT) do STMT while (0)
+
+#define _CONNECT_OPTION_GET_SINGLE(NAME, OPTION, VALUE,		\
+				   TYPE_FOO, VFOO_MEMBER,	\
+				   GETVALUE, SETVALUE)		\
+    if (!mystrcasecmp(OPTION, #NAME)) {				\
+	VALUE->type  = (TYPE_FOO);				\
+	VALUE->v.VFOO_MEMBER = (GETVALUE);			\
+	return 1;						\
+    }
+
+#define _CONNECT_OPTION_SET_SINGLE(NAME, OPTION, VALUE,		\
+				   TYPE_FOO, VFOO_MEMBER,	\
+				   GETVALUE, SETVALUE)		\
+    if (!mystrcasecmp(OPTION, #NAME)) {				\
+	SETVALUE;						\
+	return 1;						\
+    }
+
+#define _CONNECT_OPTION_LIST_SINGLE(NAME, LIST,			\
+				    TYPE_FOO, VFOO_MEMBER,	\
+				    GETVALUE, SETVALUE)		\
+    {								\
+	Var pair = new_list(2);					\
+	pair.v.list[1].type = TYPE_STR;				\
+	pair.v.list[1].v.str = str_dup(#NAME);			\
+	pair.v.list[2].type = (TYPE_FOO);			\
+	pair.v.list[2].v.VFOO_MEMBER = (GETVALUE);		\
+	LIST = listappend(LIST, pair);				\
+    }								\
+
+
 #endif				/* Server_H */
 
 /* 
  * $Log: server.h,v $
+ * Revision 1.4  2004/05/22 01:25:44  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.3.10.1  2003/06/07 12:59:04  wrog
+ * introduced connection_option macros
+ *
  * Revision 1.3  1998/12/14 13:18:58  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

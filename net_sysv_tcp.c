@@ -55,6 +55,8 @@
 #include "structures.h"
 #include "timers.h"
 
+#include "net_tcp.c"
+
 static struct t_call *call = 0;
 
 static void
@@ -72,31 +74,20 @@ proto_name(void)
     return "SysV/TCP";
 }
 
-const char *
-proto_usage_string(void)
-{
-    return "[port]";
-}
-
 int
 proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 {
     int port = DEFAULT_PORT;
-    char *p;
-
-    initialize_name_lookup();
 
     proto->pocket_size = 1;
     proto->believe_eof = 1;
     proto->eol_out_string = "\r\n";
 
-    if (argc > 1)
+    if (!tcp_arguments(argc, argv, &port))
 	return 0;
-    else if (argc == 1) {
-	port = strtoul(argv[0], &p, 10);
-	if (*p != '\0')
-	    return 0;
-    }
+
+    initialize_name_lookup();
+
     desc->type = TYPE_INT;
     desc->v.num = port;
     return 1;
@@ -123,7 +114,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 	return E_QUOTA;
     }
     req_addr.sin_family = AF_INET;
-    req_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    req_addr.sin_addr.s_addr = bind_local_ip;
     req_addr.sin_port = htons(port);
 
     requested.addr.maxlen = sizeof(req_addr);
@@ -143,7 +134,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 	if (t_errno == TACCES || (t_errno == TSYSERR && errno == EACCES))
 	    e = E_PERM;
 	return e;
-    } else if (port != 0 && rec_addr.sin_port != port) {
+    } else if (port != 0 && rec_addr.sin_port != htons(port)) {
 	errlog("Can't bind to requested port!\n");
 	t_close(s);
 	return E_QUOTA;
@@ -268,8 +259,8 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
      * getting all those nasty little parameter-passing rules right.  This
      * function isn't recursive anyway, so it doesn't matter.
      */
-    struct sockaddr_in rec_addr;
-    struct t_bind received;
+    struct sockaddr_in rec_addr, req_addr;
+    struct t_bind received, requested, *p_requested;
     static const char *host_name;
     static int port;
     static Timer_ID id;
@@ -277,6 +268,9 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     int timeout = server_int_option("name_lookup_timeout", 5);
     static struct sockaddr_in addr;
     static Stream *st1 = 0, *st2 = 0;
+
+    if (!outbound_network_enabled)
+	return E_PERM;
 
     if (!st1) {
 	st1 = new_stream(20);
@@ -304,11 +298,26 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 	    log_ti_error("Making endpoint in proto_open_connection");
 	return E_QUOTA;
     }
+
+    if (bind_local_ip == INADDR_ANY) {
+	p_requested = 0;
+    }
+    else {
+	req_addr.sin_family = AF_INET;
+	req_addr.sin_addr.s_addr = bind_local_ip;
+	req_addr.sin_port = 0;
+
+	requested.addr.maxlen = sizeof(req_addr);
+	requested.addr.len = sizeof(req_addr);
+	requested.addr.buf = (void *) &req_addr;
+	p_requested = &requested;
+    }
+
     received.addr.maxlen = sizeof(rec_addr);
     received.addr.len = sizeof(rec_addr);
     received.addr.buf = (void *) &rec_addr;
 
-    if (t_bind(fd, 0, &received) < 0) {
+    if (t_bind(fd, p_requested, &received) < 0) {
 	log_ti_error("Binding outbound endpoint");
 	t_close(fd);
 	return E_QUOTA;
@@ -317,19 +326,21 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     call->addr.len = sizeof(addr);
     call->addr.buf = (void *) &addr;
 
-    TRY
+    TRY {
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
 		       timeout_proc, 0);
-    result = t_connect(fd, call, 0);
-    cancel_timer(id);
-    EXCEPT(timeout_exception)
+	result = t_connect(fd, call, 0);
+	cancel_timer(id);
+    }
+    EXCEPT(timeout_exception) {
 	result = -1;
-    errno = ETIMEDOUT;
-    t_errno = TSYSERR;
-    reenable_timers();
-    ENDTRY
+	errno = ETIMEDOUT;
+	t_errno = TSYSERR;
+	reenable_timers();
+    }
+    ENDTRY;
 
-	if (result < 0) {
+    if (result < 0) {
 	t_close(fd);
 	log_ti_error("Connecting in proto_open_connection");
 	return E_QUOTA;
@@ -350,12 +361,22 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 }
 #endif				/* OUTBOUND_NETWORK */
 
-char rcsid_net_sysv_tcp[] = "$Id: net_sysv_tcp.c,v 1.2 1997/03/03 04:19:09 nop Exp $";
+char rcsid_net_sysv_tcp[] = "$Id: net_sysv_tcp.c,v 1.3 2004/05/22 01:25:44 wrog Exp $";
 
-/* $Log: net_sysv_tcp.c,v $
-/* Revision 1.2  1997/03/03 04:19:09  nop
-/* GNU Indent normalization
 /*
+ * $Log: net_sysv_tcp.c,v $
+ * Revision 1.3  2004/05/22 01:25:44  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.2.12.2  2003/06/01 13:15:18  wrog
+ * Fixed log / comment braindeath
+ *
+ * Revision 1.2.12.1  2003/06/01 12:42:30  wrog
+ * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
+ *
+ * Revision 1.2  1997/03/03 04:19:09  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:02  nop
  * LambdaMOO 1.8.0p5
  *

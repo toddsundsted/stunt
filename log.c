@@ -38,14 +38,24 @@ set_log_file(FILE * f)
     log_file = f;
 }
 
+int log_pcount = 5000;
+static time_t log_prev = 0;
+int log_report_progress_cktime()
+{
+    time_t now = time(0);
+    log_pcount = 5000;
+    return ((now >= log_prev + 2) && (log_prev = now, 1));
+}
+
 static void
 do_log(const char *fmt, va_list args, const char *prefix)
 {
     FILE *f;
 
+    log_prev = time(0);
+    log_pcount = 5000;
     if (log_file) {
-	time_t now = time(0);
-	char *nowstr = ctime(&now);
+	char *nowstr = ctime(&log_prev);
 
 	nowstr[19] = '\0';	/* kill the year and newline at the end */
 	f = log_file;
@@ -149,10 +159,16 @@ register_log(void)
     register_function("server_log", 1, 2, bf_server_log, TYPE_STR, TYPE_ANY);
 }
 
-char rcsid_log[] = "$Id: log.c,v 1.3 1998/12/14 13:17:59 nop Exp $";
+char rcsid_log[] = "$Id: log.c,v 1.4 2004/05/22 01:25:43 wrog Exp $";
 
 /* 
  * $Log: log.c,v $
+ * Revision 1.4  2004/05/22 01:25:43  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.3.10.1  2003/06/03 12:19:27  wrog
+ * added log_report_progress()
+ *
  * Revision 1.3  1998/12/14 13:17:59  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

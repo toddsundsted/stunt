@@ -39,6 +39,7 @@ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
 
 OPT_NET_SRCS = net_single.c net_multi.c \
 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+	net_tcp.c \
 	net_bsd_tcp.c net_bsd_lcl.c net_sysv_tcp.c net_sysv_lcl.c
 
 OPT_NET_OBJS = $(OPT_NET_SRCS:.c=.o)
@@ -48,6 +49,7 @@ OPT_CSRCS = gnu-malloc.c $(OPT_NET_SRCS)
 YSRCS = parser.y
 
 HDRS =  ast.h bf_register.h code_gen.h db.h db_io.h db_private.h decompile.h \
+	db_tune.h \
 	disassemble.h eval_env.h eval_vm.h exceptions.h execute.h functions.h \
 	getpagesize.h keywords.h list.h log.h match.h md5.h name_lookup.h \
 	network.h net_mplex.h net_multi.h net_proto.h numbers.h opcode.h \
@@ -137,7 +139,7 @@ tags:
 	etags -t $(SRCS)
 
 clean:
-	rm -f $(OBJS) core y.tab.c y.tab.h y.output makedep eddep 
+	rm -f $(OBJS) $(OPT_NET_OBJS) core y.tab.c y.tab.h y.output makedep eddep
 
 distclean:	clean
 	rm -f config.h Makefile config.status
@@ -154,6 +156,12 @@ depend: ${ALL_CSRCS}
 
 ###############################################################################
 # $Log: Makefile.in,v $
+# Revision 1.9  2004/05/22 01:25:43  wrog
+# merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+#
+# Revision 1.8.10.1  2003/06/01 12:33:07  wrog
+# added net_tcp.c; (put db_tune.h in HDRS); ran makedepend
+#
 # Revision 1.8  2000/05/11 06:32:27  xythian
 # fixed bloody "suspicious line 293" emacs warning when saving Makefile.in
 # by tweaking quotes
@@ -398,7 +406,7 @@ net_proto.o: net_proto.c options.h config.h net_bsd_tcp.c my-inet.h \
  my-in.h my-types.h my-socket.h my-stdlib.h my-string.h my-unistd.h \
  list.h structures.h my-stdio.h log.h name_lookup.h net_proto.h \
  server.h network.h streams.h timers.h my-time.h utils.h execute.h \
- db.h program.h version.h opcode.h parse_cmd.h
+ db.h program.h version.h opcode.h parse_cmd.h net_tcp.c exceptions.h
 numbers.o: numbers.c my-math.h my-stdlib.h config.h my-string.h \
  my-time.h functions.h my-stdio.h execute.h db.h program.h \
  structures.h version.h opcode.h options.h parse_cmd.h log.h random.h \
@@ -478,11 +486,12 @@ net_mp_selct.o: net_mp_selct.c my-string.h config.h my-sys-time.h \
  options.h my-types.h log.h my-stdio.h structures.h net_mplex.h
 net_mp_poll.o: net_mp_poll.c my-poll.h config.h log.h my-stdio.h \
  structures.h net_mplex.h storage.h ref_count.h
+net_tcp.o: net_tcp.c
 net_bsd_tcp.o: net_bsd_tcp.c my-inet.h config.h my-in.h my-types.h \
  my-socket.h my-stdlib.h my-string.h my-unistd.h list.h structures.h \
  my-stdio.h log.h name_lookup.h net_proto.h options.h server.h \
  network.h streams.h timers.h my-time.h utils.h execute.h db.h \
- program.h version.h opcode.h parse_cmd.h
+ program.h version.h opcode.h parse_cmd.h net_tcp.c exceptions.h
 net_bsd_lcl.o: net_bsd_lcl.c my-socket.h config.h my-stdio.h \
  my-string.h my-unistd.h log.h structures.h net_proto.h options.h \
  storage.h ref_count.h utils.h execute.h db.h program.h version.h \
@@ -491,7 +500,7 @@ net_sysv_tcp.o: net_sysv_tcp.c my-inet.h config.h my-fcntl.h my-in.h \
  my-types.h my-ioctl.h my-socket.h my-stdlib.h my-string.h \
  my-stropts.h my-tiuser.h my-unistd.h log.h my-stdio.h structures.h \
  name_lookup.h net_proto.h options.h server.h network.h streams.h \
- timers.h my-time.h
+ timers.h my-time.h net_tcp.c exceptions.h
 net_sysv_lcl.o: net_sysv_lcl.c my-fcntl.h config.h my-stat.h \
  my-stdio.h my-stdlib.h my-unistd.h exceptions.h list.h structures.h \
  log.h net_multi.h net_proto.h options.h storage.h ref_count.h \

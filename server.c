@@ -559,41 +559,33 @@ init_cmdline(int argc, char *argv[])
     cmdline_buflen = p - argv[0];
 }
 
+#define SERVER_CO_TABLE(DEFINE, H, VALUE, _)				\
+    DEFINE(binary, _, TYPE_INT, num,					\
+	   H->binary,							\
+	   {								\
+	       H->binary = is_true(VALUE);				\
+	       network_set_connection_binary(H->nhandle, H->binary);	\
+	   })								\
+
 static int
 server_set_connection_option(shandle * h, const char *option, Var value)
 {
-    if (!mystrcasecmp(option, "binary")) {
-	h->binary = is_true(value);
-	network_set_connection_binary(h->nhandle, h->binary);
-	return 1;
-    }
-    return 0;
+    CONNECTION_OPTION_SET(SERVER_CO_TABLE, h, option, value);
 }
 
 static int
 server_connection_option(shandle * h, const char *option, Var * value)
 {
-    if (!mystrcasecmp(option, "binary")) {
-	value->type = TYPE_INT;
-	value->v.num = h->binary;
-	return 1;
-    }
-    return 0;
+    CONNECTION_OPTION_GET(SERVER_CO_TABLE, h, option, value);
 }
 
 static Var
 server_connection_options(shandle * h, Var list)
 {
-    Var pair;
-
-    pair = new_list(2);
-    pair.v.list[1].type = TYPE_STR;
-    pair.v.list[1].v.str = str_dup("binary");
-    pair.v.list[2].type = TYPE_INT;
-    pair.v.list[2].v.num = h->binary;
-
-    return listappend(list, pair);
+    CONNECTION_OPTION_LIST(SERVER_CO_TABLE, h, list);
 }
+
+#undef SERVER_CO_TABLE
 
 static char *
 read_stdin_line()
@@ -602,6 +594,7 @@ read_stdin_line()
     char *line, buffer[1000];
     int buflen;
 
+    fflush(stdout);
     if (!s)
 	s = new_stream(100);
 
@@ -819,6 +812,7 @@ emergency_mode()
 		else
 		    printf("%s\n", message);
 	    } else if (!mystrcasecmp(command, "abort") && nargs == 0) {
+	        printf("Bye.  (%s)\n\n", "NOT saving database");
 		exit(1);
 	    } else if (!mystrcasecmp(command, "quit") && nargs == 0) {
 		start_ok = 0;
@@ -869,6 +863,11 @@ emergency_mode()
 	    free_var(words);
 	}
     }
+
+    printf("Bye.  (%s)\n\n", start_ok ? "continuing" : "saving database");
+#if NETWORK_PROTOCOL != NP_SINGLE
+    fclose(stdout);
+#endif
 
     free_stream(s);
     in_emergency_mode = 0;
@@ -965,7 +964,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->print_messages = (!outbound && l->print_messages);
 
     if (!outbound) {
-	new_input_task(h->tasks, "");
+	new_input_task(h->tasks, "", 0);
 	/*
 	 * Suspend input at the network level until the above input task
 	 * is processed.  At the point when it is dequeued, tasks.c will
@@ -1004,7 +1003,7 @@ server_receive_line(server_handle sh, const char *line)
     shandle *h = (shandle *) sh.ptr;
 
     h->last_activity_time = time(0);
-    new_input_task(h->tasks, line);
+    new_input_task(h->tasks, line, h->binary);
 }
 
 void
@@ -1226,6 +1225,13 @@ main(int argc, char **argv)
 		this_program, db_usage_string(), network_usage_string());
 	exit(1);
     }
+#if NETWORK_PROTOCOL != NP_SINGLE
+    if (!emergency)
+	fclose(stdout);
+#endif
+    if (log_file)
+	fclose(stderr);
+
     oklog("STARTING: Version %s of the LambdaMOO server\n", server_version);
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
@@ -1743,12 +1749,28 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.6 2003/06/12 18:16:56 bjj Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.7 2004/05/22 01:25:44 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.7  2004/05/22 01:25:44  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.5.10.4  2004/05/21 23:02:56  wrog
+ * NP_SINGLE needs to have stdout stay open
+ *
+ * Revision 1.5.10.3  2004/05/20 19:57:11  wrog
+ * fixed flushing issues w.r.t. emergency mode;
+ * close stdout and stderr when we are not using them
+ *
  * Revision 1.6  2003/06/12 18:16:56  bjj
  * Suspend input on connection until :do_login_command() can run.
+ *
+ * Revision 1.5.10.2  2003/06/11 10:40:16  wrog
+ * added binary argument to new_input_task()
+ *
+ * Revision 1.5.10.1  2003/06/07 12:59:04  wrog
+ * introduced connection_option macros
  *
  * Revision 1.5  1998/12/29 06:56:32  nop
  * Fixed leak in onc().

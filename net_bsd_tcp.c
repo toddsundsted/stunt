@@ -41,37 +41,28 @@
 #include "timers.h"
 #include "utils.h"
 
+#include "net_tcp.c"
+
 const char *
 proto_name(void)
 {
     return "BSD/TCP";
 }
 
-const char *
-proto_usage_string(void)
-{
-    return "[port]";
-}
-
 int
 proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 {
     int port = DEFAULT_PORT;
-    char *p;
-
-    initialize_name_lookup();
 
     proto->pocket_size = 1;
     proto->believe_eof = 1;
     proto->eol_out_string = "\r\n";
 
-    if (argc > 1)
+    if (!tcp_arguments(argc, argv, &port))
 	return 0;
-    else if (argc == 1) {
-	port = strtoul(argv[0], &p, 10);
-	if (*p != '\0')
-	    return 0;
-    }
+
+    initialize_name_lookup();
+
     desc->type = TYPE_INT;
     desc->v.num = port;
     return 1;
@@ -103,7 +94,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 	return E_QUOTA;
     }
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = htonl(INADDR_ANY);
+    address.sin_addr.s_addr = bind_local_ip;
     address.sin_port = htons(port);
     if (bind(s, (struct sockaddr *) &address, sizeof(address)) < 0) {
 	enum error e = E_QUOTA;
@@ -213,6 +204,9 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     static struct sockaddr_in addr;
     static Stream *st1 = 0, *st2 = 0;
 
+    if (!outbound_network_enabled)
+	return E_PERM;
+
     if (!st1) {
 	st1 = new_stream(20);
 	st2 = new_stream(50);
@@ -238,18 +232,39 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 	    log_perror("Making socket in proto_open_connection");
 	return E_QUOTA;
     }
-    TRY
+    
+    if (bind_local_ip != INADDR_ANY) {
+	static struct sockaddr_in local_addr;
+
+	local_addr.sin_family = AF_INET;
+	local_addr.sin_addr.s_addr = bind_local_ip;
+	local_addr.sin_port = 0;
+	/* In theory, if the original listen() succeeded,
+	 * then this should too, but who knows, really? */
+	if (bind(s, (struct sockaddr *) &local_addr, sizeof(local_addr)) < 0) {
+	    enum error e = E_QUOTA;
+
+	    log_perror("Binding local address in proto_open_connection");
+	    if (errno == EACCES)
+		e = E_PERM;
+	    close(s);
+	    return e;
+	}
+    }	 
+    TRY {
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
 		       timeout_proc, 0);
-    result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
-    cancel_timer(id);
-    EXCEPT(timeout_exception)
+	result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
+	cancel_timer(id);
+    }
+    EXCEPT(timeout_exception) {
 	result = -1;
-    errno = ETIMEDOUT;
-    reenable_timers();
-    ENDTRY
+	errno = ETIMEDOUT;
+	reenable_timers();
+    }
+    ENDTRY;
 
-	if (result < 0) {
+    if (result < 0) {
 	close(s);
 	if (errno == EADDRNOTAVAIL ||
 	    errno == ECONNREFUSED ||
@@ -277,10 +292,16 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 }
 #endif				/* OUTBOUND_NETWORK */
 
-char rcsid_net_bsd_tcp[] = "$Id: net_bsd_tcp.c,v 1.3 1998/12/14 13:18:27 nop Exp $";
+char rcsid_net_bsd_tcp[] = "$Id: net_bsd_tcp.c,v 1.4 2004/05/22 01:25:43 wrog Exp $";
 
 /* 
  * $Log: net_bsd_tcp.c,v $
+ * Revision 1.4  2004/05/22 01:25:43  wrog
+ * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+ *
+ * Revision 1.3.10.1  2003/06/01 12:42:30  wrog
+ * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
+ *
  * Revision 1.3  1998/12/14 13:18:27  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
