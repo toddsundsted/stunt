@@ -684,9 +684,6 @@ generate_expr(Expr * expr, State * state)
 	    case EXPR_PROP:
 		op = OP_GET_PROP;
 		break;
-	    case EXPR_INDEX:
-		op = OP_REF;
-		break;
 	    default:
 		panic("Not a binary operator in GENERATE_EXPR()");
 	    }
@@ -1353,10 +1350,13 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.9 1999/08/14 19:44:15 bjj Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.10 2002/08/23 13:00:18 bjj Exp $";
 
 /* 
  * $Log: code_gen.c,v $
+ * Revision 1.10  2002/08/23 13:00:18  bjj
+ * Removed a spurious EXPR_INDEX case left over from before x[$]
+ *
  * Revision 1.9  1999/08/14 19:44:15  bjj
  * Code generator will no longer PUSH_CLEAR things like dobj/dobjstr/prepstr
  * around CALL_VERB operations, since those variables are passed directly
