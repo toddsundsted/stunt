@@ -263,4 +263,5 @@ However, suspended tasks are a problem for switchover.  From options.h:
  * and vice versa.  It is safe to flip this switch only if there are
  * no suspended tasks in the database you are loading.  (It might work
  * anyway, but hey, it's your database.)  This restriction will be
- * lifted in a future version of the server software.
+ * lifted in a future version of the server software.  Consider this
+ * option as being BETA QUALITY until then.

@@ -206,7 +206,7 @@
  * The code generator can now recognize situations where the code will not
  * refer to the value of a variable again and generate opcodes that will
  * keep the interpreter from holding references to the value in the runtime
- * environment variable slot.  Before when doing something like x=f(x), the
+ * environment variable slot.  Before, when doing something like x=f(x), the
  * interpreter was guaranteed to have a reference to the value of x while f()
  * was running, meaning that f() always had to copy x to modify it.  With
  * BYTECODE_REDUCE_REF enabled, f() could be called with the last reference
@@ -224,12 +224,17 @@
  * and vice versa.  It is safe to flip this switch only if there are
  * no suspended tasks in the database you are loading.  (It might work
  * anyway, but hey, it's your database.)  This restriction will be
- * lifted in a future version of the server software.
+ * lifted in a future version of the server software.  Consider this
+ * option as being BETA QUALITY until then.
  *
  * NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    
  *
  ****************************************************************************** */
 /* #define BYTECODE_REDUCE_REF */
+
+#ifdef BYTECODE_REDUCE_REF
+#error Think carefully before enabling BYTECODE_REDUCE_REF.  This feature is still beta.  Comment out this line if you are sure.
+#endif
 
 /******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
@@ -331,6 +336,9 @@
 
 /* 
  * $Log: options.h,v $
+ * Revision 1.7  2000/01/11 02:05:27  nop
+ * More doc tweaking, really warn about BYTECODE_REDUCE_REF.
+ *
  * Revision 1.6  2000/01/09 22:20:15  nop
  * Round one of doc cleanup.
  *
