@@ -154,6 +154,10 @@ depend: ${ALL_CSRCS}
 
 ###############################################################################
 # $Log: Makefile.in,v $
+# Revision 1.8  2000/05/11 06:32:27  xythian
+# fixed bloody "suspicious line 293" emacs warning when saving Makefile.in
+# by tweaking quotes
+#
 # Revision 1.7  2000/01/11 01:54:05  nop
 # CFLAGS line for poor users without inline keyword.
 #
@@ -290,8 +294,8 @@ depend: ${ALL_CSRCS}
 # Revision 1.3  1992/07/27  18:30:21  pjames
 # Update what vector.o and vector.po depend on.
 ###############################################################################
-	
-# Have to do this one manually, since 'make depend' can't hack yacc files.
+
+# Have to do this one manually, since make depend cannot hack yacc files.
 parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
 		ast.h code_gen.h config.h functions.h \
 		keywords.h list.h log.h numbers.h opcode.h parser.h program.h \
