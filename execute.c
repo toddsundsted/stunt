@@ -837,7 +837,17 @@ do {    						    	\
 
 	case OP_IMM:
 	    {
-		int slot = READ_BYTES(bv, bc.numbytes_literal);
+		int slot;
+
+		/* If we'd just throw it away anyway (eg verbdocs),
+		   skip both OPs.  This accounts for most executions
+		   of OP_IMM in my tests.
+		 */
+		if (bv[bc.numbytes_literal] == OP_POP) {
+		    bv += bc.numbytes_literal + 1;
+		    break;
+		}
+		slot = READ_BYTES(bv, bc.numbytes_literal);
 		PUSH_REF(RUN_ACTIV.prog->literals[slot]);
 	    }
 	    break;
@@ -1852,8 +1862,48 @@ do {    						    	\
 	    }
 	    break;
 
-	default:
-	    if (IS_PUSH_n(op)) {
+	    /* These opcodes account for about 20% of all opcodes executed, so
+	       let's split out the case stmt so the compiler can help us out.
+	       If you're here because the #error below got tripped, just change
+	       the set of case stmts below for OP_PUSH and OP_PUT to
+	       be 0..NUM_READY_VARS-1.
+	     */
+#if NUM_READY_VARS != 32
+#error NUM_READY_VARS expected to be 32
+#endif
+	case OP_PUSH:
+	case OP_PUSH + 1:
+	case OP_PUSH + 2:
+	case OP_PUSH + 3:
+	case OP_PUSH + 4:
+	case OP_PUSH + 5:
+	case OP_PUSH + 6:
+	case OP_PUSH + 7:
+	case OP_PUSH + 8:
+	case OP_PUSH + 9:
+	case OP_PUSH + 10:
+	case OP_PUSH + 11:
+	case OP_PUSH + 12:
+	case OP_PUSH + 13:
+	case OP_PUSH + 14:
+	case OP_PUSH + 15:
+	case OP_PUSH + 16:
+	case OP_PUSH + 17:
+	case OP_PUSH + 18:
+	case OP_PUSH + 19:
+	case OP_PUSH + 20:
+	case OP_PUSH + 21:
+	case OP_PUSH + 22:
+	case OP_PUSH + 23:
+	case OP_PUSH + 24:
+	case OP_PUSH + 25:
+	case OP_PUSH + 26:
+	case OP_PUSH + 27:
+	case OP_PUSH + 28:
+	case OP_PUSH + 29:
+	case OP_PUSH + 30:
+	case OP_PUSH + 31:
+	    {
 		Var value;
 		value = RUN_ACTIV.rt_env[PUSH_n_INDEX(op)];
 		if (value.type == TYPE_NONE) {
@@ -1861,10 +1911,54 @@ do {    						    	\
 		    PUSH_ERROR(E_VARNF);
 		} else
 		    PUSH_REF(value);
-	    } else if (IS_PUT_n(op)) {
-		free_var(RUN_ACTIV.rt_env[PUT_n_INDEX(op)]);
-		RUN_ACTIV.rt_env[PUT_n_INDEX(op)] = var_ref(TOP_RT_VALUE);
-	    } else if (IS_OPTIM_NUM_OPCODE(op)) {
+	    }
+	    break;
+
+	case OP_PUT:
+	case OP_PUT + 1:
+	case OP_PUT + 2:
+	case OP_PUT + 3:
+	case OP_PUT + 4:
+	case OP_PUT + 5:
+	case OP_PUT + 6:
+	case OP_PUT + 7:
+	case OP_PUT + 8:
+	case OP_PUT + 9:
+	case OP_PUT + 10:
+	case OP_PUT + 11:
+	case OP_PUT + 12:
+	case OP_PUT + 13:
+	case OP_PUT + 14:
+	case OP_PUT + 15:
+	case OP_PUT + 16:
+	case OP_PUT + 17:
+	case OP_PUT + 18:
+	case OP_PUT + 19:
+	case OP_PUT + 20:
+	case OP_PUT + 21:
+	case OP_PUT + 22:
+	case OP_PUT + 23:
+	case OP_PUT + 24:
+	case OP_PUT + 25:
+	case OP_PUT + 26:
+	case OP_PUT + 27:
+	case OP_PUT + 28:
+	case OP_PUT + 29:
+	case OP_PUT + 30:
+	case OP_PUT + 31:
+	    {
+		Var *varp = &RUN_ACTIV.rt_env[PUT_n_INDEX(op)];
+		free_var(*varp);
+		if (bv[0] == OP_POP) {
+		    *varp = POP();
+		    ++bv;
+		} else
+		    *varp = var_ref(TOP_RT_VALUE);
+	    }
+	    break;
+
+	default:
+	    if (IS_OPTIM_NUM_OPCODE(op)) {
 		Var value;
 		value.type = TYPE_INT;
 		value.v.num = OPCODE_TO_OPTIM_NUM(op);
@@ -2686,13 +2780,28 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.3 1997/03/03 06:14:44 nop Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.4 1997/03/03 09:03:31 bjj Exp $";
 
 /* $Log: execute.c,v $
-/* Revision 1.3  1997/03/03 06:14:44  nop
-/* Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
-/* the default.
+/* Revision 1.4  1997/03/03 09:03:31  bjj
+/* 3 opcode optimizations:
 /*
+/* 1)  OP_IMM+OP_POP is "peephole optimized" away at runtime.  This makes
+/* verbdocs and other comments cheaper.
+/*
+/* 2)  OP_PUT_n+OP_POP is similarly optimized (PUT doesn't consume the
+/* top value on the stack but it is often used that way in statements like
+/* `var = expr;').  OP_G_PUT could use the same change but is rarely
+/* executed.
+/*
+/* 3)  OP_PUT_n, OP_PUSH_n which used to be in an if/else in the default
+/* case are split out into 32 cases each so the compiler can optimize it
+/* for us.  These ops account for a large percentage of those executed.
+/*
+ * Revision 1.3  1997/03/03 06:14:44  nop
+ * Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
+ * the default.
+ *
  * Revision 1.2  1997/03/03 04:18:38  nop
  * GNU Indent normalization
  *
