@@ -385,7 +385,7 @@ extern const char *db_unparse_prep(db_prep_spec);
 				 * persistent.
 				 */
 
-extern void db_add_verb(Objid oid, const char *vnames,
+extern int  db_add_verb(Objid oid, const char *vnames,
 			Objid owner, unsigned flags,
 			db_arg_spec dobj, db_prep_spec prep,
 			db_arg_spec iobj);
@@ -518,6 +518,11 @@ extern void db_delete_verb(db_verb_handle);
 
 /* 
  * $Log: db.h,v $
+ * Revision 1.4  2001/01/29 08:38:44  bjj
+ * Fix Sourceforge Bug #127620: add_verb() should return verbindex
+ * And now it does.  Old servers always returned 0, new servers will always
+ * return a positive integer.
+ *
  * Revision 1.3  1998/12/14 13:17:32  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
