@@ -60,10 +60,10 @@ static const char cmap[] =
 int
 mystrcasecmp(const char *ss, const char *tt)
 {
-    const unsigned char *s = (const unsigned char *) ss;
-    const unsigned char *t = (const unsigned char *) tt;
+    register const unsigned char *s = (const unsigned char *) ss;
+    register const unsigned char *t = (const unsigned char *) tt;
 
-    if (ss == tt) {
+    if (s == t) {
 	return 0;
     }
     while (cmap[*s] == cmap[*t++]) {
@@ -439,12 +439,13 @@ binary_to_raw_bytes(const char *binary, int *buflen)
     return reset_stream(s);
 }
 
-char rcsid_utils[] = "$Id: utils.c,v 1.6 2002/08/18 08:51:50 bjj Exp $";
+char rcsid_utils[] = "$Id: utils.c,v 1.7 2002/08/18 09:47:26 bjj Exp $";
 
 /* 
  * $Log: utils.c,v $
- * Revision 1.6  2002/08/18 08:51:50  bjj
- * Faster and better (?) hash function.  Yes it really was slow.
+ * Revision 1.7  2002/08/18 09:47:26  bjj
+ * Finally made free_activation() take a pointer after noticing how !$%^&
+ * much time it was taking in a particular profiling run.
  *
  * Revision 1.5  1999/08/09 02:36:33  nop
  * Shortcut various equality tests if we have pointer equality.
