@@ -193,6 +193,16 @@
 #define PATTERN_CACHE_SIZE	20
 
 /******************************************************************************
+ * If you don't plan on using protecting built-in properties (like
+ * .name and .location), define IGNORE_PROP_PROTECTED.  The extra
+ * property lookups on every reference to a built-in property are
+ * expensive.
+ ****************************************************************************** 
+ */
+
+#define IGNORE_PROP_PROTECTED
+
+/******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
  * Emacs.  This is a very nice and reasonably portable implementation, but some
  * systems, notably the NeXT machine, won't allow programs to provide their own
@@ -291,9 +301,13 @@
 #endif				/* !Options_h */
 
 /* $Log: options.h,v $
-/* Revision 1.2  1997/03/03 04:19:13  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/03 06:14:45  nop
+/* Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
+/* the default.
 /*
+ * Revision 1.2  1997/03/03 04:19:13  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:04  nop
  * LambdaMOO 1.8.0p5
  *
