@@ -20,6 +20,11 @@ YACC = @YACC@
 CFLAGS = -O
 # If you're using GCC, you may prefer:
 # CFLAGS = -O2 -finline-functions
+#
+# If you're not using GCC, and your compiler doesn't understand the
+# inline keyword, use the following.  (This will be fixed in autoconf2
+# upgrade).
+# CFLAGS = -O2 -Dinline=
 
 YFLAGS = -d
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
@@ -149,6 +154,9 @@ depend: ${ALL_CSRCS}
 
 ###############################################################################
 # $Log: Makefile.in,v $
+# Revision 1.7  2000/01/11 01:54:05  nop
+# CFLAGS line for poor users without inline keyword.
+#
 # Revision 1.6  2000/01/11 01:39:14  nop
 # Long overdue make depend
 #
