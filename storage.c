@@ -83,8 +83,14 @@ str_dup(const char *s)
     char *r;
 
     if (s == 0 || *s == '\0') {
-	r = (char *) mymalloc(1, M_STRING);
-	*r = '\0';
+	static char *emptystring;
+
+	if (!emptystring) {
+	    emptystring = (char *) mymalloc(1, M_STRING);
+	    *emptystring = '\0';
+	}
+	addref(emptystring);
+	return emptystring;
     } else {
 	r = (char *) mymalloc(strlen(s) + 1, M_STRING);
 	strcpy(r, s);
@@ -173,12 +179,15 @@ memory_usage(void)
     return r;
 }
 
-char rcsid_storage[] = "$Id: storage.c,v 1.2 1997/03/03 04:19:26 nop Exp $";
+char rcsid_storage[] = "$Id: storage.c,v 1.3 1997/03/03 06:32:10 bjj Exp $";
 
 /* $Log: storage.c,v $
-/* Revision 1.2  1997/03/03 04:19:26  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/03 06:32:10  bjj
+/* str_dup("") now returns the same empty string to every caller
 /*
+ * Revision 1.2  1997/03/03 04:19:26  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *
