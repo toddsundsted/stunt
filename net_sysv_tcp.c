@@ -35,7 +35,7 @@
 #include <errno.h>		/* EMFILE */
 #include "my-fcntl.h"		/* O_RDWR */
 #include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htonl(),
-				 * htons(), ntohl(), struct in_addr */
+				   * htons(), ntohl(), struct in_addr */
 #include "my-ioctl.h"		/* ioctl() */
 #include "my-socket.h"		/* AF_INET */
 #include "my-stdlib.h"		/* strtoul() */
@@ -55,7 +55,7 @@
 #include "structures.h"
 #include "timers.h"
 
-static struct t_call   *call = 0;
+static struct t_call *call = 0;
 
 static void
 log_ti_error(const char *msg)
@@ -79,13 +79,13 @@ proto_usage_string(void)
 }
 
 int
-proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
+proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 {
-    int			port = DEFAULT_PORT;
-    char	       *p;
+    int port = DEFAULT_PORT;
+    char *p;
 
     initialize_name_lookup();
-    
+
     proto->pocket_size = 1;
     proto->believe_eof = 1;
     proto->eol_out_string = "\r\n";
@@ -97,19 +97,18 @@ proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
 	if (*p != '\0')
 	    return 0;
     }
-
     desc->type = TYPE_INT;
     desc->v.num = port;
     return 1;
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
+proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 {
-    struct sockaddr_in	req_addr, rec_addr;
-    struct t_bind	requested, received;
-    int			s, port;
-    static Stream      *st = 0;
+    struct sockaddr_in req_addr, rec_addr;
+    struct t_bind requested, received;
+    int s, port;
+    static Stream *st = 0;
 
     if (!st)
 	st = new_stream(20);
@@ -123,7 +122,6 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 	log_ti_error("Creating listening endpoint");
 	return E_QUOTA;
     }
-
     req_addr.sin_family = AF_INET;
     req_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     req_addr.sin_port = htons(port);
@@ -138,19 +136,18 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
     received.addr.buf = (void *) &rec_addr;
 
     if (t_bind(s, &requested, &received) < 0) {
-	enum error	e = E_QUOTA;
+	enum error e = E_QUOTA;
 
 	log_ti_error("Binding to listening address");
 	t_close(s);
-	if (t_errno == TACCES  ||  (t_errno == TSYSERR  &&  errno == EACCES))
+	if (t_errno == TACCES || (t_errno == TSYSERR && errno == EACCES))
 	    e = E_PERM;
 	return e;
-    } else if (port != 0  &&  rec_addr.sin_port != port) {
+    } else if (port != 0 && rec_addr.sin_port != port) {
 	errlog("Can't bind to requested port!\n");
 	t_close(s);
 	return E_QUOTA;
     }
-
     if (!call)
 	call = (struct t_call *) t_alloc(s, T_CALL, T_ADDR);
     if (!call) {
@@ -158,7 +155,6 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 	t_close(s);
 	return E_QUOTA;
     }
-
     canon->type = TYPE_INT;
     canon->v.num = ntohs(rec_addr.sin_port);
 
@@ -179,7 +175,7 @@ proto_listen(int fd)
 static int
 set_rw_able(int fd)
 {
-    char	buffer[FMNAMESZ + 1];
+    char buffer[FMNAMESZ + 1];
 
     if (ioctl(fd, I_LOOK, buffer) < 0
 	|| strcmp(buffer, "timod") != 0
@@ -195,47 +191,42 @@ enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 			const char **name)
 {
-    int			timeout = server_int_option("name_lookup_timeout", 5);
-    int			fd;
+    int timeout = server_int_option("name_lookup_timeout", 5);
+    int fd;
     struct sockaddr_in *addr = (struct sockaddr_in *) call->addr.buf;
-    static Stream      *s = 0;
+    static Stream *s = 0;
 
     if (!s)
 	s = new_stream(100);
 
     fd = t_open((void *) "/dev/tcp", O_RDWR, 0);
     if (fd < 0) {
-	if (t_errno == TSYSERR  &&  errno == EMFILE)
+	if (t_errno == TSYSERR && errno == EMFILE)
 	    return PA_FULL;
 	else {
 	    log_ti_error("Opening endpoint for new connection");
 	    return PA_OTHER;
 	}
     }
-
     if (t_bind(fd, 0, 0) < 0) {
 	log_ti_error("Binding endpoint for new connection");
 	t_close(fd);
 	return PA_OTHER;
     }
-
     if (t_listen(listener_fd, call) < 0) {
 	log_ti_error("Accepting new network connection");
 	t_close(fd);
 	return PA_OTHER;
     }
-
     if (t_accept(listener_fd, fd, call) < 0) {
 	log_ti_error("Accepting new network connection");
 	t_close(fd);
 	return PA_OTHER;
     }
-
     if (!set_rw_able(fd)) {
 	t_close(fd);
 	return PA_OTHER;
     }
-
     *read_fd = *write_fd = fd;
     stream_printf(s, "%s, port %d",
 		  lookup_name_from_addr(addr, timeout),
@@ -261,7 +252,7 @@ proto_close_listener(int fd)
 
 #include "exceptions.h"
 
-static Exception	timeout_exception;
+static Exception timeout_exception;
 
 static void
 timeout_proc(Timer_ID id, Timer_Data data)
@@ -277,21 +268,20 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
      * getting all those nasty little parameter-passing rules right.  This
      * function isn't recursive anyway, so it doesn't matter.
      */
-    struct sockaddr_in	rec_addr;
-    struct t_bind	received;
-    static const char  *host_name;
-    static int		port;
-    static Timer_ID	id;
-    int			fd, result;
-    int			timeout = server_int_option("name_lookup_timeout", 5);
-    static struct sockaddr_in	addr;
-    static Stream      *st1 = 0, *st2 = 0;
+    struct sockaddr_in rec_addr;
+    struct t_bind received;
+    static const char *host_name;
+    static int port;
+    static Timer_ID id;
+    int fd, result;
+    int timeout = server_int_option("name_lookup_timeout", 5);
+    static struct sockaddr_in addr;
+    static Stream *st1 = 0, *st2 = 0;
 
     if (!st1) {
 	st1 = new_stream(20);
 	st2 = new_stream(50);
     }
-
     if (arglist.v.list[0].v.num != 2)
 	return E_ARGS;
     else if (arglist.v.list[1].type != TYPE_STR ||
@@ -310,11 +300,10 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     /* Cast to (void *) here to workaround const-less decls on some systems. */
     fd = t_open((void *) "/dev/tcp", O_RDWR, 0);
     if (fd < 0) {
-	if (t_errno != TSYSERR  ||  errno != EMFILE)
+	if (t_errno != TSYSERR || errno != EMFILE)
 	    log_ti_error("Making endpoint in proto_open_connection");
 	return E_QUOTA;
     }
-
     received.addr.maxlen = sizeof(rec_addr);
     received.addr.len = sizeof(rec_addr);
     received.addr.buf = (void *) &rec_addr;
@@ -324,7 +313,6 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 	t_close(fd);
 	return E_QUOTA;
     }
-
     call->addr.maxlen = sizeof(addr);
     call->addr.len = sizeof(addr);
     call->addr.buf = (void *) &addr;
@@ -332,26 +320,24 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     TRY
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
 		       timeout_proc, 0);
-	result = t_connect(fd, call, 0);
-        cancel_timer(id);
-    EXCEPT (timeout_exception)
+    result = t_connect(fd, call, 0);
+    cancel_timer(id);
+    EXCEPT(timeout_exception)
 	result = -1;
-        errno = ETIMEDOUT;
-	t_errno = TSYSERR;
-	reenable_timers();
+    errno = ETIMEDOUT;
+    t_errno = TSYSERR;
+    reenable_timers();
     ENDTRY
 
-    if (result < 0) {
+	if (result < 0) {
 	t_close(fd);
 	log_ti_error("Connecting in proto_open_connection");
 	return E_QUOTA;
     }
-
     if (!set_rw_able(fd)) {
 	t_close(fd);
 	return E_QUOTA;
     }
-
     *read_fd = *write_fd = fd;
 
     stream_printf(st1, "port %d", (int) ntohs(rec_addr.sin_port));
@@ -362,14 +348,17 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 
     return E_NONE;
 }
-#endif /* OUTBOUND_NETWORK */
+#endif				/* OUTBOUND_NETWORK */
 
-char rcsid_net_sysv_tcp[] = "$Id: net_sysv_tcp.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_sysv_tcp[] = "$Id: net_sysv_tcp.c,v 1.2 1997/03/03 04:19:09 nop Exp $";
 
 /* $Log: net_sysv_tcp.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:09  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/03/10  01:13:36  pavel
  * Moved definition of DEFAULT_PORT to options.h.  Release 1.8.0.
  *

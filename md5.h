@@ -34,12 +34,12 @@
    that such works are identified as "derived from the RSA Data
    Security, Inc. MD5 Message-Digest Algorithm" in all material
    mentioning or referencing the derived work.  
-                                                                    
+
    RSA Data Security, Inc. makes no representations concerning either
    the merchantability of this software or the suitability of this
    software for any particular purpose. It is provided "as is"
    without express or implied warranty of any kind.  
-                                                                    
+
    These notices must be retained in any copies of any part of this
    documentation and/or software.  
  */
@@ -49,26 +49,29 @@
 
 #include "config.h"
 
-typedef unsigned char	uint8;
-typedef unsigned32	uint32;
+typedef unsigned char uint8;
+typedef unsigned32 uint32;
 
 /* MD5 context. */
 typedef struct {
-  uint32 state[4];                                   /* state (ABCD) */
-  uint32 count[2];        /* number of bits, modulo 2^64 (lsb first) */
-  uint8  buffer[64];                                 /* input buffer */
+    uint32 state[4];		/* state (ABCD) */
+    uint32 count[2];		/* number of bits, modulo 2^64 (lsb first) */
+    uint8 buffer[64];		/* input buffer */
 } md5ctx_t;
 
-void md5_Init(md5ctx_t *context);
-void md5_Update(md5ctx_t *context, uint8 *buf, int len);
-void md5_Final(md5ctx_t *context, uint8 digest[16]);
+void md5_Init(md5ctx_t * context);
+void md5_Update(md5ctx_t * context, uint8 * buf, int len);
+void md5_Final(md5ctx_t * context, uint8 digest[16]);
 
 #endif
 
 /* $Log: md5.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:52  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 1.1  1996/02/18  23:18:53  pavel
  * Initial revision
  *

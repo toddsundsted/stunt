@@ -20,8 +20,8 @@
 #include <fcntl.h>
 
 #if NDECL_FCNTL
-extern int	fcntl(int, int, ...);
-extern int	open(const char *, int, ...);
+extern int fcntl(int, int,...);
+extern int open(const char *, int,...);
 #endif
 
 #if POSIX_NONBLOCKING_WORKS
@@ -32,9 +32,12 @@ extern int	open(const char *, int, ...);
 #endif
 
 /* $Log: my-fcntl.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:52  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:05:07  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

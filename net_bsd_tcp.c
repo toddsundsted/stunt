@@ -19,13 +19,13 @@
 
 #include "my-inet.h"		/* inet_addr() */
 #include <errno.h>		/* EMFILE, EADDRNOTAVAIL, ECONNREFUSED,
-				 * ENETUNREACH, ETIMEOUT */
+				   * ENETUNREACH, ETIMEOUT */
 #include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htons(),
-				 * htonl(), ntohl(), struct in_addr */
+				   * htonl(), ntohl(), struct in_addr */
 #include "my-socket.h"		/* socket(), AF_INET, SOCK_STREAM,
-				 * setsockopt(), SOL_SOCKET, SO_REUSEADDR,
-				 * bind(), struct sockaddr, accept(),
-				 * connect() */
+				   * setsockopt(), SOL_SOCKET, SO_REUSEADDR,
+				   * bind(), struct sockaddr, accept(),
+				   * connect() */
 #include "my-stdlib.h"		/* strtoul() */
 #include "my-string.h"		/* memcpy() */
 #include "my-unistd.h"		/* close() */
@@ -54,11 +54,11 @@ proto_usage_string(void)
 }
 
 int
-proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
+proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 {
-    int		port = DEFAULT_PORT;
-    char       *p;
-    
+    int port = DEFAULT_PORT;
+    char *p;
+
     initialize_name_lookup();
 
     proto->pocket_size = 1;
@@ -72,18 +72,17 @@ proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
 	if (*p != '\0')
 	    return 0;
     }
-
     desc->type = TYPE_INT;
     desc->v.num = port;
     return 1;
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
+proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 {
-    struct sockaddr_in	address;
-    int			s, port, option = 1;
-    static Stream      *st = 0;
+    struct sockaddr_in address;
+    int s, port, option = 1;
+    static Stream *st = 0;
 
     if (!st)
 	st = new_stream(20);
@@ -107,7 +106,7 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
     address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(port);
     if (bind(s, (struct sockaddr *) &address, sizeof(address)) < 0) {
-	enum error	e = E_QUOTA;
+	enum error e = E_QUOTA;
 
 	log_perror("Binding listening socket");
 	if (errno == EACCES)
@@ -115,10 +114,9 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 	close(s);
 	return e;
     }
-
     if (port == 0) {
-	int	length = sizeof(address);
-	
+	int length = sizeof(address);
+
 	if (getsockname(s, (struct sockaddr *) &address, &length) < 0) {
 	    log_perror("Discovering local port number");
 	    close(s);
@@ -147,11 +145,11 @@ enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 			const char **name)
 {
-    int			timeout = server_int_option("name_lookup_timeout", 5);
-    int			fd;
-    struct sockaddr_in	address;
-    int			addr_length = sizeof(address);
-    static Stream      *s = 0;
+    int timeout = server_int_option("name_lookup_timeout", 5);
+    int fd;
+    struct sockaddr_in address;
+    int addr_length = sizeof(address);
+    static Stream *s = 0;
 
     if (!s)
 	s = new_stream(100);
@@ -165,7 +163,6 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 	    return PA_OTHER;
 	}
     }
-
     *read_fd = *write_fd = fd;
     stream_printf(s, "%s, port %d",
 		  lookup_name_from_addr(&address, timeout),
@@ -192,7 +189,7 @@ proto_close_listener(int fd)
 #include "exceptions.h"
 #include "structures.h"
 
-static Exception	timeout_exception;
+static Exception timeout_exception;
 
 static void
 timeout_proc(Timer_ID id, Timer_Data data)
@@ -208,19 +205,18 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
      * getting all those nasty little parameter-passing rules right.  This
      * function isn't recursive anyway, so it doesn't matter.
      */
-    static const char  *host_name;
-    static int		port;
-    static Timer_ID	id;
-    int			s, result, length;
-    int			timeout = server_int_option("name_lookup_timeout", 5);
-    static struct sockaddr_in	addr;
-    static Stream      *st1 = 0, *st2 = 0;
+    static const char *host_name;
+    static int port;
+    static Timer_ID id;
+    int s, result, length;
+    int timeout = server_int_option("name_lookup_timeout", 5);
+    static struct sockaddr_in addr;
+    static Stream *st1 = 0, *st2 = 0;
 
     if (!st1) {
 	st1 = new_stream(20);
 	st2 = new_stream(50);
     }
-
     if (arglist.v.list[0].v.num != 2)
 	return E_ARGS;
     else if (arglist.v.list[1].type != TYPE_STR ||
@@ -242,36 +238,33 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 	    log_perror("Making socket in proto_open_connection");
 	return E_QUOTA;
     }
-
     TRY
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
 		       timeout_proc, 0);
-	result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
-        cancel_timer(id);
-    EXCEPT (timeout_exception)
+    result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
+    cancel_timer(id);
+    EXCEPT(timeout_exception)
 	result = -1;
-        errno = ETIMEDOUT;
-	reenable_timers();
+    errno = ETIMEDOUT;
+    reenable_timers();
     ENDTRY
 
-    if (result < 0) {
+	if (result < 0) {
 	close(s);
 	if (errno == EADDRNOTAVAIL ||
-	    errno == ECONNREFUSED  ||
-	    errno == ENETUNREACH   ||
+	    errno == ECONNREFUSED ||
+	    errno == ENETUNREACH ||
 	    errno == ETIMEDOUT)
 	    return E_INVARG;
 	log_perror("Connecting in proto_open_connection");
 	return E_QUOTA;
     }
-
     length = sizeof(addr);
     if (getsockname(s, (struct sockaddr *) &addr, &length) < 0) {
 	close(s);
 	log_perror("Getting local name in proto_open_connection");
 	return E_QUOTA;
     }
-
     *read_fd = *write_fd = s;
 
     stream_printf(st1, "port %d", (int) ntohs(addr.sin_port));
@@ -282,14 +275,17 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 
     return E_NONE;
 }
-#endif /* OUTBOUND_NETWORK */
+#endif				/* OUTBOUND_NETWORK */
 
-char rcsid_net_bsd_tcp[] = "$Id: net_bsd_tcp.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_bsd_tcp[] = "$Id: net_bsd_tcp.c,v 1.2 1997/03/03 04:19:02 nop Exp $";
 
 /* $Log: net_bsd_tcp.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:02  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/03/10  01:13:48  pavel
  * Moved definition of DEFAULT_PORT to options.h.  Release 1.8.0.
  *

@@ -20,8 +20,8 @@
 
 #include <errno.h>		/* EMFILE */
 #include "my-socket.h"		/* socket(), AF_UNIX, SOCK_STREAM,
-				 * bind(), struct sockaddr, accept(),
-				 * shutdown(), connect() */
+				   * bind(), struct sockaddr, accept(),
+				   * shutdown(), connect() */
 #include "my-stdio.h"		/* remove() */
 #include "my-string.h"		/* strcpy() */
 #include <sys/un.h>		/* struct sockaddr_un */
@@ -35,9 +35,9 @@
 #include "utils.h"
 
 typedef struct listener {
-    struct listener    *next;
-    int			fd;
-    const char	       *filename;
+    struct listener *next;
+    int fd;
+    const char *filename;
 } listener;
 
 static listener *all_listeners = 0;
@@ -55,7 +55,7 @@ proto_usage_string(void)
 }
 
 int
-proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
+proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 {
     const char *connect_file = DEFAULT_CONNECT_FILE;
 
@@ -68,19 +68,18 @@ proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
     else if (argc == 1) {
 	connect_file = argv[0];
     }
-
     desc->type = TYPE_STR;
     desc->v.str = str_dup(connect_file);
     return 1;
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
+proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 {
-    struct sockaddr_un	address;
-    int			s;
-    const char	       *connect_file;
-    listener	       *l;
+    struct sockaddr_un address;
+    int s;
+    const char *connect_file;
+    listener *l;
 
     if (desc.type != TYPE_STR)
 	return E_TYPE;
@@ -91,12 +90,11 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 	log_perror("Creating listening socket");
 	return E_QUOTA;
     }
-
     address.sun_family = AF_UNIX;
     strcpy(address.sun_path, connect_file);
     if (bind(s, (struct sockaddr *) &address,
 	     sizeof(address.sun_family) + strlen(connect_file))) {
-	enum error	e = E_QUOTA;
+	enum error e = E_QUOTA;
 
 	log_perror("Binding listening socket");
 	if (errno == EACCES)
@@ -104,7 +102,6 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 	close(s);
 	return e;
     }
-
     l = mymalloc(sizeof(listener), M_NETWORK);
     l->next = all_listeners;
     all_listeners = l;
@@ -128,9 +125,9 @@ enum proto_accept_error
 proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 			const char **name)
 {
-    int				fd;
-    static struct sockaddr_un	address;
-    int				addr_length = sizeof(address);
+    int fd;
+    static struct sockaddr_un address;
+    int addr_length = sizeof(address);
 
     fd = accept(listener_fd, (struct sockaddr *) &address, &addr_length);
     if (fd < 0) {
@@ -141,7 +138,6 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 	    return PA_OTHER;
 	}
     }
-
     *read_fd = *write_fd = fd;
     *name = "??";
     return PA_OKAY;
@@ -157,10 +153,10 @@ proto_close_connection(int read_fd, int write_fd)
 void
 proto_close_listener(int fd)
 {
-    listener   *l, **ll;
+    listener *l, **ll;
 
     for (l = all_listeners, ll = &all_listeners; l; ll = &(l->next),
-						    l = l->next)
+	 l = l->next)
 	if (l->fd == fd) {
 	    close(l->fd);
 	    remove(l->filename);
@@ -170,16 +166,18 @@ proto_close_listener(int fd)
 	    myfree(l, M_NETWORK);
 	    return;
 	}
-
     errlog("Can't find fd in PROTO_CLOSE_LISTENER!\n");
 }
 
-char rcsid_net_bsd_lcl[] = "$Id: net_bsd_lcl.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_bsd_lcl[] = "$Id: net_bsd_lcl.c,v 1.2 1997/03/03 04:19:02 nop Exp $";
 
 /* $Log: net_bsd_lcl.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:02  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/03/10  01:13:22  pavel
  * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
  *

@@ -19,40 +19,40 @@
 /* Distributed only by permission.                                           */
 /*****************************************************************************/
 /* File: exceptions.h                                                        */
-/* Taken originally from:						     */
-/*		Implementing Exceptions in C				     */
-/*		Eric S. Roberts						     */
-/*		Research Report #40					     */
-/*		DEC Systems Research Center				     */
-/*		March 21, 1989						     */
+/* Taken originally from:                                                    */
+/*              Implementing Exceptions in C                                 */
+/*              Eric S. Roberts                                              */
+/*              Research Report #40                                          */
+/*              DEC Systems Research Center                                  */
+/*              March 21, 1989                                               */
 /* Modified slightly by Pavel Curtis for use in the LambdaMOO server code.   */
 /* ------------------------------------------------------------------------- */
 /* The exceptions package provides a general exception handling mechanism    */
-/* for use with C that is portable across a variety of compilers and	     */
-/* operating systems. The design of this facility is based on the	     */
+/* for use with C that is portable across a variety of compilers and         */
+/* operating systems. The design of this facility is based on the            */
 /* exception handling mechanism used in the Modula-2+ language at DEC/SRC    */
-/* and is described in detail in the paper cited above.			     */
+/* and is described in detail in the paper cited above.                      */
 /* For more background on the underlying motivation for this design, see     */
-/* SRC Research Report #3.						     */
+/* SRC Research Report #3.                                                   */
 /*****************************************************************************/
 
 /* 
- * Syntax:	Exception my_exception;
+ * Syntax:    Exception my_exception;
  *
- * 		TRY
- *		   stmts;
- *		EXCEPT (my_exception)	[ANY matches all exceptions]
- *		   stmts;		[int exception_value available here]
- *		...
- *		ENDTRY
+ *              TRY
+ *                 stmts;
+ *              EXCEPT (my_exception)   [ANY matches all exceptions]
+ *                 stmts;               [int exception_value available here]
+ *              ...
+ *              ENDTRY
  *
- *		RAISE(my_exception, value);
+ *              RAISE(my_exception, value);
  *
- *		TRY
- *		    stmts;
- *		FINALLY
- *		    stmts;
- *		ENDTRY
+ *              TRY
+ *                  stmts;
+ *              FINALLY
+ *                  stmts;
+ *              ENDTRY
  */
 
 #ifndef Exceptions_H
@@ -64,24 +64,28 @@
 
 #define ES_MaxExceptionsPerScope	10
 
-typedef enum ES_Value { ES_Initialize, ES_EvalBody, ES_Exception } ES_Value;
+typedef enum ES_Value {
+    ES_Initialize, ES_EvalBody, ES_Exception
+} ES_Value;
 
-typedef struct { int junk; } Exception;	/* Only addr. of exception is used. */
+typedef struct {
+    int junk;
+} Exception;			/* Only addr. of exception is used. */
 
 typedef volatile struct ES_CtxBlock ES_CtxBlock;
 struct ES_CtxBlock {
-    jmp_buf	jmp;
-    int		nx;
-    Exception  *array[ES_MaxExceptionsPerScope];
-    Exception  *id;
-    int		value;
-    int		finally;
-    ES_CtxBlock	*link;
+    jmp_buf jmp;
+    int nx;
+    Exception *array[ES_MaxExceptionsPerScope];
+    Exception *id;
+    int value;
+    int finally;
+    ES_CtxBlock *link;
 };
 
-extern Exception	ANY;
-extern ES_CtxBlock     *ES_exceptionStack;
-extern void		ES_RaiseException(Exception *exception, int value);
+extern Exception ANY;
+extern ES_CtxBlock *ES_exceptionStack;
+extern void ES_RaiseException(Exception * exception, int value);
 
 #define RAISE(e, v)	ES_RaiseException(&e, v)
 
@@ -101,7 +105,7 @@ extern void		ES_RaiseException(Exception *exception, int value);
 		    						\
 	    while (1) {						\
 		if (ES_es == ES_EvalBody) {			\
-		    /* TRY body goes here */
+				/* TRY body goes here */
 
 
 #define EXCEPT(e)						\
@@ -120,7 +124,7 @@ extern void		ES_RaiseException(Exception *exception, int value);
 		    ES_exceptionStack = ES_ctx.link;		\
 		    exception_value = exception_value;		\
 			/* avoid warnings */			\
-		    /* handler goes here */
+				/* handler goes here */
 
 
 #define FINALLY							\
@@ -146,18 +150,21 @@ extern void		ES_RaiseException(Exception *exception, int value);
 
 
 /* The exceptions package doesn't provide this function, but it calls it */
-/* whenever a fatal error occurs:					 */
-/*	1) Too many EXCEPT clauses in a single TRY construct.		 */
-/*	2) An unhandled exception is RAISEd.				 */
+/* whenever a fatal error occurs:                                        */
+/*      1) Too many EXCEPT clauses in a single TRY construct.            */
+/*      2) An unhandled exception is RAISEd.                             */
 
-extern void	panic(const char *message);
+extern void panic(const char *message);
 
-#endif /* !Exceptions_H */
+#endif				/* !Exceptions_H */
 
 /* $Log: exceptions.h,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:37  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:25:56  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

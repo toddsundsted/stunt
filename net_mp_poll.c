@@ -24,16 +24,16 @@
 #include "net_mplex.h"
 #include "storage.h"
 
-typedef struct pollfd 	Port;
+typedef struct pollfd Port;
 
-static Port    *ports = 0;
-static unsigned	num_ports = 0;
-static unsigned	max_fd;
+static Port *ports = 0;
+static unsigned num_ports = 0;
+static unsigned max_fd;
 
 void
 mplex_clear(void)
 {
-    int	i;
+    int i;
 
     max_fd = 0;
     for (i = 0; i < num_ports; i++) {
@@ -46,9 +46,9 @@ static void
 add_common(int fd, unsigned dir)
 {
     if (fd >= num_ports) {	/* Grow ports array */
-	int 	new_num = (fd + 9) / 10 * 10 + 1;
-	Port   *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);
-	int	i;
+	int new_num = (fd + 9) / 10 * 10 + 1;
+	Port *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);
+	int i;
 
 	for (i = 0; i < num_ports; i++)
 	    new_ports[i] = ports[i];
@@ -59,7 +59,6 @@ add_common(int fd, unsigned dir)
 	ports = new_ports;
 	num_ports = new_num;
     }
-
     ports[fd].fd = fd;
     ports[fd].events |= dir;
     if (fd > max_fd)
@@ -81,7 +80,7 @@ mplex_add_writer(int fd)
 int
 mplex_wait(unsigned timeout)
 {
-    int		result = poll(ports, max_fd + 1, timeout * 1000);
+    int result = poll(ports, max_fd + 1, timeout * 1000);
 
     if (result < 0) {
 	if (errno != EINTR)
@@ -94,21 +93,24 @@ mplex_wait(unsigned timeout)
 int
 mplex_is_readable(int fd)
 {
-    return fd <= max_fd  &&  (ports[fd].revents & (POLLIN | POLLHUP)) != 0;
+    return fd <= max_fd && (ports[fd].revents & (POLLIN | POLLHUP)) != 0;
 }
 
 int
 mplex_is_writable(int fd)
 {
-    return fd <= max_fd  &&  (ports[fd].revents & POLLOUT) != 0;
+    return fd <= max_fd && (ports[fd].revents & POLLOUT) != 0;
 }
 
-char rcsid_net_mp_poll[] = "$Id: net_mp_poll.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_mp_poll[] = "$Id: net_mp_poll.c,v 1.2 1997/03/03 04:19:04 nop Exp $";
 
 /* $Log: net_mp_poll.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:04  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:36:15  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

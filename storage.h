@@ -37,20 +37,23 @@ typedef enum Memory_Type {
 
 } Memory_Type;
 
-extern char	       *str_dup(const char *);
-extern const char      *str_ref(const char *);
-extern void        	free_str(const char *);
-extern Var		memory_usage(void);
+extern char *str_dup(const char *);
+extern const char *str_ref(const char *);
+extern void free_str(const char *);
+extern Var memory_usage(void);
 
-extern void		myfree(void *where, Memory_Type type);
-extern void	       *mymalloc(unsigned size, Memory_Type type);
+extern void myfree(void *where, Memory_Type type);
+extern void *mymalloc(unsigned size, Memory_Type type);
 
-#endif /* Storage_h */
+#endif				/* Storage_h */
 
 /* $Log: storage.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:27  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:13:09  pavel
  * Added M_FLOAT, removed unused M_PI.  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

@@ -27,26 +27,29 @@
 #include <sys/socket.h>
 
 #if NDECL_ACCEPT
-extern int	accept(int, struct sockaddr *, int *);
-extern int	listen(int, int);
-extern int	setsockopt(int, int, int, const char *, int);
-extern int	socket(int, int, int);
+extern int accept(int, struct sockaddr *, int *);
+extern int listen(int, int);
+extern int setsockopt(int, int, int, const char *, int);
+extern int socket(int, int, int);
 #endif
 
 #if NDECL_BIND
-extern int	bind(int, struct sockaddr *, int);
-extern int	getsockname(int, struct sockaddr *, int *);
-extern int	connect(int, struct sockaddr *, int);
+extern int bind(int, struct sockaddr *, int);
+extern int getsockname(int, struct sockaddr *, int *);
+extern int connect(int, struct sockaddr *, int);
 #endif
 
 #if NDECL_SHUTDOWN
-extern int	shutdown(int, int);
+extern int shutdown(int, int);
 #endif
 
 /* $Log: my-socket.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:54  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/02/08  06:02:39  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

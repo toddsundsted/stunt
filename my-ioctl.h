@@ -20,13 +20,16 @@
 #include <sys/ioctl.h>
 
 #if NDECL_IOCTL
-extern int	ioctl(int, int, ...);
+extern int ioctl(int, int,...);
 #endif
 
 /* $Log: my-ioctl.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:53  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:04:38  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

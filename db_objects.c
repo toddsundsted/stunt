@@ -28,18 +28,18 @@
 #include "utils.h"
 
 static Object **objects;
-static int	num_objects = 0;
-static int	max_objects = 0;
+static int num_objects = 0;
+static int max_objects = 0;
 
-static Var	all_users;
-
+static Var all_users;
 
+
 /*********** Objects qua objects ***********/
 
 Object *
 dbpriv_find_object(Objid oid)
 {
-    if (oid < 0  || oid >= num_objects)
+    if (oid < 0 || oid >= num_objects)
 	return 0;
     else
 	return objects[oid];
@@ -71,10 +71,9 @@ ensure_new_object(void)
 	max_objects = 100;
 	objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
     }
-    
     if (num_objects >= max_objects) {
-	int	i;
-	Object	**new;
+	int i;
+	Object **new;
 
 	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
 	for (i = 0; i < max_objects; i++)
@@ -88,7 +87,7 @@ ensure_new_object(void)
 Object *
 dbpriv_new_object(void)
 {
-    Object     *o;
+    Object *o;
 
     ensure_new_object();
     o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
@@ -108,8 +107,8 @@ dbpriv_new_recycled_object(void)
 Objid
 db_create_object(void)
 {
-    Object     *o;
-    Objid	oid;
+    Object *o;
+    Objid oid;
 
     o = dbpriv_new_object();
     oid = o->id;
@@ -133,9 +132,9 @@ db_create_object(void)
 void
 db_destroy_object(Objid oid)
 {
-    Object     *o = dbpriv_find_object(oid);
-    Verbdef    *v, *w;
-    int 	i;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *v, *w;
+    int i;
 
     if (!o)
 	panic("DB_DESTROY_OBJECT: Invalid object!");
@@ -145,13 +144,12 @@ db_destroy_object(Objid oid)
 	panic("DB_DESTROY_OBJECT: Not a barren orphan!");
 
     if (is_user(oid)) {
-	Var	t;
+	Var t;
 
 	t.type = TYPE_OBJ;
 	t.v.obj = oid;
 	all_users = setremove(all_users, t);
     }
-
     free_str(o->name);
 
     for (i = 0; i < o->propdefs.cur_length; i++) {
@@ -181,8 +179,8 @@ db_destroy_object(Objid oid)
 Objid
 db_renumber_object(Objid old)
 {
-    Objid	new;
-    Object     *o;
+    Objid new;
+    Object *o;
 
     for (new = 0; new < old; new++) {
 	if (objects[new] == 0) {
@@ -193,17 +191,16 @@ db_renumber_object(Objid old)
 
 	    /* Fix up the parent/children hierarchy */
 	    {
-		Objid  	oid, *oidp;
+		Objid oid, *oidp;
 
 		if (o->parent != NOTHING) {
 		    oidp = &objects[o->parent]->child;
-		    while (*oidp != old  &&  *oidp != NOTHING)
+		    while (*oidp != old && *oidp != NOTHING)
 			oidp = &objects[*oidp]->sibling;
 		    if (*oidp == NOTHING)
 			panic("Object not in parent's children list");
 		    *oidp = new;
 		}
-
 		for (oid = o->child;
 		     oid != NOTHING;
 		     oid = objects[oid]->sibling)
@@ -212,17 +209,16 @@ db_renumber_object(Objid old)
 
 	    /* Fix up the location/contents hierarchy */
 	    {
-		Objid  	oid, *oidp;
+		Objid oid, *oidp;
 
 		if (o->location != NOTHING) {
 		    oidp = &objects[o->location]->contents;
-		    while (*oidp != old  &&  *oidp != NOTHING)
+		    while (*oidp != old && *oidp != NOTHING)
 			oidp = &objects[*oidp]->next;
 		    if (*oidp == NOTHING)
 			panic("Object not in location's contents list");
 		    *oidp = new;
 		}
-
 		for (oid = o->contents;
 		     oid != NOTHING;
 		     oid = objects[oid]->next)
@@ -231,7 +227,7 @@ db_renumber_object(Objid old)
 
 	    /* Fix up the list of users, if necessary */
 	    if (is_user(new)) {
-		int	i;
+		int i;
 
 		for (i = 1; i <= all_users.v.list[0].v.num; i++)
 		    if (all_users.v.list[i].v.obj == old) {
@@ -239,16 +235,15 @@ db_renumber_object(Objid old)
 			break;
 		    }
 	    }
-
 	    /* Fix the owners of verbs, properties and objects */
 	    {
-		Objid	oid;
+		Objid oid;
 
 		for (oid = 0; oid < num_objects; oid++) {
-		    Object     *o = objects[oid];
-		    Verbdef    *v;
-		    Pval       *p;
-		    int		i, count;
+		    Object *o = objects[oid];
+		    Verbdef *v;
+		    Pval *p;
+		    int i, count;
 
 		    if (!o)
 			continue;
@@ -285,9 +280,9 @@ db_renumber_object(Objid old)
 int
 db_object_bytes(Objid oid)
 {
-    Object     *o = objects[oid];
-    int		i, len, count;
-    Verbdef    *v;
+    Object *o = objects[oid];
+    int i, len, count;
+    Verbdef *v;
 
     count = sizeof(Object) + sizeof(Object *);
     count += strlen(o->name) + 1;
@@ -310,8 +305,8 @@ db_object_bytes(Objid oid)
 
     return count;
 }
-
 
+
 /*********** Object attributes ***********/
 
 Objid
@@ -335,7 +330,7 @@ db_object_name(Objid oid)
 void
 db_set_object_name(Objid oid, const char *name)
 {
-    Object     *o = objects[oid];
+    Object *o = objects[oid];
 
     if (o->name)
 	free_str(o->name);
@@ -351,8 +346,8 @@ db_object_parent(Objid oid)
 int
 db_count_children(Objid oid)
 {
-    Objid	c;
-    int		i = 0;
+    Objid c;
+    int i = 0;
 
     for (c = objects[oid]->child; c != NOTHING; c = objects[c]->sibling)
 	i++;
@@ -361,9 +356,9 @@ db_count_children(Objid oid)
 }
 
 int
-db_for_all_children(Objid oid, int (*func)(void *, Objid), void *data)
+db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
 {
-    Objid	c;
+    Objid c;
 
     for (c = objects[oid]->child; c != NOTHING; c = objects[c]->sibling)
 	if (func(data, c))
@@ -405,17 +400,17 @@ db_for_all_children(Objid oid, int (*func)(void *, Objid), void *data)
 int
 db_change_parent(Objid oid, Objid parent)
 {
-    Objid	old_parent;
+    Objid old_parent;
 
     if (!dbpriv_check_properties_for_chparent(oid, parent))
 	return 0;
 
     old_parent = objects[oid]->parent;
 
-    if (old_parent != NOTHING) 
+    if (old_parent != NOTHING)
 	LL_REMOVE(old_parent, child, oid, sibling);
 
-    if (parent != NOTHING) 
+    if (parent != NOTHING)
 	LL_APPEND(parent, child, oid, sibling);
 
     objects[oid]->parent = parent;
@@ -433,8 +428,8 @@ db_object_location(Objid oid)
 int
 db_count_contents(Objid oid)
 {
-    Objid	c;
-    int		i = 0;
+    Objid c;
+    int i = 0;
 
     for (c = objects[oid]->contents; c != NOTHING; c = objects[c]->next)
 	i++;
@@ -443,9 +438,9 @@ db_count_contents(Objid oid)
 }
 
 int
-db_for_all_contents(Objid oid, int (*func)(void *, Objid), void *data)
+db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
 {
-    Objid	c;
+    Objid c;
 
     for (c = objects[oid]->contents; c != NOTHING; c = objects[c]->next)
 	if (func(data, c))
@@ -458,17 +453,17 @@ void
 db_change_location(Objid oid, Objid location)
 {
     Objid old_location = objects[oid]->location;
-    
-    if (valid(old_location)) 
+
+    if (valid(old_location))
 	LL_REMOVE(old_location, contents, oid, next);
-    
+
     if (valid(location))
 	LL_APPEND(location, contents, oid, next);
 
     objects[oid]->location = location;
 }
 
-int      
+int
 db_object_has_flag(Objid oid, db_object_flag f)
 {
     return (objects[oid]->flags & (1 << f)) != 0;
@@ -479,7 +474,7 @@ db_set_object_flag(Objid oid, db_object_flag f)
 {
     objects[oid]->flags |= (1 << f);
     if (f == FLAG_USER) {
-	Var	v;
+	Var v;
 
 	v.type = TYPE_OBJ;
 	v.v.obj = oid;
@@ -492,7 +487,7 @@ db_clear_object_flag(Objid oid, db_object_flag f)
 {
     objects[oid]->flags &= ~(1 << f);
     if (f == FLAG_USER) {
-	Var	v;
+	Var v;
 
 	v.type = TYPE_OBJ;
 	v.v.obj = oid;
@@ -511,19 +506,19 @@ db_object_allows(Objid oid, Objid progr, db_object_flag f)
 int
 is_wizard(Objid oid)
 {
-    return valid(oid)  &&  db_object_has_flag(oid, FLAG_WIZARD);
+    return valid(oid) && db_object_has_flag(oid, FLAG_WIZARD);
 }
 
 int
 is_programmer(Objid oid)
 {
-    return valid(oid)  &&  db_object_has_flag(oid, FLAG_PROGRAMMER);
+    return valid(oid) && db_object_has_flag(oid, FLAG_PROGRAMMER);
 }
 
 int
 is_user(Objid oid)
 {
-    return valid(oid)  &&  db_object_has_flag(oid, FLAG_USER);
+    return valid(oid) && db_object_has_flag(oid, FLAG_USER);
 }
 
 Var
@@ -538,12 +533,15 @@ dbpriv_set_all_users(Var v)
     all_users = v;
 }
 
-char rcsid_db_objects[] = "$Id: db_objects.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_db_objects[] = "$Id: db_objects.c,v 1.2 1997/03/03 04:18:29 nop Exp $";
 
 /* $Log: db_objects.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:29  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/04/08  00:42:11  pavel
  * Adjusted computation in `db_object_bytes()' to account for change in the
  * definition of `value_bytes()'.  Release 1.8.0p3.

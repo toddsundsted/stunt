@@ -16,7 +16,7 @@
  *****************************************************************************/
 
 /* Extensions to the MOO server
- *
+
  * This module contains some examples of how to extend the MOO server using
  * some of the interfaces exported by various other modules.  The examples are
  * all commented out, since they're really not all that useful in general; they
@@ -47,22 +47,22 @@
 
 typedef struct stdin_waiter {
     struct stdin_waiter *next;
-    vm			 the_vm;
+    vm the_vm;
 } stdin_waiter;
 
-static stdin_waiter    *waiters = 0;
+static stdin_waiter *waiters = 0;
 
 static task_enum_action
 stdin_enumerator(task_closure closure, void *data)
 {
-    stdin_waiter      **ww;
+    stdin_waiter **ww;
 
     for (ww = &waiters; *ww; ww = &((*ww)->next)) {
-	stdin_waiter	       *w = *ww;
-	const char	       *status = (w->the_vm->task_id & 1
-					  ? "stdin-waiting"
-					  : "stdin-weighting");
-	task_enum_action	tea = (*closure)(w->the_vm, status, data);
+	stdin_waiter *w = *ww;
+	const char *status = (w->the_vm->task_id & 1
+			      ? "stdin-waiting"
+			      : "stdin-weighting");
+	task_enum_action tea = (*closure) (w->the_vm, status, data);
 
 	if (tea == TEA_KILL) {
 	    *ww = w->next;
@@ -70,7 +70,6 @@ stdin_enumerator(task_closure closure, void *data)
 	    if (!waiters)
 		network_unregister_fd(0);
 	}
-
 	if (tea != TEA_CONTINUE)
 	    return tea;
     }
@@ -81,10 +80,10 @@ stdin_enumerator(task_closure closure, void *data)
 static void
 stdin_readable(int fd, void *data)
 {
-    char		buffer[1000];
-    int			n;
-    Var			v;
-    stdin_waiter       *w;
+    char buffer[1000];
+    int n;
+    Var v;
+    stdin_waiter *w;
 
     if (data != &waiters)
 	panic("STDIN_READABLE: Bad data!");
@@ -93,7 +92,6 @@ stdin_readable(int fd, void *data)
 	errlog("STDIN_READABLE: Nobody cares!\n");
 	return;
     }
-
     n = read(0, buffer, sizeof(buffer));
     buffer[n] = '\0';
     while (n)
@@ -119,7 +117,7 @@ stdin_readable(int fd, void *data)
 static enum error
 stdin_suspender(vm the_vm, void *data)
 {
-    stdin_waiter       *w = data;
+    stdin_waiter *w = data;
 
     if (!waiters)
 	network_register_fd(0, stdin_readable, 0, &waiters);
@@ -134,11 +132,11 @@ stdin_suspender(vm the_vm, void *data)
 static package
 bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    stdin_waiter       *w = mymalloc(sizeof(stdin_waiter), M_TASK);
+    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
 
     return make_suspend_pack(stdin_suspender, w);
 }
-#endif /* EXAMPLE */
+#endif				/* EXAMPLE */
 
 void
 register_extensions()
@@ -149,12 +147,15 @@ register_extensions()
 #endif
 }
 
-char rcsid_extensions[] = "$Id: extensions.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+char rcsid_extensions[] = "$Id: extensions.c,v 1.2 1997/03/03 04:18:41 nop Exp $";
 
 /* $Log: extensions.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:41  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  07:03:47  pavel
  * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

@@ -24,44 +24,47 @@
 typedef unsigned char Byte;
 
 typedef struct {
-    Byte	numbytes_label, numbytes_literal, numbytes_fork,
-		numbytes_var_name, numbytes_stack;
-    Byte       *vector;
-    unsigned 	size;
-    unsigned 	max_stack;
+    Byte numbytes_label, numbytes_literal, numbytes_fork, numbytes_var_name,
+     numbytes_stack;
+    Byte *vector;
+    unsigned size;
+    unsigned max_stack;
 } Bytecodes;
 
 typedef struct {
-    DB_Version	 version;
-    unsigned     first_lineno;
-    unsigned     ref_count;
+    DB_Version version;
+    unsigned first_lineno;
+    unsigned ref_count;
 
-    Bytecodes    main_vector;
+    Bytecodes main_vector;
 
-    unsigned     num_literals;
-    Var         *literals;
+    unsigned num_literals;
+    Var *literals;
 
-    unsigned     fork_vectors_size;
-    Bytecodes   *fork_vectors;
-  
-    unsigned	 num_var_names;
+    unsigned fork_vectors_size;
+    Bytecodes *fork_vectors;
+
+    unsigned num_var_names;
     const char **var_names;
 } Program;
 
 #define MAIN_VECTOR 	-1	/* As opposed to an index into fork_vectors */
 
-extern Program	       *new_program(void);
-extern Program	       *null_program(void);
-extern Program	       *program_ref(Program *);
-extern int		program_bytes(Program *);
-extern void		free_program(Program *);
+extern Program *new_program(void);
+extern Program *null_program(void);
+extern Program *program_ref(Program *);
+extern int program_bytes(Program *);
+extern void free_program(Program *);
 
-#endif /* !Program_H */
+#endif				/* !Program_H */
 
 /* $Log: program.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:18  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/02/08  06:14:19  pavel
  * Added version number on programs.  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

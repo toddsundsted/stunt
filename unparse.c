@@ -39,22 +39,38 @@ const char *
 unparse_error(enum error e)
 {
     switch (e) {
-      case E_NONE: return "No error";
-      case E_TYPE: return "Type mismatch";
-      case E_DIV: return "Division by zero";
-      case E_PERM: return "Permission denied";
-      case E_PROPNF: return "Property not found";
-      case E_VERBNF: return "Verb not found";
-      case E_VARNF: return "Variable not found";
-      case E_INVIND: return "Invalid indirection";
-      case E_RECMOVE: return "Recursive move";
-      case E_MAXREC: return "Too many verb calls";
-      case E_RANGE: return "Range error";
-      case E_ARGS: return "Incorrect number of arguments";
-      case E_NACC: return "Move refused by destination";
-      case E_INVARG: return "Invalid argument";
-      case E_QUOTA: return "Resource limit exceeded";
-      case E_FLOAT: return "Floating-point arithmetic error";
+    case E_NONE:
+	return "No error";
+    case E_TYPE:
+	return "Type mismatch";
+    case E_DIV:
+	return "Division by zero";
+    case E_PERM:
+	return "Permission denied";
+    case E_PROPNF:
+	return "Property not found";
+    case E_VERBNF:
+	return "Verb not found";
+    case E_VARNF:
+	return "Variable not found";
+    case E_INVIND:
+	return "Invalid indirection";
+    case E_RECMOVE:
+	return "Recursive move";
+    case E_MAXREC:
+	return "Too many verb calls";
+    case E_RANGE:
+	return "Range error";
+    case E_ARGS:
+	return "Incorrect number of arguments";
+    case E_NACC:
+	return "Move refused by destination";
+    case E_INVARG:
+	return "Invalid argument";
+    case E_QUOTA:
+	return "Resource limit exceeded";
+    case E_FLOAT:
+	return "Floating-point arithmetic error";
     }
 
     return "Unknown Error";
@@ -64,69 +80,86 @@ const char *
 error_name(enum error e)
 {
     switch (e) {
-      case E_NONE: return "E_NONE";
-      case E_TYPE: return "E_TYPE";
-      case E_DIV: return "E_DIV";
-      case E_PERM: return "E_PERM";
-      case E_PROPNF: return "E_PROPNF";
-      case E_VERBNF: return "E_VERBNF";
-      case E_VARNF: return "E_VARNF";
-      case E_INVIND: return "E_INVIND";
-      case E_RECMOVE: return "E_RECMOVE";
-      case E_MAXREC: return "E_MAXREC";
-      case E_RANGE: return "E_RANGE";
-      case E_ARGS: return "E_ARGS";
-      case E_NACC: return "E_NACC";
-      case E_INVARG: return "E_INVARG";
-      case E_QUOTA: return "E_QUOTA";
-      case E_FLOAT: return "E_FLOAT";
+    case E_NONE:
+	return "E_NONE";
+    case E_TYPE:
+	return "E_TYPE";
+    case E_DIV:
+	return "E_DIV";
+    case E_PERM:
+	return "E_PERM";
+    case E_PROPNF:
+	return "E_PROPNF";
+    case E_VERBNF:
+	return "E_VERBNF";
+    case E_VARNF:
+	return "E_VARNF";
+    case E_INVIND:
+	return "E_INVIND";
+    case E_RECMOVE:
+	return "E_RECMOVE";
+    case E_MAXREC:
+	return "E_MAXREC";
+    case E_RANGE:
+	return "E_RANGE";
+    case E_ARGS:
+	return "E_ARGS";
+    case E_NACC:
+	return "E_NACC";
+    case E_INVARG:
+	return "E_INVARG";
+    case E_QUOTA:
+	return "E_QUOTA";
+    case E_FLOAT:
+	return "E_FLOAT";
     }
 
     return "E_?";
 }
 
 struct prec {
-    enum Expr_Kind	kind;
-    int			precedence;
+    enum Expr_Kind kind;
+    int precedence;
 };
 
-static struct prec prec_table[] = {
-    {EXPR_ASGN,	1},
+static struct prec prec_table[] =
+{
+    {EXPR_ASGN, 1},
 
-    {EXPR_COND,	2},	/* the unparser for this depends on only ASGN having
-			   lower precedence.  Fix that if this changes. */
-    {EXPR_OR,	3},
-    {EXPR_AND,	3},
+    {EXPR_COND, 2},		/* the unparser for this depends on only ASGN having
+				   lower precedence.  Fix that if this changes. */
+    {EXPR_OR, 3},
+    {EXPR_AND, 3},
 
-    {EXPR_EQ,	4},
-    {EXPR_NE,	4},
-    {EXPR_LT,	4},
-    {EXPR_LE,	4},
-    {EXPR_GT,	4},
-    {EXPR_GE,	4},
-    {EXPR_IN,	4},
+    {EXPR_EQ, 4},
+    {EXPR_NE, 4},
+    {EXPR_LT, 4},
+    {EXPR_LE, 4},
+    {EXPR_GT, 4},
+    {EXPR_GE, 4},
+    {EXPR_IN, 4},
 
-    {EXPR_PLUS,	5},
+    {EXPR_PLUS, 5},
     {EXPR_MINUS, 5},
 
     {EXPR_TIMES, 6},
     {EXPR_DIVIDE, 6},
-    {EXPR_MOD,	6},
+    {EXPR_MOD, 6},
 
-    {EXPR_EXP,	7},
+    {EXPR_EXP, 7},
 
     {EXPR_NEGATE, 8},
-    {EXPR_NOT,	8},
+    {EXPR_NOT, 8},
 
-    {EXPR_PROP,	9},
-    {EXPR_VERB,	9},
+    {EXPR_PROP, 9},
+    {EXPR_VERB, 9},
     {EXPR_INDEX, 9},
     {EXPR_RANGE, 9},
 
-    {EXPR_VAR,	10},
-    {EXPR_ID,	10},
-    {EXPR_LIST,	10},
-    {EXPR_CALL,	10},
+    {EXPR_VAR, 10},
+    {EXPR_ID, 10},
+    {EXPR_LIST, 10},
+    {EXPR_CALL, 10},
     {EXPR_LENGTH, 10},
     {EXPR_CATCH, 10}
 };
@@ -134,26 +167,27 @@ static struct prec prec_table[] = {
 static int expr_prec[SizeOf_Expr_Kind];
 
 struct binop {
-    enum Expr_Kind	kind;
-    const char	       *string;
+    enum Expr_Kind kind;
+    const char *string;
 };
 
-static struct binop binop_table[] = {
-    {EXPR_IN,		" in "},
-    {EXPR_OR,		" || "},
-    {EXPR_AND,		" && "},
-    {EXPR_EQ,		" == "},
-    {EXPR_NE,		" != "},
-    {EXPR_LT,		" < "},
-    {EXPR_LE,		" <= "},
-    {EXPR_GT,		" > "},
-    {EXPR_GE,		" >= "},
-    {EXPR_PLUS,		" + "},
-    {EXPR_MINUS,	" - "},
-    {EXPR_TIMES,	" * "},
-    {EXPR_DIVIDE,	" / "},
-    {EXPR_MOD,		" % "},
-    {EXPR_EXP,		" ^ "},
+static struct binop binop_table[] =
+{
+    {EXPR_IN, " in "},
+    {EXPR_OR, " || "},
+    {EXPR_AND, " && "},
+    {EXPR_EQ, " == "},
+    {EXPR_NE, " != "},
+    {EXPR_LT, " < "},
+    {EXPR_LE, " <= "},
+    {EXPR_GT, " > "},
+    {EXPR_GE, " >= "},
+    {EXPR_PLUS, " + "},
+    {EXPR_MINUS, " - "},
+    {EXPR_TIMES, " * "},
+    {EXPR_DIVIDE, " / "},
+    {EXPR_MOD, " % "},
+    {EXPR_EXP, " ^ "},
 };
 
 static const char *binop_string[SizeOf_Expr_Kind];
@@ -165,7 +199,7 @@ init_expr_tables()
 {
     int i;
 
-    for (i = 0; i < Arraysize(prec_table); i++)	
+    for (i = 0; i < Arraysize(prec_table); i++)
 	expr_prec[prec_table[i].kind] = prec_table[i].precedence;
 
     for (i = 0; i < Arraysize(binop_table); i++)
@@ -176,32 +210,32 @@ init_expr_tables()
 
 /********** globals *********************************/
 
-static Unparser_Receiver	receiver;
-static void		       *receiver_data;
-static int			fully_parenthesize, indent_code;
+static Unparser_Receiver receiver;
+static void *receiver_data;
+static int fully_parenthesize, indent_code;
 
 /********** AST to receiver procedures **************/
 
-static void unparse_stmt(Stmt *s, int indent);
-static void unparse_expr(Stream *str, Expr *e);
-static void unparse_arglist(Stream *str, Arg_List *a);
-static void unparse_scatter(Stream *str, Scatter *sc);
+static void unparse_stmt(Stmt * s, int indent);
+static void unparse_expr(Stream * str, Expr * e);
+static void unparse_arglist(Stream * str, Arg_List * a);
+static void unparse_scatter(Stream * str, Scatter * sc);
 
 static void
-list_prg(Stmt *program, int p, int i)
+list_prg(Stmt * program, int p, int i)
 {
     fully_parenthesize = p;
     indent_code = i;
-    if (! expr_tables_initialized)
+    if (!expr_tables_initialized)
 	init_expr_tables();
     unparse_stmt(program, 0);
 }
 
 static void
-bracket_lt(Stream *str, enum Expr_Kind parent, Expr *child)
+bracket_lt(Stream * str, enum Expr_Kind parent, Expr * child)
 {
     if ((fully_parenthesize && expr_prec[child->kind] < expr_prec[EXPR_PROP])
-	||  expr_prec[parent] > expr_prec[child->kind]) {
+	|| expr_prec[parent] > expr_prec[child->kind]) {
 	stream_add_char(str, '(');
 	unparse_expr(str, child);
 	stream_add_char(str, ')');
@@ -211,10 +245,10 @@ bracket_lt(Stream *str, enum Expr_Kind parent, Expr *child)
 }
 
 static void
-bracket_le(Stream *str, enum Expr_Kind parent, Expr *child)
+bracket_le(Stream * str, enum Expr_Kind parent, Expr * child)
 {
     if ((fully_parenthesize && expr_prec[child->kind] < expr_prec[EXPR_PROP])
-	||  expr_prec[parent] >= expr_prec[child->kind]) {
+	|| expr_prec[parent] >= expr_prec[child->kind]) {
 	stream_add_char(str, '(');
 	unparse_expr(str, child);
 	stream_add_char(str, ')');
@@ -224,15 +258,15 @@ bracket_le(Stream *str, enum Expr_Kind parent, Expr *child)
 }
 
 static void
-output(Stream *str)
+output(Stream * str)
 {
-    (*receiver)(receiver_data, reset_stream(str));
+    (*receiver) (receiver_data, reset_stream(str));
 }
 
 static void
-indent_stmt(Stream *str, int indent)
+indent_stmt(Stream * str, int indent)
 {
-    int		i;
+    int i;
 
     if (indent_code)
 	for (i = 0; i < indent; i++)
@@ -240,10 +274,10 @@ indent_stmt(Stream *str, int indent)
 }
 
 static void
-unparse_stmt_cond(Stream *str, struct Stmt_Cond cond, int indent)
+unparse_stmt_cond(Stream * str, struct Stmt_Cond cond, int indent)
 {
-    Cond_Arm       *elseifs;
-	
+    Cond_Arm *elseifs;
+
     stream_add_string(str, "if (");
     unparse_expr(str, cond.arms->condition);
     stream_add_char(str, ')');
@@ -269,7 +303,7 @@ unparse_stmt_cond(Stream *str, struct Stmt_Cond cond, int indent)
 }
 
 static void
-unparse_stmt_list(Stream *str, struct Stmt_List list, int indent)
+unparse_stmt_list(Stream * str, struct Stmt_List list, int indent)
 {
     stream_printf(str, "for %s in (", prog->var_names[list.id]);
     unparse_expr(str, list.expr);
@@ -282,7 +316,7 @@ unparse_stmt_list(Stream *str, struct Stmt_List list, int indent)
 }
 
 static void
-unparse_stmt_range(Stream *str, struct Stmt_Range range, int indent)
+unparse_stmt_range(Stream * str, struct Stmt_Range range, int indent)
 {
     stream_printf(str, "for %s in [", prog->var_names[range.id]);
     unparse_expr(str, range.from);
@@ -297,7 +331,7 @@ unparse_stmt_range(Stream *str, struct Stmt_Range range, int indent)
 }
 
 static void
-unparse_stmt_fork(Stream *str, struct Stmt_Fork fork_stmt, int indent)
+unparse_stmt_fork(Stream * str, struct Stmt_Fork fork_stmt, int indent)
 {
     if (fork_stmt.id >= 0)
 	stream_printf(str, "fork %s (", prog->var_names[fork_stmt.id]);
@@ -313,7 +347,7 @@ unparse_stmt_fork(Stream *str, struct Stmt_Fork fork_stmt, int indent)
 }
 
 static void
-unparse_stmt_catch(Stream *str, struct Stmt_Catch catch, int indent)
+unparse_stmt_catch(Stream * str, struct Stmt_Catch catch, int indent)
 {
     Except_Arm *ex;
 
@@ -340,31 +374,31 @@ unparse_stmt_catch(Stream *str, struct Stmt_Catch catch, int indent)
 }
 
 static void
-unparse_stmt(Stmt *stmt, int indent)
+unparse_stmt(Stmt * stmt, int indent)
 {
-    Stream     *str = new_stream(100);
+    Stream *str = new_stream(100);
 
     while (stmt) {
 	indent_stmt(str, indent);
-	switch(stmt->kind) {
-	  case STMT_COND:
+	switch (stmt->kind) {
+	case STMT_COND:
 	    unparse_stmt_cond(str, stmt->s.cond, indent);
 	    break;
-	  case STMT_LIST:
+	case STMT_LIST:
 	    unparse_stmt_list(str, stmt->s.list, indent);
 	    break;
-	  case STMT_RANGE:
+	case STMT_RANGE:
 	    unparse_stmt_range(str, stmt->s.range, indent);
 	    break;
-	  case STMT_FORK:
+	case STMT_FORK:
 	    unparse_stmt_fork(str, stmt->s.fork, indent);
 	    break;
-	  case STMT_EXPR:
+	case STMT_EXPR:
 	    unparse_expr(str, stmt->s.expr);
 	    stream_add_char(str, ';');
 	    output(str);
 	    break;
-	  case STMT_WHILE:
+	case STMT_WHILE:
 	    if (stmt->s.loop.id == -1)
 		stream_add_string(str, "while (");
 	    else
@@ -378,7 +412,7 @@ unparse_stmt(Stmt *stmt, int indent)
 	    stream_add_string(str, "endwhile");
 	    output(str);
 	    break;
-	  case STMT_RETURN:
+	case STMT_RETURN:
 	    if (stmt->s.expr) {
 		stream_add_string(str, "return ");
 		unparse_expr(str, stmt->s.expr);
@@ -387,10 +421,10 @@ unparse_stmt(Stmt *stmt, int indent)
 	    stream_add_char(str, ';');
 	    output(str);
 	    break;
-	  case STMT_TRY_EXCEPT:
+	case STMT_TRY_EXCEPT:
 	    unparse_stmt_catch(str, stmt->s.catch, indent);
 	    break;
-	  case STMT_TRY_FINALLY:
+	case STMT_TRY_FINALLY:
 	    stream_add_string(str, "try");
 	    output(str);
 	    unparse_stmt(stmt->s.finally.body, indent + 2);
@@ -402,11 +436,11 @@ unparse_stmt(Stmt *stmt, int indent)
 	    stream_add_string(str, "endtry");
 	    output(str);
 	    break;
-	  case STMT_BREAK:
-	  case STMT_CONTINUE:
+	case STMT_BREAK:
+	case STMT_CONTINUE:
 	    {
 		const char *kwd = (stmt->kind == STMT_BREAK ? "break"
-							    : "continue");
+				   : "continue");
 
 		if (stmt->s.exit == -1)
 		    stream_printf(str, "%s;", kwd);
@@ -416,7 +450,7 @@ unparse_stmt(Stmt *stmt, int indent)
 		output(str);
 	    }
 	    break;
-	  default:
+	default:
 	    errlog("UNPARSE_STMT: Unknown Stmt_Kind: %d\n", stmt->kind);
 	    stream_add_string(str, "?!?!?!?;");
 	    output(str);
@@ -433,18 +467,16 @@ ok_identifier(const char *name)
 {
     const char *p = name;
 
-    if (*p != '\0'  &&  (isalpha(*p) || *p == '_')) {
-	while (*++p != '\0'  &&  (isalnum(*p) || *p == '_'))
-	    ;
-	if (*p == '\0'  &&  !find_keyword(name))
+    if (*p != '\0' && (isalpha(*p) || *p == '_')) {
+	while (*++p != '\0' && (isalnum(*p) || *p == '_'));
+	if (*p == '\0' && !find_keyword(name))
 	    return 1;
     }
-
     return 0;
 }
 
 static void
-unparse_name_expr(Stream *str, Expr *expr)
+unparse_name_expr(Stream * str, Expr * expr)
 {
     /*
      * Handle the right-hand expression in EXPR_PROP and EXPR_VERB.
@@ -453,12 +485,11 @@ unparse_name_expr(Stream *str, Expr *expr)
      * expression normally.
      */
 
-    if (expr->kind == EXPR_VAR  &&  expr->e.var.type == TYPE_STR
-	                        &&  ok_identifier(expr->e.var.v.str)) {
+    if (expr->kind == EXPR_VAR && expr->e.var.type == TYPE_STR
+	&& ok_identifier(expr->e.var.v.str)) {
 	stream_add_string(str, expr->e.var.v.str);
 	return;
     }
-
     /* We need to use the full unparser */
     stream_add_char(str, '(');
     unparse_expr(str, expr);
@@ -466,10 +497,10 @@ unparse_name_expr(Stream *str, Expr *expr)
 }
 
 static void
-unparse_expr(Stream *str, Expr *expr)
+unparse_expr(Stream * str, Expr * expr)
 {
-    switch(expr->kind) {
-      case EXPR_PROP:
+    switch (expr->kind) {
+    case EXPR_PROP:
 	if (expr->e.bin.lhs->kind == EXPR_VAR
 	    && expr->e.bin.lhs->e.var.type == TYPE_OBJ
 	    && expr->e.bin.lhs->e.var.v.obj == 0
@@ -489,7 +520,7 @@ unparse_expr(Stream *str, Expr *expr)
 	}
 	break;
 
-      case EXPR_VERB:
+    case EXPR_VERB:
 	if (expr->e.verb.obj->kind == EXPR_VAR
 	    && expr->e.verb.obj->e.var.type == TYPE_OBJ
 	    && expr->e.verb.obj->e.var.v.obj == 0
@@ -508,14 +539,14 @@ unparse_expr(Stream *str, Expr *expr)
 	stream_add_char(str, ')');
 	break;
 
-      case EXPR_INDEX:
+    case EXPR_INDEX:
 	bracket_lt(str, EXPR_INDEX, expr->e.bin.lhs);
 	stream_add_char(str, '[');
 	unparse_expr(str, expr->e.bin.rhs);
 	stream_add_char(str, ']');
 	break;
 
-      case EXPR_RANGE:
+    case EXPR_RANGE:
 	bracket_lt(str, EXPR_RANGE, expr->e.range.base);
 	stream_add_char(str, '[');
 	unparse_expr(str, expr->e.range.from);
@@ -525,75 +556,84 @@ unparse_expr(Stream *str, Expr *expr)
 	break;
 
 	/* left-associative binary operators */
-      case EXPR_PLUS:	case EXPR_MINUS:	case EXPR_TIMES:
-      case EXPR_DIVIDE:	case EXPR_MOD:		case EXPR_AND:
-      case EXPR_OR:	case EXPR_EQ:		case EXPR_NE:
-      case EXPR_LT:	case EXPR_GT:		case EXPR_LE:
-      case EXPR_GE:	case EXPR_IN:
+    case EXPR_PLUS:
+    case EXPR_MINUS:
+    case EXPR_TIMES:
+    case EXPR_DIVIDE:
+    case EXPR_MOD:
+    case EXPR_AND:
+    case EXPR_OR:
+    case EXPR_EQ:
+    case EXPR_NE:
+    case EXPR_LT:
+    case EXPR_GT:
+    case EXPR_LE:
+    case EXPR_GE:
+    case EXPR_IN:
 	bracket_lt(str, expr->kind, expr->e.bin.lhs);
 	stream_add_string(str, binop_string[expr->kind]);
 	bracket_le(str, expr->kind, expr->e.bin.rhs);
 	break;
 
 	/* right-associative binary operators */
-      case EXPR_EXP:
+    case EXPR_EXP:
 	bracket_le(str, expr->kind, expr->e.bin.lhs);
 	stream_add_string(str, binop_string[expr->kind]);
 	bracket_lt(str, expr->kind, expr->e.bin.rhs);
 	break;
 
-      case EXPR_COND:
+    case EXPR_COND:
 	bracket_le(str, EXPR_COND, expr->e.cond.condition);
 	stream_add_string(str, " ? ");
 	unparse_expr(str, expr->e.cond.consequent);
 	stream_add_string(str, " | ");
 	bracket_le(str, EXPR_COND, expr->e.cond.alternate);
 	break;
-	
-      case EXPR_NEGATE:
+
+    case EXPR_NEGATE:
 	stream_add_char(str, '-');
 	bracket_lt(str, EXPR_NEGATE, expr->e.expr);
 	break;
-	
-      case EXPR_NOT:
+
+    case EXPR_NOT:
 	stream_add_char(str, '!');
 	bracket_lt(str, EXPR_NOT, expr->e.expr);
 	break;
 
-      case EXPR_VAR:
+    case EXPR_VAR:
 	stream_add_string(str, value_to_literal(expr->e.var));
 	break;
 
-      case EXPR_ASGN:
+    case EXPR_ASGN:
 	unparse_expr(str, expr->e.bin.lhs);
 	stream_add_string(str, " = ");
 	unparse_expr(str, expr->e.bin.rhs);
 	break;
 
-      case EXPR_CALL:
+    case EXPR_CALL:
 	stream_add_string(str, name_func_by_num(expr->e.call.func));
 	stream_add_char(str, '(');
 	unparse_arglist(str, expr->e.call.args);
 	stream_add_char(str, ')');
 	break;
 
-      case EXPR_ID:
+    case EXPR_ID:
 	stream_add_string(str, prog->var_names[expr->e.id]);
 	break;
 
-      case EXPR_LIST:
+    case EXPR_LIST:
 	stream_add_char(str, '{');
 	unparse_arglist(str, expr->e.list);
 	stream_add_char(str, '}');
 	break;
 
-      case EXPR_SCATTER:
+    case EXPR_SCATTER:
 	stream_add_char(str, '{');
 	unparse_scatter(str, expr->e.scatter);
 	stream_add_char(str, '}');
 	break;
 
-      case EXPR_CATCH:
+    case EXPR_CATCH:
 	stream_add_string(str, "`");
 	unparse_expr(str, expr->e.catch.try);
 	stream_add_string(str, " ! ");
@@ -607,12 +647,12 @@ unparse_expr(Stream *str, Expr *expr)
 	}
 	stream_add_string(str, "'");
 	break;
-	
-      case EXPR_LENGTH:
+
+    case EXPR_LENGTH:
 	stream_add_string(str, "$");
 	break;
 
-      default:
+    default:
 	errlog("UNPARSE_EXPR: Unknown Expr_Kind: %d\n", expr->kind);
 	stream_add_string(str, "(?!?!?!?!?)");
 	break;
@@ -620,7 +660,7 @@ unparse_expr(Stream *str, Expr *expr)
 }
 
 static void
-unparse_arglist(Stream *str, Arg_List *args)
+unparse_arglist(Stream * str, Arg_List * args)
 {
     while (args) {
 	if (args->kind == ARG_SPLICE)
@@ -633,17 +673,17 @@ unparse_arglist(Stream *str, Arg_List *args)
 }
 
 static void
-unparse_scatter(Stream *str, Scatter *sc)
+unparse_scatter(Stream * str, Scatter * sc)
 {
     while (sc) {
 	switch (sc->kind) {
-	  case SCAT_REST:
+	case SCAT_REST:
 	    stream_add_char(str, '@');
 	    /* fall thru to ... */
-	  case SCAT_REQUIRED:
+	case SCAT_REQUIRED:
 	    stream_add_string(str, prog->var_names[sc->id]);
 	    break;
-	  case SCAT_OPTIONAL:
+	case SCAT_OPTIONAL:
 	    stream_printf(str, "?%s", prog->var_names[sc->id]);
 	    if (sc->expr) {
 		stream_add_string(str, " = ");
@@ -657,8 +697,8 @@ unparse_scatter(Stream *str, Scatter *sc)
 }
 
 void
-unparse_program(Program *p, Unparser_Receiver r, void *data, 
-		int fully_parenthesize, int indent_lines, int f_index) 
+unparse_program(Program * p, Unparser_Receiver r, void *data,
+		int fully_parenthesize, int indent_lines, int f_index)
 {
     Stmt *stmt = decompile_program(p, f_index);
 
@@ -672,13 +712,13 @@ unparse_program(Program *p, Unparser_Receiver r, void *data,
 static void
 print_line(void *data, const char *line)
 {
-    FILE       *fp = data;
+    FILE *fp = data;
 
     fprintf(fp, "%s\n", line);
 }
 
 void
-unparse_to_file(FILE *fp, Program *p, int fully_parenthesize, int indent_lines,
+unparse_to_file(FILE * fp, Program * p, int fully_parenthesize, int indent_lines,
 		int f_index)
 {
     unparse_program(p, print_line, fp, fully_parenthesize, indent_lines,
@@ -686,18 +726,21 @@ unparse_to_file(FILE *fp, Program *p, int fully_parenthesize, int indent_lines,
 }
 
 void
-unparse_to_stderr(Program *p, int fully_parenthesize, int indent_lines,
+unparse_to_stderr(Program * p, int fully_parenthesize, int indent_lines,
 		  int f_index)
 {
     unparse_to_file(stderr, p, fully_parenthesize, indent_lines, f_index);
 }
 
-char rcsid_unparse[] = "$Id: unparse.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_unparse[] = "$Id: unparse.c,v 1.2 1997/03/03 04:19:34 nop Exp $";
 
 /* $Log: unparse.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:34  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/02/18  23:21:00  pavel
  * Fixed unparsing of expression `X.Y', where X is an integer, to add a space
  * before the dot to keep it from looking like a floating-point literal.

@@ -31,7 +31,7 @@
 vm
 new_vm(int task_id, int stack_size)
 {
-    vm	the_vm = mymalloc(sizeof(vmstruct), M_VM);
+    vm the_vm = mymalloc(sizeof(vmstruct), M_VM);
 
     the_vm->task_id = task_id;
     the_vm->activ_stack = mymalloc(sizeof(activation) * stack_size, M_VM);
@@ -44,7 +44,7 @@ free_vm(vm the_vm, int stack_too)
 {
     int i;
 
-    if (stack_too) 
+    if (stack_too)
 	for (i = the_vm->top_activ_stack; i >= 0; i--)
 	    free_activation(the_vm->activ_stack[i], 1);
     myfree(the_vm->activ_stack, M_VM);
@@ -58,7 +58,7 @@ top_activ(vm the_vm)
 }
 
 Objid
-progr_of_cur_verb(vm the_vm) 
+progr_of_cur_verb(vm the_vm)
 {
     return top_activ(the_vm).progr;
 }
@@ -69,15 +69,15 @@ suspended_lineno_of_vm(vm the_vm)
     activation top;
 
     top = top_activ(the_vm);
-    return find_line_number(top.prog, (the_vm->top_activ_stack == 0 
-				       ? the_vm->root_activ_vector 
+    return find_line_number(top.prog, (the_vm->top_activ_stack == 0
+				       ? the_vm->root_activ_vector
 				       : MAIN_VECTOR),
 			    top.error_pc);
 }
 
 /**** read/write data base ****/
 
-void 
+void
 write_vm(vm the_vm)
 {
     unsigned i;
@@ -85,7 +85,7 @@ write_vm(vm the_vm)
     dbio_printf("%u %d %u %u\n",
 		the_vm->top_activ_stack, the_vm->root_activ_vector,
 		the_vm->func_id, the_vm->max_stack_size);
-    
+
     for (i = 0; i <= the_vm->top_activ_stack; i++)
 	write_activ(the_vm->activ_stack[i]);
 }
@@ -93,10 +93,10 @@ write_vm(vm the_vm)
 vm
 read_vm(int task_id)
 {
-    unsigned 	i, top, func_id, max;
-    int		vector;
-    char	c;
-    vm		the_vm;
+    unsigned i, top, func_id, max;
+    int vector;
+    char c;
+    vm the_vm;
 
     if (dbio_scanf("%u %d %u%c", &top, &vector, &func_id, &c) != 4
 	|| (c == ' '
@@ -105,7 +105,6 @@ read_vm(int task_id)
 	errlog("READ_VM: Bad vm header\n");
 	return 0;
     }
-
     the_vm = new_vm(task_id, top + 1);
     the_vm->max_stack_size = max;
     the_vm->top_activ_stack = top;
@@ -118,16 +117,18 @@ read_vm(int task_id)
 	    errlog("READ_VM: Bad activ number %d\n", i);
 	    return 0;
 	}
-
     return the_vm;
 }
 
-char rcsid_eval_vm[] = "$Id: eval_vm.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_eval_vm[] = "$Id: eval_vm.c,v 1.2 1997/03/03 04:18:36 nop Exp $";
 
 /* $Log: eval_vm.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:36  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/02/08  07:12:16  pavel
  * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

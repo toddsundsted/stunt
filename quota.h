@@ -17,13 +17,16 @@
 
 #include "structures.h"
 
-extern int	decr_quota(Objid player);
-extern void	incr_quota(Objid player);
+extern int decr_quota(Objid player);
+extern void incr_quota(Objid player);
 
 /* $Log: quota.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:19  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:13:52  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

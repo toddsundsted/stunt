@@ -24,27 +24,30 @@
 #include "program.h"
 #include "structures.h"
 
-typedef void 		(*Unparser_Receiver)(void *, const char *);
+typedef void (*Unparser_Receiver) (void *, const char *);
 
-extern void 		unparse_program(Program *, Unparser_Receiver, void *, 
-					int fully_parenthesize,
-					int indent_lines, int f_index);
+extern void unparse_program(Program *, Unparser_Receiver, void *,
+			    int fully_parenthesize,
+			    int indent_lines, int f_index);
 
-extern void		unparse_to_file(FILE *fp, Program *,
-					int fully_parenthesize,
-					int indent_lines, int f_index);
-extern void		unparse_to_stderr(Program *, int fully_parenthesize,
-					  int indent_lines, int f_index);
+extern void unparse_to_file(FILE * fp, Program *,
+			    int fully_parenthesize,
+			    int indent_lines, int f_index);
+extern void unparse_to_stderr(Program *, int fully_parenthesize,
+			      int indent_lines, int f_index);
 
-extern const char      *error_name(enum error); /* E_NONE -> "E_NONE" */
-extern const char      *unparse_error(enum error); /* E_NONE -> "No error" */
+extern const char *error_name(enum error);	/* E_NONE -> "E_NONE" */
+extern const char *unparse_error(enum error);	/* E_NONE -> "No error" */
 
 #endif
 
 /* $Log: unparse.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:35  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:08:46  pavel
  * Added unparse_to_file() and unparse_to_stderr().  Updated copyright notice
  * for 1996.  Release 1.8.0beta1.

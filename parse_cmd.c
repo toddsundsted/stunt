@@ -33,24 +33,23 @@
 char **
 parse_into_words(char *input, int *nwords)
 {
-    static char	      **words = 0;
-    static int		max_words = 0;
-    int			in_quotes = 0;
-    char	       *ptr = input;
+    static char **words = 0;
+    static int max_words = 0;
+    int in_quotes = 0;
+    char *ptr = input;
 
     if (!words) {
 	max_words = 50;
 	words = mymalloc(max_words * sizeof(char *), M_STRING);
     }
-
     while (*input == ' ')
 	input++;
 
     for (*nwords = 0; *input != '\0'; (*nwords)++) {
 	if (*nwords == max_words) {
-	    int		new_max = max_words * 2;
-	    char      **new = mymalloc(new_max * sizeof(char *), M_STRING);
-	    int		i;
+	    int new_max = max_words * 2;
+	    char **new = mymalloc(new_max * sizeof(char *), M_STRING);
+	    int i;
 
 	    for (i = 0; i < max_words; i++)
 		new[i] = words[i];
@@ -59,10 +58,9 @@ parse_into_words(char *input, int *nwords)
 	    words = new;
 	    max_words = new_max;
 	}
-
 	words[*nwords] = ptr;
-	while (*input != '\0'  &&  (in_quotes  ||  *input != ' ')) {
-	    char	c = *(input++);
+	while (*input != '\0' && (in_quotes || *input != ' ')) {
+	    char c = *(input++);
 
 	    if (c == '"')
 		in_quotes = !in_quotes;
@@ -83,11 +81,11 @@ parse_into_words(char *input, int *nwords)
 static char *
 build_string(int argc, char *argv[])
 {
-    int         i, len = 0;
-    char	*str;
+    int i, len = 0;
+    char *str;
 
     if (!argc)
-        return str_dup("");
+	return str_dup("");
 
     len = strlen(argv[0]);
     for (i = 1; i < argc; i++)
@@ -110,10 +108,10 @@ build_string(int argc, char *argv[])
 Var
 parse_into_wordlist(const char *command)
 {
-    int		argc, i;
-    char      **argv;
-    Var		args;
-    char       *s = str_dup(command);
+    int argc, i;
+    char **argv;
+    Var args;
+    char *s = str_dup(command);
 
     argv = parse_into_words(s, &argc);
     args = new_list(argc);
@@ -128,28 +126,28 @@ parse_into_wordlist(const char *command)
 Parsed_Command *
 parse_command(const char *command, Objid user)
 {
-    static Parsed_Command	pc;
-    const char		       *argstr;
-    char		       *buf;
-    const char		       *verb;
-    int				argc;
-    char		      **argv;
-    int				pstart, pend, dlen;
-    int				i;
+    static Parsed_Command pc;
+    const char *argstr;
+    char *buf;
+    const char *verb;
+    int argc;
+    char **argv;
+    int pstart, pend, dlen;
+    int i;
 
     while (*command == ' ')
 	command++;
     switch (*command) {
-      case '"':
+    case '"':
 	verb = "say";
 	goto finish_specials;
-      case ':':
+    case ':':
 	verb = "emote";
 	goto finish_specials;
-      case ';':
+    case ';':
 	verb = "eval";
 	goto finish_specials;
-	
+
       finish_specials:
 	argstr = command + 1;
 	buf = (char *) mymalloc(strlen(argstr) + strlen(verb) + 2,
@@ -158,19 +156,19 @@ parse_command(const char *command, Objid user)
 	strcat(buf, " ");
 	strcat(buf, argstr);
 	break;
-	
-      default:
+
+    default:
 	buf = str_dup(command);
 	{			/* Skip past even complexly-quoted verbs */
-	    int	in_quotes = 0;
-	    
+	    int in_quotes = 0;
+
 	    argstr = command;
 	    while (*argstr && (in_quotes || *argstr != ' ')) {
 		char c = *(argstr++);
 
 		if (c == '"')
 		    in_quotes = !in_quotes;
-		else if (c == '\\'  &&  *argstr)
+		else if (c == '\\' && *argstr)
 		    argstr++;
 	    }
 	}
@@ -184,7 +182,6 @@ parse_command(const char *command, Objid user)
 	free_str(buf);
 	return 0;
     }
-
     pc.verb = str_dup(argv[0]);
     pc.argstr = str_dup(argstr);
 
@@ -241,7 +238,7 @@ parse_command(const char *command, Objid user)
 }
 
 void
-free_parsed_command(Parsed_Command *pc)
+free_parsed_command(Parsed_Command * pc)
 {
     free_str(pc->verb);
     free_str(pc->argstr);
@@ -252,12 +249,15 @@ free_parsed_command(Parsed_Command *pc)
 }
 
 
-char rcsid_parse_cmd[] = "$Id: parse_cmd.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_parse_cmd[] = "$Id: parse_cmd.c,v 1.2 1997/03/03 04:19:14 nop Exp $";
 
 /* $Log: parse_cmd.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:14  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/02/08  06:55:06  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

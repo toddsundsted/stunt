@@ -30,8 +30,8 @@
 unsigned
 malloc_real_size(void *ptr)
 {
-    char	       *cp = (char *) ptr;
-    struct mhead       *p = (struct mhead *) (cp - ((sizeof *p + 7) & ~7));
+    char *cp = (char *) ptr;
+    struct mhead *p = (struct mhead *) (cp - ((sizeof *p + 7) & ~7));
 
     return 1 << (p->mh_index + 3);
 }
@@ -39,8 +39,8 @@ malloc_real_size(void *ptr)
 unsigned
 malloc_size(void *ptr)
 {
-    char	       *cp = (char *) ptr;
-    struct mhead       *p = (struct mhead *) (cp - ((sizeof *p + 7) & ~7));
+    char *cp = (char *) ptr;
+    struct mhead *p = (struct mhead *) (cp - ((sizeof *p + 7) & ~7));
 
 #ifdef rcheck
     return p->mh_nbytes;
@@ -49,18 +49,21 @@ malloc_size(void *ptr)
 #endif
 }
 
-#else /* !defined(USE_GNU_MALLOC) */
+#else				/* !defined(USE_GNU_MALLOC) */
 
 int malloc_dummy;		/* Prevent `empty compilation unit' warning */
 
 #endif
 
-char rcsid_malloc[] = "$Id: malloc.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+char rcsid_malloc[] = "$Id: malloc.c,v 1.2 1997/03/03 04:18:49 nop Exp $";
 
 /* $Log: malloc.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:49  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:59:50  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -26,23 +26,26 @@
 #endif
 
 #if NDECL_GETITIMER
-extern int	getitimer(int, struct itimerval *);
+extern int getitimer(int, struct itimerval *);
 #endif
 
 #if NDECL_SETITIMER
-extern int	setitimer(int, struct itimerval *, struct itimerval *);
+extern int setitimer(int, struct itimerval *, struct itimerval *);
 #endif
 
 #if NDECL_SELECT  &&  MPLEX_STYLE == MP_SELECT
 #include "my-types.h"
 
-extern int	select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+extern int select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 #endif
 
 /* $Log: my-sys-time.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:57  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:01:00  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -31,14 +31,17 @@
 #define	FD_ZERO(p)	bzero((char *)(p), sizeof(*(p)))
 #define	FD_SET(n, p)	((p)->fds_bits[0] |= (1L<<((n)%NFDBITS)))
 #define	FD_ISSET(n, p)	((p)->fds_bits[0] &  (1L<<((n)%NFDBITS)))
-#endif /* FD_ZERO */
+#endif				/* FD_ZERO */
 
-#endif /* !My_Types_h */
+#endif				/* !My_Types_h */
 
 /* $Log: my-types.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:58  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:00:13  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

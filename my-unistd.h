@@ -26,26 +26,29 @@
 #include "my-types.h"
 
 extern unsigned alarm(unsigned);
-extern int	chmod(const char *, mode_t);
-extern int	close(int);
-extern int	dup(int);
-extern void	_exit(int);
-extern pid_t	fork(void);
-extern pid_t	getpid(void);
-extern int	link(const char *, const char *);
-extern int	pause(void);
-extern int	pipe(int *fds);
-extern int	read(int, void *, unsigned);
+extern int chmod(const char *, mode_t);
+extern int close(int);
+extern int dup(int);
+extern void _exit(int);
+extern pid_t fork(void);
+extern pid_t getpid(void);
+extern int link(const char *, const char *);
+extern int pause(void);
+extern int pipe(int *fds);
+extern int read(int, void *, unsigned);
 extern unsigned sleep(unsigned);
-extern int	unlink(const char *);
-extern int	write(int, const void *, unsigned);
+extern int unlink(const char *);
+extern int write(int, const void *, unsigned);
 
 #endif
 
 /* $Log: my-unistd.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:59  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:00:01  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

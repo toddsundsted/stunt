@@ -27,15 +27,15 @@ new_rt_env(unsigned size)
 {
     Var *ret = mymalloc(size * sizeof(Var), M_RT_ENV);
     unsigned i;
-    
+
     for (i = 0; i < size; i++)
 	ret[i].type = TYPE_NONE;
 
     return ret;
-}    
+}
 
-void 
-free_rt_env(Var *rt_env, unsigned size)
+void
+free_rt_env(Var * rt_env, unsigned size)
 {
     register unsigned i;
 
@@ -45,36 +45,43 @@ free_rt_env(Var *rt_env, unsigned size)
 }
 
 Var *
-copy_rt_env(Var *from, unsigned size)
+copy_rt_env(Var * from, unsigned size)
 {
     unsigned i;
 
     Var *ret = new_rt_env(size);
-    for (i = 0; i < size; i++) 
+    for (i = 0; i < size; i++)
 	ret[i] = var_ref(from[i]);
     return ret;
 }
 
 void
-fill_in_rt_consts(Var *env, DB_Version version)
+fill_in_rt_consts(Var * env, DB_Version version)
 {
     Var v;
 
     v.type = TYPE_INT;
-    v.v.num = (int) TYPE_ERR;     env[SLOT_ERR] = var_ref(v);
-    v.v.num = (int) TYPE_INT;     env[SLOT_NUM] = var_ref(v);
-    v.v.num = (int) TYPE_STR;     env[SLOT_STR] = var_ref(v);
-    v.v.num = (int) TYPE_OBJ;     env[SLOT_OBJ] = var_ref(v);
-    v.v.num = (int) TYPE_LIST;    env[SLOT_LIST] = var_ref(v);
+    v.v.num = (int) TYPE_ERR;
+    env[SLOT_ERR] = var_ref(v);
+    v.v.num = (int) TYPE_INT;
+    env[SLOT_NUM] = var_ref(v);
+    v.v.num = (int) TYPE_STR;
+    env[SLOT_STR] = var_ref(v);
+    v.v.num = (int) TYPE_OBJ;
+    env[SLOT_OBJ] = var_ref(v);
+    v.v.num = (int) TYPE_LIST;
+    env[SLOT_LIST] = var_ref(v);
 
     if (version >= DBV_Float) {
-	v.v.num = (int) TYPE_INT;   env[SLOT_INT] = var_ref(v);
-	v.v.num = (int) TYPE_FLOAT; env[SLOT_FLOAT] = var_ref(v);
+	v.v.num = (int) TYPE_INT;
+	env[SLOT_INT] = var_ref(v);
+	v.v.num = (int) TYPE_FLOAT;
+	env[SLOT_FLOAT] = var_ref(v);
     }
 }
 
 void
-set_rt_env_obj(Var *env, int slot, Objid o)
+set_rt_env_obj(Var * env, int slot, Objid o)
 {
     Var v;
     v.type = TYPE_OBJ;
@@ -83,7 +90,7 @@ set_rt_env_obj(Var *env, int slot, Objid o)
 }
 
 void
-set_rt_env_str(Var *env, int slot, const char *s)
+set_rt_env_str(Var * env, int slot, const char *s)
 {
     Var v;
     v.type = TYPE_STR;
@@ -92,17 +99,20 @@ set_rt_env_str(Var *env, int slot, const char *s)
 }
 
 void
-set_rt_env_var(Var *env, int slot, Var v)
+set_rt_env_var(Var * env, int slot, Var v)
 {
     env[slot] = v;
 }
 
-char rcsid_rt_env[] = "$Id: eval_env.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_rt_env[] = "$Id: eval_env.c,v 1.2 1997/03/03 04:18:35 nop Exp $";
 
 /* $Log: eval_env.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:35  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  07:13:03  pavel
  * Renamed TYPE_NUM to TYPE_INT.  Made fill_in_rt_consts() version-dependent.
  * Updated copyright notice for 1996.  Release 1.8.0beta1.

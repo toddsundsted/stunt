@@ -18,26 +18,29 @@
 #include "config.h"
 
 typedef struct {
-    int	start, end;
+    int start, end;
 } Match_Indices;
 
 typedef struct {
-    void	*ptr;
+    void *ptr;
 } Pattern;
 
 typedef enum {
     MATCH_SUCCEEDED, MATCH_FAILED, MATCH_ABORTED
 } Match_Result;
 
-extern Pattern		new_pattern(const char *pattern, int case_matters);
-extern Match_Result	match_pattern(Pattern p, const char *string,
-				      Match_Indices *indices, int is_reverse);
-extern void		free_pattern(Pattern p);
+extern Pattern new_pattern(const char *pattern, int case_matters);
+extern Match_Result match_pattern(Pattern p, const char *string,
+				Match_Indices * indices, int is_reverse);
+extern void free_pattern(Pattern p);
 
 /* $Log: pattern.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:17  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:14:35  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -16,36 +16,36 @@
  *****************************************************************************/
 
 /* Multi-user networking protocol implementation for local clients on SysV UNIX
- *
+
  * The protocol for connection establishment works like this:
  *
- *    	CLIENT				SERVER
- *					Create SERVER_FIFO (mode 622).
- *					Open SERVER_FIFO for reading (O_NDELAY)
- *					Wait for input on SERVER_FIFO
- *					...
- *	Create C2S_FIFO (mode 644)
- *	  and S2C_FIFO (mode 622) in
- *	  some personal directory
- *	  (like $HOME).
- *	Open S2C_FIFO for reading
- *	  (O_NDELAY).
- *	Open SERVER_FIFO for writing
- *	  (no O_NDELAY), write
- *	  '\n' C2S_FIFO ' ' S2C_FIFO '\n'
- *	  in a single write() call, and
- *	  then close SERVER_FIFO.
- *	Open C2S_FIFO for writing	Read C2S_FIFO and S2C_FIFO from
- *	  (*no* O_NDELAY).		  SERVER_FIFO.
- *					Open S2C_FIFO for writing (O_NDELAY)
- *					  and abort connection on error.
- *					Open C2S_FIFO for reading (O_NDELAY)
- *					  and abort connection on error.
- *	Unlink C2S_FIFO and S2C_FIFO
- *	  for privacy; their names
- *	  are no longer needed.
- *					...
- *					Close SERVER_FIFO and unlink it.
+ *      CLIENT                          SERVER
+ *                                      Create SERVER_FIFO (mode 622).
+ *                                      Open SERVER_FIFO for reading (O_NDELAY)
+ *                                      Wait for input on SERVER_FIFO
+ *                                      ...
+ *      Create C2S_FIFO (mode 644)
+ *        and S2C_FIFO (mode 622) in
+ *        some personal directory
+ *        (like $HOME).
+ *      Open S2C_FIFO for reading
+ *        (O_NDELAY).
+ *      Open SERVER_FIFO for writing
+ *        (no O_NDELAY), write
+ *        '\n' C2S_FIFO ' ' S2C_FIFO '\n'
+ *        in a single write() call, and
+ *        then close SERVER_FIFO.
+ *      Open C2S_FIFO for writing       Read C2S_FIFO and S2C_FIFO from
+ *        (*no* O_NDELAY).                SERVER_FIFO.
+ *                                      Open S2C_FIFO for writing (O_NDELAY)
+ *                                        and abort connection on error.
+ *                                      Open C2S_FIFO for reading (O_NDELAY)
+ *                                        and abort connection on error.
+ *      Unlink C2S_FIFO and S2C_FIFO
+ *        for privacy; their names
+ *        are no longer needed.
+ *                                      ...
+ *                                      Close SERVER_FIFO and unlink it.
  *
  * It is important that the client do the above actions in the given order;
  * no other sequence (with the sole exception of the timing of the opening
@@ -85,15 +85,17 @@
 #include "streams.h"
 #include "utils.h"
 
-enum state { RejectLine, GetC2S, GetS2C, Accepting };
+enum state {
+    RejectLine, GetC2S, GetS2C, Accepting
+};
 
 typedef struct listener {
-    struct listener    *next;
-    int			fifo, pseudo_client;
-    const char	       *filename;
-    enum state		state;
-    char		c2s[1001], s2c[1001];
-    int			ptr;	/* current index in c2s or s2c */
+    struct listener *next;
+    int fifo, pseudo_client;
+    const char *filename;
+    enum state state;
+    char c2s[1001], s2c[1001];
+    int ptr;			/* current index in c2s or s2c */
 } listener;
 
 static listener *all_listeners = 0;
@@ -111,7 +113,7 @@ proto_usage_string(void)
 }
 
 int
-proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
+proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 {
     const char *connect_file = DEFAULT_CONNECT_FILE;
 
@@ -129,20 +131,19 @@ proto_initialize(struct proto *proto, Var *desc, int argc, char **argv)
     else if (argc == 1) {
 	connect_file = argv[0];
     }
-
     desc->type = TYPE_STR;
     desc->v.str = str_dup(connect_file);
     return 1;
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
+proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 {
-    char	buffer[1024];
+    char buffer[1024];
     const char *connect_file;
-    int		fifo, pseudo_client;
-    listener   *l;
-    
+    int fifo, pseudo_client;
+    listener *l;
+
     if (desc.type != TYPE_STR)
 	return E_TYPE;
 
@@ -161,7 +162,6 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 	log_perror("Setting listening FIFO non-blocking");
 	return E_QUOTA;
     }
-
     l = mymalloc(sizeof(listener), M_NETWORK);
     l->next = all_listeners;
     all_listeners = l;
@@ -180,7 +180,7 @@ proto_make_listener(Var desc, int *fd, Var *canon, const char **name)
 static listener *
 find_listener(int fd)
 {
-    listener   *l;
+    listener *l;
 
     for (l = all_listeners; l; l = l->next)
 	if (l->fifo == fd)
@@ -192,17 +192,15 @@ find_listener(int fd)
 int
 proto_listen(int fd)
 {
-    listener   *l = find_listener(fd);
+    listener *l = find_listener(fd);
 
     if (l) {
 	if (chmod(l->filename, 0622) < 0) {
 	    log_perror("Making listening FIFO writable");
 	    return 0;
 	}
-	    
 	return 1;
     }
-
     errlog("Can't find FIFO in PROTO_LISTEN!");
     return 0;
 }
@@ -213,7 +211,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 {
     /* There is input available on listener_fd; read up to 1K of it and try
      * to parse a line like this from it:
-     *		<c2s-path-name> <space> <s2c-path-name> <newline>
+     *          <c2s-path-name> <space> <s2c-path-name> <newline>
      * Because it's impossible in System V and can be difficult in POSIX to do
      * otherwise, we assume that the maximum length of a path-name is 1000
      * bytes.  In fact, because System V and POSIX only guarantee that 512
@@ -222,12 +220,12 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
      * FIFO, it really ought not use names longer than about 250 bytes each.
      * Of course, in practice, the names will likely never exceed 100 bytes...
      */
-    listener	       *l = find_listener(listener_fd);
-    struct stat 	st1, st2;
-    struct passwd      *pw;
+    listener *l = find_listener(listener_fd);
+    struct stat st1, st2;
+    struct passwd *pw;
 
     if (l->state != Accepting) {
-	int		got_one = 0;
+	int got_one = 0;
 
 	while (!got_one) {
 	    char c;
@@ -236,14 +234,14 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 		break;
 
 	    switch (l->state) {
-	      case RejectLine:
+	    case RejectLine:
 		if (c == '\n') {
 		    l->state = GetC2S;
 		    l->ptr = 0;
 		}
 		break;
 
-	      case GetC2S:
+	    case GetC2S:
 		if (c == ' ') {
 		    l->c2s[l->ptr] = '\0';
 		    l->state = GetS2C;
@@ -259,7 +257,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 		    l->c2s[l->ptr++] = c;
 		break;
 
-	      case GetS2C:
+	    case GetS2C:
 		if (c == '\n') {
 		    l->s2c[l->ptr] = '\0';
 		    l->state = Accepting;
@@ -272,7 +270,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 		    l->s2c[l->ptr++] = c;
 		break;
 
-	      default:
+	    default:
 		panic("Can't happen in proto_accept_connection()");
 	    }
 	}
@@ -282,7 +280,6 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 	    return PA_OTHER;
 	}
     }
-
     if ((*write_fd = open(l->s2c, O_WRONLY | NONBLOCK_FLAG)) < 0) {
 	log_perror("Failed to open server->client FIFO");
 	if (errno == EMFILE)
@@ -302,14 +299,12 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 	    return PA_OTHER;
 	}
     }
-
     l->state = GetC2S;
-    
-    if (fstat(*read_fd, &st1) < 0  ||  fstat(*write_fd, &st2) < 0) {
+
+    if (fstat(*read_fd, &st1) < 0 || fstat(*write_fd, &st2) < 0) {
 	log_perror("Statting client FIFOs");
 	return PA_OTHER;
     }
-    
     if (st1.st_mode & S_IFMT != S_IFIFO
 	|| st2.st_mode & S_IFMT != S_IFIFO
 	|| st1.st_uid != st2.st_uid) {
@@ -318,17 +313,16 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 	errlog("Bogus FIFO names: \"%s\" and \"%s\"\n", l->c2s, l->s2c);
 	return PA_OTHER;
     }
-    
     pw = getpwuid(st1.st_uid);
     if (pw)
 	*name = pw->pw_name;
     else {
-	static char	buffer[20];
+	static char buffer[20];
 
 	sprintf(buffer, "User #%d", (int) st1.st_uid);
 	*name = buffer;
     }
-    
+
     return PA_OKAY;
 }
 
@@ -343,10 +337,10 @@ proto_close_connection(int read_fd, int write_fd)
 void
 proto_close_listener(int fd)
 {
-    listener   *l, **ll;
+    listener *l, **ll;
 
     for (l = all_listeners, ll = &all_listeners; l; ll = &(l->next),
-						    l = l->next)
+	 l = l->next)
 	if (l->fifo == fd) {
 	    remove(l->filename);
 	    close(l->fifo);
@@ -357,16 +351,18 @@ proto_close_listener(int fd)
 	    myfree(l, M_NETWORK);
 	    return;
 	}
-
     errlog("Can't find fd in PROTO_CLOSE_LISTENER!\n");
 }
 
-char rcsid_net_sysv_lcl[] = "$Id: net_sysv_lcl.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_sysv_lcl[] = "$Id: net_sysv_lcl.c,v 1.2 1997/03/03 04:19:08 nop Exp $";
 
 /* $Log: net_sysv_lcl.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:08  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/03/10  01:13:11  pavel
  * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
  *

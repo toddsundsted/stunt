@@ -38,18 +38,18 @@
 #include "timers.h"
 #include "version.h"
 
-static char	       *input_db_name, *dump_db_name;
-static int		dump_generation = 0;
-static const char      *header_format_string
-    = "** LambdaMOO Database, Format Version %u **\n";
+static char *input_db_name, *dump_db_name;
+static int dump_generation = 0;
+static const char *header_format_string
+= "** LambdaMOO Database, Format Version %u **\n";
 
-DB_Version		dbio_input_version;
-
+DB_Version dbio_input_version;
 
+
 /*********** Verb and property I/O ***********/
 
 static void
-read_verbdef(Verbdef *v)
+read_verbdef(Verbdef * v)
 {
     v->name = str_dup(dbio_read_string());
     v->owner = dbio_read_objid();
@@ -60,7 +60,7 @@ read_verbdef(Verbdef *v)
 }
 
 static void
-write_verbdef(Verbdef *v)
+write_verbdef(Verbdef * v)
 {
     dbio_write_string(v->name);
     dbio_write_objid(v->owner);
@@ -76,13 +76,13 @@ read_propdef()
 }
 
 static void
-write_propdef(Propdef *p)
+write_propdef(Propdef * p)
 {
     dbio_write_string(p->name);
 }
 
 static void
-read_propval(Pval *p)
+read_propval(Pval * p)
 {
     p->var = dbio_read_var();
     p->owner = dbio_read_objid();
@@ -90,27 +90,27 @@ read_propval(Pval *p)
 }
 
 static void
-write_propval(Pval *p)
+write_propval(Pval * p)
 {
     dbio_write_var(p->var);
     dbio_write_objid(p->owner);
     dbio_write_num(p->perms);
 }
-
 
+
 /*********** Object I/O ***********/
 
 static int
 read_object(void)
 {
-    Objid	oid;
-    Object     *o;
-    char	s[20];
-    int		i;
-    Verbdef    *v, **prevv;
-    int		nprops;
+    Objid oid;
+    Object *o;
+    char s[20];
+    int i;
+    Verbdef *v, **prevv;
+    int nprops;
 
-    if (dbio_scanf("#%d", &oid) != 1  ||  oid != db_last_used_objid() + 1)
+    if (dbio_scanf("#%d", &oid) != 1 || oid != db_last_used_objid() + 1)
 	return 0;
     dbio_read_line(s, sizeof(s));
 
@@ -154,7 +154,6 @@ read_object(void)
 	for (i = 0; i < o->propdefs.cur_length; i++)
 	    o->propdefs.l[i] = read_propdef();
     }
-	
     nprops = dbio_read_num();
     if (nprops)
 	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
@@ -171,10 +170,10 @@ read_object(void)
 static void
 write_object(Objid oid)
 {
-    Object     *o;
-    Verbdef    *v;
-    int		i;
-    int		nverbdefs, nprops;
+    Object *o;
+    Verbdef *v;
+    int i;
+    int nverbdefs, nprops;
 
     if (!valid(oid)) {
 	dbio_printf("#%d recycled\n", oid);
@@ -207,24 +206,24 @@ write_object(Objid oid)
     dbio_write_num(o->propdefs.cur_length);
     for (i = 0; i < o->propdefs.cur_length; i++)
 	write_propdef(&o->propdefs.l[i]);
-    
+
     nprops = dbpriv_count_properties(oid);
 
     dbio_write_num(nprops);
     for (i = 0; i < nprops; i++)
 	write_propval(o->propval + i);
 }
-
 
+
 /*********** File-level Input ***********/
 
 static int
 validate_hierarchies()
 {
-    Objid	oid, log_oid;
-    Objid	size = db_last_used_objid() + 1;
-    int		broken = 0;
-    int		fixed_nexts = 0;
+    Objid oid, log_oid;
+    Objid size = db_last_used_objid() + 1;
+    int broken = 0;
+    int fixed_nexts = 0;
 
     oklog("VALIDATING the object hierarchies ...\n");
 
@@ -243,11 +242,10 @@ validate_hierarchies()
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-	    if (o->location == NOTHING  &&  o->next != NOTHING) {
+	    if (o->location == NOTHING && o->next != NOTHING) {
 		o->next = NOTHING;
 		fixed_nexts++;
 	    }
-
 #	    define CHECK(field, name) 					\
 	    {								\
 	        if (o->field != NOTHING					\
@@ -275,7 +273,7 @@ validate_hierarchies()
 
     oklog("VALIDATE: Phase 2: Check for cycles ...\n");
     for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
-	Object	*o = dbpriv_find_object(oid);
+	Object *o = dbpriv_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
@@ -308,7 +306,7 @@ validate_hierarchies()
 
     oklog("VALIDATE: Phase 3: Check for inconsistencies ...\n");
     for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
-	Object	*o = dbpriv_find_object(oid);
+	Object *o = dbpriv_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
@@ -356,11 +354,11 @@ validate_hierarchies()
 
 	    CHECK(parent, child, "child", sibling);
 	    CHECK(location, contents, "contents", next);
-	    
+
 #	    undef CHECK
 	}
     }
-    
+
     oklog("VALIDATING the object hierarchies ... finished.\n");
     return !broken;
 }
@@ -368,8 +366,8 @@ validate_hierarchies()
 static const char *
 fmt_verb_name(void *data)
 {
-    db_verb_handle     *h = data;
-    static Stream      *s = 0;
+    db_verb_handle *h = data;
+    static Stream *s = 0;
 
     if (!s)
 	s = new_stream(40);
@@ -381,22 +379,21 @@ fmt_verb_name(void *data)
 static int
 read_db_file(void)
 {
-    Objid		oid;
-    int			nobjs, nprogs, nusers;
-    Var			user_list;
-    int			i, vnum, dummy;
-    db_verb_handle	h;
-    Program	       *program;
+    Objid oid;
+    int nobjs, nprogs, nusers;
+    Var user_list;
+    int i, vnum, dummy;
+    db_verb_handle h;
+    Program *program;
 
     if (dbio_scanf(header_format_string, &dbio_input_version) != 1)
 	dbio_input_version = DBV_Prehistory;
 
     if (!check_version(dbio_input_version)) {
 	errlog("READ_DB_FILE: Unknown DB version number: %d\n",
-		dbio_input_version);
+	       dbio_input_version);
 	return 0;
     }
-
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
      * straightforward error checking; unfortunately, the standard says that
@@ -408,7 +405,6 @@ read_db_file(void)
 	errlog("READ_DB_FILE: Bad header\n");
 	return 0;
     }
-
     user_list = new_list(nusers);
     for (i = 1; i <= nusers; i++) {
 	user_list.v.list[i].type = TYPE_OBJ;
@@ -422,7 +418,7 @@ read_db_file(void)
 	    errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
 	    return 0;
 	}
-	if (i % 10000 == 0  ||  i == nobjs)
+	if (i % 10000 == 0 || i == nobjs)
 	    oklog("LOADING: Done reading %d objects ...\n", i);
     }
 
@@ -430,7 +426,6 @@ read_db_file(void)
 	errlog("READ_DB_FILE: Errors in object hierarchies.\n");
 	return 0;
     }
-
     oklog("LOADING: Reading %d MOO verb programs...\n", nprogs);
     for (i = 1; i <= nprogs; i++) {
 	if (dbio_scanf("#%d:%d\n", &oid, &vnum) != 2) {
@@ -439,10 +434,10 @@ read_db_file(void)
 	}
 	if (!valid(oid)) {
 	    errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n",
-		    oid, vnum);
+		   oid, vnum);
 	    return 0;
 	}
-	h = db_find_indexed_verb(oid, vnum + 1); /* DB file is 0-based. */
+	h = db_find_indexed_verb(oid, vnum + 1);	/* DB file is 0-based. */
 	if (!h.ptr) {
 	    errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
 	    return 0;
@@ -453,7 +448,7 @@ read_db_file(void)
 	    return 0;
 	}
 	db_set_verb_program(h, program);
-	if (i % 5000 == 0  ||  i == nprogs)
+	if (i % 5000 == 0 || i == nprogs)
 	    oklog("LOADING: Done reading %d verb programs...\n", i);
     }
 
@@ -462,29 +457,27 @@ read_db_file(void)
 	errlog("READ_DB_FILE: Can't read task queue.\n");
 	return 0;
     }
-
     oklog("LOADING: Reading list of formerly active connections...\n");
     if (!read_active_connections()) {
 	errlog("DB_READ: Can't read active connections.\n");
 	return 0;
     }
-
     return 1;
 }
-
 
+
 /*********** File-level Output ***********/
 
 static int
 write_db_file(const char *reason)
 {
-    Objid		oid;
-    Objid		max_oid = db_last_used_objid();
-    Verbdef	       *v;
-    Var			user_list;
-    int			i;
-    volatile int	nprogs = 0;
-    volatile int	success = 1;
+    Objid oid;
+    Objid max_oid = db_last_used_objid();
+    Verbdef *v;
+    Var user_list;
+    int i;
+    volatile int nprogs = 0;
+    volatile int success = 1;
 
     for (oid = 0; oid <= max_oid; oid++) {
 	if (valid(oid))
@@ -492,59 +485,61 @@ write_db_file(const char *reason)
 		if (v->program)
 		    nprogs++;
     }
-    
-    user_list = db_all_users();
-    
-    TRY 
-	dbio_printf(header_format_string, current_version);
-	dbio_printf("%d\n%d\n%d\n%d\n",
-		    max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
-	for (i = 1; i <= user_list.v.list[0].v.num; i++)
-	    dbio_write_objid(user_list.v.list[i].v.obj);
-        oklog("%s: Writing %d objects...\n", reason, max_oid + 1);
-	for (oid = 0; oid <= max_oid; oid++) {
-	    write_object(oid);
-	    if ((oid + 1) % 10000 == 0  ||  oid == max_oid)
-		oklog("%s: Done writing %d objects...\n", reason, oid + 1);
-	}
-	oklog("%s: Writing %d MOO verb programs...\n", reason, nprogs);
-	for (i = 0, oid = 0; oid <= max_oid; oid++)
-	    if (valid(oid)) {
-		int	vcount = 0;
-		
-		for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
-		    if (v->program) {
-			dbio_printf("#%d:%d\n", oid, vcount);
-			dbio_write_program(v->program);
-			if (++i % 5000 == 0  ||  i == nprogs)
-			    oklog("%s: Done writing %d verb programs...\n",
-				 reason, i);
-		    }
-		    vcount++;
-		}
-	    }
 
-        oklog("%s: Writing forked and suspended tasks...\n", reason);
-	write_task_queue();
-        oklog("%s: Writing list of formerly active connections...\n", reason);
-	write_active_connections();
-    EXCEPT (dbpriv_dbio_failed)
+    user_list = db_all_users();
+
+    TRY
+	dbio_printf(header_format_string, current_version);
+    dbio_printf("%d\n%d\n%d\n%d\n",
+		max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+    for (i = 1; i <= user_list.v.list[0].v.num; i++)
+	dbio_write_objid(user_list.v.list[i].v.obj);
+    oklog("%s: Writing %d objects...\n", reason, max_oid + 1);
+    for (oid = 0; oid <= max_oid; oid++) {
+	write_object(oid);
+	if ((oid + 1) % 10000 == 0 || oid == max_oid)
+	    oklog("%s: Done writing %d objects...\n", reason, oid + 1);
+    }
+    oklog("%s: Writing %d MOO verb programs...\n", reason, nprogs);
+    for (i = 0, oid = 0; oid <= max_oid; oid++)
+	if (valid(oid)) {
+	    int vcount = 0;
+
+	    for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
+		if (v->program) {
+		    dbio_printf("#%d:%d\n", oid, vcount);
+		    dbio_write_program(v->program);
+		    if (++i % 5000 == 0 || i == nprogs)
+			oklog("%s: Done writing %d verb programs...\n",
+			      reason, i);
+		}
+		vcount++;
+	    }
+	}
+    oklog("%s: Writing forked and suspended tasks...\n", reason);
+    write_task_queue();
+    oklog("%s: Writing list of formerly active connections...\n", reason);
+    write_active_connections();
+    EXCEPT(dbpriv_dbio_failed)
 	success = 0;
     ENDTRY;
 
     return success;
 }
 
-typedef enum { DUMP_SHUTDOWN, DUMP_CHECKPOINT, DUMP_PANIC } Dump_Reason;
-const char *reason_names[] = { "DUMPING", "CHECKPOINTING", "PANIC-DUMPING" };
+typedef enum {
+    DUMP_SHUTDOWN, DUMP_CHECKPOINT, DUMP_PANIC
+} Dump_Reason;
+const char *reason_names[] =
+{"DUMPING", "CHECKPOINTING", "PANIC-DUMPING"};
 
 static int
 dump_database(Dump_Reason reason)
 {
-    Stream     *s = new_stream(100);
-    char       *temp_name;
-    FILE       *f;
-    int		success;
+    Stream *s = new_stream(100);
+    char *temp_name;
+    FILE *f;
+    int success;
 
   retryDumping:
 
@@ -566,14 +561,14 @@ dump_database(Dump_Reason reason)
 #else
     if (reason == DUMP_CHECKPOINT) {
 	switch (fork_server("checkpointer")) {
-	  case FORK_PARENT:
+	case FORK_PARENT:
 	    reset_command_history();
 	    free_stream(s);
 	    return 1;
-	  case FORK_ERROR:
+	case FORK_ERROR:
 	    free_stream(s);
 	    return 0;
-	  case FORK_CHILD:
+	case FORK_CHILD:
 	    set_server_cmdline("(MOO checkpointer)");
 	    break;
 	}
@@ -591,7 +586,7 @@ dump_database(Dump_Reason reason)
 		errlog("Abandoning checkpoint attempt...\n");
 		success = 0;
 	    } else {
-		int	retry_interval = 60;
+		int retry_interval = 60;
 
 		errlog("Waiting %d seconds and retrying dump...\n",
 		       retry_interval);
@@ -624,8 +619,8 @@ dump_database(Dump_Reason reason)
 
     return success;
 }
-
 
+
 /*********** External interface ***********/
 
 const char *
@@ -634,12 +629,12 @@ db_usage_string(void)
     return "input-db-file output-db-file";
 }
 
-static FILE    *input_db;
+static FILE *input_db;
 
 int
 db_initialize(int *pargc, char ***pargv)
 {
-    FILE       *f;
+    FILE *f;
 
     if (*pargc < 2)
 	return 0;
@@ -654,7 +649,6 @@ db_initialize(int *pargc, char ***pargv)
 		input_db_name);
 	return 0;
     }
-
     input_db = f;
     dbpriv_build_prep_table();
 
@@ -672,7 +666,7 @@ db_load(void)
 	return 0;
     }
     oklog("LOADING: %s done, will dump new database on %s\n",
-	input_db_name, dump_db_name);
+	  input_db_name, dump_db_name);
 
     fclose(input_db);
     return 1;
@@ -683,17 +677,17 @@ db_flush(enum db_flush_type type)
 {
     int success = 0;
 
-    switch(type) {
-      case FLUSH_IF_FULL:
-      case FLUSH_ONE_SECOND:
+    switch (type) {
+    case FLUSH_IF_FULL:
+    case FLUSH_ONE_SECOND:
 	success = 1;
 	break;
 
-      case FLUSH_ALL_NOW:
+    case FLUSH_ALL_NOW:
 	success = dump_database(DUMP_CHECKPOINT);
 	break;
 
-      case FLUSH_PANIC:
+    case FLUSH_PANIC:
 	success = dump_database(DUMP_PANIC);
 	break;
     }
@@ -704,9 +698,9 @@ db_flush(enum db_flush_type type)
 int32
 db_disk_size(void)
 {
-    struct stat	st;
+    struct stat st;
 
-    if ((dump_generation == 0  ||  stat(dump_db_name, &st) < 0)
+    if ((dump_generation == 0 || stat(dump_db_name, &st) < 0)
 	&& stat(input_db_name, &st) < 0)
 	return -1;
     else
@@ -719,12 +713,15 @@ db_shutdown()
     dump_database(DUMP_SHUTDOWN);
 }
 
-char rcsid_db_file[] = "$Id: db_file.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_db_file[] = "$Id: db_file.c,v 1.2 1997/03/03 04:18:27 nop Exp $";
 
 /* $Log: db_file.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:27  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/04/08  01:07:21  pavel
  * Changed a boot-time error message to go directly to stderr, instead of
  * through the logging package.  Release 1.8.0p3.

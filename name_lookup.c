@@ -30,7 +30,7 @@
 #include "my-unistd.h"
 #include "my-inet.h"		/* inet_addr() */
 #include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htons(),
-				 * htonl(), ntohl(), struct in_addr */
+				   * htonl(), ntohl(), struct in_addr */
 #include <netdb.h>		/* struct hostent, gethostbyaddr() */
 #include "my-socket.h"		/* AF_INET */
 #include "my-wait.h"
@@ -48,11 +48,11 @@
  *****************************************************************************/
 
 static pid_t
-spawn_pipe(void (*child_proc)(int to_parent, int from_parent),
+spawn_pipe(void (*child_proc) (int to_parent, int from_parent),
 	   int *to_child, int *from_child)
 {
-    int		pipe_to_child[2], pipe_from_child[2];
-    pid_t	pid;
+    int pipe_to_child[2], pipe_from_child[2];
+    pid_t pid;
 
     if (pipe(pipe_to_child) < 0) {
 	log_perror("SPAWNING: Couldn't create first pipe");
@@ -67,8 +67,8 @@ spawn_pipe(void (*child_proc)(int to_parent, int from_parent),
 	close(pipe_from_child[0]);
 	close(pipe_from_child[1]);
     } else if (pid != 0) {	/* parent */
-	int	status;
-	
+	int status;
+
 	close(pipe_to_child[0]);
 	close(pipe_from_child[1]);
 	*to_child = pipe_to_child[1];
@@ -99,7 +99,7 @@ spawn_pipe(void (*child_proc)(int to_parent, int from_parent),
 	    write(pipe_from_child[1], &pid, sizeof(pid));
 	    exit(0);
 	} else {		/* finally, the child */
-	    (*child_proc)(pipe_from_child[1], pipe_to_child[0]);
+	    (*child_proc) (pipe_from_child[1], pipe_to_child[0]);
 	    exit(0);
 	}
     }
@@ -124,7 +124,7 @@ robust_read(int fd, void *buffer, int len)
     int count;
 
     do {
-      count = read(fd, buffer, len);
+	count = read(fd, buffer, len);
     } while (count == -1 && errno == EINTR);
 
     return count;
@@ -135,11 +135,13 @@ robust_read(int fd, void *buffer, int len)
  *****************************************************************************/
 
 struct request {
-    enum { REQ_NAME_FROM_ADDR, REQ_ADDR_FROM_NAME }	kind;
-    unsigned						timeout;
+    enum {
+	REQ_NAME_FROM_ADDR, REQ_ADDR_FROM_NAME
+    } kind;
+    unsigned timeout;
     union {
-	unsigned					length;
-	struct sockaddr_in				address;
+	unsigned length;
+	struct sockaddr_in address;
     } u;
 };
 
@@ -156,11 +158,11 @@ timeout_proc(Timer_ID id, Timer_Data data)
 static void
 lookup(int to_intermediary, int from_intermediary)
 {
-    struct request	req;
-    static char	       *buffer = 0;
-    static int		buflen = 0;
-    Timer_ID		id;
-    struct hostent     *e;
+    struct request req;
+    static char *buffer = 0;
+    static int buflen = 0;
+    Timer_ID id;
+    struct hostent *e;
 
     set_server_cmdline("(MOO name-lookup slave)");
     /* Read requests and do them.  Before each, we set a timer.  If it
@@ -184,15 +186,15 @@ lookup(int to_intermediary, int from_intermediary)
 	    if (e && e->h_length == sizeof(unsigned32))
 		write(to_intermediary, e->h_addr_list[0], e->h_length);
 	    else {
-		unsigned32	addr;
+		unsigned32 addr;
 
 		/* This cast is for the same reason as the one above... */
 		addr = inet_addr((void *) buffer);
 		write(to_intermediary, &addr, sizeof(addr));
- 	    }
+	    }
 	} else {
 	    const char *host_name;
-	    int		length;
+	    int length;
 	    id = set_timer(req.timeout, timeout_proc, 0);
 	    e = gethostbyaddr((void *) &req.u.address.sin_addr,
 			      sizeof(req.u.address.sin_addr),
@@ -210,8 +212,8 @@ lookup(int to_intermediary, int from_intermediary)
  * Code that runs in the intermediary process.
  *****************************************************************************/
 
-static int		to_lookup, from_lookup;
-static pid_t		lookup_pid;
+static int to_lookup, from_lookup;
+static pid_t lookup_pid;
 
 static void
 restart_lookup(void)
@@ -227,17 +229,17 @@ restart_lookup(void)
 	oklog("NAME_LOOKUP: Started new lookup process\n");
     else
 	errlog("NAME_LOOKUP: Can't spawn lookup process; "
-		"will try again later...\n");
+	       "will try again later...\n");
 }
 
 static void
 intermediary(int to_server, int from_server)
 {
-    struct request	req;
-    static char	       *buffer = 0;
-    static int		buflen = 0;
-    int			len;
-    unsigned32		addr;
+    struct request req;
+    static char *buffer = 0;
+    static int buflen = 0;
+    int len;
+    unsigned32 addr;
 
     set_server_cmdline("(MOO name-lookup master)");
     signal(SIGPIPE, SIG_IGN);
@@ -262,8 +264,7 @@ intermediary(int to_server, int from_server)
 		    addr = 0;
 		}
 		write(to_server, &addr, sizeof(addr));
-	    }
-	    else {
+	    } else {
 		if (robust_read(from_lookup, &len, sizeof(len))
 		    != sizeof(len)) {
 		    restart_lookup();
@@ -281,7 +282,7 @@ intermediary(int to_server, int from_server)
 		    write(to_server, buffer, len);
 	    }
 	} else {		/* Lookup dead and wouldn't restart ... */
-	    int		failure = 0;
+	    int failure = 0;
 
 	    write(to_server, &failure, sizeof(failure));
 	}
@@ -293,8 +294,8 @@ intermediary(int to_server, int from_server)
  * Code that runs in the server process.
  *****************************************************************************/
 
-static int	to_intermediary, from_intermediary;
-static int	dead_intermediary = 0;
+static int to_intermediary, from_intermediary;
+static int dead_intermediary = 0;
 
 
 int
@@ -315,10 +316,10 @@ abandon_intermediary(const char *prefix)
 const char *
 lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 {
-    struct request	req;
-    static char	       *buffer = 0;
-    static int		buflen = 0;
-    int			len;
+    struct request req;
+    static char *buffer = 0;
+    static int buflen = 0;
+    int len;
 
     if (!dead_intermediary) {
 	req.kind = REQ_NAME_FROM_ADDR;
@@ -333,22 +334,21 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 	    ensure_buffer(&buffer, &buflen, len + 1);
 	    if (robust_read(from_intermediary, buffer, len) != len)
 		abandon_intermediary("LOOKUP_NAME: "
-				     "Data-read from intermediary failed");
+				   "Data-read from intermediary failed");
 	    else {
 		buffer[len] = '\0';
 		return buffer;
 	    }
 	}
     }
-
     /* Either the intermediary is presumed dead, or else it failed to produce
      * a name; in either case, we must fall back on a the default, dotted-
      * decimal notation.
      */
 
     {
-	static char	decimal[20];
-	unsigned32	a = ntohl(addr->sin_addr.s_addr);
+	static char decimal[20];
+	unsigned32 a = ntohl(addr->sin_addr.s_addr);
 
 	sprintf(decimal, "%u.%u.%u.%u",
 		(unsigned) (a >> 24) & 0xff, (unsigned) (a >> 16) & 0xff,
@@ -356,12 +356,12 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
 	return decimal;
     }
 }
-    
+
 unsigned32
 lookup_addr_from_name(const char *name, unsigned timeout)
 {
-    struct request	req;
-    unsigned32		addr = 0;
+    struct request req;
+    unsigned32 addr = 0;
 
     if (dead_intermediary) {
 	/* Numeric addresses should always work... */
@@ -380,15 +380,18 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 
     return addr == 0xffffffff ? 0 : addr;
 }
-    
-#endif /* NETWORK_PROTOCOL == NP_TCP */
 
-char rcsid_name_lookup[] = "$Id: name_lookup.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+#endif				/* NETWORK_PROTOCOL == NP_TCP */
+
+char rcsid_name_lookup[] = "$Id: name_lookup.c,v 1.2 1997/03/03 04:19:00 nop Exp $";
 
 /* $Log: name_lookup.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:00  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/02/08  06:59:04  pavel
  * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

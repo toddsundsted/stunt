@@ -36,7 +36,7 @@
 
 #ifndef _VA_LIST_
 #define _VA_LIST_ 1
-typedef void   *va_list;
+typedef void *va_list;
 #endif
 
 #define va_start(ptr, arg) \
@@ -47,18 +47,21 @@ typedef void   *va_list;
 
 #define va_end(ptr)
 
-#endif /* STDARG_H */
+#endif				/* STDARG_H */
 
 #else
 
 #include <stdarg.h>
 
-#endif /* BUGGY_STDARG */
+#endif				/* BUGGY_STDARG */
 
 /* $Log: my-stdarg.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:55  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:02:14  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -29,25 +29,25 @@
 #  undef ITIMER_VIRTUAL
 #endif
 
-typedef struct Timer_Entry	Timer_Entry;
+typedef struct Timer_Entry Timer_Entry;
 struct Timer_Entry {
     Timer_Entry *next;
-    time_t	when;
-    Timer_Proc	proc;
-    Timer_Data	data;
-    Timer_ID	id;
+    time_t when;
+    Timer_Proc proc;
+    Timer_Data data;
+    Timer_ID id;
 };
 
-static Timer_Entry     *active_timers = 0;
-static Timer_Entry     *free_timers = 0;
-static Timer_Entry     *virtual_timer = 0;
-static Timer_ID		next_id = 0;
+static Timer_Entry *active_timers = 0;
+static Timer_Entry *free_timers = 0;
+static Timer_Entry *virtual_timer = 0;
+static Timer_ID next_id = 0;
 
 static Timer_Entry *
 allocate_timer(void)
 {
     if (free_timers) {
-	Timer_Entry    *this = free_timers;
+	Timer_Entry *this = free_timers;
 
 	free_timers = this->next;
 	return this;
@@ -56,27 +56,27 @@ allocate_timer(void)
 }
 
 static void
-free_timer(Timer_Entry *this)
+free_timer(Timer_Entry * this)
 {
     this->next = free_timers;
     free_timers = this;
 }
 
-static void		restart_timers(void);
+static void restart_timers(void);
 
 static void
 wakeup_call(int signo)
 {
-    Timer_Entry	*this = active_timers;
-    Timer_Proc	proc = this->proc;
-    Timer_ID	id = this->id;
-    Timer_Data	data = this->data;
+    Timer_Entry *this = active_timers;
+    Timer_Proc proc = this->proc;
+    Timer_ID id = this->id;
+    Timer_Data data = this->data;
 
     active_timers = active_timers->next;
     free_timer(this);
     restart_timers();
     if (proc)
-	(*proc)(id, data);
+	(*proc) (id, data);
 }
 
 
@@ -84,16 +84,16 @@ wakeup_call(int signo)
 static void
 virtual_wakeup_call(int signo)
 {
-    Timer_Entry	*this = virtual_timer;
-    Timer_Proc	proc = this->proc;
-    Timer_ID	id = this->id;
-    Timer_Data	data = this->data;
+    Timer_Entry *this = virtual_timer;
+    Timer_Proc proc = this->proc;
+    Timer_ID id = this->id;
+    Timer_Data data = this->data;
 
     virtual_timer = 0;
     free_timer(this);
     if (proc)
-	(*proc)(id, data);
-}    
+	(*proc) (id, data);
+}
 #endif
 
 static void
@@ -105,7 +105,7 @@ stop_timers()
 
 #ifdef ITIMER_VIRTUAL
     {
-	struct itimerval	itimer, oitimer;
+	struct itimerval itimer, oitimer;
 
 	itimer.it_value.tv_sec = 0;
 	itimer.it_value.tv_usec = 0;
@@ -125,23 +125,22 @@ static void
 restart_timers()
 {
     if (active_timers) {
-	time_t	now = time(0);
+	time_t now = time(0);
 
 	signal(SIGALRM, wakeup_call);
 
 	if (now < active_timers->when)	/* first timer is in the future */
 	    alarm(active_timers->when - now);
 	else
-	    kill(getpid(), SIGALRM);	       	/* we're already late... */
+	    kill(getpid(), SIGALRM);	/* we're already late... */
     }
-
 #ifdef ITIMER_VIRTUAL
 
     if (virtual_timer) {
 	signal(SIGVTALRM, virtual_wakeup_call);
 
 	if (virtual_timer->when > 0) {
-	    struct itimerval	itimer;
+	    struct itimerval itimer;
 
 	    itimer.it_value.tv_sec = virtual_timer->when;
 	    itimer.it_value.tv_usec = 0;
@@ -152,25 +151,24 @@ restart_timers()
 	} else
 	    kill(getpid(), SIGVTALRM);
     }
-
 #endif
 }
 
 Timer_ID
 set_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
 {
-    Timer_Entry	*this = allocate_timer();
+    Timer_Entry *this = allocate_timer();
     Timer_Entry **t;
 
     this->id = next_id++;
     this->when = time(0) + seconds;
     this->proc = proc;
     this->data = data;
-    
+
     stop_timers();
 
     t = &active_timers;
-    while (*t  &&  this->when >= (*t)->when)
+    while (*t && this->when >= (*t)->when)
 	t = &((*t)->next);
     this->next = *t;
     *t = this;
@@ -200,7 +198,7 @@ set_virtual_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
 
     return virtual_timer->id;
 
-#else /* !ITIMER_VIRTUAL */
+#else				/* !ITIMER_VIRTUAL */
 
     return set_timer(seconds, proc, data);
 
@@ -220,17 +218,16 @@ virtual_timer_available()
 unsigned
 timer_wakeup_interval(Timer_ID id)
 {
-    Timer_Entry	*t;
+    Timer_Entry *t;
 
 #ifdef ITIMER_VIRTUAL
 
-    if (virtual_timer  &&  virtual_timer->id == id) {
-	struct itimerval	itimer;
+    if (virtual_timer && virtual_timer->id == id) {
+	struct itimerval itimer;
 
 	getitimer(ITIMER_VIRTUAL, &itimer);
 	return itimer.it_value.tv_sec;
     }
-
 #endif
 
     for (t = active_timers; t; t = t->next)
@@ -250,20 +247,20 @@ timer_sleep(unsigned seconds)
 int
 cancel_timer(Timer_ID id)
 {
-    Timer_Entry	**t = &active_timers;
-    int		found = 0;
+    Timer_Entry **t = &active_timers;
+    int found = 0;
 
     stop_timers();
 
-    if (virtual_timer  &&  virtual_timer->id == id) {
+    if (virtual_timer && virtual_timer->id == id) {
 	free(virtual_timer);
 	virtual_timer = 0;
 	found = 1;
     } else {
 	while (*t) {
 	    if ((*t)->id == id) {
-		Timer_Entry	*tt = *t;
-		
+		Timer_Entry *tt = *t;
+
 		*t = tt->next;
 		found = 1;
 		free(tt);
@@ -282,33 +279,36 @@ void
 reenable_timers(void)
 {
 #if HAVE_SIGEMPTYSET
-    sigset_t	sigs;
+    sigset_t sigs;
 
     sigemptyset(&sigs);
     sigaddset(&sigs, SIGALRM);
     sigprocmask(SIG_UNBLOCK, &sigs, 0);
 #else
 #if HAVE_SIGSETMASK
-    int		old_mask = sigsetmask(-1); /* block everything, get old mask */
+    int old_mask = sigsetmask(-1);	/* block everything, get old mask */
 
     old_mask &= ~sigmask(SIGALRM);	/* clear blocked bit for SIGALRM */
-    sigsetmask(old_mask);		/* reset the signal mask */
+    sigsetmask(old_mask);	/* reset the signal mask */
 #else
 #if HAVE_SIGRELSE
-    sigrelse(SIGALRM);			/* restore previous signal action */
+    sigrelse(SIGALRM);		/* restore previous signal action */
 #else
-    #error I need some way to stop blocking SIGALRM!
+          #error I need some way to stop blocking SIGALRM!
 #endif
 #endif
 #endif
 }
 
-char rcsid_timers[] = "$Id: timers.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_timers[] = "$Id: timers.c,v 1.2 1997/03/03 04:19:33 nop Exp $";
 
 /* $Log: timers.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:33  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:43:56  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

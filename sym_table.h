@@ -22,16 +22,16 @@
 #include "version.h"
 
 typedef struct {
-    unsigned	max_size;
-    unsigned	size;
+    unsigned max_size;
+    unsigned size;
     const char **names;
 } Names;
 
-extern Names   *new_builtin_names(DB_Version);
-extern int	first_user_slot(DB_Version);
-extern unsigned	find_or_add_name(Names **, const char *);
-extern int	find_name(Names *, const char *);
-extern void	free_names(Names *);
+extern Names *new_builtin_names(DB_Version);
+extern int first_user_slot(DB_Version);
+extern unsigned find_or_add_name(Names **, const char *);
+extern int find_name(Names *, const char *);
+extern void free_names(Names *);
 
 /* Environment slots for built-in variables */
 #define SLOT_NUM	0
@@ -55,12 +55,15 @@ extern void	free_names(Names *);
 #define SLOT_INT	16
 #define SLOT_FLOAT	17
 
-#endif /* !Sym_Table_h */
+#endif				/* !Sym_Table_h */
 
 /* $Log: sym_table.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:30  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/03/10  01:15:53  pavel
  * Removed a number of obsolete declarations.  Release 1.8.0.
  *

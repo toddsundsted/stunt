@@ -15,32 +15,35 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#ifndef Stream_h 
+#ifndef Stream_h
 #define Stream_h 1
 
 #include "config.h"
 
 typedef struct {
-    char       *buffer;
-    int		buflen;
-    int		current;
+    char *buffer;
+    int buflen;
+    int current;
 } Stream;
 
-extern Stream  *new_stream(int size);
-extern void	stream_add_char(Stream *, char);
-extern void	stream_add_string(Stream *, const char *);
-extern void	stream_printf(Stream *, const char *, ...);
-extern void	free_stream(Stream *);
-extern char    *stream_contents(Stream *);
-extern char    *reset_stream(Stream *);
-extern int	stream_length(Stream *);
+extern Stream *new_stream(int size);
+extern void stream_add_char(Stream *, char);
+extern void stream_add_string(Stream *, const char *);
+extern void stream_printf(Stream *, const char *,...);
+extern void free_stream(Stream *);
+extern char *stream_contents(Stream *);
+extern char *reset_stream(Stream *);
+extern int stream_length(Stream *);
 
 #endif
 
 /* $Log: streams.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:28  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:12:33  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

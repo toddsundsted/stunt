@@ -75,22 +75,22 @@ write_all(int fd, const char *buffer, int length)
 void
 main(int argc, char **argv)
 {
-    const char	       *connect_file = DEFAULT_CONNECT_FILE;
-    int			server_fifo;
-    const char	       *dir;
-    char		c2s[1000], s2c[1000], connect[2010];
-    int			pid = getpid();
-    int			rfd, wfd;
-    int			use_home_dir = 0;
-    char	       *prog_name = argv[0];
+    const char *connect_file = DEFAULT_CONNECT_FILE;
+    int server_fifo;
+    const char *dir;
+    char c2s[1000], s2c[1000], connect[2010];
+    int pid = getpid();
+    int rfd, wfd;
+    int use_home_dir = 0;
+    char *prog_name = argv[0];
 
-    while (--argc  &&  **(++argv) == '-') {
+    while (--argc && **(++argv) == '-') {
 	switch ((*argv)[1]) {
-	  case 'h':
+	case 'h':
 	    use_home_dir = 1;
 	    break;
 
-	  default:
+	default:
 	    goto usage;
 	}
     }
@@ -104,28 +104,25 @@ main(int argc, char **argv)
     signal(SIGINT, kill_signal);
     signal(SIGQUIT, kill_signal);
 
-    if (!use_home_dir  ||  !(dir = getenv("HOME")))
+    if (!use_home_dir || !(dir = getenv("HOME")))
 	dir = "/usr/tmp";
 
     sprintf(c2s, "%s/.c2s-%05d", dir, (int) pid);
     sprintf(s2c, "%s/.s2c-%05d", dir, (int) pid);
 
-    if (mkfifo(c2s, 0000) < 0  ||  chmod(c2s, 0644) < 0
-	|| mkfifo(s2c, 0000) < 0  ||  chmod(s2c, 0622) < 0) {
+    if (mkfifo(c2s, 0000) < 0 || chmod(c2s, 0644) < 0
+	|| mkfifo(s2c, 0000) < 0 || chmod(s2c, 0622) < 0) {
 	perror("Creating personal FIFOs");
 	goto die;
     }
-
     if ((rfd = open(s2c, O_RDONLY | NONBLOCK_FLAG)) < 0) {
 	perror("Opening server-to-client FIFO");
 	goto die;
     }
-
     if ((server_fifo = open(connect_file, O_WRONLY | NONBLOCK_FLAG)) < 0) {
 	perror("Opening server FIFO");
 	goto die;
     }
-
     sprintf(connect, "\n%s %s\n", c2s, s2c);
     write(server_fifo, connect, strlen(connect));
     close(server_fifo);
@@ -134,27 +131,24 @@ main(int argc, char **argv)
 	perror("Opening client-to-server FIFO");
 	goto die;
     }
-
     remove(c2s);
     remove(s2c);
 
     fprintf(stderr, "[Connected to server]\n");
 
-    if (!set_non_blocking(0)  ||  !set_non_blocking(rfd)) {
+    if (!set_non_blocking(0) || !set_non_blocking(rfd)) {
 	perror("Setting connection non-blocking");
 	exit(1);
     }
-
     while (1) {
-	char	buffer[1024];
-	int	count, did_some = 0;
+	char buffer[1024];
+	int count, did_some = 0;
 
 	count = read(0, buffer, sizeof(buffer));
 	if (count > 0) {
 	    did_some = 1;
 	    write_all(wfd, buffer, count);
 	}
-
 	count = read(rfd, buffer, sizeof(buffer));
 	if (count > 0) {
 	    did_some = 1;
@@ -164,7 +158,6 @@ main(int argc, char **argv)
 	    } else
 		write_all(1, buffer, count);
 	}
-
 	if (!did_some)
 	    sleep(1);
     }
@@ -182,12 +175,15 @@ main(int argc, char **argv)
     exit(1);
 }
 
-char rcsid_client_sysv[] = "$Id: client_sysv.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_client_sysv[] = "$Id: client_sysv.c,v 1.2 1997/03/03 04:18:23 nop Exp $";
 
 /* $Log: client_sysv.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:23  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/03/10  01:11:56  pavel
  * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
  *

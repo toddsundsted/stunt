@@ -39,58 +39,60 @@
  * We implement them here because neither one is in the ANSI standard.
  */
 
-static const char cmap[] = 
-  "\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017"
-  "\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037"
-  "\040\041\042\043\044\045\046\047\050\051\052\053\054\055\056\057"
-  "\060\061\062\063\064\065\066\067\070\071\072\073\074\075\076\077"
-  "\100\141\142\143\144\145\146\147\150\151\152\153\154\155\156\157"
-  "\160\161\162\163\164\165\166\167\170\171\172\133\134\135\136\137"
-  "\140\141\142\143\144\145\146\147\150\151\152\153\154\155\156\157"
-  "\160\161\162\163\164\165\166\167\170\171\172\173\174\175\176\177"
-  "\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217"
-  "\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237"
-  "\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257"
-  "\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277"
-  "\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317"
-  "\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337"
-  "\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357"
-  "\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377";
+static const char cmap[] =
+"\000\001\002\003\004\005\006\007\010\011\012\013\014\015\016\017"
+"\020\021\022\023\024\025\026\027\030\031\032\033\034\035\036\037"
+"\040\041\042\043\044\045\046\047\050\051\052\053\054\055\056\057"
+"\060\061\062\063\064\065\066\067\070\071\072\073\074\075\076\077"
+"\100\141\142\143\144\145\146\147\150\151\152\153\154\155\156\157"
+"\160\161\162\163\164\165\166\167\170\171\172\133\134\135\136\137"
+"\140\141\142\143\144\145\146\147\150\151\152\153\154\155\156\157"
+"\160\161\162\163\164\165\166\167\170\171\172\173\174\175\176\177"
+"\200\201\202\203\204\205\206\207\210\211\212\213\214\215\216\217"
+"\220\221\222\223\224\225\226\227\230\231\232\233\234\235\236\237"
+"\240\241\242\243\244\245\246\247\250\251\252\253\254\255\256\257"
+"\260\261\262\263\264\265\266\267\270\271\272\273\274\275\276\277"
+"\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317"
+"\320\321\322\323\324\325\326\327\330\331\332\333\334\335\336\337"
+"\340\341\342\343\344\345\346\347\350\351\352\353\354\355\356\357"
+"\360\361\362\363\364\365\366\367\370\371\372\373\374\375\376\377";
 
 int
 mystrcasecmp(const char *ss, const char *tt)
 {
-    const unsigned char	*s = (const unsigned char *) ss;
-    const unsigned char	*t = (const unsigned char *) tt;
+    const unsigned char *s = (const unsigned char *) ss;
+    const unsigned char *t = (const unsigned char *) tt;
 
     while (cmap[*s] == cmap[*t++]) {
 	if (!*s++)
 	    return 0;
     }
-    return(cmap[*s] - cmap[*--t]);
+    return (cmap[*s] - cmap[*--t]);
 }
 
 int
 mystrncasecmp(const char *ss, const char *tt, int n)
 {
-    const unsigned char	*s = (const unsigned char *) ss;
-    const unsigned char	*t = (const unsigned char *) tt;
-    
+    const unsigned char *s = (const unsigned char *) ss;
+    const unsigned char *t = (const unsigned char *) tt;
+
     if (!n)
 	return 0;
     while (cmap[*s] == cmap[*t++]) {
 	if (!*s++ || !--n)
 	    return 0;
     }
-    return(cmap[*s] - cmap[*--t]);
+    return (cmap[*s] - cmap[*--t]);
 }
 
 int
 verbcasecmp(const char *verb, const char *word)
 {
-    const unsigned char        *w;
-    const unsigned char        *v = (const unsigned char *) verb;
-    enum { none, inner, end }	star;
+    const unsigned char *w;
+    const unsigned char *v = (const unsigned char *) verb;
+    enum {
+	none, inner, end
+    } star;
 
     while (*v) {
 	w = (const unsigned char *) word;
@@ -106,7 +108,7 @@ verbcasecmp(const char *verb, const char *word)
 	    v++;
 	}
 	if (!*w ? (star != none || !*v || *v == ' ')
-	        : (star == end))
+	    : (star == end))
 	    return 1;
 	while (*v && *v != ' ')
 	    v++;
@@ -119,8 +121,8 @@ verbcasecmp(const char *verb, const char *word)
 unsigned
 str_hash(const char *s)
 {
-    unsigned	ans = 0;
-    int 	i, len = strlen(s), offset = 0;
+    unsigned ans = 0;
+    int i, len = strlen(s), offset = 0;
 
     for (i = 0; i < len; i++) {
 	ans = ans ^ (cmap[(unsigned char) s[i]] << offset++);
@@ -133,33 +135,33 @@ str_hash(const char *s)
 void
 free_var(Var v)
 {
-    int		i;
+    int i;
 
     switch ((int) v.type) {
-      case TYPE_STR:
-        if (v.v.str)
-            free_str(v.v.str);
+    case TYPE_STR:
+	if (v.v.str)
+	    free_str(v.v.str);
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
-	    for(i = 1; i <= v.v.list[0].v.num; i++)
+	    for (i = 1; i <= v.v.list[0].v.num; i++)
 		free_var(v.v.list[i]);
 	    myfree(v.v.list, M_LIST);
 	}
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
 	break;
-      case TYPE_INT:
-      case TYPE_OBJ:
-      case TYPE_ERR:
-      case TYPE_CLEAR:
-      case TYPE_NONE:
-      case TYPE_CATCH:
-      case TYPE_FINALLY:
+    case TYPE_INT:
+    case TYPE_OBJ:
+    case TYPE_ERR:
+    case TYPE_CLEAR:
+    case TYPE_NONE:
+    case TYPE_CATCH:
+    case TYPE_FINALLY:
 	break;
-      default:
+    default:
 	panic("FREE_VAR: Unknown value type");
 	break;
     }
@@ -168,25 +170,25 @@ free_var(Var v)
 Var
 var_ref(Var v)
 {
-    switch((int) v.type) {
-      case TYPE_STR:
+    switch ((int) v.type) {
+    case TYPE_STR:
 	addref(v.v.str);
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	addref(v.v.list);
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	addref(v.v.fnum);
 	break;
-      case TYPE_INT:
-      case TYPE_OBJ:
-      case TYPE_ERR:
-      case TYPE_CLEAR:
-      case TYPE_NONE:
-      case TYPE_CATCH:
-      case TYPE_FINALLY:
+    case TYPE_INT:
+    case TYPE_OBJ:
+    case TYPE_ERR:
+    case TYPE_CLEAR:
+    case TYPE_NONE:
+    case TYPE_CATCH:
+    case TYPE_FINALLY:
 	break;
-      default:
+    default:
 	panic("VAR_REF: Unknown value type");
     }
     return v;
@@ -195,31 +197,31 @@ var_ref(Var v)
 Var
 var_dup(Var v)
 {
-    int		i;
-    Var		newlist;
-    
+    int i;
+    Var newlist;
+
     switch ((int) v.type) {
-      case TYPE_STR:
+    case TYPE_STR:
 	v.v.str = str_dup(v.v.str);
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	newlist = new_list(v.v.list[0].v.num);
-	for(i = 1; i <= v.v.list[0].v.num; i++) {
+	for (i = 1; i <= v.v.list[0].v.num; i++) {
 	    newlist.v.list[i] = var_ref(v.v.list[i]);
 	}
 	v.v.list = newlist.v.list;
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	v = new_float(*v.v.fnum);
 	break;
-      case TYPE_INT:
-      case TYPE_OBJ:
-      case TYPE_ERR:
-      case TYPE_NONE:
-      case TYPE_CATCH:
-      case TYPE_FINALLY:
+    case TYPE_INT:
+    case TYPE_OBJ:
+    case TYPE_ERR:
+    case TYPE_NONE:
+    case TYPE_CATCH:
+    case TYPE_FINALLY:
 	break;
-      default:
+    default:
 	panic("VAR_DUP: Unknown value type");
     }
     return v;
@@ -228,10 +230,10 @@ var_dup(Var v)
 int
 is_true(Var v)
 {
-    return (   (v.type == TYPE_INT    &&  v.v.num != 0)
-	    || (v.type == TYPE_FLOAT  &&  *v.v.fnum != 0.0)
-	    || (v.type == TYPE_STR    &&  v.v.str  &&  *v.v.str != '\0')
-	    || (v.type == TYPE_LIST   &&  v.v.list[0].v.num != 0));
+    return ((v.type == TYPE_INT && v.v.num != 0)
+	    || (v.type == TYPE_FLOAT && *v.v.fnum != 0.0)
+	    || (v.type == TYPE_STR && v.v.str && *v.v.str != '\0')
+	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0));
 }
 
 int
@@ -243,22 +245,22 @@ equality(Var lhs, Var rhs, int case_matters)
 	return 0;
     else {
 	switch (lhs.type) {
-	  case TYPE_INT:
+	case TYPE_INT:
 	    return lhs.v.num == rhs.v.num;
-	  case TYPE_OBJ:
+	case TYPE_OBJ:
 	    return lhs.v.obj == rhs.v.obj;
-	  case TYPE_ERR:
+	case TYPE_ERR:
 	    return lhs.v.err == rhs.v.err;
-	  case TYPE_STR:
+	case TYPE_STR:
 	    if (case_matters)
 		return !strcmp(lhs.v.str, rhs.v.str);
 	    else
 		return !mystrcasecmp(lhs.v.str, rhs.v.str);
-	  case TYPE_LIST:
+	case TYPE_LIST:
 	    if (lhs.v.list[0].v.num != rhs.v.list[0].v.num)
 		return 0;
 	    else {
-		int	i;
+		int i;
 
 		for (i = 1; i <= lhs.v.list[0].v.num; i++) {
 		    if (!equality(lhs.v.list[i], rhs.v.list[i], case_matters))
@@ -266,7 +268,7 @@ equality(Var lhs, Var rhs, int case_matters)
 		}
 		return 1;
 	    }
-	  default:
+	default:
 	    panic("EQUALITY: Unknown value type");
 	}
     }
@@ -277,14 +279,14 @@ char *
 strsub(const char *source, const char *what, const char *with, int case_counts)
 {
     static Stream *str = 0;
-    int		lwhat = strlen(what);
+    int lwhat = strlen(what);
 
     if (str == 0)
 	str = new_stream(100);
 
     while (*source) {
-	if (! (case_counts ? strncmp(source, what, lwhat)
-	                   : mystrncasecmp(source, what, lwhat))) {
+	if (!(case_counts ? strncmp(source, what, lwhat)
+	      : mystrncasecmp(source, what, lwhat))) {
 	    stream_add_string(str, with);
 	    source += lwhat;
 	} else
@@ -297,12 +299,12 @@ strsub(const char *source, const char *what, const char *with, int case_counts)
 int
 strindex(const char *source, const char *what, int case_counts)
 {
-    const char	*s, *e;
-    int		lwhat = strlen(what);
+    const char *s, *e;
+    int lwhat = strlen(what);
 
     for (s = source, e = source + strlen(source) - lwhat; s <= e; s++) {
-	if (! (case_counts ? strncmp(s, what, lwhat)
-	                   : mystrncasecmp(s, what, lwhat))) {
+	if (!(case_counts ? strncmp(s, what, lwhat)
+	      : mystrncasecmp(s, what, lwhat))) {
 	    return s - source + 1;
 	}
     }
@@ -312,12 +314,12 @@ strindex(const char *source, const char *what, int case_counts)
 int
 strrindex(const char *source, const char *what, int case_counts)
 {
-    const char	*s;
-    int		lwhat = strlen(what);
+    const char *s;
+    int lwhat = strlen(what);
 
     for (s = source + strlen(source) - lwhat; s >= source; s--) {
-	if (! (case_counts ? strncmp(s, what, lwhat)
-	                   : mystrncasecmp(s, what, lwhat))) {
+	if (!(case_counts ? strncmp(s, what, lwhat)
+	      : mystrncasecmp(s, what, lwhat))) {
 	    return s - source + 1;
 	}
     }
@@ -327,10 +329,10 @@ strrindex(const char *source, const char *what, int case_counts)
 Var
 get_system_property(const char *name)
 {
-    Var			value;
-    db_prop_handle	h;
+    Var value;
+    db_prop_handle h;
 
-   if (!valid(SYSTEM_OBJECT)) {
+    if (!valid(SYSTEM_OBJECT)) {
 	value.type = TYPE_ERR;
 	value.v.err = E_INVIND;
 	return value;
@@ -347,7 +349,7 @@ get_system_property(const char *name)
 Objid
 get_system_object(const char *name)
 {
-    Var		value;
+    Var value;
 
     value = get_system_property(name);
     if (value.type != TYPE_OBJ) {
@@ -360,41 +362,41 @@ get_system_object(const char *name)
 int
 value_bytes(Var v)
 {
-    int	i, len, size = sizeof(Var);
-    
+    int i, len, size = sizeof(Var);
+
     switch (v.type) {
-      case TYPE_STR:
+    case TYPE_STR:
 	size += strlen(v.v.str) + 1;
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	size += sizeof(double);
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	len = v.v.list[0].v.num;
 	size += sizeof(Var);	/* for the `length' element */
 	for (i = 1; i <= len; i++)
 	    size += value_bytes(v.v.list[i]);
 	break;
-      default:
+    default:
 	break;
     }
-    
+
     return size;
 }
 
 const char *
 raw_bytes_to_binary(const char *buffer, int buflen)
 {
-    static Stream      *s = 0;
-    int			i;
+    static Stream *s = 0;
+    int i;
 
     if (!s)
 	s = new_stream(100);
 
     for (i = 0; i < buflen; i++) {
-	unsigned char	c = buffer[i];
+	unsigned char c = buffer[i];
 
-	if (c != '~' && (isgraph(c)  ||  c == ' '))
+	if (c != '~' && (isgraph(c) || c == ' '))
 	    stream_add_char(s, c);
 	else
 	    stream_printf(s, "~%02x", (int) c);
@@ -406,8 +408,8 @@ raw_bytes_to_binary(const char *buffer, int buflen)
 const char *
 binary_to_raw_bytes(const char *binary, int *buflen)
 {
-    static Stream      *s = 0;
-    const char	       *ptr = binary;
+    static Stream *s = 0;
+    const char *ptr = binary;
 
     if (!s)
 	s = new_stream(100);
@@ -415,7 +417,7 @@ binary_to_raw_bytes(const char *binary, int *buflen)
 	reset_stream(s);
 
     while (*ptr) {
-	unsigned char  	c = *ptr++;
+	unsigned char c = *ptr++;
 
 	if (c != '~')
 	    stream_add_char(s, c);
@@ -439,12 +441,15 @@ binary_to_raw_bytes(const char *binary, int *buflen)
     return reset_stream(s);
 }
 
-char rcsid_utils[] = "$Id: utils.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_utils[] = "$Id: utils.c,v 1.2 1997/03/03 04:19:36 nop Exp $";
 
 /* $Log: utils.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:36  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.8  1996/04/08  00:43:09  pavel
  * Changed definition of `value_bytes()' to add in `sizeof(Var)'.
  * Release 1.8.0p3.

@@ -19,7 +19,7 @@
  *  The server_version is a character string containing three decimal numbers
  *  separated by periods:
  *
- *	<major>.<minor>.<release>
+ *      <major>.<minor>.<release>
  *
  *  The major version number changes very slowly, only when existing MOO code
  *  might stop working, due to an incompatible change in the syntax or
@@ -40,7 +40,7 @@
 #include "config.h"
 #include "version.h"
 
-const char     *server_version = "1.8.0p5";
+const char *server_version = "1.8.0p5";
 
 int
 check_version(DB_Version version)
@@ -48,4 +48,4 @@ check_version(DB_Version version)
     return version < Num_DB_Versions;
 }
 
-char rcsid_version[] = "$Id: version.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_version[] = "$Id: version.c,v 1.2 1997/03/03 04:19:39 nop Exp $";

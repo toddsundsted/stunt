@@ -29,7 +29,7 @@
 Propdef
 dbpriv_new_propdef(const char *name)
 {
-    Propdef	newprop;
+    Propdef newprop;
 
     newprop.name = str_ref(name);
     newprop.hash = str_hash(name);
@@ -39,12 +39,12 @@ dbpriv_new_propdef(const char *name)
 int
 dbpriv_count_properties(Objid oid)
 {
-    Object	*o;
-    int		nprops = 0;
+    Object *o;
+    int nprops = 0;
 
     for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent))
 	nprops += o->propdefs.cur_length;
-    
+
     return nprops;
 }
 
@@ -53,31 +53,31 @@ property_defined_at_or_below(const char *pname, int phash, Objid oid)
 {
     /* Return true iff some descendant of OID defines a property named PNAME.
      */
-    Objid	c;
-    Proplist   *props = &dbpriv_find_object(oid)->propdefs;
-    int		length = props->cur_length;
-    int		i;
-    
+    Objid c;
+    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    int length = props->cur_length;
+    int i;
+
     for (i = 0; i < length; i++)
 	if (props->l[i].hash == phash
 	    && !mystrcasecmp(props->l[i].name, pname))
 	    return 1;
-    
+
     for (c = dbpriv_find_object(oid)->child;
 	 c != NOTHING;
 	 c = dbpriv_find_object(c)->sibling)
 	if (property_defined_at_or_below(pname, phash, c))
 	    return 1;
-    
+
     return 0;
 }
 
 static void
 insert_prop(Objid oid, int pos, Pval pval)
 {
-    Pval       *new_propval;
-    Object     *o;
-    int		i, nprops;
+    Pval *new_propval;
+    Object *o;
+    int i, nprops;
 
     nprops = dbpriv_count_properties(oid);
     new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
@@ -103,16 +103,16 @@ insert_prop(Objid oid, int pos, Pval pval)
 static void
 insert_prop_recursively(Objid root, int root_pos, Pval pv)
 {
-    Objid	c;
+    Objid c;
 
     insert_prop(root, root_pos, pv);
-    pv.var.type = TYPE_CLEAR;  /* do after initial insert_prop so only
+    pv.var.type = TYPE_CLEAR;	/* do after initial insert_prop so only
 				   children will be TYPE_CLEAR */
     for (c = dbpriv_find_object(root)->child;
 	 c != NOTHING;
 	 c = dbpriv_find_object(c)->sibling) {
-	int	new_prop_count = dbpriv_find_object(c)->propdefs.cur_length;
-	
+	int new_prop_count = dbpriv_find_object(c)->propdefs.cur_length;
+
 	insert_prop_recursively(c, new_prop_count + root_pos, pv);
     }
 }
@@ -121,10 +121,10 @@ int
 db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
 	       unsigned flags)
 {
-    Object	       *o;
-    Pval		pval;
-    int			i;
-    db_prop_handle	h;
+    Object *o;
+    Pval pval;
+    int i;
+    db_prop_handle h;
 
     h = db_find_property(oid, pname, 0);
 
@@ -133,10 +133,10 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
 
     o = dbpriv_find_object(oid);
     if (o->propdefs.cur_length == o->propdefs.max_length) {
-	Propdef	       *old_props = o->propdefs.l;	
-	int		new_size = (o->propdefs.max_length == 0
-				    ? 8 : 2 * o->propdefs.max_length);
-	    
+	Propdef *old_props = o->propdefs.l;
+	int new_size = (o->propdefs.max_length == 0
+			? 8 : 2 * o->propdefs.max_length);
+
 	o->propdefs.l = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
 	for (i = 0; i < o->propdefs.max_length; i++)
 	    o->propdefs.l[i] = old_props[i];
@@ -144,14 +144,13 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
 
 	if (old_props)
 	    myfree(old_props, M_PROPDEF);
-    }    
-
+    }
     o->propdefs.l[o->propdefs.cur_length++] = dbpriv_new_propdef(pname);
-	
+
     pval.var = value;
     pval.owner = owner;
     pval.perms = flags;
-    
+
     insert_prop_recursively(oid, o->propdefs.cur_length - 1, pval);
 
     return 1;
@@ -160,21 +159,21 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
 int
 db_rename_propdef(Objid oid, const char *old, const char *new)
 {
-    Proplist	       *props = &dbpriv_find_object(oid)->propdefs;
-    int			hash = str_hash(old);
-    int			count = props->cur_length;
-    int			i;
-    db_prop_handle	h;
+    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    int hash = str_hash(old);
+    int count = props->cur_length;
+    int i;
+    db_prop_handle h;
 
     for (i = 0; i < count; i++) {
-	Propdef	p;
+	Propdef p;
 
 	p = props->l[i];
-	if (p.hash == hash  &&  !mystrcasecmp(p.name, old)) {
-	    if (mystrcasecmp(old, new) != 0) { /* Not changing just the case */
+	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
+	    if (mystrcasecmp(old, new) != 0) {	/* Not changing just the case */
 		h = db_find_property(oid, new, 0);
 		if (h.ptr
-		    || property_defined_at_or_below(new, str_hash(new), oid))
+		|| property_defined_at_or_below(new, str_hash(new), oid))
 		    return 0;
 	    }
 	    free_str(props->l[i].name);
@@ -191,15 +190,15 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
 static void
 remove_prop(Objid oid, int pos)
 {
-    Pval       *new_propval;
-    Object     *o;
-    int		i, nprops;
+    Pval *new_propval;
+    Object *o;
+    int i, nprops;
 
     o = dbpriv_find_object(oid);
     nprops = dbpriv_count_properties(oid);
 
     free_var(o->propval[pos].var);	/* free deleted property */
-    
+
     if (nprops) {
 	new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
 	for (i = 0; i < pos; i++)
@@ -217,14 +216,14 @@ remove_prop(Objid oid, int pos)
 static void
 remove_prop_recursively(Objid root, int root_pos)
 {
-    Objid	c;
+    Objid c;
 
     remove_prop(root, root_pos);
     for (c = dbpriv_find_object(root)->child;
 	 c != NOTHING;
 	 c = dbpriv_find_object(c)->sibling) {
-	int	new_prop_count = dbpriv_find_object(c)->propdefs.cur_length;
-	
+	int new_prop_count = dbpriv_find_object(c)->propdefs.cur_length;
+
 	remove_prop_recursively(c, new_prop_count + root_pos);
     }
 }
@@ -232,26 +231,26 @@ remove_prop_recursively(Objid root, int root_pos)
 int
 db_delete_propdef(Objid oid, const char *pname)
 {
-    Proplist   *props = &dbpriv_find_object(oid)->propdefs;
-    int		hash = str_hash(pname);
-    int    	count = props->cur_length;
-    int    	max   = props->max_length;
-    int		i, j;
-	
+    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    int hash = str_hash(pname);
+    int count = props->cur_length;
+    int max = props->max_length;
+    int i, j;
+
     for (i = 0; i < count; i++) {
 	Propdef p;
-	    
+
 	p = props->l[i];
-	if (p.hash == hash  &&  !mystrcasecmp(p.name, pname)) {
+	if (p.hash == hash && !mystrcasecmp(p.name, pname)) {
 	    if (p.name)
 		free_str(p.name);
 
-	    if (max > 8  &&  props->cur_length <= ((max * 3) / 8)) {
-		int		new_size = max / 2;
-		Propdef	       *new_props;
+	    if (max > 8 && props->cur_length <= ((max * 3) / 8)) {
+		int new_size = max / 2;
+		Propdef *new_props;
 
 		new_props = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
-		    
+
 		for (j = 0; j < i; j++)
 		    new_props[j] = props->l[j];
 		for (j = i + 1; j < count; j++)
@@ -270,7 +269,7 @@ db_delete_propdef(Objid oid, const char *pname)
 	    return 1;
 	}
     }
-    
+
     return 0;
 }
 
@@ -281,11 +280,11 @@ db_count_propdefs(Objid oid)
 }
 
 int
-db_for_all_propdefs(Objid oid, int (*func)(void *, const char *), void *data)
+db_for_all_propdefs(Objid oid, int (*func) (void *, const char *), void *data)
 {
-    int 	i;
-    Object     *o = dbpriv_find_object(oid);
-    int		len = o->propdefs.cur_length;
+    int i;
+    Object *o = dbpriv_find_object(oid);
+    int len = o->propdefs.cur_length;
 
     for (i = 0; i < len; i++)
 	if (func(data, o->propdefs.l[i].name))
@@ -295,14 +294,14 @@ db_for_all_propdefs(Objid oid, int (*func)(void *, const char *), void *data)
 }
 
 struct contents_data {
-    Var		r;
-    int		i;
+    Var r;
+    int i;
 };
 
 static int
 add_to_list(void *data, Objid c)
 {
-    struct contents_data       *d = data;
+    struct contents_data *d = data;
 
     d->i++;
     d->r.v.list[d->i].type = TYPE_OBJ;
@@ -312,47 +311,47 @@ add_to_list(void *data, Objid c)
 }
 
 static void
-get_bi_value(db_prop_handle h, Var *value)
+get_bi_value(db_prop_handle h, Var * value)
 {
-    Objid	oid = *((Objid *) h.ptr);
+    Objid oid = *((Objid *) h.ptr);
 
     switch (h.built_in) {
-      case BP_NAME:
+    case BP_NAME:
 	value->type = TYPE_STR;
 	value->v.str = str_ref(db_object_name(oid));
 	break;
-      case BP_OWNER:
+    case BP_OWNER:
 	value->type = TYPE_OBJ;
 	value->v.obj = db_object_owner(oid);
 	break;
-      case BP_PROGRAMMER:
+    case BP_PROGRAMMER:
 	value->type = TYPE_INT;
 	value->v.num = db_object_has_flag(oid, FLAG_PROGRAMMER);
 	break;
-      case BP_WIZARD:
+    case BP_WIZARD:
 	value->type = TYPE_INT;
 	value->v.num = db_object_has_flag(oid, FLAG_WIZARD);
 	break;
-      case BP_R:
+    case BP_R:
 	value->type = TYPE_INT;
 	value->v.num = db_object_has_flag(oid, FLAG_READ);
 	break;
-      case BP_W:
+    case BP_W:
 	value->type = TYPE_INT;
 	value->v.num = db_object_has_flag(oid, FLAG_WRITE);
 	break;
-      case BP_F:
+    case BP_F:
 	value->type = TYPE_INT;
 	value->v.num = db_object_has_flag(oid, FLAG_FERTILE);
 	break;
-      case BP_LOCATION:
+    case BP_LOCATION:
 	value->type = TYPE_OBJ;
 	value->v.obj = db_object_location(oid);
 	break;
-      case BP_CONTENTS:
+    case BP_CONTENTS:
 	{
-	    struct contents_data	d;
-	    
+	    struct contents_data d;
+
 	    d.r = new_list(db_count_contents(oid));
 	    d.i = 0;
 	    db_for_all_contents(oid, add_to_list, &d);
@@ -360,44 +359,61 @@ get_bi_value(db_prop_handle h, Var *value)
 	    *value = d.r;
 	}
 	break;
-      default:
+    default:
 	panic("Unknown built-in property in GET_BI_VALUE!");
     }
 }
 
 db_prop_handle
-db_find_property(Objid oid, const char *name, Var *value)
+db_find_property(Objid oid, const char *name, Var * value)
 {
     static struct {
-	const char     *name;
-	enum bi_prop 	prop;
-	int		hash;
+	const char *name;
+	enum bi_prop prop;
+	int hash;
     } ptable[] = {
-	{"name",	BP_NAME,	0},
-	{"owner",	BP_OWNER,	0},
-	{"programmer",	BP_PROGRAMMER,	0},
-	{"wizard",	BP_WIZARD,	0},
-	{"r",		BP_R,		0},
-	{"w",		BP_W,		0},
-	{"f",		BP_F,		0},
-	{"location",	BP_LOCATION,	0},
-	{"contents",	BP_CONTENTS,	0}
+	{
+	    "name", BP_NAME, 0
+	},
+	{
+	    "owner", BP_OWNER, 0
+	},
+	{
+	    "programmer", BP_PROGRAMMER, 0
+	},
+	{
+	    "wizard", BP_WIZARD, 0
+	},
+	{
+	    "r", BP_R, 0
+	},
+	{
+	    "w", BP_W, 0
+	},
+	{
+	    "f", BP_F, 0
+	},
+	{
+	    "location", BP_LOCATION, 0
+	},
+	{
+	    "contents", BP_CONTENTS, 0
+	}
     };
-    static int		ptable_init = 0;
-    int			i, n;
-    db_prop_handle	h;
-    int			hash = str_hash(name);
-    Object	       *o;
+    static int ptable_init = 0;
+    int i, n;
+    db_prop_handle h;
+    int hash = str_hash(name);
+    Object *o;
 
     if (!ptable_init) {
 	for (i = 0; i < Arraysize(ptable); i++)
 	    ptable[i].hash = str_hash(ptable[i].name);
 	ptable_init = 1;
     }
-
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !mystrcasecmp(name, ptable[i].name)) {
-	    static Objid	ret;
+	    static Objid ret;
 
 	    ret = oid;
 	    h.built_in = ptable[i].prop;
@@ -412,19 +428,19 @@ db_find_property(Objid oid, const char *name, Var *value)
     h.built_in = BP_NONE;
     n = 0;
     for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent)) {
-	Proplist       *props = &(o->propdefs);
-	Propdef	       *defs = props->l;
-	int		length = props->cur_length;
+	Proplist *props = &(o->propdefs);
+	Propdef *defs = props->l;
+	int length = props->cur_length;
 
 	for (i = 0; i < length; i++, n++) {
 	    if (defs[i].hash == hash
 		&& !mystrcasecmp(defs[i].name, name)) {
-		Pval   *prop;
+		Pval *prop;
 
 		h.definer = o->id;
 		o = dbpriv_find_object(oid);
 		prop = h.ptr = o->propval + n;
-		
+
 		if (value) {
 		    while (prop->var.type == TYPE_CLEAR) {
 			n -= o->propdefs.cur_length;
@@ -445,12 +461,12 @@ db_find_property(Objid oid, const char *name, Var *value)
 Var
 db_property_value(db_prop_handle h)
 {
-    Var		value;
-    
+    Var value;
+
     if (h.built_in)
 	get_bi_value(h, &value);
     else {
-	Pval   *prop = h.ptr;
+	Pval *prop = h.ptr;
 
 	value = prop->var;
     }
@@ -462,38 +478,38 @@ void
 db_set_property_value(db_prop_handle h, Var value)
 {
     if (!h.built_in) {
-	Pval   *prop = h.ptr;
+	Pval *prop = h.ptr;
 
 	free_var(prop->var);
 	prop->var = value;
     } else {
-	Objid		oid = *((Objid *) h.ptr);
-	db_object_flag	flag;
-	
+	Objid oid = *((Objid *) h.ptr);
+	db_object_flag flag;
+
 	switch (h.built_in) {
-	  case BP_NAME:
+	case BP_NAME:
 	    if (value.type != TYPE_STR)
 		goto complain;
 	    db_set_object_name(oid, value.v.str);
 	    break;
-	  case BP_OWNER:
+	case BP_OWNER:
 	    if (value.type != TYPE_OBJ)
 		goto complain;
 	    db_set_object_owner(oid, value.v.obj);
 	    break;
-	  case BP_PROGRAMMER:
+	case BP_PROGRAMMER:
 	    flag = FLAG_PROGRAMMER;
 	    goto finish_flag;
-	  case BP_WIZARD:
+	case BP_WIZARD:
 	    flag = FLAG_WIZARD;
 	    goto finish_flag;
-	  case BP_R:
+	case BP_R:
 	    flag = FLAG_READ;
 	    goto finish_flag;
-	  case BP_W:
+	case BP_W:
 	    flag = FLAG_WRITE;
 	    goto finish_flag;
-	  case BP_F:
+	case BP_F:
 	    flag = FLAG_FERTILE;
 	  finish_flag:
 	    if (is_true(value))
@@ -502,12 +518,12 @@ db_set_property_value(db_prop_handle h, Var value)
 		db_clear_object_flag(oid, flag);
 	    free_var(value);
 	    break;
-	  case BP_LOCATION:
-	  case BP_CONTENTS:
+	case BP_LOCATION:
+	case BP_CONTENTS:
 	  complain:
 	    panic("Inappropriate value in DB_SET_PROPERTY_VALUE!");
 	    break;
-	  default:
+	default:
 	    panic("Unknown built-in property in DB_SET_PROPERTY_VALUE!");
 	}
     }
@@ -520,7 +536,7 @@ db_property_owner(db_prop_handle h)
 	panic("Built-in property in DB_PROPERTY_OWNER!");
 	return NOTHING;
     } else {
-	Pval   *prop = h.ptr;
+	Pval *prop = h.ptr;
 
 	return prop->owner;
     }
@@ -532,7 +548,7 @@ db_set_property_owner(db_prop_handle h, Objid oid)
     if (h.built_in)
 	panic("Built-in property in DB_SET_PROPERTY_OWNER!");
     else {
-	Pval   *prop = h.ptr;
+	Pval *prop = h.ptr;
 
 	prop->owner = oid;
     }
@@ -545,7 +561,7 @@ db_property_flags(db_prop_handle h)
 	panic("Built-in property in DB_PROPERTY_FLAGS!");
 	return 0;
     } else {
-	Pval   *prop = h.ptr;
+	Pval *prop = h.ptr;
 
 	return prop->perms;
     }
@@ -557,7 +573,7 @@ db_set_property_flags(db_prop_handle h, unsigned flags)
     if (h.built_in)
 	panic("Built-in property in DB_SET_PROPERTY_FLAGS!");
     else {
-	Pval   *prop = h.ptr;
+	Pval *prop = h.ptr;
 
 	prop->perms = flags;
     }
@@ -574,12 +590,12 @@ db_property_allows(db_prop_handle h, Objid progr, db_prop_flag flag)
 static void
 fix_props(Objid oid, int parent_local, int old, int new, int common)
 {
-    Object     *me = dbpriv_find_object(oid);
-    Object     *parent = dbpriv_find_object(me->parent);
-    Pval       *new_propval;
-    int		local = parent_local;
-    int		i;
-    Objid	c;
+    Object *me = dbpriv_find_object(oid);
+    Object *parent = dbpriv_find_object(me->parent);
+    Pval *new_propval;
+    int local = parent_local;
+    int i;
+    Objid c;
 
     local += me->propdefs.cur_length;
 
@@ -591,7 +607,7 @@ fix_props(Objid oid, int parent_local, int old, int new, int common)
 	for (i = 0; i < local; i++)
 	    new_propval[i] = me->propval[i];
 	for (i = 0; i < new; i++) {
-	    Pval	pv;
+	    Pval pv;
 
 	    pv = parent->propval[parent_local + i];
 	    new_propval[local + i] = pv;
@@ -615,14 +631,14 @@ fix_props(Objid oid, int parent_local, int old, int new, int common)
 int
 dbpriv_check_properties_for_chparent(Objid oid, Objid new_parent)
 {
-    Object     *o;
-    int		i;
+    Object *o;
+    int i;
 
     for (o = dbpriv_find_object(new_parent);
 	 o;
 	 o = dbpriv_find_object(o->parent)) {
-	Proplist   *props = &o->propdefs;
-	
+	Proplist *props = &o->propdefs;
+
 	for (i = 0; i < props->cur_length; i++)
 	    if (property_defined_at_or_below(props->l[i].name,
 					     props->l[i].hash,
@@ -636,8 +652,8 @@ dbpriv_check_properties_for_chparent(Objid oid, Objid new_parent)
 void
 dbpriv_fix_properties_after_chparent(Objid oid, Objid old_parent)
 {
-    Objid	o1, o2, common, new_parent;
-    int		common_props, old_props, new_props;
+    Objid o1, o2, common, new_parent;
+    int common_props, old_props, new_props;
 
     /* Find the nearest common ancestor between old & new parent */
     new_parent = db_object_parent(oid);
@@ -661,12 +677,15 @@ dbpriv_fix_properties_after_chparent(Objid oid, Objid old_parent)
     fix_props(oid, 0, old_props, new_props, common_props);
 }
 
-char rcsid_db_properties[] = "$Id: db_properties.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_db_properties[] = "$Id: db_properties.c,v 1.2 1997/03/03 04:18:31 nop Exp $";
 
 /* $Log: db_properties.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:31  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.6  1996/04/08  01:08:32  pavel
  * Fixed `db_rename_propdef()' to allow case-only changes.  Release 1.8.0p3.
  *

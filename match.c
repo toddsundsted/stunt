@@ -31,8 +31,8 @@
 static Var *
 aliases(Objid oid)
 {
-    Var         	value;
-    db_prop_handle	h;
+    Var value;
+    db_prop_handle h;
 
     h = db_find_property(oid, "aliases", &value);
     if (!h.ptr || value.type != TYPE_LIST) {
@@ -41,21 +41,21 @@ aliases(Objid oid)
     } else
 	return value.v.list;
 }
-    
+
 struct match_data {
-    int		lname;
+    int lname;
     const char *name;
-    Objid	exact, partial;
+    Objid exact, partial;
 };
 
 static int
 match_proc(void *data, Objid oid)
 {
-    struct match_data  *d = data;
-    Var		       *names = aliases(oid);
-    int			i;
-    const char	       *name;
-    
+    struct match_data *d = data;
+    Var *names = aliases(oid);
+    int i;
+    const char *name;
+
     for (i = 0; i <= names[0].v.num; i++) {
 	if (i == 0)
 	    name = db_object_name(oid);
@@ -63,14 +63,14 @@ match_proc(void *data, Objid oid)
 	    continue;
 	else
 	    name = names[i].v.str;
-	
+
 	if (!mystrncasecmp(name, d->name, d->lname)) {
-	    if (name[d->lname] == '\0') { /* exact match */
+	    if (name[d->lname] == '\0') {	/* exact match */
 		if (d->exact == NOTHING || d->exact == oid)
 		    d->exact = oid;
 		else
 		    return 1;
-	    } else {				/* partial match */
+	    } else {		/* partial match */
 		if (d->partial == FAILED_MATCH || d->partial == oid)
 		    d->partial = oid;
 		else
@@ -80,15 +80,15 @@ match_proc(void *data, Objid oid)
     }
 
     return 0;
-}    
+}
 
 static Objid
 match_contents(Objid player, const char *name)
 {
-    Objid		loc;
-    int			step;
-    Objid		oid;
-    struct match_data	d;
+    Objid loc;
+    int step;
+    Objid oid;
+    struct match_data d;
 
     d.lname = strlen(name);
     d.name = name;
@@ -119,8 +119,8 @@ match_object(Objid player, const char *name)
     if (name[0] == '\0')
 	return NOTHING;
     if (name[0] == '#') {
-	char   *p;
-	Objid	r = strtol(name + 1, &p, 10);
+	char *p;
+	Objid r = strtol(name + 1, &p, 10);
 
 	if (*p != '\0' || !valid(r))
 	    return FAILED_MATCH;
@@ -135,12 +135,15 @@ match_object(Objid player, const char *name)
     return match_contents(player, name);
 }
 
-char rcsid_match[] = "$Id: match.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+char rcsid_match[] = "$Id: match.c,v 1.2 1997/03/03 04:18:50 nop Exp $";
 
 /* $Log: match.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:50  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:59:41  pavel
  * Fixed minor portability problem.  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

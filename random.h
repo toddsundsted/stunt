@@ -18,8 +18,8 @@
 #include "config.h"
 
 #if HAVE_LRAND48
-     extern long	lrand48(void);
-     extern void	srand48(long);
+extern long lrand48(void);
+extern void srand48(long);
 #    define RANDOM	lrand48
 #    define SRANDOM	srand48
 #else
@@ -34,9 +34,12 @@
 #endif
 
 /* $Log: random.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:20  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:13:41  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-extern const char      *server_version;
+extern const char *server_version;
 
 /* The following list must never be reordered, only appended to.  There is one
  * element per version of the database format (including incompatible changes
@@ -50,17 +50,20 @@ typedef enum {
 
 #define current_version	((DB_Version) (Num_DB_Versions - 1))
 
-extern int		check_version(DB_Version);
+extern int check_version(DB_Version);
 				/* Returns true iff given version is within the
 				 * known range.
 				 */
 
-#endif /* !Version_H */
+#endif				/* !Version_H */
 
 /* $Log: version.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:39  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/04/19  01:25:21  pavel
  * Added somewhat bogus DBV_BFBugFixed version.  Release 1.8.0p4.
  *

@@ -28,51 +28,54 @@
 #include <malloc.h>
 #endif
 
-#else /* !HAVE_STDLIB_H */
+#else				/* !HAVE_STDLIB_H */
 
 #include "my-types.h"
 
-extern void	abort(void);
-extern int	abs(int);
-extern void	exit(int);
-extern void	free(void *);
-extern void    *malloc(size_t);
-extern int	rand(void);
-extern void    *realloc(void *, size_t);
-extern void	srand(unsigned);
+extern void abort(void);
+extern int abs(int);
+extern void exit(int);
+extern void free(void *);
+extern void *malloc(size_t);
+extern int rand(void);
+extern void *realloc(void *, size_t);
+extern void srand(unsigned);
 
-#endif /* !HAVE_STDLIB_H */
+#endif				/* !HAVE_STDLIB_H */
 
 #if NDECL_STRTOD
-  extern double			strtod(const char *, char **);
+extern double strtod(const char *, char **);
 #endif
 
 #if NDECL_STRTOL
-  extern long			strtol(const char *, char **, int);
+extern long strtol(const char *, char **, int);
 #endif
 
 #if HAVE_STRTOUL
 # if NDECL_STRTOUL
-    extern unsigned long	strtoul(const char *, char **, int);
+extern unsigned long strtoul(const char *, char **, int);
 # endif
 #else
 # define strtoul		strtol
 #endif
 
 #if NDECL_RANDOM
-extern int	random(void);
+extern int random(void);
 #endif
 
 #if NDECL_SRANDOM
-extern int	srandom(unsigned);
+extern int srandom(unsigned);
 #endif
 
 #endif
 
 /* $Log: my-stdlib.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:56  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:01:42  pavel
  * Updated copyright notice for 1996.  Added strtod().  Release 1.8.0beta1.
  *

@@ -24,95 +24,95 @@
 #include "program.h"
 #include "structures.h"
 
-typedef	struct Verbdef  Verbdef;
+typedef struct Verbdef Verbdef;
 
 struct Verbdef {
     const char *name;
-    Program    *program;
-    Objid	owner;
-    short	perms;
-    short	prep;
-    Verbdef    *next;
+    Program *program;
+    Objid owner;
+    short perms;
+    short prep;
+    Verbdef *next;
 };
 
 typedef struct Proplist Proplist;
-typedef struct Propdef  Propdef;
+typedef struct Propdef Propdef;
 
 struct Propdef {
     const char *name;
-    int		hash;
+    int hash;
 };
 
 struct Proplist {
-    int		max_length;
-    int		cur_length;
-    Propdef    *l;
+    int max_length;
+    int cur_length;
+    Propdef *l;
 };
 
 typedef struct Pval {
-    Var		var;
-    Objid	owner;
-    short	perms;
+    Var var;
+    Objid owner;
+    short perms;
 } Pval;
 
 typedef struct Object {
-    Objid	id;
-    Objid	owner;
-    Objid	location;
-    Objid	contents;
-    Objid	next;
+    Objid id;
+    Objid owner;
+    Objid location;
+    Objid contents;
+    Objid next;
 
-    Objid	parent;
-    Objid	child;
-    Objid	sibling;
+    Objid parent;
+    Objid child;
+    Objid sibling;
 
 
     const char *name;
-    int		flags;
+    int flags;
 
-    Verbdef    *verbdefs;
-    Proplist	propdefs;
-    Pval       *propval;
+    Verbdef *verbdefs;
+    Proplist propdefs;
+    Pval *propval;
 } Object;
 
 /*********** Objects ***********/
 
-extern void		dbpriv_set_all_users(Var);
+extern void dbpriv_set_all_users(Var);
 				/* Initialize the list returned by
 				 * db_all_users().
 				 */
 
-extern Object	       *dbpriv_new_object(void);
+extern Object *dbpriv_new_object(void);
 				/* Creates a new object, assigning it a number,
 				 * but doesn't fill in any of the fields other
 				 * than `id'.
 				 */
 
-extern void		dbpriv_new_recycled_object(void);
+extern void dbpriv_new_recycled_object(void);
 				/* Does the equivalent of creating and
 				 * destroying an object, with the net effect of
 				 * using up the next available object number.
 				 */
 
-extern Object	       *dbpriv_find_object(Objid);
+extern Object *dbpriv_find_object(Objid);
 				/* Returns 0 if given object is not valid.
 				 */
 
 /*********** Properties ***********/
 
-extern Propdef		dbpriv_new_propdef(const char *name);
+extern Propdef dbpriv_new_propdef(const char *name);
 
-extern int		dbpriv_count_properties(Objid);
+extern int dbpriv_count_properties(Objid);
 
-extern int		dbpriv_check_properties_for_chparent(Objid oid,
-							     Objid new_parent);
+extern int dbpriv_check_properties_for_chparent(Objid oid,
+						Objid new_parent);
 				/* Return true iff NEW_PARENT defines no
 				 * properties that are also defined by either
 				 * OID or any of OID's descendants.
 				 */
 
-extern void		dbpriv_fix_properties_after_chparent(Objid oid,
-							     Objid old_parent);
+extern void dbpriv_fix_properties_after_chparent(Objid oid,
+						 Objid old_parent);
 				/* OID has just had its parent changed away
 				 * from OLD_PARENT.  Fix up the properties of
 				 * OID and its descendants, removing obsolete
@@ -122,7 +122,7 @@ extern void		dbpriv_fix_properties_after_chparent(Objid oid,
 
 /*********** Verbs ***********/
 
-extern void		dbpriv_build_prep_table(void);
+extern void dbpriv_build_prep_table(void);
 				/* Should be called once near the beginning of
 				 * the world, to initialize the
 				 * prepositional-phrase matching table.
@@ -130,18 +130,21 @@ extern void		dbpriv_build_prep_table(void);
 
 /*********** DBIO ***********/
 
-extern Exception	dbpriv_dbio_failed;
+extern Exception dbpriv_dbio_failed;
 				/* Raised by DBIO in case of failure (e.g.,
 				 * running out of disk space for the dump).
 				 */
 
-extern void		dbpriv_set_dbio_input(FILE *);
-extern void		dbpriv_set_dbio_output(FILE *);
+extern void dbpriv_set_dbio_input(FILE *);
+extern void dbpriv_set_dbio_output(FILE *);
 
 /* $Log: db_private.h,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:30  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/02/08  06:27:28  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

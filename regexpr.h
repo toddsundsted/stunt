@@ -1,54 +1,52 @@
 /*
 
-regexpr.h
+   regexpr.h
 
-Author: Tatu Ylonen <ylo@ngs.fi>
+   Author: Tatu Ylonen <ylo@ngs.fi>
 
-Copyright (c) 1991 Tatu Ylonen, Espoo, Finland
+   Copyright (c) 1991 Tatu Ylonen, Espoo, Finland
 
-Permission to use, copy, modify, distribute, and sell this software
-and its documentation for any purpose is hereby granted without fee,
-provided that the above copyright notice appear in all copies.  This
-software is provided "as is" without express or implied warranty.
+   Permission to use, copy, modify, distribute, and sell this software
+   and its documentation for any purpose is hereby granted without fee,
+   provided that the above copyright notice appear in all copies.  This
+   software is provided "as is" without express or implied warranty.
 
-Created: Thu Sep 26 17:15:36 1991 ylo
-Last modified: Mon Nov  4 15:49:46 1991 ylo
+   Created: Thu Sep 26 17:15:36 1991 ylo
+   Last modified: Mon Nov  4 15:49:46 1991 ylo
 
-*/
+ */
 
 #ifndef REGEXPR_H
 #define REGEXPR_H
 
-#define RE_NREGS	100  /* number of registers available */
+#define RE_NREGS	100	/* number of registers available */
 
-typedef struct re_pattern_buffer
-{
-  char *buffer; 	 /* compiled pattern */
-  int allocated;	 /* allocated size of compiled pattern */
-  int used;		 /* actual length of compiled pattern */
-  char *fastmap;	 /* fastmap[ch] is true if ch can start pattern */
-  char *translate;	 /* translation to apply during compilation/matching */
-  char fastmap_accurate; /* true if fastmap is valid */
-  char can_be_null;	 /* true if can match empty string */
-  char uses_registers;	 /* registers are used and need to be initialized */
-  char anchor;		 /* anchor: 0=none 1=begline 2=begbuf */
+typedef struct re_pattern_buffer {
+    char *buffer;		/* compiled pattern */
+    int allocated;		/* allocated size of compiled pattern */
+    int used;			/* actual length of compiled pattern */
+    char *fastmap;		/* fastmap[ch] is true if ch can start pattern */
+    char *translate;		/* translation to apply during compilation/matching */
+    char fastmap_accurate;	/* true if fastmap is valid */
+    char can_be_null;		/* true if can match empty string */
+    char uses_registers;	/* registers are used and need to be initialized */
+    char anchor;		/* anchor: 0=none 1=begline 2=begbuf */
 } *regexp_t;
 
-typedef struct re_registers
-{
-  int start[RE_NREGS];  /* start offset of region */
-  int end[RE_NREGS];    /* end offset of region */
+typedef struct re_registers {
+    int start[RE_NREGS];	/* start offset of region */
+    int end[RE_NREGS];		/* end offset of region */
 } *regexp_registers_t;
 
 /* bit definitions for syntax */
-#define RE_NO_BK_PARENS		1    /* no quoting for parentheses */
-#define RE_NO_BK_VBAR		2    /* no quoting for vertical bar */
-#define RE_BK_PLUS_QM		4    /* quoting needed for + and ? */
-#define RE_TIGHT_VBAR		8    /* | binds tighter than ^ and $ */
-#define RE_NEWLINE_OR		16   /* treat newline as or */
-#define RE_CONTEXT_INDEP_OPS	32   /* ^$?*+ are special in all contexts */
-#define RE_ANSI_HEX		64   /* ansi sequences (\n etc) and \xhh */
-#define RE_NO_GNU_EXTENSIONS   128   /* no gnu extensions */
+#define RE_NO_BK_PARENS		1	/* no quoting for parentheses */
+#define RE_NO_BK_VBAR		2	/* no quoting for vertical bar */
+#define RE_BK_PLUS_QM		4	/* quoting needed for + and ? */
+#define RE_TIGHT_VBAR		8	/* | binds tighter than ^ and $ */
+#define RE_NEWLINE_OR		16	/* treat newline as or */
+#define RE_CONTEXT_INDEP_OPS	32	/* ^$?*+ are special in all contexts */
+#define RE_ANSI_HEX		64	/* ansi sequences (\n etc) and \xhh */
+#define RE_NO_GNU_EXTENSIONS   128	/* no gnu extensions */
 
 /* definitions for some common regexp styles */
 #define RE_SYNTAX_AWK	(RE_NO_BK_PARENS|RE_NO_BK_VBAR|RE_CONTEXT_INDEP_OPS)
@@ -77,7 +75,7 @@ int re_match(regexp_t compiled, char *string, int size, int pos,
    encountered. */
 
 int re_match_2(regexp_t compiled, char *string1, int size1,
-	      char *string2, int size2, int pos, regexp_registers_t regs,
+	       char *string2, int size2, int pos, regexp_registers_t regs,
 	       int mstop);
 /* This tries to match the regexp to the concatenation of string1 and
    string2.  This returns the length of the matched portion, or -1 if the
@@ -114,13 +112,16 @@ int re_exec(char *s);
    matches the regular expression (that is, a matching part is found
    anywhere in the string). */
 
-#endif /* REGEXPR_H */
+#endif				/* REGEXPR_H */
 
 /* RCS stuff added for LambdaMOO
- *
+
  * $Log: regexpr.h,v $
- * Revision 1.1  1997/03/03 03:45:04  nop
- * Initial revision
+ * Revision 1.2  1997/03/03 04:19:23  nop
+ * GNU Indent normalization
+ *
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
  *
  * Revision 2.0  1995/11/30  05:39:25  pavel
  * New baseline version, corresponding to release 1.8.0alpha1.

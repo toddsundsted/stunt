@@ -22,10 +22,10 @@
  * perform an I/O operation on any of a set of file descriptors without
  * blocking.  Uses of the abstraction always have the following form:
  *
- *	mplex_clear();
- *	{ mplex_add_reader(fd)  or  mplex_add_writer(fd) }*
- *	timed_out = mplex_wait(timeout);
- *	{ mplex_is_readable(fd)  or  mplex_is_writable(fd) }*
+ *      mplex_clear();
+ *      { mplex_add_reader(fd)  or  mplex_add_writer(fd) }*
+ *      timed_out = mplex_wait(timeout);
+ *      { mplex_is_readable(fd)  or  mplex_is_writable(fd) }*
  *
  * The set of file descriptors maintained by the abstraction is referred to
  * below as the `wait set'.  Each file descriptor in the wait set is marked
@@ -35,20 +35,20 @@
 #ifndef Net_MPlex_H
 #define Net_MPlex_H 1
 
-extern void	mplex_clear(void);
+extern void mplex_clear(void);
 				/* Reset the wait set to be empty. */
 
-extern void	mplex_add_reader(int fd);
+extern void mplex_add_reader(int fd);
 				/* Add the given file descriptor to the wait
 				 * set, marked for reading.
 				 */
 
-extern void	mplex_add_writer(int fd);
+extern void mplex_add_writer(int fd);
 				/* Add the given file descriptor to the wait
 				 * set, marked for writing.
 				 */
 
-extern int	mplex_wait(unsigned timeout);
+extern int mplex_wait(unsigned timeout);
 				/* Wait until it is possible either to do the
 				 * appropriate kind of I/O on some descriptor
 				 * in the wait set or until `timeout' seconds
@@ -56,24 +56,27 @@ extern int	mplex_wait(unsigned timeout);
 				 * expired without any I/O becoming possible.
 				 */
 
-extern int	mplex_is_readable(int fd);
+extern int mplex_is_readable(int fd);
 				/* Return true iff the most recent mplex_wait()
 				 * call terminated (in part) because reading
 				 * had become possible on the given descriptor.
 				 */
 
-extern int	mplex_is_writable(int fd);
+extern int mplex_is_writable(int fd);
 				/* Return true iff the most recent mplex_wait()
 				 * call terminated (in part) because reading
 				 * had become possible on the given descriptor.
 				 */
 
-#endif /* !Net_MPlex_H */
+#endif				/* !Net_MPlex_H */
 
 /* $Log: net_mplex.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:05  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:18:23  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

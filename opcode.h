@@ -29,9 +29,9 @@ enum Extended_Opcode {
     EOP_CATCH, EOP_TRY_EXCEPT, EOP_TRY_FINALLY,
     EOP_WHILE_ID, EOP_EXIT, EOP_EXIT_ID,
     EOP_SCATTER, EOP_EXP,
-    
+
     Last_Extended_Opcode = 255
-    };
+};
 
 enum Opcode {
 
@@ -41,22 +41,22 @@ enum Opcode {
 
     /* expr-related opcodes with 1 tick: */
     OP_INDEXSET, OP_PUSH_GET_PROP, OP_GET_PROP, OP_CALL_VERB, OP_PUT_PROP,
-    OP_BI_FUNC_CALL, OP_IF_QUES, OP_REF, OP_RANGE_REF, 
+    OP_BI_FUNC_CALL, OP_IF_QUES, OP_REF, OP_RANGE_REF,
 
     /* arglist-related opcodes with 1 tick: */
     OP_MAKE_SINGLETON_LIST, OP_CHECK_LIST_FOR_SPLICE,
 
     /* arith binary ops -- 1 tick: */
-    OP_MULT, OP_DIV, OP_MOD, OP_ADD, OP_MINUS, 
+    OP_MULT, OP_DIV, OP_MOD, OP_ADD, OP_MINUS,
 
     /* comparison binary ops -- 1 tick: */
-    OP_EQ, OP_NE, OP_LT, OP_LE, OP_GT, OP_GE, OP_IN,      
+    OP_EQ, OP_NE, OP_LT, OP_LE, OP_GT, OP_GE, OP_IN,
 
     /* logic binary ops -- 1 tick: */
-    OP_AND, OP_OR, 
+    OP_AND, OP_OR,
 
     /* unary ops -- 1 tick: */
-    OP_UNARY_MINUS, OP_NOT, 
+    OP_UNARY_MINUS, OP_NOT,
 
     /* assignments, 1 tick: */
     OP_PUT,
@@ -64,21 +64,21 @@ enum Opcode {
 
     /* variable references, no tick: */
     OP_PUSH,
-    OP_G_PUSH = OP_PUSH + NUM_READY_VARS,    
+    OP_G_PUSH = OP_PUSH + NUM_READY_VARS,
 
     /* expr-related opcodes with no tick: */
     OP_IMM, OP_MAKE_EMPTY_LIST, OP_LIST_ADD_TAIL, OP_LIST_APPEND,
     OP_PUSH_REF, OP_PUT_TEMP, OP_PUSH_TEMP,
 
     /* control/statement constructs with no ticks: */
-    OP_JUMP, OP_RETURN, OP_RETURN0, OP_DONE, OP_POP, 
+    OP_JUMP, OP_RETURN, OP_RETURN0, OP_DONE, OP_POP,
 
-    OP_EXTENDED, /* Used to add more opcodes */
+    OP_EXTENDED,		/* Used to add more opcodes */
 
     OPTIM_NUM_START,
     /* storage optimized imm-numbers can occupy 113-255, for 143 of them */
     Last_Opcode = 255
-    };
+};
 
 #define OPTIM_NUM_LOW -10
 #define OPTIM_NUM_HI  (Last_Opcode - OPTIM_NUM_START + OPTIM_NUM_LOW)
@@ -110,9 +110,12 @@ typedef enum Extended_Opcode Extended_Opcode;
 #endif
 
 /* $Log: opcode.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:13  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/02/08  06:18:03  pavel
  * Removed unused NUM_BUILTIN_NAMES constant.  Rearranged EOPs to support tick
  * counting and added COUNT_EOP_TICK().  Added EOP_EXP, EOP_WHILE_ID,

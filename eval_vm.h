@@ -19,20 +19,23 @@
 #include "execute.h"
 #include "structures.h"
 
-extern vm		read_vm(int task_id);
-extern void		write_vm(vm);
+extern vm read_vm(int task_id);
+extern void write_vm(vm);
 
-extern vm		new_vm(int task_id, int stack_size);
-extern void		free_vm(vm the_vm, int stack_too);
+extern vm new_vm(int task_id, int stack_size);
+extern void free_vm(vm the_vm, int stack_too);
 
-extern activation 	top_activ(vm);
-extern Objid 		progr_of_cur_verb(vm);
-extern unsigned		suspended_lineno_of_vm(vm);
+extern activation top_activ(vm);
+extern Objid progr_of_cur_verb(vm);
+extern unsigned suspended_lineno_of_vm(vm);
 
 /* $Log: eval_vm.h,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:36  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:26:06  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

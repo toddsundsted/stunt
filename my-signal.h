@@ -27,20 +27,20 @@
 #if NDECL_KILL
 #include "my-types.h"
 
-extern int	kill(pid_t, int);
+extern int kill(pid_t, int);
 #endif
 
 #if NDECL_SIGEMPTYSET && HAVE_SIGEMPTYSET
-extern int	sigemptyset(sigset_t *);
-extern int	sigaddset(sigset_t *, int);
+extern int sigemptyset(sigset_t *);
+extern int sigaddset(sigset_t *, int);
 #endif
 
 #if NDECL_SIGPROCMASK && HAVE_SIGPROCMASK
-extern int	sigprocmask(int, sigset_t *, sigset_t *);
+extern int sigprocmask(int, sigset_t *, sigset_t *);
 #endif
 
 #if NDECL_SIGRELSE && HAVE_SIGRELSE
-extern int	sigrelse(int);
+extern int sigrelse(int);
 #endif
 
 #ifndef SIGCHLD
@@ -48,9 +48,12 @@ extern int	sigrelse(int);
 #endif
 
 /* $Log: my-signal.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:54  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:03:00  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

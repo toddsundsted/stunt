@@ -30,85 +30,87 @@
 #include "utils.h"
 #include "verbs.h"
 
-const char     *mnemonics[256], *ext_mnemonics[256];
+const char *mnemonics[256], *ext_mnemonics[256];
 
 struct mapping {
-    unsigned	value;
+    unsigned value;
     const char *name;
 };
 
-struct mapping mappings[] = {
-    {OP_IF,  			"IF"},
-    {OP_WHILE,			"WHILE"},
-    {OP_EIF,			"ELSEIF"},
-    {OP_FORK,			"FORK"},
-    {OP_FORK_WITH_ID,		"FORK_NAMED"},
-    {OP_FOR_LIST,		"FOR_LIST"},
-    {OP_FOR_RANGE,		"FOR_RANGE"},
-    {OP_INDEXSET,		"INDEXSET"},
-    {OP_PUSH_GET_PROP,		"PUSH_GET_PROP"},
-    {OP_GET_PROP,		"GET_PROP"},
-    {OP_CALL_VERB,		"CALL_VERB"},
-    {OP_PUT_PROP,		"PUT_PROP"},
-    {OP_BI_FUNC_CALL,		"CALL_FUNC"},
-    {OP_IF_QUES,		"IF_EXPR"},
-    {OP_REF,			"INDEX"},
-    {OP_RANGE_REF,		"RANGE"},
-    {OP_MAKE_SINGLETON_LIST,	"MAKE_SINGLETON_LIST"},
-    {OP_CHECK_LIST_FOR_SPLICE,	"CHECK_LIST_FOR_SPLICE"},
-    {OP_MULT,			"MULTIPLY"},
-    {OP_DIV,			"DIVIDE"},
-    {OP_MOD,			"MOD"},
-    {OP_ADD,			"ADD"},
-    {OP_MINUS,			"SUBTRACT"},
-    {OP_EQ,			"EQ"},
-    {OP_NE,			"NE"},
-    {OP_LT,			"LT"},
-    {OP_LE,			"LE"},
-    {OP_GT,			"GT"},
-    {OP_GE,			"GE"},
-    {OP_IN,			"IN"},
-    {OP_AND,			"AND"},
-    {OP_OR,			"OR"},
-    {OP_UNARY_MINUS,		"NEGATE"},
-    {OP_NOT,			"NOT"},
-    {OP_G_PUT,			"PUT"},
-    {OP_G_PUSH,			"PUSH"},
-    {OP_IMM,			"PUSH_LITERAL"},
-    {OP_MAKE_EMPTY_LIST,	"MAKE_EMPTY_LIST"},
-    {OP_LIST_ADD_TAIL,		"LIST_ADD_TAIL"},
-    {OP_LIST_APPEND,		"LIST_APPEND"},
-    {OP_PUSH_REF,		"PUSH_INDEX"},
-    {OP_PUT_TEMP,		"PUT_TEMP"},
-    {OP_PUSH_TEMP,		"PUSH_TEMP"},
-    {OP_JUMP,			"JUMP"},
-    {OP_RETURN,			"RETURN"},
-    {OP_RETURN0,		"RETURN 0"},
-    {OP_DONE,			"DONE"},
-    {OP_POP,			"POP"}};
+struct mapping mappings[] =
+{
+    {OP_IF, "IF"},
+    {OP_WHILE, "WHILE"},
+    {OP_EIF, "ELSEIF"},
+    {OP_FORK, "FORK"},
+    {OP_FORK_WITH_ID, "FORK_NAMED"},
+    {OP_FOR_LIST, "FOR_LIST"},
+    {OP_FOR_RANGE, "FOR_RANGE"},
+    {OP_INDEXSET, "INDEXSET"},
+    {OP_PUSH_GET_PROP, "PUSH_GET_PROP"},
+    {OP_GET_PROP, "GET_PROP"},
+    {OP_CALL_VERB, "CALL_VERB"},
+    {OP_PUT_PROP, "PUT_PROP"},
+    {OP_BI_FUNC_CALL, "CALL_FUNC"},
+    {OP_IF_QUES, "IF_EXPR"},
+    {OP_REF, "INDEX"},
+    {OP_RANGE_REF, "RANGE"},
+    {OP_MAKE_SINGLETON_LIST, "MAKE_SINGLETON_LIST"},
+    {OP_CHECK_LIST_FOR_SPLICE, "CHECK_LIST_FOR_SPLICE"},
+    {OP_MULT, "MULTIPLY"},
+    {OP_DIV, "DIVIDE"},
+    {OP_MOD, "MOD"},
+    {OP_ADD, "ADD"},
+    {OP_MINUS, "SUBTRACT"},
+    {OP_EQ, "EQ"},
+    {OP_NE, "NE"},
+    {OP_LT, "LT"},
+    {OP_LE, "LE"},
+    {OP_GT, "GT"},
+    {OP_GE, "GE"},
+    {OP_IN, "IN"},
+    {OP_AND, "AND"},
+    {OP_OR, "OR"},
+    {OP_UNARY_MINUS, "NEGATE"},
+    {OP_NOT, "NOT"},
+    {OP_G_PUT, "PUT"},
+    {OP_G_PUSH, "PUSH"},
+    {OP_IMM, "PUSH_LITERAL"},
+    {OP_MAKE_EMPTY_LIST, "MAKE_EMPTY_LIST"},
+    {OP_LIST_ADD_TAIL, "LIST_ADD_TAIL"},
+    {OP_LIST_APPEND, "LIST_APPEND"},
+    {OP_PUSH_REF, "PUSH_INDEX"},
+    {OP_PUT_TEMP, "PUT_TEMP"},
+    {OP_PUSH_TEMP, "PUSH_TEMP"},
+    {OP_JUMP, "JUMP"},
+    {OP_RETURN, "RETURN"},
+    {OP_RETURN0, "RETURN 0"},
+    {OP_DONE, "DONE"},
+    {OP_POP, "POP"}};
 
-struct mapping	ext_mappings[] = {
-    {EOP_RANGESET,	"RANGESET"},
-    {EOP_LENGTH,	"LENGTH"},
-    {EOP_PUSH_LABEL,	"PUSH_LABEL"},
-    {EOP_SCATTER,	"SCATTER"},
-    {EOP_EXP,		"EXPONENT"},
-    {EOP_CATCH,		"CATCH"},
-    {EOP_END_CATCH,	"END_CATCH"},
-    {EOP_TRY_EXCEPT,	"TRY_EXCEPT"},
-    {EOP_END_EXCEPT,	"END_EXCEPT"},
-    {EOP_TRY_FINALLY,	"TRY_FINALLY"},
-    {EOP_END_FINALLY,	"END_FINALLY"},
-    {EOP_CONTINUE,	"CONTINUE"},
-    {EOP_WHILE_ID,	"WHILE_ID"},
-    {EOP_EXIT,		"EXIT"},
-    {EOP_EXIT_ID,	"EXIT_ID"}};
+struct mapping ext_mappings[] =
+{
+    {EOP_RANGESET, "RANGESET"},
+    {EOP_LENGTH, "LENGTH"},
+    {EOP_PUSH_LABEL, "PUSH_LABEL"},
+    {EOP_SCATTER, "SCATTER"},
+    {EOP_EXP, "EXPONENT"},
+    {EOP_CATCH, "CATCH"},
+    {EOP_END_CATCH, "END_CATCH"},
+    {EOP_TRY_EXCEPT, "TRY_EXCEPT"},
+    {EOP_END_EXCEPT, "END_EXCEPT"},
+    {EOP_TRY_FINALLY, "TRY_FINALLY"},
+    {EOP_END_FINALLY, "END_FINALLY"},
+    {EOP_CONTINUE, "CONTINUE"},
+    {EOP_WHILE_ID, "WHILE_ID"},
+    {EOP_EXIT, "EXIT"},
+    {EOP_EXIT_ID, "EXIT_ID"}};
 
 static void
 initialize_tables(void)
 {
-    static int	tables_initialized = 0;
-    unsigned	i;
+    static int tables_initialized = 0;
+    unsigned i;
 
     if (tables_initialized)
 	return;
@@ -127,28 +129,28 @@ initialize_tables(void)
     tables_initialized = 1;
 }
 
-typedef void	(*Printer)(const char *, void *);
-static Printer	print;
-static void    *print_data;
-static int	bytes_width, max_bytes_width;
+typedef void (*Printer) (const char *, void *);
+static Printer print;
+static void *print_data;
+static int bytes_width, max_bytes_width;
 
 static void
-output(Stream *s)
+output(Stream * s)
 {
-    (*print)(reset_stream(s), print_data);
+    (*print) (reset_stream(s), print_data);
 }
 
 static void
-new_insn(Stream *s, unsigned pc)
+new_insn(Stream * s, unsigned pc)
 {
     stream_printf(s, "%3d:", pc);
     bytes_width = max_bytes_width;
 }
 
 static unsigned
-add_bytes(Stream *s, Byte *vector, unsigned pc, unsigned length)
+add_bytes(Stream * s, Byte * vector, unsigned pc, unsigned length)
 {
-    unsigned	arg = 0, b;
+    unsigned arg = 0, b;
 
     while (length--) {
 	if (bytes_width == 0) {
@@ -166,7 +168,7 @@ add_bytes(Stream *s, Byte *vector, unsigned pc, unsigned length)
 }
 
 static void
-finish_insn(Stream *s, Stream *insn)
+finish_insn(Stream * s, Stream * insn)
 {
     while (bytes_width--)
 	stream_add_string(s, "    ");
@@ -175,20 +177,20 @@ finish_insn(Stream *s, Stream *insn)
 }
 
 static void
-disassemble(Program *prog, Printer p, void *data)
+disassemble(Program * prog, Printer p, void *data)
 {
-    Stream	       *s = new_stream(100);
-    Stream	       *insn = new_stream(50);
-    int			i, l;
-    unsigned		pc;
-    Bytecodes		bc;
-    const char	       *ptr;
-    const char	      **names = prog->var_names;
-    unsigned		tmp, num_names = prog->num_var_names;
+    Stream *s = new_stream(100);
+    Stream *insn = new_stream(50);
+    int i, l;
+    unsigned pc;
+    Bytecodes bc;
+    const char *ptr;
+    const char **names = prog->var_names;
+    unsigned tmp, num_names = prog->num_var_names;
 #   define NAMES(i)	(tmp = i,					\
 			 tmp < num_names ? names[tmp]			\
 					 : "*** Unknown variable ***")
-    Var		       *literals = prog->literals;
+    Var *literals = prog->literals;
 
     initialize_tables();
     print = p;
@@ -228,12 +230,12 @@ disassemble(Program *prog, Printer p, void *data)
 	max_bytes_width = 5;
 
 	for (pc = 0; pc < bc.size;) {
-	    Byte		b;
-	    unsigned		arg;
+	    Byte b;
+	    unsigned arg;
 #	    define ADD_BYTES(n)	(arg = add_bytes(s, bc.vector, pc, n),	\
 				 pc += n,				\
 				 arg)
-	    unsigned		a1, a2;
+	    unsigned a1, a2;
 
 	    new_insn(s, pc);
 	    b = add_bytes(s, bc.vector, pc++, 1);
@@ -250,33 +252,35 @@ disassemble(Program *prog, Printer p, void *data)
 		stream_add_string(insn, COUNT_EOP_TICK(b) ? " * " : "   ");
 		stream_add_string(insn, ext_mnemonics[b]);
 		switch ((Extended_Opcode) b) {
-		  case EOP_WHILE_ID:
+		case EOP_WHILE_ID:
 		    a1 = ADD_BYTES(bc.numbytes_var_name);
 		    a2 = ADD_BYTES(bc.numbytes_label);
 		    stream_printf(insn, " %s %d", NAMES(a1), a2);
 		    break;
-		  case EOP_EXIT_ID:
+		case EOP_EXIT_ID:
 		    stream_printf(insn, " %s",
 				  NAMES(ADD_BYTES(bc.numbytes_var_name)));
 		    /* fall thru */
-		  case EOP_EXIT:
+		case EOP_EXIT:
 		    a1 = ADD_BYTES(bc.numbytes_stack);
 		    a2 = ADD_BYTES(bc.numbytes_label);
 		    stream_printf(insn, " %d %d", a1, a2);
 		    break;
-		  case EOP_PUSH_LABEL:	case EOP_END_CATCH:
-		  case EOP_END_EXCEPT:	case EOP_TRY_FINALLY:
+		case EOP_PUSH_LABEL:
+		case EOP_END_CATCH:
+		case EOP_END_EXCEPT:
+		case EOP_TRY_FINALLY:
 		    stream_printf(insn, " %d", ADD_BYTES(bc.numbytes_label));
 		    break;
-		  case EOP_TRY_EXCEPT:
+		case EOP_TRY_EXCEPT:
 		    stream_printf(insn, " %d", ADD_BYTES(1));
 		    break;
-		  case EOP_LENGTH:
+		case EOP_LENGTH:
 		    stream_printf(insn, " %d", ADD_BYTES(bc.numbytes_stack));
 		    break;
-		  case EOP_SCATTER:
+		case EOP_SCATTER:
 		    {
-			int	i, nargs = ADD_BYTES(1);
+			int i, nargs = ADD_BYTES(1);
 
 			a1 = ADD_BYTES(1);
 			a2 = ADD_BYTES(1);
@@ -290,49 +294,53 @@ disassemble(Program *prog, Printer p, void *data)
 				      ADD_BYTES(bc.numbytes_label));
 		    }
 		    break;
-		  default:
+		default:
 		    break;
 		}
 	    } else {
 		stream_add_string(insn, mnemonics[b]);
 		switch ((Opcode) b) {
-		  case OP_IF:		case OP_IF_QUES:	case OP_EIF:
-		  case OP_AND:		case OP_OR:		case OP_JUMP:
-		  case OP_WHILE:
+		case OP_IF:
+		case OP_IF_QUES:
+		case OP_EIF:
+		case OP_AND:
+		case OP_OR:
+		case OP_JUMP:
+		case OP_WHILE:
 		    stream_printf(insn, " %d", ADD_BYTES(bc.numbytes_label));
 		    break;
-		  case OP_FORK:
+		case OP_FORK:
 		    stream_printf(insn, " %d", ADD_BYTES(bc.numbytes_fork));
 		    break;
-		  case OP_FORK_WITH_ID:
+		case OP_FORK_WITH_ID:
 		    a1 = ADD_BYTES(bc.numbytes_fork);
 		    a2 = ADD_BYTES(bc.numbytes_var_name);
 		    stream_printf(insn, " %d %s", a1, NAMES(a2));
 		    break;
-		  case OP_FOR_LIST:
-		  case OP_FOR_RANGE:
+		case OP_FOR_LIST:
+		case OP_FOR_RANGE:
 		    a1 = ADD_BYTES(bc.numbytes_var_name);
 		    a2 = ADD_BYTES(bc.numbytes_label);
 		    stream_printf(insn, " %s %d", NAMES(a1), a2);
 		    break;
-		  case OP_G_PUSH:
-		  case OP_G_PUT:
+		case OP_G_PUSH:
+		case OP_G_PUT:
 		    stream_printf(insn, " %s",
 				  NAMES(ADD_BYTES(bc.numbytes_var_name)));
 		    break;
-		  case OP_IMM:
+		case OP_IMM:
 		    {
 			Var v;
 
 			v = literals[ADD_BYTES(bc.numbytes_literal)];
 			switch (v.type) {
-			  case TYPE_OBJ:
+			case TYPE_OBJ:
 			    stream_printf(insn, " #%d", v.v.obj);
 			    break;
-			  case TYPE_INT:
+			case TYPE_INT:
 			    stream_printf(insn, " %d", v.v.num);
 			    break;
-			  case TYPE_STR:
+			case TYPE_STR:
 			    stream_add_string(insn, " \"");
 			    for (ptr = v.v.str; *ptr; ptr++) {
 				if (*ptr == '"' || *ptr == '\\')
@@ -341,19 +349,19 @@ disassemble(Program *prog, Printer p, void *data)
 			    }
 			    stream_add_char(insn, '"');
 			    break;
-			  case TYPE_ERR:
+			case TYPE_ERR:
 			    stream_printf(insn, " %s", error_name(v.v.err));
 			    break;
-			  default:
+			default:
 			    stream_printf(insn, " <literal type = %d>",
 					  v.type);
 			    break;
 			}
 		    }
 		    break;
-		  case OP_BI_FUNC_CALL:
+		case OP_BI_FUNC_CALL:
 		    stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(1)));
-		  default:
+		default:
 		    break;
 		}
 	    }
@@ -369,37 +377,37 @@ disassemble(Program *prog, Printer p, void *data)
 static void
 print_line(const char *line, void *data)
 {
-    FILE       *f = data;
+    FILE *f = data;
 
     fprintf(f, "%s\n", line);
 }
 
 void
-disassemble_to_file(FILE *fp, Program *prog)
+disassemble_to_file(FILE * fp, Program * prog)
 {
     disassemble(prog, print_line, fp);
 }
 
 void
-disassemble_to_stderr(Program *prog)
+disassemble_to_stderr(Program * prog)
 {
     disassemble_to_file(stderr, prog);
 }
 
 struct data {
-    char      **lines;
-    int		used, max;
+    char **lines;
+    int used, max;
 };
 
 static void
 add_line(const char *line, void *data)
 {
-    struct data	*d = data;
+    struct data *d = data;
 
     if (d->used >= d->max) {
-	int	new_max = (d->max == 0 ? 20 : d->max * 2);
-	char  **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
-	int	i;
+	int new_max = (d->max == 0 ? 20 : d->max * 2);
+	char **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+	int i;
 
 	for (i = 0; i < d->used; i++)
 	    new[i] = d->lines[i];
@@ -408,27 +416,25 @@ add_line(const char *line, void *data)
 	d->lines = new;
 	d->max = new_max;
     }
-
     d->lines[d->used++] = str_dup(line);
 }
 
 static package
 bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    db_verb_handle	h;
-    struct data		data;
-    Var			r;
-    int			i;
-    enum error		e;
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    db_verb_handle h;
+    struct data data;
+    Var r;
+    int i;
+    enum error e;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE
 	|| (e = E_INVARG, !valid(oid))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     free_var(arglist);
 
@@ -459,9 +465,12 @@ register_disassemble(void)
 char rcsid_disassemble[] = "$Id";
 
 /* $Log: disassemble.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:34  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.6  1996/04/08  01:09:40  pavel
  * Added missing mnemonic-table entry for EOP_PUSH_LABEL.  Release 1.8.0p3.
  *

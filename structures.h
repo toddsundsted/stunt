@@ -22,7 +22,7 @@
 
 #include "config.h"
 
-typedef int32	Objid;
+typedef int32 Objid;
 
 /*
  * Special Objid's
@@ -48,7 +48,7 @@ enum error {
  * raw form in the DB.
  */
 typedef enum {
-    TYPE_INT, TYPE_OBJ, TYPE_STR, TYPE_ERR, TYPE_LIST, /* user-visible */
+    TYPE_INT, TYPE_OBJ, TYPE_STR, TYPE_ERR, TYPE_LIST,	/* user-visible */
     TYPE_CLEAR,			/* in clear properties' value slot */
     TYPE_NONE,			/* in uninitialized MOO variables */
     TYPE_CATCH,			/* on-stack marker for an exception handler */
@@ -56,31 +56,34 @@ typedef enum {
     TYPE_FLOAT			/* floating-point number; user-visible */
 } var_type;
 
-#define TYPE_ANY ((var_type) -1) /* wildcard for use in declaring built-ins */
-#define TYPE_NUMERIC ((var_type) -2) /* wildcard for (integer or float) */
+#define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
+#define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
 
-typedef struct Var  Var;
+typedef struct Var Var;
 
 struct Var {
     union {
-	const char     *str;	/* STR */
-	int32		num;	/* NUM, CATCH, FINALLY */
-	Objid		obj;	/* OBJ */
-	enum error	err;	/* ERR */
-	Var	       *list;	/* LIST */
-	double	       *fnum;	/* FLOAT */
+	const char *str;	/* STR */
+	int32 num;		/* NUM, CATCH, FINALLY */
+	Objid obj;		/* OBJ */
+	enum error err;		/* ERR */
+	Var *list;		/* LIST */
+	double *fnum;		/* FLOAT */
     } v;
-    var_type	type;
+    var_type type;
 };
 
-extern Var	zero;		/* useful constant */
+extern Var zero;		/* useful constant */
 
-#endif /* !Structures_h */
+#endif				/* !Structures_h */
 
 /* $Log: structures.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:29  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:12:21  pavel
  * Added E_FLOAT, TYPE_FLOAT, and TYPE_NUMERIC.  Renamed TYPE_NUM to TYPE_INT.
  * Updated copyright notice for 1996.  Release 1.8.0beta1.

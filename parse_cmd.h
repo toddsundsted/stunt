@@ -23,31 +23,34 @@
 #include "structures.h"
 
 typedef struct {
-    const char	       *verb;		/* verb (as typed by player) */
-    const char	       *argstr;		/* arguments to verb */
-    Var			args;		/* arguments to the verb */
+    const char *verb;		/* verb (as typed by player) */
+    const char *argstr;		/* arguments to verb */
+    Var args;			/* arguments to the verb */
 
-    const char	       *dobjstr;	/* direct object string */
-    Objid		dobj;		/* direct object */
+    const char *dobjstr;	/* direct object string */
+    Objid dobj;			/* direct object */
 
-    const char	       *prepstr;	/* preposition string */
-    db_prep_spec	prep;		/* preposition identifier */
+    const char *prepstr;	/* preposition string */
+    db_prep_spec prep;		/* preposition identifier */
 
-    const char	       *iobjstr;	/* indirect object string */
-    Objid		iobj;		/* indirect object */
+    const char *iobjstr;	/* indirect object string */
+    Objid iobj;			/* indirect object */
 } Parsed_Command;
 
-extern char	      **parse_into_words(char *input, int *nwords);
-extern Var		parse_into_wordlist(const char *command);
-extern Parsed_Command  *parse_command(const char *command, Objid user);
-extern void		free_parsed_command(Parsed_Command *);
+extern char **parse_into_words(char *input, int *nwords);
+extern Var parse_into_wordlist(const char *command);
+extern Parsed_Command *parse_command(const char *command, Objid user);
+extern void free_parsed_command(Parsed_Command *);
 
-#endif /* !Parse_Cmd_H */
+#endif				/* !Parse_Cmd_H */
 
 /* $Log: parse_cmd.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:15  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:15:41  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

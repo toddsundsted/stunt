@@ -30,7 +30,7 @@
 static Names *
 new_names(unsigned max_size)
 {
-    Names      *names = mymalloc(sizeof(Names), M_NAMES);
+    Names *names = mymalloc(sizeof(Names), M_NAMES);
 
     names->names = mymalloc(sizeof(char *) * max_size, M_NAMES);
     names->max_size = max_size;
@@ -40,10 +40,10 @@ new_names(unsigned max_size)
 }
 
 static Names *
-copy_names(Names *old)
+copy_names(Names * old)
 {
-    Names      *new = new_names(old->size);
-    unsigned	i;
+    Names *new = new_names(old->size);
+    unsigned i;
 
     new->size = old->size;
     for (i = 0; i < new->size; i++)
@@ -55,7 +55,7 @@ copy_names(Names *old)
 int
 first_user_slot(DB_Version version)
 {
-    int	count = 16;		/* DBV_Prehistory count */
+    int count = 16;		/* DBV_Prehistory count */
 
     if (version >= DBV_Float)
 	count += 2;
@@ -66,11 +66,11 @@ first_user_slot(DB_Version version)
 Names *
 new_builtin_names(DB_Version version)
 {
-    static Names   *builtins[Num_DB_Versions];
-    
+    static Names *builtins[Num_DB_Versions];
+
     if (builtins[version] == 0) {
-	Names  *bi = new_names(first_user_slot(version));
-	
+	Names *bi = new_names(first_user_slot(version));
+
 	builtins[version] = bi;
 	bi->size = bi->max_size;
 
@@ -100,9 +100,9 @@ new_builtin_names(DB_Version version)
 }
 
 int
-find_name(Names *names, const char *str)
+find_name(Names * names, const char *str)
 {
-    unsigned	i;
+    unsigned i;
 
     for (i = 0; i < names->size; i++)
 	if (!mystrcasecmp(names->names[i], str))
@@ -111,35 +111,34 @@ find_name(Names *names, const char *str)
 }
 
 unsigned
-find_or_add_name(Names **names, const char *str)
+find_or_add_name(Names ** names, const char *str)
 {
-  unsigned i;
+    unsigned i;
 
-  for (i = 0; i < (*names)->size; i++)
-    if (!mystrcasecmp((*names)->names[i], str)) {/* old name */
-      return i;
+    for (i = 0; i < (*names)->size; i++)
+	if (!mystrcasecmp((*names)->names[i], str)) {	/* old name */
+	    return i;
+	}
+    if ((*names)->size == (*names)->max_size) {
+	unsigned old_max = (*names)->max_size;
+	Names *new = new_names(old_max * 2);
+	unsigned i;
+
+	for (i = 0; i < old_max; i++)
+	    new->names[i] = (*names)->names[i];
+	new->size = old_max;
+	myfree((*names)->names, M_NAMES);
+	myfree(*names, M_NAMES);
+	*names = new;
     }
-  
-  if ((*names)->size == (*names)->max_size) {
-    unsigned	old_max = (*names)->max_size;
-    Names      *new = new_names(old_max * 2);
-    unsigned	i;
-
-    for (i = 0; i < old_max; i++)
-      new->names[i] = (*names)->names[i];
-    new->size = old_max;
-    myfree((*names)->names, M_NAMES);
-    myfree(*names, M_NAMES);
-    *names = new;
-  }
-  (*names)->names[(*names)->size] = str_dup(str);
-  return (*names)->size++;
+    (*names)->names[(*names)->size] = str_dup(str);
+    return (*names)->size++;
 }
 
 void
-free_names(Names *names)
+free_names(Names * names)
 {
-    unsigned	i;
+    unsigned i;
 
     for (i = 0; i < names->size; i++)
 	free_str(names->names[i]);
@@ -147,12 +146,15 @@ free_names(Names *names)
     myfree(names, M_NAMES);
 }
 
-char rcsid_sym_table[] = "$Id: sym_table.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_sym_table[] = "$Id: sym_table.c,v 1.2 1997/03/03 04:19:29 nop Exp $";
 
 /* $Log: sym_table.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:29  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/03/10  01:16:32  pavel
  * Removed a bunch of obsolete unused functions.  Release 1.8.0.
  *

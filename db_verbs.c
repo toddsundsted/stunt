@@ -30,17 +30,18 @@
 #include "program.h"
 #include "storage.h"
 #include "utils.h"
-
 
+
 /*********** Prepositions ***********/
 
-#define MAXPPHRASE 3	/* max. number of words in a prepositional phrase */
+#define MAXPPHRASE 3		/* max. number of words in a prepositional phrase */
 
 /* NOTE: New prepositional phrases should only be added to this list at the
  * end, never in the middle, and no entries should every be removed from this
  * list; the list indices are stored raw in the DB file.
  */
-static const char  *prep_list[] = {
+static const char *prep_list[] =
+{
     "with/using",
     "at/to",
     "in front of",
@@ -61,23 +62,23 @@ static const char  *prep_list[] = {
 #define NPREPS Arraysize(prep_list)
 
 typedef struct pt_entry {
-    int		nwords;
-    char	*words[MAXPPHRASE];
+    int nwords;
+    char *words[MAXPPHRASE];
     struct pt_entry *next;
 } pt_entry;
 
-struct pt_entry	*prep_table[NPREPS];
+struct pt_entry *prep_table[NPREPS];
 
 void
 dbpriv_build_prep_table(void)
 {
-    int		i, j;
-    int		nwords;
-    char      **words;
-    char	cprep[100];
+    int i, j;
+    int nwords;
+    char **words;
+    char cprep[100];
     const char *p;
-    char       *t;
-    pt_entry   *current_alias, **prev;
+    char *t;
+    pt_entry *current_alias, **prev;
 
     for (i = 0; i < NPREPS; i++) {
 	p = prep_list[i];
@@ -112,9 +113,9 @@ dbpriv_build_prep_table(void)
 db_prep_spec
 db_find_prep(int argc, char *argv[], int *first, int *last)
 {
-    pt_entry   *alias;
-    int		i, j, k;
-    int		exact_match = (first == 0  ||  last == 0);
+    pt_entry *alias;
+    int i, j, k;
+    int exact_match = (first == 0 || last == 0);
 
     for (i = 0; i < argc; i++) {
 	for (j = 0; j < NPREPS; j++) {
@@ -125,8 +126,8 @@ db_find_prep(int argc, char *argv[], int *first, int *last)
 			    break;
 		    }
 		    if (k == alias->nwords
-			     &&  (! exact_match || i + k == argc)) {
-			if (! exact_match) {
+			&& (!exact_match || i + k == argc)) {
+			if (!exact_match) {
 			    *first = i;
 			    *last = i + alias->nwords - 1;
 			}
@@ -144,11 +145,11 @@ db_find_prep(int argc, char *argv[], int *first, int *last)
 db_prep_spec
 db_match_prep(const char *prepname)
 {
-    db_prep_spec	prep;
-    int			argc;
-    char	       *ptr;
-    char	      **argv;
-    char	       *s, first;
+    db_prep_spec prep;
+    int argc;
+    char *ptr;
+    char **argv;
+    char *s, first;
 
     s = str_dup(prepname);
     first = s[0];
@@ -162,7 +163,6 @@ db_match_prep(const char *prepname)
 	else
 	    return prep;
     }
-
     if ((ptr = strchr(s, '/')) != '\0')
 	*ptr = '\0';
 
@@ -182,8 +182,8 @@ db_unparse_prep(db_prep_spec prep)
     else
 	return prep_list[prep];
 }
-
 
+
 /*********** Verbs ***********/
 
 #define DOBJSHIFT  4
@@ -195,8 +195,8 @@ void
 db_add_verb(Objid oid, const char *vnames, Objid owner, unsigned flags,
 	    db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
-    Object     *o = dbpriv_find_object(oid);
-    Verbdef    *v, *newv;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *v, *newv;
 
     newv = mymalloc(sizeof(Verbdef), M_VERBDEF);
     newv->name = vnames;
@@ -206,21 +206,20 @@ db_add_verb(Objid oid, const char *vnames, Objid owner, unsigned flags,
     newv->next = 0;
     newv->program = 0;
     if (o->verbdefs) {
-	for (v = o->verbdefs; v->next; v = v->next)
-	    ;
+	for (v = o->verbdefs; v->next; v = v->next);
 	v->next = newv;
     } else
 	o->verbdefs = newv;
 }
 
 static Verbdef *
-find_verbdef_by_name(Object *o, const char *vname, int check_x_bit)
+find_verbdef_by_name(Object * o, const char *vname, int check_x_bit)
 {
-    Verbdef    *v;
+    Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
 	if (verbcasecmp(v->name, vname)
-	    && (!check_x_bit  ||  (v->perms & VF_EXEC)))
+	    && (!check_x_bit || (v->perms & VF_EXEC)))
 	    break;
 
     return v;
@@ -229,9 +228,9 @@ find_verbdef_by_name(Object *o, const char *vname, int check_x_bit)
 int
 db_count_verbs(Objid oid)
 {
-    int		count = 0;
-    Object     *o = dbpriv_find_object(oid);
-    Verbdef    *v;
+    int count = 0;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
 	count++;
@@ -241,32 +240,32 @@ db_count_verbs(Objid oid)
 
 int
 db_for_all_verbs(Objid oid,
-		 int (*func)(void *data, const char *vname),
+		 int (*func) (void *data, const char *vname),
 		 void *data)
 {
-    Object     *o = dbpriv_find_object(oid);
-    Verbdef    *v;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
-	if ((*func)(data, v->name))
+	if ((*func) (data, v->name))
 	    return 1;
 
     return 0;
 }
 
 typedef struct {		/* Non-null db_verb_handles point to these */
-    Objid	definer;
-    Verbdef    *verbdef;
+    Objid definer;
+    Verbdef *verbdef;
 } handle;
 
 void
 db_delete_verb(db_verb_handle vh)
 {
-    handle     *h = (handle *) vh.ptr;
-    Objid	oid = h->definer;
-    Verbdef    *v = h->verbdef;
-    Object     *o = dbpriv_find_object(oid);
-    Verbdef    *vv;
+    handle *h = (handle *) vh.ptr;
+    Objid oid = h->definer;
+    Verbdef *v = h->verbdef;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *vv;
 
     vv = o->verbdefs;
     if (vv == v)
@@ -288,20 +287,20 @@ db_verb_handle
 db_find_command_verb(Objid oid, const char *verb,
 		     db_arg_spec dobj, unsigned prep, db_arg_spec iobj)
 {
-    Object	       *o;
-    Verbdef	       *v;
-    static handle	h;
-    db_verb_handle	vh;
+    Object *o;
+    Verbdef *v;
+    static handle h;
+    db_verb_handle vh;
 
     for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent))
 	for (v = o->verbdefs; v; v = v->next) {
-	    db_arg_spec	vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
-	    db_arg_spec	viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
+	    db_arg_spec vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
+	    db_arg_spec viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
 
 	    if (verbcasecmp(v->name, verb)
-		&& (vdobj == ASPEC_ANY   ||  vdobj == dobj)
-		&& (v->prep == PREP_ANY  ||  v->prep == prep)
-		&& (viobj == ASPEC_ANY   ||  viobj == iobj)) {
+		&& (vdobj == ASPEC_ANY || vdobj == dobj)
+		&& (v->prep == PREP_ANY || v->prep == prep)
+		&& (viobj == ASPEC_ANY || viobj == iobj)) {
 		h.definer = o->id;
 		h.verbdef = v;
 		vh.ptr = &h;
@@ -318,10 +317,10 @@ db_find_command_verb(Objid oid, const char *verb,
 db_verb_handle
 db_find_callable_verb(Objid oid, const char *verb)
 {
-    Object	       *o;
-    Verbdef	       *v;
-    static handle	h;
-    db_verb_handle	vh;
+    Object *o;
+    Verbdef *v;
+    static handle h;
+    db_verb_handle vh;
 
     for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent))
 	if ((v = find_verbdef_by_name(o, verb, 1)) != 0) {
@@ -331,7 +330,6 @@ db_find_callable_verb(Objid oid, const char *verb)
 
 	    return vh;
 	}
-
     vh.ptr = 0;
 
     return vh;
@@ -340,12 +338,12 @@ db_find_callable_verb(Objid oid, const char *verb)
 db_verb_handle
 db_find_defined_verb(Objid oid, const char *vname, int allow_numbers)
 {
-    Object	       *o = dbpriv_find_object(oid);
-    Verbdef	       *v;
-    char       	       *p;
-    int			num, i;
-    static handle	h;
-    db_verb_handle	vh;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *v;
+    char *p;
+    int num, i;
+    static handle h;
+    db_verb_handle vh;
 
     if (!allow_numbers ||
 	(num = strtol(vname, &p, 10),
@@ -363,7 +361,6 @@ db_find_defined_verb(Objid oid, const char *vname, int allow_numbers)
 
 	return vh;
     }
-
     vh.ptr = 0;
 
     return vh;
@@ -372,11 +369,11 @@ db_find_defined_verb(Objid oid, const char *vname, int allow_numbers)
 db_verb_handle
 db_find_indexed_verb(Objid oid, unsigned index)
 {
-    Object	       *o = dbpriv_find_object(oid);
-    Verbdef	       *v;
-    unsigned		i;
-    static handle	h;
-    db_verb_handle	vh;
+    Object *o = dbpriv_find_object(oid);
+    Verbdef *v;
+    unsigned i;
+    static handle h;
+    db_verb_handle vh;
 
     for (v = o->verbdefs, i = 0; v; v = v->next)
 	if (++i == index) {
@@ -386,7 +383,6 @@ db_find_indexed_verb(Objid oid, unsigned index)
 
 	    return vh;
 	}
-
     vh.ptr = 0;
 
     return vh;
@@ -395,7 +391,7 @@ db_find_indexed_verb(Objid oid, unsigned index)
 Objid
 db_verb_definer(db_verb_handle vh)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h)
 	return h->definer;
@@ -407,7 +403,7 @@ db_verb_definer(db_verb_handle vh)
 const char *
 db_verb_names(db_verb_handle vh)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h)
 	return h->verbdef->name;
@@ -419,7 +415,7 @@ db_verb_names(db_verb_handle vh)
 void
 db_set_verb_names(db_verb_handle vh, const char *names)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h) {
 	if (h->verbdef->name)
@@ -432,7 +428,7 @@ db_set_verb_names(db_verb_handle vh, const char *names)
 Objid
 db_verb_owner(db_verb_handle vh)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h)
 	return h->verbdef->owner;
@@ -444,7 +440,7 @@ db_verb_owner(db_verb_handle vh)
 void
 db_set_verb_owner(db_verb_handle vh, Objid owner)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h)
 	h->verbdef->owner = owner;
@@ -455,7 +451,7 @@ db_set_verb_owner(db_verb_handle vh, Objid owner)
 unsigned
 db_verb_flags(db_verb_handle vh)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h)
 	return h->verbdef->perms & PERMMASK;
@@ -467,7 +463,7 @@ db_verb_flags(db_verb_handle vh)
 void
 db_set_verb_flags(db_verb_handle vh, unsigned flags)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h) {
 	h->verbdef->perms &= ~PERMMASK;
@@ -479,22 +475,21 @@ db_set_verb_flags(db_verb_handle vh, unsigned flags)
 Program *
 db_verb_program(db_verb_handle vh)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h) {
-	Program	*p = h->verbdef->program;
+	Program *p = h->verbdef->program;
 
 	return p ? p : null_program();
     }
-
     panic("DB_VERB_PROGRAM: Null handle!");
     return 0;
 }
 
 void
-db_set_verb_program(db_verb_handle vh, Program *program)
+db_set_verb_program(db_verb_handle vh, Program * program)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h) {
 	if (h->verbdef->program)
@@ -506,9 +501,9 @@ db_set_verb_program(db_verb_handle vh, Program *program)
 
 void
 db_verb_arg_specs(db_verb_handle vh,
-		  db_arg_spec *dobj, db_prep_spec *prep, db_arg_spec *iobj)
+	     db_arg_spec * dobj, db_prep_spec * prep, db_arg_spec * iobj)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h) {
 	*dobj = (h->verbdef->perms >> DOBJSHIFT) & OBJMASK;
@@ -520,9 +515,9 @@ db_verb_arg_specs(db_verb_handle vh,
 
 void
 db_set_verb_arg_specs(db_verb_handle vh,
-		      db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
+		   db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
-    handle     *h = (handle *) vh.ptr;
+    handle *h = (handle *) vh.ptr;
 
     if (h) {
 	h->verbdef->perms = ((h->verbdef->perms & PERMMASK)
@@ -542,12 +537,15 @@ db_verb_allows(db_verb_handle h, Objid progr, db_verb_flag flag)
 }
 
 
-char rcsid_db_verbs[] = "$Id: db_verbs.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_db_verbs[] = "$Id: db_verbs.c,v 1.2 1997/03/03 04:18:31 nop Exp $";
 
 /* $Log: db_verbs.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:31  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/05/12  21:32:23  pavel
  * Changed db_add_verb() not to bump the reference count of the given
  * verb-names string.  Release 1.8.0p5.

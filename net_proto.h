@@ -27,14 +27,14 @@
 #include "structures.h"
 
 struct proto {
-    unsigned	pocket_size;	/* Maximum number of file descriptors it might
+    unsigned pocket_size;	/* Maximum number of file descriptors it might
 				 * take to accept a new connection in this
 				 * protocol.  The generic multi-user network
 				 * code will keep this many descriptors `in its
 				 * pocket', ready to be freed up in order to
 				 * tell potential users that there's no more
 				 * room in the server. */
-    int		believe_eof;	/* If true, then read() will return 0 on a
+    int believe_eof;		/* If true, then read() will return 0 on a
 				 * connection using this protocol iff the
 				 * connection really is closed.  If false, then
 				 * read() -> 0 will be interpreted as the
@@ -44,17 +44,17 @@ struct proto {
 				 * line of output on connections. */
 };
 
-extern const char      *proto_name(void);
+extern const char *proto_name(void);
 				/* Returns a string naming the protocol. */
 
-extern const char      *proto_usage_string(void);
+extern const char *proto_usage_string(void);
 				/* Returns a string giving the syntax of any
 				 * extra, protocol-specific command-line
 				 * arguments, such as a port number.
 				 */
 
-extern int		proto_initialize(struct proto *proto, Var *desc,
-					 int argc, char **argv);
+extern int proto_initialize(struct proto *proto, Var * desc,
+			    int argc, char **argv);
 				/* ARGC and ARGV refer to just the protocol-
 				 * specific command-line arguments, if any,
 				 * which always come after any protocol-
@@ -67,8 +67,8 @@ extern int		proto_initialize(struct proto *proto, Var *desc,
 				 * server's initial listening point.
 				 */
 
-extern enum error	proto_make_listener(Var desc, int *fd, Var *canon,
-					    const char **name);
+extern enum error proto_make_listener(Var desc, int *fd, Var * canon,
+				      const char **name);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -90,7 +90,7 @@ extern enum error	proto_make_listener(Var desc, int *fd, Var *canon,
 				 * accepting connections.
 				 */
 
-extern int		proto_listen(int fd);
+extern int proto_listen(int fd);
 				/* Prepare for accepting connections on the
 				 * given file descriptor, returning true if
 				 * successful.  FD was returned by a call to
@@ -98,12 +98,14 @@ extern int		proto_listen(int fd);
 				 */
 
 
-enum proto_accept_error { PA_OKAY, PA_FULL, PA_OTHER };
+enum proto_accept_error {
+    PA_OKAY, PA_FULL, PA_OTHER
+};
 
 extern enum proto_accept_error
-	    		proto_accept_connection(int listener_fd,
-						int *read_fd, int *write_fd,
-						const char **name);
+ proto_accept_connection(int listener_fd,
+			 int *read_fd, int *write_fd,
+			 const char **name);
 				/* Accept a new connection on LISTENER_FD,
 				 * returning PA_OKAY if successful, PA_FULL if
 				 * unsuccessful only because there aren't
@@ -121,10 +123,10 @@ extern enum proto_accept_error
 
 #ifdef OUTBOUND_NETWORK
 
-extern enum error	proto_open_connection(Var arglist,
-					      int *read_fd, int *write_fd,
-					      const char **local_name,
-					      const char **remote_name);
+extern enum error proto_open_connection(Var arglist,
+					int *read_fd, int *write_fd,
+					const char **local_name,
+					const char **remote_name);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be opened.  If the arguments are OK for
@@ -138,28 +140,31 @@ extern enum error	proto_open_connection(Var arglist,
 				 * an appropriate error should be returned.
 				 */
 
-#endif /* OUTBOUND_NETWORK */
+#endif				/* OUTBOUND_NETWORK */
 
-extern void		proto_close_connection(int read_fd, int write_fd);
+extern void proto_close_connection(int read_fd, int write_fd);
 				/* Close the given file descriptors, which were
 				 * returned by proto_accept_connection(),
 				 * performing whatever extra clean-ups are
 				 * required by the protocol.
 				 */
 
-extern void		proto_close_listener(int fd);
+extern void proto_close_listener(int fd);
 				/* Close FD, which was returned by a call to
 				 * proto_make_listener(), performing whatever
 				 * extra clean-ups are required by the
 				 * protocol.
 				 */
 
-#endif /* !Net_Proto_H */
+#endif				/* !Net_Proto_H */
 
 /* $Log: net_proto.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:07  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/02/08  06:16:01  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

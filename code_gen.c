@@ -17,7 +17,7 @@
 
 #include <limits.h>
 
-#include "ast.h" 
+#include "ast.h"
 #include "exceptions.h"
 #include "opcode.h"
 #include "program.h"
@@ -36,53 +36,52 @@ enum fixup_kind {
 };
 
 struct fixup {
-    enum fixup_kind	kind;
-    unsigned		pc;
-    unsigned		value;
-    unsigned		prev_literals, prev_forks, prev_var_refs, prev_labels,
-			prev_stacks;
-    int			next;	/* chain for compiling IF/ELSEIF arms */
+    enum fixup_kind kind;
+    unsigned pc;
+    unsigned value;
+    unsigned prev_literals, prev_forks, prev_var_refs, prev_labels,
+     prev_stacks;
+    int next;			/* chain for compiling IF/ELSEIF arms */
 };
-typedef struct fixup	Fixup;
+typedef struct fixup Fixup;
 
 struct gstate {
-    unsigned		total_var_refs;	/* For duplicating an old bug... */
-    unsigned		num_literals, max_literals;
-    Var		       *literals;
-    unsigned		num_fork_vectors, max_fork_vectors;
-    Bytecodes	       *fork_vectors;
+    unsigned total_var_refs;	/* For duplicating an old bug... */
+    unsigned num_literals, max_literals;
+    Var *literals;
+    unsigned num_fork_vectors, max_fork_vectors;
+    Bytecodes *fork_vectors;
 };
-typedef struct gstate	GState;
+typedef struct gstate GState;
 
 struct loop {
-    int		id;
-    Fixup	top_label;
-    unsigned	top_stack;
-    int		bottom_label;
-    unsigned	bottom_stack;
+    int id;
+    Fixup top_label;
+    unsigned top_stack;
+    int bottom_label;
+    unsigned bottom_stack;
 };
-typedef struct loop	Loop;
+typedef struct loop Loop;
 
 struct state {
-    unsigned		max_literal, max_fork, max_var_ref;
-				/* For telling how big the refs must be */
-    unsigned		num_literals, num_forks, num_var_refs, num_labels,
-			num_stacks;
-				/* For computing the final vector length */
-    unsigned		num_fixups, max_fixups;
-    Fixup	       *fixups;
-    unsigned		num_bytes, max_bytes;
-    Byte	       *bytes;
-    unsigned		cur_stack, max_stack;
-    unsigned		saved_stack;
-    unsigned		num_loops, max_loops;
-    Loop	       *loops;
-    GState	       *gstate;
+    unsigned max_literal, max_fork, max_var_ref;
+    /* For telling how big the refs must be */
+    unsigned num_literals, num_forks, num_var_refs, num_labels, num_stacks;
+    /* For computing the final vector length */
+    unsigned num_fixups, max_fixups;
+    Fixup *fixups;
+    unsigned num_bytes, max_bytes;
+    Byte *bytes;
+    unsigned cur_stack, max_stack;
+    unsigned saved_stack;
+    unsigned num_loops, max_loops;
+    Loop *loops;
+    GState *gstate;
 };
-typedef struct state	State;
+typedef struct state State;
 
 static void
-init_gstate(GState *gstate)
+init_gstate(GState * gstate)
 {
     gstate->total_var_refs = 0;
     gstate->num_literals = gstate->num_fork_vectors = 0;
@@ -101,7 +100,7 @@ free_gstate(GState gstate)
 }
 
 static void
-init_state(State *state, GState *gstate)
+init_state(State * state, GState * gstate)
 {
     state->num_literals = state->num_forks = state->num_labels = 0;
     state->num_var_refs = state->num_stacks = 0;
@@ -135,13 +134,13 @@ free_state(State state)
 }
 
 static void
-emit_byte(Byte b, State *state)
+emit_byte(Byte b, State * state)
 {
     if (state->num_bytes == state->max_bytes) {
-	unsigned	new_max = 2 * state->max_bytes;
-	Byte	       *new_bytes = mymalloc(sizeof(Byte) * new_max,
-					     M_BYTECODES);
-	unsigned	i;
+	unsigned new_max = 2 * state->max_bytes;
+	Byte *new_bytes = mymalloc(sizeof(Byte) * new_max,
+				   M_BYTECODES);
+	unsigned i;
 
 	for (i = 0; i < state->num_bytes; i++)
 	    new_bytes[i] = state->bytes[i];
@@ -150,26 +149,25 @@ emit_byte(Byte b, State *state)
 	state->bytes = new_bytes;
 	state->max_bytes = new_max;
     }
-
     state->bytes[state->num_bytes++] = b;
 }
 
 static void
-emit_extended_byte(Byte b, State *state)
+emit_extended_byte(Byte b, State * state)
 {
     emit_byte(OP_EXTENDED, state);
     emit_byte(b, state);
 }
 
 static int
-add_known_fixup(Fixup f, State *state)
+add_known_fixup(Fixup f, State * state)
 {
-    int		i;
+    int i;
 
     if (state->num_fixups == state->max_fixups) {
-	unsigned	new_max = 2 * state->max_fixups;
-	Fixup	       *new_fixups = mymalloc(sizeof(Fixup) * new_max,
-					      M_CODE_GEN);
+	unsigned new_max = 2 * state->max_fixups;
+	Fixup *new_fixups = mymalloc(sizeof(Fixup) * new_max,
+				     M_CODE_GEN);
 
 	for (i = 0; i < state->num_fixups; i++)
 	    new_fixups[i] = state->fixups[i];
@@ -178,7 +176,6 @@ add_known_fixup(Fixup f, State *state)
 	state->fixups = new_fixups;
 	state->max_fixups = new_max;
     }
-
     f.pc = state->num_bytes;
     state->fixups[i = state->num_fixups++] = f;
 
@@ -188,9 +185,9 @@ add_known_fixup(Fixup f, State *state)
 }
 
 static int
-add_linked_fixup(enum fixup_kind kind, unsigned value, int next, State *state)
+add_linked_fixup(enum fixup_kind kind, unsigned value, int next, State * state)
 {
-    Fixup	f;
+    Fixup f;
 
     f.kind = kind;
     f.value = value;
@@ -204,30 +201,30 @@ add_linked_fixup(enum fixup_kind kind, unsigned value, int next, State *state)
 }
 
 static int
-add_fixup(enum fixup_kind kind, unsigned value, State *state)
+add_fixup(enum fixup_kind kind, unsigned value, State * state)
 {
     return add_linked_fixup(kind, value, -1, state);
 }
 
 static void
-add_literal(Var v, State *state)
+add_literal(Var v, State * state)
 {
-    GState     *gstate = state->gstate;
-    Var	       *literals = gstate->literals;
-    unsigned	i;
+    GState *gstate = state->gstate;
+    Var *literals = gstate->literals;
+    unsigned i;
 
     for (i = 0; i < gstate->num_literals; i++)
-	if (v.type == literals[i].type /* no int/float coercion here */
+	if (v.type == literals[i].type	/* no int/float coercion here */
 	    && equality(v, literals[i], 1))
 	    break;
 
     if (i == gstate->num_literals) {
 	/* New literal to intern */
 	if (gstate->num_literals == gstate->max_literals) {
-	    unsigned	new_max = gstate->max_literals == 0
-				     ? 5 : 2 * gstate->max_literals;
-	    Var	       *new_literals = mymalloc(sizeof(Var) * new_max,
-						M_CODE_GEN);
+	    unsigned new_max = gstate->max_literals == 0
+	    ? 5 : 2 * gstate->max_literals;
+	    Var *new_literals = mymalloc(sizeof(Var) * new_max,
+					 M_CODE_GEN);
 
 	    if (gstate->literals) {
 		for (i = 0; i < gstate->num_literals; i++)
@@ -235,14 +232,11 @@ add_literal(Var v, State *state)
 
 		myfree(literals, M_CODE_GEN);
 	    }
-	    
 	    gstate->literals = new_literals;
 	    gstate->max_literals = new_max;
 	}
-
 	gstate->literals[i = gstate->num_literals++] = var_ref(v);
     }
-
     add_fixup(FIXUP_LITERAL, i, state);
     state->num_literals++;
     if (i > state->max_literal)
@@ -250,16 +244,16 @@ add_literal(Var v, State *state)
 }
 
 static void
-add_fork(Bytecodes b, State *state)
+add_fork(Bytecodes b, State * state)
 {
-    unsigned	i;
-    GState     *gstate = state->gstate;
+    unsigned i;
+    GState *gstate = state->gstate;
 
     if (gstate->num_fork_vectors == gstate->max_fork_vectors) {
-	unsigned	new_max = gstate->max_fork_vectors == 0
-				     ? 1 : 2 * gstate->max_fork_vectors;
-	Bytecodes      *new_fv = mymalloc(sizeof(Bytecodes) * new_max,
-					  M_CODE_GEN);
+	unsigned new_max = gstate->max_fork_vectors == 0
+	? 1 : 2 * gstate->max_fork_vectors;
+	Bytecodes *new_fv = mymalloc(sizeof(Bytecodes) * new_max,
+				     M_CODE_GEN);
 
 	if (gstate->fork_vectors) {
 	    for (i = 0; i < gstate->num_fork_vectors; i++)
@@ -267,11 +261,9 @@ add_fork(Bytecodes b, State *state)
 
 	    myfree(gstate->fork_vectors, M_CODE_GEN);
 	}
-	
 	gstate->fork_vectors = new_fv;
 	gstate->max_fork_vectors = new_max;
     }
-
     gstate->fork_vectors[i = gstate->num_fork_vectors++] = b;
 
     add_fixup(FIXUP_FORK, i, state);
@@ -281,7 +273,7 @@ add_fork(Bytecodes b, State *state)
 }
 
 static void
-add_var_ref(unsigned slot, State *state)
+add_var_ref(unsigned slot, State * state)
 {
     add_fixup(FIXUP_VAR_REF, slot, state);
     state->num_var_refs++;
@@ -291,24 +283,24 @@ add_var_ref(unsigned slot, State *state)
 }
 
 static int
-add_linked_label(int next, State *state)
+add_linked_label(int next, State * state)
 {
-    int		label = add_linked_fixup(FIXUP_LABEL, 0, next, state);
+    int label = add_linked_fixup(FIXUP_LABEL, 0, next, state);
 
     state->num_labels++;
     return label;
 }
 
 static int
-add_label(State *state)
+add_label(State * state)
 {
     return add_linked_label(-1, state);
 }
 
 static void
-add_pseudo_label(unsigned value, State *state)
+add_pseudo_label(unsigned value, State * state)
 {
-    Fixup	f;
+    Fixup f;
 
     f.kind = FIXUP_LABEL;
     f.value = value;
@@ -321,18 +313,18 @@ add_pseudo_label(unsigned value, State *state)
 }
 
 static int
-add_known_label(Fixup f, State *state)
+add_known_label(Fixup f, State * state)
 {
-    int		label = add_known_fixup(f, state);
+    int label = add_known_fixup(f, state);
 
     state->num_labels++;
     return label;
 }
 
 static Fixup
-capture_label(State *state)
+capture_label(State * state)
 {
-    Fixup	f;
+    Fixup f;
 
     f.kind = FIXUP_LABEL;
     f.value = state->num_bytes;
@@ -346,12 +338,12 @@ capture_label(State *state)
 }
 
 static void
-define_label(int label, State *state)
+define_label(int label, State * state)
 {
-    unsigned	value = state->num_bytes;
+    unsigned value = state->num_bytes;
 
     while (label != -1) {
-	Fixup  *fixup = &(state->fixups[label]);
+	Fixup *fixup = &(state->fixups[label]);
 
 	fixup->value = value;
 	fixup->prev_literals = state->num_literals;
@@ -363,13 +355,13 @@ define_label(int label, State *state)
 }
 
 static void
-add_stack_ref(unsigned index, State *state)
+add_stack_ref(unsigned index, State * state)
 {
     add_fixup(FIXUP_STACK, index, state);
 }
 
 static void
-push_stack(unsigned n, State *state)
+push_stack(unsigned n, State * state)
 {
     state->cur_stack += n;
     if (state->cur_stack > state->max_stack)
@@ -377,15 +369,15 @@ push_stack(unsigned n, State *state)
 }
 
 static void
-pop_stack(unsigned n, State *state)
+pop_stack(unsigned n, State * state)
 {
     state->cur_stack -= n;
 }
 
 static unsigned
-save_stack_top(State *state)
+save_stack_top(State * state)
 {
-    unsigned	old = state->saved_stack;
+    unsigned old = state->saved_stack;
 
     state->saved_stack = state->cur_stack - 1;
 
@@ -393,28 +385,28 @@ save_stack_top(State *state)
 }
 
 static unsigned
-saved_stack_top(State *state)
+saved_stack_top(State * state)
 {
     return state->saved_stack;
 }
 
 static void
-restore_stack_top(unsigned old, State *state)
+restore_stack_top(unsigned old, State * state)
 {
     state->saved_stack = old;
 }
 
 static void
 enter_loop(int id, Fixup top_label, unsigned top_stack,
-	   int bottom_label, unsigned bottom_stack, State *state)
+	   int bottom_label, unsigned bottom_stack, State * state)
 {
-    int		i;
-    Loop       *loop;
+    int i;
+    Loop *loop;
 
     if (state->num_loops == state->max_loops) {
-	unsigned	new_max = 2 * state->max_loops;
-	Loop	       *new_loops = mymalloc(sizeof(Loop) * new_max,
-					     M_CODE_GEN);
+	unsigned new_max = 2 * state->max_loops;
+	Loop *new_loops = mymalloc(sizeof(Loop) * new_max,
+				   M_CODE_GEN);
 
 	for (i = 0; i < state->num_loops; i++)
 	    new_loops[i] = state->loops[i];
@@ -423,7 +415,6 @@ enter_loop(int id, Fixup top_label, unsigned top_stack,
 	state->loops = new_loops;
 	state->max_loops = new_max;
     }
-
     loop = &(state->loops[state->num_loops++]);
     loop->id = id;
     loop->top_label = top_label;
@@ -433,34 +424,33 @@ enter_loop(int id, Fixup top_label, unsigned top_stack,
 }
 
 static int
-exit_loop(State *state)
+exit_loop(State * state)
 {
     return state->loops[--state->num_loops].bottom_label;
 }
-
 
+
 static void
-emit_var_op(Opcode op, unsigned slot, State *state)
+emit_var_op(Opcode op, unsigned slot, State * state)
 {
     if (slot >= NUM_READY_VARS) {
 	emit_byte(op + NUM_READY_VARS, state);
 	add_var_ref(slot, state);
-    } else 
+    } else
 	emit_byte(op + slot, state);
 }
 
 static void generate_expr(Expr *, State *);
 
 static void
-generate_arg_list(Arg_List *args, State *state)
+generate_arg_list(Arg_List * args, State * state)
 {
     if (!args) {
 	emit_byte(OP_MAKE_EMPTY_LIST, state);
 	push_stack(1, state);
     } else {
-	Opcode		normal_op = OP_MAKE_SINGLETON_LIST,
-			splice_op = OP_CHECK_LIST_FOR_SPLICE;
-	unsigned	pop = 0;
+	Opcode normal_op = OP_MAKE_SINGLETON_LIST, splice_op = OP_CHECK_LIST_FOR_SPLICE;
+	unsigned pop = 0;
 
 	for (; args; args = args->next) {
 	    generate_expr(args->expr, state);
@@ -474,19 +464,19 @@ generate_arg_list(Arg_List *args, State *state)
 }
 
 static void
-push_lvalue(Expr *expr, int indexed_above, State *state)
+push_lvalue(Expr * expr, int indexed_above, State * state)
 {
-    unsigned	old;
+    unsigned old;
 
     switch (expr->kind) {
-      case EXPR_RANGE:
+    case EXPR_RANGE:
 	push_lvalue(expr->e.range.base, 1, state);
 	old = save_stack_top(state);
 	generate_expr(expr->e.range.from, state);
 	generate_expr(expr->e.range.to, state);
 	restore_stack_top(old, state);
 	break;
-      case EXPR_INDEX:
+    case EXPR_INDEX:
 	push_lvalue(expr->e.bin.lhs, 1, state);
 	old = save_stack_top(state);
 	generate_expr(expr->e.bin.rhs, state);
@@ -496,13 +486,13 @@ push_lvalue(Expr *expr, int indexed_above, State *state)
 	    push_stack(1, state);
 	}
 	break;
-      case EXPR_ID:
+    case EXPR_ID:
 	if (indexed_above) {
 	    emit_var_op(OP_PUSH, expr->e.id, state);
 	    push_stack(1, state);
 	}
 	break;
-      case EXPR_PROP:
+    case EXPR_PROP:
 	generate_expr(expr->e.bin.lhs, state);
 	generate_expr(expr->e.bin.rhs, state);
 	if (indexed_above) {
@@ -510,13 +500,13 @@ push_lvalue(Expr *expr, int indexed_above, State *state)
 	    push_stack(1, state);
 	}
 	break;
-      default:
+    default:
 	panic("Bad lvalue in PUSH_LVALUE()");
     }
 }
 
 static void
-generate_codes(Arg_List *codes, State *state)
+generate_codes(Arg_List * codes, State * state)
 {
     if (codes)
 	generate_arg_list(codes, state);
@@ -527,12 +517,12 @@ generate_codes(Arg_List *codes, State *state)
 }
 
 static void
-generate_expr(Expr *expr, State *state)
+generate_expr(Expr * expr, State * state)
 {
     switch (expr->kind) {
-      case EXPR_VAR:
+    case EXPR_VAR:
 	{
-	    Var	v;
+	    Var v;
 
 	    v = expr->e.var;
 	    if (v.type == TYPE_INT && IN_OPTIM_NUM_RANGE(v.v.num))
@@ -544,14 +534,14 @@ generate_expr(Expr *expr, State *state)
 	    push_stack(1, state);
 	}
 	break;
-      case EXPR_ID:
+    case EXPR_ID:
 	emit_var_op(OP_PUSH, expr->e.id, state);
 	push_stack(1, state);
 	break;
-      case EXPR_AND:
-      case EXPR_OR:
+    case EXPR_AND:
+    case EXPR_OR:
 	{
-	    int	end_label;
+	    int end_label;
 
 	    generate_expr(expr->e.bin.lhs, state);
 	    emit_byte(expr->kind == EXPR_AND ? OP_AND : OP_OR, state);
@@ -561,60 +551,88 @@ generate_expr(Expr *expr, State *state)
 	    define_label(end_label, state);
 	}
 	break;
-      case EXPR_NEGATE:
-      case EXPR_NOT:
+    case EXPR_NEGATE:
+    case EXPR_NOT:
 	generate_expr(expr->e.expr, state);
 	emit_byte(expr->kind == EXPR_NOT ? OP_NOT : OP_UNARY_MINUS, state);
 	break;
-      case EXPR_EQ:
-      case EXPR_NE:
-      case EXPR_GE:
-      case EXPR_GT:
-      case EXPR_LE:
-      case EXPR_LT:
-      case EXPR_IN:
-      case EXPR_PLUS:
-      case EXPR_MINUS:
-      case EXPR_TIMES:
-      case EXPR_DIVIDE:
-      case EXPR_MOD:
-      case EXPR_PROP:
+    case EXPR_EQ:
+    case EXPR_NE:
+    case EXPR_GE:
+    case EXPR_GT:
+    case EXPR_LE:
+    case EXPR_LT:
+    case EXPR_IN:
+    case EXPR_PLUS:
+    case EXPR_MINUS:
+    case EXPR_TIMES:
+    case EXPR_DIVIDE:
+    case EXPR_MOD:
+    case EXPR_PROP:
 	{
-	    Opcode	op = OP_ADD; /* initialize to silence warning */
+	    Opcode op = OP_ADD;	/* initialize to silence warning */
 
 	    generate_expr(expr->e.bin.lhs, state);
 	    generate_expr(expr->e.bin.rhs, state);
 	    switch (expr->kind) {
-	      case EXPR_EQ:	op = OP_EQ;	break;
-	      case EXPR_NE:	op = OP_NE;	break;
-	      case EXPR_GE:	op = OP_GE;	break;
-	      case EXPR_GT:	op = OP_GT;	break;
-	      case EXPR_LE:	op = OP_LE;	break;
-	      case EXPR_LT:	op = OP_LT;	break;
-	      case EXPR_IN:	op = OP_IN;	break;
-	      case EXPR_PLUS:	op = OP_ADD;	break;
-	      case EXPR_MINUS:	op = OP_MINUS;	break;
-	      case EXPR_TIMES:	op = OP_MULT;	break;
-	      case EXPR_DIVIDE:	op = OP_DIV;	break;
-	      case EXPR_MOD:	op = OP_MOD;	break;
-	      case EXPR_PROP:   op = OP_GET_PROP; break;
-	      case EXPR_INDEX:	op = OP_REF;	break;
-	      default:
+	    case EXPR_EQ:
+		op = OP_EQ;
+		break;
+	    case EXPR_NE:
+		op = OP_NE;
+		break;
+	    case EXPR_GE:
+		op = OP_GE;
+		break;
+	    case EXPR_GT:
+		op = OP_GT;
+		break;
+	    case EXPR_LE:
+		op = OP_LE;
+		break;
+	    case EXPR_LT:
+		op = OP_LT;
+		break;
+	    case EXPR_IN:
+		op = OP_IN;
+		break;
+	    case EXPR_PLUS:
+		op = OP_ADD;
+		break;
+	    case EXPR_MINUS:
+		op = OP_MINUS;
+		break;
+	    case EXPR_TIMES:
+		op = OP_MULT;
+		break;
+	    case EXPR_DIVIDE:
+		op = OP_DIV;
+		break;
+	    case EXPR_MOD:
+		op = OP_MOD;
+		break;
+	    case EXPR_PROP:
+		op = OP_GET_PROP;
+		break;
+	    case EXPR_INDEX:
+		op = OP_REF;
+		break;
+	    default:
 		panic("Not a binary operator in GENERATE_EXPR()");
 	    }
 	    emit_byte(op, state);
 	    pop_stack(1, state);
 	}
 	break;
-      case EXPR_EXP:
+    case EXPR_EXP:
 	generate_expr(expr->e.bin.lhs, state);
 	generate_expr(expr->e.bin.rhs, state);
 	emit_extended_byte(EOP_EXP, state);
 	pop_stack(1, state);
 	break;
-      case EXPR_INDEX:
+    case EXPR_INDEX:
 	{
-	    unsigned	old;
+	    unsigned old;
 
 	    generate_expr(expr->e.bin.lhs, state);
 	    old = save_stack_top(state);
@@ -624,9 +642,9 @@ generate_expr(Expr *expr, State *state)
 	    pop_stack(1, state);
 	}
 	break;
-      case EXPR_RANGE:
+    case EXPR_RANGE:
 	{
-	    unsigned	old;
+	    unsigned old;
 
 	    generate_expr(expr->e.range.base, state);
 	    old = save_stack_top(state);
@@ -637,9 +655,9 @@ generate_expr(Expr *expr, State *state)
 	    pop_stack(2, state);
 	}
 	break;
-      case EXPR_LENGTH:
+    case EXPR_LENGTH:
 	{
-	    unsigned	saved = saved_stack_top(state);
+	    unsigned saved = saved_stack_top(state);
 
 	    if (saved != UINT_MAX) {
 		emit_extended_byte(EOP_LENGTH, state);
@@ -649,25 +667,25 @@ generate_expr(Expr *expr, State *state)
 		panic("Missing saved stack for `$' in GENERATE_EXPR()");
 	}
 	break;
-      case EXPR_LIST:
+    case EXPR_LIST:
 	generate_arg_list(expr->e.list, state);
 	break;
-      case EXPR_CALL:
+    case EXPR_CALL:
 	generate_arg_list(expr->e.call.args, state);
 	emit_byte(OP_BI_FUNC_CALL, state);
 	emit_byte(expr->e.call.func, state);
 	break;
-      case EXPR_VERB:
+    case EXPR_VERB:
 	generate_expr(expr->e.verb.obj, state);
 	generate_expr(expr->e.verb.verb, state);
 	generate_arg_list(expr->e.verb.args, state);
 	emit_byte(OP_CALL_VERB, state);
 	pop_stack(2, state);
 	break;
-      case EXPR_COND:
+    case EXPR_COND:
 	{
-	    int		else_label, end_label;
-	    
+	    int else_label, end_label;
+
 	    generate_expr(expr->e.cond.condition, state);
 	    emit_byte(OP_IF_QUES, state);
 	    else_label = add_label(state);
@@ -681,15 +699,15 @@ generate_expr(Expr *expr, State *state)
 	    define_label(end_label, state);
 	}
 	break;
-      case EXPR_ASGN:
+    case EXPR_ASGN:
 	{
-	    Expr       *e = expr->e.bin.lhs;
+	    Expr *e = expr->e.bin.lhs;
 
 	    if (e->kind == EXPR_SCATTER) {
-		int		nargs = 0, nreq = 0, rest = -1;
-		unsigned	done;
-		Scatter	       *sc;
-		
+		int nargs = 0, nreq = 0, rest = -1;
+		unsigned done;
+		Scatter *sc;
+
 		generate_expr(expr->e.bin.rhs, state);
 		for (sc = e->e.scatter; sc; sc = sc->next) {
 		    nargs++;
@@ -715,7 +733,7 @@ generate_expr(Expr *expr, State *state)
 		}
 		done = add_label(state);
 		for (sc = e->e.scatter; sc; sc = sc->next)
-		    if (sc->kind == SCAT_OPTIONAL  &&  sc->expr) {
+		    if (sc->kind == SCAT_OPTIONAL && sc->expr) {
 			define_label(sc->label, state);
 			generate_expr(sc->expr, state);
 			emit_var_op(OP_PUT, sc->id, state);
@@ -724,7 +742,7 @@ generate_expr(Expr *expr, State *state)
 		    }
 		define_label(done, state);
 	    } else {
-		int	is_indexed = 0;
+		int is_indexed = 0;
 
 		push_lvalue(e, 0, state);
 		generate_expr(expr->e.bin.rhs, state);
@@ -732,26 +750,26 @@ generate_expr(Expr *expr, State *state)
 		    emit_byte(OP_PUT_TEMP, state);
 		while (1) {
 		    switch (e->kind) {
-		      case EXPR_RANGE:
+		    case EXPR_RANGE:
 			emit_extended_byte(EOP_RANGESET, state);
 			pop_stack(3, state);
 			e = e->e.range.base;
 			is_indexed = 1;
 			continue;
-		      case EXPR_INDEX:
+		    case EXPR_INDEX:
 			emit_byte(OP_INDEXSET, state);
 			pop_stack(2, state);
 			e = e->e.bin.lhs;
 			is_indexed = 1;
 			continue;
-		      case EXPR_ID:
+		    case EXPR_ID:
 			emit_var_op(OP_PUT, e->e.id, state);
 			break;
-		      case EXPR_PROP:
+		    case EXPR_PROP:
 			emit_byte(OP_PUT_PROP, state);
 			pop_stack(2, state);
 			break;
-		      default:
+		    default:
 			panic("Bad lvalue in GENERATE_EXPR()");
 		    }
 		    break;
@@ -763,9 +781,9 @@ generate_expr(Expr *expr, State *state)
 	    }
 	}
 	break;
-      case EXPR_CATCH:
+    case EXPR_CATCH:
 	{
-	    int		handler_label, end_label;
+	    int handler_label, end_label;
 
 	    generate_codes(expr->e.catch.codes, state);
 	    emit_extended_byte(EOP_PUSH_LABEL, state);
@@ -776,7 +794,7 @@ generate_expr(Expr *expr, State *state)
 	    generate_expr(expr->e.expr, state);
 	    emit_extended_byte(EOP_END_CATCH, state);
 	    end_label = add_label(state);
-	    pop_stack(3, state); /* codes, label, catch */
+	    pop_stack(3, state);	/* codes, label, catch */
 	    define_label(handler_label, state);
 	    /* After this label, we still have a value on the stack, but now,
 	     * instead of it being the value of the main expression, we have
@@ -794,7 +812,7 @@ generate_expr(Expr *expr, State *state)
 	    define_label(end_label, state);
 	}
 	break;
-      default:
+    default:
 	panic("Can't happen in GENERATE_EXPR()");
     }
 }
@@ -802,19 +820,19 @@ generate_expr(Expr *expr, State *state)
 static Bytecodes stmt_to_code(Stmt *, GState *);
 
 static void
-generate_stmt(Stmt *stmt, State *state)
+generate_stmt(Stmt * stmt, State * state)
 {
     for (; stmt; stmt = stmt->next) {
 	switch (stmt->kind) {
-	  case STMT_COND:
+	case STMT_COND:
 	    {
-		Opcode		if_op = OP_IF;
-		int		end_label = -1;
-		Cond_Arm       *arms;
+		Opcode if_op = OP_IF;
+		int end_label = -1;
+		Cond_Arm *arms;
 
 		for (arms = stmt->s.cond.arms; arms; arms = arms->next) {
-		    int		else_label;
-		    
+		    int else_label;
+
 		    generate_expr(arms->condition, state);
 		    emit_byte(if_op, state);
 		    else_label = add_label(state);
@@ -831,13 +849,13 @@ generate_stmt(Stmt *stmt, State *state)
 		define_label(end_label, state);
 	    }
 	    break;
-	  case STMT_LIST:
+	case STMT_LIST:
 	    {
-		Fixup   loop_top;
-		int	end_label;
-		
+		Fixup loop_top;
+		int end_label;
+
 		generate_expr(stmt->s.list.expr, state);
-		emit_byte(OPTIM_NUM_TO_OPCODE(1), state); /* loop list index */
+		emit_byte(OPTIM_NUM_TO_OPCODE(1), state);	/* loop list index */
 		push_stack(1, state);
 		loop_top = capture_label(state);
 		emit_byte(OP_FOR_LIST, state);
@@ -853,11 +871,11 @@ generate_stmt(Stmt *stmt, State *state)
 		pop_stack(2, state);
 	    }
 	    break;
-	  case STMT_RANGE:
+	case STMT_RANGE:
 	    {
-		Fixup   loop_top;
-		int	end_label;
-		
+		Fixup loop_top;
+		int end_label;
+
 		generate_expr(stmt->s.range.from, state);
 		generate_expr(stmt->s.range.to, state);
 		loop_top = capture_label(state);
@@ -874,11 +892,11 @@ generate_stmt(Stmt *stmt, State *state)
 		pop_stack(2, state);
 	    }
 	    break;
-	  case STMT_WHILE:
+	case STMT_WHILE:
 	    {
-		Fixup   loop_top;
-		int	end_label;
-		
+		Fixup loop_top;
+		int end_label;
+
 		loop_top = capture_label(state);
 		generate_expr(stmt->s.loop.condition, state);
 		if (stmt->s.loop.id == -1)
@@ -898,7 +916,7 @@ generate_stmt(Stmt *stmt, State *state)
 		define_label(end_label, state);
 	    }
 	    break;
-	  case STMT_FORK:
+	case STMT_FORK:
 	    generate_expr(stmt->s.fork.time, state);
 	    if (stmt->s.fork.id >= 0)
 		emit_byte(OP_FORK_WITH_ID, state);
@@ -909,12 +927,12 @@ generate_stmt(Stmt *stmt, State *state)
 		add_var_ref(stmt->s.fork.id, state);
 	    pop_stack(1, state);
 	    break;
-	  case STMT_EXPR:
+	case STMT_EXPR:
 	    generate_expr(stmt->s.expr, state);
 	    emit_byte(OP_POP, state);
 	    pop_stack(1, state);
 	    break;
-	  case STMT_RETURN:
+	case STMT_RETURN:
 	    if (stmt->s.expr) {
 		generate_expr(stmt->s.expr, state);
 		emit_byte(OP_RETURN, state);
@@ -922,10 +940,10 @@ generate_stmt(Stmt *stmt, State *state)
 	    } else
 		emit_byte(OP_RETURN0, state);
 	    break;
-	  case STMT_TRY_EXCEPT:
+	case STMT_TRY_EXCEPT:
 	    {
-		int		end_label, arm_count = 0;
-		Except_Arm     *ex;
+		int end_label, arm_count = 0;
+		Except_Arm *ex;
 
 		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
 		    generate_codes(ex->codes, state);
@@ -940,10 +958,10 @@ generate_stmt(Stmt *stmt, State *state)
 		generate_stmt(stmt->s.catch.body, state);
 		emit_extended_byte(EOP_END_EXCEPT, state);
 		end_label = add_label(state);
-		pop_stack(2 * arm_count + 1, state); /* 2(codes,pc) + catch */
+		pop_stack(2 * arm_count + 1, state);	/* 2(codes,pc) + catch */
 		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
 		    define_label(ex->label, state);
-		    push_stack(1, state); /* exception tuple */
+		    push_stack(1, state);	/* exception tuple */
 		    if (ex->id >= 0)
 			emit_var_op(OP_PUT, ex->id, state);
 		    emit_byte(OP_POP, state);
@@ -957,29 +975,29 @@ generate_stmt(Stmt *stmt, State *state)
 		define_label(end_label, state);
 	    }
 	    break;
-	  case STMT_TRY_FINALLY:
+	case STMT_TRY_FINALLY:
 	    {
-		int	handler_label;
+		int handler_label;
 
 		emit_extended_byte(EOP_TRY_FINALLY, state);
 		handler_label = add_label(state);
 		push_stack(1, state);
 		generate_stmt(stmt->s.finally.body, state);
 		emit_extended_byte(EOP_END_FINALLY, state);
-		pop_stack(1, state); /* FINALLY marker */
+		pop_stack(1, state);	/* FINALLY marker */
 		define_label(handler_label, state);
-		push_stack(2, state); /* continuation value, reason */
+		push_stack(2, state);	/* continuation value, reason */
 		generate_stmt(stmt->s.finally.handler, state);
 		emit_extended_byte(EOP_CONTINUE, state);
 		pop_stack(2, state);
 	    }
 	    break;
-	  case STMT_BREAK:
-	  case STMT_CONTINUE:
+	case STMT_BREAK:
+	case STMT_CONTINUE:
 	    {
-		int	i;
-		Loop   *loop = 0; /* silence warnings */
-		
+		int i;
+		Loop *loop = 0;	/* silence warnings */
+
 		if (stmt->s.exit == -1) {
 		    emit_extended_byte(EOP_EXIT, state);
 		    if (state->num_loops == 0)
@@ -1007,7 +1025,7 @@ generate_stmt(Stmt *stmt, State *state)
 		}
 	    }
 	    break;
-	  default:
+	default:
 	    panic("Can't happen in GENERATE_STMT()");
 	}
     }
@@ -1031,13 +1049,13 @@ ref_size(unsigned max)
 }
 
 static Bytecodes
-stmt_to_code(Stmt *stmt, GState *gstate)
+stmt_to_code(Stmt * stmt, GState * gstate)
 {
-    State	state;
-    Bytecodes	bc;
-    unsigned	old_i, new_i, fix_i;
-    Fixup      *fixup;
-    
+    State state;
+    Bytecodes bc;
+    unsigned old_i, new_i, fix_i;
+    Fixup *fixup;
+
     init_state(&state, gstate);
 
     generate_stmt(stmt, &state);
@@ -1060,9 +1078,9 @@ stmt_to_code(Stmt *stmt, GState *gstate)
 					gstate->total_var_refs));
 
     bc.size = state.num_bytes
-	      + (bc.numbytes_literal - 1) * state.num_literals
-	      + (bc.numbytes_fork - 1) * state.num_forks
-	      + (bc.numbytes_var_name - 1) * state.num_var_refs;
+	+ (bc.numbytes_literal - 1) * state.num_literals
+	+ (bc.numbytes_fork - 1) * state.num_forks
+	+ (bc.numbytes_var_name - 1) * state.num_var_refs;
 
     if (bc.size <= 256)
 	bc.numbytes_label = 1;
@@ -1082,44 +1100,44 @@ stmt_to_code(Stmt *stmt, GState *gstate)
 
     for (old_i = new_i = 0; old_i < state.num_bytes; old_i++) {
 	if (fix_i < state.num_fixups && fixup->pc == old_i) {
-	    unsigned	value, size = 0; /* initialized to silence warning */
+	    unsigned value, size = 0;	/* initialized to silence warning */
 
 	    value = fixup->value;
 	    switch (fixup->kind) {
-	      case FIXUP_LITERAL:
+	    case FIXUP_LITERAL:
 		size = bc.numbytes_literal;
 		break;
-	      case FIXUP_FORK:
+	    case FIXUP_FORK:
 		size = bc.numbytes_fork;
 		break;
-	      case FIXUP_VAR_REF:
+	    case FIXUP_VAR_REF:
 		size = bc.numbytes_var_name;
 		break;
-	      case FIXUP_STACK:
+	    case FIXUP_STACK:
 		size = bc.numbytes_stack;
 		break;
-	      case FIXUP_LABEL:
+	    case FIXUP_LABEL:
 		value += fixup->prev_literals * (bc.numbytes_literal - 1)
-			 + fixup->prev_forks * (bc.numbytes_fork - 1)
-			 + fixup->prev_var_refs * (bc.numbytes_var_name - 1)
-			 + fixup->prev_labels * (bc.numbytes_label - 1)
-			 + fixup->prev_stacks * (bc.numbytes_stack - 1);
+		    + fixup->prev_forks * (bc.numbytes_fork - 1)
+		    + fixup->prev_var_refs * (bc.numbytes_var_name - 1)
+		    + fixup->prev_labels * (bc.numbytes_label - 1)
+		    + fixup->prev_stacks * (bc.numbytes_stack - 1);
 		size = bc.numbytes_label;
 		break;
-	      default:
+	    default:
 		panic("Can't happen #1 in STMT_TO_CODE()");
 	    }
 
 	    switch (size) {
-	      case 4:
+	    case 4:
 		bc.vector[new_i++] = value >> 24;
 		bc.vector[new_i++] = value >> 16;
-	      case 2:
+	    case 2:
 		bc.vector[new_i++] = value >> 8;
-	      case 1:
+	    case 1:
 		bc.vector[new_i++] = value;
 		break;
-	      default:
+	    default:
 		panic("Can't happen #2 in STMT_TO_CODE()");
 	    }
 
@@ -1134,11 +1152,11 @@ stmt_to_code(Stmt *stmt, GState *gstate)
     return bc;
 }
 
-Program	*
-generate_code(Stmt *stmt, DB_Version version)
+Program *
+generate_code(Stmt * stmt, DB_Version version)
 {
-    Program    *prog = new_program();
-    GState	gstate;
+    Program *prog = new_program();
+    GState gstate;
 
     init_gstate(&gstate);
 
@@ -1146,7 +1164,7 @@ generate_code(Stmt *stmt, DB_Version version)
     prog->version = version;
 
     if (gstate.literals) {
-	unsigned	i;
+	unsigned i;
 
 	prog->literals = mymalloc(sizeof(Var) * gstate.num_literals,
 				  M_LIT_LIST);
@@ -1159,7 +1177,7 @@ generate_code(Stmt *stmt, DB_Version version)
     }
 
     if (gstate.fork_vectors) {
-	unsigned	i;
+	unsigned i;
 
 	prog->fork_vectors =
 	    mymalloc(sizeof(Bytecodes) * gstate.num_fork_vectors,
@@ -1177,12 +1195,15 @@ generate_code(Stmt *stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.2 1997/03/03 04:18:24 nop Exp $";
 
 /* $Log: code_gen.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:24  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/02/08  07:21:08  pavel
  * Renamed TYPE_NUM to TYPE_INT.  Added support for exponentiation expression,
  * named WHILE loop and BREAK and CONTINUE statement.  Updated copyright

@@ -20,21 +20,21 @@
 #include "quota.h"
 #include "structures.h"
 
-static const char	*quota_name = "ownership_quota";
+static const char *quota_name = "ownership_quota";
 
 int
 decr_quota(Objid player)
 {
-    db_prop_handle	h;
-    Var			v;
+    db_prop_handle h;
+    Var v;
 
     if (!valid(player))
 	return 1;
-    
+
     h = db_find_property(player, quota_name, &v);
     if (!h.ptr)
 	return 1;
-    
+
     if (v.type != TYPE_INT)
 	return 1;
 
@@ -49,12 +49,12 @@ decr_quota(Objid player)
 void
 incr_quota(Objid player)
 {
-    db_prop_handle	h;
-    Var			v;
+    db_prop_handle h;
+    Var v;
 
     if (!valid(player))
 	return;
-    
+
     h = db_find_property(player, quota_name, &v);
     if (!h.ptr)
 	return;
@@ -66,12 +66,15 @@ incr_quota(Objid player)
     db_set_property_value(h, v);
 }
 
-char rcsid_quota[] = "$Id: quota.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_quota[] = "$Id: quota.c,v 1.2 1997/03/03 04:19:19 nop Exp $";
 
 /* $Log: quota.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:19  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:54:04  pavel
  * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

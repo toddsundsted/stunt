@@ -34,14 +34,14 @@
 #include "verbs.h"
 
 struct verb_data {
-    Var	r;
-    int	i;
+    Var r;
+    int i;
 };
 
 static int
 add_to_list(void *data, const char *verb_name)
 {
-    struct verb_data       *d = data;
+    struct verb_data *d = data;
 
     d->i++;
     d->r.v.list[d->i].type = TYPE_STR;
@@ -52,8 +52,8 @@ add_to_list(void *data, const char *verb_name)
 
 static package
 bf_verbs(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object) */
-    Objid	oid = arglist.v.list[1].v.obj;
+{				/* (object) */
+    Objid oid = arglist.v.list[1].v.obj;
 
     free_var(arglist);
 
@@ -62,8 +62,8 @@ bf_verbs(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!db_object_allows(oid, progr, FLAG_READ))
 	return make_error_pack(E_PERM);
     else {
-	struct verb_data	d;
-	
+	struct verb_data d;
+
 	d.r = new_list(db_count_verbs(oid));
 	d.i = 0;
 	db_for_all_verbs(oid, add_to_list, &d);
@@ -73,7 +73,7 @@ bf_verbs(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static enum error
-validate_verb_info(Var v, Objid *owner, unsigned *flags, const char **names)
+validate_verb_info(Var v, Objid * owner, unsigned *flags, const char **names)
 {
     const char *s;
 
@@ -90,11 +90,23 @@ validate_verb_info(Var v, Objid *owner, unsigned *flags, const char **names)
 
     for (*flags = 0, s = v.v.list[2].v.str; *s; s++) {
 	switch (*s) {
-	  case 'r': case 'R': *flags |= VF_READ;  break;
-	  case 'w': case 'W': *flags |= VF_WRITE; break;
-	  case 'x': case 'X': *flags |= VF_EXEC; break;
-	  case 'd': case 'D': *flags |= VF_DEBUG; break;
-	  default:
+	case 'r':
+	case 'R':
+	    *flags |= VF_READ;
+	    break;
+	case 'w':
+	case 'W':
+	    *flags |= VF_WRITE;
+	    break;
+	case 'x':
+	case 'X':
+	    *flags |= VF_EXEC;
+	    break;
+	case 'd':
+	case 'D':
+	    *flags |= VF_DEBUG;
+	    break;
+	default:
 	    return E_INVARG;
 	}
     }
@@ -111,7 +123,7 @@ validate_verb_info(Var v, Objid *owner, unsigned *flags, const char **names)
 }
 
 static int
-match_arg_spec(const char *s, db_arg_spec *spec)
+match_arg_spec(const char *s, db_arg_spec * spec)
 {
     if (!mystrcasecmp(s, "none")) {
 	*spec = ASPEC_NONE;
@@ -127,7 +139,7 @@ match_arg_spec(const char *s, db_arg_spec *spec)
 }
 
 static int
-match_prep_spec(const char *s, db_prep_spec *spec)
+match_prep_spec(const char *s, db_prep_spec * spec)
 {
     if (!mystrcasecmp(s, "none")) {
 	*spec = PREP_NONE;
@@ -140,8 +152,8 @@ match_prep_spec(const char *s, db_prep_spec *spec)
 }
 
 static enum error
-validate_verb_args(Var v, db_arg_spec *dobj, db_prep_spec *prep,
-		   db_arg_spec *iobj)
+validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
+		   db_arg_spec * iobj)
 {
     if (!(v.type = TYPE_LIST
 	  && v.v.list[0].v.num == 3
@@ -159,27 +171,26 @@ validate_verb_args(Var v, db_arg_spec *dobj, db_prep_spec *prep,
 }
 
 static package
-bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr) 
-{ /* (object, info, args) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			info = arglist.v.list[2];
-    Var			args = arglist.v.list[3];
-    Objid		owner;
-    unsigned		flags;
-    const char	       *names;
-    db_arg_spec		dobj, iobj;
-    db_prep_spec	prep;
-    enum error		e;
+bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (object, info, args) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var info = arglist.v.list[2];
+    Var args = arglist.v.list[3];
+    Objid owner;
+    unsigned flags;
+    const char *names;
+    db_arg_spec dobj, iobj;
+    db_prep_spec prep;
+    enum error e;
 
-    if ((e = validate_verb_info(info, &owner, &flags, &names)) != E_NONE)
-	;			/* Already failed */
+    if ((e = validate_verb_info(info, &owner, &flags, &names)) != E_NONE);	/* Already failed */
     else if ((e = validate_verb_args(args, &dobj, &prep, &iobj)) != E_NONE)
 	free_str(names);
     else if (!valid(oid)) {
 	free_str(names);
 	e = E_INVARG;
     } else if (!db_object_allows(oid, progr, FLAG_WRITE)
-	       || (progr != owner  &&  !is_wizard(progr))) {
+	       || (progr != owner && !is_wizard(progr))) {
 	free_str(names);
 	e = E_PERM;
     } else
@@ -212,21 +223,20 @@ find_described_verb(Objid oid, Var desc)
 	return db_find_indexed_verb(oid, desc.v.num);
     else {
 	int flag = server_flag_option("support_numeric_verbname_strings");
-	
+
 	return db_find_defined_verb(oid, desc.v.str, flag);
     }
 }
 
 static package
 bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, verb-desc) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    db_verb_handle	h;
-    enum error		e;
+{				/* (object, verb-desc) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    db_verb_handle h;
+    enum error e;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE)
-	;			/* Do nothing; e is already set. */
+    if ((e = validate_verb_descriptor(desc)) != E_NONE);	/* Do nothing; e is already set. */
     else if (!valid(oid))
 	e = E_INVARG;
     else if (!db_object_allows(oid, progr, FLAG_WRITE))
@@ -248,21 +258,20 @@ bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, verb-desc) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    db_verb_handle	h;
-    Var			r;
-    unsigned		flags;
-    char	       *s;
-    enum error		e;
+{				/* (object, verb-desc) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    db_verb_handle h;
+    Var r;
+    unsigned flags;
+    char *s;
+    enum error e;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE
 	|| (e = E_INVARG, !valid(oid))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     free_var(arglist);
 
@@ -277,10 +286,14 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     r.v.list[2].type = TYPE_STR;
     r.v.list[2].v.str = s = str_dup("xxxx");
     flags = db_verb_flags(h);
-    if (flags & VF_READ)  *s++ = 'r';
-    if (flags & VF_WRITE) *s++ = 'w';
-    if (flags & VF_EXEC)  *s++ = 'x';
-    if (flags & VF_DEBUG)  *s++ = 'd';
+    if (flags & VF_READ)
+	*s++ = 'r';
+    if (flags & VF_WRITE)
+	*s++ = 'w';
+    if (flags & VF_EXEC)
+	*s++ = 'x';
+    if (flags & VF_DEBUG)
+	*s++ = 'd';
     *s = '\0';
     r.v.list[3].type = TYPE_STR;
     r.v.list[3].v.str = str_ref(db_verb_names(h));
@@ -290,28 +303,26 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, verb-desc, {owner, flags, names}) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    Var			info = arglist.v.list[3];
-    Objid		new_owner;
-    unsigned		new_flags;
-    const char	       *new_names;
-    enum error		e;
-    db_verb_handle	h;
+{				/* (object, verb-desc, {owner, flags, names}) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    Var info = arglist.v.list[3];
+    Objid new_owner;
+    unsigned new_flags;
+    const char *new_names;
+    enum error e;
+    db_verb_handle h;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE)
-	;			/* Do nothing; e is already set. */
+    if ((e = validate_verb_descriptor(desc)) != E_NONE);	/* Do nothing; e is already set. */
     else if (!valid(oid))
 	e = E_INVARG;
     else
 	e = validate_verb_info(info, &new_owner, &new_flags, &new_names);
-    
+
     if (e != E_NONE) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     free_var(arglist);
 
@@ -319,11 +330,10 @@ bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 	free_str(new_names);
 	return make_error_pack(E_VERBNF);
     } else if (!db_verb_allows(h, progr, VF_WRITE)
-	     || (!is_wizard(progr)  &&  db_verb_owner(h) != new_owner)) {
+	       || (!is_wizard(progr) && db_verb_owner(h) != new_owner)) {
 	free_str(new_names);
 	return make_error_pack(E_PERM);
     }
-
     db_set_verb_owner(h, new_owner);
     db_set_verb_flags(h, new_flags);
     db_set_verb_names(h, new_names);
@@ -335,13 +345,13 @@ static const char *
 unparse_arg_spec(db_arg_spec spec)
 {
     switch (spec) {
-      case ASPEC_NONE:
+    case ASPEC_NONE:
 	return str_dup("none");
-      case ASPEC_ANY:
+    case ASPEC_ANY:
 	return str_dup("any");
-      case ASPEC_THIS:
+    case ASPEC_THIS:
 	return str_dup("this");
-      default:
+    default:
 	panic("UNPARSE_ARG_SPEC: Unknown db_arg_spec!");
 	return "";
     }
@@ -349,21 +359,20 @@ unparse_arg_spec(db_arg_spec spec)
 
 static package
 bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, verb-desc) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    db_verb_handle	h;
-    db_arg_spec		dobj, iobj;
-    db_prep_spec	prep;
-    Var			r;
-    enum error		e;
+{				/* (object, verb-desc) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    db_verb_handle h;
+    db_arg_spec dobj, iobj;
+    db_prep_spec prep;
+    Var r;
+    enum error e;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE
 	|| (e = E_INVARG, !valid(oid))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     free_var(arglist);
 
@@ -386,17 +395,16 @@ bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, verb-desc, {dobj, prep, iobj}) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    Var			args = arglist.v.list[3];
-    enum error		e;
-    db_verb_handle	h;
-    db_arg_spec		dobj, iobj;
-    db_prep_spec	prep;
+{				/* (object, verb-desc, {dobj, prep, iobj}) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    Var args = arglist.v.list[3];
+    enum error e;
+    db_verb_handle h;
+    db_arg_spec dobj, iobj;
+    db_prep_spec prep;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE)
-	;			/* Do nothing; e is already set. */
+    if ((e = validate_verb_descriptor(desc)) != E_NONE);	/* Do nothing; e is already set. */
     else if (!valid(oid))
 	e = E_INVARG;
     else
@@ -406,7 +414,6 @@ bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     free_var(arglist);
 
@@ -423,9 +430,9 @@ bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 lister(void *data, const char *line)
 {
-    Var	       *r = (Var *) data;
-    Var		v;
-    
+    Var *r = (Var *) data;
+    Var v;
+
     v.type = TYPE_STR;
     v.v.str = str_dup(line);
     *r = listappend(*r, v);
@@ -433,25 +440,24 @@ lister(void *data, const char *line)
 
 static package
 bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, verb-desc [, fully-paren [, indent]]) */
-    int			nargs = arglist.v.list[0].v.num;
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    int			parens = nargs >= 3 && is_true(arglist.v.list[3]);
-    int 		indent = nargs < 4 || is_true(arglist.v.list[4]);
-    db_verb_handle	h;
-    Var			code;
-    enum error		e;
+{				/* (object, verb-desc [, fully-paren [, indent]]) */
+    int nargs = arglist.v.list[0].v.num;
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    int parens = nargs >= 3 && is_true(arglist.v.list[3]);
+    int indent = nargs < 4 || is_true(arglist.v.list[4]);
+    db_verb_handle h;
+    Var code;
+    enum error e;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE
 	|| (e = E_INVARG, !valid(oid))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     free_var(arglist);
-    
+
     if (!h.ptr)
 	return make_error_pack(E_VERBNF);
     else if (!db_verb_allows(h, progr, VF_READ))
@@ -465,29 +471,27 @@ bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr) 
-{ /* (object, verb-desc, code) */
-    Objid		oid = arglist.v.list[1].v.obj;
-    Var			desc = arglist.v.list[2];
-    Var			code = arglist.v.list[3];
-    int			i;
-    Program	       *program;
-    db_verb_handle	h;
-    Var			errors;
-    enum error		e;
+bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (object, verb-desc, code) */
+    Objid oid = arglist.v.list[1].v.obj;
+    Var desc = arglist.v.list[2];
+    Var code = arglist.v.list[3];
+    int i;
+    Program *program;
+    db_verb_handle h;
+    Var errors;
+    enum error e;
 
     for (i = 1; i <= code.v.list[0].v.num; i++)
 	if (code.v.list[i].type != TYPE_STR) {
 	    free_var(arglist);
 	    return make_error_pack(E_TYPE);
 	}
-
     if ((e = validate_verb_descriptor(desc)) != E_NONE
 	|| (e = E_INVARG, !valid(oid))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-
     h = find_described_verb(oid, desc);
     if (!h.ptr) {
 	free_var(arglist);
@@ -496,7 +500,6 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
-
     program = parse_list_as_program(code, &errors);
     if (program) {
 	if (task_timed_out)
@@ -504,7 +507,6 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 	else
 	    db_set_verb_program(h, program);
     }
-
     free_var(arglist);
     return make_var_pack(errors);
 }
@@ -514,14 +516,14 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 {
     package p;
     if (next == 1) {
-	
+
 	if (!is_programmer(progr)) {
 	    free_var(arglist);
 	    p = make_error_pack(E_PERM);
 	} else {
-	    Var		errors;
-	    Program    *program = parse_list_as_program(arglist, &errors);
-	    
+	    Var errors;
+	    Program *program = parse_list_as_program(arglist, &errors);
+
 	    free_var(arglist);
 	    if (program) {
 		free_var(errors);
@@ -533,7 +535,7 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 		}
 	    } else {
 		Var r;
-		
+
 		r = new_list(2);
 		r.v.list[1].type = TYPE_INT;
 		r.v.list[1].v.num = 0;
@@ -541,13 +543,13 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 		p = make_var_pack(r);
 	    }
 	}
-    } else { /* next == 2 */
+    } else {			/* next == 2 */
 	Var r;
-	
+
 	r = new_list(2);
 	r.v.list[1].type = TYPE_INT;
 	r.v.list[1].v.num = 1;
-	r.v.list[2] = arglist; 
+	r.v.list[2] = arglist;
 	p = make_var_pack(r);
     }
     return p;
@@ -555,30 +557,33 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 
 void
 register_verbs(void)
-{ 
+{
     register_function("verbs", 1, 1, bf_verbs, TYPE_OBJ);
     register_function("verb_info", 2, 2, bf_verb_info, TYPE_OBJ, TYPE_ANY);
     register_function("set_verb_info", 3, 3, bf_set_verb_info,
-			     TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
     register_function("verb_args", 2, 2, bf_verb_args, TYPE_OBJ, TYPE_ANY);
     register_function("set_verb_args", 3, 3, bf_set_verb_args,
-			     TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
     register_function("add_verb", 3, 3, bf_add_verb,
-			     TYPE_OBJ, TYPE_LIST, TYPE_LIST);
+		      TYPE_OBJ, TYPE_LIST, TYPE_LIST);
     register_function("delete_verb", 2, 2, bf_delete_verb, TYPE_OBJ, TYPE_ANY);
     register_function("verb_code", 2, 4, bf_verb_code,
-			     TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+		      TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("set_verb_code", 3, 3, bf_set_verb_code,
-			     TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
     register_function("eval", 1, 1, bf_eval, TYPE_STR);
 }
 
-char rcsid_verbs[] = "$Id: verbs.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_verbs[] = "$Id: verbs.c,v 1.2 1997/03/03 04:19:37 nop Exp $";
 
 /* $Log: verbs.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:37  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.8  1996/05/12  21:29:46  pavel
  * Fixed memory leak for verb names string in bf_add_verb.  Release 1.8.0p5.
  *

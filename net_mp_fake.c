@@ -29,25 +29,27 @@
  #error Configuration Error: this code can only be used with the FIFO protocol
 #endif
 
-typedef enum {Read, Write} Direction;
+typedef enum {
+    Read, Write
+} Direction;
 
 typedef struct {
-    int		fd;
-    Direction	dir;
+    int fd;
+    Direction dir;
 } Port;
 
-static Port    *ports = 0;
-static int	num_ports = 0;
-static int	max_ports = 0;
+static Port *ports = 0;
+static int num_ports = 0;
+static int max_ports = 0;
 
-static char    *readable = 0;
-static char    *writable = 0;
-static int	rw_size = 0;
+static char *readable = 0;
+static char *writable = 0;
+static int rw_size = 0;
 
 void
 mplex_clear(void)
 {
-    int	i;
+    int i;
 
     num_ports = 0;
     for (i = 0; i < rw_size; i++)
@@ -58,12 +60,12 @@ static void
 add_common(int fd, Direction dir)
 {
     if (fd >= rw_size) {	/* Grow readable/writable arrays */
-	int	new_size = (fd + 9) / 10 * 10 + 1;
-	char   *new_readable = (char *) mymalloc(new_size * sizeof(char),
-						 M_NETWORK);
-	char   *new_writable = (char *) mymalloc(new_size * sizeof(char),
-						 M_NETWORK);
-	int	i;
+	int new_size = (fd + 9) / 10 * 10 + 1;
+	char *new_readable = (char *) mymalloc(new_size * sizeof(char),
+					       M_NETWORK);
+	char *new_writable = (char *) mymalloc(new_size * sizeof(char),
+					       M_NETWORK);
+	int i;
 
 	for (i = 0; i < new_size; i++)
 	    new_readable[i] = new_writable[i] = 0;
@@ -72,16 +74,14 @@ add_common(int fd, Direction dir)
 	    myfree(readable, M_NETWORK);
 	    myfree(writable, M_NETWORK);
 	}
-
 	readable = new_readable;
 	writable = new_writable;
 	rw_size = new_size;
     }
-
-    if (num_ports == max_ports) { /* Grow ports array */
-	int 	new_max = max_ports + 10;
-	Port   *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);
-	int	i;
+    if (num_ports == max_ports) {	/* Grow ports array */
+	int new_max = max_ports + 10;
+	Port *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);
+	int i;
 
 	for (i = 0; i < max_ports; i++)
 	    new_ports[i] = ports[i];
@@ -92,7 +92,6 @@ add_common(int fd, Direction dir)
 	ports = new_ports;
 	max_ports = new_max;
     }
-
     ports[num_ports].fd = fd;
     ports[num_ports++].dir = dir;
 }
@@ -112,8 +111,8 @@ mplex_add_writer(int fd)
 int
 mplex_wait(unsigned timeout)
 {
-    struct stat	st;
-    int		i, got_one = 0;
+    struct stat st;
+    int i, got_one = 0;
 
     while (1) {
 	for (i = 0; i < num_ports; i++) {
@@ -159,12 +158,15 @@ mplex_is_writable(int fd)
     return (fd < rw_size) ? writable[fd] : 0;
 }
 
-char rcsid_net_mp_fake[] = "$Id: net_mp_fake.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_mp_fake[] = "$Id: net_mp_fake.c,v 1.2 1997/03/03 04:19:03 nop Exp $";
 
 /* $Log: net_mp_fake.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:03  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:36:06  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -24,24 +24,24 @@
 
 #include "my-types.h"
 
-extern void     bzero(char *, int);
-extern void    *memset(void *, int, size_t);
-extern char    *strcpy(char *, const char *);
-extern char    *strncpy(char *, const char *, size_t);
-extern char    *strcat(char *, const char *);
-extern int	strcmp(const char *, const char *);
-extern int	strncmp(const char *, const char *, size_t);
-extern char    *strchr(const char *, int);
-extern char    *strerror(int);
+extern void bzero(char *, int);
+extern void *memset(void *, int, size_t);
+extern char *strcpy(char *, const char *);
+extern char *strncpy(char *, const char *, size_t);
+extern char *strcat(char *, const char *);
+extern int strcmp(const char *, const char *);
+extern int strncmp(const char *, const char *, size_t);
+extern char *strchr(const char *, int);
+extern char *strerror(int);
 
 /* We don't need to declare these because we're only using our own string.h
  * due to GCC complaining about conflicting built-in declarations for them.
  */
 
 #if 0
-extern void    *memcpy(void *, const void *, size_t);
-extern int	memcmp(const void *, const void *, size_t);
-extern size_t	strlen(const char *);
+extern void *memcpy(void *, const void *, size_t);
+extern int memcmp(const void *, const void *, size_t);
+extern size_t strlen(const char *);
 #endif
 
 #else
@@ -53,8 +53,8 @@ extern size_t	strlen(const char *);
 #  else
 #    if NDECL_MEMCPY
 #      include "my-types.h"
-       extern void     *memcpy(void *, const void *, size_t);
-       extern int	memcmp(const void *, const void *, size_t);
+extern void *memcpy(void *, const void *, size_t);
+extern int memcmp(const void *, const void *, size_t);
 #    endif
 #  endif
 
@@ -62,10 +62,10 @@ extern size_t	strlen(const char *);
 
 #if HAVE_STRERROR
 # if NDECL_STRERROR
-    extern char		       *strerror(int);
+extern char *strerror(int);
 # endif
 #else
-   extern const char   	       *sys_errlist[];
+extern const char *sys_errlist[];
 #  define strerror(error_code)	sys_errlist[error_code]
 #endif
 
@@ -73,22 +73,25 @@ extern size_t	strlen(const char *);
 #  if BZERO_IN_STDLIB_H
 #    include "my-stdlib.h"
 #  else
-     extern void	bzero(char *, int);
+extern void bzero(char *, int);
 #  endif
 #endif
 
 #if NDECL_MEMSET
 #include "my-types.h"
 
-extern void    *memset(void *, int, size_t);
+extern void *memset(void *, int, size_t);
 #endif
 
-#endif /* !My_String_H */
+#endif				/* !My_String_H */
 
 /* $Log: my-string.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:57  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:01:23  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

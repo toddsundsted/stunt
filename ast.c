@@ -28,12 +28,12 @@
 #include "utils.h"
 
 struct entry {
-    void       *ptr;
-    Memory_Type	type;
+    void *ptr;
+    Memory_Type type;
 };
 
-static int		pool_size, next_pool_slot;
-static struct entry    *pool;
+static int pool_size, next_pool_slot;
+static struct entry *pool;
 
 void
 begin_code_allocation()
@@ -47,23 +47,22 @@ void
 end_code_allocation(int aborted)
 {
     if (aborted) {
-	int	i;
+	int i;
 
 	for (i = 0; i < next_pool_slot; i++) {
 	    if (pool[i].ptr != 0)
 		myfree(pool[i].ptr, pool[i].type);
 	}
     }
-
     myfree(pool, M_AST_POOL);
 }
 
 static void *
 allocate(int size, Memory_Type type)
 {
-    if (next_pool_slot >= pool_size) { /* enlarge the pool */
-	struct entry   *new_pool;
-	int		i;
+    if (next_pool_slot >= pool_size) {	/* enlarge the pool */
+	struct entry *new_pool;
+	int i;
 
 	pool_size *= 2;
 	new_pool = mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
@@ -73,7 +72,6 @@ allocate(int size, Memory_Type type)
 	myfree(pool, M_AST_POOL);
 	pool = new_pool;
     }
-
     pool[next_pool_slot].type = type;
     return pool[next_pool_slot++].ptr = mymalloc(size, type);
 }
@@ -81,7 +79,7 @@ allocate(int size, Memory_Type type)
 static void
 deallocate(void *ptr)
 {
-    int	i;
+    int i;
 
     for (i = 0; i < next_pool_slot; i++) {
 	if (ptr == pool[i].ptr) {
@@ -97,8 +95,8 @@ deallocate(void *ptr)
 char *
 alloc_string(const char *buffer)
 {
-    char	*string = allocate(strlen(buffer) + 1, M_STRING);
-    
+    char *string = allocate(strlen(buffer) + 1, M_STRING);
+
     strcpy(string, buffer);
     return string;
 }
@@ -112,7 +110,7 @@ dealloc_string(char *str)
 double *
 alloc_float(double value)
 {
-    double	*d = allocate(sizeof(double), M_FLOAT);
+    double *d = allocate(sizeof(double), M_FLOAT);
 
     *d = value;
     return d;
@@ -127,7 +125,7 @@ dealloc_node(void *node)
 Stmt *
 alloc_stmt(enum Stmt_Kind kind)
 {
-    Stmt       *result = allocate(sizeof(Stmt), M_AST);
+    Stmt *result = allocate(sizeof(Stmt), M_AST);
 
     result->kind = kind;
     result->next = 0;
@@ -135,9 +133,9 @@ alloc_stmt(enum Stmt_Kind kind)
 }
 
 Cond_Arm *
-alloc_cond_arm(Expr *condition, Stmt *stmt)
+alloc_cond_arm(Expr * condition, Stmt * stmt)
 {
-    Cond_Arm   *result = allocate(sizeof(Cond_Arm), M_AST);
+    Cond_Arm *result = allocate(sizeof(Cond_Arm), M_AST);
 
     result->condition = condition;
     result->stmt = stmt;
@@ -146,9 +144,9 @@ alloc_cond_arm(Expr *condition, Stmt *stmt)
 }
 
 Except_Arm *
-alloc_except(int id, Arg_List *codes, Stmt *stmt)
+alloc_except(int id, Arg_List * codes, Stmt * stmt)
 {
-    Except_Arm	*result = allocate(sizeof(Except_Arm), M_AST);
+    Except_Arm *result = allocate(sizeof(Except_Arm), M_AST);
 
     result->id = id;
     result->codes = codes;
@@ -161,8 +159,8 @@ alloc_except(int id, Arg_List *codes, Stmt *stmt)
 Expr *
 alloc_expr(enum Expr_Kind kind)
 {
-    Expr       *result = allocate(sizeof(Expr), M_AST);
-    
+    Expr *result = allocate(sizeof(Expr), M_AST);
+
     result->kind = kind;
     return result;
 }
@@ -170,26 +168,26 @@ alloc_expr(enum Expr_Kind kind)
 Expr *
 alloc_var(var_type type)
 {
-    Expr       *result = alloc_expr(EXPR_VAR);
+    Expr *result = alloc_expr(EXPR_VAR);
 
     result->e.var.type = type;
     return result;
 }
 
 Expr *
-alloc_binary(enum Expr_Kind kind, Expr *lhs, Expr *rhs)
+alloc_binary(enum Expr_Kind kind, Expr * lhs, Expr * rhs)
 {
-    Expr       *result = alloc_expr(kind);
-    
+    Expr *result = alloc_expr(kind);
+
     result->e.bin.lhs = lhs;
     result->e.bin.rhs = rhs;
     return result;
 }
 
 Expr *
-alloc_verb(Expr *obj, Expr *verb, Arg_List *args)
+alloc_verb(Expr * obj, Expr * verb, Arg_List * args)
 {
-    Expr       *result = alloc_expr(EXPR_VERB);
+    Expr *result = alloc_expr(EXPR_VERB);
 
     result->e.verb.obj = obj;
     result->e.verb.verb = verb;
@@ -198,9 +196,9 @@ alloc_verb(Expr *obj, Expr *verb, Arg_List *args)
 }
 
 Arg_List *
-alloc_arg_list(enum Arg_Kind kind, Expr *expr)
+alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 {
-    Arg_List   *result = allocate(sizeof(Arg_List), M_AST);
+    Arg_List *result = allocate(sizeof(Arg_List), M_AST);
 
     result->kind = kind;
     result->expr = expr;
@@ -209,9 +207,9 @@ alloc_arg_list(enum Arg_Kind kind, Expr *expr)
 }
 
 Scatter *
-alloc_scatter(enum Scatter_Kind kind, int id, Expr *expr)
+alloc_scatter(enum Scatter_Kind kind, int id, Expr * expr)
 {
-    Scatter    *sc = allocate(sizeof(Scatter), M_AST);
+    Scatter *sc = allocate(sizeof(Scatter), M_AST);
 
     sc->kind = kind;
     sc->id = id;
@@ -225,9 +223,9 @@ alloc_scatter(enum Scatter_Kind kind, int id, Expr *expr)
 static void free_expr(Expr *);
 
 static void
-free_arg_list(Arg_List *args)
+free_arg_list(Arg_List * args)
 {
-    Arg_List   *arg, *next_arg;
+    Arg_List *arg, *next_arg;
 
     for (arg = args; arg; arg = next_arg) {
 	next_arg = arg->next;
@@ -237,9 +235,9 @@ free_arg_list(Arg_List *args)
 }
 
 static void
-free_scatter(Scatter *sc)
+free_scatter(Scatter * sc)
 {
-    Scatter   *next_sc;
+    Scatter *next_sc;
 
     for (; sc; sc = next_sc) {
 	next_sc = sc->next;
@@ -250,72 +248,84 @@ free_scatter(Scatter *sc)
 }
 
 static void
-free_expr(Expr *expr)
+free_expr(Expr * expr)
 {
     switch (expr->kind) {
 
-      case EXPR_VAR:
+    case EXPR_VAR:
 	free_var(expr->e.var);
 	break;
 
-      case EXPR_ID:
-      case EXPR_LENGTH:
+    case EXPR_ID:
+    case EXPR_LENGTH:
 	/* Do nothing. */
 	break;
 
-      case EXPR_PROP:	case EXPR_INDEX:	case EXPR_PLUS:
-      case EXPR_MINUS:  case EXPR_TIMES:	case EXPR_DIVIDE:
-      case EXPR_MOD:	case EXPR_AND:		case EXPR_OR:
-      case EXPR_EQ:     case EXPR_NE:		case EXPR_LT:
-      case EXPR_LE:	case EXPR_GT:		case EXPR_GE:
-      case EXPR_IN:	case EXPR_ASGN:		case EXPR_EXP:
+    case EXPR_PROP:
+    case EXPR_INDEX:
+    case EXPR_PLUS:
+    case EXPR_MINUS:
+    case EXPR_TIMES:
+    case EXPR_DIVIDE:
+    case EXPR_MOD:
+    case EXPR_AND:
+    case EXPR_OR:
+    case EXPR_EQ:
+    case EXPR_NE:
+    case EXPR_LT:
+    case EXPR_LE:
+    case EXPR_GT:
+    case EXPR_GE:
+    case EXPR_IN:
+    case EXPR_ASGN:
+    case EXPR_EXP:
 	free_expr(expr->e.bin.lhs);
 	free_expr(expr->e.bin.rhs);
 	break;
 
-      case EXPR_COND:
+    case EXPR_COND:
 	free_expr(expr->e.cond.condition);
 	free_expr(expr->e.cond.consequent);
 	free_expr(expr->e.cond.alternate);
 	break;
 
-      case EXPR_VERB:
+    case EXPR_VERB:
 	free_expr(expr->e.verb.obj);
 	free_expr(expr->e.verb.verb);
 	free_arg_list(expr->e.verb.args);
 	break;
 
-      case EXPR_RANGE:
+    case EXPR_RANGE:
 	free_expr(expr->e.range.base);
 	free_expr(expr->e.range.from);
 	free_expr(expr->e.range.to);
 	break;
 
-      case EXPR_CALL:
+    case EXPR_CALL:
 	free_arg_list(expr->e.call.args);
 	break;
 
-      case EXPR_NEGATE:
-      case EXPR_NOT:
+    case EXPR_NEGATE:
+    case EXPR_NOT:
 	free_expr(expr->e.expr);
 	break;
 
-      case EXPR_LIST:
+    case EXPR_LIST:
 	free_arg_list(expr->e.list);
 	break;
 
-      case EXPR_CATCH:
+    case EXPR_CATCH:
 	free_expr(expr->e.catch.try);
 	free_arg_list(expr->e.catch.codes);
 	if (expr->e.catch.except)
 	    free_expr(expr->e.catch.except);
 	break;
 
-      case EXPR_SCATTER:
+    case EXPR_SCATTER:
 	free_scatter(expr->e.scatter);
 	break;
 
-      default:
+    default:
 	errlog("FREE_EXPR: Unknown Expr_Kind: %d\n", expr->kind);
 	break;
     }
@@ -324,10 +334,10 @@ free_expr(Expr *expr)
 }
 
 void
-free_stmt(Stmt *stmt)
+free_stmt(Stmt * stmt)
 {
-    Stmt       *next_stmt;
-    Cond_Arm   *arm, *next_arm;
+    Stmt *next_stmt;
+    Cond_Arm *arm, *next_arm;
     Except_Arm *except, *next_e;
 
     for (; stmt; stmt = next_stmt) {
@@ -335,7 +345,7 @@ free_stmt(Stmt *stmt)
 
 	switch (stmt->kind) {
 
-	  case STMT_COND:
+	case STMT_COND:
 	    for (arm = stmt->s.cond.arms; arm; arm = next_arm) {
 		next_arm = arm->next;
 		free_expr(arm->condition);
@@ -346,34 +356,34 @@ free_stmt(Stmt *stmt)
 		free_stmt(stmt->s.cond.otherwise);
 	    break;
 
-	  case STMT_LIST:
+	case STMT_LIST:
 	    free_expr(stmt->s.list.expr);
 	    free_stmt(stmt->s.list.body);
 	    break;
 
-	  case STMT_RANGE:
+	case STMT_RANGE:
 	    free_expr(stmt->s.range.from);
 	    free_expr(stmt->s.range.to);
 	    free_stmt(stmt->s.range.body);
 	    break;
 
-	  case STMT_WHILE:
+	case STMT_WHILE:
 	    free_expr(stmt->s.loop.condition);
 	    free_stmt(stmt->s.loop.body);
 	    break;
 
-	  case STMT_FORK:
+	case STMT_FORK:
 	    free_expr(stmt->s.fork.time);
 	    free_stmt(stmt->s.fork.body);
 	    break;
 
-	  case STMT_EXPR:
-	  case STMT_RETURN:
+	case STMT_EXPR:
+	case STMT_RETURN:
 	    if (stmt->s.expr)
 		free_expr(stmt->s.expr);
 	    break;
 
-	  case STMT_TRY_EXCEPT:
+	case STMT_TRY_EXCEPT:
 	    free_stmt(stmt->s.catch.body);
 	    for (except = stmt->s.catch.excepts; except; except = next_e) {
 		next_e = except->next;
@@ -383,16 +393,16 @@ free_stmt(Stmt *stmt)
 	    }
 	    break;
 
-	  case STMT_TRY_FINALLY:
+	case STMT_TRY_FINALLY:
 	    free_stmt(stmt->s.finally.body);
 	    free_stmt(stmt->s.finally.handler);
 	    break;
 
-	  case STMT_BREAK:
-	  case STMT_CONTINUE:
+	case STMT_BREAK:
+	case STMT_CONTINUE:
 	    break;		/* Nothing extra to free */
 
-	  default:
+	default:
 	    errlog("FREE_STMT: unknown Stmt_Kind: %d\n", stmt->kind);
 	    break;
 	}
@@ -401,12 +411,15 @@ free_stmt(Stmt *stmt)
     }
 }
 
-char rcsid_ast[] = "$Id: ast.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_ast[] = "$Id: ast.c,v 1.2 1997/03/03 04:18:21 nop Exp $";
 
 /* $Log: ast.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:21  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/02/08  07:11:54  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1 (again).
  *

@@ -15,7 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "ast.h" 
+#include "ast.h"
 #include "decompile.h"
 #include "exceptions.h"
 #include "opcode.h"
@@ -24,17 +24,19 @@
 #include "utils.h"
 
 static Program *program;
-static Expr   **expr_stack;
-static int	top_expr_stack;
+static Expr **expr_stack;
+static int top_expr_stack;
 
-static Byte    *hot_byte;
-static void    *hot_node;
-static enum { TOP, ENDBODY, BOTTOM, DONE }	hot_position;
+static Byte *hot_byte;
+static void *hot_node;
+static enum {
+    TOP, ENDBODY, BOTTOM, DONE
+} hot_position;
 
-static int	lineno;
+static int lineno;
 
 static void
-push_expr(Expr *expr)
+push_expr(Expr * expr)
 {
     expr_stack[top_expr_stack++] = expr;
 }
@@ -85,16 +87,16 @@ do {				\
 #define READ_JUMP(is_hot)	read_jump(bc.numbytes_label, &ptr, &is_hot)
 
 static unsigned
-read_jump(unsigned numbytes_label, Byte **p, int *is_hot)
+read_jump(unsigned numbytes_label, Byte ** p, int *is_hot)
 {
-    Byte       *ptr = *p;
-    unsigned	label;
+    Byte *ptr = *p;
+    unsigned label;
 
     *is_hot = (ptr == hot_byte);
     if (*ptr++ != OP_JUMP)
 	panic("Missing JUMP in DECOMPILE!");
- 
-   label = READ_BYTES(numbytes_label);
+
+    label = READ_BYTES(numbytes_label);
     *p = ptr;
 
     return label;
@@ -123,21 +125,21 @@ read_jump(unsigned numbytes_label, Byte **p, int *is_hot)
 	    (ptr = decompile(bc, start, end, stmt_sink, arm_sink))
 
 static Byte *
-decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
-	  Cond_Arm **arm_sink)
+decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
+	  Cond_Arm ** arm_sink)
 {
     /*** The reader will likely find it useful to consult the file
      *** `MOOCodeSequences.txt' in this directory while reading this function.
      ***/
 
-    Byte	       *ptr = start;
-    unsigned		stmt_start = start - bc.vector;
-    unsigned		jump_len = bc.numbytes_label + 1;
-    Stmt	       *s;
-    Expr	       *e;
-    enum Expr_Kind	kind;
-    void	       *node;
-    int			asgn_hot = 0;
+    Byte *ptr = start;
+    unsigned stmt_start = start - bc.vector;
+    unsigned jump_len = bc.numbytes_label + 1;
+    Stmt *s;
+    Expr *e;
+    enum Expr_Kind kind;
+    void *node;
+    int asgn_hot = 0;
 
     if (stmt_sink)
 	*stmt_sink = 0;
@@ -145,9 +147,9 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 	*arm_sink = 0;
 
     while (ptr < end) {
-	int	op_hot = (ptr == hot_byte);
-	Opcode	op = *ptr++;
-	
+	int op_hot = (ptr == hot_byte);
+	Opcode op = *ptr++;
+
 	if (IS_PUSH_n(op)) {
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = PUSH_n_INDEX(op);
@@ -165,16 +167,15 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 	    push_expr(HOT_OP(e));
 	    continue;
 	}
-
 	switch (op) {
-	  case OP_IF:
+	case OP_IF:
 	    {
-		unsigned	next = READ_LABEL();
-		Expr   	       *condition = pop_expr();
-		Stmt	       *arm_stmts;
-		Cond_Arm       *arm;
-		unsigned	done;
-		int		jump_hot;
+		unsigned next = READ_LABEL();
+		Expr *condition = pop_expr();
+		Stmt *arm_stmts;
+		Cond_Arm *arm;
+		unsigned done;
+		int jump_hot;
 
 		s = alloc_stmt(STMT_COND);
 		DECOMPILE(bc, ptr, bc.vector + next - jump_len, &arm_stmts, 0);
@@ -184,18 +185,18 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		HOT_BOTTOM(jump_hot, arm);
 		DECOMPILE(bc, ptr, bc.vector + done, &(s->s.cond.otherwise),
 			  &(arm->next));
-		
+
 		ADD_STMT(s);
 	    }
 	    break;
-	  case OP_EIF:
+	case OP_EIF:
 	    {
-		unsigned	next = READ_LABEL();
-		Expr   	       *condition = pop_expr();
-		Stmt	       *arm_stmts;
-		Cond_Arm       *arm;
-		unsigned	done;
-		int		jump_hot;
+		unsigned next = READ_LABEL();
+		Expr *condition = pop_expr();
+		Stmt *arm_stmts;
+		Cond_Arm *arm;
+		unsigned done;
+		int jump_hot;
 
 		DECOMPILE(bc, ptr, bc.vector + next - jump_len, &arm_stmts, 0);
 		ADD_ARM(arm = alloc_cond_arm(condition, arm_stmts));
@@ -207,14 +208,14 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		stmt_start = ptr - bc.vector;
 	    }
 	    break;
-	  case OP_FOR_LIST:
+	case OP_FOR_LIST:
 	    {
-		unsigned	top = (ptr - 1) - bc.vector;
-		int		id = READ_ID();
-		unsigned	done = READ_LABEL();
-		Expr	       *one = pop_expr();
-		Expr	       *list = pop_expr();
-		int		jump_hot;
+		unsigned top = (ptr - 1) - bc.vector;
+		int id = READ_ID();
+		unsigned done = READ_LABEL();
+		Expr *one = pop_expr();
+		Expr *list = pop_expr();
+		int jump_hot;
 
 		if (one->kind != EXPR_VAR
 		    || one->e.var.type != TYPE_INT
@@ -233,14 +234,14 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		ADD_STMT(HOT_OP2(one, list, s));
 	    }
 	    break;
-	  case OP_FOR_RANGE:
+	case OP_FOR_RANGE:
 	    {
-		unsigned	top = (ptr - 1) - bc.vector;
-		int		id = READ_ID();
-		unsigned	done = READ_LABEL();
-		Expr	       *to = pop_expr();
-		Expr	       *from = pop_expr();
-		int		jump_hot;
+		unsigned top = (ptr - 1) - bc.vector;
+		int id = READ_ID();
+		unsigned done = READ_LABEL();
+		Expr *to = pop_expr();
+		Expr *from = pop_expr();
+		int jump_hot;
 
 		s = alloc_stmt(STMT_RANGE);
 		s->s.range.id = id;
@@ -254,15 +255,15 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		ADD_STMT(HOT_OP2(from, to, s));
 	    }
 	    break;
-	  case OP_WHILE:
+	case OP_WHILE:
 	    s = alloc_stmt(STMT_WHILE);
 	    s->s.loop.id = -1;
 	  finish_while:
 	    {
-		unsigned	top = stmt_start;
-		unsigned	done = READ_LABEL();
-		Expr	       *condition = pop_expr();
-		int		jump_hot;
+		unsigned top = stmt_start;
+		unsigned done = READ_LABEL();
+		Expr *condition = pop_expr();
+		int jump_hot;
 
 		s->s.loop.condition = condition;
 		DECOMPILE(bc, ptr, bc.vector + done - jump_len,
@@ -273,12 +274,12 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		ADD_STMT(HOT_OP1(condition, s));
 	    }
 	    break;
-	  case OP_FORK:
-	  case OP_FORK_WITH_ID:
+	case OP_FORK:
+	case OP_FORK_WITH_ID:
 	    {
-		Bytecodes	fbc;
-		int		id;
-		Expr	       *time = pop_expr();
+		Bytecodes fbc;
+		int id;
+		Expr *time = pop_expr();
 
 		fbc = READ_FORK();
 		id = (op == OP_FORK ? -1 : READ_ID());
@@ -291,35 +292,35 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		ADD_STMT(HOT_OP1(time, s));
 	    }
 	    break;
-	  case OP_POP:
+	case OP_POP:
 	    s = alloc_stmt(STMT_EXPR);
 	    e = s->s.expr = pop_expr();
 	    ADD_STMT(HOT_OP1(e, s));
 	    break;
-	  case OP_RETURN:
-	  case OP_RETURN0:
+	case OP_RETURN:
+	case OP_RETURN0:
 	    s = alloc_stmt(STMT_RETURN);
 	    e = s->s.expr = (op == OP_RETURN ? pop_expr() : 0);
 	    ADD_STMT(HOT(op_hot || (e && e == hot_node), s));
 	    break;
-	  case OP_DONE:
+	case OP_DONE:
 	    if (ptr != end)
 		panic("DONE not at end in DECOMPILE!");
 	    break;
-	  case OP_IMM:
+	case OP_IMM:
 	    e = alloc_expr(EXPR_VAR);
 	    e->e.var = var_ref(READ_LITERAL());
 	    push_expr(HOT_OP(e));
 	    break;
-	  case OP_G_PUSH:
+	case OP_G_PUSH:
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = READ_ID();
 	    push_expr(HOT_OP(e));
 	    break;
-	  case OP_AND:
-	  case OP_OR:
+	case OP_AND:
+	case OP_OR:
 	    {
-		unsigned	done = READ_LABEL();
+		unsigned done = READ_LABEL();
 
 		e = pop_expr();
 		DECOMPILE(bc, ptr, bc.vector + done, 0, 0);
@@ -330,64 +331,64 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		push_expr(HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
 	    }
 	    break;
-	  case OP_UNARY_MINUS:
-	  case OP_NOT:
+	case OP_UNARY_MINUS:
+	case OP_NOT:
 	    e = alloc_expr(op == OP_NOT ? EXPR_NOT : EXPR_NEGATE);
 	    e->e.expr = pop_expr();
 	    push_expr(HOT_OP1(e->e.expr, e));
 	    break;
-	  case OP_GET_PROP:
-	  case OP_PUSH_GET_PROP:
+	case OP_GET_PROP:
+	case OP_PUSH_GET_PROP:
 	    kind = EXPR_PROP;
 	    goto finish_binary;
-	  case OP_EQ:
+	case OP_EQ:
 	    kind = EXPR_EQ;
 	    goto finish_binary;
-	  case OP_NE:
+	case OP_NE:
 	    kind = EXPR_NE;
 	    goto finish_binary;
-	  case OP_LT:
+	case OP_LT:
 	    kind = EXPR_LT;
 	    goto finish_binary;
-	  case OP_LE:
+	case OP_LE:
 	    kind = EXPR_LE;
 	    goto finish_binary;
-	  case OP_GT:
+	case OP_GT:
 	    kind = EXPR_GT;
 	    goto finish_binary;
-	  case OP_GE:
+	case OP_GE:
 	    kind = EXPR_GE;
 	    goto finish_binary;
-	  case OP_IN:
+	case OP_IN:
 	    kind = EXPR_IN;
 	    goto finish_binary;
-	  case OP_ADD:
+	case OP_ADD:
 	    kind = EXPR_PLUS;
 	    goto finish_binary;
-	  case OP_MINUS:
+	case OP_MINUS:
 	    kind = EXPR_MINUS;
 	    goto finish_binary;
-	  case OP_MULT:
+	case OP_MULT:
 	    kind = EXPR_TIMES;
 	    goto finish_binary;
-	  case OP_DIV:
+	case OP_DIV:
 	    kind = EXPR_DIVIDE;
 	    goto finish_binary;
-	  case OP_MOD:
+	case OP_MOD:
 	    kind = EXPR_MOD;
 	    goto finish_binary;
-	  case OP_REF:
-	  case OP_PUSH_REF:
+	case OP_REF:
+	case OP_PUSH_REF:
 	    kind = EXPR_INDEX;
 	  finish_binary:
 	    e = pop_expr();
 	    e = alloc_binary(kind, pop_expr(), e);
 	    push_expr(HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
 	    break;
-	  case OP_RANGE_REF:
+	case OP_RANGE_REF:
 	    {
-		Expr   *e1 = pop_expr();
-		Expr   *e2 = pop_expr();
+		Expr *e1 = pop_expr();
+		Expr *e2 = pop_expr();
 
 		e = alloc_expr(EXPR_RANGE);
 		e->e.range.base = pop_expr();
@@ -396,9 +397,9 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		push_expr(HOT_OP3(e1, e2, e->e.range.base, e));
 	    }
 	    break;
-	  case OP_BI_FUNC_CALL:
+	case OP_BI_FUNC_CALL:
 	    {
-		Expr   *a = pop_expr();
+		Expr *a = pop_expr();
 
 		if (a->kind != EXPR_LIST)
 		    panic("Missing arglist for BI_FUNC_CALL in DECOMPILE!");
@@ -409,10 +410,10 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		push_expr(HOT_OP1(a, e));
 	    }
 	    break;
-	  case OP_CALL_VERB:
+	case OP_CALL_VERB:
 	    {
-		Expr   *a = pop_expr();
-		Expr   *e2 = pop_expr();
+		Expr *a = pop_expr();
+		Expr *e2 = pop_expr();
 
 		if (a->kind != EXPR_LIST)
 		    panic("Missing arglist for CALL_VERB in DECOMPILE!");
@@ -421,10 +422,10 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 		push_expr(HOT_OP3(e->e.verb.obj, a, e2, e));
 	    }
 	    break;
-	  case OP_IF_QUES:
+	case OP_IF_QUES:
 	    {
-		unsigned	label = READ_LABEL();
-		int		jump_hot;
+		unsigned label = READ_LABEL();
+		int jump_hot;
 
 		e = alloc_expr(EXPR_COND);
 		e->e.cond.condition = pop_expr();
@@ -440,18 +441,18 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			       e));
 	    }
 	    break;
-	  case OP_PUT_TEMP:
+	case OP_PUT_TEMP:
 	    /* Ignore; following RANGESET or INDEXSET does the work */
 	    if (op_hot)
 		asgn_hot = 1;
 	    break;
-	  case OP_INDEXSET:
+	case OP_INDEXSET:
 	    /* Most of the lvalue has already been constructed on the stack.
 	     * Add the final indexing.
 	     */
 	    {
-		Expr   *rvalue = pop_expr();
-		Expr   *index = pop_expr();
+		Expr *rvalue = pop_expr();
+		Expr *index = pop_expr();
 
 		e = alloc_binary(EXPR_INDEX, pop_expr(), index);
 		push_expr(HOT3(op_hot || asgn_hot,
@@ -464,21 +465,21 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 	     */
 	    asgn_hot = 0;
 	    while (*ptr != OP_PUSH_TEMP) {
-		if (ptr == hot_byte) /* it's our assignment expression */
+		if (ptr == hot_byte)	/* it's our assignment expression */
 		    hot_node = expr_stack[top_expr_stack];
 		ptr++;
 	    }
 	    ptr++;
 	    break;
-	  case OP_G_PUT:
+	case OP_G_PUT:
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = READ_ID();
 	    e = alloc_binary(EXPR_ASGN, e, pop_expr());
 	    push_expr(HOT_OP1(e->e.bin.rhs, e));
 	    break;
-	  case OP_PUT_PROP:
+	case OP_PUT_PROP:
 	    {
-		Expr   *rvalue = pop_expr();
+		Expr *rvalue = pop_expr();
 
 		e = pop_expr();
 		e = alloc_binary(EXPR_PROP, pop_expr(), e);
@@ -486,53 +487,52 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 				  alloc_binary(EXPR_ASGN, e, rvalue)));
 	    }
 	    break;
-	  case OP_MAKE_EMPTY_LIST:
+	case OP_MAKE_EMPTY_LIST:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = 0;
 	    push_expr(HOT_OP(e));
 	    break;
-	  case OP_MAKE_SINGLETON_LIST:
+	case OP_MAKE_SINGLETON_LIST:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = alloc_arg_list(ARG_NORMAL, pop_expr());
 	    push_expr(HOT_OP1(e->e.list->expr, e));
 	    break;
-	  case OP_CHECK_LIST_FOR_SPLICE:
+	case OP_CHECK_LIST_FOR_SPLICE:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = alloc_arg_list(ARG_SPLICE, pop_expr());
 	    push_expr(HOT_OP1(e->e.list->expr, e));
 	    break;
-	  case OP_LIST_ADD_TAIL:
-	  case OP_LIST_APPEND:
+	case OP_LIST_ADD_TAIL:
+	case OP_LIST_APPEND:
 	    {
-		Expr   	       *list;
-		Arg_List       *a;
+		Expr *list;
+		Arg_List *a;
 
 		e = pop_expr();
 		list = pop_expr();
 		if (list->kind != EXPR_LIST)
 		    panic("Missing list expression in DECOMPILE!");
-		for (a = list->e.list; a->next; a = a->next)
-		    ;
+		for (a = list->e.list; a->next; a = a->next);
 		a->next = alloc_arg_list(op == OP_LIST_APPEND ? ARG_SPLICE
-							      : ARG_NORMAL, e);
+					 : ARG_NORMAL, e);
 		push_expr(HOT_OP1(e, list));
 	    }
 	    break;
-	  case OP_PUSH_TEMP:
-	  case OP_JUMP:
+	case OP_PUSH_TEMP:
+	case OP_JUMP:
 	    panic("Unexpected opcode in DECOMPILE!");
 	    break;
-	  case OP_EXTENDED:
+	case OP_EXTENDED:
 	    {
-		Extended_Opcode	eop = *ptr++;
+		Extended_Opcode eop = *ptr++;
 
 		switch (eop) {
-		  case EOP_RANGESET:
+		case EOP_RANGESET:
 		    /* Most of the lvalue has already been constructed on the
 		     * stack.  Add the final subranging.
 		     */
 		    {
-			Expr   *rvalue = pop_expr();
+			Expr *rvalue = pop_expr();
 
 			e = alloc_expr(EXPR_RANGE);
 			e->e.range.to = pop_expr();
@@ -541,34 +541,34 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			push_expr(HOT4(op_hot || asgn_hot,
 				       e->e.range.base, e->e.range.from,
 				       e->e.range.to, rvalue,
-				       alloc_binary(EXPR_ASGN, e, rvalue)));
+				    alloc_binary(EXPR_ASGN, e, rvalue)));
 		    }
 		    goto finish_indexed_assignment;
-		  case EOP_LENGTH:
+		case EOP_LENGTH:
 		    READ_STACK();
 		    e = alloc_expr(EXPR_LENGTH);
 		    push_expr(HOT_OP(e));
 		    break;
-		  case EOP_EXP:
+		case EOP_EXP:
 		    kind = EXPR_EXP;
 		    goto finish_binary;
-		  case EOP_SCATTER:
+		case EOP_SCATTER:
 		    {
-			Scatter	*sc, **scp;
-			int	nargs = *ptr++;
-			int	rest = (ptr++, *ptr++);	/* skip nreq */
-			int    *next_label = 0;
-			int	i, done, is_hot = op_hot;
+			Scatter *sc, **scp;
+			int nargs = *ptr++;
+			int rest = (ptr++, *ptr++);	/* skip nreq */
+			int *next_label = 0;
+			int i, done, is_hot = op_hot;
 
 			for (i = 1, scp = &sc;
 			     i <= nargs;
 			     i++, scp = &((*scp)->next)) {
-			    int	id = READ_ID();
-			    int	label = READ_LABEL();
+			    int id = READ_ID();
+			    int label = READ_LABEL();
 
 			    *scp = alloc_scatter(i == rest ? SCAT_REST :
-						 label == 0 ? SCAT_REQUIRED
-							    : SCAT_OPTIONAL,
+					       label == 0 ? SCAT_REQUIRED
+						 : SCAT_OPTIONAL,
 						 id, 0);
 			    if (label > 1) {
 				(*scp)->label = label;
@@ -585,8 +585,8 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			e->e.scatter = sc;
 			for (sc = e->e.scatter; sc; sc = sc->next)
 			    if (sc->label) {
-				Expr   *defallt;
-				
+				Expr *defallt;
+
 				if (ptr != bc.vector + sc->label)
 				    panic("Misplaced default in DECOMPILE!");
 				DECOMPILE(bc, ptr,
@@ -611,19 +611,19 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			    panic("Not at end of scatter in DECOMPILE!");
 		    }
 		    break;
-		  case EOP_PUSH_LABEL:
+		case EOP_PUSH_LABEL:
 		    e = alloc_var(TYPE_INT);
 		    e->e.var.v.num = READ_LABEL();
 		    push_expr(HOT_OP(e));
 		    break;
-		  case EOP_CATCH:
+		case EOP_CATCH:
 		    {
-			Expr	       *label_expr = pop_expr();
-			Expr	       *codes = pop_expr();
-			Expr	       *try_expr, *default_expr = 0;
-			Arg_List       *a = 0; /* silence warning */
-			int		label, done;
-			int		is_hot = op_hot;
+			Expr *label_expr = pop_expr();
+			Expr *codes = pop_expr();
+			Expr *try_expr, *default_expr = 0;
+			Arg_List *a = 0;	/* silence warning */
+			int label, done;
+			int is_hot = op_hot;
 
 			if (label_expr->kind != EXPR_VAR
 			    || label_expr->e.var.type != TYPE_INT)
@@ -668,21 +668,21 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			e->e.catch.codes = a;
 			e->e.catch.except = default_expr;
 			push_expr(HOT3(is_hot || (default_expr
-						  && default_expr == hot_node),
+					    && default_expr == hot_node),
 				       label_expr, codes, try_expr,
 				       e));
 		    }
 		    break;
-		  case EOP_END_CATCH:
+		case EOP_END_CATCH:
 		    /* Early exit; main logic is in CATCH case, above. */
 		    return ptr - 2;
-		  case EOP_TRY_EXCEPT:
+		case EOP_TRY_EXCEPT:
 		    {
-			Expr	       *label_expr;
-			Except_Arm     *ex;
-			Arg_List       *a = 0; /* silence warning */
-			int		count = *ptr++, label;
-			unsigned	done;
+			Expr *label_expr;
+			Except_Arm *ex;
+			Arg_List *a = 0;	/* silence warning */
+			int count = *ptr++, label;
+			unsigned done;
 
 			s = HOT_OP(alloc_stmt(STMT_TRY_EXCEPT));
 			s->s.catch.excepts = 0;
@@ -715,8 +715,8 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			    panic("Missing END_EXCEPT in DECOMPILE!");
 			done = READ_LABEL();
 			for (ex = s->s.catch.excepts; ex; ex = ex->next) {
-			    Byte       *stop;
-			    int		jump_hot = 0;
+			    Byte *stop;
+			    int jump_hot = 0;
 
 			    if (ex->label != ptr - bc.vector)
 				panic("Not at start of handler in DECOMPILE!");
@@ -747,12 +747,12 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			ADD_STMT(s);
 		    }
 		    break;
-		  case EOP_END_EXCEPT:
+		case EOP_END_EXCEPT:
 		    /* Early exit; main logic is in TRY_EXCEPT case, above. */
 		    return ptr - 2;
-		  case EOP_TRY_FINALLY:
+		case EOP_TRY_FINALLY:
 		    {
-			int	label = READ_LABEL();
+			int label = READ_LABEL();
 
 			s = HOT_OP(alloc_stmt(STMT_TRY_FINALLY));
 			DECOMPILE(bc, ptr, end, &(s->s.finally.body), 0);
@@ -769,16 +769,16 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			ADD_STMT(s);
 		    }
 		    break;
-		  case EOP_END_FINALLY:
-		  case EOP_CONTINUE:
+		case EOP_END_FINALLY:
+		case EOP_CONTINUE:
 		    /* Early exit; main logic is in TRY_FINALLY case, above. */
 		    return ptr - 2;
-		  case EOP_WHILE_ID:
+		case EOP_WHILE_ID:
 		    s = alloc_stmt(STMT_WHILE);
 		    s->s.loop.id = READ_ID();
 		    goto finish_while;
-		  case EOP_EXIT:
-		  case EOP_EXIT_ID:
+		case EOP_EXIT:
+		case EOP_EXIT_ID:
 		    s = alloc_stmt(STMT_BREAK);
 		    if (eop == EOP_EXIT_ID)
 			s->s.exit = READ_ID();
@@ -789,12 +789,12 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 			s->kind = STMT_CONTINUE;
 		    ADD_STMT(HOT_OP(s));
 		    break;
-		  default:
+		default:
 		    panic("Unknown extended opcode in DECOMPILE!");
 		}
 	    }
 	    break;
-	  default:
+	default:
 	    panic("Unknown opcode in DECOMPILE!");
 	}
     }
@@ -806,11 +806,11 @@ decompile(Bytecodes bc, Byte *start, Byte *end, Stmt **stmt_sink,
 }
 
 static Stmt *
-program_to_tree(Program *prog, int vector, int pc_vector, int pc)
+program_to_tree(Program * prog, int vector, int pc_vector, int pc)
 {
-    Stmt       *result;
-    Bytecodes	bc;
-    int		i, sum;
+    Stmt *result;
+    Bytecodes bc;
+    int i, sum;
 
     program = prog;
     bc = (pc_vector == MAIN_VECTOR
@@ -847,18 +847,18 @@ program_to_tree(Program *prog, int vector, int pc_vector, int pc)
 }
 
 Stmt *
-decompile_program(Program *prog, int vector)
+decompile_program(Program * prog, int vector)
 {
     return program_to_tree(prog, vector, MAIN_VECTOR, -1);
 }
 
 static int
-find_hot_node(Stmt *stmt)
+find_hot_node(Stmt * stmt)
 {
     /* Invariants: on entry, lineno is number of first line of STMT
-     *		   on exit, if result is true,
-     *			          lineno is line number of hot_node/position
-     *			    else, lineno is number of first line after STMT
+     *                   on exit, if result is true,
+     *                            lineno is line number of hot_node/position
+     *                      else, lineno is number of first line after STMT
      */
 
     for (; stmt; stmt = stmt->next) {
@@ -866,9 +866,9 @@ find_hot_node(Stmt *stmt)
 	    return 1;
 
 	switch (stmt->kind) {
-	  case STMT_COND:
+	case STMT_COND:
 	    {
-		Cond_Arm       *arm;
+		Cond_Arm *arm;
 
 		for (arm = stmt->s.cond.arms; arm; arm = arm->next) {
 		    if (arm == hot_node && hot_position == TOP)
@@ -877,7 +877,7 @@ find_hot_node(Stmt *stmt)
 		    if (find_hot_node(arm->stmt))
 			return 1;
 		    else if (arm == hot_node && hot_position == BOTTOM) {
-			lineno--; /* Blame last line of arm */
+			lineno--;	/* Blame last line of arm */
 			return 1;
 		    }
 		}
@@ -888,37 +888,37 @@ find_hot_node(Stmt *stmt)
 		}
 	    }
 	    break;
-	  case STMT_LIST:
+	case STMT_LIST:
 	    lineno++;		/* Skip `for' line */
 	    if (find_hot_node(stmt->s.list.body))
 		return 1;
 	    break;
-	  case STMT_RANGE:
+	case STMT_RANGE:
 	    lineno++;		/* Skip `for' line */
 	    if (find_hot_node(stmt->s.range.body))
 		return 1;
 	    break;
-	  case STMT_WHILE:
+	case STMT_WHILE:
 	    lineno++;		/* Skip `while' line */
 	    if (find_hot_node(stmt->s.loop.body))
 		return 1;
 	    break;
-	  case STMT_FORK:
+	case STMT_FORK:
 	    lineno++;		/* Skip `fork' line */
 	    if (find_hot_node(stmt->s.fork.body))
 		return 1;
 	    break;
-	  case STMT_EXPR:
-	  case STMT_RETURN:
-	  case STMT_BREAK:
-	  case STMT_CONTINUE:
+	case STMT_EXPR:
+	case STMT_RETURN:
+	case STMT_BREAK:
+	case STMT_CONTINUE:
 	    /* Nothing more to do */
 	    break;
-	  case STMT_TRY_EXCEPT:
+	case STMT_TRY_EXCEPT:
 	    {
-		Except_Arm     *ex;
-		
-		lineno++;		/* Skip `try' line */
+		Except_Arm *ex;
+
+		lineno++;	/* Skip `try' line */
 		if (find_hot_node(stmt->s.catch.body))
 		    return 1;
 		if (stmt == hot_node && hot_position == ENDBODY) {
@@ -932,13 +932,13 @@ find_hot_node(Stmt *stmt)
 		    if (find_hot_node(ex->stmt))
 			return 1;
 		    if (ex == hot_node && hot_position == BOTTOM) {
-			lineno--; /* blame last line of handler */
+			lineno--;	/* blame last line of handler */
 			return 1;
 		    }
 		}
 	    }
 	    break;
-	  case STMT_TRY_FINALLY:
+	case STMT_TRY_FINALLY:
 	    lineno++;		/* Skip `try' line */
 	    if (find_hot_node(stmt->s.finally.body)
 		|| (stmt == hot_node && hot_position == ENDBODY))
@@ -947,7 +947,7 @@ find_hot_node(Stmt *stmt)
 	    if (find_hot_node(stmt->s.finally.handler))
 		return 1;
 	    break;
-	  default:
+	default:
 	    panic("Unknown statement kind in FIND_HOT_NODE!");
 	}
 
@@ -961,9 +961,9 @@ find_hot_node(Stmt *stmt)
 }
 
 int
-find_line_number(Program *prog, int vector, int pc)
+find_line_number(Program * prog, int vector, int pc)
 {
-    Stmt       *tree = program_to_tree(prog, MAIN_VECTOR, vector, pc);
+    Stmt *tree = program_to_tree(prog, MAIN_VECTOR, vector, pc);
 
     lineno = prog->first_lineno;
     find_hot_node(tree);
@@ -971,16 +971,19 @@ find_line_number(Program *prog, int vector, int pc)
 
     if (!hot_node && hot_position != DONE)
 	panic("Can't do job in FIND_LINE_NUMBER!");
-    
+
     return lineno;
 }
 
-char rcsid_decompile[] = "$Id: decompile.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_decompile[] = "$Id: decompile.c,v 1.2 1997/03/03 04:18:32 nop Exp $";
 
 /* $Log: decompile.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:32  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.6  1996/03/10  01:17:48  pavel
  * Removed a automatic structure initialization.  Release 1.8.0.
  *

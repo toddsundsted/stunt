@@ -38,10 +38,10 @@
 Var
 new_list(int size)
 {
-    Var		new;
+    Var new;
 
     new.type = TYPE_LIST;
-    new.v.list = (Var *) mymalloc((size + 1) * sizeof (Var), M_LIST);
+    new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
     new.v.list[0].type = TYPE_INT;
     new.v.list[0].v.num = size;
     return new;
@@ -60,7 +60,7 @@ setadd(Var list, Var value)
 Var
 setremove(Var list, Var value)
 {
-    int		i;
+    int i;
 
     if ((i = ismember(value, list, 0)) != 0) {
 	return listdelete(list, i);
@@ -72,7 +72,7 @@ setremove(Var list, Var value)
 int
 ismember(Var lhs, Var rhs, int case_matters)
 {
-    int		i;
+    int i;
 
     for (i = 1; i <= rhs.v.list[0].v.num; i++) {
 	if (equality(lhs, rhs.v.list[i], case_matters)) {
@@ -93,8 +93,8 @@ listset(Var list, Var value, int pos)
 static Var
 doinsert(Var list, Var value, int pos)
 {
-    Var		new;
-    int		i;
+    Var new;
+    int i;
 
     new = new_list(list.v.list[0].v.num + 1);
     for (i = 1; i < pos; i++)
@@ -125,8 +125,8 @@ listappend(Var list, Var value)
 Var
 listdelete(Var list, int pos)
 {
-    Var		new;
-    int		i;
+    Var new;
+    int i;
 
     new = new_list(list.v.list[0].v.num - 1);
     for (i = 1; i < pos; i++) {
@@ -141,11 +141,11 @@ listdelete(Var list, int pos)
 Var
 listconcat(Var first, Var second)
 {
-    int	lsecond = second.v.list[0].v.num;
-    int	lfirst = first.v.list[0].v.num;
-    Var	new;
+    int lsecond = second.v.list[0].v.num;
+    int lfirst = first.v.list[0].v.num;
+    Var new;
     int i;
-    
+
     new = new_list(lsecond + lfirst);
     for (i = 1; i <= lfirst; i++)
 	new.v.list[i] = var_ref(first.v.list[i]);
@@ -171,7 +171,7 @@ listrangeset(Var base, int from, int to, Var value)
     Var ans;
 
     ans = new_list(newsize);
-    for (index = 1; index <= lenleft; index++)	
+    for (index = 1; index <= lenleft; index++)
 	ans.v.list[++offset] = var_ref(base.v.list[index]);
     for (index = 1; index <= lenmiddle; index++)
 	ans.v.list[++offset] = var_ref(value.v.list[index]);
@@ -189,9 +189,9 @@ sublist(Var list, int lower, int upper)
 	free_var(list);
 	return new_list(0);
     } else {
-	Var		r;
-	int		i;
-	
+	Var r;
+	int i;
+
 	r = new_list(upper - lower + 1);
 	for (i = lower; i <= upper; i++)
 	    r.v.list[i - lower + 1] = var_ref(list.v.list[i]);
@@ -201,46 +201,46 @@ sublist(Var list, int lower, int upper)
 }
 
 static const char *
-list2str(Var *args)
+list2str(Var * args)
 {
-    static Stream      *str = 0;
-    int			i;
-    
+    static Stream *str = 0;
+    int i;
+
     if (!str)
 	str = new_stream(100);
-    
+
     for (i = 1; i <= args[0].v.num; i++) {
 	switch (args[i].type) {
-	  case TYPE_INT:
+	case TYPE_INT:
 	    stream_printf(str, "%d", args[i].v.num);
 	    break;
-	  case TYPE_OBJ:
+	case TYPE_OBJ:
 	    stream_printf(str, "#%d", args[i].v.obj);
 	    break;
-	  case TYPE_STR:
+	case TYPE_STR:
 	    stream_add_string(str, args[i].v.str);
 	    break;
-	  case TYPE_ERR:
+	case TYPE_ERR:
 	    stream_add_string(str, unparse_error(args[i].v.err));
 	    break;
-	  case TYPE_FLOAT:
+	case TYPE_FLOAT:
 	    stream_printf(str, "%g", *args[i].v.fnum);
 	    break;
-	  case TYPE_LIST:
+	case TYPE_LIST:
 	    stream_add_string(str, "{list}");
 	    break;
-	  default:
+	default:
 	    panic("LIST2STR: Impossible var type.\n");
 	}
     }
-    
+
     return reset_stream(str);
 }
 
 const char *
 value2str(Var value)
 {
-    Var 	list;
+    Var list;
     const char *str;
 
     list = new_list(1);
@@ -251,43 +251,43 @@ value2str(Var value)
 }
 
 static void
-print_to_stream(Var v, Stream *s)
+print_to_stream(Var v, Stream * s)
 {
     switch (v.type) {
-      case TYPE_INT:
+    case TYPE_INT:
 	stream_printf(s, "%d", v.v.num);
 	break;
-      case TYPE_OBJ:
+    case TYPE_OBJ:
 	stream_printf(s, "#%d", v.v.obj);
 	break;
-      case TYPE_ERR:
+    case TYPE_ERR:
 	stream_add_string(s, error_name(v.v.num));
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	stream_printf(s, "%g", *v.v.fnum);
 	break;
-      case TYPE_STR:
+    case TYPE_STR:
 	{
 	    const char *str = v.v.str;
-		
+
 	    stream_add_char(s, '"');
 	    while (*str) {
 		switch (*str) {
-		  case '"':
-		  case '\\':
+		case '"':
+		case '\\':
 		    stream_add_char(s, '\\');
 		    /* fall thru */
-		  default:
+		default:
 		    stream_add_char(s, *str++);
 		}
 	    }
 	    stream_add_char(s, '"');
 	}
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	{
 	    const char *sep = "";
-	    int		len, i;
+	    int len, i;
 
 	    stream_add_char(s, '{');
 	    len = v.v.list[0].v.num;
@@ -299,7 +299,7 @@ print_to_stream(Var v, Stream *s)
 	    stream_add_char(s, '}');
 	}
 	break;
-      default:
+    default:
 	errlog("PRINT_TO_STREAM: Unknown Var type = %d\n", v.type);
 	stream_add_string(s, ">>Unknown value<<");
     }
@@ -308,7 +308,7 @@ print_to_stream(Var v, Stream *s)
 const char *
 value_to_literal(Var v)
 {
-    static Stream      *s = 0;
+    static Stream *s = 0;
 
     if (!s)
 	s = new_stream(100);
@@ -329,7 +329,7 @@ strrangeset(Var base, int from, int to, Var value)
     int lenmiddle = val_len;
     int lenright = (base_len > to) ? base_len - to : 0;
     int newsize = lenleft + lenmiddle + lenright;
-	
+
     Var ans;
     char *s;
 
@@ -346,13 +346,13 @@ strrangeset(Var base, int from, int to, Var value)
     ans.v.str = s;
     free_var(base);
     free_var(value);
-    return ans;    
+    return ans;
 }
 
 Var
 substr(Var str, int lower, int upper)
 {
-    Var		r;
+    Var r;
 
     r.type = TYPE_STR;
     if (lower > upper)
@@ -373,8 +373,8 @@ substr(Var str, int lower, int upper)
 Var
 strget(Var str, Var i)
 {
-    Var		r;
-    char       *s;
+    Var r;
+    char *s;
 
     r.type = TYPE_STR;
     s = str_dup(" ");
@@ -389,30 +389,30 @@ static package
 bf_length(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    switch(arglist.v.list[1].type) {
-      case TYPE_LIST:
+    switch (arglist.v.list[1].type) {
+    case TYPE_LIST:
 	r.type = TYPE_INT;
 	r.v.num = arglist.v.list[1].v.list[0].v.num;
 	break;
-      case TYPE_STR:
+    case TYPE_STR:
 	r.type = TYPE_INT;
 	r.v.num = strlen(arglist.v.list[1].v.str);
 	break;
-      default:
+    default:
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
 	break;
     }
-    
+
     free_var(arglist);
     return make_var_pack(r);
 }
 
-static package 
+static package
 bf_setadd(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    
+
     r = setadd(var_ref(arglist.v.list[1]), var_ref(arglist.v.list[2]));
     free_var(arglist);
     return make_var_pack(r);
@@ -423,7 +423,7 @@ static package
 bf_setremove(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    
+
     r = setremove(var_ref(arglist.v.list[1]), arglist.v.list[2]);
     free_var(arglist);
     return make_var_pack(r);
@@ -451,8 +451,8 @@ bf_listinsert(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num == 2)
 	r = listinsert(var_ref(arglist.v.list[1]), var_ref(arglist.v.list[2]), 1);
     else
-	r = listinsert(var_ref(arglist.v.list[1]), 
-		       var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
+	r = listinsert(var_ref(arglist.v.list[1]),
+		    var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -461,7 +461,7 @@ static package
 bf_listdelete(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    if (arglist.v.list[2].v.num <= 0 
+    if (arglist.v.list[2].v.num <= 0
 	|| arglist.v.list[2].v.num > arglist.v.list[1].v.list[0].v.num) {
 	free_var(arglist);
 	return make_error_pack(E_RANGE);
@@ -477,12 +477,12 @@ static package
 bf_listset(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    if (arglist.v.list[3].v.num <= 0 
+    if (arglist.v.list[3].v.num <= 0
 	|| arglist.v.list[3].v.num > arglist.v.list[1].v.list[0].v.num) {
 	free_var(arglist);
 	return make_error_pack(E_RANGE);
     } else {
-	r = listset(var_dup(arglist.v.list[1]), 
+	r = listset(var_dup(arglist.v.list[1]),
 		    var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
     }
     free_var(arglist);
@@ -492,7 +492,7 @@ bf_listset(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var	r;
+    Var r;
 
     r.type = TYPE_INT;
     r.v.num = equality(arglist.v.list[1], arglist.v.list[2], 1);
@@ -503,7 +503,7 @@ bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var	r;
+    Var r;
 
     r.type = TYPE_INT;
     r.v.num = ismember(arglist.v.list[1], arglist.v.list[2], 1);
@@ -513,10 +513,10 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (source, what, with [, case-matters]) */
+{				/* (source, what, with [, case-matters]) */
     Var r;
-    int	case_matters = 0;
-    
+    int case_matters = 0;
+
     if (arglist.v.list[0].v.num == 4)
 	case_matters = is_true(arglist.v.list[4]);
     if (arglist.v.list[2].v.str[0] == '\0') {
@@ -527,7 +527,7 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 	r.v.str = str_dup(strsub(arglist.v.list[1].v.str,
 				 arglist.v.list[2].v.str,
 				 arglist.v.list[3].v.str, case_matters));
-	
+
 	free_var(arglist);
 	return make_var_pack(r);
     }
@@ -535,15 +535,15 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (string, [salt]) */
-    Var 	r;
+{				/* (string, [salt]) */
+    Var r;
 
 #if HAVE_CRYPT
-    char	salt[3];
+    char salt[3];
     static char saltstuff[] =
-	"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
     extern const char *crypt(const char *, const char *);
-    
+
     if (arglist.v.list[0].v.num == 1 || strlen(arglist.v.list[2].v.str) < 2) {
 	salt[0] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
 	salt[1] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
@@ -554,7 +554,7 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
     salt[2] = '\0';
     r.type = TYPE_STR;
     r.v.str = str_dup(crypt(arglist.v.list[1].v.str, salt));
-#else /* !HAVE_CRYPT */
+#else				/* !HAVE_CRYPT */
     r.type = TYPE_STR;
     r.v.str = str_ref(arglist.v.list[1].v.str);
 #endif
@@ -571,9 +571,9 @@ signum(int x)
 
 static package
 bf_strcmp(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (string1, string2) */
+{				/* (string1, string2) */
     Var r;
-    
+
     r.type = TYPE_INT;
     r.v.num = signum(strcmp(arglist.v.list[1].v.str, arglist.v.list[2].v.str));
     free_var(arglist);
@@ -582,33 +582,33 @@ bf_strcmp(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_index(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (source, what [, case-matters]) */
+{				/* (source, what [, case-matters]) */
     Var r;
     int case_matters = 0;
-    
+
     if (arglist.v.list[0].v.num == 3)
 	case_matters = is_true(arglist.v.list[3]);
     r.type = TYPE_INT;
-    r.v.num = strindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str, 
+    r.v.num = strindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str,
 		       case_matters);
-    
+
     free_var(arglist);
     return make_var_pack(r);
 }
 
 static package
 bf_rindex(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (source, what [, case-matters]) */
+{				/* (source, what [, case-matters]) */
     Var r;
-    
+
     int case_matters = 0;
-    
+
     if (arglist.v.list[0].v.num == 3)
 	case_matters = is_true(arglist.v.list[3]);
     r.type = TYPE_INT;
-    r.v.num = strrindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str, 
+    r.v.num = strrindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str,
 			case_matters);
-    
+
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -627,7 +627,7 @@ static package
 bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    
+
     r.type = TYPE_STR;
     r.v.str = str_dup(value_to_literal(arglist.v.list[1]));
     free_var(arglist);
@@ -635,19 +635,19 @@ bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 struct pat_cache_entry {
-    char		       *string;
-    int			       	case_matters;
-    Pattern			pattern;
-    struct pat_cache_entry     *next;
+    char *string;
+    int case_matters;
+    Pattern pattern;
+    struct pat_cache_entry *next;
 };
-    
-static struct pat_cache_entry  *pat_cache;
-static struct pat_cache_entry	pat_cache_entries[PATTERN_CACHE_SIZE];
+
+static struct pat_cache_entry *pat_cache;
+static struct pat_cache_entry pat_cache_entries[PATTERN_CACHE_SIZE];
 
 static void
 setup_pattern_cache()
 {
-    int	i;
+    int i;
 
     for (i = 0; i < PATTERN_CACHE_SIZE; i++) {
 	pat_cache_entries[i].string = 0;
@@ -657,21 +657,21 @@ setup_pattern_cache()
     for (i = 0; i < PATTERN_CACHE_SIZE - 1; i++)
 	pat_cache_entries[i].next = &(pat_cache_entries[i + 1]);
     pat_cache_entries[PATTERN_CACHE_SIZE - 1].next = 0;
-    
+
     pat_cache = &(pat_cache_entries[0]);
 }
 
 static Pattern
 get_pattern(const char *string, int case_matters)
 {
-    struct pat_cache_entry     *entry, **entry_ptr;
+    struct pat_cache_entry *entry, **entry_ptr;
 
     entry = pat_cache;
     entry_ptr = &pat_cache;
 
     while (1) {
-	if (entry->string  &&  !strcmp(string, entry->string)
-	    &&  case_matters == entry->case_matters) {
+	if (entry->string && !strcmp(string, entry->string)
+	    && case_matters == entry->case_matters) {
 	    /* A cache hit; move this entry to the front of the cache. */
 	    break;
 	} else if (!entry->next) {
@@ -705,23 +705,23 @@ get_pattern(const char *string, int case_matters)
 Var
 do_match(Var arglist, int reverse)
 {
-    const char 	       *subject, *pattern;
-    int 		i;
-    Pattern		pat;
-    Var 		ans;
-    Match_Indices 	regs[10];
+    const char *subject, *pattern;
+    int i;
+    Pattern pat;
+    Var ans;
+    Match_Indices regs[10];
 
     subject = arglist.v.list[1].v.str;
     pattern = arglist.v.list[2].v.str;
     pat = get_pattern(pattern, (arglist.v.list[0].v.num == 3
-				&&  is_true(arglist.v.list[3])));
+				&& is_true(arglist.v.list[3])));
 
     if (!pat.ptr) {
 	ans.type = TYPE_ERR;
 	ans.v.err = E_INVARG;
     } else
 	switch (match_pattern(pat, subject, regs, reverse)) {
-	  case MATCH_SUCCEEDED:
+	case MATCH_SUCCEEDED:
 	    ans = new_list(4);
 	    ans.v.list[1].type = TYPE_INT;
 	    ans.v.list[2].type = TYPE_INT;
@@ -738,10 +738,10 @@ do_match(Var arglist, int reverse)
 		ans.v.list[3].v.list[i].v.list[2].v.num = regs[i].end;
 	    }
 	    break;
-	  case MATCH_FAILED:
+	case MATCH_FAILED:
 	    ans = new_list(0);
 	    break;
-	  case MATCH_ABORTED:
+	case MATCH_ABORTED:
 	    ans.type = TYPE_ERR;
 	    ans.v.err = E_QUOTA;
 	    break;
@@ -754,7 +754,7 @@ static package
 bf_match(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var ans;
-    
+
     ans = do_match(arglist, 0);
     free_var(arglist);
     if (ans.type == TYPE_ERR)
@@ -780,7 +780,7 @@ int
 invalid_pair(int num1, int num2, int max)
 {
     if ((num1 == 0 && num2 == -1)
-	|| (num1 > 0  &&  num2 >= num1 - 1  &&  num2 <= max))
+	|| (num1 > 0 && num2 >= num1 - 1 && num2 <= max))
 	return 0;
     else
 	return 1;
@@ -791,7 +791,7 @@ check_subs_list(Var subs)
 {
     const char *subj;
     int subj_length, loop;
-    
+
     if (subs.type != TYPE_LIST || subs.v.list[0].v.num != 4
 	|| subs.v.list[1].type != TYPE_INT
 	|| subs.v.list[2].type != TYPE_INT
@@ -804,16 +804,16 @@ check_subs_list(Var subs)
     if (invalid_pair(subs.v.list[1].v.num, subs.v.list[2].v.num,
 		     subj_length))
 	return 1;
-    
+
     for (loop = 1; loop <= 9; loop++) {
 	Var pair;
 	pair = subs.v.list[3].v.list[loop];
-	if (pair.type != TYPE_LIST 
-	    || pair.v.list[0].v.num != 2 
-	    || pair.v.list[1].type != TYPE_INT 
-	    || pair.v.list[2].type != TYPE_INT 
+	if (pair.type != TYPE_LIST
+	    || pair.v.list[0].v.num != 2
+	    || pair.v.list[1].type != TYPE_INT
+	    || pair.v.list[2].type != TYPE_INT
 	    || invalid_pair(pair.v.list[1].v.num, pair.v.list[2].v.num,
-			     subj_length))
+			    subj_length))
 	    return 1;
     }
     return 0;
@@ -839,12 +839,12 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
     }
     subject = subs.v.list[4].v.str;
     subject_length = strlen(subject);
-    
+
     s = new_stream(template_length);
     ans.type = TYPE_STR;
     while ((c = *(template++)) != '\0') {
-	switch(c) {
-	  case '%':
+	switch (c) {
+	case '%':
 	    {
 		Var pair;
 		int start = 0, end = 0;
@@ -853,13 +853,13 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 		    stream_add_char(s, '%');
 		else {
 		    if (c >= '1' && c <= '9') {
-			pair = subs.v.list[3].v.list[c-'0'];
-			start = pair.v.list[1].v.num-1;
-			end = pair.v.list[2].v.num-1;
+			pair = subs.v.list[3].v.list[c - '0'];
+			start = pair.v.list[1].v.num - 1;
+			end = pair.v.list[2].v.num - 1;
 		    } else if (c == '0') {
-			start = subs.v.list[1].v.num-1;
-			end = subs.v.list[2].v.num-1;
-		    } else 
+			start = subs.v.list[1].v.num - 1;
+			end = subs.v.list[2].v.num - 1;
+		    } else
 			invarg = 1;
 		    if (!invarg) {
 			int where;
@@ -869,27 +869,27 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 		}
 		break;
 	    }
-	  default:
+	default:
 	    stream_add_char(s, c);
 	}
 	if (invarg)
 	    break;
     }
-    
+
     free_var(arglist);
     if (!invarg)
 	ans.v.str = str_dup(reset_stream(s));
     free_stream(s);
-    if (invarg) 
+    if (invarg)
 	return make_error_pack(E_INVARG);
-    else 
+    else
 	return make_var_pack(ans);
 }
 
 static package
 bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var	r;
+    Var r;
 
     r.type = TYPE_INT;
     r.v.num = value_bytes(arglist.v.list[1]);
@@ -900,11 +900,11 @@ bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 static const char *
 hash_bytes(const char *input, int length)
 {
-    md5ctx_t	context;
-    uint8	result[16];
-    int		i;
-    const char	digits[] = "0123456789ABCDEF";
-    char       *hex = str_dup("12345678901234567890123456789012");
+    md5ctx_t context;
+    uint8 result[16];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("12345678901234567890123456789012");
     const char *answer = hex;
 
     md5_Init(&context);
@@ -920,8 +920,8 @@ hash_bytes(const char *input, int length)
 static package
 bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var		r;
-    int		length;
+    Var r;
+    int length;
     const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
 
     free_var(arglist);
@@ -935,7 +935,7 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var		r;
+    Var r;
     const char *str = arglist.v.list[1].v.str;
 
     r.type = TYPE_STR;
@@ -947,7 +947,7 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var		r;
+    Var r;
     const char *lit = value_to_literal(arglist.v.list[1]);
 
     r.type = TYPE_STR;
@@ -959,12 +959,12 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int		length;
+    int length;
     const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
-    int		nargs = arglist.v.list[0].v.num;
-    int		fully = (nargs >= 2 && is_true(arglist.v.list[2]));
-    Var		r;
-    int		i;
+    int nargs = arglist.v.list[0].v.num;
+    int fully = (nargs >= 2 && is_true(arglist.v.list[2]));
+    Var r;
+    int i;
 
     free_var(arglist);
     if (!bytes)
@@ -977,16 +977,16 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	    r.v.list[i].v.num = bytes[i - 1];
 	}
     } else {
-	static Stream  *s = 0;
-	int		count, in_string;
+	static Stream *s = 0;
+	int count, in_string;
 
 	if (!s)
 	    s = new_stream(50);
 
 	for (count = in_string = 0, i = 0; i < length; i++) {
 	    unsigned char c = bytes[i];
-	    
-	    if (isgraph(c)  ||  c == ' '  ||  c == '\t') {
+
+	    if (isgraph(c) || c == ' ' || c == '\t') {
 		if (!in_string)
 		    count++;
 		in_string = 1;
@@ -999,8 +999,8 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	r = new_list(count);
 	for (count = 1, in_string = 0, i = 0; i < length; i++) {
 	    unsigned char c = bytes[i];
-	    
-	    if (isgraph(c)  ||  c == ' '  ||  c == '\t') {
+
+	    if (isgraph(c) || c == ' ' || c == '\t') {
 		stream_add_char(s, c);
 		in_string = 1;
 	    } else {
@@ -1026,25 +1026,25 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static int
-encode_binary(Stream *s, Var v)
+encode_binary(Stream * s, Var v)
 {
-    int	i;
+    int i;
 
     switch (v.type) {
-      case TYPE_INT:
-	if (v.v.num < 0  ||  v.v.num >= 256)
+    case TYPE_INT:
+	if (v.v.num < 0 || v.v.num >= 256)
 	    return 0;
 	stream_add_char(s, (char) v.v.num);
 	break;
-      case TYPE_STR:
+    case TYPE_STR:
 	stream_add_string(s, v.v.str);
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	for (i = 1; i <= v.v.list[0].v.num; i++)
 	    if (!encode_binary(s, v.v.list[i]))
 		return 0;
 	break;
-      default:
+    default:
 	return 0;
     }
 
@@ -1054,10 +1054,10 @@ encode_binary(Stream *s, Var v)
 static package
 bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static Stream      *s = 0;
-    int			ok, length;
-    Var			r;
-    const char	       *bytes;
+    static Stream *s = 0;
+    int ok, length;
+    Var r;
+    const char *bytes;
 
     if (!s)
 	s = new_stream(100);
@@ -1114,12 +1114,15 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.2 1997/03/03 04:18:46 nop Exp $";
 
 /* $Log: list.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:46  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.7  1996/03/11  23:35:17  pavel
  * Fixed bad use of possibly-signed characters in decode_binary().
  * Release 1.8.0p1.

@@ -25,16 +25,16 @@
 #include "storage.h"
 #include "streams.h"
 
-static char	casefold[256];
+static char casefold[256];
 
 static void
 init_casefold_once(void)
 {
     if (casefold[1] != 1) {
-	int	i;
+	int i;
 
 	for (i = 0; i < 256; i++)
-	    casefold[i] = isupper (i) ? tolower (i) : i;
+	    casefold[i] = isupper(i) ? tolower(i) : i;
     }
 }
 
@@ -45,16 +45,16 @@ translate_pattern(const char *pattern, int *tpatlen)
      * just involves converting from `%' escapes into `\' escapes.
      */
 
-    static Stream      *s = 0;
-    const char	       *p = pattern;
-    char		c;
+    static Stream *s = 0;
+    const char *p = pattern;
+    char c;
 
     if (!s)
 	s = new_stream(100);
 
     while (*p) {
 	switch (c = *p++) {
-	  case '%':
+	case '%':
 	    c = *p++;
 	    if (!c)
 		goto fail;
@@ -62,10 +62,10 @@ translate_pattern(const char *pattern, int *tpatlen)
 		stream_add_char(s, '\\');
 	    stream_add_char(s, c);
 	    break;
-	  case '\\':
+	case '\\':
 	    stream_add_string(s, "\\\\");
 	    break;
-	  case '[':
+	case '[':
 	    /* Any '%' or '\' characters inside a charset should be copied
 	     * over without translation. */
 	    stream_add_char(s, c);
@@ -89,7 +89,7 @@ translate_pattern(const char *pattern, int *tpatlen)
 	    else
 		stream_add_char(s, c);
 	    break;
-	  default:
+	default:
 	    stream_add_char(s, c);
 	    break;
 	}
@@ -108,10 +108,10 @@ translate_pattern(const char *pattern, int *tpatlen)
 Pattern
 new_pattern(const char *pattern, int case_matters)
 {
-    int			tpatlen;
-    const char	       *tpattern = translate_pattern(pattern, &tpatlen);
-    regexp_t		buf = mymalloc(sizeof(*buf), M_PATTERN);
-    Pattern		p;
+    int tpatlen;
+    const char *tpattern = translate_pattern(pattern, &tpatlen);
+    regexp_t buf = mymalloc(sizeof(*buf), M_PATTERN);
+    Pattern p;
 
     init_casefold_once();
 
@@ -119,7 +119,7 @@ new_pattern(const char *pattern, int case_matters)
     buf->allocated = 0;
     buf->translate = case_matters ? 0 : casefold;
     re_set_syntax(MOO_SYNTAX);
-    
+
     if (tpattern
 	&& !re_compile_pattern((void *) tpattern, tpatlen, buf)) {
 	buf->fastmap = mymalloc(256 * sizeof(char), M_PATTERN);
@@ -136,28 +136,28 @@ new_pattern(const char *pattern, int case_matters)
 }
 
 Match_Result
-match_pattern(Pattern p, const char *string, Match_Indices *indices,
+match_pattern(Pattern p, const char *string, Match_Indices * indices,
 	      int is_reverse)
 {
-    regexp_t		buf = p.ptr;
-    int			len = strlen(string);
-    int			i;
-    struct re_registers	regs;
+    regexp_t buf = p.ptr;
+    int len = strlen(string);
+    int i;
+    struct re_registers regs;
 
     switch (re_search(buf, (void *) string, len,
 		      is_reverse ? len : 0,
 		      is_reverse ? -len : len,
 		      &regs)) {
-      default:
+    default:
 	for (i = 0; i < 10; i++) {
 	    /* Convert from 0-based open interval to 1-based closed one. */
 	    indices[i].start = regs.start[i] + 1;
 	    indices[i].end = regs.end[i];
 	}
 	return MATCH_SUCCEEDED;
-      case -1:
+    case -1:
 	return MATCH_FAILED;
-      case -2:
+    case -2:
 	return MATCH_ABORTED;
     }
 }
@@ -165,7 +165,7 @@ match_pattern(Pattern p, const char *string, Match_Indices *indices,
 void
 free_pattern(Pattern p)
 {
-    regexp_t	buf = p.ptr;
+    regexp_t buf = p.ptr;
 
     if (buf) {
 	free(buf->buffer);
@@ -177,9 +177,12 @@ free_pattern(Pattern p)
 char rcsid_pattern[] = "$Id";
 
 /* $Log: pattern.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:16  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/05/12  21:33:02  pavel
  * Fixed memory leak in case of a malformed pattern.  Release 1.8.0p5.
  *

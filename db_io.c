@@ -37,14 +37,14 @@
 #include "structures.h"
 #include "unparse.h"
 #include "version.h"
-
 
+
 /*********** Input ***********/
 
-static FILE    *input;
+static FILE *input;
 
 void
-dbpriv_set_dbio_input(FILE *f)
+dbpriv_set_dbio_input(FILE * f)
 {
     input = f;
 }
@@ -56,10 +56,10 @@ dbio_read_line(char *s, int n)
 }
 
 int
-dbio_scanf(const char *format, ...)
+dbio_scanf(const char *format,...)
 {
-    va_list	args;
-    int		count;
+    va_list args;
+    int count;
     const char *ptr;
 
     va_start(args, format);
@@ -75,9 +75,9 @@ dbio_scanf(const char *format, ...)
 
     count = 0;
     for (ptr = format; *ptr; ptr++) {
-	int		c, n, *ip;
-	unsigned       *up;
-	char	       *cp;
+	int c, n, *ip;
+	unsigned *up;
+	char *cp;
 
 	if (isspace(*ptr)) {
 	    do
@@ -88,7 +88,7 @@ dbio_scanf(const char *format, ...)
 	    do
 		c = fgetc(input);
 	    while (isspace(c));
-	    
+
 	    if (c == EOF)
 		return count ? count : EOF;
 	    else if (c != *ptr) {
@@ -97,15 +97,15 @@ dbio_scanf(const char *format, ...)
 	    }
 	} else
 	    switch (*++ptr) {
-	      case 'd':
+	    case 'd':
 		ip = va_arg(args, int *);
 		n = fscanf(input, "%d", ip);
 		goto finish;
-	      case 'u':
+	    case 'u':
 		up = va_arg(args, unsigned *);
 		n = fscanf(input, "%u", up);
 		goto finish;
-	      case 'c':
+	    case 'c':
 		cp = va_arg(args, char *);
 		n = fscanf(input, "%c", cp);
 	      finish:
@@ -113,10 +113,10 @@ dbio_scanf(const char *format, ...)
 		    count++;
 		else if (n == 0)
 		    return count;
-		else /* n == EOF */
+		else		/* n == EOF */
 		    return count ? count : EOF;
 		break;
-	      default:
+	    default:
 		panic("DBIO_SCANF: Unsupported directive!");
 	    }
     }
@@ -129,30 +129,30 @@ dbio_scanf(const char *format, ...)
 int
 dbio_read_num(void)
 {
-    char	s[20];
-    char       *p;
-    int		i;
+    char s[20];
+    char *p;
+    int i;
 
     fgets(s, 20, input);
     i = strtol(s, &p, 10);
     if (isspace(*s) || *p != '\n')
 	errlog("DBIO_READ_NUM: Bad number: \"%s\" at file pos. %ld\n",
-		s, ftell(input));
+	       s, ftell(input));
     return i;
 }
 
 double
 dbio_read_float(void)
 {
-    char	s[40];
-    char       *p;
-    double	d;
+    char s[40];
+    char *p;
+    double d;
 
     fgets(s, 40, input);
     d = strtod(s, &p);
     if (isspace(*s) || *p != '\n')
 	errlog("DBIO_READ_FLOAT: Bad number: \"%s\" at file pos. %ld\n",
-		s, ftell(input));
+	       s, ftell(input));
     return d;
 }
 
@@ -165,9 +165,9 @@ dbio_read_objid(void)
 const char *
 dbio_read_string(void)
 {
-    static Stream      *str = 0;
-    static char		buffer[1024];
-    int			len, used_stream = 0;
+    static Stream *str = 0;
+    static char buffer[1024];
+    int len, used_stream = 0;
 
     if (str == 0)
 	str = new_stream(1024);
@@ -175,12 +175,11 @@ dbio_read_string(void)
   try_again:
     fgets(buffer, sizeof(buffer), input);
     len = strlen(buffer);
-    if (len == sizeof(buffer) - 1  &&  buffer[len - 1] != '\n') {
+    if (len == sizeof(buffer) - 1 && buffer[len - 1] != '\n') {
 	stream_add_string(str, buffer);
 	used_stream = 1;
 	goto try_again;
     }
-
     if (buffer[len - 1] == '\n')
 	buffer[len - 1] = '\0';
 
@@ -194,38 +193,38 @@ dbio_read_string(void)
 Var
 dbio_read_var(void)
 {
-    Var		r;
-    int		i, l = dbio_read_num();
+    Var r;
+    int i, l = dbio_read_num();
 
-    if (l == (int) TYPE_ANY  &&  dbio_input_version == DBV_Prehistory)
+    if (l == (int) TYPE_ANY && dbio_input_version == DBV_Prehistory)
 	l = TYPE_NONE;		/* Old encoding for VM's empty temp register
 				 * and any as-yet unassigned variables.
 				 */
     r.type = (var_type) l;
     switch (l) {
-      case TYPE_CLEAR:
-      case TYPE_NONE:
+    case TYPE_CLEAR:
+    case TYPE_NONE:
 	break;
-      case TYPE_STR:
+    case TYPE_STR:
 	r.v.str = str_dup(dbio_read_string());
 	break;
-      case TYPE_OBJ:
-      case TYPE_ERR:
-      case TYPE_INT:
-      case TYPE_CATCH:
-      case TYPE_FINALLY:
+    case TYPE_OBJ:
+    case TYPE_ERR:
+    case TYPE_INT:
+    case TYPE_CATCH:
+    case TYPE_FINALLY:
 	r.v.num = dbio_read_num();
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	r = new_float(dbio_read_float());
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	l = dbio_read_num();
 	r = new_list(l);
 	for (i = 0; i < l; i++)
 	    r.v.list[i + 1] = dbio_read_var();
 	break;
-      default:
+    default:
 	errlog("DBIO_READ_VAR: Unknown type (%d) at DB file pos. %ld\n",
 	       l, ftell(input));
 	r = zero;
@@ -235,9 +234,9 @@ dbio_read_var(void)
 }
 
 struct state {
-    char	prev_char;
-    const char *(*fmtr)(void *);
-    void       *data;
+    char prev_char;
+    const char *(*fmtr) (void *);
+    void *data;
 };
 
 static const char *
@@ -246,7 +245,7 @@ program_name(struct state *s)
     if (!s->fmtr)
 	return s->data;
     else
-	return (*s->fmtr)(s->data);
+	return (*s->fmtr) (s->data);
 }
 
 static void
@@ -266,13 +265,13 @@ my_warning(void *data, const char *msg)
 static int
 my_getc(void *data)
 {
-    struct state       *s = data;
-    int			c;
+    struct state *s = data;
+    int c;
 
     c = fgetc(input);
-    if (c == '.'  &&  s->prev_char == '\n') {
+    if (c == '.' && s->prev_char == '\n') {
 	/* end-of-verb marker in DB */
-	c = fgetc(input);		/* skip next newline */
+	c = fgetc(input);	/* skip next newline */
 	return EOF;
     }
     if (c == EOF)
@@ -281,36 +280,37 @@ my_getc(void *data)
     return c;
 }
 
-static Parser_Client    parser_client = { my_error, my_warning, my_getc };
+static Parser_Client parser_client =
+{my_error, my_warning, my_getc};
 
 Program *
-dbio_read_program(DB_Version version, const char *(*fmtr)(void *), void *data)
+dbio_read_program(DB_Version version, const char *(*fmtr) (void *), void *data)
 {
-    struct state	s;
+    struct state s;
 
     s.prev_char = '\n';
     s.fmtr = fmtr;
     s.data = data;
     return parse_program(version, parser_client, &s);
 }
-
 
+
 /*********** Output ***********/
 
 Exception dbpriv_dbio_failed;
 
-static FILE    *output;
+static FILE *output;
 
 void
-dbpriv_set_dbio_output(FILE *f)
+dbpriv_set_dbio_output(FILE * f)
 {
     output = f;
 }
 
 void
-dbio_printf(const char *format, ...)
+dbio_printf(const char *format,...)
 {
-    va_list	args;
+    va_list args;
 
     va_start(args, format);
     if (vfprintf(output, format, args) < 0)
@@ -327,14 +327,13 @@ dbio_write_num(int n)
 void
 dbio_write_float(double d)
 {
-    static const char  *fmt = 0;
-    static char		buffer[10];
+    static const char *fmt = 0;
+    static char buffer[10];
 
     if (!fmt) {
 	sprintf(buffer, "%%.%dg\n", DBL_DIG + 4);
 	fmt = buffer;
     }
-
     dbio_printf(fmt, d);
 }
 
@@ -353,27 +352,27 @@ dbio_write_string(const char *s)
 void
 dbio_write_var(Var v)
 {
-    int		i;
+    int i;
 
     dbio_write_num((int) v.type);
     switch (v.type) {
-      case TYPE_CLEAR:
-      case TYPE_NONE:
+    case TYPE_CLEAR:
+    case TYPE_NONE:
 	break;
-      case TYPE_STR:
+    case TYPE_STR:
 	dbio_write_string(v.v.str);
 	break;
-      case TYPE_OBJ:
-      case TYPE_ERR:
-      case TYPE_INT:
-      case TYPE_CATCH:
-      case TYPE_FINALLY:
+    case TYPE_OBJ:
+    case TYPE_ERR:
+    case TYPE_INT:
+    case TYPE_CATCH:
+    case TYPE_FINALLY:
 	dbio_write_num(v.v.num);
 	break;
-      case TYPE_FLOAT:
+    case TYPE_FLOAT:
 	dbio_write_float(*v.v.fnum);
 	break;
-      case TYPE_LIST:
+    case TYPE_LIST:
 	dbio_write_num(v.v.list[0].v.num);
 	for (i = 0; i < v.v.list[0].v.num; i++)
 	    dbio_write_var(v.v.list[i + 1]);
@@ -388,25 +387,28 @@ receiver(void *data, const char *line)
 }
 
 void
-dbio_write_program(Program *program)
+dbio_write_program(Program * program)
 {
     unparse_program(program, receiver, 0, 1, 0, MAIN_VECTOR);
     dbio_printf(".\n");
 }
 
 void
-dbio_write_forked_program(Program *program, int f_index)
+dbio_write_forked_program(Program * program, int f_index)
 {
     unparse_program(program, receiver, 0, 1, 0, f_index);
     dbio_printf(".\n");
 }
 
-char rcsid_db_io[] = "$Id: db_io.c,v 1.1 1997/03/03 03:44:59 nop Exp $";
+char rcsid_db_io[] = "$Id: db_io.c,v 1.2 1997/03/03 04:18:27 nop Exp $";
 
 /* $Log: db_io.c,v $
-/* Revision 1.1  1997/03/03 03:44:59  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:27  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/03/19  07:16:12  pavel
  * Increased precision of floating-point numbers printed in the DB file.
  * Release 1.8.0p2.

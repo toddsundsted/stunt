@@ -37,7 +37,7 @@ controls(Objid who, Objid what)
 static Var
 make_arglist(Objid what)
 {
-    Var		r;
+    Var r;
 
     r = new_list(1);
     r.v.list[1].type = TYPE_OBJ;
@@ -45,24 +45,24 @@ make_arglist(Objid what)
 
     return r;
 }
-
 
+
 struct bf_move_data {
-  Objid what, where;
+    Objid what, where;
 };
 
 static package
 do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 {
-    Objid		what = data->what, where = data->where;
-    Objid		oid, oldloc;
-    int			accepts;
-    Var			args;
-    enum error		e;
-    
+    Objid what = data->what, where = data->where;
+    Objid oid, oldloc;
+    int accepts;
+    Var args;
+    enum error e;
+
     switch (next) {
-      case 1:			/* Check validity and decide `accepts' */
-	if (!valid(what)  || (!valid(where)  &&  where != NOTHING))
+    case 1:			/* Check validity and decide `accepts' */
+	if (!valid(what) || (!valid(where) && where != NOTHING))
 	    return make_error_pack(E_INVARG);
 	else if (!controls(progr, what))
 	    return make_error_pack(E_PERM);
@@ -72,72 +72,71 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	    args = make_arglist(what);
 	    e = call_verb(where, "accept", args, 0);
 	    /* e will not be E_INVIND */
-	    
-	    if (e == E_NONE) 
+
+	    if (e == E_NONE)
 		return make_call_pack(2, data);
 	    else {
 		free_var(args);
 		if (e == E_VERBNF)
 		    accepts = 0;
-		else /* (e == E_MAXREC) */
+		else		/* (e == E_MAXREC) */
 		    return make_error_pack(e);
 	    }
 	}
 	goto accepts_decided;
 
-      case 2:			/* Returned from `accepts' call */
+    case 2:			/* Returned from `accepts' call */
 	accepts = is_true(arglist);
 
       accepts_decided:
-	if (!is_wizard(progr) && accepts == 0) 
+	if (!is_wizard(progr) && accepts == 0)
 	    return make_error_pack(E_NACC);
-	
+
 	if (!valid(what)
-	    ||  (where != NOTHING  &&  !valid(where))
-	    ||  db_object_location(what) == where)
+	    || (where != NOTHING && !valid(where))
+	    || db_object_location(what) == where)
 	    return no_var_pack();
-	
+
 	/* Check to see that we're not trying to violate the hierarchy */
 	for (oid = where; oid != NOTHING; oid = db_object_location(oid))
 	    if (oid == what)
 		return make_error_pack(E_RECMOVE);
-	
+
 	oldloc = db_object_location(what);
 	db_change_location(what, where);
-	
+
 	args = make_arglist(what);
 	e = call_verb(oldloc, "exitfunc", args, 0);
-	
-	if (e == E_NONE) 
+
+	if (e == E_NONE)
 	    return make_call_pack(3, data);
 	else {
 	    free_var(args);
-	    if (e == E_MAXREC) 
+	    if (e == E_MAXREC)
 		return make_error_pack(e);
 	}
 	/* e == E_INVIND or E_VERBNF, in both cases fall through */
 
-      case 3:			/* Returned from exitfunc call */
+    case 3:			/* Returned from exitfunc call */
 	if (valid(where) && valid(what)
 	    && db_object_location(what) == where) {
 	    args = make_arglist(what);
 	    e = call_verb(where, "enterfunc", args, 0);
 	    /* e != E_INVIND */
-	    
-	    if (e == E_NONE) 
+
+	    if (e == E_NONE)
 		return make_call_pack(4, data);
 	    else {
 		free_var(args);
-		if (e == E_MAXREC) 
+		if (e == E_MAXREC)
 		    return make_error_pack(e);
 		/* else e == E_VERBNF, fall through */
 	    }
 	}
-
-      case 4:			/* Returned from enterfunc call */
+    case 4:			/* Returned from enterfunc call */
 	return no_var_pack();
 
-      default:
+    default:
 	panic("Unknown PC in DO_MOVE");
 	return no_var_pack();	/* Dead code to eliminate compiler warning */
     }
@@ -147,20 +146,19 @@ static package
 bf_move(Var arglist, Byte next, void *vdata, Objid progr)
 {
     struct bf_move_data *data = vdata;
-    package		p;
-    
+    package p;
+
     if (next == 1) {
 	data = alloc_data(sizeof(*data));
 	data->what = arglist.v.list[1].v.obj;
 	data->where = arglist.v.list[2].v.obj;
     }
-    
     p = do_move(arglist, next, data, progr);
     free_var(arglist);
-    
+
     if (p.kind != BI_CALL)
 	free_data(data);
-    
+
     return p;
 }
 
@@ -178,28 +176,28 @@ bf_move_read()
 {
     struct bf_move_data *data = alloc_data(sizeof(*data));
 
-    if (dbio_scanf("bf_move data: what = %d, where = %d\n", 
-	       &data->what, &data->where) == 2)
+    if (dbio_scanf("bf_move data: what = %d, where = %d\n",
+		   &data->what, &data->where) == 2)
 	return data;
     else
 	return 0;
-}    
+}
 
 static package
 bf_toobj(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var 	r;
-    int		i;
-    enum error 	e;
-    
+    Var r;
+    int i;
+    enum error e;
+
     r.type = TYPE_OBJ;
     e = become_integer(arglist.v.list[1], &i, 0);
     r.v.obj = i;
-    
+
     free_var(arglist);
     if (e != E_NONE)
 	return make_error_pack(e);
-    
+
     return make_var_pack(r);
 }
 
@@ -215,9 +213,9 @@ bf_typeof(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object) */
+{				/* (object) */
     Var r;
-    
+
     r.type = TYPE_INT;
     r.v.num = valid(arglist.v.list[1].v.obj);
     free_var(arglist);
@@ -225,8 +223,8 @@ bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_max_object(Var arglist, Byte next, void *vdata, Objid progr) 
-{ /* () */
+bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* () */
     Var r;
 
     free_var(arglist);
@@ -237,61 +235,61 @@ bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_create(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (parent [, owner]) */
+{				/* (parent [, owner]) */
     Objid *data = vdata;
-    Var r;  
-    
-    if (next == 1) { 
+    Var r;
+
+    if (next == 1) {
 	Objid parent, owner;
-	
+
 	parent = arglist.v.list[1].v.obj;
 	owner = (arglist.v.list[0].v.num == 2
 		 ? arglist.v.list[2].v.obj
 		 : progr);
 	free_var(arglist);
-	
+
 	if ((valid(parent) ? !db_object_allows(parent, progr, FLAG_FERTILE)
-			   : (parent != NOTHING))
-	    || (owner != progr && !is_wizard(progr))) 
+	     : (parent != NOTHING))
+	    || (owner != progr && !is_wizard(progr)))
 	    return make_error_pack(E_PERM);
 
-	if (valid(owner)  &&  !decr_quota(owner))
+	if (valid(owner) && !decr_quota(owner))
 	    return make_error_pack(E_QUOTA);
 	else {
-	    enum error 	e;
-	    Objid 	oid = db_create_object();
-	    Var		args;
-	    
+	    enum error e;
+	    Objid oid = db_create_object();
+	    Var args;
+
 	    db_set_object_name(oid, str_dup(""));
 	    db_set_object_owner(oid, owner == NOTHING ? oid : owner);
 	    db_change_parent(oid, parent);
-	    
+
 	    data = alloc_data(sizeof(*data));
 	    *data = oid;
 	    args = new_list(0);
 	    e = call_verb(oid, "initialize", args, 0);
 	    /* e will not be E_INVIND */
-	    
+
 	    if (e == E_NONE)
 		return make_call_pack(2, data);
-	    
+
 	    free_data(data);
 	    free_var(args);
-	    
-	    if (e == E_MAXREC) 
+
+	    if (e == E_MAXREC)
 		return make_error_pack(e);
-	    else { /* (e == E_VERBNF) do nothing */
+	    else {		/* (e == E_VERBNF) do nothing */
 		r.type = TYPE_OBJ;
 		r.v.obj = oid;
 		return make_var_pack(r);
 	    }
 	}
-    } else { /* next == 2, returns from initialize verb_call */
+    } else {			/* next == 2, returns from initialize verb_call */
 	r.type = TYPE_OBJ;
 	r.v.obj = *data;
 	free_data(data);
 	return make_var_pack(r);
-    }	  
+    }
 }
 
 static void
@@ -304,7 +302,7 @@ static void *
 bf_create_read(void)
 {
     Objid *data = alloc_data(sizeof(Objid));
-    
+
     if (dbio_scanf("bf_create data: oid = %d\n", data) == 1)
 	return data;
     else
@@ -313,10 +311,10 @@ bf_create_read(void)
 
 static package
 bf_chparent(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object, new_parent) */
-    Objid	what = arglist.v.list[1].v.obj;
-    Objid	parent = arglist.v.list[2].v.obj;
-    Objid	oid;
+{				/* (object, new_parent) */
+    Objid what = arglist.v.list[1].v.obj;
+    Objid parent = arglist.v.list[2].v.obj;
+    Objid oid;
 
     free_var(arglist);
     if (!valid(what)
@@ -330,7 +328,7 @@ bf_chparent(Var arglist, Byte next, void *vdata, Objid progr)
 	for (oid = parent; oid != NOTHING; oid = db_object_parent(oid))
 	    if (oid == what)
 		return make_error_pack(E_RECMOVE);
-	
+
 	if (!db_change_parent(what, parent))
 	    return make_error_pack(E_INVARG);
 	else
@@ -340,13 +338,13 @@ bf_chparent(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object) */
+{				/* (object) */
     Var r;
     Objid obj = arglist.v.list[1].v.obj;
-    
+
     free_var(arglist);
-    
-    if (!valid(obj)) 
+
+    if (!valid(obj))
 	return make_error_pack(E_INVARG);
     else {
 	r.type = TYPE_OBJ;
@@ -356,14 +354,14 @@ bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 struct children_data {
-    Var		r;
-    int		i;
+    Var r;
+    int i;
 };
 
 static int
 add_to_list(void *data, Objid child)
 {
-    struct children_data       *d = data;
+    struct children_data *d = data;
 
     d->i++;
     d->r.v.list[d->i].type = TYPE_OBJ;
@@ -374,15 +372,15 @@ add_to_list(void *data, Objid child)
 
 static package
 bf_children(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object) */
+{				/* (object) */
     Objid oid = arglist.v.list[1].v.obj;
-    
+
     free_var(arglist);
-    
-    if (!valid(oid)) 
+
+    if (!valid(oid))
 	return make_error_pack(E_INVARG);
     else {
-	struct children_data	d;
+	struct children_data d;
 
 	d.r = new_list(db_count_children(oid));
 	d.i = 0;
@@ -396,15 +394,15 @@ static int
 move_to_nothing(Objid oid)
 {
     /* All we need to do is change the location and run the exitfunc. */
-    Objid 	oldloc = db_object_location(oid);
-    Var 	args;
-    enum error	e;
-    
+    Objid oldloc = db_object_location(oid);
+    Var args;
+    enum error e;
+
     db_change_location(oid, NOTHING);
-    
+
     args = make_arglist(oid);
     e = call_verb(oldloc, "exitfunc", args, 0);
-    
+
     if (e == E_NONE)
 	return 1;
 
@@ -415,14 +413,14 @@ move_to_nothing(Objid oid)
 static int
 first_proc(void *data, Objid oid)
 {
-    Objid      *oidp = data;
+    Objid *oidp = data;
 
     *oidp = oid;
     return 1;
 }
 
 static Objid
-get_first(Objid oid, int (*for_all)(Objid, int (*)(void *, Objid), void *))
+get_first(Objid oid, int (*for_all) (Objid, int (*)(void *, Objid), void *))
 {
     Objid result = NOTHING;
 
@@ -433,35 +431,35 @@ get_first(Objid oid, int (*for_all)(Objid, int (*)(void *, Objid), void *))
 
 static package
 bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
-{ /* (object) */
-    Objid       oid, c;
-    Var         args;
-    enum error	e;
-    Objid       *data = vdata;
-    
+{				/* (object) */
+    Objid oid, c;
+    Var args;
+    enum error e;
+    Objid *data = vdata;
+
     switch (func_pc) {
-      case 1:
+    case 1:
 	oid = arglist.v.list[1].v.obj;
 	free_var(arglist);
 
-	if (!valid(oid)) 
+	if (!valid(oid))
 	    return make_error_pack(E_INVARG);
 	else if (!controls(progr, oid))
 	    return make_error_pack(E_PERM);
-	
+
 	data = alloc_data(sizeof(*data));
 	*data = oid;
 	args = new_list(0);
 	e = call_verb(oid, "recycle", args, 0);
 	/* e != E_INVIND */
-	
-	if (e == E_NONE) 
+
+	if (e == E_NONE)
 	    return make_call_pack(2, data);
 	/* else e == E_VERBNF or E_MAXREC; fall through */
 	free_var(args);
 	goto moving_contents;
 
-      case 2:			/* moving all contents to #-1 */
+    case 2:			/* moving all contents to #-1 */
 	free_var(arglist);
 	oid = *data;
 
@@ -470,13 +468,12 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    free_data(data);
 	    return no_var_pack();
 	}
-
 	while ((c = get_first(oid, db_for_all_contents)) != NOTHING)
 	    if (move_to_nothing(c))
 		return make_call_pack(2, data);
 
 	if (db_object_location(oid) != NOTHING
-	    &&  move_to_nothing(oid))
+	    && move_to_nothing(oid))
 	    /* Return to same case because this :exitfunc might add new */
 	    /* contents to OID or even move OID right back in. */
 	    return make_call_pack(2, data);
@@ -491,11 +488,11 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	/* Finish the demolition. */
 	incr_quota(db_object_owner(oid));
 	db_destroy_object(oid);
-	
+
 	free_data(data);
 	return no_var_pack();
     }
-    
+
     panic("Can't happen in BF_RECYCLE");
     return no_var_pack();
 }
@@ -503,17 +500,17 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 static void
 bf_recycle_write(void *vdata)
 {
-    Objid      *data = vdata;
-    
+    Objid *data = vdata;
+
     dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
 }
 
 static void *
 bf_recycle_read(void)
 {
-    Objid      *data = alloc_data(sizeof(*data));
-    int		dummy;
-    
+    Objid *data = alloc_data(sizeof(*data));
+    int dummy;
+
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
      * straightforward error checking; unfortunately, the standard says that
@@ -525,48 +522,48 @@ bf_recycle_read(void)
 	return data;
     else
 	return 0;
-}    
-
+}
 
+
 static package
 bf_players(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* () */
+{				/* () */
     free_var(arglist);
     return make_var_pack(var_ref(db_all_users()));
 }
 
 static package
 bf_is_player(Var arglist, Byte next, void *vdata, Objid progr)
-{ /* (object) */
+{				/* (object) */
     Var r;
     Objid oid = arglist.v.list[1].v.obj;
-    
+
     free_var(arglist);
-    
+
     if (!valid(oid))
 	return make_error_pack(E_INVARG);
-    
+
     r.type = TYPE_INT;
     r.v.num = is_user(oid);
     return make_var_pack(r);
 }
 
 static package
-bf_set_player_flag(Var arglist, Byte next, void *vdata, Objid progr) 
-{ /* (object, yes/no) */
+bf_set_player_flag(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (object, yes/no) */
     Var obj;
     char bool;
-    
+
     obj = arglist.v.list[1];
     bool = is_true(arglist.v.list[2]);
-    
+
     free_var(arglist);
-    
+
     if (!valid(obj.v.obj))
 	return make_error_pack(E_INVARG);
-    else if (!is_wizard(progr)) 
+    else if (!is_wizard(progr))
 	return make_error_pack(E_PERM);
-    
+
     if (bool) {
 	db_set_object_flag(obj.v.obj, FLAG_USER);
     } else {
@@ -577,14 +574,14 @@ bf_set_player_flag(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr) 
+bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Objid	oid = arglist.v.list[1].v.obj;
-    Var		v;
+    Objid oid = arglist.v.list[1].v.obj;
+    Var v;
 
     free_var(arglist);
 
-    if (!is_wizard(progr)) 
+    if (!is_wizard(progr))
 	return make_error_pack(E_PERM);
     else if (!valid(oid))
 	return make_error_pack(E_INVIND);
@@ -597,7 +594,7 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 
 void
 register_objects(void)
-{ 
+{
     register_function("toobj", 1, 1, bf_toobj, TYPE_ANY);
     register_function("typeof", 1, 1, bf_typeof, TYPE_ANY);
     register_function_with_read_write("create", 1, 2, bf_create,
@@ -621,12 +618,15 @@ register_objects(void)
 				      TYPE_OBJ, TYPE_OBJ);
 }
 
-char rcsid_objects[] = "$Id: objects.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_objects[] = "$Id: objects.c,v 1.2 1997/03/03 04:19:12 nop Exp $";
 
 /* $Log: objects.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:12  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/04/19  01:17:48  pavel
  * Rationalized the errors that can be raised from chparent().
  * Release 1.8.0p4.

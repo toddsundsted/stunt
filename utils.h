@@ -25,38 +25,41 @@
 
 #define Arraysize(x) (sizeof(x) / sizeof(*x))
 
-extern int		mystrcasecmp(const char *, const char *);
-extern int		mystrncasecmp(const char *, const char *, int);
+extern int mystrcasecmp(const char *, const char *);
+extern int mystrncasecmp(const char *, const char *, int);
 
-extern int		verbcasecmp(const char *verb, const char *word);
+extern int verbcasecmp(const char *verb, const char *word);
 
-extern unsigned		str_hash(const char *);
+extern unsigned str_hash(const char *);
 
-extern void		free_var(Var);
-extern Var		var_dup(Var);
-extern Var      	var_ref(Var);
+extern void free_var(Var);
+extern Var var_dup(Var);
+extern Var var_ref(Var);
 
-extern int		equality(Var lhs, Var rhs, int case_matters);
-extern int 		is_true(Var v);
+extern int equality(Var lhs, Var rhs, int case_matters);
+extern int is_true(Var v);
 
-extern char    	       *strsub(const char *, const char *, const char *, int);
-extern int		strindex(const char *, const char *, int);
-extern int		strrindex(const char *, const char *, int);
+extern char *strsub(const char *, const char *, const char *, int);
+extern int strindex(const char *, const char *, int);
+extern int strrindex(const char *, const char *, int);
 
-extern Var		get_system_property(const char *);
-extern Objid		get_system_object(const char *);
+extern Var get_system_property(const char *);
+extern Objid get_system_object(const char *);
 
-extern int		value_bytes(Var);
+extern int value_bytes(Var);
 
-extern const char      *raw_bytes_to_binary(const char *buffer, int buflen);
-extern const char      *binary_to_raw_bytes(const char *binary, int *rawlen);
+extern const char *raw_bytes_to_binary(const char *buffer, int buflen);
+extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
 
 #endif
 
 /* $Log: utils.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:37  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/02/08  06:08:07  pavel
  * Moved become_number and compare_ints to number.h.  Updated copyright notice
  * for 1996.  Release 1.8.0beta1.

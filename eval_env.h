@@ -22,22 +22,25 @@
 #include "structures.h"
 #include "version.h"
 
-extern Var     *new_rt_env(unsigned size);
-extern void     free_rt_env(Var *rt_env, unsigned size);
-extern Var     *copy_rt_env(Var *from, unsigned size);
+extern Var *new_rt_env(unsigned size);
+extern void free_rt_env(Var * rt_env, unsigned size);
+extern Var *copy_rt_env(Var * from, unsigned size);
 
-void            set_rt_env_obj(Var *env, int slot, Objid o);
-void		set_rt_env_str(Var *env, int slot, const char *s);
-void 		set_rt_env_var(Var *env, int slot, Var v);
+void set_rt_env_obj(Var * env, int slot, Objid o);
+void set_rt_env_str(Var * env, int slot, const char *s);
+void set_rt_env_var(Var * env, int slot, Var v);
 
-void		fill_in_rt_consts(Var *env, DB_Version);
+void fill_in_rt_consts(Var * env, DB_Version);
 
 #endif
 
 /* $Log: eval_env.h,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:36  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:26:34  pavel
  * Made fill_in_rt_consts() version-dependent.  Updated copyright notice for
  * 1996.  Release 1.8.0beta1.

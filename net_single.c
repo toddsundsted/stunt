@@ -28,10 +28,12 @@
 #include "structures.h"
 #include "utils.h"
 
-static enum {STATE_OPEN, STATE_CLOSED} state = STATE_CLOSED;
-static int		listening = 0;
-static server_listener	slistener;
-static int		binary = 0;
+static enum {
+    STATE_OPEN, STATE_CLOSED
+} state = STATE_CLOSED;
+static int listening = 0;
+static server_listener slistener;
+static int binary = 0;
 
 const char *
 network_protocol_name(void)
@@ -46,7 +48,7 @@ network_usage_string(void)
 }
 
 int
-network_initialize(int argc, char **argv, Var *desc)
+network_initialize(int argc, char **argv, Var * desc)
 {
     *desc = zero;
     if (argc != 0)
@@ -56,8 +58,8 @@ network_initialize(int argc, char **argv, Var *desc)
 }
 
 enum error
-network_make_listener(server_listener sl, Var desc, network_listener *nl,
-		      Var *canon, const char **name)
+network_make_listener(server_listener sl, Var desc, network_listener * nl,
+		      Var * canon, const char **name)
 {
     if (listening)
 	return E_PERM;
@@ -121,7 +123,7 @@ network_connection_options(network_handle nh, Var list)
 }
 
 int
-network_connection_option(network_handle nh, const char *option, Var *value)
+network_connection_option(network_handle nh, const char *option, Var * value)
 {
     return 0;
 }
@@ -154,7 +156,7 @@ network_shutdown(void)
 	log_perror("Setting standard input blocking again");
 }
 
-static int	input_suspended = 0;
+static int input_suspended = 0;
 
 void
 network_suspend_input(network_handle nh)
@@ -171,17 +173,17 @@ network_resume_input(network_handle nh)
 int
 network_process_io(int timeout)
 {
-    network_handle 	nh;
+    network_handle nh;
     static server_handle sh;
-    static Stream      *s = 0;
-    char		buffer[1024];
-    int			count;
-    char	       *ptr, *end;
-    int 		got_some = 0;
-    
+    static Stream *s = 0;
+    char buffer[1024];
+    int count;
+    char *ptr, *end;
+    int got_some = 0;
+
     if (s == 0) {
 	int flags;
-	
+
 	s = new_stream(1000);
 
 	if ((flags = fcntl(0, F_GETFL)) < 0
@@ -190,19 +192,17 @@ network_process_io(int timeout)
 	    return 0;
 	}
     }
-
     switch (state) {
-      case STATE_CLOSED:
+    case STATE_CLOSED:
 	if (listening) {
 	    sh = server_new_connection(slistener, nh, 0);
 	    state = STATE_OPEN;
 	    got_some = 1;
-	} else
-	    if (timeout != 0)
-		sleep(timeout);
-	    break;
+	} else if (timeout != 0)
+	    sleep(timeout);
+	break;
 
-      case STATE_OPEN:
+    case STATE_OPEN:
 	for (;;) {
 	    while (!input_suspended
 		   && (count = read(0, buffer, sizeof(buffer))) > 0) {
@@ -214,16 +214,16 @@ network_process_io(int timeout)
 		    for (ptr = buffer, end = buffer + count;
 			 ptr < end;
 			 ptr++) {
-			unsigned char	c = *ptr;
+			unsigned char c = *ptr;
 
-			if (isgraph(c)  ||  c == ' '  ||  c == '\t')
+			if (isgraph(c) || c == ' ' || c == '\t')
 			    stream_add_char(s, c);
 			else if (c == '\n')
 			    server_receive_line(sh, reset_stream(s));
 		    }
 	    }
 
-	    if (got_some  ||  timeout == 0)
+	    if (got_some || timeout == 0)
 		goto done;
 
 	    sleep(1);
@@ -235,12 +235,15 @@ network_process_io(int timeout)
     return got_some;
 }
 
-char rcsid_net_single[] = "$Id: net_single.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_net_single[] = "$Id: net_single.c,v 1.2 1997/03/03 04:19:07 nop Exp $";
 
 /* $Log: net_single.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:07  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/03/10  01:23:12  pavel
  * Added support for `connection_option()'.  Added missing include of
  * "utils.h".  Release 1.8.0.

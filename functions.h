@@ -26,28 +26,28 @@
 #include "structures.h"
 
 typedef struct {
-  enum {
-      BI_RETURN,		/* Normal function return */
-      BI_RAISE,			/* Raising an error */
-      BI_CALL,			/* Making a nested verb call */
-      BI_SUSPEND		/* Suspending the current task */
-  }				kind;
-  union {
-    Var 		ret;
-    struct {
-	Var         code;
-	const char *msg;
-	Var	    value;
-    }			raise;
-    struct {
-	Byte 	pc;
-	void   *data;
-    }			call;
-    struct {
-	enum error  (*proc)(vm, void *);
-	void	    *data;
-    }			susp;
-  } 				u;
+    enum {
+	BI_RETURN,		/* Normal function return */
+	BI_RAISE,		/* Raising an error */
+	BI_CALL,		/* Making a nested verb call */
+	BI_SUSPEND		/* Suspending the current task */
+    } kind;
+    union {
+	Var ret;
+	struct {
+	    Var code;
+	    const char *msg;
+	    Var value;
+	} raise;
+	struct {
+	    Byte pc;
+	    void *data;
+	} call;
+	struct {
+	    enum error (*proc) (vm, void *);
+	    void *data;
+	} susp;
+    } u;
 } package;
 
 void register_bi_functions();
@@ -60,9 +60,9 @@ package make_call_pack(Byte pc, void *data);
 package tail_call_pack(void);
 package make_suspend_pack(enum error (*)(vm, void *), void *);
 
-typedef package (*bf_type)(Var, Byte, void *, Objid);
-typedef void  	(*bf_write_type)(void *vdata);
-typedef void   *(*bf_read_type)(void);
+typedef package(*bf_type) (Var, Byte, void *, Objid);
+typedef void (*bf_write_type) (void *vdata);
+typedef void *(*bf_read_type) (void);
 
 #define MAX_FUNC         256
 #define FUNC_NOT_FOUND   MAX_FUNC
@@ -74,25 +74,28 @@ typedef void   *(*bf_read_type)(void);
 extern const char *name_func_by_num(unsigned);
 extern unsigned number_func_by_name(const char *);
 
-extern unsigned register_function(const char *, int, int, bf_type, ...);
+extern unsigned register_function(const char *, int, int, bf_type,...);
 extern unsigned register_function_with_read_write(const char *, int, int,
 						  bf_type, bf_read_type,
-						  bf_write_type, ...);
+						  bf_write_type,...);
 
-extern package 	call_bi_func(unsigned, Var, Byte, Objid, void *); 
+extern package call_bi_func(unsigned, Var, Byte, Objid, void *);
 /* will free or use Var arglist */
 
-extern void 	write_bi_func_data(void *vdata, Byte f_id);
-extern int	read_bi_func_data(Byte f_id, void **bi_func_state,
-				  Byte *bi_func_pc);
-extern Byte    *pc_for_bi_func_data(void);
+extern void write_bi_func_data(void *vdata, Byte f_id);
+extern int read_bi_func_data(Byte f_id, void **bi_func_state,
+			     Byte * bi_func_pc);
+extern Byte *pc_for_bi_func_data(void);
 
 #endif
 
 /* $Log: functions.h,v $
-/* Revision 1.1  1997/03/03 03:45:03  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:42  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/04/19  01:22:04  pavel
  * Added tail_call_pack() declaration and patches to allow generation of the
  * new warning in read_bi_func_data().  Release 1.8.0p4.

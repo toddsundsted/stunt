@@ -25,31 +25,31 @@
 #if NDECL_FCLOSE
 #include "my-types.h"
 
-extern int	fclose(FILE *);
-extern int	fflush(FILE *);
-extern size_t	fwrite(const void *, size_t, size_t, FILE *);
-extern int	fgetc(FILE *);
-extern int	fprintf(FILE *, const char *, ...);
-extern int	fscanf(FILE *, const char *, ...);
-extern int	sscanf(const char *, const char *, ...);
-extern int	printf(const char *, ...);
-extern int	ungetc(int, FILE *);
+extern int fclose(FILE *);
+extern int fflush(FILE *);
+extern size_t fwrite(const void *, size_t, size_t, FILE *);
+extern int fgetc(FILE *);
+extern int fprintf(FILE *, const char *,...);
+extern int fscanf(FILE *, const char *,...);
+extern int sscanf(const char *, const char *,...);
+extern int printf(const char *,...);
+extern int ungetc(int, FILE *);
 #endif
 
 #if NDECL_PERROR
-extern void	perror(const char *);
+extern void perror(const char *);
 #endif
 
 #if NDECL_REMOVE
-extern int	remove(const char *);
-extern int	rename(const char *, const char *);
+extern int remove(const char *);
+extern int rename(const char *, const char *);
 #endif
 
 #if NDECL_VFPRINTF
 #include "my-stdarg.h"
 
-extern int	vfprintf(FILE *, const char *, va_list);
-extern int	vfscanf(FILE *, const char *, va_list);
+extern int vfprintf(FILE *, const char *, va_list);
+extern int vfscanf(FILE *, const char *, va_list);
 #endif
 
 #if !HAVE_REMOVE
@@ -62,12 +62,15 @@ extern int	vfscanf(FILE *, const char *, va_list);
 #  define rename(old, new)	(link(old, new) && unlink(old))
 #endif
 
-#endif /* !My_Stdio_H */
+#endif				/* !My_Stdio_H */
 
 /* $Log: my-stdio.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:56  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/02/08  06:02:04  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

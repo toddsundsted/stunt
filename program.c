@@ -27,7 +27,7 @@
 Program *
 new_program(void)
 {
-    Program    *p = (Program *) mymalloc(sizeof(Program), M_PROGRAM);
+    Program *p = (Program *) mymalloc(sizeof(Program), M_PROGRAM);
 
     p->ref_count = 1;
     p->first_lineno = 1;
@@ -37,8 +37,8 @@ new_program(void)
 Program *
 null_program(void)
 {
-    static Program     *p = 0;
-    Var			code, errors;
+    static Program *p = 0;
+    Var code, errors;
 
     if (!p) {
 	code = new_list(0);
@@ -48,12 +48,11 @@ null_program(void)
 	free_var(code);
 	free_var(errors);
     }
-
     return p;
 }
 
 Program *
-program_ref(Program *p)
+program_ref(Program * p)
 {
     p->ref_count++;
 
@@ -61,9 +60,9 @@ program_ref(Program *p)
 }
 
 int
-program_bytes(Program *p)
+program_bytes(Program * p)
 {
-    int	i, count;
+    int i, count;
 
     count = sizeof(Program);
     count += p->main_vector.size;
@@ -83,7 +82,7 @@ program_bytes(Program *p)
 }
 
 void
-free_program(Program *p)
+free_program(Program * p)
 {
     unsigned i;
 
@@ -91,32 +90,35 @@ free_program(Program *p)
     if (p->ref_count == 0) {
 
 	for (i = 0; i < p->num_literals; i++)
-	    if (p->literals[i].type == TYPE_STR) /* will not be a LIST */
-		free_str(p->literals[i].v.str);    
+	    if (p->literals[i].type == TYPE_STR)	/* will not be a LIST */
+		free_str(p->literals[i].v.str);
 	if (p->literals)
 	    myfree(p->literals, M_LIT_LIST);
-   
+
 	for (i = 0; i < p->fork_vectors_size; i++)
 	    myfree(p->fork_vectors[i].vector, M_BYTECODES);
 	if (p->fork_vectors_size)
 	    myfree(p->fork_vectors, M_FORK_VECTORS);
-    
+
 	for (i = 0; i < p->num_var_names; i++)
 	    free_str(p->var_names[i]);
 	myfree(p->var_names, M_NAMES);
 
 	myfree(p->main_vector.vector, M_BYTECODES);
-    
+
 	myfree(p, M_PROGRAM);
     }
 }
 
-char rcsid_program[] = "$Id: program.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_program[] = "$Id: program.c,v 1.2 1997/03/03 04:19:17 nop Exp $";
 
 /* $Log: program.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:17  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.3  1996/04/08  00:41:16  pavel
  * Corrected an error in the computation of `program_bytes()'.
  * Release 1.8.0p3.

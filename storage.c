@@ -25,31 +25,29 @@
 #include "storage.h"
 #include "structures.h"
 
-static unsigned	alloc_num[Sizeof_Memory_Type];
+static unsigned alloc_num[Sizeof_Memory_Type];
 #ifdef USE_GNU_MALLOC
-static unsigned alloc_size[Sizeof_Memory_Type],
-                alloc_real_size[Sizeof_Memory_Type];
+static unsigned alloc_size[Sizeof_Memory_Type], alloc_real_size[Sizeof_Memory_Type];
 #endif
-     
-void *	 
+
+void *
 mymalloc(unsigned size, Memory_Type type)
 {
-    void       *memptr;
-    char	msg[100];
+    void *memptr;
+    char msg[100];
 
     if (size == 0)		/* For queasy systems */
 	size = 1;
 
     memptr = (void *) malloc(size
 #ifdef FIND_LEAKS
-		             + 8
+			     + 8
 #endif
-		             );
+	);
     if (!memptr) {
 	sprintf(msg, "memory allocation (size %u) failed!", size);
 	panic(msg);
     }
-
 #ifdef FIND_LEAKS
     *((int *) memptr) = type;
 #endif
@@ -57,8 +55,8 @@ mymalloc(unsigned size, Memory_Type type)
     alloc_num[type]++;
 #ifdef USE_GNU_MALLOC
     {
-	extern unsigned		malloc_real_size(void *ptr);
-	extern unsigned		malloc_size(void *ptr);
+	extern unsigned malloc_real_size(void *ptr);
+	extern unsigned malloc_size(void *ptr);
 
 	alloc_size[type] += malloc_size(memptr);
 	alloc_real_size[type] += malloc_real_size(memptr);
@@ -82,7 +80,7 @@ str_ref(const char *s)
 char *
 str_dup(const char *s)
 {
-    char	*r;
+    char *r;
 
     if (s == 0 || *s == '\0') {
 	r = (char *) mymalloc(1, M_STRING);
@@ -91,7 +89,7 @@ str_dup(const char *s)
 	r = (char *) mymalloc(strlen(s) + 1, M_STRING);
 	strcpy(r, s);
     }
-    return  r;
+    return r;
 }
 
 void
@@ -101,14 +99,14 @@ myfree(void *ptr, Memory_Type type)
     ptr = ((char *) ptr) - 8;
 
     if (*((int *) ptr) != type)
-        abort();
+	abort();
 #endif
 
     alloc_num[type]--;
 #ifdef USE_GNU_MALLOC
     {
-	extern unsigned		malloc_real_size(void *ptr);
-	extern unsigned		malloc_size(void *ptr);
+	extern unsigned malloc_real_size(void *ptr);
+	extern unsigned malloc_size(void *ptr);
 
 	alloc_size[type] -= malloc_size(ptr);
 	alloc_real_size[type] -= malloc_real_size(ptr);
@@ -119,13 +117,13 @@ myfree(void *ptr, Memory_Type type)
 }
 
 #ifdef USE_GNU_MALLOC
-    struct mstats_value {
-	int blocksize;
-	int nfree;
-	int nused;
-    };
+struct mstats_value {
+    int blocksize;
+    int nfree;
+    int nused;
+};
 
-    extern struct mstats_value malloc_stats(int size);
+extern struct mstats_value malloc_stats(int size);
 #endif
 
 void
@@ -138,14 +136,14 @@ free_str(const char *s)
 Var
 memory_usage(void)
 {
-    Var		r;
+    Var r;
 
 #ifdef USE_GNU_MALLOC
-    int		nsizes, i;
+    int nsizes, i;
 
     /* Discover how many block sizes there are. */
-    for (nsizes = 0; ; nsizes++) {
-	struct mstats_value	v;
+    for (nsizes = 0;; nsizes++) {
+	struct mstats_value v;
 
 	v = malloc_stats(nsizes);
 	if (v.blocksize <= 0)
@@ -158,8 +156,8 @@ memory_usage(void)
 	r.v.list[i] = new_list(3);
 
     for (i = 0; i < nsizes; i++) {
-	struct mstats_value	v;
-	Var			l;
+	struct mstats_value v;
+	Var l;
 
 	v = malloc_stats(i);
 	l = r.v.list[i + 1];
@@ -175,12 +173,15 @@ memory_usage(void)
     return r;
 }
 
-char rcsid_storage[] = "$Id: storage.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_storage[] = "$Id: storage.c,v 1.2 1997/03/03 04:19:26 nop Exp $";
 
 /* $Log: storage.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:26  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:51:20  pavel
  * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
  * Release 1.8.0beta1.

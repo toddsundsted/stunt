@@ -28,7 +28,7 @@
 Stream *
 new_stream(int size)
 {
-    Stream     *s = mymalloc(sizeof(Stream), M_STREAM);
+    Stream *s = mymalloc(sizeof(Stream), M_STREAM);
 
     s->buffer = mymalloc(size, M_STREAM);
     s->buflen = size;
@@ -38,10 +38,10 @@ new_stream(int size)
 }
 
 static void
-grow(Stream *s, int newlen)
+grow(Stream * s, int newlen)
 {
-    char   *newbuf;
-    
+    char *newbuf;
+
     newbuf = mymalloc(newlen, M_STREAM);
     memcpy(newbuf, s->buffer, s->current);
     myfree(s->buffer, M_STREAM);
@@ -50,7 +50,7 @@ grow(Stream *s, int newlen)
 }
 
 void
-stream_add_char(Stream *s, char c)
+stream_add_char(Stream * s, char c)
 {
     if (s->current + 1 >= s->buflen)
 	grow(s, s->buflen * 2);
@@ -59,18 +59,17 @@ stream_add_char(Stream *s, char c)
 }
 
 void
-stream_add_string(Stream *s, const char *string)
+stream_add_string(Stream * s, const char *string)
 {
-    int		len = strlen(string);
+    int len = strlen(string);
 
     if (s->current + len >= s->buflen) {
-	int	newlen = s->buflen * 2;
+	int newlen = s->buflen * 2;
 
 	if (newlen <= s->current + len)
 	    newlen = s->current + len + 1;
 	grow(s, newlen);
     }
-
     strcpy(s->buffer + s->current, string);
     s->current += len;
 }
@@ -80,19 +79,21 @@ itoa(int n, int radix)
 {
     if (n == 0)			/* zero produces "" below. */
 	return "0";
-    else if (n == -2147483647 -1)	/* min. integer won't work below. */
+    else if (n == -2147483647 - 1)	/* min. integer won't work below. */
 	switch (radix) {
-	  case 16: return "-7FFFFFFF";
-	  case 10: return "-2147483648";
-	  case 8:  return "-17777777777";
-	  default:
+	case 16:
+	    return "-7FFFFFFF";
+	case 10:
+	    return "-2147483648";
+	case 8:
+	    return "-17777777777";
+	default:
 	    errlog("STREAM_PRINTF: Illegal radix %d!\n", radix);
 	    return "0";
-	}
-    else {
-	static char	buffer[20];
-	char	       *ptr = buffer + 19;
-	int		neg = 0;
+    } else {
+	static char buffer[20];
+	char *ptr = buffer + 19;
+	int neg = 0;
 
 	if (n < 0) {
 	    neg = 1;
@@ -113,64 +114,70 @@ itoa(int n, int radix)
 static const char *
 dbl_fmt(void)
 {
-    static const char  *fmt = 0;
-    static char		buffer[10];
+    static const char *fmt = 0;
+    static char buffer[10];
 
     if (!fmt) {
 	sprintf(buffer, "%%.%dg", DBL_DIG);
 	fmt = buffer;
     }
-
     return fmt;
 }
 
 void
-stream_printf(Stream *s, const char *fmt, ...)
+stream_printf(Stream * s, const char *fmt,...)
 {
-    char	buffer[40];
-    va_list	args;
+    char buffer[40];
+    va_list args;
 
     va_start(args, fmt);
     while (*fmt) {
-	char	c = *fmt;
+	char c = *fmt;
 
 	if (c == '%') {
-	    char	pad = ' ';
-	    int		width = 0, base;
-	    const char *string = ""; /* initialized to silence warning */
-	    
+	    char pad = ' ';
+	    int width = 0, base;
+	    const char *string = "";	/* initialized to silence warning */
+
 	    while ((c = *(++fmt)) != '\0') {
 		switch (c) {
-		  case 's':
+		case 's':
 		    string = va_arg(args, char *);
 		    break;
-		  case 'x':
+		case 'x':
 		    base = 16;
 		    goto finish_number;
-		  case 'o':
+		case 'o':
 		    base = 8;
 		    goto finish_number;
-		  case 'd':
+		case 'd':
 		    base = 10;
 		  finish_number:
 		    string = itoa(va_arg(args, int), base);
 		    break;
-		  case 'g':
+		case 'g':
 		    sprintf(buffer, dbl_fmt(), va_arg(args, double));
 		    if (!strchr(buffer, '.') && !strchr(buffer, 'e'))
-			strcat(buffer, ".0"); /* make it look floating */
+			strcat(buffer, ".0");	/* make it look floating */
 		    string = buffer;
 		    break;
-		  case '0':
+		case '0':
 		    if (width == 0) {
 			pad = '0';
 			continue;
 		    }
-		  case '1': case '2': case '3': case '4': case '5':
-		  case '6': case '7': case '8': case '9':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
 		    width = width * 10 + c - '0';
 		    continue;
-		  default:
+		default:
 		    errlog("STREAM_PRINTF: Unknown format directive: %%%c\n",
 			   c);
 		    goto abort;
@@ -193,14 +200,14 @@ stream_printf(Stream *s, const char *fmt, ...)
 }
 
 void
-free_stream(Stream *s)
+free_stream(Stream * s)
 {
     myfree(s->buffer, M_STREAM);
     myfree(s, M_STREAM);
 }
 
 char *
-reset_stream(Stream *s)
+reset_stream(Stream * s)
 {
     s->buffer[s->current] = '\0';
     s->current = 0;
@@ -208,24 +215,27 @@ reset_stream(Stream *s)
 }
 
 char *
-stream_contents(Stream *s)
+stream_contents(Stream * s)
 {
     s->buffer[s->current] = '\0';
     return s->buffer;
 }
 
 int
-stream_length(Stream *s)
+stream_length(Stream * s)
 {
     return s->current;
 }
 
-char rcsid_streams[] = "$Id: streams.c,v 1.1 1997/03/03 03:45:01 nop Exp $";
+char rcsid_streams[] = "$Id: streams.c,v 1.2 1997/03/03 04:19:28 nop Exp $";
 
 /* $Log: streams.c,v $
-/* Revision 1.1  1997/03/03 03:45:01  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:28  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.5  1996/03/19  07:14:02  pavel
  * Fixed default printing of floating-point numbers.  Release 1.8.0p2.
  *

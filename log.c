@@ -30,10 +30,10 @@
 #include "streams.h"
 #include "utils.h"
 
-static FILE    *log_file = 0;
+static FILE *log_file = 0;
 
 void
-set_log_file(FILE *f)
+set_log_file(FILE * f)
 {
     log_file = f;
 }
@@ -41,15 +41,15 @@ set_log_file(FILE *f)
 static void
 do_log(const char *fmt, va_list args, const char *prefix)
 {
-    FILE       *f;
+    FILE *f;
 
     if (log_file) {
-	time_t	now = time(0);
-	char   *nowstr = ctime(&now);
+	time_t now = time(0);
+	char *nowstr = ctime(&now);
 
 	nowstr[19] = '\0';	/* kill the year and newline at the end */
 	f = log_file;
-	fprintf(f, "%s: %s", nowstr + 4, prefix); /* skip the day of week */
+	fprintf(f, "%s: %s", nowstr + 4, prefix);	/* skip the day of week */
     } else
 	f = stderr;
 
@@ -58,9 +58,9 @@ do_log(const char *fmt, va_list args, const char *prefix)
 }
 
 void
-oklog(const char *fmt, ...)
+oklog(const char *fmt,...)
 {
-    va_list	args;
+    va_list args;
 
     va_start(args, fmt);
     do_log(fmt, args, "");
@@ -68,9 +68,9 @@ oklog(const char *fmt, ...)
 }
 
 void
-errlog(const char *fmt, ...)
+errlog(const char *fmt,...)
 {
-    va_list	args;
+    va_list args;
 
     va_start(args, fmt);
     do_log(fmt, args, "*** ");
@@ -85,7 +85,7 @@ log_perror(const char *what)
 
 
 #ifdef LOG_COMMANDS
-static Stream	*command_history = 0;
+static Stream *command_history = 0;
 #endif
 
 void
@@ -111,14 +111,14 @@ void
 add_command_to_history(Objid player, const char *command)
 {
 #ifdef LOG_COMMANDS
-    time_t	now = time(0);
-    char       *nowstr = ctime(&now);
+    time_t now = time(0);
+    char *nowstr = ctime(&now);
 
-    nowstr[19] = '\0';	/* kill the year and newline at the end */
+    nowstr[19] = '\0';		/* kill the year and newline at the end */
     stream_printf(command_history, "%s: #%d: %s\n",
 		  nowstr + 4,	/* skip day of week */
 		  player, command);
-#endif /* LOG_COMMANDS */
+#endif				/* LOG_COMMANDS */
 }
 
 /**** built in functions ****/
@@ -131,13 +131,13 @@ bf_server_log(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_PERM);
     } else {
 	int is_error = (arglist.v.list[0].v.num == 2
-			&&  is_true(arglist.v.list[2]));
+			&& is_true(arglist.v.list[2]));
 
 	if (is_error)
 	    errlog("> %s\n", arglist.v.list[1].v.str);
 	else
 	    oklog("> %s\n", arglist.v.list[1].v.str);
-	    
+
 	free_var(arglist);
 	return no_var_pack();
     }
@@ -149,12 +149,15 @@ register_log(void)
     register_function("server_log", 1, 2, bf_server_log, TYPE_STR, TYPE_ANY);
 }
 
-char rcsid_log[] = "$Id: log.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+char rcsid_log[] = "$Id: log.c,v 1.2 1997/03/03 04:18:48 nop Exp $";
 
 /* $Log: log.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:48  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/04/08  01:06:25  pavel
  * Added `set_log_file()' entry point.  Made logging print undated messages to
  * stderr if they arrive before a log file has been set.  Release 1.8.0p3.

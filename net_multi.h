@@ -22,10 +22,10 @@
  * configurations.
  */
 
-typedef void	(*network_fd_callback)(int fd, void *data);
+typedef void (*network_fd_callback) (int fd, void *data);
 
-extern void	network_register_fd(int fd, network_fd_callback readable,
-				    network_fd_callback writable, void *data);
+extern void network_register_fd(int fd, network_fd_callback readable,
+				network_fd_callback writable, void *data);
 				/* The file descriptor FD will be selected for
 				 * at intervals (whenever the networking module
 				 * is doing its own I/O processing).  If FD
@@ -35,22 +35,25 @@ extern void	network_register_fd(int fd, network_fd_callback readable,
 				 * WRITABLE.
 				 */
 
-extern void	network_unregister_fd(int fd);
+extern void network_unregister_fd(int fd);
 				/* Any existing registration for FD is
 				 * forgotten.
 				 */
 
-extern int	network_set_nonblocking(int fd);
+extern int network_set_nonblocking(int fd);
 				/* Enable nonblocking I/O on the file
-                                 * descriptor FD.  Return true iff successful.
+				 * descriptor FD.  Return true iff successful.
 				 */
 
-#endif /* !Net_Multi_H */
+#endif				/* !Net_Multi_H */
 
 /* $Log: net_multi.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:06  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:18:14  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

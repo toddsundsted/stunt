@@ -20,24 +20,27 @@
 
 #include "my-time.h"
 
-typedef int	Timer_ID;
-typedef	void   *Timer_Data;
-typedef	void	(*Timer_Proc)(Timer_ID, Timer_Data);
+typedef int Timer_ID;
+typedef void *Timer_Data;
+typedef void (*Timer_Proc) (Timer_ID, Timer_Data);
 
-extern Timer_ID	set_timer(unsigned, Timer_Proc, Timer_Data);
-extern Timer_ID	set_virtual_timer(unsigned, Timer_Proc, Timer_Data);
-extern int	cancel_timer(Timer_ID);
-extern void	reenable_timers(void);
-extern unsigned	timer_wakeup_interval(Timer_ID);
-extern void	timer_sleep(unsigned seconds);
-extern int	virtual_timer_available();
+extern Timer_ID set_timer(unsigned, Timer_Proc, Timer_Data);
+extern Timer_ID set_virtual_timer(unsigned, Timer_Proc, Timer_Data);
+extern int cancel_timer(Timer_ID);
+extern void reenable_timers(void);
+extern unsigned timer_wakeup_interval(Timer_ID);
+extern void timer_sleep(unsigned seconds);
+extern int virtual_timer_available();
 
-#endif /* !Timers_H */
+#endif				/* !Timers_H */
 
 /* $Log: timers.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:33  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:09:00  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

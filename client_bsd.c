@@ -33,9 +33,9 @@
 void
 main(int argc, char **argv)
 {
-    const char	       *connect_file = DEFAULT_CONNECT_FILE;
-    int			s;
-    struct sockaddr_un	address;
+    const char *connect_file = DEFAULT_CONNECT_FILE;
+    int s;
+    struct sockaddr_un address;
 
     if (argc == 2)
 	connect_file = argv[1];
@@ -43,12 +43,10 @@ main(int argc, char **argv)
 	fprintf(stderr, "Usage: %s [server-connect-file]\n", argv[0]);
 	exit(1);
     }
-
     if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	perror("socket");
 	exit(1);
     }
-
     address.sun_family = AF_UNIX;
     strcpy(address.sun_path, connect_file);
 
@@ -57,10 +55,9 @@ main(int argc, char **argv)
 	perror("connect");
 	exit(1);
     }
-
     while (1) {
-	fd_set	input;
-	char	buffer[1024];
+	fd_set input;
+	char buffer[1024];
 
 	FD_ZERO(&input);
 	FD_SET(0, &input);
@@ -87,12 +84,15 @@ main(int argc, char **argv)
     exit(0);
 }
 
-char rcsid_client_bsd[] = "$Id: client_bsd.c,v 1.1 1997/03/03 03:45:02 nop Exp $";
+char rcsid_client_bsd[] = "$Id: client_bsd.c,v 1.2 1997/03/03 04:18:23 nop Exp $";
 
 /* $Log: client_bsd.c,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:23  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/03/10  01:11:49  pavel
  * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
  *

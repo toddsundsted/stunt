@@ -29,28 +29,28 @@
 #include "structures.h"
 
 typedef struct {		/* Network's handle on a connection */
-    void       *ptr;
+    void *ptr;
 } network_handle;
 
 typedef struct {		/* Network's handle on a listening point */
-    void       *ptr;
+    void *ptr;
 } network_listener;
 
 #include "server.h"		/* Include this *after* defining the types */
 
-extern const char      *network_protocol_name(void);
+extern const char *network_protocol_name(void);
 				/* Returns a string naming the networking
 				 * protocol in use.
 				 */
 
-extern const char      *network_usage_string(void);
+extern const char *network_usage_string(void);
 				/* Returns a string describing any extra
 				 * network-specific command-line arguments,
 				 * such as a port number, etc.
 				 */
 
-extern int		network_initialize(int argc, char **argv,
-					   Var *desc);
+extern int network_initialize(int argc, char **argv,
+			      Var * desc);
 				/* ARGC and ARGV refer to just the network-
 				 * specific arguments, if any, which always
 				 * come after any network-independent args.
@@ -60,9 +60,9 @@ extern int		network_initialize(int argc, char **argv,
 				 * create the server's initial listening point.
 				 */
 
-extern enum error	network_make_listener(server_listener sl, Var desc,
-					      network_listener *nl,
-					      Var *canon, const char **name);
+extern enum error network_make_listener(server_listener sl, Var desc,
+					network_listener * nl,
+					Var * canon, const char **name);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
 				 * be used as a specification of a new local
@@ -87,14 +87,14 @@ extern enum error	network_make_listener(server_listener sl, Var desc,
 				 * accepting connections.
 				 */
 
-extern int		network_listen(network_listener nl);
+extern int network_listen(network_listener nl);
 				/* The network should begin accepting
-			         * connections on the given listening point,
-			         * returning true iff this is now possible.
+				 * connections on the given listening point,
+				 * returning true iff this is now possible.
 				 */
 
-extern int		network_send_line(network_handle nh, const char *line,
-					  int flush_ok);
+extern int network_send_line(network_handle nh, const char *line,
+			     int flush_ok);
 				/* The given line should be queued for output
 				 * on the specified connection.  'line' does
 				 * NOT end in a newline; it is up to the
@@ -109,9 +109,9 @@ extern int		network_send_line(network_handle nh, const char *line,
 				 * fail if FLUSH_OK is false.
 				 */
 
-extern int		network_send_bytes(network_handle nh,
-					   const char *buffer, int buflen,
-					   int flush_ok);
+extern int network_send_bytes(network_handle nh,
+			      const char *buffer, int buflen,
+			      int flush_ok);
 				/* The first BUFLEN bytes in the given BUFFER
 				 * should be queued for output on the specified
 				 * connection.  If FLUSH_OK is true, then the
@@ -124,30 +124,30 @@ extern int		network_send_bytes(network_handle nh,
 				 * fail if FLUSH_OK is false.
 				 */
 
-extern int		network_buffered_output_length(network_handle nh);
+extern int network_buffered_output_length(network_handle nh);
 				/* Returns the number of bytes of output
 				 * currently queued up on the given connection.
 				 */
 
-extern void		network_suspend_input(network_handle nh);
+extern void network_suspend_input(network_handle nh);
 				/* The network module is strongly encouraged,
 				 * though not strictly required, to temporarily
 				 * stop calling `server_receive_line()' for
 				 * the given connection.
 				 */
 
-extern void		network_resume_input(network_handle nh);
+extern void network_resume_input(network_handle nh);
 				/* The network module may once again feel free
 				 * to call `server_receive_line()' for the
 				 * given connection.
 				 */
 
-extern void		network_set_connection_binary(network_handle, int);
+extern void network_set_connection_binary(network_handle, int);
 				/* Set the given connection into or out of
 				 * `binary input mode'.
 				 */
 
-extern int	        network_process_io(int timeout);
+extern int network_process_io(int timeout);
 				/* This is called at intervals to allow the
 				 * network to flush pending output, receive
 				 * pending input, and handle requests for new
@@ -158,31 +158,31 @@ extern int	        network_process_io(int timeout);
 				 * timeout).
 				 */
 
-extern const char      *network_connection_name(network_handle nh);
+extern const char *network_connection_name(network_handle nh);
 				/* Return some human-readable identification
 				 * for the specified connection.  It should fit
 				 * into the phrase 'Connection accepted: %s'.
 				 */
 
-extern Var		network_connection_options(network_handle nh,
-						   Var list);
+extern Var network_connection_options(network_handle nh,
+				      Var list);
 				/* Add the current option settings for the
 				 * given connection onto the end of LIST and
 				 * return the new list.  Each entry on LIST
 				 * should be a {NAME, VALUE} pair.
 				 */
 
-extern int		network_connection_option(network_handle nh,
-						  const char *option,
-						  Var *value);
+extern int network_connection_option(network_handle nh,
+				     const char *option,
+				     Var * value);
 				/* Return true iff the given option name
 				 * is valid for the given connection, storing
 				 * the current setting into *VALUE if valid.
 				 */
 
-extern int		network_set_connection_option(network_handle nh,
-						      const char *option,
-						      Var value);
+extern int network_set_connection_option(network_handle nh,
+					 const char *option,
+					 Var value);
 				/* Return true iff the given option/value pair
 				 * is valid for the given connection, applying
 				 * the given setting if valid.
@@ -191,7 +191,7 @@ extern int		network_set_connection_option(network_handle nh,
 #ifdef OUTBOUND_NETWORK
 #include "structures.h"
 
-extern enum error	network_open_connection(Var arglist);
+extern enum error network_open_connection(Var arglist);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the
@@ -211,7 +211,7 @@ extern enum error	network_open_connection(Var arglist);
 
 #endif
 
-extern void		network_close(network_handle nh);
+extern void network_close(network_handle nh);
 				/* The specified connection should be closed
 				 * immediately, after flushing as much pending
 				 * output as possible.  Effective immediately,
@@ -221,7 +221,7 @@ extern void		network_close(network_handle nh);
 				 * network.
 				 */
 
-extern void		network_close_listener(network_listener nl);
+extern void network_close_listener(network_listener nl);
 				/* The specified listening point should be
 				 * closed immediately.  Effective immediately,
 				 * the given network_listener will not be used
@@ -230,7 +230,7 @@ extern void		network_close_listener(network_listener nl);
 				 * network.
 				 */
 
-extern void		network_shutdown(void);
+extern void network_shutdown(void);
 				/* All network connections should be closed
 				 * after flushing as much pending output as
 				 * possible, and all listening points should be
@@ -242,12 +242,15 @@ extern void		network_shutdown(void);
 				 * never make another call on the network.
 				 */
 
-#endif /* Network_H */
+#endif				/* Network_H */
 
 /* $Log: network.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:19:10  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.4  1996/03/10  01:15:13  pavel
  * Added support for `connection_option()'.  Release 1.8.0.
  *

@@ -32,19 +32,22 @@
 #define getpagesize() NBPG * CLSIZE
 #ifndef CLSIZE
 #define CLSIZE 1
-#endif /* no CLSIZE */
-#else /* no NBPG */
+#endif				/* no CLSIZE */
+#else				/* no NBPG */
 #define getpagesize() NBPC
-#endif /* no NBPG */
-#endif /* no EXEC_PAGESIZE */
+#endif				/* no NBPG */
+#endif				/* no EXEC_PAGESIZE */
 
-#endif /* not HAVE_GETPAGESIZE */
+#endif				/* not HAVE_GETPAGESIZE */
 
 
 /* $Log: getpagesize.h,v $
-/* Revision 1.1  1997/03/03 03:45:03  nop
-/* Initial revision
+/* Revision 1.2  1997/03/03 04:18:43  nop
+/* GNU Indent normalization
 /*
+ * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:24:58  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *
