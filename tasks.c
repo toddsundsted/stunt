@@ -1421,36 +1421,36 @@ bf_task_id(Var arglist, Byte next, void *vdata, Objid progr)
 static int
 activation_bytes(activation *ap)
 {
-	int total = sizeof(activation);
-	Var *v;
-	int i;
+    int total = sizeof(activation);
+    Var *v;
+    int i;
 
-	/* The MOO Way [tm] is double-billing to avoid the possibility
-	 * of not billing at all, so the size of the prog is counted here
-	 * even though it will be shared unless the verb was reprogrammed.
-	 */
-	total += program_bytes(ap->prog);
-	for (i = 0; i < ap->prog->num_var_names; ++i)
-		total += value_bytes(ap->rt_env[i]);
-	for (v = ap->top_rt_stack - 1; v >= ap->base_rt_stack; v--)
-		total += value_bytes(*v);
-	/* XXX ignore bi_func_data, it's an opaque type. */
-	total += value_bytes(ap->temp) - sizeof(Var);
-	total += strlen(ap->verb) + 1;
-	total += strlen(ap->verbname) + 1;
-	return total;
+    /* The MOO Way [tm] is double-billing to avoid the possibility
+     * of not billing at all, so the size of the prog is counted here
+     * even though it will be shared unless the verb was reprogrammed.
+     */
+    total += program_bytes(ap->prog);
+    for (i = 0; i < ap->prog->num_var_names; ++i)
+	total += value_bytes(ap->rt_env[i]);
+    for (v = ap->top_rt_stack - 1; v >= ap->base_rt_stack; v--)
+	total += value_bytes(*v);
+    /* XXX ignore bi_func_data, it's an opaque type. */
+    total += value_bytes(ap->temp) - sizeof(Var);
+    total += strlen(ap->verb) + 1;
+    total += strlen(ap->verbname) + 1;
+    return total;
 }
 
 static int
 forked_task_bytes(forked_task ft)
 {
-	int total = sizeof(forked_task);
+    int total = sizeof(forked_task);
 
-	/* ft.program is duplicated in ft.a */
-	total += activation_bytes(&ft.a) - sizeof(activation);
-	/* ft.rt_env is properly inside ft.a now */
+    /* ft.program is duplicated in ft.a */
+    total += activation_bytes(&ft.a) - sizeof(activation);
+    /* ft.rt_env is properly inside ft.a now */
 
-	return total;
+    return total;
 }
 
 static Var
@@ -1486,13 +1486,13 @@ list_for_forked_task(forked_task ft)
 static int
 suspended_task_bytes(vm the_vm)
 {
-	int total = sizeof(vmstruct);
-	int i;
+    int total = sizeof(vmstruct);
+    int i;
 
-	for (i = 0; i <= the_vm->top_activ_stack; i++)
-		total += activation_bytes(the_vm->activ_stack + i);
+    for (i = 0; i <= the_vm->top_activ_stack; i++)
+	total += activation_bytes(the_vm->activ_stack + i);
 
-	return total;
+    return total;
 }
 
 static Var
@@ -1746,7 +1746,6 @@ killing_closure(vm the_vm, const char *status, void *data)
 	} else
 	    return TEA_STOP;
     }
-
     return TEA_CONTINUE;
 }
 
@@ -2004,10 +2003,13 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.7 2001/07/27 07:29:44 bjj Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.8 2001/07/27 23:06:20 bjj Exp $";
 
 /* 
  * $Log: tasks.c,v $
+ * Revision 1.8  2001/07/27 23:06:20  bjj
+ * Run through indent, oops.
+ *
  * Revision 1.7  2001/07/27 07:29:44  bjj
  * Add a 10th list element to queued_task() entries with the size in bytes
  * of the forked or suspended task.
