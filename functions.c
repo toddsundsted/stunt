@@ -79,6 +79,7 @@ struct bft_entry {
     bf_type func;
     bf_read_type read;
     bf_write_type write;
+    int protected;
 };
 
 static struct bft_entry bf_table[MAX_FUNC];
@@ -109,6 +110,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
     bf_table[top_bf_table].func = func;
     bf_table[top_bf_table].read = read;
     bf_table[top_bf_table].write = write;
+    bf_table[top_bf_table].protected = 0;
 
     if (num_arg_types > 0)
 	bf_table[top_bf_table].prototype =
@@ -197,7 +199,8 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	/*
 	 * Check permissions, if protected
 	 */
-	if (caller() != SYSTEM_OBJECT && server_flag_option(f->protect_str)) {
+	/* if (caller() != SYSTEM_OBJECT && server_flag_option(f->protect_str)) { */
+	if (caller() != SYSTEM_OBJECT && f->protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
 	    enum error e = call_verb(SYSTEM_OBJECT, f->verb_str, arglist, 0);
 
@@ -413,18 +416,53 @@ bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static void
+load_server_protect_flags(void)
+{
+    int i;
+
+    for (i = 0; i < top_bf_table; i++) {
+	bf_table[i].protected = server_flag_option(bf_table[i].protect_str);
+    }
+    oklog("Loaded protect cache for %d builtins\n", i);
+}
+
+void
+load_server_options(void)
+{
+    load_server_protect_flags();
+}
+
+static package
+bf_load_server_options(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    if (!is_wizard(progr)) {
+	return make_error_pack(E_PERM);
+    }
+    load_server_options();
+
+    return no_var_pack();
+}
+
 void
 register_functions(void)
 {
     register_function("function_info", 0, 1, bf_function_info, TYPE_STR);
+    register_function("load_server_options", 0, 0, bf_load_server_options);
 }
 
-char rcsid_functions[] = "$Id: functions.c,v 1.2 1997/03/03 04:18:42 nop Exp $";
+char rcsid_functions[] = "$Id: functions.c,v 1.3 1997/03/03 05:03:50 nop Exp $";
 
 /* $Log: functions.c,v $
-/* Revision 1.2  1997/03/03 04:18:42  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/03 05:03:50  nop
+/* steak2: move protectedness into builtin struct, load_server_options()
+/* now required for $server_options updates.
 /*
+ * Revision 1.2  1997/03/03 04:18:42  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
  *
