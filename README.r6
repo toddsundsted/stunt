@@ -1,0 +1,16 @@
+This is an interim release; no full Changelog available yet.  Once we
+get some feedback from sites running this and it looks like we're
+stable, this will probably be renamed to something like 1.8.1.
+
+The two big changes in r6 over r5 are:
+
+  o  Bytecode optimizations to try to modify lists in-place whenever
+possible.  List manipulation and mutation should be orders of
+magnitude faster in some cases.
+
+  o  String "interning" during load; initially, there will be one and
+only one in-memory copy of each identical string.  (In JHCore that
+means we only allocate memory for "do" once...)
+
+Ben Jackson       ben@ben.com
+Jay Carlson       nop@nop.com
