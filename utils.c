@@ -63,6 +63,9 @@ mystrcasecmp(const char *ss, const char *tt)
     const unsigned char *s = (const unsigned char *) ss;
     const unsigned char *t = (const unsigned char *) tt;
 
+    if (ss == tt) {
+	return 0;
+    }
     while (cmap[*s] == cmap[*t++]) {
 	if (!*s++)
 	    return 0;
@@ -76,7 +79,7 @@ mystrncasecmp(const char *ss, const char *tt, int n)
     const unsigned char *s = (const unsigned char *) ss;
     const unsigned char *t = (const unsigned char *) tt;
 
-    if (!n)
+    if (!n || ss == tt)
 	return 0;
     while (cmap[*s] == cmap[*t++]) {
 	if (!*s++ || !--n)
@@ -94,6 +97,9 @@ verbcasecmp(const char *verb, const char *word)
 	none, inner, end
     } star;
 
+    if (verb == word) {
+	return 1;
+    }
     while (*v) {
 	w = (const unsigned char *) word;
 	star = none;
@@ -254,6 +260,9 @@ equality(Var lhs, Var rhs, int case_matters)
 	    else {
 		int i;
 
+		if (lhs.v.list == rhs.v.list) {
+		    return 1;
+		}
 		for (i = 1; i <= lhs.v.list[0].v.num; i++) {
 		    if (!equality(lhs.v.list[i], rhs.v.list[i], case_matters))
 			return 0;
@@ -433,10 +442,13 @@ binary_to_raw_bytes(const char *binary, int *buflen)
     return reset_stream(s);
 }
 
-char rcsid_utils[] = "$Id: utils.c,v 1.4 1998/12/14 13:19:14 nop Exp $";
+char rcsid_utils[] = "$Id: utils.c,v 1.5 1999/08/09 02:36:33 nop Exp $";
 
 /* 
  * $Log: utils.c,v $
+ * Revision 1.5  1999/08/09 02:36:33  nop
+ * Shortcut various equality tests if we have pointer equality.
+ *
  * Revision 1.4  1998/12/14 13:19:14  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
