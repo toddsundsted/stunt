@@ -1,0 +1,6 @@
+This is another interim release; no full Changelog available yet.
+
+r7 adds more fixes to BYTECODE_REDUCE_REF.  It's now safe to turn on.
+
+Ben Jackson       ben@ben.com
+Jay Carlson       nop@nop.com
