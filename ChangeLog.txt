@@ -1,0 +1,2297 @@
+Version 1.0.0, 5 February 1991
+-- First public release.
+
+Version 1.1.0, 8 February 1991
+-- recycle(x) now calls x:recycle() before destroying the object.
+-- the little-used and functionally-dubious update() function has been removed.
+   **** NOTE: Technically, this change should make this a major release, since
+   ****       it can break old code that depended on update() existing.  In
+   ****       practice, however, only $prog:@update used it (in LambdaCore.db,
+   ****       anyway).  Thus, to install this server, you should first @rmverb
+   ****       $prog:@update, since its code would otherwise be syntactically
+   ****       illegal.
+-- added renumber() and reset_max_object(), to facilitate automatically
+   generating new versions of LambdaCore.db from the current LambdaMOO db.
+-- made it so that only wizards can set the .name property of players; code in
+   the database now checks that players keep unique names.
+-- added set_player_flag() and boot_player() to enable registration-style
+   player creation and @toad-ing.
+
+Version 1.1,1, 12 February 1991
+-- Much rearrangement of #include's to come as close as possible to conformance
+   with ANSI C and POSIX.
+-- Many changes to improve portability, especially to sites with only 'nearly'
+   ANSI-compliant compilers.
+-- Added backtrace-printing for tasks aborted for running too long.
+
+Version 1.1.2, 13 February 1991
+-- Fixed nasty infinite recursion problem on server panic.
+-- Fixed the implementation of renumber() to really do the job.  It's now much
+   more expensive (linear in the size of the database rather than constant
+   time), but at least it's correct.  It's only intended for use on a tiny
+   DB anyway.
+
+Version 1.1.3, 11 March 1991
+-- Fixed benign unparsing bug that always parenthesized unary-minus
+   expressions.
+-- Changed move() to insert the newly-moved object as the last item in the
+   contents list, rather than the first.
+-- Fixed a less-than-benign bug in the unparsing of conditional expressions,
+   where 'x ? y | (z ? w | v)' was being unparsed without the parentheses.
+-- Fixed a bug whereby an extra checkpoint timer was created every time the
+   '.dump' command was used.
+-- Added printing the value of 'this' to error backtraces whenever it is
+   different from the verb location.
+-- Fixed bug in propagation of property ownership on object creation.
+-- WARNING: I believe that there is a storage leak somewhere in the server.  If
+            so, it is not very fast.  With any luck, I'll find it soon.  For
+            safety's sake, check on the size of your server's address space
+            and reboot the server every few days if it's getting large.
+
+Version 1.2.0, 11 April 1991
+-- Fixed bug in parser that made 'after' a reserved word; this was part of an
+   old (and never completely implemented) alternative syntax for the 'fork'
+   statement.
+-- Added memory_usage() function, to help in tracking down any memory-leak
+   bugs, among other things.
+-- Removed ancient restrictions on players recycling themselves.
+-- Changed recycle() so that children of recycled objects are not themselves
+   recycled.  Instead, they are adopted by their former grandparent.
+-- Fixed bugs in which errors are returned from move() in certain cases.
+-- Removed useless error value E_BADMOVE.
+-- Fixed bug in move() that allowed the enterfunc to be called even if the
+   object being moved was no longer valid.
+-- Changed several uses of E_INVIND to E_INVARG; E_INVIND is now only used when
+   an attempt is made to fetch or store the value of a property or verb from an
+   invalid object.
+-- Changed several functions to improve consistency in the order in which
+   certain kinds of errors are checked for.
+-- Made the allocator keep track of statistics concerning memory usage by type
+   of object being allocated.
+-- Changed queued_tasks() to return the value of 'this' in each task as well.
+   This new value is returned at the end of the sublist for each task, so old
+   code should continue to work unless it depended upon the exact length of the
+   sublists.
+-- Changed set_task_perms() not to return E_PERM if the argument is the same as
+   the current permissions of the verb (i.e., if the change in permissions
+   would be a no-op).
+-- Made tonum() and toobj() more robust in the face of extra spaces before or
+   after tokens.
+
+Version 1.3.0, 7 June 1991
+-- Removed the now-useless `.help' and `.mem' commands, and all code concerning
+   the also-removed CHECKMALLOC option.
+-- Fixed allocation bug in inheritance of 'dobjstr' and its ilk, when the
+   current value of the variable has the wrong type (e.g., 'dobjstr' is a list
+   when another verb-call happens).
+-- Fixed the timers implementation not to try to free storage inside an
+   interrupt procedure.
+-- Changed move() so that :accept is called even if it's a wizard doing the
+   moving; of course, the wizards gets to do the move even if :accept returns
+   false.
+-- Added 'off/off of' as a new preposition.
+-- Fixed the built-in parser to return #-1 ($nothing) for the empty string,
+   rather than #-2 ($ambiguous_match).
+-- Fixed a few bugs in how the allocator keeps track of types.
+-- Fixed two memory leaks:
+	 1) If you returned or aborted from inside an iteration over a list,
+	    the list was never freed.
+	 2) If you killed a task, its associated environment was never freed.
+-- Added ticks_left() and seconds_left(), for determining how much longer the
+   current task will be allowed to run.
+-- Reduced the maximum number of seconds for each task from 60 to 15.
+-- Removed restriction that the first argument to notify() and boot_player()
+   must be a valid player object.
+-- Removed the .shutdown and .dump commands.
+-- Added shutdown() and dump_database() functions to replace their respective
+   built-in commands.  The shutdown() function takes a single string argument
+   that is printed to all players as their connections are closed.
+-- Added output_delimiters() as a way to discover the current PREFIX and SUFFIX
+   strings on a given connection.
+-- Completely rewrote and modularized the network interface (now in
+   bsd_network.c), the main loop, connection-management, and checkpointing code
+   (now in server.c), and the task dispatcher (now in tasks.c).
+-- Eliminated the notion of `clocks' associated with tasks.  All tasks,
+   including forked tasks, begin execution with a full complement of ticks and
+   seconds.  To make this reasonable, the task dispatcher maintains a separate
+   queue per player, with command tasks and ready forked tasks intermingled.
+   Thus, a malicious player who forks many tasks can only clog his own queue.
+-- Eliminated the `command burst' heuristics from the dispatcher; this always
+   seemed like just a patch for having a fair dispatcher anyway.
+-- Added a timeout for closing idle un-logged-in connections.
+-- Removed the QUIT command; the boot_player() function can now be used for
+   that purpose.  boot_player() now does a normal disconnect, including running
+   the disfuncs.  At the same time, I made it allow players to boot themselves.
+-- Because clocks have been eliminated, the lists returned by queued_tasks()
+   have changed somewhat, though in a mostly-compatible way.  The clock ID and
+   clock ticks fields are both constant now, with the ticks equal to 20,000.
+-- ****************** All processing of commands typed by un-logged-in players
+   *** VITAL NOTE *** has been moved into the database.  Every un-logged-in
+   ****************** connection is assigned a unique negative player number.
+   The functions notify() and boot_player() can be used by wizards to send
+   text to and to terminate such a connection, respectively, using that player
+   number as the connection identifier.  Each line of input on such a
+   connection is first parsed into words in the usual way and then these words
+   are passed as the arguments to #0:do_login_command().  For example, the line
+   	connect Munchkin frebblebit
+   would result in the following call being made:
+	#0:do_login_command("connect", "Munchkin", "frebblebit")
+   If #0:do_login_command returns a valid player object, then the connection is
+   considered to have logged into that player.  When the connection is first
+   established, the null command is automatically entered, resulting in a call
+   to #0:do_login_command with no arguments.  This signal can be used by the
+   verb to print out a welcome message, for example; this service is no longer
+   provided by the server.
+      Because of this change, it will be **NECESSARY** to add an implementation
+   of #0:do_login_command to your database *before* beginning to use version
+   1.3.0 of the server.  The Minimal.db database and the version of the
+   LambdaCore database released concurrently with 1.3.0 already provide such an
+   implementation.  The following code can be used as a simple implementation
+   that preserves most of the functionality of version 1.2.0:
+
+	if (callers())
+	  "This code should only be run as a server task.";
+	  return;
+	endif
+	if (args == {})
+	  args = {"help"};
+	endif
+	command = args[1];
+	args = args[2..length(args)];
+	nargs = length(args);
+	if (command == "connect")
+	  if (nargs < 1)
+	    notify(player,
+	           "Usage:  connect <existing-player-name> <password>");
+	  else
+	    name = args[1];
+	    password = nargs >= 2 ? args[2] | "";
+	    for p in (players())
+	      if (p.name == name
+	          && (typeof(p.password) != STR
+		      || (length(p.password) >= 2
+			  && crypt(password, p.password[1..2]) == p.password)))
+		p.last_connect_time = time();
+		return p;
+	      endif
+	    endfor
+	    notify(player, "Unknown player or wrong password.");
+	  endif
+	elseif (command == "create")
+	  if (nargs != 2)
+	    notify(player, "Usage:  create <new-player-name> <new-password>");
+	  else
+	    name = args[1];
+	    password = args[2];
+	    for p in (players())
+	      if (p.name == name)
+		notify(player, "That player name is already in use.");
+		return 0;
+	      endif
+	    endfor
+	    new = create($player_class, $nothing);
+	    set_player_flag(new, 1);
+	    new.name = name;
+	    new.aliases = {name};
+	    new.programmer = $player_class.programmer;
+	    new.password = crypt(password);
+	    new.last_connect_time = time();
+	    move(new, $player_start);
+	    return new;
+	  endif
+	elseif (strcmp(command, "QUIT") == 0)
+	  boot_player(player);
+	else
+	  msg = $welcome_message;
+	  if (typeof(msg) != LIST)
+	    msg = {msg};
+	  endif
+	  for line in (msg)
+	    if (typeof(line) == STR)
+	      notify(player, line);
+	    endif
+	  endfor
+	endif
+	return 0;
+
+   Of course, the whole point of bringing this code into the database is to
+   enable easy experimentation with new facilities for un-logged-in users, such
+   as multiple Guest players, friendlier coping with similarly-named players,
+   provision of a `who' command, etc.
+-- The network interface now copes more nicely with running out of buffer
+   space for output to a player.  Before, excess output was simply dropped on
+   the floor; now, it instead attempts to push it out the network socket and
+   only flushes output when that doesn't work.  I was able to have a single
+   command send me over 60,000 characters of output without flushing any.
+-- The PREFIX and SUFFIX strings are no longer printed either for the .program
+   command or for any of the lines of program input.
+-- Recycled players with active connections are more promptly noticed and their
+   connections closed.
+-- The numeric ID associated with forked tasks is now guaranteed to be the same
+   as the value of task_id() in that task when it executes.
+-- The create() function now invokes the :initialize verb on the newly-created
+   object before returning it.  It is not an error if there is no :initialize
+   verb defined on the object.
+-- Changed listinsert() and listappend() never to generate E_RANGE errors.
+   Instead, the following expressions are now always equivalent:
+	listinsert(list, element, index)
+	listappend(list, element, index - 1)
+	{@list[1..index - 1], element, @list[index..length(list)]}
+-- Changed the matching algorithm for verb names so that the old behavior of
+   `*' matching anything is generalized to `foo*' matching anything beginning
+   with `foo'.
+-- Changed eval() and set_verb_code() to require programmer permissions.
+-- Added a timezone abbreviation onto the end of ctime()'s result.
+-- Added min(), max(), and abs() functions.
+-- The messages printed for running out of ticks and for running out of seconds
+   are now disinguishable.
+
+Version 1.4.0, 22 August 1991
+-- Fixed a bug whereby running out of seconds might be misreported as running
+   out of ticks.
+-- Fixed a bug whereby using `@' on a non-list in a verb's argument list could
+   end up passing E_TYPE as the value of `args'.
+-- Fixed parsing bug that would ignore an extraneous comma at the front of an
+   argument list.
+-- Changed random() to raise E_INVARG on non-positive numerical arguments,
+   rather than E_TYPE.
+-- Fixed bug in handling of the case where a verb disappears between a
+   `.program' and the corresponding `.'.
+-- Made it a type error to use <, <=, >, or >= either on operands of different
+   types or on lists.
+-- Completely rewrote the MOO-code parser, unparser, and interpreter using a
+   new program representation based on vectors of bytecodes instead of abstract
+   syntax trees.  This saves space and time and also allows the interpreter to
+   be iterative instead of recursive.  This, in turn, allows us to implement
+   various operations that involve saving the entire state of a running task
+   for later resumption.
+-- Added read() and suspend() functions, using the new capabilities of the
+   interpreter.
+-- The new interpreter counts a few more ticks than the old one; in particular,
+   every IF, ELSEIF, and FORK now counts a tick.  In view of this, and in view
+   of the improved performance of the interpreter, the ticks limit for tasks
+   has been increased from 20,000 to 30,000.
+-- Added an indexed assignment statement for updating lists stored in variables
+   and properties.
+-- Fixed bug in numeric comparisons where `-2147483647 > 1' was false but
+   `-2147483647 > 2' was true.
+-- Fixed database dumping to detect and recover from filesystem errors.  For
+   normal periodic checkpoints, the dump attempt is simply abandoned.  For
+   panic and shutdown dumps, the server retries the dump from the beginning
+   after waiting 60 seconds (during which time, presumably, the archwizard will
+   fix whatever the problem was).  In all cases, explanatory messages are
+   printed in the log.  This should help mitigate the problems that arise when
+   there's no more room left on the filesystem on which the server is dumping.
+-- Enhanced the callers() function to return the verb-location and initial
+   value of `player' for each caller.
+
+Version 1.4.5, 20 September 1991
+-- Made unparser failures panic the server rather than try to press on.
+-- Changed the task scheduler in two important ways:
+	1) Effectively gave each player's input tasks a higher priority than
+	   their forked or suspended tasks.  This should both improve
+	   interactive response and make it possible for users to recover from
+	   accidentally forking off many tasks; they can now run commands to
+	   kill those tasks and avoid having those commands wait behind all of
+	   the forked tasks.
+	2) The scheduler no longer uses a strictly round-robin algorithm for
+	   choosing which player's task to run next.  Instead, it keeps track
+	   of how many seconds have been consumed by each player's tasks and
+	   runs the next task from the queue with the least total `usage'.
+	   Fresh queues and those queues that are empty when it becomes their
+	   turn to run again are kept apart from non-empty queues.  When an
+	   empty queue next gets a task to run, its usage is set equal to the
+	   least usage of already-non-empty queues.  Thus, such queues go to
+	   the head of the list but have no advantage over the queues that were
+	   never empty.  This more complex scheduling scheme is intended to
+	   ameliorate the problems with some players having long-running tasks
+	   constantly runnable in the background; such players will now get
+	   only their fair share of the server.
+-- Fixed queued_tasks() to list the player being read from as the owner of a
+   reading task.  This makes it consistent with kill_task(), which only allows
+   that player to kill such a task.
+-- Fixed a bug with my use of signal() on some POSIX-compliant machines.  One
+   possible consequence of the bug (actually manifest on the IRIS) is that all
+   checkpointing processes after the first one will never be waited for,
+   leaving `defunct' processes lying around until the server itself terminates.
+-- Fixed a small bug in my use of ANSI C: the `typedef enum Opcode Opcode;'
+   line in opcode.h must come *after* the definition of `enum Opcode'; unlike
+   struct types, enum types may not be forwardly referenced.  Thanks to yduJ
+   and the Lucid C compiler for finding this bug.
+-- Fixed a bug in the line-number-finding code; this bug was identical to one
+   we fixed long ago in the unparser.  Since the LNF code is *derived* from the
+   unparsing code, this is unsurprising.  What's embarassing is that we forgot
+   to fix the LNF code at the same time...
+
+Version 1.5.0, 3 November 1991
+-- Added connection_name(player) to allow wizards some level of reasonable
+   control over whom they allow to connect to their servers.
+-- Changed read() to accept an optional argument, player, specifying the player
+   from whose connection to read.  If this argument is given, the check that
+   the current task is an input task is not done.  The only good use for this
+   that I'm aware of is in conjunction with the next change...
+-- The new compilation option OUTBOUND_NETWORK enables a new built-in function
+   called open_network_connection().  The arguments are specific to the network
+   module in use, but the intent is that they somehow specify a remote place to
+   which a network connection can be made.  For the default, BSD networking
+   module, there are two arguments, a host-name string and a port number.  The
+   function creates a connection to that place, if possible, and tricks the
+   rest of the server into believing that a normal connection just came from
+   that place.  Open_network_connection() returns the negative object number
+   that is the pseudo-player object for that connection.  One can then use
+   read() and notify() to send and receive lines of ASCII text on that
+   connection.  Of course, if the server should ever receive a line of input
+   when there's no task read()ing from the connection, that input will be
+   treated as a command in the usual way.  Also, unless the connection `logs
+   in' at some point, the usual five-minute timeout-if-no-input-received
+   connection shutdown will take place.  The usual practice is to have the same
+   task that opens the connection go into an infinite loop read()ing from it.
+   As usual, boot_player() can be used to shut down the connection.  This
+   function can only be called by wizards, of course.  If the OUTBOUND_NETWORK
+   option is not used, then open_network_connection() still exists, but always
+   raises E_PERM.
+-- Changed the bsd_network module to map tab to space on input, rather than
+   simply dropping tabs on the floor.
+
+Version 1.5.1, 12 November 1991
+-- Fixed bug in checkpointing whereby the server's command log was flushed even
+   if the checkpoint failed.
+-- Various minor tweaks to make the server work on an IBM RS/6000.
+
+Version 1.5.9, 6 December 1991
+-- Gave different ticks/seconds limits to non-input tasks. They get only 15,000
+   ticks and 5 seconds.
+-- The task seconds limit is now measured in server CPU seconds (as opposed to
+   wall-clock seconds) on systems that can support it.
+-- Adding some simple object-hierarchy checking and (in very simple cases)
+   repair code to the DB reading process.  If unfixable errors are found, the
+   server refuses to run.
+-- Fixed minor inconsistency in the log format.
+-- Fixed a few minor memory leaks.
+-- Fixed a bug whereby the bottom frame of a suspended task that was read from
+   the database file could be given the wrong size runtime value stack.
+-- Made the DB-reading code a bit pickier about the correctness of its input.
+-- Tweaked create() to make it more properly initialize the new object's
+   location and contents.
+-- Fixed bug in move() that could be tickled if an `accept' verb recycled
+   either the movee or the destination.
+-- Fixed several bugs in recycle() that could (and did!) corrupt the contents
+   hierarchy in the database.  The implementation is now much simpler, too!
+
+Version 1.5.14, 3 March 1992
+-- Various minor tweaks to make the server work on a Macintosh running A/UX.
+-- Tweak to work around bug in isgraph() on systems that default to signed
+   characters.
+-- Fixed bug in boot_player() that didn't allow players to boot themselves.
+   [I know it says under release 1.3.0 above that boot_players() already worked
+   this way, but as far as I can see, that was a lie!]
+-- Fixed bsd_network startup sequence so that the server does not `listen' on
+   its port until after the DB has been read.  Connections during the
+   DB-reading phase will most likely time out.  I think this is better than the
+   old situation, in which those connections succeeded and then hung without
+   printing anything until the server finished reading in the DB.
+-- Changed behavior of server when there aren't enough file descriptors to
+   accept a new connection.  The server now arranges to stop just short of this
+   point and to immediately close any new connections after printing an
+   explanatory message.
+-- Fixed properties(), verbs(), x.contents, and queued_tasks() to run in time
+   linear in the length of their results, rather than quadratic.
+
+Version 1.5.20, 24 July 1992
+-- Added check for an empty string as the second argument to strsub(); this now
+   raises E_INVARG.
+-- Conditionalized the keeping of the command log; it is now controlled by the
+   LOG_COMMANDS symbol.
+-- Removed a number of causes for GCC 2.1 to issue warnings about server code.
+   (Version 1.5.15)
+-- Fixed an ordering bug whereby the task queue for a newly-connected player
+   was not fully initialized when the :confunc task(s) were run.  In
+   particular, the new, connected queue was not marked as belonging to that
+   player, and certain functions like output_delimiters() would always fail
+   (not that that's a very interesting function to call in a :confunc, since
+   it's guaranteed to return {"", ""} then...).  (Version 1.5.16)
+-- Finally fixed the bug whereby it was possible to use chparent() to create a
+   situation in which an object defines a property with the same name as one
+   defined by one of its ancestors.  Such an attempt now results in chparent()
+   raising E_INVARG.  (Version 1.5.17)
+-- Finally fixed the bug whereby add_property() allowed the definition of a
+   property in a parent that was already defined in a child.  With this change,
+   it should no longer be possible to create a situation in which a parent and
+   child define properties with the same name.  (Version 1.5.18)
+-- Eliminated some minor warnings from the Dell SVR4 and HP/UX 9000 compilers.
+   (Version 1.5.19)
+-- Added logging of all instances of x.wizard = 1.
+-- The very first task run on booting the server is now a server task calling
+   #0:server_started() with player == #-1.  This task runs even before the
+   server gets the value of $dump_interval in order to schedule the first
+   checkpoint.  (Version 1.5.20)
+
+Version 1.6.0, 13 August 1992
+-- Changed MOO-code parser to generate the old version 1.3 program-
+   representation based on abstract syntax trees.  These syntax trees are then
+   translated to vectors of bytecodes.  This is much cleaner and easier to
+   understand than the old method; perhaps surprisingly, it also appears to be
+   significantly faster, too.  (Version 1.5.21)
+-- Added support for compilation on MIPS SVR3 machines.
+-- Added support for a remote `checkpoint-request' signal (SIGUSR2), analogous
+   to the existing `shutdown-request' signal (SIGUSR1).
+-- Changed unparser to first convert bytecodes to trees and then use output
+   routines from version 1.3 of the server.  Same for line numbers.
+-- Error tracebacks now include line numbers for all frames on stack.
+   (Version 1.5.24)
+-- Cleaned up interpreter code.
+-- Added sqrt() and server_log() built in functions (Version 1.5.25)
+-- All built-in function registration procedures are now located in one list,
+   so it is easier to add new ones.
+-- Added match(), rmatch(), and substitute() built-in functions to handle
+   regular expression searches. (Version 1.6.0)
+
+Version 1.6.1, 14 August 1992
+-- Fixed off-by-one bug in GNU regexp searching code.  (*sigh*)
+
+Version 1.7.0, 23 October 1992
+-- Fixed behavior of index(), rindex(), match(), and rmatch() on empty pattern
+   and/or subject strings. (Version 1.6.3)
+-- Added the prefix `> ' to all log messages generated by the server_log()
+   built-in function, so that they can be distinguished from server-generated
+   messages.
+-- Added a compile-time option (OUT_OF_BAND_PREFIX) enabling a method of
+   entering commands that bypass both normal command parsing and any pending
+   read()ing task.  If OUT_OF_BAND_PREFIX is #define'd (in config.h) as a
+   non-empty string, then any lines of player input that begin with that prefix
+   will be parsed into a list of words and those words passed as arguments in a
+   server task invoking #0:do_out_of_band_command.  This is intended for use by
+   fancy MOO clients that need to send reliably-understood messages to the
+   server, such as window-event notifications.
+-- Added output to the `.program' built-in command, stating that it is obsolete
+   and will be replaced `soon' (i.e., in the next release).
+-- Rearranged the per-system configuration procedure for compiling the server;
+   now it should be easier for people to understand just what needs to be done
+   for their particular system.  The user changes in the Makefile are now
+   confined to specfying details of the compiler; all other kinds of options
+   are handled by editing the `config.h' file, which has been radically
+   reorganized.
+-- Renamed a few files (notably parse_command.[ch]) to fit within the
+   14-character limit imposed on certain systems.  (Version 1.6.4)
+-- Implemented reference counting on string and list values, replacing the old,
+   CPU-intensive deep copying method of storage management.
+-- Added subrange assignment for strings and lists.  Added indexed assignment
+   for strings.  (Version 1.6.5)
+-- Fixed bug whereby a read()ing task with no more input to consume was never
+   resumed if the connection being read was subsequently closed, from either
+   side.  Now the read() call raises E_INVARG, just as it would if the read()
+   were begun when the connection was already closed and no more input was left
+   to consume.
+-- Added TYPE_CLEAR value to properties, which cause property lookup on the
+   parent.  Added built in functions `clear_property()' and
+   `is_clear_property()' to assist in TYPE_CLEAR property manipulation.
+-- Added hash-lookup for properties and changed property definition
+   representation to be arrays instead of linked-lists, both to speed up
+   property lookup. (1.6.6)
+-- Added support for multiple complete networking implementations.  The first
+   use of this flexibility is a new SINGLE_USER option, which creates a version
+   of the server that accepts only one connection at a time and uses the
+   server's own standard input and output streams for it.
+-- Added a new built-in property on objects, the `f' (for `fertile') bit; it
+   replaces the use of the `r' bit to allow children to be made of the object
+   by either create() or chparent().  That is, now those operations check that
+   the `f' bit is set and disregard the setting of the `r' bit. (Version 1.6.7)
+   ******** Before upgrading an existing MOO to use this version of the server,
+   * NOTE * you should make sure that no object in your database already has a
+   ******** property named `f'; the following MOO program, run by a wizard,
+   will perform this check:
+		for i in [0..tonum(max_object())]
+		  o = toobj(i);
+		  if (ticks_left() < 1000 || seconds_left() < 2)
+		    notify(player, tostr("Checking ", o, " ..."));
+		    suspend(0);
+		  endif
+		  if (valid(o) && "f" in properties(o))
+		    notify(player, tostr("*** ", o.name, " (", o,
+				         ") has an `f' property!"));
+		  endif
+		endfor
+   After eliminating all such properties from the database and restarting with
+   this version of the server, you should, as a wizard, run the following MOO
+   code to initialize the `f' bits of all of the objects:
+		for i in [0..tonum(max_object())]
+		  o = toobj(i);
+		  if (ticks_left() < 1000 || seconds_left() < 2)
+		    notify(player, tostr("Fixing ", o, ".f ..."));
+		    suspend(0);
+		  endif
+		  if (valid(o))
+		    o.f = o.r;
+		  endif
+		endfor
+-- Reorganized the files so that all database modifying procedures were in one
+   of four modules. (Version 1.6.8)
+-- Reorganized existing network protocol and multiplexing wait implementations
+   into a pluggable modular form. (Version 1.6.9)
+-- Fixed bug in the interpreter that could pass a garbage program counter to
+   the line-number-finding code, used in printing error tracebacks.  The l-n-f
+   code responded semi-robustly by printing a message in the server log and
+   returning a line number of zero. (Version 1.6.10)
+-- Fixed bug whereby passing negative numbers to random() failed to evoke an
+   E_INVARG error.
+-- Fixed a bug in MOO-code compilation that led to real nastiness if there were
+   more than 255 literals in a single verb.
+-- Incorporated several new networking implementations, allowing for use by a
+   single-user (using the standard input and output streams of the server
+   itself), and by multiple users on either System V or BSD-style UNIX systems,
+   either with or without TCP/IP networking.  (Version 1.6.11)
+-- Fixed a bug in built-in function management that caused max() and min() to
+   always raise E_TYPE on some systems.
+-- Added a new automatic configuration system to the server distribution, so
+   that people do not, in general, need to know much of anything about their
+   local system in order to compile the server.  (Version 1.6.12)
+-- Fixed a misfeature of substitute whereby it was not possible to include a
+   percent-sign in the string that was to survive into the output.  Now, `%%'
+   is replaced by `%' in the output.  (Version 1.7.0)
+
+Version 1.7.2, 3 August 1993
+-- Made tabs input as themselves, rather than being mapped to spaces.  This is
+   necessary in order to communicate with Gopher servers from within the MOO.
+-- Reduced the default `seconds-left' limit for task; forground tasks went from
+   15 to 5 seconds and background tasks from 5 to 3.
+-- Fixed regular-expression matching to respect task seconds limits, aborting
+   the match.
+-- Fixed bugs whereby both kill_task() and queued_tasks() would miss reading
+   tasks that had no ready input (i.e., whose associated task queues were
+   empty).
+-- Fixed memory leak when a read() call fails with E_INVARG; the copied
+   interpreter stack was never being freed.
+-- Fixed possible free of the null pointer during object recycling.
+-- Fixed a number of places that generated warnings in newer versions of GCC.
+-- Fixed inconsistency of the behavior of strcmp() between different server
+   machines; now it always returns one of 1, 0, or -1.
+-- Added a five-second timeout to outbound connection attempts, aborting them
+   if the timer expires.
+-- Made the error message to users about network buffers overflowing and lines
+   of output being flushed much more understandable.
+-- Added log entry for each time the server refuses a connection due to being
+   full.
+-- Fixed premature-free bug in preposition matching.
+-- Bowing to popular pressure, removed warning from `.program' command about
+   its (no longer) imminent demise.
+-- Added more error checks to options.h to make it easier for installers to
+   diagnose problems.
+-- Fixed a bunch of auto-configuration problems encountered by installers.
+-- Fixed a bug in substitute() where certain successful match() results were
+   rejected as invalid.
+-- Removed restrictions that only player objects could be used in place of `x'
+   in the following:
+	object.owner = x
+	add_property(object, pname, value, {x, perms})
+	set_property_info(object, pname, {x, perms})
+	add_verb(object, {x, perms, names}, args)
+	set_verb_info(object, vname, {x, perms, names})
+	set_task_perms(x)
+   That is, non-players may now own objects, verbs, and properties, and running
+   tasks may take on the authority of a non-player.
+-- Fixed bug where it was possible for a task to run out of seconds during a
+   call to set_verb_code() and have a truncated version of the program
+   installed as the new verb code.  Now, either all of it gets installed or
+   none of it.
+-- The log messages produced by successful open_network_connection() calls are
+   more useful now, containing the hostname and port of the connection.
+-- Outbound network connections are no longer susceptible to connection
+   timeouts due to a lack of input.
+-- Fixed a bug whereby verbs with numeric names screwed up DB loading, with the
+   wrong code getting put into some verbs and others getting no code at all.
+
+Version 1.7.3, 4 August 1993
+-- Outbound connections no longer get a spurious blank line of input as soon as
+   they're created.
+-- Fixed stupid bug introduced in fixing bug in substitute().
+-- Fixed some bugs in the Makefile and the configuration script.
+
+Version 1.7.4, 10 August 1993
+-- Fixed more configuration problems and warnings from GCC.
+
+Version 1.7.5, 12 August 1993
+-- Added more log entries during loading, to make it clearer where the time is
+   being spent.
+-- Fixed a long-standing denial-of-service attack vulnerability, in which a
+   connection could keep the server from ever running any tasks at all by
+   *always* providing ready input.
+
+Version 1.7.6, 11 October 1993
+-- The built-in command parser now matches the (in)direct object string against
+   the names of objects as well as their aliases.
+-- The server no longer calls :confunc or :disfunc directly when users connect
+   or disconnect; instead, it calls the following verbs on #0 in the
+   appropriate circumstances:
+	:user_created(USER)
+		When #0:do_login_command() returns USER, a valid player object
+		whose number is greater than the value max_object() returned
+		before the server called #0:do_login_command().  That is, when
+		a new user has been created.
+	:user_connected(USER)
+		When #0:do_login_command() returns USER, a previously-existing
+		valid player object for which no active connection already
+		existed.
+	:user_reconnected(USER)
+		When #0:do_login_command() returns USER, a previously-existing
+		valid player object for which there was already an active
+		connection.
+	:user_disconnected(USER)
+		After the end of a task that called either boot_player(USER) or
+		set_player_flag(USER, 0).
+	:user_client_disconnected(USER)
+		When USER's client unilaterally closes its connection to the
+		server.
+   ******** Before upgrading an existing MOO to use this version of the server,
+   * NOTE * you should install the following verbs on #0 in order to remain
+   ******** compatible with existing code; NOTE WELL that they should be
+   installed with the `d' permissions bit UNSET:
+	#0:"user_created user_connected"
+   		user = args[1];
+		fork (0)
+		  user:confunc();
+		endfork
+		user.location:confunc(user);
+	#0:"user_disconnected user_client_disconnected"
+   		user = args[1];
+		fork (0)
+		  user.location:disfunc(user);
+		endfork
+		user:disfunc();
+-- Non-wizard users can now use the read() built-in function when they give a
+   connected object they own as an argument.  Thus, it is possible, for
+   example, for a non-wizard to prompt itself for input.
+-- The match() and rmatch() built-in functions now cache some number of the
+   most recently used patterns, somewhat speeding up the matching process.
+-- The server now calls #0:checkpoint_started() whenever it starts to dump a
+   checkpoint of the database and #0:checkpoint_finished(SUCCESS) whenever the
+   dump finishes, where SUCCESS is true iff and only if the checkpoint was
+   successful.
+-- Fixed a bug (!) in the built-in command parser whereby in the command
+	="This is in quotes" and this is not
+   the variable `verb' would correctly be set to "=This is in quotes" but the
+   variable `argstr' would be "is in quotes\" and this is not" instead of the
+   correct "and this is not".  (Reported by Shirgall.)
+-- Fixed some compilation problems with the SYSV/TCP configuration on Solaris
+   machines.
+-- The value of `argstr' when the server calls either #0:do_login_command() or
+   #0:do_out_of_band_command() is now the raw command line as received from the
+   connection, as opposed to the empty string.
+
+Version 1.7.7, 20 December 1993
+-- Added some extra configuration tests and other changes to work around bugs
+   in HP/UX.
+-- Fixed an output-timing bug in calling the #0:checkpoint_started() hook.
+-- Fixed bug in the SYSV/LOCAL client whereby some output from the server could
+   be lost, never being printed.
+-- Added the server FIFO file name to an error message in the SYSV/LOCAL
+   configuration.
+-- Added the first rudimentary support for in-DB command parsing.  Each user
+   command is broken up into words, a list of which is passed as the arguments
+   in a call to #0:do_command(), if it exists, with `argstr' initialized to the
+   raw command line typed by the user.  If #0:do_command() does not exist, or
+   if that verb-call completes normally (i.e., without suspending or aborting)
+   and returns a false value, then the built-in command parser is invoked as
+   usual to handle the command.  Otherwise, it is assumed that the DB code
+   handled the command completely and no further action is taken by the server
+   for that command.
+
+Version 1.7.8, 30 September 1994
+-- Many serious bugs in the MOO-code compiler (some server-crashing) were fixed
+   by rewriting the code-generator portion from scratch.  This should fix the
+   problems some folks have had with panics due to `Unparse failed!'.
+-- As a side-effect of the support I wrote for debugging the new code
+   generator, there is a new built-in function, disassemble(OBJ, VERB), which
+   returns a (longish) list of strings giving the `assembly-language' listing
+   for the compiled code of the verb VERB on the object OBJ.  The permissions
+   checks are the same as for verb_code(OBJ, VERB).  I don't make any promises
+   about how that output might change in later releases and I probably won't be
+   writing any detailed documentation of the opcode set, etc.  Think of it as a
+   little puzzle gift, from me to you... :-)
+-- Added a number of new configuration tests, especially to aid compilation on
+   the DEC Alpha running OSF/1 and any machine running NeXT Mach 3.1.
+-- The checkpoint process now changes how its command line shows up in the
+   output of the `ps' command (on systems where that's possible), to make it
+   clear what process it is.
+-- Added the first stages of a general new facility for customizing the
+   operation of the server dynamically, from inside the database.  At a number
+   of times, the server checks for whether the property $server_options exists
+   and has an object number as its value.  If so, then the server looks for a
+   variety of other properties on that $server_options object and, if they
+   exist, uses their values to control how the server operates.  There are only
+   a couple of uses of this facility in 1.7.8; many more are expected in the
+   future.
+-- As the first use of the above facility, the server uses the value of
+   $server_options.fg_ticks and $server_options.fg_seconds (if they exist and
+   are numbers) as the numbers of ticks and seconds allotted to command tasks
+   and server tasks; the values of DEFAULT_FG_TICKS and DEFAULT_FG_SECONDS in
+   options.h are used if the corresponding properties either don't exist or are
+   not numbers.  Similarly, the values of $server_options.bg_ticks and
+   $server_options.bg_seconds are used for forked tasks and suspended tasks,
+   falling back on DEFAULT_BG_TICKS and DEFAULT_BG_SECONDS.  These properties
+   are looked up anew every time a task begins or resumes execution.
+-- As the second use of the $server_options facility, on every call to a
+   built-in function `foo()', if the property $server_options.protect_foo
+   exists and is true, and the programmer is not a wizard, then E_PERM is
+   raised.  Thus, for example, to make the `chparent()' function wiz-only,
+   simply set $server_options.protect_chparent to 1.
+-- Fixed a bug in the MOO-code unparser where any use of a string naming a MOO
+   keyword as a property or verb name would be unparsed in such a way as to
+   make the resulting code syntactically incorrect.  Thus, for example, the
+   expression
+	x.("while")
+   now unparses into the same code, instead of into
+	x.while
+   which won't parse properly.
+-- The server now uses a pair of additional (smallish) UNIX processes to
+   perform all network host-name lookups.  Under the new system, it can
+   reliably abort stalled lookups without causing problems; in particular, this
+   provides the real fix for the long-standing `VM exhausted' problem on NeXT
+   machines.
+-- A few small storage leaks were fixed.
+-- A number of new progress-report log messages were added to the DB loading
+   process.
+
+Version 1.7.8p1, 3 October 1994
+-- Fixed a file-descriptor leak in the new name-lookup code; if the server has
+   enough name-lookup timeouts, killing the name-lookup worker process over and
+   over, then the name-lookup intermediary will eventually run out of file
+   descriptors and fail, shutting down name-lookup services until the server is
+   rebooted.
+-- Fixed a minor portability problem in the new code generator; believe it or
+   not, there are still C compiler's out there (on Ultrix, for example) that
+   don't implement initializers for locally-declared structures...
+-- Fixed a bug in disassemble() whereby it couldn't find !x verbs.
+
+Version 1.7.8p2, 6 October 1994
+-- Fixed another little bug in disassemble(), whereby it could crash the server
+   if you try to disassemble an unprogrammed verb.
+-- Added a hard minimum of 100 ticks and 1 second for all tasks, to prevent
+   disaster when somewiz somewhere blows the values of $server_options.fg_ticks
+   and company.
+-- Fixed a bug whereby the new name-lookup code would fail to recognize even
+   dotted-decimal numeric addresses once the intermediary was presumed dead.
+-- Fixed a null-pointer free in the disassembler that was crashing servers that
+   were using the GNU malloc() implementation.
+-- Added Craig Horman's patch to the regex.c code for the Alpha, which avoids
+   occasional random failures of the matching code.  I don't know why it took
+   me so long to apply this...
+
+Version 1.7.8p3, 19 October 1994
+-- Fixed a typo in the "hard minimum" code added in 1.7.8p2; the minimum
+   seconds allocation is now really 1, not 2...
+-- Fixed a bug in the disassembler wherein it could produce garbage or even
+   possibly crash the server if the C compiler decided to evaluate certain sets
+   of function arguments in other than left-to-right order.
+-- Fixed a bug in is_clear_property() that could attempt to access an
+   uninitialized variable.  (Thanks to Quowong P Liu for pointing out this and
+   others of the bugs fixed in the various 1.7.8 patch releases.)
+-- Fixed a bug whereby the server was, on some systems, always susceptible to
+   being shut down prematurely by the `hangup' signal.  Now, the `restart'
+   script uses `nohup' and the server continues to ignore SIGHUP if it was
+   started ignoring it (i.e., by `nohup').
+-- Fixed MOO-level tracebacks to include lines for built-in functions that call
+   verbs, such as eval(), move(), etc.
+-- Added MOO-level traceback printing for all server panics that happen during
+   the execution of a MOO task.
+
+Version 1.7.8p4, 2 November 1994
+-- Fixed minor memory leak in disassemble().
+-- Fixed bug whereby verb_info() and friends allowed an argument of "" to
+   always match the first verb on an object.
+-- Fixed bug whereby MOO keywords (e.g., `if', `E_PERM', `return', etc.) were
+   case-sensitive.
+-- Fixed (I hope...) the 32-bit assumptions that break on the (64-bit) Alpha.
+
+Version 1.7.9alpha1, 25 September 1995
+-- Fixed a few minor configuration and portability problems.
+-- Fixed a potentially server-crashing bug in subrange assignments.
+-- Renamed the internal server function `log()', to avoid name conflicts with
+   the logarithm function in the math library.
+-- Changed the name-lookup subsystem to be more optimistic about the chances of
+   eventually recovering from an earlier failure to restart the lookup process.
+   Also bullet-proofed it against problems with its read() calls getting
+   interrupted by the checkpoint timer.
+-- Added a paragraph to `README' explaining how to boost the limit on the
+   number of connections a server can support.
+-- Added two new built-in functions enabling faster case-sensitive tests:
+	equal(X, Y) returns true iff the values X and Y are completely equal,
+          including the case of any strings they might contain; this is just
+	  a case-sensitive version of the `==' expression.
+	is_member(X, L) is a similarly case-sensitive version of `X in L'.
+-- Made the `.program' built-in command wiz-only if
+   $server_options.protect_set_verb_code exists and is true.
+-- Added the built-in function `set_connection_option(CONN, OPTION, VALUE)',
+   for controlling various optional behaviors on the connection CONN.  The only
+   allowed values for OPTION in this release are as follows:
+	"hold-input" -- if VALUE is true, then input received on CONN will
+	    never be treated as a command; instead, it will remain in the queue
+	    until retrieved by a call to read().
+	"client-echo" -- (NP_TCP configurations only) sends the Telnet Protocol
+	    WON'T ECHO or WILL ECHO commands (depending on whether VALUE is
+	    true or false, respectively).  For clients that support the Telnet
+	    Protocol, this should toggle whether or not the client echoes
+	    locally the characters typed by the user.  Note that the server
+	    never echoes input characters under any circumstances.
+-- Fixed stupid bug that let people lose by setting $server_options.fg_ticks
+   and company to negative values.
+-- Added an optional second argument to the `read()' built-in function.  If it
+   is provided and true, then this call to `read()' will not suspend the
+   calling task under any circumstances.  If there is input currently
+   available, it will be returned immediately; otherwise, `read()' returns 0.
+   (As before, if no input is available and no more is coming, `read()' raises
+   E_INVARG as an end-of-input indicator.)
+-- Added flow-control to the server's input-handling: if more than a reasonable
+   amount of unprocessed input accumulates for any connection, the server will
+   temporarily stop trying to read from that connection at all, until the
+   backlog drops down substantially.
+-- Fixed a longstanding bug in match() that could make it return garbage in
+   certain circumstances.  More bugs in match() almost certainly still exist.
+   (Thanks to Judy Anderson for finding this.)
+-- Fixed a minor memory leak in the case where #0:do_command() exists and
+   returns a list or string value.  (Thanks to Ian Macintosh for finding this.)
+-- Fixed a possible race condition in the TCP networking code, where a timer
+   could go off before we've installed the exception handler.  (Thanks to Alex
+   Stewart for finding this.)
+-- Officially deprecated the USE_GNU_MALLOC option in options.h, since it's not
+   aging very well.
+-- Completely replaced the regular-expression matching implementation that
+   underlies match() and rmatch(); it used to be the GNU `regex' package and is
+   now the GNU `RX' package shipped with GNU `sed'.  This may not eliminate all
+   bugs in match(), but it almost certainly has moved them around a bit.
+   ********** The old GNU regex package had a bug in its handling of certain
+   ** NOTE ** patterns with parentheses in them, and it is reasonably likely
+   ********** that many MOO programmers have, perhaps unconsciously, come to
+   depend upon this buggy behavior.  Unfortunately for such programmers, RX
+   does not have this bug, so you will want to fix your regular expressions
+   before upgrading to this release; the fixed patterns will work correctly on
+   both releases.
+     The old bug concerns patterns of the form `%( ... %)*', that is, a starred
+   parenthesized sub-pattern; for example, consider the MOO expression
+	match("foo", "%(o%)*")
+   Using the old regex package, this returns
+	{2, 3, {{2, 3}, {0, -1}, ...}, "foo"}
+   which is *wrong*; the last successful match of the parenthesized sub-pattern
+   covered just the third character, not the second and third ones.  Using the
+   new RX package, this expression returns the proper value:
+	{2, 3, {{3, 3}, {0, -1}, ...}, "foo"}
+   To get the effect of the old bug, you need another set of parentheses around
+   the whole starred sub-pattern:
+	match("foo", "%(%(o%)*%)")
+   Under both GNU regex and RX, if M is the result of this expression, we have
+	M[3][1] == {2, 3}
+   You should look carefully at your uses of match() and rmatch() before
+   upgrading to this release, fixing those places where your code depends on
+   the old, buggy behavior.
+-- Added an optional third argument to the built-in function notify(); if it is
+   provided and true, and if there isn't enough room left in the given user's
+   output buffer to hold the given line, then notify() will return false and
+   the line will not have been queued for output.  In all other circumstances,
+   notify() now returns true.  If the new optional argument is false or not
+   provided, then the old behavior is invoked, in which some of the
+   already-queued output is discarded to make room for the new line.
+-- Made it possible to change the maximum verb-call depth from inside the DB.
+   The MAX_VERB_DEPTH constant in options.h was replaced by
+   DEFAULT_MAX_STACK_DEPTH, which can be overridden by
+   $server_options.max_stack_depth.  The maximum stack depth for any task is
+   set at the time that task is created and cannot be changed thereafter.  This
+   implies that suspended tasks, even after being saved in and restored from
+   the DB, are not affected by later changes to
+   $server_options.max_stack_depth.
+-- The task scheduler is now guaranteed never to assign a task_id() of zero.
+-- The built-in functions notify(), connected_players(), connected_seconds(),
+   idle_seconds(), connection_name(), and set_connection_option() now treat
+   connections on which boot_player() has been called as if they did not exist.
+-- A number of the messages printed to a connection by the server under various
+   circumstances can now be customized or eliminated from within the DB.  In
+   each case, a property on $server_options is checked at the time the message
+   would be printed.  If the property does not exist, the standard message is
+   printed.  If the property exists and its value is not a string, then no
+   message is printed at all.  Otherwise, the string is printed in place of the
+   standard message.  The following list covers all of the newly customizable
+   messages, showing for each the name of the relevant property on
+   $server_options, the default/standard message, and the circumstances under
+   which the message is printed:
+	timeout_msg	      "*** Timed-out waiting for login. ***"
+		This in-bound network connection was idle and un-logged-in for
+		at least CONNECT_TIMEOUT seconds (as defined in options.h).
+	recycle_msg	      "*** Recycled ***"
+		The logged-in user of this connection has been recycled.
+	boot_msg	      "*** Disconnected ***"
+		The function boot_player() was called on this connection.
+	redirect_from_msg     "*** Redirecting connection to new port ***"
+		The logged-in user of this connection has just logged in on
+		some other connection.
+	redirect_to_msg	      "*** Redirecting old connection to this port ***"
+		The user who just logged in on this connection was already
+		logged in on some other connection.
+	create_msg	      "*** Created ***"
+		The user object that just logged in on this connection did not
+		exist before #0:do_login_command() was called.
+	connect_msg	      "*** Connected ***"
+		The user object that just logged in on this connection existed
+		before #0:do_login_command() was called.
+-- The `for VAR in [EXPR..EXPR]' looping construct can now be used with either
+   numbers or object numbers.  That is, the construct `for o in [#0..#100]' is
+   now legal and does the obvious thing.  NOTE that in the example `o' will
+   take on each of 101 object numbers in the specified range, regardless of
+   whether or not those object numbers are valid.
+-- By popular request, added the built-in function `value_bytes(VALUE)', which
+   returns the number of bytes of memory required to store the given value.  [I
+   was also asked to provide an `object_bytes(OBJ)' function, to give the total
+   memory required to store the given valid object, but I wanted to think
+   longer about possible interactions with 1.8.0's new modularity wall between
+   the DB implementation and the rest of the server.]
+-- At long last, there is a DB-settable limit on the number of queued tasks any
+   single user can have at once.  If $server_utils.user_task_limit exists and
+   is a non-negative number, then that is the `task limit' for normal users;
+   otherwise, the task limit is infinite.  For wizards, the task limit is
+   controlled similarly by $server_utils.wizard_task_limit.  Whenever a `fork'
+   statement or `suspend()' call are executed, the server checks whether or not
+   the current verb's owner (really, the current task perms) is already at or
+   above their task limit; if so, E_QUOTA is raised instead of either forking
+   or suspending.  Reading tasks are not affected by the task limit.
+-- The result of `tostr(E_QUOTA)' has been changed to the string
+   "Resource limit exceeded".
+-- Applied Alex Stewart's pAS4 patch, which modifies the result of the
+   built-in function `connection_name()' on TCP networking configurations to
+   contain the remote port of the connection as well as the host name, in the
+   following format:
+		"99 from FOO.BAR.COM, port 9999"
+   As before, the first number in the result is pretty useless to MOO
+   programmers (it's the server's file descriptor for the connection) but can,
+   believe it or not, occasionally be useful to the maintainer.
+   ******** Before upgrading an existing MOO to use this version of the server,
+   * NOTE * you should modify the verb $string_utils:connection_hostname_bsd as
+   ******** follows:
+		@chmod $string_utils:connection_hostname_bsd -d
+		@program $string_utils:connection_hostname_bsd
+		s = args[1];
+		return strsub($string_utils:explode(s)[3], ",", "") || "";
+		.
+   This code should work compatibly with either version of the server.
+-- Applied the key part of Alex Stewart's pAS7 patch, which fixes a problem
+   with the server occasionally hanging under Sun's Solaris 2.X system.  [I
+   just removed the (useless) call to `shutdown()'; the SO_LINGER setting
+   didn't seem necessary or very useful.]
+-- Added a new item to options.h, UNFORKED_CHECKPOINTS (off by default), that
+   prevents the server from forking a separate process to make checkpoints;
+   instead, the main server process performs the checkpoints itself, halting
+   all user interaction and MOO task execution for the duration.
+-- Made the server's log output during the initial database load *slightly*
+   easier to understand.
+-- Removed perhaps the last hard limit in the server; you can now have input
+   lines with more than 500 words on them.  (Thanks to Bill Drury for sending
+   the message to MOO-Cows that finally got me to fix this longstanding bug.)
+-- Disallowed empty verb names and those made up only of spaces.
+-- Added a new built-in function `toliteral(VALUE)' such that
+	eval("return " + toliteral(VALUE) + ";") == {1, VALUE}
+   for all MOO values.
+-- The `create()' built-in function will now create children of #-1.
+-- Added an `emergency wizard mode' to the server's start-up sequence; if you
+   give an initial `-e' option on the command line, then after loading in the
+   database but *before* running #0:server_started(), the server will use its
+   standard input and output streams to allow execution of wizardly `eval'
+   commands and re-programming of verbs.  For more details, type `help' from
+   inside the mode.
+-- The verbs #0:user_disconnected() and #0:user_client_disconnected() are now
+   called for un-logged-in and outbound connections, too, just as they are for
+   logged-in ones.
+   ******** Before upgrading an existing MOO to use this version of the server,
+   * NOTE * you should check your versions of these verbs to ensure that they
+   ******** will work appropriately when passed negative (and therefore
+   invalid) object numbers.  In most cases, it is probably sufficient to add
+   the following lines to the top of these verbs:
+		if (args[1] < #0)
+		  return;
+		endif
+   This code should work compatibly with either version of the server, since
+   these verbs weren't being called with such object numbers before.
+-- The server now saves, in the DB file, a list of all users with active
+   connections at the time of the checkpoint, shutdown, or panic that made the
+   file.  Upon server start-up, if such a list is present in the DB file, a
+   call is made to #0:user_disconnected() for each formerly active connection.
+   These calls are made *before* the call to #0:server_started().  In this way,
+   there are no longer any discontinuities across a server reboot; from the
+   point of view of code in the DB, the only evidence of a reboot is that,
+   first, a relatively long time has passed since the last task execution,
+   second, all connections to the server (in-bound or out, logged-in or not)
+   have simultaneously been closed, and third, #0:server_started() has been
+   called by the server.
+-- Fixed RX to do reverse-searching properly, so now rmatch() works again.
+   Also added a abort-check in the searching inner loop for the MOO interpreter
+   having run out of seconds.
+
+Version 1.7.9, 18 October 1995
+-- Fixed stupid bug in registration of toliteral(); it now shouln't raise
+   E_TYPE on all calls...
+-- Added new built-in function `queue_info([USER])'.  If USER is omitted,
+   returns a list of object numbers naming all users that currently have task
+   queues inside the server; if USER is provided, returns the number of tasks
+   currently queued for that user.  It is guaranteed that queue_info(X) will
+   return zero for any X not in the result of queue_info().  In essence,
+   queue_info(X) is a very efficient version of
+	set_task_perms(X);
+	return length(queued_tasks());
+   In particular, it (a) doesn't have to allocate a large list structure, and
+   (b) tells you when passed no arguments the complete set of users for whom
+   there might actually be any queued tasks.
+-- Fixed initialization bug in code to track number of queued tasks.
+-- Liberalized the rules for when a call to read() without arguments will
+   succeed.  Wizards won't get E_PERM if the current task is the one that was
+   last spawned by a command from the connection in question.  You can assure
+   this in a number of ways:
+	1) Never suspend, but rather only call read().  This is the one way
+	   that used to work.
+	2) Get lucky, go ahead and call suspend(), and have it just happen that
+	   no commands have been read since the last time you called read(),
+	   perhaps because the user was waiting for a prompt and no typing
+	   ahead.  This technique is *not* recommended.
+	3) Before suspending, call
+		set_connection_option(player, "hold-input", 1)
+	   thereby ensuring that no commands will be taken from this player's
+	   queue until you call
+		set_connection_option(player, "hold-input", 0)
+   This new third technique, suggested by Alex Stewart, was the impetus for
+   making this change.
+-- Fixed a memory leak in the server's use of the new matcher.
+-- Fixed a bug whereby the third element of a successful result of match() or
+   rmatch() contained 29 elements instead of the usual 9.
+-- Changed the method for determining a given user's queued-task limit, which
+   is checked on every `fork' or `suspend()' from code running with that user's
+   permissions.  If the current task perms are valid, and that object has a
+   `queued_task_limit' property, and the value of that property is a
+   non-negative number, then that number is the limit.  Otherwise, if
+   $server_options.queued_task_limit exists and its value is a non-negative
+   number, then that's the limit.  Otherwise, there is no limit.  (Thanks to
+   Gustavo Glusman for his suggestion on how to do this.)
+-- The following release note, given for the 1.7.9alpha1 release, contained an
+   error; the following version corrects it.
+   ********** The old GNU regex package had a bug in its handling of certain
+   ** NOTE ** patterns with parentheses in them, and it is reasonably likely
+   ********** that many MOO programmers have, perhaps unconsciously, come to
+   depend upon this buggy behavior.  Unfortunately for such programmers, RX
+   does not have this bug, so you will want to fix your regular expressions
+   before upgrading to this release; the fixed patterns will work correctly on
+   both releases.
+     The old bug concerns patterns of the form `%( ... %)*', that is, a starred
+   or plussed parenthesized sub-pattern; for example, consider the MOO
+   expression
+	match("foo", "%(o%)+")
+   Using the old regex package, this returns
+	{2, 3, {{2, 3}, {0, -1}, ...}, "foo"}
+   which is *wrong*; the last successful match of the parenthesized sub-pattern
+   covered just the third character, not the second and third ones.  Using the
+   new RX package, this expression returns the proper value:
+	{2, 3, {{3, 3}, {0, -1}, ...}, "foo"}
+   To get the effect of the old bug, you need another set of parentheses around
+   the whole starred sub-pattern:
+	match("foo", "%(%(o%)+%)")
+   Under both GNU regex and RX, if M is the result of this expression, we have
+	M[3][1] == {2, 3}
+   You should look carefully at your uses of match() and rmatch() before
+   upgrading to this release, fixing those places where your code depends on
+   the old, buggy behavior.
+-- ********** There is a severe performance bug in the new matcher, causing it
+   ** NOTE ** to run exponentially slowly in certain cases.  Fortunately, these
+   ********** cases are usually easy to work around.  If you get an `out of
+   seconds' traceback inside a call to `match()' or `rmatch()' (which will be
+   accompanied by an error message in the log giving the pattern in use), you
+   should probably check first for an instance of this problem.
+      The problem concerns starred or plussed sub-patterns inside a starred or
+   plussed parenthesized pattern.  For example, here is a perfectly reasonable
+   pattern matching MOO strings:
+	"\"%([^\"\\]+%|\\.%)*\""
+   (It matches double quotes around a sequence of either (a) a cluster of
+   characters that don't require escaping, or (b) a single escaped character.)
+   Note, however, that it contains a plussed sub-pattern inside of starred
+   parentheses, precisely the bad case for the new matcher.  Fortunately, this
+   pattern can be altered slightly, removing the `+', without changing the
+   meaning:
+	"\"%([^\"\\]%|\\.%)*\""
+   This pattern does not cause problems for the new matcher.  I don't know of
+   any problematical patterns in LambdaCore, but there is at least one in
+   JHCore, in $code_utils:safe_eval, where it uses this pattern:
+	"^%([^\"()=]+%|\"%([^\\\"]*%|\\.%)*\"%)*$"
+                    ^             ^       ^
+   There are three instances of the problem here, indicated by the up-arrows;
+   the first two of them can be removed without changing the meaning:
+	"^%([^\"()=]%|\"%([^\\\"]%|\\.%)*\"%)*$"
+   The third instance, in my testing, does not appear to cause any problems in
+   practice.
+     I am continuing my search for a better regexp implementation, but this one
+   has worked well enough for us in practice that I didn't feel it was worth
+   holding up the release for it.
+
+Version 1.7.9p1, 18 October 1995
+-- Fixed another place in the MOO's interface to the regexp code where it was
+   assuming 29 registers instead of 9.  I think that's all of them, now... :-(
+
+Version 1.7.9p2, 28 October 1995
+-- Fixed a bug that could crash the server if #0:do_command suspended or
+   aborted.
+-- Fixed a minor storage leak in the emergency wizard mode.
+-- Switched over to yet another implementation of regular expressions, this one
+   extracted from the Python-1.3 release.  It's much simpler than RX, and has
+   seen a lot more use, so it's much more likely to be stable.  It does share
+   some of the same inherent limitations as the old regex package used in the
+   1.7.8p4 release of the server (which it resembles pretty closely in many
+   ways), but I think I've tweaked the parameters in such a way as to render
+   those limitations invisible for the vast majority of MOO uses.  This matcher
+   also doesn't have the exponential performance bug that existed in the one
+   used in 1.7.9p1.
+-- The match() and rmatch() functions now raise E_QUOTA if they run out of
+   memory during matching.  Previously, they simply returned {}, just as if the
+   pattern had not matched.
+
+Version 1.8.0alpha1, 29 November 1995
+-- Much internal cleanup, especially surrounding the interface between the DB
+   module and the rest of the server.
+-- Added an optional argument to the built-in function callers(); if provided
+   and true, each element of the returned value will have a sixth element, the
+   currently executing line number of the corresponding verb.
+-- Added new facilities for raising and handling MOO errors, as described in
+   the next four points.
+-- Added built-in function `raise(CODE [, MSG [, VALUE]])' where CODE can be
+   any MOO value (*not* just one of type ERR), MSG defaults to `tostr(CODE)',
+   and VALUE defaults to 0.  This raises CODE as an error, just like dividing
+   by zero raises E_DIV.  If the error is not caught (by one of the other new
+   constructs described below), then MSG will appear on the first line of the
+   resulting traceback printed to the user.  VALUE is accessible to an error
+   handler established by the new TRY-EXCEPT-ENDTRY construct; see below.
+-- Added new error-catching expression:
+		`EXPR ! CODES => EXPR_H'
+   NOTE: The open- and close-quotation marks in the previous line are really
+   part of the syntax!
+      In this new expression, EXPR and EXPR_H are arbitrary expressions.  CODES
+   is either the new keyword "ANY" or a non-empty "argument list" of
+   expressions; just like normal argument lists, CODES can contain "@"-marked
+   expressions that evaluate to lists to be spliced into the resulting list of
+   error codes.  The "=> EXPR_H" part is optional.
+      First, CODES is evaluated yielding a list of error codes that should be
+   caught if raised; if CODES is "ANY", then it is equivalent to the list of
+   all possible MOO values.
+      Next, EXPR is evaluated.  If it evaluated normally, without raising an
+   error, then its value becomes the value of the entire error-catching
+   expression.   If evaluating EXPR results in an error being raised, then call
+   it E.  If E is in the list resulting from CODES, then E is considered
+   "caught" by this error-catching expression.  In such a case, if EXPR_H was
+   given, it is evaluated to get the outcome of the entire error-catching
+   expression; if EXPR_H was omitted, then E is the value of the entire
+   expression.  If E is *not* in the list resulting from CODES, then this
+   expression does not catch the error and it continues to be raised, possibly
+   to be caught by some piece of code either surrounding this expression or
+   higher up on the verb-call stack.
+      Here are some examples:
+	`x + 1 ! E_TYPE => 0'
+		Returns x + 1 if x is a number, returns 0 if x is not a number,
+		and raises E_VARNF if x doesn't have a value.
+	`x.y ! E_PROPNF, E_PERM => 17'
+		Returns x.y if that doesn't cause an error, 17 if x doesn't
+		have a "y" property or that property isn't readable, and raises
+		some other kind of error (like E_INVIND) if x.y does.
+	`1 / 0 ! ANY'
+		Returns E_DIV.
+-- Added new error-catching statement:
+		TRY
+		  statements_0
+		EXCEPT id_1 (codes_1)
+		  statements_1
+		EXCEPT id_2 (codes_2)
+		  statements_2
+		ENDTRY
+   The IDs are optional, CODES has the same syntax as above, and there can be
+   anywhere from 1 to 255 EXCEPT clauses.
+      First, each CODES is evaluated yielding a list of error codes that should
+   be caught if raised; if any CODES is "ANY", then it is equivalent to the
+   list of all possible MOO values.
+      Next, STATEMENTS_0 is executed; if it doesn't raise an error, then that's
+   all that happens for the entire TRY statement.  Otherwise, let E be the
+   error it raises.  From top to bottom, E is searched for in the lists
+   resulting from the various CODES_i; if it isn't found in any of them, then
+   it continues to be raised, possibly to be caught by some piece of code
+   either surrounding this TRY statement or higher up on the verb-call stack.
+      If E is found first in CODES_i, then ID_i (if provided) assigned a value
+   containing information about the error being raised and STATEMENTS_i is
+   executed.  The value assigned to ID_i list a list of four elements:
+		{CODE, MSG, VALUE, TRACEBACK}
+   where CODE is E, the error being raised, MSG and VALUE are as provided by
+   the code that raised the error (built-in errors, such as division by zero,
+   currently act as if the MSG and VALUE arguments to raise() were omitted),
+   and TRACEBACK is a list like that returned by callers(), including line
+   numbers.  The TRACEBACK list contains entries for every verb from the one
+   that raised the error through the one containing this TRY statement.
+      Here is an example:
+		try
+		  result = object:(command)(@arguments);
+		  player:tell("=> ", toliteral(result));
+		except v (ANY)
+		  tb = v[4];
+		  if (length(tb) == 1)
+		    player:tell("** Illegal command: ", v[2]);
+		  else
+		    top = tb[1];
+		    tb[1..1] = {};
+		    player:tell(top[1], ":", top[2], ", line ", top[6], ":",
+		                v[2]);
+		    for fr in (tb)
+		      player:tell("... called from ", fr[1], ":", fr[2],
+		                  ", line ", fr[6]);
+		    endfor
+		    player:tell("(End of traceback)");
+		  endif
+		endtry
+-- Added new error-cleanup statement:
+		TRY
+		  statements_0
+		FINALLY
+		  statements_1
+		ENDTRY
+   STATEMENTS_0 is executed; if it completes without raising an error or
+   returning from this verb, then STATEMENTS_1 is executed and that's
+   all that happens for the entire TRY statement.  Otherwise, the process of
+   raising the error past this point or returning from this verb (as
+   appropriate) is interrupted and STATEMENTS_1 is executed.  If STATEMENTS_1
+   itself completes without raising an error or returning from this verb, then
+   the interrupted raising or returning process is resumed.  If STATEMENTS_1
+   does return or raise an error, then the interrupted raising or returning
+   process is simply forgotten in favor of the new one.
+      In short, this statement ensures that STATEMENTS_1 is executed after
+   control leaves STATEMENTS_0 for whatever reason; it can thus be used to make
+   sure that some piece of cleanup code is run even if STATEMENTS_0 doesn't
+   simply run normally to completion.
+      Here's an example:
+		try
+		  start = time();
+		  object:(command)(@arguments);
+		finally
+		  end = time();
+		  this:charge_user_for_seconds(player, end - start);
+		endtry
+-- Completely rewrote the MOO-code decompiler, restructuring it to be able to
+   cope with the new exception-handling constructs.
+-- Fixed bug in handling of EOF in emergency wizard mode; it is now treated as
+   equivalent to the `quit' command.
+-- Added internal interfaces allowing built-in function implementations (a) to
+   be notified when given file descriptors are readable/writable (see file
+   net_multi.h), (b) to resume tasks that they earlier caused to suspend (see
+   resume_task() in file tasks.h), and (c) to make it possible for their
+   suspended tasks to be listed by queued_tasks() and killed by kill_task().
+-- Added a new, essentially empty module `extensions.c', intended to be easily
+   replaced by users with a file of their own MOO extensions.  The file also
+   contains some examples of extensions using all of the new internal
+   interfaces.
+-- Clarification to change made in 1.7.9alpha1: $server_options.max_stack_depth
+   can only be used to override DEFAULT_MAX_STACK_DEPTH if it *increases* the
+   value.  This is good because (a) there probably aren't any good reasons to
+   want to lower the limit, and (b) you could get good and screwed if you set
+   it too low.
+-- Fixed match() and rmatch() to treat unrecognized escape sequences in
+   patterns as if the `%' were not there.  Thus, `%X' in a pattern is now
+   equivalent to simply `X', for all X not explicitly mentioned in the
+   programmer's manual.
+
+Version 1.8.0alpha2, 11 December 1995
+-- Added an optional argument to `connected_players()'; if provided and true,
+   this now includes *all* active connections in the returned list, including
+   outbound or un-logged-in ones.
+-- Fixed checkpoint timing to test for overflow when adding $dump_interval to
+   the current time; when this happens, it pretends that $dump_interval = 3600.
+   This should fix the problem someone found where setting $dump_interval to
+   $maxint caused continuous checkpointing.
+-- Fixed `make clean' to remove a few more derived files that aren't part of
+   the distribution, including `Makefile' itself.
+-- Added two new DB-settable options:
+      $server_options.name_lookup_timeout
+	   is the maximum number of seconds the server will wait for a response
+	   to a hostname <--> IP address lookup before giving up.
+      $server_options.outbound_connect_timeout
+	   is the maximum number of seconds that a server will hang waiting for
+	   an outbound network connection attempt to succeed; after that, it
+	   gives up.
+-- Added new built-in function `resume(TASK_ID [, VALUE])', where TASK_ID is
+   the task ID of an existing suspended task and VALUE defaults to zero.  If
+   the programmer is a wizard or owns the specified task, the task is made
+   immediately runnable; when it runs, its call to `suspend()' will return
+   VALUE.  Raises E_PERM if the programmer does not own the specified task and
+   E_INVARG if TASK_ID does not specify an existing suspended task.
+-- Made the argument to `suspend()' be optional; if omitted, the suspension is
+   effectively forever.  Such eternally suspended tasks can only be made
+   runnable again with the new `resume()' function.
+-- Verbs that have not yet been programmed are now completely equivalent to
+   those with the empty program.  In particular, they are no longer invisible
+   to normal verb-calls.
+-- Added new built-in function `task_stack(TASK_ID [, LINE_NUMBERS_TOO])',
+   where TASK_ID is the task ID of an existing suspended task and
+   LINE_NUMBERS_TOO defaults to false.  Returns a value like that returned by
+   `callers()', but covering all of the stack frames of the specified task.
+-- It is now possible to make specific built-in properties readable only by
+   wizards.  For a built-in property `foo', if $server_options.protect_foo
+   exists and has a true value, then any attempt by a non-wizard to read the
+   value of the `foo' property of any object will raise E_PERM.  For example,
+   if $server_options.protect_location existed with the value 1, then the
+   `location' property of all objects would only be readable by wizards.
+-- Added OUTPUTPREFIX and OUTPUTSUFFIX as synonyms for the built-in PREFIX and
+   SUFFIX commands.  I'm told that this would make the MOO compatible with some
+   other servers, allowing the same somewhat fancy clients to be used with
+   both.
+-- Added new built-in function `object_bytes(OBJECT)', where OBJECT is a valid
+   object and the result is the number of bytes of memory required to represent
+   that object and all of its verbs and properties.  Raises E_PERM if called by
+   a non-wizard.  [There's a surprising amount of difference between this very
+   accurate count and the one returned by the rough-guess :object_bytes() verb
+   I wrote long ago, which is still used as the basis of most byte-based quota
+   implementations.  In particular, the vast majority of objects are, in fact,
+   smaller than the rough guess, sometimes by substantial amounts.  For
+   example, the $player object in LambdaCore-1Oct94.db is farthest off, being
+   43,260 bytes smaller than :object_bytes() guessed.  The majority though,
+   including Mr. Spell, are within about 5,000 bytes of the guess, which isn't
+   too bad, eh?  It would appear that the guesses were most wrong for verb
+   code, which isn't very surprising.]
+-- Added the syntax `$vname(...)' as an abbreviation for `#0:vname(...)', by
+   analogy to the `$' notation for properties on #0.
+-- Fixed a server-crashing bug in which the resumption value of suspended tasks
+   was not properly saved and restored after reboot.  (Thanks to Jin-su Ahn for
+   pointing this out.)
+-- Fixed a bug in which forked tasks were written out incorrectly in checkpoint
+   files.  (Thanks to Jin-su Ahn for noticing the problem.)
+-- Fixed a server-crashing bug in the new decompiler.  (Thanks to Jin-su Ahn
+   for discovering the bug.)
+-- Made it possible to rename properties.  If the third argument to
+   set_property_info(OBJECT, NAME, INFO) has a third element that is a string,
+   NEW, and the property NAME is defined on OBJECT (not merely inherited), and
+   NEW names neither a built-in property nor an existing property on OBJECT or
+   any of its ancestors or descendants, then "OBJECT.NAME" is renamed to
+   "OBJECT.NEW".  This more-or-less parallels the way verb renaming works.
+-- Traceback lists, returned by callers() and task_stack() and also made
+   available in the try-except-endtry construct, now include entries for
+   built-in functions that have made MOO verb calls.  Such entries have the
+   same form as normal entries, but the THIS, PROGRAMMER, and VERB-LOC fields
+   (elements 1, 3, and 4) are all set to #-1, the VERB-NAME field (element 2)
+   is set to the name of the built-in function, and the LINE-NUMBER field
+   (element 6), if any, is set to an index used internally to determine the
+   current state of the built-in function.  The simplest safe test for a
+   built-in function entry is
+	(VERB-LOC == #-1  &&  PROGRAMMER == #-1  &&  VERB-NAME != "")
+   This combination was not previously possible.  I leave it to the interested
+   reader to discover the previously possible circumstances under which any
+   weaker test might fail...
+
+Version 1.8.0alpha3, 27 December 1995
+-- Added new built-in function `call_function(FNAME, @ARGS)' where FNAME is a
+   string naming a built-in function to call and ARGS are the arguments to pass
+   to it.  This allows you to compute the name of the function to call and, in
+   particular, allows you to write a call to a built-in function that may or
+   may not exist in the particular version of the server you're using.
+-- Changed MOO-code parser to just issue a warning during DB loading if a call
+   to an unknown built-in function is encountered; in such a case, the call is
+   replaced by an equivalent one to `call_function()'.
+-- Changed parser error and warning messages during DB loading to include
+   information about where the program in question is located.
+-- Fixed registration of `suspend()' to allow for it being called with no
+   arguments.  (Thanks to Jin-su Ahn for discovering the bug.)
+-- Fixed a nasty memory leak in the new match() implementation.  (Thanks to
+   Bill Garrett and Judy Anderson for tracking down a test case.)
+-- Fixed a bug in the line-number-finding code in the new decompiler.  (Thanks
+   to Jin-su Ahn for noticing the problem.)
+-- Fixed a new bug preventing the loading of suspended tasks from the DB file.
+   (Thanks once again to Jin-su Ahn for pointing this out.)
+-- Fixed a new memory leak in the handling of errors raised from built-in
+   functions called from !d verbs.
+-- Fixed a new memory leak in command parsing.
+-- Fixed a new memory leak in built-in property reference.
+-- Fixed a serious memory leak in the new decompiler, triggered every time the
+   server needed to determine a line number in a verb program.
+-- Fixed a minor memory leak in the loading of forked tasks from the DB file.
+-- Fixed bug that would cause prepositions not to be properly matched in the
+   very first user command processed after booting.  Beware C functions that
+   return pointers to static private data... :-/
+-- Added new built-in function `db_disk_size()', which returns the total size,
+   in bytes, of the most recent full representation of the database as one or
+   more disk files.  It raises E_QUOTA if, for some reason, no such on-disk
+   representation is currently available.
+-- Changed network input handler to accept any of CR, LF, or CRLF as an end-of-
+   line indicator.  This should improve robustness in the face of broken telnet
+   clients that assume local EOL conventions will work across the net.
+-- Added progress messages to the dumping/checkpointing process just like those
+   printed during the loading process.
+-- Added some extra configuration help for NeXT machines.
+-- Fixed server-crashing bug in case where a raised error is not handled by the
+   innermost handler.  (Thanks to Nate Massey for finding the problem.)
+-- Added support for unambiguous reference to specific verbs in the built-in
+   functions `delete_verb()', `verb_info()', `set_verb_info()', `verb_args()',
+   `set_verb_args()', `verb_code()', `set_verb_code()', and `disassemble().  In
+   all cases, if the second argument (the verb name) is a positive number
+   instead of a string, it is treated as a 1-based index into the list of all
+   verbs defined on the given object.
+   ********** The old behavior, in which numeric strings in these argument
+   ** NOTE ** positions (and in the built-in `.program' command) were sometimes
+   ********** treated as 0-based indices into the list of defined verbs, has
+   now been disabled by default.  To re-enable it, define the property
+   `$server_options.support_numeric_verbname_strings' and give it a true value.
+   Most existing databases will require this re-enabling, at least for a period
+   of transition; a certain amount of important old code critically depends on
+   this old behavior.
+     I chose to do things this way in order to emphasize the strong incentive
+   for sites to update the affected old code to the new, more reliable
+   mechanism; with the old mechanism enabled, it is possible to create
+   situations where some verbs (with numeric names) simply cannot be referred
+   to by name.
+-- Fixed bug where errors raised by built-in functions called from !d verbs are
+   not properly squelched if the built-in has itself previously called a MOO
+   verb.  (Thanks to Brian Buchanan for noticing this bug.)
+
+Version 1.8.0alpha4, 30 December 1995
+-- Fixed foolish C-syntax bug in the delete_verb() built-in.  (Thanks to Brian
+   Buchanan and Nate Massey for finding this.)
+-- Fixed configuration problem on FreeBSD and perhaps other platforms.  (Thanks
+   again to Brian Buchanan for pointing this out.)
+-- Fixed compilation warning in net_bsd_tcp.c when OUTBOUND_NETWORK was
+   defined.  (Thanks to Martian and others for reporting this.)
+-- Fixed nasty occasional memory smash in delete_property().  (Thanks to Kai
+   Storbeck for reporting it.)
+-- All DB-configurable messages (e.g., $server_options.timeout_msg, etc.) can
+   now be given as either a string or a list of strings; in the latter case,
+   each string will be printed on a separate line.
+-- New DB-configurable message $server_options.server_full_msg is printed to
+   any connection that arrives when the server really can't accept any more
+   connections; after printing the message, the temporarily-accepted connection
+   is immediately closed.  The default for this message is as was formerly
+   hardwired into the server:
+        *** Sorry, but the server cannot accept any more connections right now.
+	*** Please try again later.
+-- The DB-configurable messages are no longer printed on outbound connections.
+-- Added a version of the MPL (multiple-port listening) extension first
+   implemented by Ivan Judson.  This involves the addition of three new
+   built-in functions:
+	listen(OBJ, DESC [, PRINT_MESSAGES]) => CANON_DESC
+	    Create a new point at which the server will listen for network
+	    connections, just as it does normally.  OBJ is the object whose
+	    verbs :do_login_command, :do_command, :do_out_of_band_command,
+	    :user_connected, :user_created, :user_reconnected,
+	    :user_disconnected, and :user_client_disconnected will be called at
+	    appropriate points, just like these verbs are called on #0 for
+	    normal connections.  (If a user reconnects and the user's old and
+	    new connections are on two different listening points being handled
+	    by different objects, then :user_client_disconnected is called for
+	    the old connection and :user_connected for the new one.)  DESC is a
+	    network-configuration- specific parameter describing the listening
+	    point.  For the TCP configurations, DESC is a port number on which
+	    to listen.  If PRINT_MESSAGES is provided and true, then the
+	    various DB- configurable messages will be printed on connections
+	    received at the new listening point.  CANON_DESC is a
+	    `canonicalized' version of DESC, with any configuration-specific
+	    defaulting or aliasing accounted for.  For the TCP configurations,
+	    CANON_DESC is equal to DESC unless DESC is zero, in which case
+	    CANON_DESC is a port number assigned by the operating system.  This
+	    raises E_PERM if the programmer is not a wizard, E_INVARG if OBJ is
+	    invalid or there is already a listening point described by DESC,
+	    and E_QUOTA if some network-configuration-specific error occurred.
+	unlisten(DESC)
+	    Stop listening for connections on the point described by DESC,
+	    which should be a value returned by some successful call to
+	    listen().  Raises E_PERM if the programmer is not a wizard and
+	    E_INVARG if there does not exist a listener with that description.
+	listeners() => {{OBJ, DESC, PRINT_MESSAGES}, ...}
+	    Returns a list of all existing listeners, including the default one
+	    set up by the server at boot time.
+   I believe that this implementation is upward-compatible with the existing
+   uses of Ivan's package.  As far as I know, the only differences are that his
+   package did not have the PRINT_MESSAGES argument to listen(), did not work
+   for the non-BSD/TCP networking configurations, did not call :do_command or
+   :do_out_of_band_command, did not distinguish the case of a user reconnecting
+   on a different listening point, and did not have the listeners() function.
+      Please note that there is now nothing special about the initial listening
+   point created by the server at boot time; you can use unlisten() on it just
+   as if it had been created by listen().  This can be useful; for example, you
+   might start up your server on some obscure port, say 12345, connect to it by
+   yourself for a while, and then open it up to normal users with the command
+	;;unlisten(12345); listen(#0, 7777, 1)
+-- Changed the result of connection_name() to expose information about the
+   listening point on which the connection was accepted.  For the TCP
+   networking configurations, the format is now:
+	  "port 7777 from foo.bar.com, port 3456"
+   where 7777 is the server port on which the connection arrived and the rest
+   is as before.
+   ********** Before upgrading an existing LambdaCore-based MOO to use this
+   ** NOTE ** version of the server, you should modify the verb
+   ********** $string_utils:connection_hostname_bsd as follows:
+		    @program $string_utils:connection_hostname_bsd
+		    s = args[1];
+		    m = match(s, "^.* %(from%|to%) %([^, ]+%)");
+		    return m ? substitute("%2", m) | "";
+		    .
+   This code should work compatibly with any version of the server since 1.6.0.
+-- Added a new kind of expression, allowed only within the indexing/subranging
+   brackets `[...]'; in this context, the expression `$' means the length of
+   the value being indexed or subranged.  This allows, for example, expressions
+   like `x[2..$]' to get the `rest' of a list after the first element or
+   `x[random($)]' to get a random element of a list.  You can also use this on
+   the left-hand side of an assignment; for example `x[$] = 7' sets the last
+   element of a list, and `x[$+1..$] = {y}' adds y onto the end of the list x.
+   My favorite abuse of the new syntax is `x[l = $]' as a substitute for the
+   verbose and now old-fashioned `l = length(x)'.
+-- Fixed longstanding bug in `client_sysv', the client for the SYSV/LOCAL
+   networking configuration; it never worked to specify a server connection
+   file on the command line!
+
+Version 1.8.0alpha5, 11 January 1996
+-- Removed test that caused commands from disconnected users to be discarded.
+   (Thanks to Nate Massey for asking the question that led to this.)
+-- If $do_command() returns false without suspending (signalling that the
+   server should carry on with its normal command parsing and dispatch), the
+   resulting input task will have the same task_id() value as the $do_command()
+   task did.  (Thanks to Nate Massey for the suggestion.)
+-- Added configuration code to cope with the C function crypt() not existing;
+   in such a case, the crypt() built-in function simply returns the first
+   argument, unchanged.  (Thanks again to Nate Massey for the suggestion.)
+-- Fixed bogus-memory freeing bug in add_verb().  (Thanks to Mark Blanchard for
+   reporting this and to Purify for finding it.)
+-- Fixed missing declaration of strlen() in parser.y.  (Thanks again to Mark
+   Blanchard for the report.)
+-- Fixed bug where the wrong permissions are used by built-in functions who ask
+   after they've already called some MOO function.  (Thanks to Brian Buchanan
+   for finding this.)
+-- Added new built-in function `buffered_output_length([CONN])', where CONN is
+   an active connection and the result is the number of bytes currently
+   buffered up for output.  If CONN is not provided, this returns the maximum
+   number of bytes that will be buffered up for output on any connection.
+   (Thanks to Martian for the impetus for this and to Gustavo Glusman and Jaime
+   Prilusky for inspiration on the interface.)
+-- Made it easier for server code to get the result of a suspended task, by
+   adding an `result' argument to resume_from_previous_vm().  (Thanks to Jin-su
+   Ahn for pointing out this irregularity in the code.)
+-- Fixed problem with non-flushing notify() calls when the string to be output
+   is larger than MAX_QUEUED_OUTPUT; this always failed, even when there wasn't
+   any other output in the buffer.  Now, if the buffer is currently empty, any
+   line of output, no matter how large, will be accepted.
+-- Added facility for doing fully-general binary I/O on connections.  If you
+   call `set_connection_option(CONN, "binary", 1)', then both input from and
+   output to that connection can contain arbitrary bytes.  On input, any byte
+   that isn't an ASCII printing character, the space character, or the TAB
+   character will be represented as the four-character substring "~NNN", where
+   NNN is the octal representation of the byte; the input character `~' is
+   represented by the two-character substring "~~".  Call this representation
+   of bytes "binary strings".  Input from a connection in binary mode is *not*
+   broken into lines at all; it is delivered to either the read() function or
+   the built-in command parser in whatever size chunks come back from the
+   operating system.  For output to a connection in binary mode, the second
+   argument to `notify()' must be a binary string; if it is malformed, E_INVARG
+   is raised.  Of course, the call `set_connection_option(CONN, "binary", 0)'
+   sets the connection back into the normal MOO I/O mode.
+-- For convenience in manipulating binary strings, two new built-in functions
+   are provided:
+	decode_binary(BIN_STRING [, FULLY]) => LIST
+	    Returns a list of strings and/or numbers representing the bytes in
+	    BIN_STRING in order.  If FULLY is false or omitted, the list
+	    contains a number only for each non-printing, non-space, non-tab
+	    byte; all other characters are grouped into the longest possible
+	    contiguous substrings.  If FULLY is provided and true, the list
+	    contains only numbers, one for each byte represented in BIN_STRING.
+	    Raises E_INVARG if BIN_STRING is malformed.
+	    Examples:
+		decode_binary("foo") => {"foo"}
+		decode_binary("~~foo") => {"~foo"}
+		decode_binary("foo~015~012") => {"foo", 13, 10}
+		decode_binary("foo~012bar~012baz")
+						=> {"foo", 10, "bar", 10, "baz}
+		decode_binary("foo~015~012", 1) => {102, 111, 111, 13, 10}
+	encode_binary(@ARGS) => BIN_STRING
+	    ARGS must be a list of numbers between 0 and 255, strings, and
+	    lists of this same form.  Translates each number and string in turn
+	    into its binary string equivalent, returning the concatenation of
+	    all these substrings into a single binary string.
+	    Examples:
+		encode_binary("~foo") => "~~foo"
+		encode_binary({"foo", 13, 10}, {"bar", 13, 10})
+					=> "foo~015~012bar~015~012"
+		encode_binary("foo", 13, 10, "bar", 13, 10)
+					=> "foo~015~012bar~015~012"
+-- Fixed two places missed in a change made in 1.7.9alpha1;
+   $user_disconnected() is now called for un-logged-in connections that either
+   time out or are the target of a call to boot_player().  (Thanks to Brian
+   Buchanan for pointing out the discrepancy.)
+-- Fixed memory-smash bug in the renumber() built-in function.  (Thanks again
+   to Brian Buchanan for reporting this and to Purify for making it easy to
+   find the problem.)
+
+Version 1.8.0alpha6, 16 January 1996
+-- Replaced panic with raising E_TYPE in the case where `x[$]' is applied to a
+   non-string, non-list `x'.  (Thanks to Kipp the Kid for reporting this.)
+-- Fixed (yet another) bug in the stack-unwinding code; this one stuck the
+   return information for each of a built-in's second and subsequent verb calls
+   on successively higher stack frames, causing all manner of havoc, the least
+   of which was somewhat surprising results from the (correct!) callers()
+   built-in.  (Thanks once again to Brian Buchanan for reporting this bug; this
+   marks the *third* bug in stack-unwinding that Brian has uncovered!)
+-- Changed the rules for binary strings slightly so that (a) TAB is no longer
+   treated as a normal, printing character (i.e., it gets converted to `~011'
+   on input in binary mode), and (b) `~' is treated just like all of the
+   non-printing characters (i.e., it gets converted to `~176' on input in
+   binary mode and the sequence `~~' is illegal in binary strings).  Change (a)
+   removes one more source of TAB characters from the MOO (which can only be a
+   good thing), and change (b) both simplifies the specification and makes it
+   easier to compute the true length of a binary string (i.e., it's the length
+   of the string itself minus three times the number of tildes).  (Thanks to
+   James Deikun for these suggestions.)
+-- Fixed uninitialized-variable bug in the `program' command in emergency
+   wizard mode.  (Thanks to Kipp the Kid for reporting it.)
+-- Fixed potential memory smash bug if #100 (or #200 or #400 or #800 or ...)
+   was a recycled object in the DB file being loaded.  (Thanks to Dave Van
+   Buren for sending me a DB file that tickled the bug and to Purify for
+   pinpointing it.)
+-- Fixed bug that caused *all* settings of the .wizard property to be logged,
+   instead of just those that set it to a true value.  (Thanks again to Dave
+   Van Buren for reporting this.)
+-- Fixed bug accuracy of the top line number in tracebacks resulting from the
+   setting of a wizard bit.  (Thanks one last time to DVB for sending me a
+   traceback that contained such an error.)
+-- Added new built-in function `function_info([NAME])' which returns
+   descriptions of built-in functions available on the server.  If NAME is
+   provided, only the description of the function with that name is returned;
+   if NAME is omitted, a list of descriptions is returned, one for each
+   function available on the server.  Each description is a list of the
+   following form:
+	{NAME, MIN_ARGS, MAX_ARGS, TYPES}
+   NAME is the name of the built-in function, MIN_ARGS is the minimum number of
+   arguments that must be provided to the function, MAX_ARGS is the maximum
+   number of arguments that can be provided to the function or -1 if there is
+   no maximum, and TYPES is a list of MAX_ARGS numbers (or MIN_ARGS if MAX_ARGS
+   is -1), each of which represents the type of argument required in the
+   corresponding position.  Each type number is as would be returned from the
+   typeof() built-in function except that -1 indicates that any type of value
+   is acceptable.  For example, here are several entries from the list:
+	{"listdelete", 2, 2, {4, 0}}
+	{"suspend", 0, 1, {0}}
+	{"server_log", 1, 2, {2, -1}}
+	{"tostr", 0, -1, {}}
+   `listdelete()' takes exactly 2 arguments, of which the first must be a list
+   (LIST == 4) and the second must be a number (NUM == 0).  `suspend()' has one
+   optional argument that, if provided, must be a number.  `server_log()' has
+   one required argument that must be a string (STR == 2) and one optional
+   argument that, if provided, may be of any type.  `tostr()' takes any number
+   of arguments and it can't be determined from this description which argument
+   types would be acceptable in which positions.
+      It should be noted that, in a feat of synchronicity, this new built-in
+   brings the total number supported in the official server release to exactly
+   100!  (Thanks to some-user-whose-message-I've-lost [feel free to mail me
+   again so that I can patch this thank-you note] for suggesting such a
+   built-in function.)
+-- Fixed the definitions of the built-in functions match(), rmatch(), index(),
+   rindex(), and strsub() to accept any type of value for their final,
+   `case-matters' flag argument.  Also fixed `verb_code()' to allow any type of
+   value for either of its final two flag arguments.
+-- Added `scattering assignment' expression, allowing the elements of a list to
+   be spread among multiple variables simultaneously; this could be used, for
+   example, to get at the arguments to a verb in a more convenient form than
+   the list `args'.
+      A scattering assignment expression looks like this:
+	{ TARGETS } = EXPR
+   where TARGETS is a comma-separated list of places to store elements of the
+   list that results from evaluating EXPR.  A target has one of the following
+   forms:
+	VARIABLE
+	    This is the simplest target, just a simple variable; the list
+	    element in the corresponding position is assigned to the variable.
+	    I call this a `required' target, since the assignment is required
+	    to put one of the list elements into the variable.
+	? VARIABLE
+	    I call this an `optional' target, since it doesn't always get
+	    assigned an element.  If there are any list elements left over
+	    after all of the required targets (and all of the other optionals
+	    to the left of this one) have been accounted for, then this
+	    variable is treated like a required one and the list element in the
+	    corresponding position is assigned to the variable.  If there
+	    aren't enough elements to assign one to this target, then no
+	    assignment is made to this variable, leaving it with whatever its
+	    previous value was.
+	? VARIABLE = EXPR
+	    This is also an optional target, but if there aren't enough list
+	    elements available to assign one to this target, the result of
+	    evaluating EXPR is assigned to it instead.  Thus, EXPR is a kind of
+	    `default value' for the variable.  The default value expressions
+	    are evaluated and assigned working from left to right *after* all
+	    of the other assignments have been performed.
+	@ VARIABLE
+	    Analogously to MOO argument lists, this variable is assigned a list
+	    of all of the `leftover' list elements in this part of the list
+	    after all of the other targets have been filled in.  It will be
+	    assigned the empty list, if there aren't any elements left over.  I
+	    call this a `rest' target, since it gets the rest of the elements.
+	    There may be at most one rest target in TARGETS.
+   If there aren't enough list elements to fill all of the required targets, or
+   if there are more than enough to fill all of the required and optional
+   targets but there isn't a rest target to take the leftover ones, then E_ARGS
+   is raised.
+      Here are some examples of how this works.  Assume first that the verb
+   `me:foo()' contains the following code:
+		b = c = e = 17;
+		{a, ?b, ?c = 8, @d, ?e = 9, f} = args;
+		return {a, b, c, d, e, f};
+   Then the following calls return the given values:
+	    `me:foo(1) ! ANY'              => E_ARGS
+	    me:foo(1, 2)                   => {1, 17, 8, {}, 9, 2}
+	    me:foo(1, 2, 3)		   => {1, 2, 8, {}, 9, 3}
+	    me:foo(1, 2, 3, 4)		   => {1, 2, 3, {}, 9, 4}
+	    me:foo(1, 2, 3, 4, 5)	   => {1, 2, 3, {}, 4, 5}
+	    me:foo(1, 2, 3, 4, 5, 6)	   => {1, 2, 3, {4}, 5, 6}
+	    me:foo(1, 2, 3, 4, 5, 6, 7)	   => {1, 2, 3, {4, 5}, 6, 7}
+	    me:foo(1, 2, 3, 4, 5, 6, 7, 8) => {1, 2, 3, {4, 5, 6}, 7, 8}
+   Finally MOO has a convenient mechanism for naming verb arguments, checking
+   for there being exactly the right number of arguments, handling optional and
+   `rest' arguments, etc.  I intend to start every new MOO verb of mine with a
+   scattering assignment of `args', and I encourage other MOO programmers to do
+   the same.
+
+Version 1.8.0beta1, 7 February 1996
+-- Fixed bug where scattering assignment was not checking for the right-hand
+   side value being a list, and a severe bug where errors in a scattering
+   assignment in a !d verb caused the interpreter to execute many of the
+   operands of the EOP_SCATTER instruction as if they were opcodes.  (Thanks to
+   Kipp the Kid for finding this problem.)
+-- Changed several routines to panic the server instead of simply logging an
+   error message; these were places where such an error indicated a memory
+   smash or some other very serious error had occurred; it made no sense to try
+   to press on with normal operations.  This eliminates the "Impossible var
+   type" log messages sometimes seen from FREE_VAR, VAR_REF, and VAR_DUP.
+-- Added support for in-DB handling of all tracebacks, of which there are two
+   kinds: unhandled errors and tasks that have timed out.
+      If an error is raised and not caught, then the verb-call
+          #0:handle_uncaught_error(CODE, MSG, VALUE, TRACEBACK, FORMATTED)
+   is made, where CODE, MSG, VALUE, and TRACEBACK are the values that would
+   have been passed to a `try-except-endtry' handler for the error and
+   FORMATTED is a list of strings being the lines of traceback output that
+   will be printed to the player.
+      If a task runs out of ticks or seconds, then the verb-call
+          #0:handle_task_timeout(RESOURCE, TRACEBACK, FORMATTED)
+   is made, where RESOURCE is the appropriate one of the strings "ticks" or
+   "seconds", and TRACEBACK and FORMATTED are as above.
+      In both situations, the indicated verb call is made with the same
+   task_id() as the task that caused the traceback.  If the handler verb call
+   either suspends or returns a true value, then that code is considered to
+   have handled the traceback and no further processing will be done by the
+   server.  On the other hand, if the appropriate handler verb does not exist,
+   or returns a false value without suspending, or itself causes a traceback,
+   the original traceback (i.e., FORMATTED) will be printed to the player as in
+   earlier versions of the server.
+      Note that, if the handler verb-call itself causes a traceback, no
+   `nested' handler call is made; its traceback is simply printed to the player
+   without further processing.  This prevents what might otherwise be quite a
+   nasty vicious cycle.
+      (Thanks to ThwartedEfforts for suggesting such a feature.)
+-- Added a way to flush all pending input on a given connection, mostly for use
+   by users who change their minds about having typed something and can react
+   before the server has processed it.  Each connection may have a defined
+   `flush command'; if a raw line of input is equal to that connection's flush
+   command, then all pending input on the connection is flushed and a message
+   is printed back to the connection describing what happened.  By default,
+   each connection's flush command is `.flush'; you can change this default by
+   setting $server_options.default_flush_command either to a non-empty string
+   (the new default) or something else (a default of `no defined flush
+   command').  On any given connection, you can redefine the flush command with
+	set_connection_option(CONN, "flush-command", VALUE)
+   Again, if VALUE is a non-empty string, it becomes the new flush command for
+   CONN; otherwise, CONN is set to have no defined flush command.
+   ********** This could confuse things for certain kinds of unusual server
+   ** NOTE ** connections, such as outbound ones or ones to non-MOO servers
+   ********** running in the database (e.g., HTTP servers).  You may want to
+   set $server_options.default_flush_command to the empty string (to disable
+   flush commands by default) and use set_connection_option() to change this
+   just for appropriate connections (e.g., in #0:do_login_command).
+      (Thanks to Kent Pitman and others for help in designing this feature.)
+-- Added the `connection_options(CONN)' built-in function, which returns a list
+   of {NAME, VALUE} pairs describing the current settings of all of the allowed
+   options for the connection CONN.  (Thanks to Brian Buchanan for suggesting
+   this.)
+-- Added `list' and `disassemble' commands to emergency wizard mode.  (Thanks
+   to H. Peter Anvin for writing the first versions of these.)
+-- Added a new `named' form of the `while' loop:
+		WHILE id (expression)
+		  statements
+		ENDWHILE
+   This behaves exactly like the statement
+		WHILE (id = (expression))
+		  statements
+		ENDWHILE
+   This was added solely to provide a way to give a name to a `while' loop, for
+   use in the new `break' and `continue' statements, described below.
+-- Added new MOO statements `break' and `continue', similar to the ones in C or
+   Java.  The syntax is
+		BREAK [id];
+		CONTINUE [id];
+   A `break' statement causes your program to exit an enclosing `for' or
+   `while' loop; a `continue' statement causes your program to skip ahead to
+   the begining of the next iteration of an enclosing loop.  If provided, the
+   ID in the `break' or `continue' statement specifies which enclosing loop is
+   meant; ID should be the variable name appearing directly after the `for' or
+   `while' keyword in the desired loop.  If no ID is provided, the innermost
+   enclosing loop is indicated.  If a `break' or `continue' statement causes
+   control to leave the main body of a `try - finally - entry' statement, the
+   `finally' part will be executed first, just as with a `return' statement.
+      Here's an example:
+		x = 0;
+		for i in [1..5]
+		  notify(player, "top");
+		  try
+		    if (!x)
+		      x = 1;
+		      notify(player, "continuing");
+		      continue;
+		    endif
+		    x = x + 1;
+		  finally
+		    notify(player, "finally");
+		  endtry
+		  notify(player, "after");
+		  if (x > 1)
+		    break;
+		  endif
+		endfor
+		notify(player, "done");
+   This verb produces the following output:
+		top
+		continuing
+		finally
+		top
+		finally
+		after
+		done
+   I don't claim that this is a useful verb, mind you, but it does illustrate
+   all of the possible interactions.
+-- By popular demand, I added the new built-in function
+	force_input(CONN, LINE [, AT_FRONT])
+   which inserts the string LINE as an input task in the queue for the
+   connection CONN, just as if it had arrived as input over the network.  If
+   AT_FRONT is provided and true, then the new line of input is put at the
+   front of CONN's queue, so that it will be the very next line of input
+   processed even if there is already some other input in that queue.
+-- Fixed a bug whereby the very most common case of resuming a suspended task
+   with a new value failed to work.  (Thanks to Brian Buchanan for reporting
+   this.)
+-- Changed the server to make a log entry whenever the value of a wizard bit
+   changes (as opposed to just when it goes from false to true).  (Thanks to
+   Marc <marc@got.net> for this very sensible suggestion.)
+-- Fixed a bug where the server thought it sometimes advisable to parenthesize
+   the single-character `$' expression...
+-- Fixed stack-overflow memory-smash bug that could occur if, in a !d verb, the
+   `$' expression got a type error.  (Thanks to Kipp the Kid for reporting
+   this.)
+-- Fixed a typo in the registration of the functions decode_binary() and
+   encode_binary().  (Thanks to Richard Connamacher and H. Peter Anvin for
+   finding this.)
+-- Added floating-point numbers as a new MOO value type; this involves a number
+   of changes to the behavior of existing MOO primitives, described in the
+   following several items.  The representation of these values is in the local
+   C compiler's type `double', which is IEEE double precision on almost all
+   modern systems.  IEEE infinite and NaN values are not allowed in MOO; the
+   new error code E_FLOAT is raised whenever one of these values would
+   otherwise be computed.
+       (Enormous thanks go to H. Peter Anvin, without whose great
+       efforts, understanding, and persistence these floating-point
+       facilities would not have made it into any release of the
+       server on my watch.  I have not taken his patches without
+       modification, but nearly every change I made in adding these
+       features was patterned closely on what he had done.  Of course,
+       any bugs that still remain in the server are solely my
+       responsibility and should not be taken to reflect badly on HPA
+       in any way.)
+-- MOO numeric literals now have the following syntax:
+	digit+ [. digit+] [{e | E} [+ | -] digit+]
+   The number is represented in floating-point if and only if either a decimal
+   point or a scientific-notation marker (`e' or `E') appears in the
+   literal.
+-- Added new built-in variables `INT' (with the same meaning as the old `NUM'
+   variable) and `FLOAT' (the result of typeof() applied to a floating-point
+   number).
+-- Floating-point numbers not equal to 0.0 are treated as `true' in MOO
+   conditionals.
+-- Both tostr() and toliteral() display floating-point numbers in the fullest
+   available precision, with 15 decimal digits on most machines.
+-- The new built-in function `floatstr(FLOAT, PRECISION [, USE_SCI_NOTATION])'
+   can be used to get more control over the conversion of floating-point
+   numbers to strings.  In this function, FLOAT is a floating-point number and
+   PRECISION is the number of digits to appear to the right of the decimal
+   point (at most the maximum available precision, 15 digits on most machines).
+   If USE_SCI_NOTATION is false or not provided, the result is a string in the
+   form "MMMMMMM.DDDDDD", preceded by a minus sign if FLOAT is negative.  If
+   USE_SCI_NOTATION is provided and true, the result is a string in the form
+   "M.DDDDDDe+EEE", again preceded by a minus sign if FLOAT is negative.
+-- The following operators now work in the obvious way (analogously to the
+   integer case) if X and Y are both floating-point numbers:
+	-X
+	X + Y		X - Y		X * Y		X / Y		X % Y
+	X == Y		X != Y
+	X < Y		X <= Y		X > Y		X >= Y
+   If one of X or Y is an integer and the other is a floating-point number,
+   then most of these operators raise E_TYPE; there are no automatic coercions
+   of integers to floating-point numbers.  The expression (X == Y) is always
+   false and (X != Y) always true if X and Y do not have the same type.
+       (This is the most major place where I decided to depart from
+       HPA's patches; I was persuaded by the discussion on the
+       MOO-Cows list that the potential dangers posed by automatic
+       coercions in MOO's ubiquitously persistent world outweighed
+       their added convenience in some kinds of programs.  It's my
+       guess that this decision will generate more dialog on the list,
+       and I welcome the input; it's always possible to extend the
+       server upward-compatibly later to allow such coercions.)
+-- The following operations all raise E_TYPE if either X or Y is a
+   floating-point number:
+	Z[X]		Z[X] = E	Z[X..Y]		Z[X..Y] = E
+   List and string indices must be integers.
+-- Added built-in functions `toint()' (a synonym for `tonum()') and
+   `tofloat()'.  The former can be used to convert a floating-point number to
+   an integer by truncation toward zero.  The latter can be used to convert an
+   integer, a floating-point number, an object number, a string containing a
+   floating-point literal, or an error value into a floating-point number.
+-- The functions `min()', `max()', and `abs()' now work analogously on
+   floating-point numbers.  If `min()' or `max()' are passed some integers and
+   some floating-point numbers in the same call, they raise E_TYPE.
+-- ************ The function `sqrt()' no longer accepts integer arguments; its
+   *** NOTE *** argument must now be a floating-point number and its result
+   ************ will always be such a number.  The old and nearly useless
+   behavior of a call to `sqrt(X)' can be simulated with the new expression
+   `toint(sqrt(tofloat(x)))'.  (I did this because it made no sense for the
+   various new math functions, like `sin()' and `exp()', to map integer
+   arguments to integer results and it seemed important to keep all of the math
+   functions consistent.  It's my guess that there's very little existing code
+   that uses the old `sqrt()' function, so that this will not represent much of
+   an upgrading burden; I'm sure you'll let me know if I'm wrong...)
+-- Added a new expression type `X ^ Y', which returns X raised to the power of
+   Y.  If X is an integer, then Y must be an integer as well.  If X is a
+   floating-point number, then Y may be either integer or floating-point.
+       (Yes, maybe this is inconsistent with the complete lack of
+       coercions described above; feel free to try to argue me around
+       to a position you think is better.)
+-- Added the following new functions:
+	sin(X)		sine of X
+	cos(X)		cosine of X
+	tan(X)		tangent of X
+	asin(X)		arc-sine (inverse sine) of X in range [-pi/2, pi/2],
+			for X in range [-1, 1]
+	asin(X)		arc-cosine (inverse cosine) of X in range [0, pi], for
+			X in range [-1, 1]
+	atan(X [, Y])	arc-tangent (inverse tangent) of X in range
+			[-pi/2, pi/2] if Y is not provided, or of Y/X in range
+			[-pi, pi] is Y is provided
+	sinh(X)		hyperbolic sine of X
+	cosh(X)		hyperbolic cosine of X
+	tanh(X)		hyperbolic tangent of X
+	exp(X)		exponential function e^X
+	log(X)		natural logarithm ln(X), for X > 0
+	log10(X)	base 10 logarithm of X, for X > 0
+	ceil(X)		smallest integer not less than X, as a floating-point
+			number
+	floor(X)	largest integer not greater than X, as a floating-point
+			number
+   All of these functions take only floating-point arguments and return
+   floating-point results.  They raise E_INVARG if their argument is out of
+   range or E_FLOAT if the result overflows.  On underflow, they return zero.
+   [Incredibly, some systems also print an error message on standard error if
+   the argument is out of range; there isn't anything I can do to stop it, so
+   just ignore such messages in the log.]
+   (This ends the floating-point changes.)
+-- Changed the function `random()' to allow calls with no arguments; this is
+   effectively the same as passing in the largest MOO integer.
+-- Fixed a long-neglected loophole in tick-counting; the following constructs
+   all newly take one tick now:
+	-- exception-handling expression: `expr ! codes'
+	-- exception-handling statement: try ... except (expr) ... endtry
+	-- cleanup statement: try ... finally ... endtry
+	-- scattering assignment: {A, B, @C} = X
+-- Fixed a bug in the decompiler that could panic the server if a WHILE loop
+   was the first thing inside the ELSE part of an IF statement.  (Thanks to Ron
+   Stanions for reporting this.)
+-- Added documentation of what's required in order to add a new MOO value type
+   to the server; see the new file AddingNewMOOTypes.txt.
+
+Version 1.8.0beta2, 10 February 1996
+-- Made the source of standard messages printed on connections dependent on the
+   object acting as listener for connection.  Connections received on a
+   listening point handled by an object OID print messages taken from
+   properties on OID.server_options or, if that does not exist, then from
+   $server_options.  Thus, for example, after doing `listen(#987, LP, 1)', a
+   connection that arrives on the listening point LP and then is disconnected
+   will have the text of #987.server_options.boot_msg printed to it; if #987
+   does not have a property named "server_options", then
+   $server_options.boot_msg will be used instead, just as before. (Thanks to
+   Michael Brundage for persistently reminding me to add this feature.)
+-- Fixed bug in clear_property(OID, PNAME) where it could crash the server if
+   the object OID defines the property PNAME.  (Thanks to Don Schwarz for
+   reporting this.)
+-- Fixed bug in floating-point number parsing where literals with exponents but
+   no decimal point (e.g., `1E6') were treated as integers.  (Thanks to
+   H. Peter Anvin for pointing this out to me.)
+-- Slightly liberalized parsing of floating-point numbers not to require any
+   digits before the decimal point if there are digits after it.  Thus, `.02'
+   is now parsed identically to `0.02'.  (Thanks to Kipp the Kid for suggesting
+   this.)
+-- Fixed bug where `kill_task(task_id())' could panic the server.  (Thanks to
+   Brian Buchanan for reporting this.)
+-- Fixed handling of floating-point exceptions on systems that support the
+   SVID3 `matherr()' handler function.  (Thanks to H. Peter Anvin for reminding
+    me to do this.)
+-- Added built-in function `trunc(X)' which returns the floating-point number
+   obtained by truncating the floating-point number X at the decimal point.
+   For X < 0.0, this is equivalent to `ceil(X)'; otherwise, it is equivalent to
+   `floor(X)'.  (Thanks to HPA again for suggesting this.)
+
+Version 1.8.0beta3, 18 February 1996
+-- Once more liberalized parsing of floating-point numbers, this time not to
+   require any digits *after* the decimal point if there are digits *before*
+   it.  Thus, `32.' is now parsed identically to `32.0' and `32.e1' is parsed
+   identically to `32.0e1'.  (Thanks to Brian Buchanan for pointing out this
+   remaining inconsistency with the behavior of tofloat().)
+-- Added built-in function `value_hash(X)', which returns a 32-character
+   hexadecimal string equal to `MD5(toliteral(X))', where MD5 is a well-known
+   cryptographically secure hash function.  In essence, if
+   `equals(value_hash(X), value_hash(Y))' then you can be pretty damned sure
+   that `equals(X, Y)', even if the two hashes were computed on different
+   machines.  Also added `string_hash(X)', which just computes the MD5 hash of
+   the contents of the string X, and `binary_hash(X)', which does the same for
+   the binary string X.
+-- Fixed `toint(X)', where X is a string denoting a floating-point number, to
+   return the same as `toint(tofloat(X))'.  (Thanks to Kai Storbeck for
+   suggesting this.)
+-- Fixed bug in `floatstr(X, PREC)' where PREC was allowed to be negative.
+   (Thanks to `slayer' for reporting this bug.)
+-- Changed parser to replace calls of the form `call_function("foo", ...)'
+   with simply `foo(...)' if `foo' is a known function.  (Thanks to Don Schwarz
+   for suggesting this.)
+
+Version 1.8.0, 9 March 1996
+-- Verbs defined on #0 are no longer subject to the wiz-only permissions check
+   on built-in functions generated by defining $server_options.protect_FOO with
+   a true value.  Thus, you can now write a `wrapper' for a built-in function
+   without having to re-implement all of the server's built-in permissions
+   checks for that function.  (Thanks to ThwartedEfforts for bringing this idea
+   back to my attention.)
+-- If a built-in function FOO has been made wiz-only (by defining
+   $server_options.protect_FOO with a true value) and a call is made to that
+   function from a non-wiz verb not defined on #0 (that is, if the server is
+   about to raise E_PERM), the server first checks to see if the verb #0:bf_FOO
+   exists.  If so, it calls it instead of raising E_PERM and returns or raises
+   whatever it returns or raises.  (Thanks to yduJ and ThwartedEfforts for
+   putting this idea together.)
+-- Added the source code for `pgperf' to a subdirectory of the release `tar'
+   file.  You need `pgperf' in order to recreate the keyword-lookup table used
+   in the MOO-code parser should you ever change the set of keywords accepted
+   by the parser.  Check out the `pgperf/README' file for (slightly) more
+   information.
+-- Backed out the change in 1.8.0beta3 where the parser was replacing calls of
+   the form `call_function("foo", ...)'  with simply `foo(...)' if `foo' was a
+   known function.  While this change made sense for porting whole databases
+   between server versions, it made it harder to port single verbs or objects
+   from place to place.  (Thanks to Richard Connamacher for being persistent
+   enough to finally make me see this point.)
+-- Added new built-in function `connection_option(CONN, OPTION)', which returns
+   the current setting of the option OPTION on the connection CONN.  It raises
+   E_INVARG if OPTION is not a valid option for that connection.  (Thanks to
+   Don Schwarz for pointing out how inconvenient it could be to have to use
+   `connection_options(CONN)' for this.)
+-- Changed the format of binary strings to have non-printing characters
+   represented in hexadecimal instead of octal, for improved concision and
+   consistency with the output of the `*_hash()' functions.  (Thanks to
+   ThwartedEfforts for suggesting this.)
+-- Made optional the argument to `shutdown()'.  (Thanks to Richard Godard for
+   suggesting this.)
+-- Moved the DEFAULT_PORT and DEFAULT_CONNECT_FILE options into `options.h'.
+   (Thanks to Richard Godard for suggesting this, too.)
+-- Fixed line numbers reported in load-time warnings about renaming old uses of
+   new keywords.  (Thanks to Ron Stanions and others for noticing this bug.)
+
+Version 1.8.0p1, 11 March 1996
+-- Fixed bug in the transition of binary strings from octal to hex.  (Thanks to
+   Adrian Irving-Beer for reporting this.)
+-- Fixed longer-standing bug in decode_binary() where bytes over 127 would be
+   decoded as negative numbers on some systems.
+
+Version 1.8.0p2, 18 March 1996
+-- Fixed off-by-one bug in set_verb_code() that failed to type-check the last
+   element of the CODE list.  (Thanks to Kipp the Kid for reporting this.)
+-- Reordered printing of start-up messages and the registration of built-in
+   functions to allow function registrars to more aesthetically print out their
+   own such messages.  (Thanks to Richard Godard for suggesting this.)
+-- Minor configuration change to improve chances of finding an ANSI C compiler
+   on SGI IRIX 5.2 systems.  (Thanks to John Wilson for the suggestion here.)
+-- Changed the behavior of calls to built-in functions made wiz-only via
+   $server_options; for a call to a protected function FOO from an object other
+   than #0, if $bf_FOO() exists, it is always called instead of the built-in,
+   *even for wizards*.  (Thanks to Roger Crew for helping me beat this horse
+   thoroughly dead.)
+-- Fixed conversions of floating-point numbers into strings.  The default
+   conversion, used in tostr() and toliteral(), uses the exact number of
+   decimal digits of precision supported in the underlying representation
+   (i.e., DBL_DIG in ANSI C).  The writing of the database file uses four more
+   digits to be certain of extracting all of the available information.  The
+   floatstr() function allows specification of any non-negative number of
+   digits up to four more than DBL_DIG.  (Thanks to Brian Buchanan for
+   reporting the problem and to H. Peter Anvin for suggesting the appropriate
+   fix.)
+-- Fixed task_stack() to test for the given task ID being valid (i.e., naming a
+   suspended task) *before* testing that the caller's permissions are
+   sufficient.  (Thanks to Judy Anderson for reporting this.)
+-- The idle un-logged-in connection timeout can now be set in the database.
+   For a connection accepted by a listening object L, the server checks for the
+   property `connect_timeout' being defined on either L.server_options or, if
+   L.server_options is not defined, on $server_options.  If the
+   `connect_timeout' property exists and is a positive integer, that is the
+   number of seconds to use for the timeout.  If `connect_timeout' exists but
+   is not a positive integer, then no timeout is used.  Finally, if
+   `connect_timeout' does not exist, the old default of 300 seconds is used as
+   the timeout.  (Thanks to Richard Godard for prodding me into this.)
+-- Setting the .programmer or .wizard bit on an object no longer raises
+   E_INVARG if the object is not a player.  (Thanks to Roger Crew for
+   suggesting this.)
+-- Fixed `;' command in emergency wizard mode so that such tasks now have
+   legitimate task IDs.
+
+Version 1.8.0p3, 7 April 1996
+-- Fixed panic when a line of input existed from a logged-in but invalid object
+   (as is made possible by force_input()).
+-- Fixed `usage' message to include the new `-e' flag.
+-- Fixed bug where it didn't work to rename a property changing only the case
+   of the letters.  (Thanks to Brack for reporting this.)
+-- Exported `get_server_option()' to `server.h', for possible use by server
+   extensions.  (Thanks to Richard Godard for suggesting this.)
+-- Added `-l LOGFILE' command-line option, to allow specifying the destination
+   for logging messages separately from redirecting the standard-error stream.
+   This is most useful when intending to `continue' from emergency wizard mode.
+   (Thanks to Seth Rich for suggesting this.)
+-- Moved test for a built-in function being `protected' and the possible call
+   to $bf_FOO() before the test for the correct number and type of arguments.
+   This allows a $bf_FOO() overriding verb to take different arguments from the
+   built-in it's overriding.  (Thanks to Brian Buchanan for suggesting this.)
+-- Added built-in function `flush_input(CONN [, SHOW_MESSAGES])' that does the
+   same thing as the user CONN typing their defined `flush' command.  That is,
+   it removes all pending lines of input from CONN's queue and, if
+   SHOW_MESSAGES is provided and true, prints a message to CONN listing the
+   flushed lines, if any.  This makes it possible to flush an input queue from
+   within verb code.  (Thanks to Seth Rich for pointing out this issue.)
+-- An un-logged-in connection can now only `log in' (via $do_login_command()
+   returning a valid player object) if the network connection is actually still
+   open.  In particular, the following cases, which used to cause panics, now
+   have no effect aside from the obvious calls to $do_login_command():
+	1) Something opens a connection, sends input that would log it in, and
+	   then closes the connection before the server has had time to run the
+	   $do_login_command() task that would log it in.
+	2) Someone executes `force_input(CONN, LINE)' where CONN is negative
+	   and LINE would log in an un-logged-in connection.
+   (Thanks to Dave Kormann for reporting this bug.)
+-- Changed the definition of value_bytes() to make it more intuitive to users.
+   Now, value_bytes() always returns a non-zero value, since *every* MOO value
+   requires *some* memory in order to be represented.  (Thanks to several
+   members of the MOO-Cows mailing list for the discussion that led to this.)
+-- Fixed disassemble() to properly print the mnemonic for the PUSH_LABEL
+   instruction.  (Thanks to Brian Buchanan for reporting this bug.)
+
+Version 1.8.0p4, 18 April 1996
+-- Fixed potential memory-smash bug in the parsing of a misplaced `$'
+   expression.  (Thanks to Brack for reporting this.)
+-- Fixed odd choice of errors raised by chparent(A, B); it used to raise E_PERM
+   when A was not valid or B was neither valid nor equal to #-1.  It now raises
+   E_INVARG in these cases.
+-- Fixed *really* nasty bug in the way the $bf_FOO() overrides for protected
+   built-in functions were implemented.  The first (and least nasty!) effect
+   was a potential memory smash and/or server panic if you killed a task that
+   was in the middle of a call to some $bf_FOO().  (Thanks to slayer@kaiwan.com
+   for reporting this effect of the bug and thereby ruining the rest of my day,
+   spent tracking down and trying to cope with the *rest* of the effects.)  The
+   more subtle and terrifying effect is given below.
+   ********** There was a serious bug in versions 1.8.0 through 1.8.0p3 of the
+   ** NOTE ** server that could cause a database written by such a server to be
+   ********** read back in incorrectly and, in some cases, *undetectably*,
+   causing one or more bad effects outlined below.  One of the potential
+   effects, perhaps the most serious one, *is* detectable and fixable; release
+   1.8.0p4 of the server detects and fixes this problem during loading.  If it
+   discovers/fixes an instance of the problem, it also prints a warning message
+   into the log.
+   ----------------------------------------------------------------------------
+   NOTE PLEASE: As described below, most databases will NOT be at risk from ANY
+   of the potential problems.  I only describe them in this much detail to make
+   sure that all POSSIBLE cases are disclosed.
+   ----------------------------------------------------------------------------
+      In a nutshell, the problem is that the server can write out a database
+   file that, on reloading, makes it look as if an overridden built-in function
+   (i.e., one that is made wiz-only by a $server_options.protect_FOO property
+   and then overridden by a $bf_FOO() verb) *made a verb call* to $bf_FOO()
+   instead of being *replaced* by that verb.  This would be in the saved state
+   of some task that was suspended at the time the database file was written.
+   This means that, after the task resumes and the call to $bf_FOO() returns,
+   the built-in function implementation could be re-entered in a very confused
+   state.  This confusion could have the following effects:
+	1) A function that never actually calls a verb (i.e., almost any of the
+	   current built-in functions) could mistake $bf_FOO()'s returned value
+	   for an argument list and smash memory all over the server.
+	   (Fortunately, this is the detectable and fixable case mentioned
+	   above; therefore, this effect cannot happen under 1.8.0p4.)
+	2) The eval() function could end up wrapping an extra {1, ...} around
+	   the correct returned value.  That is, instead of returning {F, V} as
+	   it should, it would return {1, {F, V}} in this case.
+	3) The create() function could return a different object number from
+	   the correct one; in particular, it could return an invalid or even
+	   negative object number.
+	4) The recycle() function could recycle the wrong object, without
+	   checking permissions and without calling that object's :recycle
+	   verb, and/or leave the correct object unrecycled.
+	5) The move() function could move the wrong object to the wrong
+	   destination and/or leave the correct object where it was.
+   If you reboot your server under 1.8.0p4, I believe that effect (1) above is
+   completely prevented and that, in effects (4) and (5), the function in
+   question is extremely unlikely to operate on the wrong object.  If you are
+   actually at risk from any of these effects (see below), then by far the most
+   likely cases are as follows:
+	1) Not possible.
+	2) The eval() function will have the full effect given above.
+	3) The create() function will have the full effect given above.
+	4) The correct object will not actually be recycled, even though its
+	   :recycle verb will have been called.
+	5) The correct object will not actually be moved, even though the
+	   destination's :accept verb will have been called.
+   >>> NOT ALL DATABASES ARE AT RISK FROM THESE EFFECTS <<<
+      For a database to be at risk, all of the following must be true:
+	a) One or more of the functions eval(), create(), recycle(), or move()
+	   must have been made wiz-only via the $server_options.protect_FOO
+	   property, for the appropriate FOO.
+	b) Such a function must have been overridden by a $bf_FOO() verb.
+	c) It must have been possible for the code of the $bf_FOO() verb (or
+	   any code it calls) to call suspend().
+	d) The database file must have been written to disk (i.e., either via a
+	   checkpoint or a shutdown or a panic) during the time that (a) and
+	   (b) were true and while the call to $bf_FOO() was suspended.
+	e) You must be restarting your server from the database mentioned in
+	   point (d).
+   Even in a database that is at risk, it is only at risk for the effects of
+   the specific function(s) for which all of points (a) through (e) are true.
+   For example, if you have never protected and overridden the move() function,
+   then your database is not at risk for effect (5).
+     These facts imply that, if your server might be at risk but is still
+   running under 1.8.0p3 or earlier, you may be able to remove the risk before
+   shutting down, by making one or more of points (a) through (e) false.  For
+   example, you might be able to stop overriding one of the functions in
+   question and then wait until there are no longer any suspended tasks inside
+   calls to the appropriate $bf_FOO() verb.
+      >>> WARNING: Do NOT attempt to kill such a suspended task in order to
+		   remove the risk from your system; this would trigger the bug
+		   mentioned at the top of this release note, quite possibly
+		   panicking your server.
+   Naturally, I am dismayed at both the existence of this bug and at the fact
+   that I cannot guarantee even those not yet bitten by it that they can avoid
+   eventually losing.  This is the first time I can recall this sort of thing
+   happening in the entire time LambdaMOO has existed.  Just my luck, just as
+   I'm about to retire... :-(
+
+Version 1.8.0p5, 12 May 1996
+-- Fixed two memory leaks, one triggered every time `match()' was called with a
+   malformed pattern and the other every time `add_verb()' was called at all.
+   (Thanks to Gustavo Glusman for putting me onto the trail of the first one.)
+-- Fixed mis-initialization of the value of the "client-echo" connection
+   option.  (Thanks to Wisquatuk for reporting this.)
+-- Fixed backward-compatibility problem in 1.8.0 where the semantically
+   erroneous but syntactically correct expression
+	-"a string"
+   stopped even compiling, let alone running.  (Thanks to Seth Rich for
+   pointing this out.)
+-- Fixed another backward-compatibility problem in which the (again)
+   semantically erroneous but syntactically correct expression
+	36789.foo
+   (an understandable typo for #6789.foo) stopped compiling when found in a
+   database made by a pre-1.8.0 server.

@@ -1,0 +1,38 @@
+There are a number of places in the server that have to be changed when adding
+a new type of MOO value; this file attempts to list all of them for easy
+reference.
+
+First, though, it is important to realize that there are several types of MOO
+values that are invisible to MOO programmers; they are used for a variety of
+purposes internally in the virtual machine or database, and they can appear in
+the DB file on disk, but they are never the value of a MOO expression.  Adding
+one of these `invisible' types involves only a few changes to the server.
+Adding one of the other kind, though, the `visible' types of values that *can*
+be the value of a MOO expression, involves a number of additional changes, as
+seen below.
+
+For all new types, both visible and invisible, you must:
+-- add an item *at the end* of the `var_type' enumeration in structures.h
+-- perhaps add a clause to the union in `struct Var' in structures.h
+-- add a case to each of dbio_read_var() and dbio_write_var(), in db_io.c
+-- add a case to each of free_var(), var_ref(), and var_dup(), in utils.c
+
+In addition, for visible types, you must:
+-- consider adding a new built-in MOO variable like OBJ, STR, and LIST:
+	-- add a new SLOT_XXX constant *at the end* of the list in sym_table.h
+	-- add a new DB version number *just before the end* of the
+	   `DB_Version' enumeration in version.h
+	-- add a version-contingent clause to fill_in_rt_consts(),
+	   in eval_env.c
+	-- add a version-contingent clause to each of new_builtin_names() and
+	   first_user_slot(), in sym_table.c
+-- consider adding a new kind of MOO literal or expression that produces values
+   of the new type.
+-- add a case to each of list2str() and print_to_stream(), in list.c; the
+   former is used by the MOO function tostr() and the latter by toliteral().
+-- add a case to to each of become_integer() and become_float(), in numbers.c;
+   the former is used by toint() and toobj() and the latter by tofloat().
+-- consider adding a clause to is_true(), equality(), and value_bytes(),
+   in utils.c; the first implements MOO's notion of truth values, the second is
+   used in the `==' and `!=' expressions and the equals() function, and the
+   third is used in the MOO function of the same name.

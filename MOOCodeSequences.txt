@@ -1,0 +1,347 @@
+This file documents, in very terse fashion, the opcode sequences emitted by the
+MOO compiler and accepted by the MOO decompiler.  It is an invaluable reference
+while reading the code in either `code_gen.c' or `decompile.c'.
+
+NOTE: Since MOO database files contain suspended tasks, and since the file
+      representation of those tasks includes both source code and a current PC
+      for each frame on the stack, IT IS CRITICALLY IMPORTANT that these code
+      sequences not change between releases of the server.  Otherwise, when the
+      code for a frame was recompiled at server start-up, its associated saved
+      PC value might no longer be valid, leading to almost certain catastrophe.
+      If the database file format were at some point changed to contain the
+      bytecodes (and not the source code) for suspended task frames, then this
+      restriction could (at least one release later) be relaxed.
+
+stmt:
+	  {[ELSE]IF ( expr ) stmts}+ [ELSE stmts] ENDIF
+
+		<expr>		; Once for each arm
+		IF / EIF next	;
+		<stmts>		;
+		JUMP done	;
+	    next:		;
+
+		<stmts>		; If there's an ELSE part
+
+	    done:
+
+	| FOR id IN ( expr ) stmts ENDFOR
+
+		<expr>
+		NUM 1
+	    top:
+		FOR_LIST id done
+		<stmts>
+		JUMP top
+	    done:
+
+	| FOR id IN [ expr1 .. expr2 ] stmts ENDFOR
+
+		<expr1>
+		<expr2>
+	    top:
+		FOR_RANGE id done
+		<stmts>
+		JUMP top
+	    done:
+
+	| WHILE [id] ( expr ) stmts ENDWHILE
+
+	    top:
+		<expr>
+
+		WHILE done		; if there is no ID
+		WHILE_ID id done	; if there is an ID
+
+		<stmts>
+		JUMP top
+	    done:
+
+	| FORK [id] ( expr ) stmts ENDFORK
+
+		<expr>
+		FORK / FORK_WITH_ID vector [id]
+
+		{vector: <stmts>}
+
+	| expr ;
+
+		<expr>
+		POP
+
+	| RETURN ;
+
+		RETURN0
+
+	| RETURN expr ;
+
+		<expr>
+		RETURN
+
+    	| TRY stmts_b {EXCEPT [id_i] ( codes_i ) stmts_i}+ ENDTRY
+
+		<codes_1>
+		PUSH_LABEL handler_1
+		...
+		<codes_N>
+		PUSH_LABEL handler_N
+		TRY_EXCEPT N
+		<stmts_b>
+		END_EXCEPT done
+		...
+	    handler_i:
+		PUT id_i	; if <id_i> is supplied
+		POP
+		<stmts_i>
+		JUMP done	; all but last handler
+		...
+	    done:
+
+    	| TRY stmts_b FINALLY stmts_h ENDTRY
+
+		TRY_FINALLY handler
+		<stmts_b>
+		END_FINALLY
+	    handler:
+		<stmts_h>
+		CONTINUE
+
+	| BREAK [id];
+	| CONTINUE [id];
+
+		EXIT <stack-level> <label>	; if there is no ID
+		EXIT_ID <stack-level> <label>	; if there is an ID
+	;
+
+expr:
+	  NUMBER
+	| STRING
+	| # NUMBER
+	| # - NUMBER
+	| ERROR
+
+		NUM n		; if NUMBER and IN_OPTIM_NUM_RANGE(n)
+
+		IMM v		; otherwise
+
+	| id
+
+		PUSH id
+
+	| expr1 && expr2
+	| expr1 || expr2
+
+		<expr1>
+		AND / OR done
+		<expr2>
+	    done:
+
+	| - expr
+	| ! expr
+
+		<expr>
+		UNARY_MINUS / NOT
+
+	| $ id
+	| expr1 . id
+	| expr1 . ( expr2 )
+
+		<expr1>
+		<expr2>
+		GET_PROP
+
+	| expr1 == expr2
+	| expr1 != expr2
+	| expr1 < expr2
+	| expr1 <= expr2
+	| expr1 > expr2
+	| expr1 >= expr2
+	| expr1 IN expr2
+	| expr1 + expr2
+	| expr1 - expr2
+	| expr1 * expr2
+	| expr1 / expr2
+	| expr1 % expr2
+	| expr1 [ expr2 ]
+
+		<expr1>
+		<expr2>
+		EQ / NE / LT / LE / GT / GE / IN / ADD / MINUS / MULT / DIV
+		   / MOD / REF
+
+	| expr1 [ expr2 .. expr3 ]
+
+		<expr1>
+		<expr2>
+		<expr3>
+		RANGE_REF
+
+	| { arglist }
+
+		<arglist>
+
+	| id ( arglist )
+
+		<arglist>
+		BI_FUNC_CALL fn
+
+	| expr1 : id ( arglist )
+	| expr1 : ( expr2 ) ( arglist )
+
+		<expr1>
+		<expr2>
+		<arglist>
+		CALL_VERB
+
+	| expr1 ? expr2 | expr3
+
+		<expr1>
+		IF_QUES else
+		<expr2>
+		JUMP done
+	    else:
+		<expr3>
+	    done:
+		
+	| {id | expr_l1 . ( expr_l2 )}
+			{[ expr_i ]}*
+			{[ expr_r1 .. expr_r2 ]}? = expr_r
+
+		PUSH id		; if id and indexed/subranged
+
+		<expr_l1>	; if expr.expr
+		<expr_l2>	;
+		PUSH_GET_PROP	; if expr.expr and indexed/subranged
+
+		...		; if indexed
+		<expr_i>	;
+		PUSH_REF	; if indexed/subranged further
+		...		;
+
+		<expr_r1>	; if subranged
+		<expr_r2>	;
+
+		<expr_r>
+
+		PUT_TEMP	; if indexed/subranged
+
+		RANGESET	; if subranged
+
+		...		; if indexed
+		INDEXSET	;
+		...		;
+
+		PUT		; if id
+
+		PUT_PROP	; if expr.expr
+
+		POP		; if indexed/subranged
+		PUSH_TEMP	;
+
+	| { scatter } = expr_r
+
+		/* Example:
+		 *    {a, ?b, ?c = expr_c, @d, ?e = expr_e, f} = expr_r
+		 */
+
+		<expr_r>
+		SCATTER 6, 2, 4: a/0, b/1, c/default_c, d/0, e/default_e,
+			^  ^  ^	 f/0, done
+			|  |  |  ^
+			|  |  |  |
+			|  |  |  +-- list of id/label pairs + done label
+			|  |  +----- 1-index of `@' argument (or # of args)
+			|  +-------- number of required arguments
+			+----------- number of arguments
+	    default_c:
+		<expr_c>
+		PUT c
+		POP
+	    default_e:
+		<expr_e>
+		PUT e
+		POP
+	    done:
+
+	| ` expr ! codes [=> expr_d] '
+
+		<codes>
+		PUSH_LABEL handler
+		CATCH
+		<expr>
+		END_CATCH done
+	    handler:
+		NUM 1		; if <expr_d> is omitted
+		REF		;
+
+		POP		; if <expr_d> is supplied
+		<expr_d>	;
+	    done:
+
+	;
+
+codes:
+	  ANY
+
+		NUM 0
+
+	| ne_arglist
+
+		<ne_arglist>
+
+arglist:
+	  /* NOTHING */
+
+		MAKE_EMPTY_LIST
+
+        | ne_arglist
+
+		<ne_arglist>
+
+	;
+
+ne_arglist:
+	expr
+
+		<expr>
+		MAKE_SINGLETON_LIST
+
+	| @ expr
+
+		<expr>
+		CHECK_LIST_FOR_SPLICE
+
+	| ne_arglist , expr
+
+		<ne_arglist>
+		<expr>
+		LIST_ADD_TAIL
+
+	| ne_arglist , @ expr
+
+		<ne_arglist>
+		<expr>
+		LIST_APPEND
+
+	;
+
+
+# $Log: MOOCodeSequences.txt,v $
+# Revision 1.1  1997/03/03 03:45:06  nop
+# Initial revision
+#
+# Revision 2.3  1996/03/10  01:25:45  pavel
+# Fixed a grammar problem.  Release 1.8.0.
+#
+# Revision 2.2  1996/02/08  05:43:09  pavel
+# Added named WHILE loops and the BREAK and CONTINUE statements.
+# Release 1.8.0beta1.
+#
+# Revision 2.1  1996/01/16  07:15:25  pavel
+# Add support for scattering assignment.  Release 1.8.0alpha6.
+#
+# Revision 2.0  1995/11/30  05:41:16  pavel
+# New baseline version, corresponding to release 1.8.0alpha1.
+#
+# Revision 1.1  1995/11/30  05:36:21  pavel
+# Initial revision

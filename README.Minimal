@@ -1,0 +1,75 @@
+Instructions on using Minimal.db
+------------ -- ----- ----------
+
+The Minimal database is really quite minimal; there are no commands defined
+other than the built-in ones (`PREFIX', `SUFFIX', and `.program') and only
+enough verbs defined and/or programmed to make it possible to bootstrap.  It's
+almost a certainty that you'd better off starting from the most recent release
+of the LambdaCore database and possibly trimming things from that.  Some people
+can't resist a challenge, though, so this document exists to orient them to the
+meager contents of the Minimal database.
+
+There are four objects in the Minimal database, arranged in the parent/child
+hierarchy as follows:
+
+	Root Class (#1)
+	  System Object (#0)
+	  The First Room (#2)
+	  Wizard (#3)
+
+The System Object has one defined verb, #0:do_login_command, which simply
+returns #3.  This has the effect that all connections to the Minimal database
+are automatically logged-in to Wizard, the only player.
+
+The First Room has a verb named `eval' defined but not yet programmed.  It has
+arguments `any any any' and permissions `rxd'.
+
+The Wizard is initially located in the First Room and the other three objects
+are initially located in #-1 (i.e., nowhere).
+
+There are no other properties or verbs defined in the database.  There are no
+forked or suspended tasks either.
+
+The only way to get started in the Minimal database is either to change the
+program for #0:do_login_command to perform some useful task (probably a more
+tedious way to go, since you'd have to reconnect to get that verb to run), or
+to provide a useful definition for `#2:eval' (probably the right course, since
+you can invoke that more easily).
+
+Of course, there are no restrictions on what you make this `eval' verb do, but
+I recommend that you implement a simple, general MOO-code expression evaluator,
+perhaps using code like this:
+
+	.program here:eval
+	notify(player, toliteral(eval("return " + argstr + ";")[2]));
+	.
+
+Or, perhaps something a tad fancier, to help you diagnose syntax errors more
+easily:
+
+	.program here:eval
+	answer = eval("return " + argstr + ";");
+	if (answer[1])
+	  notify(player, tostr("=> ", toliteral(answer[2])));
+	else
+	  for line in (answer[2])
+	    notify(player, line);
+	  endfor
+	endif
+	.
+
+Of course, much fancier `eval' verbs are possible, but you'll discover them for
+yourself, I'm sure.
+
+From such a basis, you can do anything by using the various built-in functions
+directly, like add_verb(), add_property(), etc.  With sufficient amounts of
+work, you can build up a set of easier-to-use command-line interfaces to these
+facilities to make programming and building much easier.
+
+If you should decide, after reading this, to build up an interesting database
+starting from the Minimal one, and you succeed in doing so, please drop me a
+line; I'd love to hear about it.
+
+	Pavel Curtis
+	aka Haakon, ArchWizard of LambdaMOO
+	Pavel@PARC.Xerox.Com
