@@ -23,6 +23,8 @@
 #include "config.h"
 #include "execute.h"
 
+#undef MAX
+#undef MIN
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 
@@ -57,9 +59,13 @@ extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
 #endif
 
 /* $Log: utils.h,v $
-/* Revision 1.3  1997/03/05 08:15:55  bjj
-/* *** empty log message ***
+/* Revision 1.4  1997/03/05 08:20:51  bjj
+/* With 1.2 (oops) add MIN/MAX macros that do the obvious thing, with undef to
+/* avoid clashing with system definitions.
 /*
+ * Revision 1.3  1997/03/05 08:15:55  bjj
+ * *** empty log message ***
+ *
  * Revision 1.2  1997/03/03 04:19:37  nop
  * GNU Indent normalization
  *
