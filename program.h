@@ -49,6 +49,7 @@ typedef struct {
 
     unsigned cached_lineno;
     unsigned cached_lineno_pc;
+    unsigned cached_lineno_vec;
 } Program;
 
 #define MAIN_VECTOR 	-1	/* As opposed to an index into fork_vectors */
@@ -63,6 +64,9 @@ extern void free_program(Program *);
 
 /* 
  * $Log: program.h,v $
+ * Revision 1.5  1999/08/16 04:15:13  bjj
+ * Lineno computation could be wrong for forked vectors.
+ *
  * Revision 1.4  1998/12/14 13:18:49  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
