@@ -1,0 +1,306 @@
+Release notes on the 1.8.0r5 patches to the LambdaMOO server
+============================================================
+
+1.8.0r5 is a collection of unofficial patches to Erik Ostrom's
+LambdaMOO 1.8.0p6 server release.  They're primarily bug fixes and
+speedups.  For logistical reasons they're packaged as a tar file
+rather than as a collection of diffs.
+
+It's difficult to measure MOO server performance.  All we can say is
+that some plausible synthetic benchmarks are now two to four times
+faster.  Users have noted that production systems running this code
+feel much more responsive at computationally expensive tasks.
+
+Our thanks go out to the administrators of LambdaMOO (and some other
+servers) for beta testing previous releases of this patch.  Most of
+the changes have been tested there and on other large systems, so good
+stability is anticipated.  As always we solicit bug reports and bug
+fixes.  If no significant problems are noted within a reasonable
+period of time we may post an "all clear" message for administrators
+who are really skeptical.
+
+This is the first public release of these patches.  We hope people
+will help expand and extend the MOO server in general and these
+patches in particular.  However, the charter of the "r" series of
+patches is primarily performance and bug fixes; significant extensions
+to functionality or other major changes aren't the main goal.  We're
+happy to look at other people's patches for inclusion although we'd
+prefer them to be sent to moo-cows and to have attached lucid
+explanations of the bugs they fix or how they improve performance in
+the real world---profiling results and benchmarks are far better than
+intuition and aesthetics as far as this goes.
+
+Broader changes may still be appropriate for the MOO server in
+general; we urge you to discuss them on moo-cows.  The person you need
+to convince there is Erik as he's still the final arbiter of what will
+be in the next official MOO server release.  
+
+We feel source availability is important for the MOO community in
+general.  We'd like people packaging binary distributions of this
+modified server for specific platforms to make source available.
+Since we're not claiming copyright on our changes, the original MOO
+server license still applies; we can't do anything more than think bad
+thoughts at you if you decide to go against our wishes here.
+
+As of the time of this writing, the distribution point for this patch
+is ftp://ftp.place.org/pub/moo/unofficial/ .
+
+Have fun with your fast new server!
+
+Ben Jackson       ben@ben.com
+Jay Carlson       nop@nop.com
+
+================
+
+There are no user-visible changes in this release, aside from
+performance.
+
+There are three new builtin functions available to wizards:
+
+load_server_options() must be called after modifying
+$server_options.  Although doing this is not always necessary in the
+current release, it's now officially undefined whether your changes to
+$server_options will have any effect until you call this.
+
+log_cache_stats() and verb_cache_stats() provide statistics on
+the verb lookup cache.
+
+There are a few new changes to the compilation process:
+
+The suggested CFLAGS is now -O2 (it's a performance release, right?)
+with or without -finline-functions for gcc---you may want to
+experiment and find out whether adding that flag will help.  On x86
+machines the gcc flag -fomit-frame-pointer will significantly speed
+things up at the cost of some ability to debug.
+
+In options.h, #define IGNORE_PROP_PROTECTED will skip builtin property
+protection.  If you don't plan on protecting (for example) .name and
+.location, this define is highly recommended for performance.
+
+If your C compiler doesn't support gcc-style inline function
+declarations (static inline int foo(int bar)) you need to compile with
+"-Dinline=" in CFLAGS.
+
+There is experimental support for reducing memory usage on the DEC
+Alpha.  See SHORT_ALPHA_VAR_POINTERS in structures.h.
+
+More detailed (yet sketchy) change information follows.
+
+================
+
+All files were run through GNU indent with settings given in
+.indent.pro in an attempt to normalize coding style.
+
+code_gen.c:
+
+Fixed bizarre bug where uninitialized memory was accessed; usually
+multiplied by zero immediately, so nobody ever noticed.
+
+eval_env.c, db_io.c, objects.c, utils.c:
+
+Type identifiers (TYPE_STR et al) now contain a bit flag indicating
+whether additional work needs to be done when a Var of their type is
+freed.  This allows free_var to run inline without a case statement
+when "simple" Vars are freed.  Code to translate between the internal
+TYPE_STR and the previous external representation added.
+
+db_verbs.c, db_objects.c:
+
+(This part is primarily Jay's fault, so we'll let him talk about it
+using the first person.)
+
+The verb lookup cache.  Traditionally, the server has spent large
+amounts of time searching for what verbcode to run.  MOO verbs can
+have aliases ($object_utils:descendents/descendants), incomplete
+specification ($room:l*ook), and command-line verbs distinguished by
+args...and verb definition order matters during lookup!  These
+features ruled out the naive speedup of just dumping all verbdefs in a
+hash table per object.
+
+I decided not to work too hard on improving the performance of command
+line verb lookups.  Any solution that addressed them looked to be many
+times more complex than just fixing verbs calling verbs
+(db_find_callable_verb), and the later appeared more significant to
+overall performance.
+
+Originally I built a 7 element per object table to cache lookups but
+this significantly inflated the server size relative to the
+performance increase.  If you're interested in this, it's in the
+moo-cows archive as one of the steak patches.
+
+My current solution to lookup performance is to build a global hash
+table mapping
+
+   (hash(object_key x target_verbname), object_key, target_verbname)
+        => (verbdef, handle)
+
+used only for callable verb lookups.  
+
+Any action on the db that could affect the validity of this table
+clears the whole table by calling
+db_priv_affected_callable_verb_lookup().  Here's a list:
+
+  recycle()
+  renumber()
+  chparent(): in some circumstances
+  add_verb()
+  delete_verb()
+  set_verb_info(): name changes, flag changes
+  set_verb_args()
+
+Since a good number of objects don't have verbs on them (inheriting
+all behavior from parents) I decided to use "first parent with verbs"
+as the object_key.  This means that all those kids of $exit don't need
+to have separate table entries for :invoke or whatever.  All kids of a
+player class get a single entry for :tell unless the player has verbs
+on emself.  (Sadly, on LambdaMOO, the lag reduction feature object
+places a trivial :tell on anyone using it.  Since the verb is
+immediately at hand the lookup is short but unavoidable for every
+player using it.)
+
+Since I use "first parent with verbs" as object_key, chparent() does
+not need to clear the table that often.  If the object has no verbs,
+it can't be mentioned in the table directly; however, if it has
+children it could indirectly affect lookup of its kids that do have
+verbs.  Transient objects going through the usual
+$recycler:_create()/$recycler:_recycle() life cycle avoid both of
+these problems and in this release no longer trigger a flush.
+
+For this release, Ben added negative caching---failed verb lookups are
+stored in the table as well.
+
+The table itself is implemented as a fixed number of hash chains.  The
+compiled-in default is 7507 (DEFAULT_VC_SIZE in db_verbs.c).
+Statistics on occupancy are available through two new wiz-only
+primitives.  log_cache_stats() dumps formatted info into the server
+log; verb_cache_stats() returns a list of the form:
+
+  {hits, negative_hits, misses, table_clears, histogram}
+
+where histogram is a 17 element list.  histogram[1] is the number of
+chains with length 0; histogram[2] is the number of chains with length
+1 and so on up to histogram[17] which counts the number of chains with
+length of 16 or greater.
+
+hits, negative_hits, misses, and table_clears are counters only zeroed
+at server start.  The histogram is a snapshot of current cache
+condition.  If you're running a really busy server you can overflow
+the hits counter in a few weeks; your server won't crash but values
+reported by these functions will be wrong.  Yes, LambdaMOO executes
+*billions* of verbs in a typical run.
+
+If you start fretting about how much memory the lookup table is using,
+write a continuously running verb that forces one of the table clear
+conditions.
+
+extensions.c, db_tune.h:
+
+The functions in extensions.c that provide verb cache stats need to
+talk to the db layer's internals in order to gather information, but
+they aren't part of the db layer proper.  db_tune.h was invented as a
+middle ground between db.h and db_private.h for source files that
+needed access to implementation-specific interfaces provided by the db
+layer.
+
+Comments (and suggestions on a better name!) on this are solicited.
+
+decompile.c, program.c:
+
+When errors are thrown, the line number of the error is included in
+the traceback information.  Mapping between bytecode program counter
+and line number is expensive, so each Program now maintains a single
+pc->lineno cache entry---hopefully most programs that fail multiple
+times usually fail on the same line.
+
+eval_env.c, execute.c:
+
+To avoid calling malloc()/free() as often, the server now keeps a
+central pool of rt_stacks and rt_envs of given sizes.  They revert to
+malloc()/free() for large requests.
+
+execute.c:
+
+General optimization; Ben can write more extensively about this.  One of
+the more significant is that OP_IMM followed by OP_POP is "peephole
+optimized"; this makes verb comments like
+
+  "$string_utils:from_list(l, [, separator])";
+  "Return a string etc";
+  do_some_work();
+  "and do some more work";
+  do_more_work();
+
+much cheaper.
+
+An important memory leak involving failed property lookups was closed.
+
+execute.c, options.h
+
+Because very few sites actually use protected builtin properties and
+using them is a very substantial performance hit, a new options.h
+define, IGNORE_PROP_PROTECTED, allows them to be disabled at
+compile-time.  This is the default.
+
+functions.c, server.c:
+
+Doing property lookups per builtin function call to determine whether
+the function needs the $server_options.protect_foo treatment is
+extremely expensive.  A protectedness flag was directly added to the
+builtin function struct; the value of these flags are loaded from the
+db at startup time, or whenever the new builtin function
+load_server_options() is called.
+
+list.c:
+
+There's now a canonical empty list.  
+
+The regexp pattern cache wasn't storing the case_matters flag, causing
+many patterns to be impossible to find in the cache.
+
+decode_binary() was broken on systems where char is signed by default.
+
+doinsert reallocs lists with refcount 1 when appending rather than
+calling var_ref/free_var on all the elements.  (The general case could
+be sped up with memcpy as well.)
+
+my-types.h:
+
+sys/time.h may be necessary for FD_ZERO et al definitions.
+
+parse_cmd.c, storage.h:
+
+parse_into_words was incorrectly allocating an array of (char *) as
+M_STRING.  This caused a million unaligned memory access warnings on
+the Alpha.  Created a new M_STRING_PTRS allocation class for this.
+
+pattern.c:
+
+fastmap was allocated with mymalloc() but freed with the normal
+free().  Fixed.
+
+ref_count.c:
+
+Refcounts are now allocated as part of objects that can be
+addref()'d.  This allows macros to manipulate those counts and makes a
+request for the current refcount of an object much cheaper.  This
+completely replaces the old hash table implementation.
+
+storage.c:
+
+There's now a canonical empty string.
+
+myrealloc(), the mymalloc/myfree analog of realloc() is now available.
+
+As a result of the changes, the memory debugging code is no longer
+available.  Also, since we now hold pointers to only the interior of
+some allocated objects, tools such as Purify will claim a million
+possible memory leaks.
+
+tasks.c:
+
+If a forked task was killed before it ever started, it leaked some
+memory.  Fixed.
+
+utils.c:
+
+var_refcount(Var v) added.  Returns the refcount of any Var.
