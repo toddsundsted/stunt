@@ -90,6 +90,13 @@ typedef struct state State;
 #ifdef BYTECODE_REDUCE_REF
 #define INCR_TRY_DEPTH(SSS)	(++(SSS)->try_depth)
 #define DECR_TRY_DEPTH(SSS)	(--(SSS)->try_depth)
+#define NON_VR_VAR_MASK	      ~((1 << SLOT_ARGSTR) | \
+				(1 << SLOT_DOBJ) | \
+				(1 << SLOT_DOBJSTR) | \
+				(1 << SLOT_PREPSTR) | \
+				(1 << SLOT_IOBJ) | \
+				(1 << SLOT_IOBJSTR) | \
+				(1 << SLOT_PLAYER))
 #else /* no BYTECODE_REDUCE_REF */
 #define INCR_TRY_DEPTH(SSS)
 #define DECR_TRY_DEPTH(SSS)
@@ -472,6 +479,15 @@ exit_loop(State * state)
 
 
 static void
+emit_call_verb_op(Opcode op, State * state)
+{
+    emit_byte(op, state);
+#ifdef BYTECODE_REDUCE_REF
+    state->pushmap[state->num_bytes - 1] = OP_CALL_VERB;
+#endif /* BYTECODE_REDUCE_REF */
+}
+
+static void
 emit_ending_op(Opcode op, State * state)
 {
     emit_byte(op, state);
@@ -733,7 +749,7 @@ generate_expr(Expr * expr, State * state)
 	generate_expr(expr->e.verb.obj, state);
 	generate_expr(expr->e.verb.verb, state);
 	generate_arg_list(expr->e.verb.args, state);
-	emit_byte(OP_CALL_VERB, state);
+	emit_call_verb_op(OP_CALL_VERB, state);
 	pop_stack(2, state);
 	break;
     case EXPR_COND:
@@ -1225,6 +1241,13 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 		 * a ref to `args' during the called verb.
 		 */
 		varbits = ~0U;
+	    } else if (state.pushmap[old_i] == OP_CALL_VERB) {
+		/*
+		 * Verb calls implicitly pass the VR variables (dobj,
+		 * dobjstr, player, etc).  They can't be clear at the
+		 * time of a verbcall.
+		 */
+		varbits &= NON_VR_VAR_MASK;
 	    }
 	}
     }
@@ -1330,10 +1353,15 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.8 1999/08/12 05:40:09 bjj Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.9 1999/08/14 19:44:15 bjj Exp $";
 
 /* 
  * $Log: code_gen.c,v $
+ * Revision 1.9  1999/08/14 19:44:15  bjj
+ * Code generator will no longer PUSH_CLEAR things like dobj/dobjstr/prepstr
+ * around CALL_VERB operations, since those variables are passed directly
+ * from one environment to the next.
+ *
  * Revision 1.8  1999/08/12 05:40:09  bjj
  * Consider OP_FORK a nonlocal goto so that no variables are undefined
  * when it happens (the saved environment has to be complete for the forked
