@@ -2295,3 +2295,20 @@ Version 1.8.0p5, 12 May 1996
 	36789.foo
    (an understandable typo for #6789.foo) stopped compiling when found in a
    database made by a pre-1.8.0 server.
+
+Version 1.8.0p6
+-- New maintainer: Erik Ostrom
+-- Fixed bug where Pattern.ptr->fastmap was  allocated with mymalloc()
+   but freed with free().  (Thanks to Ben Jackson for report and fix.)
+-- Fixed bug where passing E_NONE as the second arg to resume() would
+   produce unintuitive results, including server crashes.  In the
+   next version of the server, resuming with an error value may
+   make the suspended task _resume_ with it, rather than raising it.
+   A facility would be provided for raising errors in suspended tasks.
+   Thanks to Bill Carter, by way of Eric Mercer, for the report.
+-- Fixed memory leak--free_program didn't free float literals correctly.
+   (Thanks to Brian Buchanan for report and fix.)
+-- Fixed bug where force_input() didn't work on non-connected objects.
+   (Report from Joe Shaw, fix from Pavel.)
+-- Fixed bug where toint() accepted arguments that were not
+   syntactically correct (e.g., "-+5", "- 3").  Report from tijmen@dse.nl.
