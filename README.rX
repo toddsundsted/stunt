@@ -255,4 +255,12 @@ The default input and output buffer sizes in options.h are now 64k.
 From README.r8:
 
 r8 adds more fixes to BYTECODE_REDUCE_REF.  It's now safe to turn on.
-[This appears to be true.]
+However, suspended tasks are a problem for switchover.  From options.h:
+
+ * This option affects the length of certain bytecode sequences.
+ * Suspended tasks in a database from a server built with this option
+ * are not guaranteed to work with a server built without this option,
+ * and vice versa.  It is safe to flip this switch only if there are
+ * no suspended tasks in the database you are loading.  (It might work
+ * anyway, but hey, it's your database.)  This restriction will be
+ * lifted in a future version of the server software.

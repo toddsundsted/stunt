@@ -2349,7 +2349,9 @@ Version 1.8.0p6
    list value in some situations.  For example, `l[a] = b' will be
    significantly faster for long lists, if `l' is the only reference
    to the underlying list. This optimization can only be done outside
-   of error-handling expressions and `try' statements.
+   of error-handling expressions and `try' statements.  However, see
+   the notes in options.h on BYTECODE_REDUCE_REF for information on
+   the upgrade procedure currently required for safely enabling this.
 -- The server now declares some C functions as "static inline".  If
    your C compiler doesn't understand this gcc-style declaration, add
    "-Dinline=" to CFLAGS in the Makefile.  (This gross requirement
