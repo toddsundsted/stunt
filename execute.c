@@ -88,7 +88,7 @@ static Var *rt_stack_quick;
 #define RT_STACK_QUICKSIZE	15
 
 static void
-alloc_rt_stack(activation *a, int size)
+alloc_rt_stack(activation * a, int size)
 {
     Var *res;
 
@@ -103,7 +103,7 @@ alloc_rt_stack(activation *a, int size)
 }
 
 static void
-free_rt_stack(activation *a)
+free_rt_stack(activation * a)
 {
     Var *stack = a->base_rt_stack;
 
@@ -678,7 +678,7 @@ bi_prop_protected(enum bi_prop prop, Objid progr)
 **/
 
 static enum outcome
-run(enum error resumption_error, Var * result)
+run(char raise, enum error resumption_error, Var * result)
 {				/* runs the_vm */
     /* If the returned value is OUTCOME_DONE and RESULT is non-NULL, then
      * *RESULT is the value returned by the top frame.
@@ -757,7 +757,7 @@ do {    						    	\
 
     LOAD_STATE_VARIABLES();
 
-    if (resumption_error != E_NONE) {
+    if (raise) {
 	error_bv = bv;
 	PUSH_ERROR(resumption_error);
     }
@@ -2029,7 +2029,13 @@ setup_task_execution_limits(int seconds, int ticks)
 }
 
 enum outcome
-run_interpreter(enum error e, Var * result, int is_fg, int do_db_tracebacks)
+run_interpreter(char raise, enum error e,
+		Var * result, int is_fg, int do_db_tracebacks)
+    /* raise is boolean, true iff an error should be raised.
+       e is the specific error to be raised if so.
+       (in earlier versions, an error was raised iff e != E_NONE,
+       but now it's possible to raise E_NONE on resumption from
+       suspend().) */
 {
     enum outcome ret;
 
@@ -2045,7 +2051,7 @@ run_interpreter(enum error e, Var * result, int is_fg, int do_db_tracebacks)
     handler_verb_args = zero;
     handler_verb_name = 0;
     interpreter_is_running = 1;
-    ret = run(e, result);
+    ret = run(raise, e, result);
     interpreter_is_running = 0;
     task_timed_out = 0;
     cancel_timer(task_alarm_id);
@@ -2134,7 +2140,7 @@ do_task(Program * prog, int which_vector, Var * result, int do_db_tracebacks)
     RUN_ACTIV.bi_func_pc = 0;
     RUN_ACTIV.temp.type = TYPE_NONE;
 
-    return run_interpreter(E_NONE, result, !forked, do_db_tracebacks);
+    return run_interpreter(0, E_NONE, result, !forked, do_db_tracebacks);
 }
 
 /* procedure to resume an old task */
@@ -2154,12 +2160,12 @@ resume_from_previous_vm(vm the_vm, Var v, task_kind kind, Var * result)
     free_vm(the_vm, 0);
 
     if (v.type == TYPE_ERR)
-	return run_interpreter(v.v.err, result, 0, 1);
+	return run_interpreter(1, v.v.err, result, 0, 1);
     else {
 	/* PUSH_REF(v) */
 	*(RUN_ACTIV.top_rt_stack++) = var_ref(v);
 
-	return run_interpreter(E_NONE, result, 0, 1);
+	return run_interpreter(0, E_NONE, result, 0, 1);
     }
 }
 
@@ -2812,14 +2818,17 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.5 1997/03/05 08:41:47 bjj Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.6 1997/03/08 06:25:39 nop Exp $";
 
 /* $Log: execute.c,v $
-/* Revision 1.5  1997/03/05 08:41:47  bjj
-/* A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
-/* so that we can keep a pool of them handy.  rt_envs are similarly pooled.
-/* Both revert to malloc/free for large requests.
+/* Revision 1.6  1997/03/08 06:25:39  nop
+/* 1.8.0p6 merge by hand.
 /*
+ * Revision 1.5  1997/03/05 08:41:47  bjj
+ * A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+ * so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+ * Both revert to malloc/free for large requests.
+ *
  * Revision 1.4  1997/03/03 09:03:31  bjj
  * 3 opcode optimizations:
  *
@@ -2844,6 +2853,11 @@ char rcsid_execute[] = "$Id: execute.c,v 1.5 1997/03/05 08:41:47 bjj Exp $";
  *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
+ *
+ * Revision 2.11  1997/03/04 04:31:48  eostrom
+ * Modified run() and run_interpreter() to take a separate argument
+ * indicating whether to raise an exception, rather than assuming E_NONE
+ * means no and anything else means yes.
  *
  * Revision 2.10  1996/04/19  01:24:40  pavel
  * Added support for built-in functions making tail calls to MOO verbs and

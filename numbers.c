@@ -35,16 +35,10 @@ static int
 parse_number(const char *str, int *result, int try_floating_point)
 {
     char *p;
-    int negative = 0;
 
-    while (*str && *str == ' ')
-	str++;
-    if (*str == '-') {
-	str++;
-	negative = 1;
-    }
     *result = strtol(str, &p, 10);
-    if (try_floating_point && (*p == '.' || *p == 'e' || *p == 'E'))
+    if (try_floating_point &&
+	(p == str || *p == '.' || *p == 'e' || *p == 'E'))
 	*result = (int) strtod(str, &p);
     if (p == str)
 	return 0;
@@ -53,8 +47,6 @@ parse_number(const char *str, int *result, int try_floating_point)
 	    return 0;
 	p++;
     }
-    if (negative)
-	*result = -*result;
     return 1;
 }
 
@@ -715,14 +707,22 @@ register_numbers(void)
     register_function("trunc", 1, 1, bf_trunc, TYPE_FLOAT);
 }
 
-char rcsid_numbers[] = "$Id: numbers.c,v 1.2 1997/03/03 04:19:11 nop Exp $";
+char rcsid_numbers[] = "$Id: numbers.c,v 1.3 1997/03/08 06:25:42 nop Exp $";
 
 /* $Log: numbers.c,v $
-/* Revision 1.2  1997/03/03 04:19:11  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/08 06:25:42  nop
+/* 1.8.0p6 merge by hand.
 /*
+ * Revision 1.2  1997/03/03 04:19:11  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
+ *
+ * Revision 2.6  1997/03/04 04:34:06  eostrom
+ * parse_number() now trusts strtol() and strtod() more instead of
+ * parsing for "-" itself, since a bug in that led to inputs like "--5"
+ * and "-+5" being treated as valid.
  *
  * Revision 2.5  1996/03/19  07:15:27  pavel
  * Fixed floatstr() to allow DBL_DIG + 4 digits.  Release 1.8.0p2.

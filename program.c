@@ -90,8 +90,8 @@ free_program(Program * p)
     if (p->ref_count == 0) {
 
 	for (i = 0; i < p->num_literals; i++)
-	    if (p->literals[i].type == TYPE_STR)	/* will not be a LIST */
-		free_str(p->literals[i].v.str);
+	    /* can't be a list--strings and floats need to be freed, though. */
+	    free_var(p->literals[i]);
 	if (p->literals)
 	    myfree(p->literals, M_LIT_LIST);
 
@@ -110,14 +110,20 @@ free_program(Program * p)
     }
 }
 
-char rcsid_program[] = "$Id: program.c,v 1.2 1997/03/03 04:19:17 nop Exp $";
+char rcsid_program[] = "$Id: program.c,v 1.3 1997/03/08 06:25:42 nop Exp $";
 
 /* $Log: program.c,v $
-/* Revision 1.2  1997/03/03 04:19:17  nop
-/* GNU Indent normalization
+/* Revision 1.3  1997/03/08 06:25:42  nop
+/* 1.8.0p6 merge by hand.
 /*
+ * Revision 1.2  1997/03/03 04:19:17  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
+ *
+ * Revision 2.4  1997/03/04 04:36:18  eostrom
+ * Fixed memory leak in free_program().
  *
  * Revision 2.3  1996/04/08  00:41:16  pavel
  * Corrected an error in the computation of `program_bytes()'.
