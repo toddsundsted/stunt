@@ -1,5 +1,8 @@
-Release notes on the 1.8.0r5 patches to the LambdaMOO server
-============================================================
+This file merges information from the various README.r[5-8] notes
+shipped with Ben Jackson and Jay Carlson's "rogue" server patches.
+The information below didn't fit well into the changelog format.
+
+From README.r5:
 
 1.8.0r5 is a collection of unofficial patches to Erik Ostrom's
 LambdaMOO 1.8.0p6 server release.  They're primarily bug fixes and
@@ -11,82 +14,7 @@ that some plausible synthetic benchmarks are now two to four times
 faster.  Users have noted that production systems running this code
 feel much more responsive at computationally expensive tasks.
 
-Our thanks go out to the administrators of LambdaMOO (and some other
-servers) for beta testing previous releases of this patch.  Most of
-the changes have been tested there and on other large systems, so good
-stability is anticipated.  As always we solicit bug reports and bug
-fixes.  If no significant problems are noted within a reasonable
-period of time we may post an "all clear" message for administrators
-who are really skeptical.
-
-This is the first public release of these patches.  We hope people
-will help expand and extend the MOO server in general and these
-patches in particular.  However, the charter of the "r" series of
-patches is primarily performance and bug fixes; significant extensions
-to functionality or other major changes aren't the main goal.  We're
-happy to look at other people's patches for inclusion although we'd
-prefer them to be sent to moo-cows and to have attached lucid
-explanations of the bugs they fix or how they improve performance in
-the real world---profiling results and benchmarks are far better than
-intuition and aesthetics as far as this goes.
-
-Broader changes may still be appropriate for the MOO server in
-general; we urge you to discuss them on moo-cows.  The person you need
-to convince there is Erik as he's still the final arbiter of what will
-be in the next official MOO server release.  
-
-We feel source availability is important for the MOO community in
-general.  We'd like people packaging binary distributions of this
-modified server for specific platforms to make source available.
-Since we're not claiming copyright on our changes, the original MOO
-server license still applies; we can't do anything more than think bad
-thoughts at you if you decide to go against our wishes here.
-
-As of the time of this writing, the distribution point for this patch
-is ftp://ftp.place.org/pub/moo/unofficial/ .
-
-Have fun with your fast new server!
-
-Ben Jackson       ben@ben.com
-Jay Carlson       nop@nop.com
-
-================
-
-There are no user-visible changes in this release, aside from
-performance.
-
-There are three new builtin functions available to wizards:
-
-load_server_options() must be called after modifying
-$server_options.  Although doing this is not always necessary in the
-current release, it's now officially undefined whether your changes to
-$server_options will have any effect until you call this.
-
-log_cache_stats() and verb_cache_stats() provide statistics on
-the verb lookup cache.
-
-There are a few new changes to the compilation process:
-
-The suggested CFLAGS is now -O2 (it's a performance release, right?)
-with or without -finline-functions for gcc---you may want to
-experiment and find out whether adding that flag will help.  On x86
-machines the gcc flag -fomit-frame-pointer will significantly speed
-things up at the cost of some ability to debug.
-
-In options.h, #define IGNORE_PROP_PROTECTED will skip builtin property
-protection.  If you don't plan on protecting (for example) .name and
-.location, this define is highly recommended for performance.
-
-If your C compiler doesn't support gcc-style inline function
-declarations (static inline int foo(int bar)) you need to compile with
-"-Dinline=" in CFLAGS.
-
-There is experimental support for reducing memory usage on the DEC
-Alpha.  See SHORT_ALPHA_VAR_POINTERS in structures.h.
-
-More detailed (yet sketchy) change information follows.
-
-================
+[...]
 
 All files were run through GNU indent with settings given in
 .indent.pro in an attempt to normalize coding style.
@@ -304,3 +232,27 @@ memory.  Fixed.
 utils.c:
 
 var_refcount(Var v) added.  Returns the refcount of any Var.
+
+From README.r6:
+
+The two big changes in r6 over r5 are:
+
+  o  Bytecode optimizations to try to modify lists in-place whenever
+possible.  List manipulation and mutation should be orders of
+magnitude faster in some cases.
+
+  o  String "interning" during load; initially, there will be one and
+only one in-memory copy of each identical string.  (In JHCore that
+means we only allocate memory for "do" once...)
+
+From README.r7:
+
+r7 fixes BYTECODE_REDUCE_REF.  It's now safe to turn on.
+[This turned out to be false.]
+
+The default input and output buffer sizes in options.h are now 64k.
+
+From README.r8:
+
+r8 adds more fixes to BYTECODE_REDUCE_REF.  It's now safe to turn on.
+[This appears to be true.]

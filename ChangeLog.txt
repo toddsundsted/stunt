@@ -2312,3 +2312,61 @@ Version 1.8.0p6
    (Report from Joe Shaw, fix from Pavel.)
 -- Fixed bug where toint() accepted arguments that were not
    syntactically correct (e.g., "-+5", "- 3").  Report from tijmen@dse.nl.
+
+ Version 1.8.1
+-- New maintainers: Ben Jackson (ben@ben.com) and Jay Carlson (nop@nop.com)
+-- No significant user-visible changes to server behavior.
+-- Many internal memory usage bugs fixed.
+-- Server is significantly (200-400%) faster.
+-- Merged rX series of patches.
+**** Changes significant to programmers, wizards, and people compiling
+     the server follow:
+-- After modifying properties on $server_options, wizards must call
+   the new built-in function `load_server_options()'.  Changes made
+   may not take effect until this function is called.  This allows the
+   server to cache option values internally; this significantly speeds
+   up built-in function invocation.
+-- The server now caches verbname-to-Program lookups.  See README.rX
+   for details.  Two new built-in functions, `log_cache_stats()' and
+   `verb_cache_stats()' allow wizards to peer into verb cache
+   statistics.
+-- options.h now #defines IGNORE_PROP_PROTECTED by default.  If it is
+   defined, the server ignores all attempts to protect built-in
+   properties (such as $server_options.protect_location).  Protecting
+   properties is a significant performance hit, and most MOOs do not
+   use this functionality.
+-- The default input and output buffer sizes in options.h are now 64k.
+-- As the server loads the database, it "interns" all strings it
+   encounters, ensuring there initially will be one and only one
+   in-memory copy of each unique string.  This saves significant
+   amounts of memory for many medium and large databases---20-30% on
+   JHM.  The table used to uniquify strings is discarded after the
+   database is loaded, but depending on the OS memory allocation
+   strategy, the full savings may not be apparent through tools like
+   "ps" and "top".  Unused process space simply will be swapped out by
+   the OS over time.
+-- MOO code operations that manipulate lists now avoid copying the old
+   list value in some situations.  For example, `l[a] = b' will be
+   significantly faster for long lists, if `l' is the only reference
+   to the underlying list. This optimization can only be done outside
+   of error-handling expressions and `try' statements.
+-- The server now declares some C functions as "static inline".  If
+   your C compiler doesn't understand this gcc-style declaration, add
+   "-Dinline=" to CFLAGS in the Makefile.  (This gross requirement
+   will go away once we upgrade to modern autoconf scripts.)
+-- There's primitive support for the 32-bit memory model for reducing
+   memory usage on the DEC Alpha using DEC cc.  See
+   SHORT_ALPHA_VAR_POINTERS in structures.h.
+**** Critical changes significant to server hackers follow:
+-- All C source code was processed with GNU indent using the settings
+   in the file `.indent.pro'.  This is an attempt to normalize coding
+   style.  This also breaks patch files against 1.8.0p6.
+-- The Memory_Type passed to mymalloc is now more significant.  In
+   particular, use of M_STRING as the typing for `void *' will break
+   your code, due to poor interactions with the new reference counting
+   system and alignment restrictions.  Only use M_STRING for strings.
+   To allocate a new kind of storage with mymalloc(), add a new type
+   name to the Memory_Type enum in storage.h.  (You can currently get
+   away with reusing a type like M_VM, but this may break eventually.)
+-- Server hackers should read README.rX for more information on
+   changes to server internals.
