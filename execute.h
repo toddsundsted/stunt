@@ -81,6 +81,10 @@ typedef enum {
    or E_NONE.  the vm will only be changed if E_NONE is returned */
 extern enum error call_verb(Objid obj, const char *vname, Var args,
 			    int do_pass);
+/* if your vname is already a moo str (via str_dup) then you can
+   use this interface instead */
+extern enum error call_verb2(Objid obj, const char *vname, Var args,
+			    int do_pass);
 
 extern int setup_activ_for_eval(Program * prog);
 
@@ -131,6 +135,10 @@ extern int read_activ(activation * a, int which_vector);
 
 /* 
  * $Log: execute.h,v $
+ * Revision 1.5  2001/03/12 05:10:54  bjj
+ * Split out call_verb and call_verb2.  The latter must only be called with
+ * strings that are already MOO strings (str_ref-able).
+ *
  * Revision 1.4  1998/12/14 13:17:51  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

@@ -535,12 +535,31 @@ free_activation(activation a, char data_too)
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
 
+enum error call_verb2(Objid this, const char *vname, Var args, int do_pass);
+
+/*
+ * Historical interface for things which want to call with vname not
+ * already in a moo-str.
+ */
 enum error
-call_verb(Objid this, const char *vname, Var args, int do_pass)
+call_verb(Objid this, const char *vname_in, Var args, int do_pass)
+{
+    const char *vname = str_dup(vname_in);
+    enum error result;
+
+    result = call_verb2(this, vname, args, do_pass);
+    /* call_verb2 got any refs it wanted */
+    free_str(vname);
+    return result;
+}
+
+enum error
+call_verb2(Objid this, const char *vname, Var args, int do_pass)
 {
     /* if call succeeds, args will be consumed.  If call fails, args
        will NOT be consumed  -- it must therefore be freed by caller */
     /* vname will never be consumed */
+    /* vname *must* already be a MOO-string (as in str_ref-able) */
 
     /* will only return E_MAXREC, E_INVIND, E_VERBNF, or E_NONE */
     /* returns an error if there is one, and does not change the vm in that
@@ -570,7 +589,6 @@ call_verb(Objid this, const char *vname, Var args, int do_pass)
 	return E_MAXREC;
 
     program = db_verb_program(h);
-    vname = str_dup(vname);	/* ensure that vname is heap-allocated */
     RUN_ACTIV.prog = program_ref(program);
     RUN_ACTIV.this = this;
     RUN_ACTIV.progr = db_verb_owner(h);
@@ -612,7 +630,7 @@ call_verb(Objid this, const char *vname, Var args, int do_pass)
 #undef ENV_COPY
 
     v.type = TYPE_STR;
-    v.v.str = vname;
+    v.v.str = str_ref(vname);
     set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
     set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
 
@@ -1538,7 +1556,7 @@ do {    						    	\
 		    err = E_INVIND;
 		else {
 		    STORE_STATE_VARIABLES();
-		    err = call_verb(obj.v.obj, verb.v.str, args, 0);
+		    err = call_verb2(obj.v.obj, verb.v.str, args, 0);
 		    /* if there is no error, RUN_ACTIV is now the CALLEE's.
 		       args will be consumed in the new rt_env */
 		    /* if there is an error, then RUN_ACTIV is unchanged, and
@@ -2522,7 +2540,7 @@ bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    enum error e = call_verb(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
+    enum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
 
     if (e == E_NONE)
 	return tail_call_pack();
@@ -2856,10 +2874,14 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.11 2001/03/12 03:25:16 bjj Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.12 2001/03/12 05:10:54 bjj Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.12  2001/03/12 05:10:54  bjj
+ * Split out call_verb and call_verb2.  The latter must only be called with
+ * strings that are already MOO strings (str_ref-able).
+ *
  * Revision 1.11  2001/03/12 03:25:16  bjj
  * Added new package type BI_KILL which kills the task calling the builtin.
  * Removed the static int task_killed in execute.c which wa tested on every
