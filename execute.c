@@ -955,8 +955,15 @@ do {    						    	\
 		    free_var(list);
 		    PUSH_ERROR(E_INVARG);
 		} else if (list.type == TYPE_LIST) {
-		    PUSH(listset(var_dup(list), value, index.v.num));
-		    free_var(list);
+		    Var res;
+
+		    if (var_refcount(list) == 1)
+			res = list;
+		    else {
+			res = var_dup(list);
+		        free_var(list);
+		    }
+		    PUSH(listset(res, value, index.v.num));
 		} else {	/* TYPE_STR */
 		    char *tmp_str = str_dup(list.v.str);
 		    free_str(list.v.str);
@@ -1506,23 +1513,12 @@ do {    						    	\
 		    free_var(time);
 		    RAISE_ERROR(E_INVARG);
 		} else {
-		    Var *copied_rt_env;
-		    Var task_id;
+		    enum error e;
 
-		    copied_rt_env = copy_rt_env(RUN_ACTIV.rt_env,
-					  RUN_ACTIV.prog->num_var_names);
-		    task_id = enqueue_forked_task(program_ref(RUN_ACTIV.prog),
-						RUN_ACTIV, copied_rt_env,
-						  f_index, time.v.num);
-		    if (task_id.type == TYPE_ERR) {
-			free_rt_env(copied_rt_env, RUN_ACTIV.prog->num_var_names);
-			RAISE_ERROR(task_id.v.err);
-		    } else if (op == OP_FORK_WITH_ID) {
-			free_var(RUN_ACTIV.rt_env[id]);
-			RUN_ACTIV.rt_env[id] = task_id;
-			free_var(copied_rt_env[id]);
-			copied_rt_env[id] = task_id;
-		    }
+		    e = enqueue_forked_task2(RUN_ACTIV, f_index, time.v.num,
+			op == OP_FORK_WITH_ID ? id : -1);
+		    if (e != E_NONE)
+			RAISE_ERROR(e);
 		}
 	    }
 	    break;
@@ -1947,6 +1943,52 @@ do {    						    	\
 		    PUSH_REF(value);
 	    }
 	    break;
+
+#ifdef BYTECODE_REDUCE_REF
+	case OP_PUSH_CLEAR:
+	case OP_PUSH_CLEAR + 1:
+	case OP_PUSH_CLEAR + 2:
+	case OP_PUSH_CLEAR + 3:
+	case OP_PUSH_CLEAR + 4:
+	case OP_PUSH_CLEAR + 5:
+	case OP_PUSH_CLEAR + 6:
+	case OP_PUSH_CLEAR + 7:
+	case OP_PUSH_CLEAR + 8:
+	case OP_PUSH_CLEAR + 9:
+	case OP_PUSH_CLEAR + 10:
+	case OP_PUSH_CLEAR + 11:
+	case OP_PUSH_CLEAR + 12:
+	case OP_PUSH_CLEAR + 13:
+	case OP_PUSH_CLEAR + 14:
+	case OP_PUSH_CLEAR + 15:
+	case OP_PUSH_CLEAR + 16:
+	case OP_PUSH_CLEAR + 17:
+	case OP_PUSH_CLEAR + 18:
+	case OP_PUSH_CLEAR + 19:
+	case OP_PUSH_CLEAR + 20:
+	case OP_PUSH_CLEAR + 21:
+	case OP_PUSH_CLEAR + 22:
+	case OP_PUSH_CLEAR + 23:
+	case OP_PUSH_CLEAR + 24:
+	case OP_PUSH_CLEAR + 25:
+	case OP_PUSH_CLEAR + 26:
+	case OP_PUSH_CLEAR + 27:
+	case OP_PUSH_CLEAR + 28:
+	case OP_PUSH_CLEAR + 29:
+	case OP_PUSH_CLEAR + 30:
+	case OP_PUSH_CLEAR + 31:
+	    {
+		Var *vp;
+		vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
+		if (vp->type == TYPE_NONE) {
+		    PUSH_ERROR(E_VARNF);
+		} else {
+		    PUSH(*vp);
+		    vp->type = TYPE_NONE;
+		}
+	    }
+	    break;
+#endif /* BYTECODE_REDUCE_REF */
 
 	case OP_PUT:
 	case OP_PUT + 1:
@@ -2816,12 +2858,16 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.9 1998/02/19 07:36:17 nop Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.10 1998/12/14 13:17:50 nop Exp $";
 
-/* $Log: execute.c,v $
-/* Revision 1.9  1998/02/19 07:36:17  nop
-/* Initial string interning during db load.
-/*
+/* 
+ * $Log: execute.c,v $
+ * Revision 1.10  1998/12/14 13:17:50  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.9  1998/02/19 07:36:17  nop
+ * Initial string interning during db load.
+ *
  * Revision 1.8  1997/07/07 03:24:54  nop
  * Merge UNSAFE_OPTS (r5) after extensive testing.
  *
@@ -2830,6 +2876,20 @@ char rcsid_execute[] = "$Id: execute.c,v 1.9 1998/02/19 07:36:17 nop Exp $";
  * (we do execute it billions of times, after all).  Later we'll want to
  * get rid of if (task_killed) by introducing BI_KILL or by moving it into
  * the BI_FUNC_CALL case, at least.
+ *
+ * Revision 1.6.2.4  1998/12/06 07:13:21  bjj
+ * Rationalize enqueue_forked_task interface and fix program_ref leak in
+ * the case where fork fails with E_QUOTA.  Make .queued_task_limit=0 really
+ * enforce a limit of zero tasks (for old behavior set it to 1, that's the
+ * effect it used to have).
+ *
+ * Revision 1.6.2.3  1997/09/09 07:01:17  bjj
+ * Change bytecode generation so that x=f(x) calls f() without holding a ref
+ * to the value of x in the variable slot.  See the options.h comment for
+ * BYTECODE_REDUCE_REF for more details.
+ *
+ * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+ * new code is not conditional and still works either way).
  *
  * Revision 1.6.2.2  1997/05/24 07:08:37  bjj
  * Cleanup of Jay's last checkin to avoid some code duplication.

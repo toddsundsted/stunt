@@ -203,6 +203,23 @@
 #define IGNORE_PROP_PROTECTED
 
 /******************************************************************************
+ * The code generator can now recognize situations where the code will not
+ * refer to the value of a variable again and generate opcodes that will
+ * keep the interpreter from holding references to the value in the runtime
+ * environment variable slot.  Before when doing something like x=f(x), the
+ * interpreter was guaranteed to have a reference to the value of x while f()
+ * was running, meaning that f() always had to copy x to modify it.  With
+ * BYTECODE_REDUCE_REF enabled, f() could be called with the last reference
+ * to the value of x.  So for example, x={@x,y} can (if there are no other
+ * references to the value of x in variables or properties) just append to
+ * x rather than make a copy and append to that.  If it *does* have to copy,
+ * the next time (if it's in a loop) it will have the only reference to the
+ * copy and then it can take advantage.
+ ****************************************************************************** 
+ */
+#define BYTECODE_REDUCE_REF
+
+/******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
  * Emacs.  This is a very nice and reasonably portable implementation, but some
  * systems, notably the NeXT machine, won't allow programs to provide their own
@@ -300,11 +317,23 @@
 
 #endif				/* !Options_h */
 
-/* $Log: options.h,v $
-/* Revision 1.3  1997/03/03 06:14:45  nop
-/* Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
-/* the default.
-/*
+/* 
+ * $Log: options.h,v $
+ * Revision 1.4  1998/12/14 13:18:41  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.3.2.1  1997/09/09 07:01:17  bjj
+ * Change bytecode generation so that x=f(x) calls f() without holding a ref
+ * to the value of x in the variable slot.  See the options.h comment for
+ * BYTECODE_REDUCE_REF for more details.
+ *
+ * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+ * new code is not conditional and still works either way).
+ *
+ * Revision 1.3  1997/03/03 06:14:45  nop
+ * Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
+ * the default.
+ *
  * Revision 1.2  1997/03/03 04:19:13  nop
  * GNU Indent normalization
  *

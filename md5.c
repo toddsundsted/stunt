@@ -322,10 +322,14 @@ md5_Final(md5ctx_t * context, uint8 digest[16])
     memset((char *) context, 0, sizeof(*context));
 }
 
-/* $Log: md5.c,v $
-/* Revision 1.2  1997/03/03 04:18:51  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: md5.c,v $
+ * Revision 1.3  1998/12/14 13:18:04  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:51  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
  *

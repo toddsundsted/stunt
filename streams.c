@@ -227,12 +227,16 @@ stream_length(Stream * s)
     return s->current;
 }
 
-char rcsid_streams[] = "$Id: streams.c,v 1.2 1997/03/03 04:19:28 nop Exp $";
+char rcsid_streams[] = "$Id: streams.c,v 1.3 1998/12/14 13:19:01 nop Exp $";
 
-/* $Log: streams.c,v $
-/* Revision 1.2  1997/03/03 04:19:28  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: streams.c,v $
+ * Revision 1.3  1998/12/14 13:19:01  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:28  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

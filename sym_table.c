@@ -146,12 +146,16 @@ free_names(Names * names)
     myfree(names, M_NAMES);
 }
 
-char rcsid_sym_table[] = "$Id: sym_table.c,v 1.2 1997/03/03 04:19:29 nop Exp $";
+char rcsid_sym_table[] = "$Id: sym_table.c,v 1.3 1998/12/14 13:19:05 nop Exp $";
 
-/* $Log: sym_table.c,v $
-/* Revision 1.2  1997/03/03 04:19:29  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: sym_table.c,v $
+ * Revision 1.3  1998/12/14 13:19:05  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:29  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

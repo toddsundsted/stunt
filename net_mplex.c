@@ -29,12 +29,16 @@
 #    include "net_mp_fake.c"
 #  endif
 
-char rcsid_net_mplex[] = "$Id: net_mplex.c,v 1.1 1997/03/03 03:45:00 nop Exp $";
+char rcsid_net_mplex[] = "$Id: net_mplex.c,v 1.2 1998/12/14 13:18:29 nop Exp $";
 
-/* $Log: net_mplex.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
-/*
+/* 
+ * $Log: net_mplex.c,v $
+ * Revision 1.2  1998/12/14 13:18:29  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:58:20  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

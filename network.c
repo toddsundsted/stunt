@@ -23,10 +23,14 @@
 #  include "net_multi.c"
 #endif
 
-/* $Log: network.c,v $
-/* Revision 1.1  1997/03/03 03:45:00  nop
-/* Initial revision
-/*
+/* 
+ * $Log: network.c,v $
+ * Revision 1.2  1998/12/14 13:18:35  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.0  1995/11/30  05:11:37  pavel
  * New baseline version, corresponding to release 1.8.0alpha1.
  *

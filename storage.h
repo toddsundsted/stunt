@@ -56,10 +56,14 @@ free_str(const char *s)
 
 #endif				/* Storage_h */
 
-/* $Log: storage.h,v $
-/* Revision 1.4  1998/02/19 07:36:17  nop
-/* Initial string interning during db load.
-/*
+/* 
+ * $Log: storage.h,v $
+ * Revision 1.5  1998/12/14 13:19:00  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.4  1998/02/19 07:36:17  nop
+ * Initial string interning during db load.
+ *
  * Revision 1.3  1997/07/07 03:24:55  nop
  * Merge UNSAFE_OPTS (r5) after extensive testing.
  *

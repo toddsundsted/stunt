@@ -158,10 +158,14 @@ extern void proto_close_listener(int fd);
 
 #endif				/* !Net_Proto_H */
 
-/* $Log: net_proto.h,v $
-/* Revision 1.2  1997/03/03 04:19:07  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: net_proto.h,v $
+ * Revision 1.3  1998/12/14 13:18:34  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:07  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:04  nop
  * LambdaMOO 1.8.0p5
  *

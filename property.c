@@ -329,12 +329,16 @@ register_property(void)
 			     TYPE_OBJ, TYPE_STR);
 }
 
-char rcsid_property[] = "$Id: property.c,v 1.2 1997/03/03 04:19:18 nop Exp $";
+char rcsid_property[] = "$Id: property.c,v 1.3 1998/12/14 13:18:50 nop Exp $";
 
-/* $Log: property.c,v $
-/* Revision 1.2  1997/03/03 04:19:18  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: property.c,v $
+ * Revision 1.3  1998/12/14 13:18:50  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:18  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

@@ -732,12 +732,16 @@ unparse_to_stderr(Program * p, int fully_parenthesize, int indent_lines,
     unparse_to_file(stderr, p, fully_parenthesize, indent_lines, f_index);
 }
 
-char rcsid_unparse[] = "$Id: unparse.c,v 1.2 1997/03/03 04:19:34 nop Exp $";
+char rcsid_unparse[] = "$Id: unparse.c,v 1.3 1998/12/14 13:19:12 nop Exp $";
 
-/* $Log: unparse.c,v $
-/* Revision 1.2  1997/03/03 04:19:34  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: unparse.c,v $
+ * Revision 1.3  1998/12/14 13:19:12  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:34  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

@@ -112,12 +112,16 @@ free_program(Program * p)
     }
 }
 
-char rcsid_program[] = "$Id: program.c,v 1.4 1997/07/07 03:24:54 nop Exp $";
+char rcsid_program[] = "$Id: program.c,v 1.5 1998/12/14 13:18:48 nop Exp $";
 
-/* $Log: program.c,v $
-/* Revision 1.4  1997/07/07 03:24:54  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
+/* 
+ * $Log: program.c,v $
+ * Revision 1.5  1998/12/14 13:18:48  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.4  1997/07/07 03:24:54  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ * 
  * Revision 1.3.2.1  1997/06/05 09:00:00  bjj
  * Cache one pc/lineno pair with each Program.  Hopefully most programs that
  * fail multiple times usually do it on the same line!

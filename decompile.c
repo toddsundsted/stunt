@@ -155,6 +155,13 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	    e->e.id = PUSH_n_INDEX(op);
 	    push_expr(HOT_OP(e));
 	    continue;
+#ifdef BYTECODE_REDUCE_REF
+	} else if (IS_PUSH_CLEAR_n(op)) {
+	    e = alloc_expr(EXPR_ID);
+	    e->e.id = PUSH_CLEAR_n_INDEX(op);
+	    push_expr(HOT_OP(e));
+	    continue;
+#endif /* BYTECODE_REDUCE_REF */
 	} else if (IS_PUT_n(op)) {
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = PUT_n_INDEX(op);
@@ -982,12 +989,24 @@ find_line_number(Program * prog, int vector, int pc)
     return lineno;
 }
 
-char rcsid_decompile[] = "$Id: decompile.c,v 1.3 1997/07/07 03:24:53 nop Exp $";
+char rcsid_decompile[] = "$Id: decompile.c,v 1.4 1998/12/14 13:17:40 nop Exp $";
 
-/* $Log: decompile.c,v $
-/* Revision 1.3  1997/07/07 03:24:53  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
+/* 
+ * $Log: decompile.c,v $
+ * Revision 1.4  1998/12/14 13:17:40  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.3  1997/07/07 03:24:53  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ * 
+ * Revision 1.2.2.2  1997/09/09 07:01:16  bjj
+ * Change bytecode generation so that x=f(x) calls f() without holding a ref
+ * to the value of x in the variable slot.  See the options.h comment for
+ * BYTECODE_REDUCE_REF for more details.
+ *
+ * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+ * new code is not conditional and still works either way).
+ * 
  * Revision 1.2.2.1  1997/06/05 09:00:00  bjj
  * Cache one pc/lineno pair with each Program.  Hopefully most programs that
  * fail multiple times usually do it on the same line!

@@ -722,12 +722,16 @@ network_shutdown(void)
 	close_nlistener(all_nlisteners);
 }
 
-char rcsid_net_multi[] = "$Id: net_multi.c,v 1.2 1997/03/03 04:19:05 nop Exp $";
+char rcsid_net_multi[] = "$Id: net_multi.c,v 1.3 1998/12/14 13:18:31 nop Exp $";
 
-/* $Log: net_multi.c,v $
-/* Revision 1.2  1997/03/03 04:19:05  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: net_multi.c,v $
+ * Revision 1.3  1998/12/14 13:18:31  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:05  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:02  nop
  * LambdaMOO 1.8.0p5
  *

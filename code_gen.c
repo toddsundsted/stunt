@@ -26,6 +26,7 @@
 #include "str_intern.h"
 #include "utils.h"
 #include "version.h"
+#include "my-stdlib.h"
 
 /*** The reader will likely find it useful to consult the file
  *** `MOOCodeSequences.txt' in this directory while reading the code in this
@@ -73,6 +74,9 @@ struct state {
     Fixup *fixups;
     unsigned num_bytes, max_bytes;
     Byte *bytes;
+#ifdef BYTECODE_REDUCE_REF
+    Byte *pushmap;
+#endif /* BYTECODE_REDUCE_REF */
     unsigned cur_stack, max_stack;
     unsigned saved_stack;
     unsigned num_loops, max_loops;
@@ -115,6 +119,9 @@ init_state(State * state, GState * gstate)
     state->num_bytes = 0;
     state->max_bytes = 50;
     state->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+#ifdef BYTECODE_REDUCE_REF
+    state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+#endif /* BYTECODE_REDUCE_REF */
 
     state->cur_stack = state->max_stack = 0;
     state->saved_stack = UINT_MAX;
@@ -131,6 +138,9 @@ free_state(State state)
 {
     myfree(state.fixups, M_CODE_GEN);
     myfree(state.bytes, M_BYTECODES);
+#ifdef BYTECODE_REDUCE_REF
+    myfree(state.pushmap, M_BYTECODES);
+#endif /* BYTECODE_REDUCE_REF */
     myfree(state.loops, M_CODE_GEN);
 }
 
@@ -139,17 +149,17 @@ emit_byte(Byte b, State * state)
 {
     if (state->num_bytes == state->max_bytes) {
 	unsigned new_max = 2 * state->max_bytes;
-	Byte *new_bytes = mymalloc(sizeof(Byte) * new_max,
+	state->bytes = myrealloc(state->bytes, sizeof(Byte) * new_max,
 				   M_BYTECODES);
-	unsigned i;
-
-	for (i = 0; i < state->num_bytes; i++)
-	    new_bytes[i] = state->bytes[i];
-
-	myfree(state->bytes, M_BYTECODES);
-	state->bytes = new_bytes;
+#ifdef BYTECODE_REDUCE_REF
+	state->pushmap = myrealloc(state->pushmap, sizeof(Byte) * new_max,
+				   M_BYTECODES);
+#endif /* BYTECODE_REDUCE_REF */
 	state->max_bytes = new_max;
     }
+#ifdef BYTECODE_REDUCE_REF
+    state->pushmap[state->num_bytes] = 0;
+#endif /* BYTECODE_REDUCE_REF */
     state->bytes[state->num_bytes++] = b;
 }
 
@@ -451,8 +461,12 @@ emit_var_op(Opcode op, unsigned slot, State * state)
     if (slot >= NUM_READY_VARS) {
 	emit_byte(op + NUM_READY_VARS, state);
 	add_var_ref(slot, state);
-    } else
+    } else {
 	emit_byte(op + slot, state);
+#ifdef BYTECODE_REDUCE_REF
+        state->pushmap[state->num_bytes - 1] = op;
+#endif /* BYTECODE_REDUCE_REF */
+    }
 }
 
 static void generate_expr(Expr *, State *);
@@ -1063,12 +1077,27 @@ ref_size(unsigned max)
 	return 4;
 }
 
+#ifdef BYTECODE_REDUCE_REF
+static int
+bbd_cmp(int *a, int *b)
+{
+	return *a - *b;
+}
+#endif /* BYTECODE_REDUCE_REF */
+
 static Bytecodes
 stmt_to_code(Stmt * stmt, GState * gstate)
 {
     State state;
     Bytecodes bc;
-    unsigned old_i, new_i, fix_i;
+    int old_i, new_i, fix_i;
+#ifdef BYTECODE_REDUCE_REF
+    int *bbd, n_bbd;	/* basic block delimiters */
+    unsigned varbits;		/* variables we've seen */
+#if NUM_READY_VARS > 32
+#error assumed NUM_READY_VARS was 32
+#endif
+#endif /* BYTECODE_REDUCE_REF */
     Fixup *fixup;
 
     init_state(&state, gstate);
@@ -1110,9 +1139,57 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 
     bc.vector = mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
 
+#ifdef BYTECODE_REDUCE_REF
+    /*
+     * Create a sorted array filled with the bytecode offsets of
+     * beginnings of each basic block of code.  These are sequences
+     * of bytecodes which are guaranteed to execute in order (so if
+     * you start at the top, you will reach the bottom).  As such they
+     * are delimited by conditional and unconditional jump operations,
+     * each of which has an associated fixup.  If you also want to
+     * limit the blocks to those which have the property "if you get to
+     * the bottom you had to have started at the top", include the
+     * *destinations* of the jumps (hence the qsort).
+     */
+    bbd = mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
+    n_bbd = 0;
+    bbd[n_bbd++] = 0;
+    bbd[n_bbd++] = state.num_bytes;
+    for (fixup = state.fixups, fix_i = 0; fix_i < state.num_fixups; ++fix_i, ++fixup)
+	if (fixup->kind == FIXUP_LABEL)
+	    bbd[n_bbd++] = fixup->pc;
+    qsort(bbd, n_bbd, sizeof(*bbd), bbd_cmp);
+
+    /*
+     * For every basic block, search backwards for PUT ops.  The first
+     * PUSH we find for each variable slot (looking backwards, remember)
+     * after each PUT becomes a PUSH_CLEAR, while the rest remain PUSHs.
+     * In other words, the last use of a variable before it is replaced
+     * is identified, so that during interpretation the code can avoid
+     * holding spurious references to it.
+     */
+    while (n_bbd-- > 1) {
+	varbits = 0;
+
+        for (old_i = bbd[n_bbd] - 1; old_i >= bbd[n_bbd - 1]; --old_i) {
+	    if (state.pushmap[old_i] == OP_PUSH) {
+		int id = PUSH_n_INDEX(state.bytes[old_i]);
+
+		if (varbits & (1 << id)) {
+			varbits &= ~(1 << id);
+			state.bytes[old_i] += OP_PUSH_CLEAR - OP_PUSH;
+		}
+	    } else if (state.pushmap[old_i] == OP_PUT) {
+		int id = PUT_n_INDEX(state.bytes[old_i]);
+		varbits |= 1 << id;
+	    }
+	}
+    }
+    myfree(bbd, M_CODE_GEN);
+#endif /* BYTECODE_REDUCE_REF */
+
     fixup = state.fixups;
     fix_i = 0;
-
     for (old_i = new_i = 0; old_i < state.num_bytes; old_i++) {
 	if (fix_i < state.num_fixups && fixup->pc == old_i) {
 	    unsigned value, size = 0;	/* initialized to silence warning */
@@ -1210,12 +1287,24 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.4 1998/02/19 07:36:16 nop Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.5 1998/12/14 13:17:30 nop Exp $";
 
-/* $Log: code_gen.c,v $
-/* Revision 1.4  1998/02/19 07:36:16  nop
-/* Initial string interning during db load.
-/*
+/* 
+ * $Log: code_gen.c,v $
+ * Revision 1.5  1998/12/14 13:17:30  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.4  1998/02/19 07:36:16  nop
+ * Initial string interning during db load.
+ *
+ * Revision 1.2.2.2  1997/09/09 07:01:16  bjj
+ * Change bytecode generation so that x=f(x) calls f() without holding a ref
+ * to the value of x in the variable slot.  See the options.h comment for
+ * BYTECODE_REDUCE_REF for more details.
+ *
+ * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+ * new code is not conditional and still works either way).
+ *
  * Revision 1.3  1997/07/07 03:24:53  nop
  * Merge UNSAFE_OPTS (r5) after extensive testing.
  *

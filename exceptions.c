@@ -63,12 +63,16 @@ ES_RaiseException(Exception * exception, int value)
     longjmp((void *) cb->jmp, 1);
 }
 
-char rcsid_exceptions[] = "$Id: exceptions.c,v 1.2 1997/03/03 04:18:37 nop Exp $";
+char rcsid_exceptions[] = "$Id: exceptions.c,v 1.3 1998/12/14 13:17:48 nop Exp $";
 
-/* $Log: exceptions.c,v $
-/* Revision 1.2  1997/03/03 04:18:37  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: exceptions.c,v $
+ * Revision 1.3  1998/12/14 13:17:48  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:37  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

@@ -121,12 +121,17 @@ set_rt_env_var(Var * env, int slot, Var v)
     env[slot] = v;
 }
 
-char rcsid_rt_env[] = "$Id: eval_env.c,v 1.4 1997/07/07 03:24:53 nop Exp $";
+char rcsid_rt_env[] = "$Id: eval_env.c,v 1.5 1998/12/14 13:17:44 nop Exp $";
 
-/* $Log: eval_env.c,v $
-/* Revision 1.4  1997/07/07 03:24:53  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
+
+/* 
+ * $Log: eval_env.c,v $
+ * Revision 1.5  1998/12/14 13:17:44  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.4  1997/07/07 03:24:53  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.3.2.1  1997/03/20 18:07:50  bjj
  * Add a flag to the in-memory type identifier so that inlines can cheaply
  * identify Vars that need actual work done to ref/free/dup them.  Add the

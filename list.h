@@ -34,10 +34,14 @@ extern Var new_list(int size);
 extern const char *value2str(Var);
 extern const char *value_to_literal(Var);
 
-/* $Log: list.h,v $
-/* Revision 1.2  1997/03/03 04:18:47  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: list.h,v $
+ * Revision 1.3  1998/12/14 13:17:58  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:47  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:03  nop
  * LambdaMOO 1.8.0p5
  *

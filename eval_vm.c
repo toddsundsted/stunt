@@ -120,12 +120,16 @@ read_vm(int task_id)
     return the_vm;
 }
 
-char rcsid_eval_vm[] = "$Id: eval_vm.c,v 1.2 1997/03/03 04:18:36 nop Exp $";
+char rcsid_eval_vm[] = "$Id: eval_vm.c,v 1.3 1998/12/14 13:17:46 nop Exp $";
 
-/* $Log: eval_vm.c,v $
-/* Revision 1.2  1997/03/03 04:18:36  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: eval_vm.c,v $
+ * Revision 1.3  1998/12/14 13:17:46  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:36  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

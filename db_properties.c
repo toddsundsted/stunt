@@ -677,12 +677,16 @@ dbpriv_fix_properties_after_chparent(Objid oid, Objid old_parent)
     fix_props(oid, 0, old_props, new_props, common_props);
 }
 
-char rcsid_db_properties[] = "$Id: db_properties.c,v 1.2 1997/03/03 04:18:31 nop Exp $";
+char rcsid_db_properties[] = "$Id: db_properties.c,v 1.3 1998/12/14 13:17:38 nop Exp $";
 
-/* $Log: db_properties.c,v $
-/* Revision 1.2  1997/03/03 04:18:31  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: db_properties.c,v $
+ * Revision 1.3  1998/12/14 13:17:38  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:31  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

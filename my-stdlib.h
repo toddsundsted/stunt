@@ -69,10 +69,14 @@ extern int srandom(unsigned);
 
 #endif
 
-/* $Log: my-stdlib.h,v $
-/* Revision 1.2  1997/03/03 04:18:56  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: my-stdlib.h,v $
+ * Revision 1.3  1998/12/14 13:18:18  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:56  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:05  nop
  * LambdaMOO 1.8.0p5
  *

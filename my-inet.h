@@ -24,10 +24,14 @@
 
 #include <arpa/inet.h>
 
-/* $Log: my-inet.h,v $
-/* Revision 1.1  1997/03/03 03:45:04  nop
-/* Initial revision
-/*
+/* 
+ * $Log: my-inet.h,v $
+ * Revision 1.2  1998/12/14 13:18:10  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.1  1996/02/08  06:04:48  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

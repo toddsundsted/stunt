@@ -61,10 +61,14 @@ extern void free_program(Program *);
 
 #endif				/* !Program_H */
 
-/* $Log: program.h,v $
-/* Revision 1.3  1997/07/07 03:24:55  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
+/* 
+ * $Log: program.h,v $
+ * Revision 1.4  1998/12/14 13:18:49  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.3  1997/07/07 03:24:55  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.2.2.1  1997/06/05 09:00:01  bjj
  * Cache one pc/lineno pair with each Program.  Hopefully most programs that
  * fail multiple times usually do it on the same line!

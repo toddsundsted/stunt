@@ -84,10 +84,14 @@ extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
 
 #endif
 
-/* $Log: utils.h,v $
-/* Revision 1.5  1997/07/07 03:24:55  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
+/* 
+ * $Log: utils.h,v $
+ * Revision 1.6  1998/12/14 13:19:15  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.5  1997/07/07 03:24:55  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ *
  * Revision 1.4.2.2  1997/03/21 15:11:22  bjj
  * add var_refcount interface
  *

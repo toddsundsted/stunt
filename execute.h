@@ -129,12 +129,16 @@ extern int read_activ(activation * a, int which_vector);
 
 #endif
 
-/* $Log: execute.h,v $
-/* Revision 1.3  1997/03/05 08:41:49  bjj
-/* A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
-/* so that we can keep a pool of them handy.  rt_envs are similarly pooled.
-/* Both revert to malloc/free for large requests.
-/*
+/* 
+ * $Log: execute.h,v $
+ * Revision 1.4  1998/12/14 13:17:51  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.3  1997/03/05 08:41:49  bjj
+ * A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+ * so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+ * Both revert to malloc/free for large requests.
+ *
  * Revision 1.2  1997/03/03 04:18:40  nop
  * GNU Indent normalization
  *

@@ -37,10 +37,14 @@ extern int stream_length(Stream *);
 
 #endif
 
-/* $Log: streams.h,v $
-/* Revision 1.2  1997/03/03 04:19:28  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: streams.h,v $
+ * Revision 1.3  1998/12/14 13:19:02  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:28  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:04  nop
  * LambdaMOO 1.8.0p5
  *

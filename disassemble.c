@@ -75,6 +75,9 @@ struct mapping mappings[] =
     {OP_NOT, "NOT"},
     {OP_G_PUT, "PUT"},
     {OP_G_PUSH, "PUSH"},
+#ifdef BYTECODE_REDUCE_REF
+    {OP_G_PUSH_CLEAR, "PUSH_CLEAR"},
+#endif /* BYTECODE_REDUCE_REF */
     {OP_IMM, "PUSH_LITERAL"},
     {OP_MAKE_EMPTY_LIST, "MAKE_EMPTY_LIST"},
     {OP_LIST_ADD_TAIL, "LIST_ADD_TAIL"},
@@ -243,6 +246,10 @@ disassemble(Program * prog, Printer p, void *data)
 		stream_add_string(insn, COUNT_TICK(b) ? " * " : "   ");
 	    if (IS_OPTIM_NUM_OPCODE(b))
 		stream_printf(insn, "NUM %d", OPCODE_TO_OPTIM_NUM(b));
+#ifdef BYTECODE_REDUCE_REF
+	    else if (IS_PUSH_CLEAR_n(b))
+		stream_printf(insn, "PUSH_CLEAR %s", NAMES(PUSH_CLEAR_n_INDEX(b)));
+#endif /* BYTECODE_REDUCE_REF */
 	    else if (IS_PUSH_n(b))
 		stream_printf(insn, "PUSH %s", NAMES(PUSH_n_INDEX(b)));
 	    else if (IS_PUT_n(b))
@@ -324,6 +331,9 @@ disassemble(Program * prog, Printer p, void *data)
 		    stream_printf(insn, " %s %d", NAMES(a1), a2);
 		    break;
 		case OP_G_PUSH:
+#ifdef BYTECODE_REDUCE_REF
+		case OP_G_PUSH_CLEAR:
+#endif /* BYTECODE_REDUCE_REF */
 		case OP_G_PUT:
 		    stream_printf(insn, " %s",
 				  NAMES(ADD_BYTES(bc.numbytes_var_name)));
@@ -464,10 +474,22 @@ register_disassemble(void)
 
 char rcsid_disassemble[] = "$Id";
 
-/* $Log: disassemble.c,v $
-/* Revision 1.2  1997/03/03 04:18:34  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: disassemble.c,v $
+ * Revision 1.3  1998/12/14 13:17:42  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2.2.1  1997/09/09 07:01:16  bjj
+ * Change bytecode generation so that x=f(x) calls f() without holding a ref
+ * to the value of x in the variable slot.  See the options.h comment for
+ * BYTECODE_REDUCE_REF for more details.
+ *
+ * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+ * new code is not conditional and still works either way).
+ *
+ * Revision 1.2  1997/03/03 04:18:34  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:44:59  nop
  * LambdaMOO 1.8.0p5
  *

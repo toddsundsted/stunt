@@ -383,12 +383,16 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 
 #endif				/* NETWORK_PROTOCOL == NP_TCP */
 
-char rcsid_name_lookup[] = "$Id: name_lookup.c,v 1.2 1997/03/03 04:19:00 nop Exp $";
+char rcsid_name_lookup[] = "$Id: name_lookup.c,v 1.3 1998/12/14 13:18:25 nop Exp $";
 
-/* $Log: name_lookup.c,v $
-/* Revision 1.2  1997/03/03 04:19:00  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: name_lookup.c,v $
+ * Revision 1.3  1998/12/14 13:18:25  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:00  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
  *

@@ -28,10 +28,14 @@ extern void register_server(void);
 extern void register_tasks(void);
 extern void register_verbs(void);
 
-/* $Log: bf_register.h,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
-/*
+/* 
+ * $Log: bf_register.h,v $
+ * Revision 1.2  1998/12/14 13:17:29  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+ * LambdaMOO 1.8.0p5
+ *
  * Revision 2.2  1996/02/08  06:29:12  pavel
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *

@@ -300,12 +300,16 @@ reenable_timers(void)
 #endif
 }
 
-char rcsid_timers[] = "$Id: timers.c,v 1.2 1997/03/03 04:19:33 nop Exp $";
+char rcsid_timers[] = "$Id: timers.c,v 1.3 1998/12/14 13:19:09 nop Exp $";
 
-/* $Log: timers.c,v $
-/* Revision 1.2  1997/03/03 04:19:33  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: timers.c,v $
+ * Revision 1.3  1998/12/14 13:19:09  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:19:33  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:01  nop
  * LambdaMOO 1.8.0p5
  *

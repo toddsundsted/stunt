@@ -160,12 +160,13 @@ extern Exception dbpriv_dbio_failed;
 extern void dbpriv_set_dbio_input(FILE *);
 extern void dbpriv_set_dbio_output(FILE *);
 
-/* $Log: db_private.h,v $
-/* Revision 1.3  1997/07/07 03:24:53  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
- * Revision 1.2.2.1  1997/03/20 07:26:03  nop
- * First pass at the new verb cache.  Some ugly code inside.
+/* 
+ * $Log: db_private.h,v $
+ * Revision 1.4  1998/12/14 13:17:37  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.3  1997/07/07 03:24:53  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
  *
  * Revision 1.2  1997/03/03 04:18:30  nop
  * GNU Indent normalization

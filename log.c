@@ -149,12 +149,16 @@ register_log(void)
     register_function("server_log", 1, 2, bf_server_log, TYPE_STR, TYPE_ANY);
 }
 
-char rcsid_log[] = "$Id: log.c,v 1.2 1997/03/03 04:18:48 nop Exp $";
+char rcsid_log[] = "$Id: log.c,v 1.3 1998/12/14 13:17:59 nop Exp $";
 
-/* $Log: log.c,v $
-/* Revision 1.2  1997/03/03 04:18:48  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: log.c,v $
+ * Revision 1.3  1998/12/14 13:17:59  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:48  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:00  nop
  * LambdaMOO 1.8.0p5
  *

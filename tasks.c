@@ -717,7 +717,9 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front)
     if (!tq->hold_input || tq->reading)		/* Anything to do with this line? */
 	ensure_usage(tq);
 
-    if (!tq->input_suspended && tq->total_input_length > INPUT_HIWAT) {
+    if (!tq->input_suspended
+	&& tq->connected
+	&& tq->total_input_length > INPUT_HIWAT) {
 	server_suspend_input(tq->player);
 	tq->input_suspended = 1;
     }
@@ -814,31 +816,36 @@ check_user_task_limit(Objid user)
     if (limit < 0)
 	limit = server_int_option("queued_task_limit", -1);
 
-    if (tq && limit >= 0 && tq->num_bg_tasks >= limit)
+    if (limit < 0)
+	return 1;
+    else if ((tq ? tq->num_bg_tasks : 0) >= limit)
 	return 0;
     else
 	return 1;
 }
 
-Var
-enqueue_forked_task(Program * program, activation a, Var * rt_env,
-		    int f_index, unsigned after_seconds)
+enum error
+enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
 {
-    int id = new_task_id();
-    Var v;
+    int id;
+    Var *rt_env;
 
-    if (check_user_task_limit(a.progr)) {
-	a.verb = str_ref(a.verb);
-	a.verbname = str_ref(a.verbname);
-	enqueue_ft(program, a, rt_env, f_index, time(0) + after_seconds, id);
-	v.type = TYPE_INT;
-	v.v.num = id;
-    } else {
-	v.type = TYPE_ERR;
-	v.v.err = E_QUOTA;
+    if (!check_user_task_limit(a.progr))
+	return E_QUOTA;
+
+    id = new_task_id();
+    a.verb = str_ref(a.verb);
+    a.verbname = str_ref(a.verbname);
+    a.prog = program_ref(a.prog);
+    if (vid >= 0) {
+	free_var(a.rt_env[vid]);
+	a.rt_env[vid].type = TYPE_INT;
+	a.rt_env[vid].v.num = id;
     }
+    rt_env = copy_rt_env(a.rt_env, a.prog->num_var_names);
+    enqueue_ft(a.prog, a, rt_env, f_index, time(0) + after_seconds, id);
 
-    return v;
+    return E_NONE;
 }
 
 enum error
@@ -1937,12 +1944,26 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.4 1997/07/07 03:24:55 nop Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.5 1998/12/14 13:19:07 nop Exp $";
 
-/* $Log: tasks.c,v $
-/* Revision 1.4  1997/07/07 03:24:55  nop
-/* Merge UNSAFE_OPTS (r5) after extensive testing.
-/*
+/* 
+ * $Log: tasks.c,v $
+ * Revision 1.5  1998/12/14 13:19:07  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.4  1997/07/07 03:24:55  nop
+ * Merge UNSAFE_OPTS (r5) after extensive testing.
+ * 
+ * Revision 1.3.2.3  1998/12/06 07:13:22  bjj
+ * Rationalize enqueue_forked_task interface and fix program_ref leak in
+ * the case where fork fails with E_QUOTA.  Make .queued_task_limit=0 really
+ * enforce a limit of zero tasks (for old behavior set it to 1, that's the
+ * effect it used to have).
+ * 
+ * Revision 1.3.2.2  1998/11/23 01:10:55  bjj
+ * Fix a server crash when force_input() fills the input queue of an
+ * unconnected object.  No observable behavior has changed.
+ *
  * Revision 1.3.2.1  1997/05/21 03:41:34  bjj
  * Fix a memleak when a forked task was killed before it ever started.
  *

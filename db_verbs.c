@@ -756,13 +756,17 @@ db_verb_allows(db_verb_handle h, Objid progr, db_verb_flag flag)
 }
 
 
-char rcsid_db_verbs[] = "$Id: db_verbs.c,v 1.4 1997/09/07 23:58:37 nop Exp $";
+char rcsid_db_verbs[] = "$Id: db_verbs.c,v 1.5 1998/12/14 13:17:39 nop Exp $";
 
-/* $Log: db_verbs.c,v $
-/* Revision 1.4  1997/09/07 23:58:37  nop
-/* Bump up cache size to 7507, since lambdamoo has been running with that
-/* for months.
-/*
+/* 
+ * $Log: db_verbs.c,v $
+ * Revision 1.5  1998/12/14 13:17:39  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.4  1997/09/07 23:58:37  nop
+ * Bump up cache size to 7507, since lambdamoo has been running with that
+ * for months.
+ * 
  * Revision 1.3  1997/07/07 03:24:53  nop
  * Merge UNSAFE_OPTS (r5) after extensive testing.
  *

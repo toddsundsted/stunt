@@ -707,12 +707,16 @@ register_numbers(void)
     register_function("trunc", 1, 1, bf_trunc, TYPE_FLOAT);
 }
 
-char rcsid_numbers[] = "$Id: numbers.c,v 1.3 1997/03/08 06:25:42 nop Exp $";
+char rcsid_numbers[] = "$Id: numbers.c,v 1.4 1998/12/14 13:18:37 nop Exp $";
 
-/* $Log: numbers.c,v $
-/* Revision 1.3  1997/03/08 06:25:42  nop
-/* 1.8.0p6 merge by hand.
-/*
+/* 
+ * $Log: numbers.c,v $
+ * Revision 1.4  1998/12/14 13:18:37  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.3  1997/03/08 06:25:42  nop
+ * 1.8.0p6 merge by hand.
+ *
  * Revision 1.2  1997/03/03 04:19:11  nop
  * GNU Indent normalization
  *

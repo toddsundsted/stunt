@@ -20,10 +20,14 @@
 
 extern Objid match_object(Objid player, const char *name);
 
-/* $Log: match.h,v $
-/* Revision 1.2  1997/03/03 04:18:50  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: match.h,v $
+ * Revision 1.3  1998/12/14 13:18:03  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:50  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:03  nop
  * LambdaMOO 1.8.0p5
  *

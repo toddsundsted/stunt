@@ -34,10 +34,14 @@ void fill_in_rt_consts(Var * env, DB_Version);
 
 #endif
 
-/* $Log: eval_env.h,v $
-/* Revision 1.2  1997/03/03 04:18:36  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: eval_env.h,v $
+ * Revision 1.3  1998/12/14 13:17:45  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:36  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:02  nop
  * LambdaMOO 1.8.0p5
  *

@@ -22,10 +22,14 @@
 extern void disassemble_to_file(FILE * fp, Program * program);
 extern void disassemble_to_stderr(Program * program);
 
-/* $Log: disassemble.h,v $
-/* Revision 1.2  1997/03/03 04:18:35  nop
-/* GNU Indent normalization
-/*
+/* 
+ * $Log: disassemble.h,v $
+ * Revision 1.3  1998/12/14 13:17:43  nop
+ * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+ *
+ * Revision 1.2  1997/03/03 04:18:35  nop
+ * GNU Indent normalization
+ *
  * Revision 1.1.1.1  1997/03/03 03:45:02  nop
  * LambdaMOO 1.8.0p5
  *
