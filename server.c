@@ -413,7 +413,7 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
 	}
     } else			/* Use default message */
 	while ((line = va_arg(args, const char *)) != 0)
-	     network_send_line(nh, line, 1);
+	    network_send_line(nh, line, 1);
 
     va_end(args);
 }
@@ -485,18 +485,18 @@ main_loop(void)
 		nexth = h->next;
 
 		if (!h->outbound && h->connection_time == 0
-		&& (get_server_option(h->listener, "connect_timeout", &v)
-		    ? (v.type == TYPE_INT && v.v.num > 0
-		       && now - h->last_activity_time > v.v.num)
-		    : (now - h->last_activity_time
-		       > DEFAULT_CONNECT_TIMEOUT))) {
+		    && (get_server_option(h->listener, "connect_timeout", &v)
+			? (v.type == TYPE_INT && v.v.num > 0
+			   && now - h->last_activity_time > v.v.num)
+			: (now - h->last_activity_time
+			   > DEFAULT_CONNECT_TIMEOUT))) {
 		    call_notifier(h->player, h->listener, "user_disconnected");
 		    oklog("TIMEOUT: #%d on %s\n",
 			  h->player,
 			  network_connection_name(h->nhandle));
 		    if (h->print_messages)
 			send_message(h->listener, h->nhandle, "timeout_msg",
-				  "*** Timed-out waiting for login. ***",
+				     "*** Timed-out waiting for login. ***",
 				     0);
 		    network_close(h->nhandle);
 		    free_shandle(h);
@@ -506,7 +506,7 @@ main_loop(void)
 			  network_connection_name(h->nhandle));
 		    if (h->print_messages)
 			send_message(h->listener, h->nhandle,
-				   "recycle_msg", "*** Recycled ***", 0);
+				     "recycle_msg", "*** Recycled ***", 0);
 		    network_close(h->nhandle);
 		    free_shandle(h);
 		} else if (h->disconnect_me) {
@@ -821,7 +821,7 @@ emergency_mode()
 	    } else if (!mystrcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
 	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
-		 && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
+		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
 		printf("** Switching to wizard #%d...\n", wizard);
 	    } else {
 		if (mystrcasecmp(command, "help")
@@ -1064,7 +1064,7 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 			 "*** Redirecting connection to new port ***", 0);
 	if (new_h->print_messages)
 	    send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
-		   "*** Redirecting old connection to this port ***", 0);
+			 "*** Redirecting old connection to this port ***", 0);
 	network_close(existing_h->nhandle);
 	free_shandle(existing_h);
 	if (existing_h->listener == new_h->listener)
@@ -1088,7 +1088,7 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 			     "*** Connected ***", 0);
 	}
 	call_notifier(new_id, new_h->listener,
-		   is_newly_created ? "user_created" : "user_connected");
+		      is_newly_created ? "user_created" : "user_connected");
     }
 }
 
@@ -1567,7 +1567,7 @@ bf_set_connection_option(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!h || h->disconnect_me
 	     || (!server_set_connection_option(h, option, value)
 		 && !tasks_set_connection_option(h->tasks, option, value)
-	   && !network_set_connection_option(h->nhandle, option, value)))
+		 && !network_set_connection_option(h->nhandle, option, value)))
 	e = E_INVARG;
 
     free_var(arglist);
@@ -1749,10 +1749,13 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.7 2004/05/22 01:25:44 wrog Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.8 2004/05/25 07:28:55 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.8  2004/05/25 07:28:55  wrog
+ * indentation fixes
+ *
  * Revision 1.7  2004/05/22 01:25:44  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *
