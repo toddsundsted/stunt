@@ -85,6 +85,17 @@ typedef struct task {
     } t;
 } task;
 
+enum icmd_flag {
+    /* fix icmd_index() if you change any of the following numbers: */
+    ICMD_SUFFIX       = 1,
+    ICMD_OUTPUTSUFFIX = 2,
+    ICMD_OUTPUTPREFIX = 3,
+    ICMD_PREFIX       = 4,
+    ICMD_PROGRAM      = 5,  /* .program */
+    /* mask */
+    ICMD_ALL_CMDS = ((1<<(ICMD_PROGRAM+1))-2)
+};
+
 typedef struct tqueue {
     /*
      * A task queue can be in one of four possible states, depending upon the
@@ -144,6 +155,7 @@ typedef struct tqueue {
     char hold_input;		/* input tasks must wait for read() */
     char disable_oob;		/* treat all input lines as inband */
     char reading;		/* some task is blocked on read() */
+    char icmds;			/* which of .program/PREFIX/... are enabled */
     vm reading_vm;
 } tqueue;
 
@@ -166,6 +178,92 @@ static ext_queue *external_queues = 0;
     (ttt->kind == TASK_FORKED \
      ? ttt->t.forked.start_time \
      : ttt->t.suspended.start_time)
+
+
+/* 
+ *  ICMD_FOR_EACH(DEFINE,verb)
+ *   expands to a table of intrinsic commands,
+ *   each entry of the form
+ *
+ *  DEFINE(ICMD_NAME,<name>,<matcher>)  where
+ *      ICMD_NAME == enumeration constant name to use
+ *      <name>    == full verbname
+ *      <matcher>(verb) -> true iff verb matches <name>
+ */
+#define __IDLM(DEFINE,DELIMITER,verb)			\
+      DEFINE(ICMD_##DELIMITER,  DELIMITER,		\
+	     (strcmp(verb, #DELIMITER) == 0))		\
+
+#define ICMD_FOR_EACH(DEFINE,verb)			\
+      DEFINE(ICMD_PROGRAM, .program,			\
+	     (verbcasecmp(".pr*ogram", (verb))))	\
+      __IDLM(DEFINE,PREFIX,      (verb))		\
+      __IDLM(DEFINE,SUFFIX,      (verb))		\
+      __IDLM(DEFINE,OUTPUTPREFIX,(verb))		\
+      __IDLM(DEFINE,OUTPUTSUFFIX,(verb))		\
+
+static int
+icmd_index(const char * verb) {
+    /* evil, poor-man's minimal perfect hash */
+    int len = strlen(verb);
+    char c2 = len > 2 ? verb[2] : 0;
+    char c8 = len > 8 ? verb[8] : 0;
+    switch (((c2&7)^6)+!(c8&2)) {
+    default:
+	break;
+#define _ICMD_IX(ICMD_PREFIX,_,MATCH)		\
+	case ICMD_PREFIX:			\
+	    if (MATCH) return ICMD_PREFIX;	\
+	    break;				\
+
+	ICMD_FOR_EACH(_ICMD_IX,verb);
+    }
+    return 0;
+}
+#undef _ICMD_IX
+
+static Var
+icmd_list(int icmd_flags)
+{
+    Var s;
+    Var list = new_list(0);
+    s.type = TYPE_STR;
+#define _ICMD_MKSTR(ICMD_PREFIX,PREFIX,_)	\
+	if (icmd_flags & (1<<ICMD_PREFIX)) {	\
+	    s.v.str = str_dup(#PREFIX);		\
+	    list = listappend(list, s);		\
+	}					\
+
+    ICMD_FOR_EACH(_ICMD_MKSTR,@);
+    return list;
+}
+#undef _ICMD_MKSTR
+
+static int
+icmd_set_flags(tqueue * tq, Var list)
+{
+    int i;
+    int newflags;
+    if (list.type == TYPE_INT) {
+	newflags = is_true(list) ? ICMD_ALL_CMDS : 0;
+    }
+    else if(list.type != TYPE_LIST)
+	return 0;
+    else {
+	newflags = 0;
+	for (i = 1; i <= list.v.list[0].v.num; ++i) {
+	    int icmd;
+	    if (list.v.list[i].type != TYPE_STR)
+		return 0;
+	    icmd = icmd_index(list.v.list[i].v.str);
+	    if (!icmd)
+		return 0;
+	    newflags |= (1<<icmd);
+	}
+    }
+    tq->icmds = newflags;
+    return 1;
+}
 
 
 static void
@@ -254,6 +352,7 @@ find_tqueue(Objid player, int create_if_not_found)
     tq->reading = 0;
     tq->hold_input = 0;
     tq->disable_oob = 0;
+    tq->icmds = ICMD_ALL_CMDS;
     tq->num_bg_tasks = 0;
     tq->last_input_task_id = 0;
 
@@ -539,6 +638,37 @@ find_verb_on(Objid oid, Parsed_Command * pc, db_verb_handle * vh)
 
 
 static int
+do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
+{
+    int icmd = icmd_index(pc->verb);
+    if (!(icmd && (tq->icmds & (1<<icmd))))
+	return 0;
+    switch (icmd) {
+    default: 
+	panic("Bad return value from icmd_index()");
+	break;
+    case ICMD_PROGRAM:
+	if (!is_programmer(tq->player))
+	    return 0;
+	if (pc->args.v.list[0].v.num != 1)
+	    notify(tq->player, "Usage:  .program object:verb");
+	else	
+	    start_programming(tq, (char *) pc->args.v.list[1].v.str);
+	break;
+    case ICMD_PREFIX:	
+    case ICMD_OUTPUTPREFIX:
+	set_delimiter(&(tq->output_prefix), pc->argstr);
+	break;
+    case ICMD_SUFFIX:
+    case ICMD_OUTPUTSUFFIX:
+	set_delimiter(&(tq->output_suffix), pc->argstr);
+	break;
+    }
+    return 1;
+}
+
+
+static int
 do_command_task(tqueue * tq, char *command)
 {
     if (tq->program_stream) {	/* We're programming */
@@ -552,18 +682,7 @@ do_command_task(tqueue * tq, char *command)
 	if (!pc)
 	    return 0;
 
-	if (is_programmer(tq->player) && verbcasecmp(".pr*ogram", pc->verb)) {
-	    if (pc->args.v.list[0].v.num != 1)
-		notify(tq->player, "Usage:  .program object:verb");
-	    else
-		start_programming(tq, (char *) pc->args.v.list[1].v.str);
-	} else if (strcmp(pc->verb, "PREFIX") == 0
-		   || strcmp(pc->verb, "OUTPUTPREFIX") == 0)
-	    set_delimiter(&(tq->output_prefix), pc->argstr);
-	else if (strcmp(pc->verb, "SUFFIX") == 0
-		 || strcmp(pc->verb, "OUTPUTSUFFIX") == 0)
-	    set_delimiter(&(tq->output_suffix), pc->argstr);
-	else {
+	if (!do_intrinsic_command(tq, pc)) {
 	    Objid location = (valid(tq->player)
 			      ? db_object_location(tq->player)
 			      : NOTHING);
@@ -731,6 +850,13 @@ free_task_queue(task_queue q)
 		   && (tq->first_itail->next				\
 		       || tq->first_input->kind == TASK_OOB))		\
 		   ensure_usage(tq);					\
+	   })								\
+									\
+    DEFINE(intrinsic-commands, _, TYPE_LIST, list,			\
+           icmd_list(tq->icmds).v.list,					\
+	   {								\
+	       if (!icmd_set_flags(tq, value))				\
+		   return 0;						\
 	   })								\
 
 int
@@ -2107,10 +2233,13 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.12 2004/05/22 01:25:44 wrog Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.13 2004/05/28 07:53:32 wrog Exp $";
 
 /* 
  * $Log: tasks.c,v $
+ * Revision 1.13  2004/05/28 07:53:32  wrog
+ * added "intrinsic-commands" connection option
+ *
  * Revision 1.12  2004/05/22 01:25:44  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *
