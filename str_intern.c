@@ -80,8 +80,8 @@ free_intern_entry_hunks(void)
     
     for (h = intern_alloc; h; h = next) {
         next = h->next;
-        free(h->contents);
-        free(h);
+        myfree(h->contents, M_INTERN_ENTRY);
+        myfree(h, M_INTERN_HUNK);
     }
     
     intern_alloc = NULL;
