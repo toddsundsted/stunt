@@ -5,6 +5,7 @@
 #include "str_intern.h"
 #include "utils.h"
 
+#ifdef STRING_INTERNING
 
 struct intern_entry {
     const char *s;
@@ -124,7 +125,8 @@ str_intern_open(int table_size)
     intern_allocations_saved = 0;
 }
 
-extern void str_intern_close(void)
+void
+str_intern_close(void)
 {
     int i;
     struct intern_entry *e, *next;
@@ -219,7 +221,7 @@ intern_rehash(int new_size) {
 
 /* Make an immutable copy of s.  If there's an intern table open,
    possibly share storage. */
-extern const char *
+const char *
 str_intern(const char *s)
 {
     struct intern_entry *e;
@@ -255,3 +257,25 @@ str_intern(const char *s)
     
     return r;
 }
+
+#else /* STRING_INTERNING */
+
+const char *
+str_intern(const char *s)
+{
+	return str_dup(s);
+}
+
+void
+str_intern_close(void)
+{
+	;
+}
+
+void
+str_intern_open(int table_size)
+{
+	;
+}
+
+#endif /* STRING_INTERNING */

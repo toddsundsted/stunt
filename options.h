@@ -229,12 +229,26 @@
  *
  * NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    NOTE WELL    
  *
- ****************************************************************************** */
+ ******************************************************************************
+ */
 /* #define BYTECODE_REDUCE_REF */
 
 #ifdef BYTECODE_REDUCE_REF
 #error Think carefully before enabling BYTECODE_REDUCE_REF.  This feature is still beta.  Comment out this line if you are sure.
 #endif
+
+/******************************************************************************
+ * The server can merge duplicate strings on load to conserve memory.  This
+ * involves a rather expensive step at startup to dispose of the table used
+ * to find the duplicates.  This should be improved eventually, but you may
+ * want to trade off faster startup time for increased memory usage.
+ *
+ * You might want to turn this off if you see a large delay before the
+ * INTERN: lines in the log at startup.
+ ******************************************************************************
+ */
+
+#define STRING_INTERNING /* */
 
 /******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
@@ -336,6 +350,9 @@
 
 /* 
  * $Log: options.h,v $
+ * Revision 1.8  2001/01/29 09:08:40  bjj
+ * Made STRING_INTERNING optional via options.h.
+ *
  * Revision 1.7  2000/01/11 02:05:27  nop
  * More doc tweaking, really warn about BYTECODE_REDUCE_REF.
  *
