@@ -191,7 +191,7 @@ extern int network_set_connection_option(network_handle nh,
 #ifdef OUTBOUND_NETWORK
 #include "structures.h"
 
-extern enum error network_open_connection(Var arglist);
+extern enum error network_open_connection(Var arglist, server_listener sl);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the
@@ -246,6 +246,9 @@ extern void network_shutdown(void);
 
 /* 
  * $Log: network.h,v $
+ * Revision 1.4  2005/09/29 18:46:18  bjj
+ * Add third argument to open_network_connection() that associates a specific listener object with the new connection.  This simplifies a lot of outbound connection management.
+ *
  * Revision 1.3  1998/12/14 13:18:36  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

@@ -88,8 +88,7 @@ typedef struct slistener {
 
 static slistener *all_slisteners = 0;
 
-server_listener null_server_listener =
-{0};
+server_listener null_server_listener = {0};
 
 static void
 free_shandle(shandle * h)
@@ -956,14 +955,14 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
     h->connection_time = 0;
     h->last_activity_time = time(0);
     h->player = next_unconnected_player--;
-    h->listener = outbound ? SYSTEM_OBJECT : l->oid;
+    h->listener = l ? l->oid : SYSTEM_OBJECT;
     h->tasks = new_task_queue(h->player, h->listener);
     h->disconnect_me = 0;
     h->outbound = outbound;
     h->binary = 0;
-    h->print_messages = (!outbound && l->print_messages);
+    h->print_messages = l ? l->print_messages : !outbound;
 
-    if (!outbound) {
+    if (l || !outbound) {
 	new_input_task(h->tasks, "", 0);
 	/*
 	 * Suspend input at the network level until the above input task
@@ -1371,6 +1370,20 @@ bf_db_disk_size(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(v);
 }
 
+#ifdef OUTBOUND_NETWORK
+static slistener *
+find_slistener_by_oid(Objid obj)
+{
+    slistener *l;
+
+    for (l = all_slisteners; l; l = l->next)
+	if (l->oid == obj)
+	    return l;
+
+    return 0;
+}
+#endif /* OUTBOUND_NETWORK */
+
 static package
 bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -1378,13 +1391,37 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 
     Var r;
     enum error e;
+    server_listener sl;
+    slistener l;
 
     if (!is_wizard(progr)) {
         free_var(arglist);
         return make_error_pack(E_PERM);
     }
 
-    e = network_open_connection(arglist);
+    if (arglist.v.list[0].v.num == 3) {
+	Objid oid;
+
+	if (arglist.v.list[3].type != TYPE_OBJ) {
+	    return make_error_pack(E_TYPE);
+	}
+	oid = arglist.v.list[3].v.obj;
+	arglist = listdelete(arglist, 3);
+
+	sl.ptr = find_slistener_by_oid(oid);
+	if (!sl.ptr) {
+	    /* Create a temporary */
+	    l.print_messages = 0;
+	    l.name = "open_network_connection";
+	    l.desc = zero;
+	    l.oid = oid;
+	    sl.ptr = &l;
+	}
+    } else {
+	sl.ptr = NULL;
+    }
+
+    e = network_open_connection(arglist, sl);
     free_var(arglist);
     if (e == E_NONE) {
 	/* The connection was successfully opened, implying that
@@ -1749,10 +1786,13 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.8 2004/05/25 07:28:55 wrog Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.9 2005/09/29 18:46:18 bjj Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.9  2005/09/29 18:46:18  bjj
+ * Add third argument to open_network_connection() that associates a specific listener object with the new connection.  This simplifies a lot of outbound connection management.
+ *
  * Revision 1.8  2004/05/25 07:28:55  wrog
  * indentation fixes
  *
