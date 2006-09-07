@@ -960,12 +960,13 @@ do {    						    	\
 			   || (list.type == TYPE_LIST
 		       && index.v.num > list.v.list[0].v.num /* size */ )
 			   || (list.type == TYPE_STR
-			    && index.v.num > (int) strlen(list.v.str))) {
+			    && index.v.num > (int) memo_strlen(list.v.str))) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_RANGE);
-		} else if (list.type == TYPE_STR && strlen(value.v.str) != 1) {
+		} else if (list.type == TYPE_STR
+			   && memo_strlen(value.v.str) != 1) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
@@ -1178,10 +1179,11 @@ do {    						    	\
 		    ans = do_add(lhs, rhs);
 		else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
 		    char *str;
+		    int llen = memo_strlen(lhs.v.str);
 
-		    str = mymalloc((strlen(rhs.v.str) + strlen(lhs.v.str) + 1)
-				   * sizeof(char), M_STRING);
-		    sprintf(str, "%s%s", lhs.v.str, rhs.v.str);
+		    str = mymalloc(llen + memo_strlen(rhs.v.str) + 1, M_STRING);
+		    strcpy(str, lhs.v.str);
+		    strcpy(str + llen, rhs.v.str);
 		    ans.type = TYPE_STR;
 		    ans.v.str = str;
 		} else {
@@ -1271,7 +1273,7 @@ do {    						    	\
 		    }
 		} else {	/* list.type == TYPE_STR */
 		    if (index.v.num <= 0
-			|| index.v.num > (int) strlen(list.v.str)) {
+			|| index.v.num > (int) memo_strlen(list.v.str)) {
 			free_var(index);
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
@@ -1315,7 +1317,7 @@ do {    						    	\
 		    free_var(from);
 		    PUSH_ERROR(E_TYPE);
 		} else {
-		    int len = (base.type == TYPE_STR ? strlen(base.v.str)
+		    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
 			       : base.v.list[0].v.num);
 		    if (from.v.num <= to.v.num
 			&& (from.v.num <= 0 || from.v.num > len
@@ -1681,7 +1683,7 @@ do {    						    	\
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
 			} else if (rangeset_check(base.type == TYPE_STR
-						  ? strlen(base.v.str)
+						  ? memo_strlen(base.v.str)
 						  : base.v.list[0].v.num,
 						  from.v.num, to.v.num)) {
 			    free_var(base);
@@ -1704,7 +1706,7 @@ do {    						    	\
 			v.type = TYPE_INT;
 			item = RUN_ACTIV.base_rt_stack[i];
 			if (item.type == TYPE_STR) {
-			    v.v.num = strlen(item.v.str);
+			    v.v.num = memo_strlen(item.v.str);
 			    PUSH(v);
 			} else if (item.type == TYPE_LIST) {
 			    v.v.num = item.v.list[0].v.num;
@@ -2868,10 +2870,17 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.16 2004/05/22 01:25:43 wrog Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.17 2006/09/07 00:55:02 bjj Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.17  2006/09/07 00:55:02  bjj
+ * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+ * store strlen with strings.  This is basically free, since most string
+ * allocations are rounded up by malloc anyway.  This saves lots of cycles
+ * computing strlen.  (The change is originally from jitmoo, where I wanted
+ * inline range checks for string ops).
+ *
  * Revision 1.16  2004/05/22 01:25:43  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *

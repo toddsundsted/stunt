@@ -343,8 +343,8 @@ strrangeset(Var base, int from, int to, Var value)
 {
     /* base and value are free'd */
     int index, offset = 0;
-    int val_len = strlen(value.v.str);
-    int base_len = strlen(base.v.str);
+    int val_len = memo_strlen(value.v.str);
+    int base_len = memo_strlen(base.v.str);
     int lenleft = (from > 1) ? from - 1 : 0;
     int lenmiddle = val_len;
     int lenright = (base_len > to) ? base_len - to : 0;
@@ -416,7 +416,7 @@ bf_length(Var arglist, Byte next, void *vdata, Objid progr)
 	break;
     case TYPE_STR:
 	r.type = TYPE_INT;
-	r.v.num = strlen(arglist.v.list[1].v.str);
+	r.v.num = memo_strlen(arglist.v.list[1].v.str);
 	break;
     default:
 	free_var(arglist);
@@ -565,7 +565,7 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
     extern const char *crypt(const char *, const char *);
 
-    if (arglist.v.list[0].v.num == 1 || strlen(arglist.v.list[2].v.str) < 2) {
+    if (arglist.v.list[0].v.num == 1 || memo_strlen(arglist.v.list[2].v.str) < 2) {
 	/* provide a random 2-letter salt, works with old and new crypts */
 	salt[0] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
 	salt[1] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
@@ -825,7 +825,7 @@ check_subs_list(Var subs)
 	|| subs.v.list[4].type != TYPE_STR)
 	return 1;
     subj = subs.v.list[4].v.str;
-    subj_length = strlen(subj);
+    subj_length = memo_strlen(subj);
     if (invalid_pair(subs.v.list[1].v.num, subs.v.list[2].v.num,
 		     subj_length))
 	return 1;
@@ -855,7 +855,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
     char c = '\0';
 
     template = arglist.v.list[1].v.str;
-    template_length = strlen(template);
+    template_length = memo_strlen(template);
     subs = arglist.v.list[2];
 
     if (check_subs_list(subs)) {
@@ -863,7 +863,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_INVARG);
     }
     subject = subs.v.list[4].v.str;
-    subject_length = strlen(subject);
+    subject_length = memo_strlen(subject);
 
     s = new_stream(template_length);
     ans.type = TYPE_STR;
@@ -964,7 +964,7 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
     const char *str = arglist.v.list[1].v.str;
 
     r.type = TYPE_STR;
-    r.v.str = hash_bytes(str, strlen(str));
+    r.v.str = hash_bytes(str, memo_strlen(str));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -976,7 +976,7 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
     const char *lit = value_to_literal(arglist.v.list[1]);
 
     r.type = TYPE_STR;
-    r.v.str = hash_bytes(lit, strlen(lit));
+    r.v.str = hash_bytes(lit, memo_strlen(lit));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1139,10 +1139,17 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.6 2001/03/12 00:16:29 bjj Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.7 2006/09/07 00:55:02 bjj Exp $";
 
 /* 
  * $Log: list.c,v $
+ * Revision 1.7  2006/09/07 00:55:02  bjj
+ * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+ * store strlen with strings.  This is basically free, since most string
+ * allocations are rounded up by malloc anyway.  This saves lots of cycles
+ * computing strlen.  (The change is originally from jitmoo, where I wanted
+ * inline range checks for string ops).
+ *
  * Revision 1.6  2001/03/12 00:16:29  bjj
  * bf_crypt now passes the entire second argument as the salt to
  * the C crypt() routine.  This works fine for traditional DES crypts

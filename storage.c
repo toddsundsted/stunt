@@ -43,7 +43,11 @@ refcount_overhead(Memory_Type type)
 	/* for systems with picky double alignment */
 	return MAX(sizeof(int), sizeof(double));
     case M_STRING:
+#ifdef MEMO_STRLEN
+	return sizeof(int) + sizeof(int);
+#else
 	return sizeof(int);
+#endif /* MEMO_STRLEN */
     case M_LIST:
 	/* for systems with picky pointer alignment */
 	return MAX(sizeof(int), sizeof(Var *));
@@ -82,6 +86,10 @@ mymalloc(unsigned size, Memory_Type type)
     if (offs) {
 	memptr += offs;
 	((int *) memptr)[-1] = 1;
+#ifdef MEMO_STRLEN
+	if (type == M_STRING)
+	    ((int *) memptr)[-2] = size - 1;
+#endif /* MEMO_STRLEN */
     }
     return memptr;
 }
@@ -108,7 +116,7 @@ str_dup(const char *s)
 	addref(emptystring);
 	return emptystring;
     } else {
-	r = (char *) mymalloc(strlen(s) + 1, M_STRING);
+	r = (char *) mymalloc(strlen(s) + 1, M_STRING);	/* NO MEMO HERE */
 	strcpy(r, s);
     }
     return r;
@@ -129,19 +137,18 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
 	alloc_real_size[type] -= malloc_real_size(ptr);
 #endif
 
-    ptr = realloc((char *) ptr - offs, size + offs);
-    if (!ptr) {
-	sprintf(msg, "memory re-allocation (size %u) failed!", size);
-	panic(msg);
-    }
-
+	ptr = realloc((char *) ptr - offs, size + offs);
+	if (!ptr) {
+	    sprintf(msg, "memory re-allocation (size %u) failed!", size);
+	    panic(msg);
+	}
 #ifdef USE_GNU_MALLOC
 	alloc_size[type] += malloc_size(ptr);
 	alloc_real_size[type] += malloc_real_size(ptr);
     }
 #endif
 
-    return (char *)ptr + offs;
+    return (char *) ptr + offs;
 }
 
 void
@@ -179,6 +186,7 @@ free_str(const char *s)
     if (delref(s) == 0)
 	myfree((void *) s, M_STRING);
 }
+
 #endif
 
 Var
@@ -221,10 +229,17 @@ memory_usage(void)
     return r;
 }
 
-char rcsid_storage[] = "$Id: storage.c,v 1.5 1998/12/14 13:18:59 nop Exp $";
+char rcsid_storage[] = "$Id: storage.c,v 1.6 2006/09/07 00:55:02 bjj Exp $";
 
 /* 
  * $Log: storage.c,v $
+ * Revision 1.6  2006/09/07 00:55:02  bjj
+ * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+ * store strlen with strings.  This is basically free, since most string
+ * allocations are rounded up by malloc anyway.  This saves lots of cycles
+ * computing strlen.  (The change is originally from jitmoo, where I wanted
+ * inline range checks for string ops).
+ *
  * Revision 1.5  1998/12/14 13:18:59  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *

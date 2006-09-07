@@ -274,6 +274,13 @@
 #define STRING_INTERNING /* */
 
 /******************************************************************************
+ * Store the length of the string WITH the string rather than recomputing
+ * it each time it is needed.
+ ******************************************************************************
+ */
+/* #define MEMO_STRLEN */
+
+/******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
  * Emacs.  This is a very nice and reasonably portable implementation, but some
  * systems, notably the NeXT machine, won't allow programs to provide their own
@@ -384,6 +391,13 @@
 
 /* 
  * $Log: options.h,v $
+ * Revision 1.10  2006/09/07 00:55:02  bjj
+ * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+ * store strlen with strings.  This is basically free, since most string
+ * allocations are rounded up by malloc anyway.  This saves lots of cycles
+ * computing strlen.  (The change is originally from jitmoo, where I wanted
+ * inline range checks for string ops).
+ *
  * Revision 1.9  2004/05/22 01:25:44  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *

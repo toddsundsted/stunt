@@ -243,7 +243,7 @@ str_intern(const char *s)
     
     if (e != NULL) {
         intern_allocations_saved++;
-        intern_bytes_saved += strlen(s);
+        intern_bytes_saved += memo_strlen(e->s);
         return str_ref(e->s);
     }
     

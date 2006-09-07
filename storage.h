@@ -47,17 +47,35 @@ extern void myfree(void *where, Memory_Type type);
 extern void *mymalloc(unsigned size, Memory_Type type);
 extern void *myrealloc(void *where, unsigned size, Memory_Type type);
 
-static inline void    /* XXX was extern, fix for non-gcc compilers */
+static inline void		/* XXX was extern, fix for non-gcc compilers */
 free_str(const char *s)
 {
     if (delref(s) == 0)
 	myfree((void *) s, M_STRING);
 }
 
+#ifdef MEMO_STRLEN
+/*
+ * Using the same mechanism as ref_count.h uses to hide Value ref counts,
+ * keep a memozied strlen in the storage with the string.
+ */
+#define memo_strlen(X)		((void)0, (((int *)(X))[-2]))
+#else
+#define memo_strlen(X)		strlen(X)
+
+#endif /* MEMO_STRLEN */
+
 #endif				/* Storage_h */
 
 /* 
  * $Log: storage.h,v $
+ * Revision 1.6  2006/09/07 00:55:02  bjj
+ * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+ * store strlen with strings.  This is basically free, since most string
+ * allocations are rounded up by malloc anyway.  This saves lots of cycles
+ * computing strlen.  (The change is originally from jitmoo, where I wanted
+ * inline range checks for string ops).
+ *
  * Revision 1.5  1998/12/14 13:19:00  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
