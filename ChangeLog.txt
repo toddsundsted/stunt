@@ -2377,6 +2377,9 @@ Version 1.8.2, in progress
 -- several fixes for warnings, wrong use of free() vs myfree(), etc.
 -- fixes to support modern toolchains (bison, autoconf, ...)
 -- SF bug #227620: add_verb() now returns (positive integer) verb index
+-- SF bug #887464: fixed a bug in the server's startup processing, in which it
+   scans for unknown built-in functions in active verbs (Thanks luke-jr for
+   the report and patch.)
 -- Admins can trade faster startup for increased memory consumption by
    disabling STRING_INTERNING in options.h
 -- bf_crypt() passes salts longer than 2 characters to the C crypt() function
