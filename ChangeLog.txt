@@ -2313,7 +2313,7 @@ Version 1.8.0p6
 -- Fixed bug where toint() accepted arguments that were not
    syntactically correct (e.g., "-+5", "- 3").  Report from tijmen@dse.nl.
 
- Version 1.8.1
+Version 1.8.1, 10 January 2000
 -- New maintainers: Ben Jackson (ben@ben.com) and Jay Carlson (nop@nop.com)
 -- No significant user-visible changes to server behavior.
 -- Many internal memory usage bugs fixed.
@@ -2372,3 +2372,34 @@ Version 1.8.0p6
    away with reusing a type like M_VM, but this may break eventually.)
 -- Server hackers should read README.rX for more information on
    changes to server internals.
+
+Version 1.8.2, in progress
+-- several fixes for warnings, wrong use of free() vs myfree(), etc.
+-- fixes to support modern toolchains (bison, autoconf, ...)
+-- SF bug #127620: add_verb() now returns (positive integer) verb index
+-- Admins can trade faster startup for increased memory consumption by
+   disabling STRING_INTERNING in options.h
+-- bf_crypt() passes salts longer than 2 characters to the C crypt() function
+-- bf_queued_tasks() entries include a 10th element (size of the task in bytes)
+-- bf_open_network_connection() accepts an optional third argument that
+   associates a specific listener object with the new connection.  This
+   simplifies a lot of outbound connection management.
+-- Added new connection option `intrinsic-commands'
+-- Added `-a SOURCE-ADDRESS' command-line option, to bind and listen on a
+   specific interface, instead of all interfaces
+-- Added `+O/-O' command-line options, to enable/disable outbound networking.
+   Admins still set the default behaviour at compile-time in options.h
+-- Server will report progress every few seconds (rather than every 10k objects)
+   during potentially long-running operations (loading, validating, writing)
+-- New "out of band" command handling behaviour:
+   -- non-blocking read() now only grabs in-band lines
+   -- `hold-input' connection option no longer hold out-of-band lines
+   -- out-of-band line handling will no longer mess with binary input lines
+   -- added new connection option `disable-oob'
+-- A new OUT_OF_BAND_QUOTE_PREFIX is added; any player input lines that begin
+   with this string will be stripped of this prefix and processed normally, even
+   if the resulting line begins with OUT_OF_BAND_PREFIX.  This provides a means
+   of quoting lines that would otherwise trigger do_out_of_band_command.
+**** Changes relevant to server hackers:
+-- New call_verb2() accepts verb name that is a MOO string (ie, str_ref-able)
+-- str_hash() replaced with a faster (and better?) string hash function
