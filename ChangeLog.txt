@@ -2403,6 +2403,10 @@ Version 1.8.2, in progress
    with this string will be stripped of this prefix and processed normally, even
    if the resulting line begins with OUT_OF_BAND_PREFIX.  This provides a means
    of quoting lines that would otherwise trigger do_out_of_band_command.
+-- Added a new compile option (MEMO_STRLEN in options.h) that optimizes away
+   most strlen computations.
+-- SF bug #1552816: fixed an issue that could cause tracebacks in emergency mode
+   to produce "Unknown Var type" errors
 **** Changes relevant to server hackers:
 -- New call_verb2() accepts verb name that is a MOO string (ie, str_ref-able)
 -- str_hash() replaced with a faster (and better?) string hash function
