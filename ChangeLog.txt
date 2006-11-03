@@ -2373,40 +2373,79 @@ Version 1.8.1, 10 January 2000
 -- Server hackers should read README.rX for more information on
    changes to server internals.
 
-Version 1.8.2, in progress
--- several fixes for warnings, wrong use of free() vs myfree(), etc.
--- fixes to support modern toolchains (bison, autoconf, ...)
--- SF bug #227620: add_verb() now returns (positive integer) verb index
+Version 1.8.2
+Because of the long time with no release after 1.8.1, some distributors began
+to distribute 1.8.1 plus patches as 1.8.2.  To avoid confusion, we have opted
+to make the next official release version 1.8.3.
+
+Version 1.8.3, in progress
 -- SF bug #887464: fixed a bug in the server's startup processing, in which it
    scans for unknown built-in functions in active verbs (Thanks luke-jr and
    Gavin Lambert for reports and patches.)
--- Admins can trade faster startup for increased memory consumption by
-   disabling STRING_INTERNING in options.h
--- bf_crypt() passes salts longer than 2 characters to the C crypt() function
+-- Server will report progress every few seconds (rather than every 10k objects)
+   during potentially long-running operations (loading, validating, writing)
+-- New validation algorithms for cycle-detection and hierarchy checking vastly
+   decrease startup time on large databases.
+-- SF bug #1552816: fixed an issue that could cause tracebacks in emergency mode
+   to produce "Unknown Var type" errors
+**** Changes relevant to programmers / wizards:
+-- SF bug #227620: add_verb() now returns (positive integer) verb index
+-- bf_crypt() now passes salts longer than 2 characters to the underlying C
+   function.  This works fine for traditional DES crypts and supports modern
+   modular crypts like FreeBSD's.  See the Programmers Manual for more details.
 -- bf_queued_tasks() entries include a 10th element (size of the task in bytes)
 -- bf_open_network_connection() accepts an optional third argument that
    associates a specific listener object with the new connection.  This
    simplifies a lot of outbound connection management.
--- Added new connection option `intrinsic-commands'
--- Added `-a SOURCE-ADDRESS' command-line option, to bind and listen on a
-   specific interface, instead of all interfaces
--- Added `+O/-O' command-line options, to enable/disable outbound networking.
-   Admins still set the default behaviour at compile-time in options.h
--- Server will report progress every few seconds (rather than every 10k objects)
-   during potentially long-running operations (loading, validating, writing)
--- New "out of band" command handling behaviour:
-   -- non-blocking read() now only grabs in-band lines
-   -- `hold-input' connection option no longer hold out-of-band lines
-   -- out-of-band line handling will no longer mess with binary input lines
-   -- added new connection option `disable-oob'
+-- network input is suspended on new connections until after the initial
+   #0:do_login_command call returns.  Thus do_login_command may now reliably
+   set binary mode without losing data.
+-- connection_option()/connection_options()/set_connection_option() now
+   recognize the following new options:
+   (*) "intrinsic-commands"
+       which determines which (if any) of the commands
+          .program
+          PREFIX
+          SUFFIX
+          OUTPUTPREFIX
+          OUTPUTSUFFIX
+       will be recognized on that connection.  Option value is a list 
+       of strings, but set_connection_option() also accepts any numeric
+       value, in which case all 5 intrinsic commands are enabled/disabled
+       according to the value being true/false.
+   (*) "disable-oob"
+       which, if set true, disables all out-of-band command processing 
+       on subsequent input lines, i.e., the server behaves for that 
+       connection as if OUT_OF_BAND_PREFIX had never been #defined.
+       Out-of-band quoting (see below) is likewise disabled.
+-- If "disable-oob" is set false (as it is by default), then it is now the case
+   that all out-of-band lines will be processed as out-of-band commands (i.e.,
+   by #0:do_out_of_band_command) if no 'flush' command intervenes; setting of
+   "hold-input" and/or making intervening read() calls will not affect this.
+   (This fixes a bug whereby read() sometimes snarfed out-of-band lines.)
+-- Setting connection_option "binary" now disables all out-of-band processing
+   on that connection.
+**** Changes significant to people compiling and running the server:
+-- several fixes for warnings, wrong use of free() vs myfree(), etc.
+-- fixes to support modern toolchains (bison, autoconf, ...)
+-- Admins can trade faster startup for increased memory consumption by
+   disabling STRING_INTERNING in options.h
+-- Added a new compile option (MEMO_STRLEN in options.h) that optimizes away
+   most strlen computations.
 -- A new OUT_OF_BAND_QUOTE_PREFIX is added; any player input lines that begin
    with this string will be stripped of this prefix and processed normally, even
    if the resulting line begins with OUT_OF_BAND_PREFIX.  This provides a means
-   of quoting lines that would otherwise trigger do_out_of_band_command.
--- Added a new compile option (MEMO_STRLEN in options.h) that optimizes away
-   most strlen computations.
--- SF bug #1552816: fixed an issue that could cause tracebacks in emergency mode
-   to produce "Unknown Var type" errors
+   for quoting lines that would otherwise trigger do_out_of_band_command.
+-- If the server is compiled with OUTBOUND_NETWORK, this may now be  explicitly
+   enabled/disabled from the server command line using +O and -O respectively.
+-- If the server is compiled with NP_TCP, there is now a command line option
+   `-a SOURCE-ADDRESS' to bind and listen on a specific interface, instead of
+   all interfaces.
+-- Fixed some flushing issues with emergency wizard mode (-e).
+   The server now behaves a bit more sensibly when stdin comes from a pipe.
+   stdout and stderr are now closed if they are not being used.
+   (Outside of emergency wizard mode, stdout is only used on an an NP_SINGLE
+   server; stderr is only used if no logfile (-l) is specifed.)
 **** Changes relevant to server hackers:
 -- New call_verb2() accepts verb name that is a MOO string (ie, str_ref-able)
 -- str_hash() replaced with a faster (and better?) string hash function
