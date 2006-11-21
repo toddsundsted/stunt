@@ -2388,6 +2388,9 @@ Version 1.8.3, in progress
    decrease startup time on large databases.
 -- SF bug #1552816: fixed an issue that could cause tracebacks in emergency mode
    to produce "Unknown Var type" errors
+-- SF bug #1500775: fixed two use-after-free bugs that could lead very rarely to
+   calling the wrong functions during player connection (Thanks Garance Drosehn
+   for the report and initial patch.)
 **** Changes relevant to programmers / wizards:
 -- SF bug #227620: add_verb() now returns (positive integer) verb index
 -- bf_crypt() now passes salts longer than 2 characters to the underlying C

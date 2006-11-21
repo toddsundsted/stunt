@@ -1065,7 +1065,6 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	    send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
 			 "*** Redirecting old connection to this port ***", 0);
 	network_close(existing_h->nhandle);
-	free_shandle(existing_h);
 	if (existing_h->listener == new_h->listener)
 	    call_notifier(new_id, new_h->listener, "user_reconnected");
 	else {
@@ -1073,6 +1072,7 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 			  "user_client_disconnected");
 	    call_notifier(new_id, new_h->listener, "user_connected");
 	}
+	free_shandle(existing_h);
     } else {
 	oklog("%s: %s on %s\n",
 	      is_newly_created ? "CREATED" : "CONNECTED",
@@ -1740,7 +1740,7 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     if (nargs == 0)
 	r.v.num = MAX_QUEUED_OUTPUT;
     else {
-	shandle *h = find_shandle(arglist.v.list[1].v.obj);
+	shandle *h = find_shandle(conn);
 
 	if (!h)
 	    return make_error_pack(E_INVARG);
@@ -1786,10 +1786,15 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.9 2005/09/29 18:46:18 bjj Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.10 2006/11/21 18:42:37 pschwan Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.10  2006/11/21 18:42:37  pschwan
+ * b=1500775
+ * fixes two use-after-free bugs that could lead very rarely to
+ * calling the wrong functions during player connection
+ *
  * Revision 1.9  2005/09/29 18:46:18  bjj
  * Add third argument to open_network_connection() that associates a specific listener object with the new connection.  This simplifies a lot of outbound connection management.
  *
