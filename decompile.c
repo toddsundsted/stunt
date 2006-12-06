@@ -66,6 +66,7 @@ do {				\
     arm_sink = &(temp->next);	\
 } while (0);
 
+#define SKIP_BYTES(n)  ((void)(ptr += n))
 #define READ_BYTES(n)			\
   (ptr += n,				\
    (n == 1				\
@@ -82,7 +83,7 @@ do {				\
 #define READ_LITERAL()	program->literals[READ_BYTES(bc.numbytes_literal)]
 #define READ_FORK()	program->fork_vectors[READ_BYTES(bc.numbytes_fork)]
 #define READ_ID()	READ_BYTES(bc.numbytes_var_name)
-#define READ_STACK()	READ_BYTES(bc.numbytes_stack)
+#define READ_STACK()	SKIP_BYTES(bc.numbytes_stack)
 
 #define READ_JUMP(is_hot)	read_jump(bc.numbytes_label, &ptr, &is_hot)
 
@@ -990,10 +991,13 @@ find_line_number(Program * prog, int vector, int pc)
     return lineno;
 }
 
-char rcsid_decompile[] = "$Id: decompile.c,v 1.6 2002/09/15 23:21:01 xplat Exp $";
+char rcsid_decompile[] = "$Id: decompile.c,v 1.7 2006/12/06 23:51:31 wrog Exp $";
 
 /* 
  * $Log: decompile.c,v $
+ * Revision 1.7  2006/12/06 23:51:31  wrog
+ * Fix compiler warnings about unused values
+ *
  * Revision 1.6  2002/09/15 23:21:01  xplat
  * GNU indent normalization.
  *
