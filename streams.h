@@ -28,6 +28,7 @@ typedef struct {
 
 extern Stream *new_stream(int size);
 extern void stream_add_char(Stream *, char);
+extern void stream_delete_char(Stream *);
 extern void stream_add_string(Stream *, const char *);
 extern void stream_printf(Stream *, const char *,...);
 extern void free_stream(Stream *);
@@ -39,6 +40,9 @@ extern int stream_length(Stream *);
 
 /* 
  * $Log: streams.h,v $
+ * Revision 1.4  2006/12/06 23:57:51  wrog
+ * New INPUT_APPLY_BACKSPACE option to process backspace/delete characters on nonbinary connections (patch 1571939)
+ *
  * Revision 1.3  1998/12/14 13:19:02  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
