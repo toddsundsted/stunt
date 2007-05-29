@@ -1047,6 +1047,12 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
     new_h->connection_time = time(0);
 
     if (existing_h) {
+	/* we now have two shandles with the same player value while
+	 * find_shandle assumes there can only be one.  This needs to
+	 * be remedied before any call_notifier() call; luckily, the
+	 * latter only needs listener value.
+	 */
+	Objid existing_listener = existing_h->listener;
 	/* network_connection_name is allowed to reuse the same string
 	 * storage, so we have to copy one of them.
 	 */
@@ -1058,21 +1064,21 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	      network_connection_name(new_h->nhandle));
 	free_str(name1);
 	if (existing_h->print_messages)
-	    send_message(existing_h->listener, existing_h->nhandle,
+	    send_message(existing_listener, existing_h->nhandle,
 			 "redirect_from_msg",
 			 "*** Redirecting connection to new port ***", 0);
 	if (new_h->print_messages)
 	    send_message(new_h->listener, new_h->nhandle, "redirect_to_msg",
 			 "*** Redirecting old connection to this port ***", 0);
 	network_close(existing_h->nhandle);
-	if (existing_h->listener == new_h->listener)
+	free_shandle(existing_h);
+	if (existing_listener == new_h->listener)
 	    call_notifier(new_id, new_h->listener, "user_reconnected");
 	else {
-	    call_notifier(new_id, existing_h->listener,
+	    call_notifier(new_id, existing_listener,
 			  "user_client_disconnected");
 	    call_notifier(new_id, new_h->listener, "user_connected");
 	}
-	free_shandle(existing_h);
     } else {
 	oklog("%s: %s on %s\n",
 	      is_newly_created ? "CREATED" : "CONNECTED",
@@ -1786,10 +1792,13 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.10 2006/11/21 18:42:37 pschwan Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.11 2007/05/29 12:21:47 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.11  2007/05/29 12:21:47  wrog
+ * fixes server panic (or lost messages) caused by attempting to write to freed network handle during #0:user_reconnected; removes the one case where server and network handles were not being freed together
+ *
  * Revision 1.10  2006/11/21 18:42:37  pschwan
  * b=1500775
  * fixes two use-after-free bugs that could lead very rarely to
