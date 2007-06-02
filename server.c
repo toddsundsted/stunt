@@ -1075,8 +1075,10 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	if (existing_listener == new_h->listener)
 	    call_notifier(new_id, new_h->listener, "user_reconnected");
 	else {
+	    new_h->disconnect_me = 1;
 	    call_notifier(new_id, existing_listener,
 			  "user_client_disconnected");
+	    new_h->disconnect_me = 0;
 	    call_notifier(new_id, new_h->listener, "user_connected");
 	}
     } else {
@@ -1792,10 +1794,14 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.11 2007/05/29 12:21:47 wrog Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.12 2007/06/02 21:34:36 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.12  2007/06/02 21:34:36  wrog
+ * fix player_connect() so that the user_client_disconnected hook
+ * sees a disconnected player, same as with server_close()
+ *
  * Revision 1.11  2007/05/29 12:21:47  wrog
  * fixes server panic (or lost messages) caused by attempting to write to freed network handle during #0:user_reconnected; removes the one case where server and network handles were not being freed together
  *
