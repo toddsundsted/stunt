@@ -268,7 +268,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     db_verb_handle h;
     Var r;
     unsigned flags;
-    char *s;
+    char perms[5], *s;
     enum error e;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE
@@ -288,7 +288,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     r.v.list[1].type = TYPE_OBJ;
     r.v.list[1].v.obj = db_verb_owner(h);
     r.v.list[2].type = TYPE_STR;
-    r.v.list[2].v.str = s = str_dup("xxxx");
+    s = perms;
     flags = db_verb_flags(h);
     if (flags & VF_READ)
 	*s++ = 'r';
@@ -299,6 +299,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     if (flags & VF_DEBUG)
 	*s++ = 'd';
     *s = '\0';
+    r.v.list[2].v.str = str_dup(perms);
     r.v.list[3].type = TYPE_STR;
     r.v.list[3].v.str = str_ref(db_verb_names(h));
 
@@ -579,10 +580,14 @@ register_verbs(void)
     register_function("eval", 1, 1, bf_eval, TYPE_STR);
 }
 
-char rcsid_verbs[] = "$Id: verbs.c,v 1.4 2001/01/29 08:38:44 bjj Exp $";
+char rcsid_verbs[] = "$Id: verbs.c,v 1.5 2008/08/20 04:25:23 bjj Exp $";
 
 /* 
  * $Log: verbs.c,v $
+ * Revision 1.5  2008/08/20 04:25:23  bjj
+ * Fix iffy usage of str_dup in verb_info() and property_info() which could
+ * cause poor behavior with MEMO_STRLEN (and other future string optimizations)
+ *
  * Revision 1.4  2001/01/29 08:38:44  bjj
  * Fix Sourceforge Bug #127620: add_verb() should return verbindex
  * And now it does.  Old servers always returned 0, new servers will always
