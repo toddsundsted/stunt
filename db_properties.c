@@ -372,33 +372,9 @@ db_find_property(Objid oid, const char *name, Var * value)
 	enum bi_prop prop;
 	int hash;
     } ptable[] = {
-	{
-	    "name", BP_NAME, 0
-	},
-	{
-	    "owner", BP_OWNER, 0
-	},
-	{
-	    "programmer", BP_PROGRAMMER, 0
-	},
-	{
-	    "wizard", BP_WIZARD, 0
-	},
-	{
-	    "r", BP_R, 0
-	},
-	{
-	    "w", BP_W, 0
-	},
-	{
-	    "f", BP_F, 0
-	},
-	{
-	    "location", BP_LOCATION, 0
-	},
-	{
-	    "contents", BP_CONTENTS, 0
-	}
+#define _ENTRY(P,p) { #p, BP_##P, 0 },
+      BUILTIN_PROPERTIES(_ENTRY)
+#undef _ENTRY
     };
     static int ptable_init = 0;
     int i, n;
@@ -411,13 +387,13 @@ db_find_property(Objid oid, const char *name, Var * value)
 	    ptable[i].hash = str_hash(ptable[i].name);
 	ptable_init = 1;
     }
+    h.definer = NOTHING;
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !mystrcasecmp(name, ptable[i].name)) {
 	    static Objid ret;
 
 	    ret = oid;
 	    h.built_in = ptable[i].prop;
-	    h.definer = NOTHING;
 	    h.ptr = &ret;
 	    if (value)
 		get_bi_value(h, value);
@@ -453,7 +429,6 @@ db_find_property(Objid oid, const char *name, Var * value)
 	    }
 	}
     }
-
     h.ptr = 0;
     return h;
 }
@@ -677,10 +652,13 @@ dbpriv_fix_properties_after_chparent(Objid oid, Objid old_parent)
     fix_props(oid, 0, old_props, new_props, common_props);
 }
 
-char rcsid_db_properties[] = "$Id: db_properties.c,v 1.3 1998/12/14 13:17:38 nop Exp $";
+char rcsid_db_properties[] = "$Id: db_properties.c,v 1.4 2010/03/26 23:46:47 wrog Exp $";
 
 /* 
  * $Log: db_properties.c,v $
+ * Revision 1.4  2010/03/26 23:46:47  wrog
+ * Moved builtin properties into a macro\nFixed compiler warning about unassigned field
+ *
  * Revision 1.3  1998/12/14 13:17:38  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
