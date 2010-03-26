@@ -746,6 +746,9 @@ do_match(Var arglist, int reverse)
 	ans.v.err = E_INVARG;
     } else
 	switch (match_pattern(pat, subject, regs, reverse)) {
+	default:
+	    panic("do_match:  match_pattern returned unfortunate value.\n");
+	    /*notreached*/
 	case MATCH_SUCCEEDED:
 	    ans = new_list(4);
 	    ans.v.list[1].type = TYPE_INT;
@@ -1139,10 +1142,13 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.7 2006/09/07 00:55:02 bjj Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.8 2010/03/26 23:28:29 wrog Exp $";
 
 /* 
  * $Log: list.c,v $
+ * Revision 1.8  2010/03/26 23:28:29  wrog
+ * Fix compiler warning about unassigned variable
+ *
  * Revision 1.7  2006/09/07 00:55:02  bjj
  * Add new MEMO_STRLEN option which uses the refcounting mechanism to
  * store strlen with strings.  This is basically free, since most string
