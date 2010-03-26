@@ -264,12 +264,22 @@ extern int db_for_all_propdefs(Objid,
 				 * if the references are to be persistent.
 				 */
 
+#define BUILTIN_PROPERTIES(DEFINE)		\
+    DEFINE(NAME,name)				\
+    DEFINE(OWNER,owner)				\
+    DEFINE(PROGRAMMER,programmer)		\
+    DEFINE(WIZARD,wizard)			\
+    DEFINE(R,r)					\
+    DEFINE(W,w)					\
+    DEFINE(F,f)					\
+    DEFINE(LOCATION,location)			\
+    DEFINE(CONTENTS,contents)
+
 enum bi_prop {
-    BP_NONE = 0,
-    BP_NAME, BP_OWNER,
-    BP_PROGRAMMER, BP_WIZARD,
-    BP_R, BP_W, BP_F,
-    BP_LOCATION, BP_CONTENTS
+    BP_NONE = 0
+#define _BP_DO(P,p) , BP_##P
+    BUILTIN_PROPERTIES(_BP_DO)
+#undef _BP_DO
 };
 
 typedef struct {
@@ -535,6 +545,9 @@ extern void db_delete_verb(db_verb_handle);
 
 /* 
  * $Log: db.h,v $
+ * Revision 1.6  2010/03/26 23:45:06  wrog
+ * Moved builtin properties into a macro
+ *
  * Revision 1.5  2004/05/22 01:25:43  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *
