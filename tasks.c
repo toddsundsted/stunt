@@ -950,7 +950,6 @@ static void
 flush_input(tqueue * tq, int show_messages)
 {
     if (tq->first_input) {
-	Stream *s = new_stream(100);
 	task *t;
 
 	if (show_messages)
@@ -958,8 +957,10 @@ flush_input(tqueue * tq, int show_messages)
 	while ((t = dequeue_input_task(tq, DQ_FIRST)) != 0) {
 	    /* TODO*** flush only non-TASK_OOB tasks ??? */
 	    if (show_messages) {
+		Stream *s = new_stream(100);
 		stream_printf(s, ">>     %s", t->t.input.string);
 		notify(tq->player, reset_stream(s));
+		free_stream(s);
 	    }
 	    free_task(t, 1);
 	}
@@ -2233,10 +2234,13 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.14 2006/09/07 00:55:02 bjj Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.15 2010/03/27 14:20:18 wrog Exp $";
 
 /* 
  * $Log: tasks.c,v $
+ * Revision 1.15  2010/03/27 14:20:18  wrog
+ * Fixed memory leak in flush_input
+ *
  * Revision 1.14  2006/09/07 00:55:02  bjj
  * Add new MEMO_STRLEN option which uses the refcounting mechanism to
  * store strlen with strings.  This is basically free, since most string
