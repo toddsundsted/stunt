@@ -198,8 +198,11 @@ static int raise_error(package p, enum outcome *outcome);
 static int
 unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 {
-    /* Returns true iff the entire stack was unwound and the interpreter
-     * should stop, in which case *outcome is the correct outcome to return. */
+    /* Returns true iff the interpreter should stop,
+     * in which case *outcome is set to the correct outcome to return.
+     * Interpreter stops either because it was blocked (OUTCOME_BLOCKED)
+     * or the entire stack was unwound (OUTCOME_DONE/OUTCOME_ABORTED)
+     */
     Var code = (why == FIN_RAISE ? value.v.list[1] : zero);
 
     for (;;) {			/* loop over activations */
@@ -636,59 +639,37 @@ call_verb2(Objid this, const char *vname, Var args, int do_pass)
     return E_NONE;
 }
 
-static int
-rangeset_check(int end, int from, int to)
+static enum error
+rangeset_check(Var base, Var inst, int from, int to)
 {
-    if (from > end + 1 || to < 0)
-	return 1;
-    return 0;
+    int blen;
+    int ilen;
+    int max;
+    if (base.type == TYPE_STR) {
+	blen = memo_strlen(base.v.str);
+	ilen = memo_strlen(inst.v.str);
+	max  = server_int_option_cached(SVO_MAX_STRING_CONCAT);
+    }
+    else {
+	blen = base.v.list[0].v.num;
+	ilen = inst.v.list[0].v.num;
+	max  = server_int_option_cached(SVO_MAX_LIST_CONCAT);
+    }
+    
+    if (from > blen + 1 || to < 0) 
+	return E_RANGE;
+
+    if (0 < max && max < (((from > 1) ? from - 1 : 0) + ilen
+			  + ((blen > to) ? blen - to : 0)))
+	return E_QUOTA;
+
+    return E_NONE;
 }
 
 #ifdef IGNORE_PROP_PROTECTED
 #define bi_prop_protected(prop, progr) (0)
 #else
-static int
-bi_prop_protected(enum bi_prop prop, Objid progr)
-{
-    const char *pname = 0;	/* silence warning */
-
-    if (is_wizard(progr))
-	return 0;
-
-    switch (prop) {
-    case BP_NAME:
-	pname = "protect_name";
-	break;
-    case BP_OWNER:
-	pname = "protect_owner";
-	break;
-    case BP_PROGRAMMER:
-	pname = "protect_programmer";
-	break;
-    case BP_WIZARD:
-	pname = "protect_wizard";
-	break;
-    case BP_R:
-	pname = "protect_r";
-	break;
-    case BP_W:
-	pname = "protect_w";
-	break;
-    case BP_F:
-	pname = "protect_f";
-	break;
-    case BP_LOCATION:
-	pname = "protect_location";
-	break;
-    case BP_CONTENTS:
-	pname = "protect_contents";
-	break;
-    default:
-	panic("Can't happen in BI_PROP_PROTECTED!");
-    }
-
-    return server_flag_option(pname);
-}
+#define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_int_option_cached(prop))
 #endif				/* IGNORE_PROP_PROTECTED */
 
 /** 
@@ -770,6 +751,21 @@ do {    						    	\
     error_var.type = TYPE_ERR;					\
     error_var.v.err = the_err;					\
     PUSH(error_var);						\
+} while (0)
+
+#define PUSH_ERROR_UNLESS_QUOTA(the_err)			\
+do {								\
+    if (E_QUOTA == (the_err) &&					\
+        !server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))	\
+    {								\
+        /* simulate out-of-seconds abort resulting */		\
+	/* from monster malloc+copy taking too long */		\
+	STORE_STATE_VARIABLES();				\
+	abort_task(0);						\
+	return OUTCOME_ABORTED;					\
+    }								\
+    else							\
+	PUSH_ERROR(the_err);					\
 } while (0)
 
 #define JUMP(label)     (bv = bc.vector + label)
@@ -934,13 +930,21 @@ do {    						    	\
 	case OP_LIST_APPEND:
 	    {
 		Var tail, list;
+		int max = server_int_option_cached(SVO_MAX_LIST_CONCAT);
+		enum error e = E_NONE;
 
 		tail = POP();	/* second, should be list */
 		list = POP();	/* first, should be list */
 		if (tail.type != TYPE_LIST || list.type != TYPE_LIST) {
+		    e = E_TYPE;
+		} else if (0 < max && 
+			   max < list.v.list[0].v.num + tail.v.list[0].v.num) {
+		    e = E_QUOTA;
+		}
+		if (e != E_NONE) {
 		    free_var(tail);
 		    free_var(list);
-		    PUSH_ERROR(E_TYPE);
+		    PUSH_ERROR_UNLESS_QUOTA(e);
 		} else
 		    PUSH(listconcat(list, tail));
 	    }
@@ -1185,12 +1189,19 @@ do {    						    	\
 		else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
 		    char *str;
 		    int llen = memo_strlen(lhs.v.str);
+		    int flen = llen + memo_strlen(rhs.v.str);
+		    int max  = server_int_option_cached(SVO_MAX_STRING_CONCAT);
 
-		    str = mymalloc(llen + memo_strlen(rhs.v.str) + 1, M_STRING);
-		    strcpy(str, lhs.v.str);
-		    strcpy(str + llen, rhs.v.str);
-		    ans.type = TYPE_STR;
-		    ans.v.str = str;
+		    if (0 < max && max < flen) {
+			ans.type = TYPE_ERR;
+			ans.v.err = E_QUOTA;
+		    } else {
+			str = mymalloc(flen + 1, M_STRING);
+			strcpy(str, lhs.v.str);
+			strcpy(str + llen, rhs.v.str);
+			ans.type = TYPE_STR;
+			ans.v.str = str;
+		    }
 		} else {
 		    ans.type = TYPE_ERR;
 		    ans.v.err = E_TYPE;
@@ -1199,7 +1210,7 @@ do {    						    	\
 		free_var(lhs);
 
 		if (ans.type == TYPE_ERR)
-		    PUSH_ERROR(ans.v.err);
+		    PUSH_ERROR_UNLESS_QUOTA(ans.v.err);
 		else
 		    PUSH(ans);
 	    }
@@ -1459,9 +1470,10 @@ do {    						    	\
 			case BP_NAME:
 			    if (rhs.type != TYPE_STR)
 				err = E_TYPE;
-			    else if (!is_wizard(progr)
-				     && (is_user(obj.v.obj)
-				 || progr != db_object_owner(obj.v.obj)))
+			    else if (!is_wizard(progr) && 
+				     (is_user(obj.v.obj) || 
+				      bi_prop_protected(h.built_in, progr) ||
+				      progr != db_object_owner(obj.v.obj)))
 				err = E_PERM;
 			    break;
 			case BP_OWNER:
@@ -1493,8 +1505,9 @@ do {    						    	\
 			case BP_R:
 			case BP_W:
 			case BP_F:
-			    if (progr != db_object_owner(obj.v.obj)
-				&& !is_wizard(progr))
+			    if (!is_wizard(progr) &&
+				(bi_prop_protected(h.built_in, progr) ||
+				 progr != db_object_owner(obj.v.obj)))
 				err = E_PERM;
 			    break;
 			case BP_LOCATION:
@@ -1672,6 +1685,7 @@ do {    						    	\
 		case EOP_RANGESET:
 		    {
 			Var base, from, to, value;
+			enum error e;
 
 			value = POP();	/* rhs value (list or string) */
 			to = POP();	/* end of range (integer) */
@@ -1687,15 +1701,12 @@ do {    						    	\
 			    free_var(from);
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
-			} else if (rangeset_check(base.type == TYPE_STR
-						  ? memo_strlen(base.v.str)
-						  : base.v.list[0].v.num,
-						  from.v.num, to.v.num)) {
+			} else if (E_NONE != (e = rangeset_check(base, value, from.v.num, to.v.num))) {
 			    free_var(base);
 			    free_var(to);
 			    free_var(from);
 			    free_var(value);
-			    PUSH_ERROR(E_RANGE);
+			    PUSH_ERROR_UNLESS_QUOTA(e);
 			} else if (base.type == TYPE_LIST)
 			    PUSH(listrangeset(base, from.v.num, to.v.num, value));
 			else	/* TYPE_STR */
@@ -2878,10 +2889,19 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.19 2006/12/06 23:54:53 wrog Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.20 2010/03/27 00:27:26 wrog Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.20  2010/03/27 00:27:26  wrog
+ * New server options max_*_concat and
+ * (new checks for OP_LIST_APPEND, (string)OP_ADD and EOP_RANGESET);
+ * New server option max_concat_catchable and
+ * (new macro PUSH_ERROR_UNLESS_QUOTA to support it);
+ * protect_<property> now prevents non-wizard *writes* to .name/.r/.w/.f
+ * bi_prop_protected now references cached option values;
+ * Fixed description of unwind_stack
+ *
  * Revision 1.19  2006/12/06 23:54:53  wrog
  * Fix compiler warnings about undefined behavior (bv assigned twice in JUMP(READ_BYTES(...))) and unused values
  *
