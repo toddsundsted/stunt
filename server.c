@@ -628,7 +628,6 @@ emergency_mode()
     Var words;
     int nargs;
     const char *command;
-    Stream *s = new_stream(100);
     Objid wizard = -1;
     int debug = 1;
     int start_ok = -1;
@@ -868,7 +867,6 @@ emergency_mode()
     fclose(stdout);
 #endif
 
-    free_stream(s);
     in_emergency_mode = 0;
     oklog("EMERGENCY_MODE: Leaving mode; %s continue...\n",
 	  start_ok ? "will" : "won't");
@@ -1794,10 +1792,13 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.12 2007/06/02 21:34:36 wrog Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.13 2010/03/27 18:16:49 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.13  2010/03/27 18:16:49  wrog
+ * Removed completely unused stream
+ *
  * Revision 1.12  2007/06/02 21:34:36  wrog
  * fix player_connect() so that the user_client_disconnected hook
  * sees a disconnected player, same as with server_close()
