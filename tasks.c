@@ -950,22 +950,25 @@ static void
 flush_input(tqueue * tq, int show_messages)
 {
     if (tq->first_input) {
+	Stream *s = 0;
 	task *t;
 
-	if (show_messages)
+	if (show_messages) {
 	    notify(tq->player, ">> Flushing the following pending input:");
+	    s = new_stream(100);
+	}
 	while ((t = dequeue_input_task(tq, DQ_FIRST)) != 0) {
 	    /* TODO*** flush only non-TASK_OOB tasks ??? */
 	    if (show_messages) {
-		Stream *s = new_stream(100);
 		stream_printf(s, ">>     %s", t->t.input.string);
 		notify(tq->player, reset_stream(s));
-		free_stream(s);
 	    }
 	    free_task(t, 1);
 	}
-	if (show_messages)
+	if (show_messages) {
 	    notify(tq->player, ">> (Done flushing)");
+	    free_stream(s);
+	}
     } else if (show_messages)
 	notify(tq->player, ">> No pending input to flush...");
 }
@@ -2234,10 +2237,13 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.15 2010/03/27 14:20:18 wrog Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.16 2010/03/27 17:37:53 wrog Exp $";
 
 /* 
  * $Log: tasks.c,v $
+ * Revision 1.16  2010/03/27 17:37:53  wrog
+ * Fixed memory leak in flush_input less stupidly
+ *
  * Revision 1.15  2010/03/27 14:20:18  wrog
  * Fixed memory leak in flush_input
  *
