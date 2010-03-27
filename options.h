@@ -174,7 +174,7 @@
  */
 
 /* disable by default, +O enables: */
-#define OUTBOUND_NETWORK 0
+/* #define OUTBOUND_NETWORK 0 */
 
 /* enable by default, -O disables: */
 /* #define OUTBOUND_NETWORK 1 */
@@ -423,6 +423,10 @@
 
 /* 
  * $Log: options.h,v $
+ * Revision 1.13  2010/03/27 00:10:33  wrog
+ * IGNORE_PROP_PROTECTED now off by default and deprecated;
+ * Undo accidental uncommenting of OUTBOUND_NETWORK
+ *
  * Revision 1.12  2010/03/26 23:51:42  wrog
  * New server options max_*_concat and max_concat_catchable
  *
