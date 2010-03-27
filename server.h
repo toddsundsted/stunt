@@ -145,6 +145,47 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 				 * OPT.NAME and return 1; else return 0.
 				 */
 
+#include "db.h"
+
+/* Some server options are cached for performance reasons. 
+   Changes to cached options must be followed by load_server_options()
+   in order to have any effect.  Three categories of cached options
+   (1)  "protect_<bi-function>" cached in bf_table (functions.c).
+   (2)  "protect_<bi-property>" cached here. 
+   (3)  SERVER_OPTIONS_CACHED_MISC cached here.
+*/
+#define SERVER_OPTIONS_CACHED_MISC(DEFINE)				\
+  DEFINE(SVO_MAX_LIST_CONCAT,max_list_concat,DEFAULT_MAX_LIST_CONCAT)	\
+  DEFINE(SVO_MAX_STRING_CONCAT,max_string_concat,DEFAULT_MAX_STRING_CONCAT) \
+  DEFINE(SVO_MAX_CONCAT_CATCHABLE,max_concat_catchable,0)
+
+/* List of all category (2) and (3) cached server options */
+enum Server_Option {
+
+# define _BP_DO(PROP,prop)  SVO_PROTECT_##PROP = BP_##PROP,
+    BUILTIN_PROPERTIES(_BP_DO)
+# undef _BP_DO
+
+# define _SRV_DO(SVO_PROP,prop,DEFAULT)  SVO_PROP,
+    SERVER_OPTIONS_CACHED_MISC(_SRV_DO)
+# undef _SRV_DO
+
+    SVO__CACHE_SIZE
+};
+
+/*
+ * Retrieve cached integer server_option values using the SVO_ numbers
+ * E.g., use   server_int_option_cached( SVO_MAX_LIST_CONCAT ) 
+ * instead of  server_int_option("max_list_concat")
+ */
+#define server_flag_option_cached(srvopt)  (_server_int_option_cache[srvopt])
+#define server_int_option_cached(srvopt)   (_server_int_option_cache[srvopt])
+
+
+extern int _server_int_option_cache[]; /* private */
+
+
+
 enum Fork_Result {
     FORK_PARENT, FORK_CHILD, FORK_ERROR
 };
@@ -243,6 +284,11 @@ extern int read_active_connections(void);
 
 /* 
  * $Log: server.h,v $
+ * Revision 1.5  2010/03/27 00:02:35  wrog
+ * New server options max_*_concat and max_concat_catchable;
+ * New regime for caching integer/flag server options other than protect_<function>;
+ * protect_<property> options now cached; IGNORE_PROP_PROTECT now off by default and deprecated
+ *
  * Revision 1.4  2004/05/22 01:25:44  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *
