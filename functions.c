@@ -427,21 +427,25 @@ bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-static void
-load_server_protect_flags(void)
+int _server_int_option_cache[SVO__CACHE_SIZE];
+
+void
+load_server_options(void)
 {
     int i;
 
     for (i = 0; i < top_bf_table; i++) {
 	bf_table[i].protected = server_flag_option(bf_table[i].protect_str);
     }
-    oklog("Loaded protect cache for %d builtins\n", i);
-}
+# define _BP_DO(PROP,prop)  _server_int_option_cache[SVO_PROTECT_##PROP] = server_flag_option("protect_" #prop);
+    BUILTIN_PROPERTIES(_BP_DO)
+# undef _BP_DO
 
-void
-load_server_options(void)
-{
-    load_server_protect_flags();
+# define _SRV_DO(SVO_PROP,prop,DEFAULT)  _server_int_option_cache[SVO_PROP] = server_int_option(#prop, DEFAULT);
+    SERVER_OPTIONS_CACHED_MISC(_SRV_DO)
+# undef _SRV_DO
+
+    oklog("Loaded protect cache for %d builtins\n", i);
 }
 
 static package
@@ -464,10 +468,16 @@ register_functions(void)
     register_function("load_server_options", 0, 0, bf_load_server_options);
 }
 
-char rcsid_functions[] = "$Id: functions.c,v 1.7 2001/03/12 05:10:54 bjj Exp $";
+char rcsid_functions[] = "$Id: functions.c,v 1.8 2010/03/27 00:05:53 wrog Exp $";
 
 /* 
  * $Log: functions.c,v $
+ * Revision 1.8  2010/03/27 00:05:53  wrog
+ * New server options max_*_concat and max_concat_catchable;
+ * New regime for caching integer/flag server options other than protect_<function>;
+ * protect_<property> options now cached; IGNORE_PROP_PROTECTED now off by default and deprecated;
+ * load_server_protect_flags() rolled into load_server_options()
+ *
  * Revision 1.7  2001/03/12 05:10:54  bjj
  * Split out call_verb and call_verb2.  The latter must only be called with
  * strings that are already MOO strings (str_ref-able).
