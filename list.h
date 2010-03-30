@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include "structures.h"
+#include "streams.h"
 
 extern Var listappend(Var list, Var value);
 extern Var listinsert(Var list, Var value, int pos);
@@ -32,10 +33,13 @@ extern Var substr(Var str, int lower, int upper);
 extern Var strget(Var str, Var i);
 extern Var new_list(int size);
 extern const char *value2str(Var);
-extern const char *value_to_literal(Var);
+extern void unparse_value(Stream *, Var);
 
 /* 
  * $Log: list.h,v $
+ * Revision 1.4  2010/03/30 23:06:51  wrog
+ * value_to_literal() replaced by unparse_value()
+ *
  * Revision 1.3  1998/12/14 13:17:58  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
