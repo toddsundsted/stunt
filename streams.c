@@ -37,11 +37,36 @@ new_stream(int size)
     return s;
 }
 
+Exception stream_too_big;
+int stream_alloc_maximum = 0;
+
+static int allow_stream_exceptions = 0;
+
+void 
+enable_stream_exceptions()
+{
+    ++allow_stream_exceptions;
+}
+
+void 
+disable_stream_exceptions()
+{
+    --allow_stream_exceptions;
+}
+
 static void
-grow(Stream * s, int newlen)
+grow(Stream * s, int newlen, int need)
 {
     char *newbuf;
 
+    if (allow_stream_exceptions > 0 && stream_alloc_maximum != 0) {
+	if (newlen > stream_alloc_maximum) {
+	    if (s->current + need < stream_alloc_maximum)
+		newlen = stream_alloc_maximum;
+	    else
+		RAISE(stream_too_big, 0);
+	}
+    }
     newbuf = mymalloc(newlen, M_STREAM);
     memcpy(newbuf, s->buffer, s->current);
     myfree(s->buffer, M_STREAM);
@@ -53,7 +78,7 @@ void
 stream_add_char(Stream * s, char c)
 {
     if (s->current + 1 >= s->buflen)
-	grow(s, s->buflen * 2);
+	grow(s, s->buflen * 2, 1);
 
     s->buffer[s->current++] = c;
 }
@@ -75,7 +100,7 @@ stream_add_string(Stream * s, const char *string)
 
 	if (newlen <= s->current + len)
 	    newlen = s->current + len + 1;
-	grow(s, newlen);
+	grow(s, newlen, len);
     }
     strcpy(s->buffer + s->current, string);
     s->current += len;
@@ -234,10 +259,13 @@ stream_length(Stream * s)
     return s->current;
 }
 
-char rcsid_streams[] = "$Id: streams.c,v 1.4 2006/12/06 23:57:51 wrog Exp $";
+char rcsid_streams[] = "$Id: streams.c,v 1.5 2010/03/30 22:13:22 wrog Exp $";
 
 /* 
  * $Log: streams.c,v $
+ * Revision 1.5  2010/03/30 22:13:22  wrog
+ * Added stream exception API to catch mymalloc failures
+ *
  * Revision 1.4  2006/12/06 23:57:51  wrog
  * New INPUT_APPLY_BACKSPACE option to process backspace/delete characters on nonbinary connections (patch 1571939)
  *
