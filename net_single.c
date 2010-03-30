@@ -194,7 +194,7 @@ network_process_io(int timeout)
 		   && (count = read(0, buffer, sizeof(buffer))) > 0) {
 		got_some = 1;
 		if (binary) {
-		    stream_add_string(s, raw_bytes_to_binary(buffer, count));
+		    stream_add_raw_bytes_to_binary(s, buffer, count);
 		    server_receive_line(sh, reset_stream(s));
 		} else
 		    for (ptr = buffer, end = buffer + count;
@@ -225,10 +225,13 @@ network_process_io(int timeout)
     return got_some;
 }
 
-char rcsid_net_single[] = "$Id: net_single.c,v 1.4 2006/12/06 23:57:51 wrog Exp $";
+char rcsid_net_single[] = "$Id: net_single.c,v 1.5 2010/03/30 23:16:49 wrog Exp $";
 
 /*
  * $Log: net_single.c,v $
+ * Revision 1.5  2010/03/30 23:16:49  wrog
+ * raw_bytes_to_binary() replaced by stream_add_raw_bytes_to_binary()
+ *
  * Revision 1.4  2006/12/06 23:57:51  wrog
  * New INPUT_APPLY_BACKSPACE option to process backspace/delete characters on nonbinary connections (patch 1571939)
  *
