@@ -226,7 +226,7 @@ find_described_verb(Objid oid, Var desc)
     if (desc.type == TYPE_INT)
 	return db_find_indexed_verb(oid, desc.v.num);
     else {
-	int flag = server_flag_option("support_numeric_verbname_strings");
+	int flag = server_flag_option("support_numeric_verbname_strings", 0);
 
 	return db_find_defined_verb(oid, desc.v.str, flag);
     }
@@ -580,10 +580,13 @@ register_verbs(void)
     register_function("eval", 1, 1, bf_eval, TYPE_STR);
 }
 
-char rcsid_verbs[] = "$Id: verbs.c,v 1.5 2008/08/20 04:25:23 bjj Exp $";
+char rcsid_verbs[] = "$Id: verbs.c,v 1.6 2010/03/30 23:26:36 wrog Exp $";
 
 /* 
  * $Log: verbs.c,v $
+ * Revision 1.6  2010/03/30 23:26:36  wrog
+ * server_flag_option() now takes a default value
+ *
  * Revision 1.5  2008/08/20 04:25:23  bjj
  * Fix iffy usage of str_dup in verb_info() and property_info() which could
  * cause poor behavior with MEMO_STRLEN (and other future string optimizations)
