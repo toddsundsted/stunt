@@ -199,7 +199,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	/*
 	 * Check permissions, if protected
 	 */
-	/* if (caller() != SYSTEM_OBJECT && server_flag_option(f->protect_str)) { */
+	/* if (caller() != SYSTEM_OBJECT && server_flag_option(f->protect_str, 0)) { */
 	if (caller() != SYSTEM_OBJECT && f->protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
 	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, arglist, 0);
@@ -432,18 +432,30 @@ int _server_int_option_cache[SVO__CACHE_SIZE];
 void
 load_server_options(void)
 {
-    int i;
+    int i, value;
 
     for (i = 0; i < top_bf_table; i++) {
-	bf_table[i].protected = server_flag_option(bf_table[i].protect_str);
+	bf_table[i].protected
+	    = server_flag_option(bf_table[i].protect_str, 0);
     }
-# define _BP_DO(PROP,prop)  _server_int_option_cache[SVO_PROTECT_##PROP] = server_flag_option("protect_" #prop);
-    BUILTIN_PROPERTIES(_BP_DO)
+
+# define _BP_DO(PROPERTY, property)				\
+      _server_int_option_cache[SVO_PROTECT_##PROPERTY]		\
+	  = server_flag_option("protect_" #property, 0);	\
+
+    BUILTIN_PROPERTIES(_BP_DO);
+
 # undef _BP_DO
 
-# define _SRV_DO(SVO_PROP,prop,DEFAULT)  _server_int_option_cache[SVO_PROP] = server_int_option(#prop, DEFAULT);
-    SERVER_OPTIONS_CACHED_MISC(_SRV_DO)
-# undef _SRV_DO
+# define _SVO_DO(SVO_MISC_OPTION, misc_option,			\
+		 kind, DEFAULT, CANONICALIZE)			\
+      value = server_##kind##_option(#misc_option, DEFAULT);	\
+      CANONICALIZE;						\
+      _server_int_option_cache[SVO_MISC_OPTION] = value;	\
+
+    SERVER_OPTIONS_CACHED_MISC(_SVO_DO, value);
+
+# undef _SVO_DO
 
     oklog("Loaded protect cache for %d builtins\n", i);
 }
@@ -468,10 +480,16 @@ register_functions(void)
     register_function("load_server_options", 0, 0, bf_load_server_options);
 }
 
-char rcsid_functions[] = "$Id: functions.c,v 1.8 2010/03/27 00:05:53 wrog Exp $";
+char rcsid_functions[] = "$Id: functions.c,v 1.9 2010/03/30 23:20:45 wrog Exp $";
 
 /* 
  * $Log: functions.c,v $
+ * Revision 1.9  2010/03/30 23:20:45  wrog
+ * server_flag_option() now takes a default value;
+ * Minimum values on max_string_concat/max_list_concat enforced;
+ * Treat max_concat_catchable like other boolean options;
+ * Cleaned up server option macro invocations
+ *
  * Revision 1.8  2010/03/27 00:05:53  wrog
  * New server options max_*_concat and max_concat_catchable;
  * New regime for caching integer/flag server options other than protect_<function>;
