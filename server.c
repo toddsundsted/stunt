@@ -719,8 +719,13 @@ emergency_mode()
 						wizard, debug, wizard, "",
 						&result)) {
 		case OUTCOME_DONE:
-		    printf("=> %s\n", value_to_literal(result));
-		    free_var(result);
+		    {
+			Stream *s = new_stream(100);
+			unparse_value(s, result);
+			printf("=> %s\n", reset_stream(s));
+			free_stream(s);
+			free_var(result);
+		    }
 		    break;
 		case OUTCOME_ABORTED:
 		    printf("=> *Aborted*\n");
@@ -902,14 +907,14 @@ set_server_cmdline(const char *line)
 }
 
 int
-server_flag_option(const char *name)
+server_flag_option(const char *name, int defallt)
 {
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
 	return is_true(v);
     else
-	return 0;
+	return defallt;
 }
 
 int
@@ -1792,10 +1797,16 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.13 2010/03/27 18:16:49 wrog Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.14 2010/03/30 22:59:57 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.14  2010/03/30 22:59:57  wrog
+ * server_flag_option() now takes a default value;
+ * Minimum values on max_string_concat/max_list_concat enforced;
+ * Treat max_concat_catchable like other boolean options;
+ * Server option macros more readable/flexible/canonicalizable;
+ *
  * Revision 1.13  2010/03/27 18:16:49  wrog
  * Removed completely unused stream
  *

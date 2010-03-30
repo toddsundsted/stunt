@@ -112,10 +112,11 @@ extern void set_server_cmdline(const char *line);
 
 #include "structures.h"
 
-extern int server_flag_option(const char *name);
-				/* Return true iff both $server_options and
-				 * $server_options.NAME exist and the latter
-				 * has a true MOO value.
+extern int server_flag_option(const char *name, int defallt);
+				/* If both $server_options and
+				 * $server_options.NAME exist, then return true
+				 * iff the latter has a true MOO value.
+				 * Otherwise, return DEFALLT.
 				 */
 
 extern int server_int_option(const char *name, int defallt);
@@ -153,22 +154,54 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
    (1)  "protect_<bi-function>" cached in bf_table (functions.c).
    (2)  "protect_<bi-property>" cached here. 
    (3)  SERVER_OPTIONS_CACHED_MISC cached here.
-*/
-#define SERVER_OPTIONS_CACHED_MISC(DEFINE)				\
-  DEFINE(SVO_MAX_LIST_CONCAT,max_list_concat,DEFAULT_MAX_LIST_CONCAT)	\
-  DEFINE(SVO_MAX_STRING_CONCAT,max_string_concat,DEFAULT_MAX_STRING_CONCAT) \
-  DEFINE(SVO_MAX_CONCAT_CATCHABLE,max_concat_catchable,0)
+
+ * Each of the entries in SERVER_OPTIONS_CACHED_MISC
+ * should be of the form
+ * 
+ *    DEFINE( SVO_OPTION_NAME,     // symbolic name
+ *            property_name,	   // $server_options property
+ *            kind,		   // 'int' or 'flag'
+ *            default_value,	   // 
+ *            {value = fn(value);},// canonicalizer
+ *          )
+ */
+#define SERVER_OPTIONS_CACHED_MISC(DEFINE, value)		\
+								\
+  DEFINE( SVO_MAX_LIST_CONCAT, max_list_concat,			\
+								\
+	  int, DEFAULT_MAX_LIST_CONCAT,				\
+ 	 _STATEMENT({						\
+	     if (value > 0 && value < 1022) value = 1022;	\
+	   }))							\
+								\
+  DEFINE( SVO_MAX_STRING_CONCAT, max_string_concat,		\
+								\
+	  int, DEFAULT_MAX_STRING_CONCAT,			\
+	 _STATEMENT({						\
+	     if (value > 0 && value < 1015) value = 1015;	\
+	     stream_alloc_maximum = value + 1;			\
+	   }))							\
+								\
+  DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
+ 	  flag, 0, /* already canonical */			\
+	  )
 
 /* List of all category (2) and (3) cached server options */
 enum Server_Option {
 
-# define _BP_DO(PROP,prop)  SVO_PROTECT_##PROP = BP_##PROP,
-    BUILTIN_PROPERTIES(_BP_DO)
-# undef _BP_DO
+# define _BP_DEF(PROPERTY,property)		\
+      SVO_PROTECT_##PROPERTY = BP_##PROPERTY,	\
 
-# define _SRV_DO(SVO_PROP,prop,DEFAULT)  SVO_PROP,
-    SERVER_OPTIONS_CACHED_MISC(_SRV_DO)
-# undef _SRV_DO
+    BUILTIN_PROPERTIES(_BP_DEF)
+
+# undef _BP_DEF
+
+# define _SVO_DEF(SVO_MISC_OPTION,_1,_2,_3,_4)	\
+      SVO_MISC_OPTION,				\
+
+    SERVER_OPTIONS_CACHED_MISC(_SVO_DEF,@)
+
+# undef _SVO_DEF
 
     SVO__CACHE_SIZE
 };
@@ -284,6 +317,12 @@ extern int read_active_connections(void);
 
 /* 
  * $Log: server.h,v $
+ * Revision 1.6  2010/03/30 22:59:57  wrog
+ * server_flag_option() now takes a default value;
+ * Minimum values on max_string_concat/max_list_concat enforced;
+ * Treat max_concat_catchable like other boolean options;
+ * Server option macros more readable/flexible/canonicalizable;
+ *
  * Revision 1.5  2010/03/27 00:02:35  wrog
  * New server options max_*_concat and max_concat_catchable;
  * New regime for caching integer/flag server options other than protect_<function>;
