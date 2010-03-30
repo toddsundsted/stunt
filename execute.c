@@ -1638,7 +1638,16 @@ do {								\
 			PUSH(p.u.ret);
 			break;
 		    case BI_RAISE:
-			if (RUN_ACTIV.debug) {
+			if (task_timed_out) {
+			    /* ?FIX: separate BI_XXX so that builtins can
+			     * directly call for out-of-seconds death? */
+			    free_var(p.u.raise.code);
+			    free_str(p.u.raise.msg);
+			    free_var(p.u.raise.value);
+			    STORE_STATE_VARIABLES();
+			    abort_task(0);
+			    return OUTCOME_ABORTED;
+			} else if (RUN_ACTIV.debug) {
 			    if (raise_error(p, 0))
 				return OUTCOME_ABORTED;
 			    else
@@ -2463,7 +2472,7 @@ bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
     Var code = var_ref(arglist.v.list[1]);
     const char *msg = (nargs >= 2
 		       ? str_ref(arglist.v.list[2].v.str)
-		       : str_dup(value2str(code)));
+		       : value2str(code));
     Var value;
 
     value = (nargs >= 3 ? var_ref(arglist.v.list[3]) : zero);
@@ -2889,10 +2898,14 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.20 2010/03/27 00:27:26 wrog Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.21 2010/03/30 23:18:41 wrog Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.21  2010/03/30 23:18:41  wrog
+ * Allow builtins to cause out-of-seconds task aborts more directly
+ * value2str now returns addref'ed string
+ *
  * Revision 1.20  2010/03/27 00:27:26  wrog
  * New server options max_*_concat and
  * (new checks for OP_LIST_APPEND, (string)OP_ADD and EOP_RANGESET);
