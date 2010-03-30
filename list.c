@@ -34,6 +34,7 @@
 #include "structures.h"
 #include "unparse.h"
 #include "utils.h"
+#include "server.h"
 
 Var
 new_list(int size)
@@ -220,58 +221,53 @@ sublist(Var list, int lower, int upper)
     }
 }
 
-static const char *
-list2str(Var * args)
+static void
+stream_add_tostr(Stream * s, Var v)
 {
-    static Stream *str = 0;
-    int i;
-
-    if (!str)
-	str = new_stream(100);
-
-    for (i = 1; i <= args[0].v.num; i++) {
-	switch (args[i].type) {
-	case TYPE_INT:
-	    stream_printf(str, "%d", args[i].v.num);
-	    break;
-	case TYPE_OBJ:
-	    stream_printf(str, "#%d", args[i].v.obj);
-	    break;
-	case TYPE_STR:
-	    stream_add_string(str, args[i].v.str);
-	    break;
-	case TYPE_ERR:
-	    stream_add_string(str, unparse_error(args[i].v.err));
-	    break;
-	case TYPE_FLOAT:
-	    stream_printf(str, "%g", *args[i].v.fnum);
-	    break;
-	case TYPE_LIST:
-	    stream_add_string(str, "{list}");
-	    break;
-	default:
-	    panic("LIST2STR: Impossible var type.\n");
-	}
+    switch (v.type) {
+    case TYPE_INT:
+	stream_printf(s, "%d", v.v.num);
+	break;
+    case TYPE_OBJ:
+	stream_printf(s, "#%d", v.v.obj);
+	break;
+    case TYPE_STR:
+	stream_add_string(s, v.v.str);
+	break;
+    case TYPE_ERR:
+	stream_add_string(s, unparse_error(v.v.err));
+	break;
+    case TYPE_FLOAT:
+	stream_printf(s, "%g", *v.v.fnum);
+	break;
+    case TYPE_LIST:
+	stream_add_string(s, "{list}");
+	break;
+    default:
+	panic("STREAM_ADD_TOSTR: Unknown Var type");
     }
-
-    return reset_stream(str);
 }
+
 
 const char *
 value2str(Var value)
 {
-    Var list;
-    const char *str;
-
-    list = new_list(1);
-    list.v.list[1] = var_ref(value);
-    str = list2str(list.v.list);
-    free_var(list);
-    return str;
+    if (value.type == TYPE_STR) {
+	/* do this case separately to avoid two copies
+	 * and to ensure that the stream never grows */
+	return str_ref(value.v.str);
+    }
+    else {
+	static Stream *s = 0;
+	if (!s)
+	    s = new_stream(32);
+	stream_add_tostr(s, value);
+	return str_dup(reset_stream(s));
+    }
 }
 
-static void
-print_to_stream(Var v, Stream * s)
+void
+unparse_value(Stream * s, Var v)
 {
     switch (v.type) {
     case TYPE_INT:
@@ -281,7 +277,7 @@ print_to_stream(Var v, Stream * s)
 	stream_printf(s, "#%d", v.v.obj);
 	break;
     case TYPE_ERR:
-	stream_add_string(s, error_name(v.v.num));
+	stream_add_string(s, error_name(v.v.err));
 	break;
     case TYPE_FLOAT:
 	stream_printf(s, "%g", *v.v.fnum);
@@ -314,28 +310,14 @@ print_to_stream(Var v, Stream * s)
 	    for (i = 1; i <= len; i++) {
 		stream_add_string(s, sep);
 		sep = ", ";
-		print_to_stream(v.v.list[i], s);
+		unparse_value(s, v.v.list[i]);
 	    }
 	    stream_add_char(s, '}');
 	}
 	break;
     default:
-	errlog("PRINT_TO_STREAM: Unknown Var type = %d\n", v.type);
-	stream_add_string(s, ">>Unknown value<<");
+	panic("UNPARSE_VALUE: Unknown Var type");
     }
-}
-
-const char *
-value_to_literal(Var v)
-{
-    static Stream *s = 0;
-
-    if (!s)
-	s = new_stream(100);
-
-    print_to_stream(v, s);
-
-    return reset_stream(s);
 }
 
 Var
@@ -531,26 +513,42 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+#define TRY_STREAM     { enable_stream_exceptions(); TRY
+#define ENDTRY_STREAM						\
+    if (!server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))	\
+	    task_timed_out = 1;					\
+    ENDTRY  disable_stream_exceptions(); }
+
+
 static package
 bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (source, what, with [, case-matters]) */
-    Var r;
     int case_matters = 0;
+    Stream *s;
+    package p;
 
     if (arglist.v.list[0].v.num == 4)
 	case_matters = is_true(arglist.v.list[4]);
     if (arglist.v.list[2].v.str[0] == '\0') {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
-    } else {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(strsub(arglist.v.list[1].v.str,
-				 arglist.v.list[2].v.str,
-				 arglist.v.list[3].v.str, case_matters));
-
-	free_var(arglist);
-	return make_var_pack(r);
     }
+    s = new_stream(100);
+    TRY_STREAM {
+	Var r;
+	stream_add_strsub(s, arglist.v.list[1].v.str, arglist.v.list[2].v.str,
+			  arglist.v.list[3].v.str, case_matters);
+	r.type = TYPE_STR;
+	r.v.str = str_dup(reset_stream(s));
+	p = make_var_pack(r);
+    }
+    EXCEPT (stream_too_big) {
+	p = make_error_pack(E_QUOTA);
+    }	    
+    ENDTRY_STREAM;
+    free_stream(s);
+    free_var(arglist);
+    return p;
 }
 
 static package
@@ -640,22 +638,46 @@ bf_rindex(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r.type = TYPE_STR;
-    r.v.str = str_dup(list2str(arglist.v.list));
+    package p;
+    Stream *s = new_stream(100);
+    TRY_STREAM {
+	Var r;
+	int i;
+	for (i = 1; i <= arglist.v.list[0].v.num; i++) {
+	    stream_add_tostr(s, arglist.v.list[i]);
+	}
+	r.type = TYPE_STR;
+	r.v.str = str_dup(reset_stream(s));
+	p = make_var_pack(r);
+    }
+    EXCEPT (stream_too_big) {
+	p = make_error_pack(E_QUOTA);
+    }
+    ENDTRY_STREAM;
+    free_stream(s);
     free_var(arglist);
-    return make_var_pack(r);
+    return p;
 }
 
 static package
 bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-
-    r.type = TYPE_STR;
-    r.v.str = str_dup(value_to_literal(arglist.v.list[1]));
+    package p;
+    Stream *s = new_stream(100);
+    TRY_STREAM {
+	Var r;
+	unparse_value(s, arglist.v.list[1]);
+	r.type = TYPE_STR;
+	r.v.str = str_dup(reset_stream(s));
+	p = make_var_pack(r);
+    }
+    EXCEPT (stream_too_big) {
+	p = make_error_pack(E_QUOTA);
+    }
+    ENDTRY_STREAM;
+    free_stream(s);
     free_var(arglist);
-    return make_var_pack(r);
+    return p;
 }
 
 struct pat_cache_entry {
@@ -853,7 +875,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
     int template_length, subject_length;
     const char *template, *subject;
     Var subs, ans;
-    int invarg = 0;
+    enum error e = E_NONE;
     Stream *s;
     char c = '\0';
 
@@ -869,49 +891,46 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
     subject_length = memo_strlen(subject);
 
     s = new_stream(template_length);
-    ans.type = TYPE_STR;
-    while ((c = *(template++)) != '\0') {
-	switch (c) {
-	case '%':
-	    {
-		Var pair;
-		int start = 0, end = 0;
+    TRY_STREAM {
+	while ((c = *(template++)) != '\0') {
+	    if (c != '%')
+		stream_add_char(s, c);
+	    else {
 		c = *(template++);
 		if (c == '%')
 		    stream_add_char(s, '%');
 		else {
+		    int start = 0, end = 0;
 		    if (c >= '1' && c <= '9') {
-			pair = subs.v.list[3].v.list[c - '0'];
+			Var pair = subs.v.list[3].v.list[c - '0'];
 			start = pair.v.list[1].v.num - 1;
 			end = pair.v.list[2].v.num - 1;
 		    } else if (c == '0') {
 			start = subs.v.list[1].v.num - 1;
 			end = subs.v.list[2].v.num - 1;
-		    } else
-			invarg = 1;
-		    if (!invarg) {
-			int where;
-			for (where = start; where <= end; where++)
-			    stream_add_char(s, subject[where]);
+		    } else {
+			e = E_INVARG;
+			goto oops;
 		    }
+		    while (start <= end)
+			stream_add_char(s, subject[start++]);
 		}
-		break;
 	    }
-	default:
-	    stream_add_char(s, c);
 	}
-	if (invarg)
-	    break;
-    }
-
-    free_var(arglist);
-    if (!invarg)
+	ans.type = TYPE_STR;
 	ans.v.str = str_dup(reset_stream(s));
+    oops: ;
+    }
+    EXCEPT (stream_too_big) {
+	e = E_QUOTA;
+    }
+    ENDTRY_STREAM;
+    free_var(arglist);
     free_stream(s);
-    if (invarg)
-	return make_error_pack(E_INVARG);
-    else
+    if (e == E_NONE)
 	return make_var_pack(ans);
+    else
+	return make_error_pack(e);
 }
 
 static package
@@ -975,13 +994,24 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    const char *lit = value_to_literal(arglist.v.list[1]);
-
-    r.type = TYPE_STR;
-    r.v.str = hash_bytes(lit, memo_strlen(lit));
+    package p;
+    Stream *s = new_stream(100);
+    TRY_STREAM {
+	Var r;
+	const char *lit;
+	unparse_value(s, arglist.v.list[1]);
+	lit = reset_stream(s);
+	r.type = TYPE_STR;
+	r.v.str = hash_bytes(lit, memo_strlen(lit));
+	p = make_var_pack(r);
+    }
+    EXCEPT (stream_too_big) {
+	p = make_error_pack(E_QUOTA);
+    }
+    ENDTRY_STREAM;
+    free_stream(s);
     free_var(arglist);
-    return make_var_pack(r);
+    return p;
 }
 
 static package
@@ -999,17 +1029,19 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_INVARG);
 
     if (fully) {
+	if (length > server_int_option_cached(SVO_MAX_LIST_CONCAT)) {
+	    if (!server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
+		task_timed_out = 1;
+	    return make_error_pack(E_QUOTA);
+	}
 	r = new_list(length);
 	for (i = 1; i <= length; i++) {
 	    r.v.list[i].type = TYPE_INT;
 	    r.v.list[i].v.num = (unsigned char) bytes[i - 1];
 	}
     } else {
-	static Stream *s = 0;
 	int count, in_string;
-
-	if (!s)
-	    s = new_stream(50);
+	Stream *s = new_stream(50);
 
 	for (count = in_string = 0, i = 0; i < length; i++) {
 	    unsigned char c = bytes[i];
@@ -1024,6 +1056,12 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	    }
 	}
 
+	if (count > server_int_option_cached(SVO_MAX_LIST_CONCAT)) {
+	    free_stream(s);
+	    if (!server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
+		task_timed_out = 1;
+	    return make_error_pack(E_QUOTA);
+	}
 	r = new_list(count);
 	for (count = 1, in_string = 0, i = 0; i < length; i++) {
 	    unsigned char c = bytes[i];
@@ -1048,6 +1086,7 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	    r.v.list[count].type = TYPE_STR;
 	    r.v.list[count].v.str = str_dup(reset_stream(s));
 	}
+	free_stream(s);
     }
 
     return make_var_pack(r);
@@ -1082,24 +1121,32 @@ encode_binary(Stream * s, Var v)
 static package
 bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static Stream *s = 0;
-    int ok, length;
     Var r;
-    const char *bytes;
-
-    if (!s)
-	s = new_stream(100);
-
-    ok = encode_binary(s, arglist);
+    enum error e = E_NONE;
+    Stream *s = new_stream(100);
+    Stream *s2 = new_stream(100);
+    TRY_STREAM {
+	if (encode_binary(s, arglist)) {
+	    int length = stream_length(s);
+	    const char *bytes = reset_stream(s);
+	    stream_add_raw_bytes_to_binary(s2, bytes, length);
+	    r.type = TYPE_STR;
+	    r.v.str = str_dup(reset_stream(s2));
+	}
+	else
+	    e = E_INVARG;
+    }
+    EXCEPT (stream_too_big) {
+	e = E_QUOTA;
+    }
+    ENDTRY_STREAM;
+    free_stream(s2);
+    free_stream(s);
     free_var(arglist);
-    length = stream_length(s);
-    bytes = reset_stream(s);
-    if (ok) {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(raw_bytes_to_binary(bytes, length));
+    if (e == E_NONE)
 	return make_var_pack(r);
-    } else
-	return make_error_pack(E_INVARG);
+    else
+	return make_error_pack(e);
 }
 
 void
@@ -1142,10 +1189,22 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.8 2010/03/26 23:28:29 wrog Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.9 2010/03/30 23:13:39 wrog Exp $";
 
 /* 
  * $Log: list.c,v $
+ * Revision 1.9  2010/03/30 23:13:39  wrog
+ * rewrote bf_strsub(), bf_tostr(), bf_toliteral(),
+ * -  bf_substitute(), bf_value_hash(), bf_encode_binary()
+ * -  to enable and watch for stream_too_big exceptions;
+ * bf_decode_binary() now raises errors
+ * -  instead of creating overly large lists
+ * value2str() made safe (never allocates);
+ * list2str cannibalized into stream_add_tostr();
+ * print_to_stream() renamed to unparse_value(),
+ * -  made public to replace value_to_literal() [removed],
+ * -  now panicks on unknown Var type rather than logging;
+ *
  * Revision 1.8  2010/03/26 23:28:29  wrog
  * Fix compiler warning about unassigned variable
  *
