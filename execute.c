@@ -194,6 +194,7 @@ suspend_task(package p)
 }
 
 static int raise_error(package p, enum outcome *outcome);
+static void abort_task(enum abort_reason reason);
 
 static int
 unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
@@ -202,6 +203,9 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
      * in which case *outcome is set to the correct outcome to return.
      * Interpreter stops either because it was blocked (OUTCOME_BLOCKED)
      * or the entire stack was unwound (OUTCOME_DONE/OUTCOME_ABORTED)
+     *
+     * why==FIN_EXIT always returns false
+     * why==FIN_ABORT always returns true/OUTCOME_ABORTED
      */
     Var code = (why == FIN_RAISE ? value.v.list[1] : zero);
 
@@ -315,7 +319,10 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 		    a->bi_func_data = p.u.call.data;
 		    return 0;
 		case BI_KILL:
-		    return unwind_stack(FIN_ABORT, zero, outcome);
+		    abort_task(p.u.ret.v.num);
+		    if (outcome)
+			*outcome = OUTCOME_ABORTED;
+		    return 1;
 		}
 	    } else {
 		/* Built-in functions receive zero as a `returned value' on
@@ -484,20 +491,39 @@ raise_error(package p, enum outcome *outcome)
 }
 
 static void
-abort_task(int is_ticks)
+abort_task(enum abort_reason reason)
 {
     Var value;
-    const char *msg = (is_ticks ? "Task ran out of ticks"
-		       : "Task ran out of seconds");
+    const char *msg;
+    const char *htag;
 
-    value = new_list(3);
-    value.v.list[1].type = TYPE_STR;
-    value.v.list[1].v.str = str_dup(is_ticks ? "ticks" : "seconds");
-    value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
-				      root_activ_vector, 1);
-    value.v.list[3] = error_backtrace_list(msg);
-    save_handler_info("handle_task_timeout", value);
-    unwind_stack(FIN_ABORT, zero, 0);
+    switch(reason) {
+    default:
+	panic("Bad abort_reason");
+	/*NOTREACHED*/
+
+    case ABORT_TICKS:
+	msg  = "Task ran out of ticks";
+	htag = "ticks";
+	goto save_hinfo;
+
+    case ABORT_SECONDS:
+	msg = "Task ran out of seconds";
+	htag = "seconds";
+
+    save_hinfo:
+	value = new_list(3);
+	value.v.list[1].type = TYPE_STR;
+	value.v.list[1].v.str = str_dup(htag);
+	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
+					  root_activ_vector, 1);
+	value.v.list[3] = error_backtrace_list(msg);
+	save_handler_info("handle_task_timeout", value);
+	/* fall through */
+
+    case ABORT_KILL:
+	(void) unwind_stack(FIN_ABORT, zero, 0);
+    }
 }
 
 /**** activation manipulation ****/
@@ -761,7 +787,7 @@ do {								\
         /* simulate out-of-seconds abort resulting */		\
 	/* from monster malloc+copy taking too long */		\
 	STORE_STATE_VARIABLES();				\
-	abort_task(0);						\
+	abort_task(ABORT_SECONDS);				\
 	return OUTCOME_ABORTED;					\
     }								\
     else							\
@@ -786,12 +812,12 @@ do {								\
 	if (COUNT_TICK(op)) {
 	    if (--ticks_remaining <= 0) {
 		STORE_STATE_VARIABLES();
-		abort_task(1);
+		abort_task(ABORT_TICKS);
 		return OUTCOME_ABORTED;
 	    }
 	    if (task_timed_out) {
 		STORE_STATE_VARIABLES();
-		abort_task(0);
+		abort_task(ABORT_SECONDS);
 		return OUTCOME_ABORTED;
 	    }
 	}
@@ -1638,16 +1664,7 @@ do {								\
 			PUSH(p.u.ret);
 			break;
 		    case BI_RAISE:
-			if (task_timed_out) {
-			    /* ?FIX: separate BI_XXX so that builtins can
-			     * directly call for out-of-seconds death? */
-			    free_var(p.u.raise.code);
-			    free_str(p.u.raise.msg);
-			    free_var(p.u.raise.value);
-			    STORE_STATE_VARIABLES();
-			    abort_task(0);
-			    return OUTCOME_ABORTED;
-			} else if (RUN_ACTIV.debug) {
+			if (RUN_ACTIV.debug) {
 			    if (raise_error(p, 0))
 				return OUTCOME_ABORTED;
 			    else
@@ -1676,7 +1693,7 @@ do {								\
 			break;
 		    case BI_KILL:
 			STORE_STATE_VARIABLES();
-			unwind_stack(FIN_ABORT, zero, 0);
+			abort_task(p.u.ret.v.num);
 			return OUTCOME_ABORTED;
 			/* NOTREACHED */
 		    }
@@ -1931,7 +1948,7 @@ do {								\
 			v.v.list[2].type = TYPE_INT;
 			v.v.list[2].v.num = READ_BYTES(bv, bc.numbytes_label);
 			STORE_STATE_VARIABLES();
-			unwind_stack(FIN_EXIT, v, 0);
+			(void) unwind_stack(FIN_EXIT, v, 0);
 			LOAD_STATE_VARIABLES();
 		    }
 		    break;
@@ -2898,10 +2915,14 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.21 2010/03/30 23:18:41 wrog Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.22 2010/03/31 18:08:07 wrog Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.22  2010/03/31 18:08:07  wrog
+ * builtin functions can now explicitly abort task with out-of-seconds/ticks
+ * using make_abort_pack()/BI_KILL rather than by setting task_timed_out
+ *
  * Revision 1.21  2010/03/30 23:18:41  wrog
  * Allow builtins to cause out-of-seconds task aborts more directly
  * value2str now returns addref'ed string
