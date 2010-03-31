@@ -31,7 +31,7 @@ typedef struct {
 	BI_RAISE,		/* Raising an error */
 	BI_CALL,		/* Making a nested verb call */
 	BI_SUSPEND,		/* Suspending the current task */
-	BI_KILL			/* Kill the current task */
+	BI_KILL			/* Killing the current task */
     } kind;
     union {
 	Var ret;
@@ -53,7 +53,13 @@ typedef struct {
 
 void register_bi_functions();
 
-package make_kill_pack();
+enum abort_reason {
+    ABORT_KILL    = -1, 	/* kill_task(task_id()) */
+    ABORT_SECONDS = 0,		/* out of seconds */
+    ABORT_TICKS   = 1		/* out of ticks */
+};
+
+package make_abort_pack(enum abort_reason reason);
 package make_error_pack(enum error err);
 package make_raise_pack(enum error err, const char *msg, Var value);
 package make_var_pack(Var v);
@@ -95,6 +101,9 @@ extern void load_server_options(void);
 
 /* 
  * $Log: functions.h,v $
+ * Revision 1.6  2010/03/31 18:02:05  wrog
+ * differentiate kinds of BI_KILL; replace make_kill_pack() with make_abort_pack(abort_reason)
+ *
  * Revision 1.5  2001/03/12 03:25:16  bjj
  * Added new package type BI_KILL which kills the task calling the builtin.
  * Removed the static int task_killed in execute.c which wa tested on every

@@ -2082,7 +2082,7 @@ bf_kill_task(Var arglist, Byte next, void *vdata, Objid progr)
     if (e != E_NONE)
 	return make_error_pack(e);
     else if (id == current_task_id)
-	return make_kill_pack();
+	return make_abort_pack(ABORT_KILL);
 
     return no_var_pack();
 }
@@ -2237,10 +2237,13 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.17 2010/03/30 23:26:36 wrog Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.18 2010/03/31 18:02:05 wrog Exp $";
 
 /* 
  * $Log: tasks.c,v $
+ * Revision 1.18  2010/03/31 18:02:05  wrog
+ * differentiate kinds of BI_KILL; replace make_kill_pack() with make_abort_pack(abort_reason)
+ *
  * Revision 1.17  2010/03/30 23:26:36  wrog
  * server_flag_option() now takes a default value
  *
