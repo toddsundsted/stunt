@@ -156,6 +156,9 @@ depend: ${ALL_CSRCS}
 
 ###############################################################################
 # $Log: Makefile.in,v $
+# Revision 1.11  2010/04/22 21:18:43  wrog
+# Support for version_hook and version_src.h
+#
 # Revision 1.10  2006/12/06 23:44:24  wrog
 # Add parser.c to clean target
 #
@@ -316,6 +319,9 @@ parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
 network.o: 	net_single.o net_multi.o
 net_proto.o:	net_bsd_tcp.o net_bsd_lcl.o net_sysv_tcp.o net_sysv_lcl.o
 net_mplex.o:	net_mp_selct.o net_mp_poll.o net_mp_fake.o
+version.o:	version_src.h version_options.h
+version_src.h:
+	if [ ! -e $@ ]; then touch $@; fi
 
 $(OPT_NET_OBJS):
 	touch $@
