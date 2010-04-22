@@ -30,6 +30,9 @@ new_stream(int size)
 {
     Stream *s = mymalloc(sizeof(Stream), M_STREAM);
 
+    if (size < 1)
+	size = 1;
+
     s->buffer = mymalloc(size, M_STREAM);
     s->buflen = size;
     s->current = 0;
@@ -259,10 +262,13 @@ stream_length(Stream * s)
     return s->current;
 }
 
-char rcsid_streams[] = "$Id: streams.c,v 1.5 2010/03/30 22:13:22 wrog Exp $";
+char rcsid_streams[] = "$Id: streams.c,v 1.6 2010/04/22 21:47:48 wrog Exp $";
 
 /* 
  * $Log: streams.c,v $
+ * Revision 1.6  2010/04/22 21:47:48  wrog
+ * Improve stream robustness (rob@mars.org)
+ *
  * Revision 1.5  2010/03/30 22:13:22  wrog
  * Added stream exception API to catch mymalloc failures
  *
