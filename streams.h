@@ -45,8 +45,8 @@ extern Exception stream_too_big;
 /*
  * Calls to enable_stream_exceptions() and disable_stream_exceptions()
  * must be paired and nest properly.
- * 
- * If (1) enable_stream_exceptions() is in effect, and 
+ *
+ * If (1) enable_stream_exceptions() is in effect, and
  * (2) stream_alloc_maximum is set to a positive value,
  * then, upon any attempt to grow a stream beyond
  * stream_alloc_maximum bytes, a stream_too_big exception
@@ -57,6 +57,9 @@ extern Exception stream_too_big;
 
 /* 
  * $Log: streams.h,v $
+ * Revision 1.6  2010/04/22 21:23:24  wrog
+ * whitespace fixes
+ *
  * Revision 1.5  2010/03/30 22:13:22  wrog
  * Added stream exception API to catch mymalloc failures
  *
