@@ -403,7 +403,7 @@ read_db_file(void)
     if (dbio_scanf(header_format_string, &dbio_input_version) != 1)
 	dbio_input_version = DBV_Prehistory;
 
-    if (!check_version(dbio_input_version)) {
+    if (!check_db_version(dbio_input_version)) {
 	errlog("READ_DB_FILE: Unknown DB version number: %d\n",
 	       dbio_input_version);
 	return 0;
@@ -503,7 +503,7 @@ write_db_file(const char *reason)
     user_list = db_all_users();
 
     TRY {
-	dbio_printf(header_format_string, current_version);
+	dbio_printf(header_format_string, current_db_version);
 	dbio_printf("%d\n%d\n%d\n%d\n",
 		    max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
 	for (i = 1; i <= user_list.v.list[0].v.num; i++)
@@ -732,12 +732,19 @@ void
 db_shutdown()
 {
     dump_database(DUMP_SHUTDOWN);
+
+    free_str(input_db_name);
+    free_str(dump_db_name);
 }
 
-char rcsid_db_file[] = "$Id: db_file.c,v 1.6 2007/11/12 11:17:03 wrog Exp $";
+char rcsid_db_file[] = "$Id: db_file.c,v 1.7 2010/04/22 21:29:18 wrog Exp $";
 
 /* 
  * $Log: db_file.c,v $
+ * Revision 1.7  2010/04/22 21:29:18  wrog
+ * Free database name strings on shutdown (rob@mars.org)
+ * current_version -> current_db_version
+ *
  * Revision 1.6  2007/11/12 11:17:03  wrog
  * sync so that checkpoint is physically written before prior checkpoint is unlinked
  *
