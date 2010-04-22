@@ -968,8 +968,8 @@ find_hot_node(Stmt * stmt)
     return 0;
 }
 
-int
-find_line_number(Program * prog, int vector, int pc)
+unsigned
+find_line_number(Program * prog, int vector, unsigned pc)
 {
     Stmt *tree;
 
@@ -991,10 +991,13 @@ find_line_number(Program * prog, int vector, int pc)
     return lineno;
 }
 
-char rcsid_decompile[] = "$Id: decompile.c,v 1.7 2006/12/06 23:51:31 wrog Exp $";
+char rcsid_decompile[] = "$Id: decompile.c,v 1.8 2010/04/22 21:42:44 wrog Exp $";
 
 /* 
  * $Log: decompile.c,v $
+ * Revision 1.8  2010/04/22 21:42:44  wrog
+ * Line number and pc are unsigned: fix find_line_number return/args types
+ *
  * Revision 1.7  2006/12/06 23:51:31  wrog
  * Fix compiler warnings about unused values
  *
