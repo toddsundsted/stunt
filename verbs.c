@@ -77,7 +77,7 @@ validate_verb_info(Var v, Objid * owner, unsigned *flags, const char **names)
 {
     const char *s;
 
-    if (!(v.type = TYPE_LIST
+    if (!(v.type == TYPE_LIST
 	  && v.v.list[0].v.num == 3
 	  && v.v.list[1].type == TYPE_OBJ
 	  && v.v.list[2].type == TYPE_STR
@@ -155,7 +155,7 @@ static enum error
 validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
 		   db_arg_spec * iobj)
 {
-    if (!(v.type = TYPE_LIST
+    if (!(v.type == TYPE_LIST
 	  && v.v.list[0].v.num == 3
 	  && v.v.list[1].type == TYPE_STR
 	  && v.v.list[2].type == TYPE_STR
@@ -580,10 +580,13 @@ register_verbs(void)
     register_function("eval", 1, 1, bf_eval, TYPE_STR);
 }
 
-char rcsid_verbs[] = "$Id: verbs.c,v 1.6 2010/03/30 23:26:36 wrog Exp $";
+char rcsid_verbs[] = "$Id: verbs.c,v 1.7 2010/04/22 21:25:14 wrog Exp $";
 
 /* 
  * $Log: verbs.c,v $
+ * Revision 1.7  2010/04/22 21:25:14  wrog
+ * Fix assignment/equality typos (rob@mars.org)
+ *
  * Revision 1.6  2010/03/30 23:26:36  wrog
  * server_flag_option() now takes a default value
  *
