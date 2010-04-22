@@ -381,7 +381,10 @@ capture_label(State * state)
     f.prev_stacks = state->num_stacks;
     f.next = -1;
 
-    f.pc = 0xdefeca7e; /* silence compiler warning */
+    /* silence compiler warning;
+     * capture_label() is always followed by add_known_label()
+     */
+    f.pc = 0xdefeca7e;
     return f;
 }
 
@@ -1351,10 +1354,13 @@ generate_code(Stmt * stmt, DB_Version version)
     return prog;
 }
 
-char rcsid_code_gen[] = "$Id: code_gen.c,v 1.12 2010/03/26 07:54:46 wrog Exp $";
+char rcsid_code_gen[] = "$Id: code_gen.c,v 1.13 2010/04/22 21:33:16 wrog Exp $";
 
 /* 
  * $Log: code_gen.c,v $
+ * Revision 1.13  2010/04/22 21:33:16  wrog
+ * Fix compiler warning: f.pc uninitialized in capture_label
+ *
  * Revision 1.12  2010/03/26 07:54:46  wrog
  * Fix compiler warning about unassigned field
  *
