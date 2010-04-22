@@ -695,7 +695,7 @@ rangeset_check(Var base, Var inst, int from, int to)
 #ifdef IGNORE_PROP_PROTECTED
 #define bi_prop_protected(prop, progr) (0)
 #else
-#define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_int_option_cached(prop))
+#define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_flag_option_cached(prop))
 #endif				/* IGNORE_PROP_PROTECTED */
 
 /** 
@@ -899,11 +899,23 @@ do {								\
 		} else {
 		    free_var(RUN_ACTIV.rt_env[id]);
 		    RUN_ACTIV.rt_env[id] = var_ref(from);
-		    if (to.type == TYPE_INT)
-			from.v.num++;
-		    else
-			from.v.obj++;
-		    NEXT_TOP_RT_VALUE = from;
+		    if (to.type == TYPE_INT) {
+			if (from.v.num < MAXINT) {
+			    from.v.num++;
+			    NEXT_TOP_RT_VALUE = from;
+			} else {
+			    to.v.num--;
+			    TOP_RT_VALUE = to;
+			}
+		    } else {
+			if (from.v.obj < MAXOBJ) {
+			    from.v.obj++;
+			    NEXT_TOP_RT_VALUE = from;
+			} else {
+			    to.v.obj--;
+			    TOP_RT_VALUE = to;
+			}
+		    }
 		}
 	    }
 	    break;
@@ -2846,7 +2858,7 @@ read_activ(activation * a, int which_vector)
     else if (dbio_scanf("language version %u\n", &version) != 1) {
 	errlog("READ_ACTIV: Malformed language version\n");
 	return 0;
-    } else if (!check_version(version)) {
+    } else if (!check_db_version(version)) {
 	errlog("READ_ACTIV: Unrecognized language version: %d\n",
 	       version);
 	return 0;
@@ -2915,10 +2927,14 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.22 2010/03/31 18:08:07 wrog Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.23 2010/04/22 21:54:47 wrog Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.23  2010/04/22 21:54:47  wrog
+ * Fix for-statement infinite loop bug (rob@mars.org)
+ * current_version -> current_db_version
+ *
  * Revision 1.22  2010/03/31 18:08:07  wrog
  * builtin functions can now explicitly abort task with out-of-seconds/ticks
  * using make_abort_pack()/BI_KILL rather than by setting task_timed_out
