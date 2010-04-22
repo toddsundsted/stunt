@@ -628,6 +628,7 @@ emergency_mode()
     Var words;
     int nargs;
     const char *command;
+    Stream *s = new_stream(100);
     Objid wizard = -1;
     int debug = 1;
     int start_ok = -1;
@@ -719,13 +720,9 @@ emergency_mode()
 						wizard, debug, wizard, "",
 						&result)) {
 		case OUTCOME_DONE:
-		    {
-			Stream *s = new_stream(100);
-			unparse_value(s, result);
-			printf("=> %s\n", reset_stream(s));
-			free_stream(s);
-			free_var(result);
-		    }
+		    unparse_value(s, result);
+		    printf("=> %s\n", reset_stream(s));
+		    free_var(result);
 		    break;
 		case OUTCOME_ABORTED:
 		    printf("=> *Aborted*\n");
@@ -872,6 +869,7 @@ emergency_mode()
     fclose(stdout);
 #endif
 
+    free_stream(s);
     in_emergency_mode = 0;
     oklog("EMERGENCY_MODE: Leaving mode; %s continue...\n",
 	  start_ok ? "will" : "won't");
@@ -1287,10 +1285,18 @@ static package
 bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    r.type = TYPE_STR;
-    r.v.str = str_dup(server_version);
+    if (arglist.v.list[0].v.num > 0) {
+	r = server_version_full(arglist.v.list[1]);
+    }
+    else {
+	r.type = TYPE_STR;
+	r.v.str = str_dup(server_version);
+    }
     free_var(arglist);
-    return make_var_pack(r);
+    if (r.type == TYPE_ERR)
+	return make_error_pack(r.v.err);
+    else
+	return make_var_pack(r);
 }
 
 static package
@@ -1767,7 +1773,7 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_server(void)
 {
-    register_function("server_version", 0, 0, bf_server_version);
+    register_function("server_version", 0, 1, bf_server_version, TYPE_ANY);
     register_function("renumber", 1, 1, bf_renumber, TYPE_OBJ);
     register_function("reset_max_object", 0, 0, bf_reset_max_object);
     register_function("memory_usage", 0, 0, bf_memory_usage);
@@ -1797,10 +1803,14 @@ register_server(void)
 		      bf_buffered_output_length, TYPE_OBJ);
 }
 
-char rcsid_server[] = "$Id: server.c,v 1.14 2010/03/30 22:59:57 wrog Exp $";
+char rcsid_server[] = "$Id: server.c,v 1.15 2010/04/22 21:46:36 wrog Exp $";
 
 /* 
  * $Log: server.c,v $
+ * Revision 1.15  2010/04/22 21:46:36  wrog
+ * support for server_version(argument)
+ * simplify stream usage in emergency mode
+ *
  * Revision 1.14  2010/03/30 22:59:57  wrog
  * server_flag_option() now takes a default value;
  * Minimum values on max_string_concat/max_list_concat enforced;
