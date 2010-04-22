@@ -19,8 +19,19 @@
 #define Version_H 1
 
 #include "config.h"
+#include "structures.h"
+
+/*****************************************************************
+ * Server Executable Version
+ */
 
 extern const char *server_version;
+extern Var server_version_full(Var);
+
+
+/*****************************************************************
+ * Language / Database-Format Version 
+ */
 
 /* The following list must never be reordered, only appended to.  There is one
  * element per version of the database format (including incompatible changes
@@ -48,9 +59,9 @@ typedef enum {
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
-#define current_version	((DB_Version) (Num_DB_Versions - 1))
+#define current_db_version	((DB_Version) (Num_DB_Versions - 1))
 
-extern int check_version(DB_Version);
+extern int check_db_version(DB_Version);
 				/* Returns true iff given version is within the
 				 * known range.
 				 */
@@ -59,6 +70,10 @@ extern int check_version(DB_Version);
 
 /* 
  * $Log: version.h,v $
+ * Revision 1.4  2010/04/22 21:39:52  wrog
+ * support for server_version(argument)
+ * current_version -> current_db_version
+ *
  * Revision 1.3  1998/12/14 13:19:19  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
@@ -72,8 +87,10 @@ extern int check_version(DB_Version);
  * Added somewhat bogus DBV_BFBugFixed version.  Release 1.8.0p4.
  *
  * Revision 2.2  1996/02/08  06:07:10  pavel
- * Added DBV_BreakCont and DBV_Float versions, check_version().  Moved
- * db_in_version to db_io.h and renamed db_out_version to current_version.
+ * Added DBV_BreakCont and DBV_Float versions, check_version().
+ * ...(check_version is now check_db_version -- wrog 2010)
+ * Moved db_in_version to db_io.h and renamed db_out_version to
+ * current_version ...(is now current_db_version -- wrog 2010)
  * Updated copyright notice for 1996.  Release 1.8.0beta1.
  *
  * Revision 2.1  1995/12/28  00:48:42  pavel
