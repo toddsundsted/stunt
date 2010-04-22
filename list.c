@@ -248,7 +248,6 @@ stream_add_tostr(Stream * s, Var v)
     }
 }
 
-
 const char *
 value2str(Var value)
 {
@@ -385,6 +384,54 @@ strget(Var str, Var i)
     return r;
 }
 
+/**** helpers for catching overly large allocations ****/
+
+#define TRY_STREAM     { enable_stream_exceptions(); TRY
+#define ENDTRY_STREAM  ENDTRY  disable_stream_exceptions(); }
+/*
+ * Expected usage:
+ *
+ *   TRY_STREAM
+ *     <...do stuff...>
+ *   EXCEPT (stream_too_big)
+ *     <...handle memory-go-boom case...>
+ *   ENDTRY_STREAM
+ *
+ * Since TRY uses setjmp/longjmp, variables modified in the course of
+ * <...do stuff...> should not be assumed to have retained any useful
+ * values into the EXCEPT handler or afterwards in event that the
+ * stream_too_big exception is raised.
+ *
+ * Implementation note:
+ *
+ * If we wanted to be uber-paranoid, or if there were any real
+ * possibility of nested code throwing other kinds of exceptions
+ * that get caught further out, then we'd want to enclose the
+ * disable_stream_exceptions() call in a FINALLY clause.  However,
+ *
+ * (1) said clause will also certainly want to include other kinds of
+ * cleanup (e.g., freeing of streams) so this is not simply a case of
+ * rolling it into ENDTRY_STREAM, and
+ *
+ * (2) the current exception implementation cannot have EXCEPT and
+ * FINALLY in the same TRY, so we then have to worry about which
+ * should be on the inside, and then the additional costs of pushing a
+ * second exception context and possibly having to do two longjmps
+ * in the course of handle an exception, at which point we may be
+ * wanting to rewrite the exception implementation anyway...,
+ *
+ * --wrog
+ */
+
+static package
+make_space_pack()
+{
+    if (server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
+	return make_error_pack(E_QUOTA);
+    else
+	return make_abort_pack(ABORT_SECONDS);
+}
+
 /**** built in functions ****/
 
 static package
@@ -513,18 +560,6 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-#define TRY_STREAM     { enable_stream_exceptions(); TRY
-#define ENDTRY_STREAM  ENDTRY  disable_stream_exceptions(); }
-
-static package
-make_space_pack()
-{
-    if (server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
-	return make_error_pack(E_QUOTA);
-    else
-	return make_abort_pack(ABORT_SECONDS);
-}
-
 static package
 bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (source, what, with [, case-matters]) */
@@ -544,7 +579,7 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 	stream_add_strsub(s, arglist.v.list[1].v.str, arglist.v.list[2].v.str,
 			  arglist.v.list[3].v.str, case_matters);
 	r.type = TYPE_STR;
-	r.v.str = str_dup(reset_stream(s));
+	r.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(r);
     }
     EXCEPT (stream_too_big) {
@@ -645,14 +680,16 @@ bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
+
     TRY_STREAM {
 	Var r;
 	int i;
+
 	for (i = 1; i <= arglist.v.list[0].v.num; i++) {
 	    stream_add_tostr(s, arglist.v.list[i]);
 	}
 	r.type = TYPE_STR;
-	r.v.str = str_dup(reset_stream(s));
+	r.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(r);
     }
     EXCEPT (stream_too_big) {
@@ -669,11 +706,13 @@ bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
+
     TRY_STREAM {
 	Var r;
+
 	unparse_value(s, arglist.v.list[1]);
 	r.type = TYPE_STR;
-	r.v.str = str_dup(reset_stream(s));
+	r.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(r);
     }
     EXCEPT (stream_too_big) {
@@ -900,30 +939,27 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 	while ((c = *(template++)) != '\0') {
 	    if (c != '%')
 		stream_add_char(s, c);
+	    else if ((c = *(template++)) == '%')
+		stream_add_char(s, '%');
 	    else {
-		c = *(template++);
-		if (c == '%')
-		    stream_add_char(s, '%');
-		else {
-		    int start = 0, end = 0;
-		    if (c >= '1' && c <= '9') {
-			Var pair = subs.v.list[3].v.list[c - '0'];
-			start = pair.v.list[1].v.num - 1;
-			end = pair.v.list[2].v.num - 1;
-		    } else if (c == '0') {
-			start = subs.v.list[1].v.num - 1;
-			end = subs.v.list[2].v.num - 1;
-		    } else {
-			p = make_error_pack(E_INVARG);
-			goto oops;
-		    }
-		    while (start <= end)
-			stream_add_char(s, subject[start++]);
+		int start = 0, end = 0;
+		if (c >= '1' && c <= '9') {
+		    Var pair = subs.v.list[3].v.list[c - '0'];
+		    start = pair.v.list[1].v.num - 1;
+		    end = pair.v.list[2].v.num - 1;
+		} else if (c == '0') {
+		    start = subs.v.list[1].v.num - 1;
+		    end = subs.v.list[2].v.num - 1;
+		} else {
+		    p = make_error_pack(E_INVARG);
+		    goto oops;
 		}
+		while (start <= end)
+		    stream_add_char(s, subject[start++]);
 	    }
 	}
 	ans.type = TYPE_STR;
-	ans.v.str = str_dup(reset_stream(s));
+	ans.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(ans);
     oops: ;
     }
@@ -999,13 +1035,13 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
+
     TRY_STREAM {
 	Var r;
-	const char *lit;
+
 	unparse_value(s, arglist.v.list[1]);
-	lit = reset_stream(s);
 	r.type = TYPE_STR;
-	r.v.str = hash_bytes(lit, memo_strlen(lit));
+	r.v.str = hash_bytes(stream_contents(s), stream_length(s));
 	p = make_var_pack(r);
     }
     EXCEPT (stream_too_big) {
@@ -1124,13 +1160,13 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
     Stream *s2 = new_stream(100);
+
     TRY_STREAM {
 	if (encode_binary(s, arglist)) {
-	    int length = stream_length(s);
-	    const char *bytes = reset_stream(s);
-	    stream_add_raw_bytes_to_binary(s2, bytes, length);
+	    stream_add_raw_bytes_to_binary(
+		s2, stream_contents(s), stream_length(s));
 	    r.type = TYPE_STR;
-	    r.v.str = str_dup(reset_stream(s2));
+	    r.v.str = str_dup(stream_contents(s2));
 	    p = make_var_pack(r);
 	}
 	else
@@ -1186,10 +1222,14 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.10 2010/03/31 18:08:07 wrog Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.11 2010/04/22 22:00:35 wrog Exp $";
 
 /* 
  * $Log: list.c,v $
+ * Revision 1.11  2010/04/22 22:00:35  wrog
+ * Fuller explanation of TRY_STREAM, unscramble bf_substitute,
+ * stream usage cleanups in bf_tostr, bf_toliteral, bf_value_hash, bf_encode_binary
+ *
  * Revision 1.10  2010/03/31 18:08:07  wrog
  * builtin functions can now explicitly abort task with out-of-seconds/ticks
  * using make_abort_pack()/BI_KILL rather than by setting task_timed_out
