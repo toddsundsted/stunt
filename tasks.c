@@ -589,7 +589,7 @@ end_programming(tqueue * tq)
 	    s.nerrors = 0;
 	    s.input = stream_contents(tq->program_stream);
 
-	    program = parse_program(current_version, client, &s);
+	    program = parse_program(current_db_version, client, &s);
 
 	    sprintf(buf, "%d error(s).", s.nerrors);
 	    notify(player, buf);
@@ -1370,7 +1370,7 @@ register_task_queue(task_enumerator enumerator)
 static void
 write_forked_task(forked_task ft)
 {
-    int lineno = find_line_number(ft.program, ft.f_index, 0);
+    unsigned lineno = find_line_number(ft.program, ft.f_index, 0);
 
     dbio_printf("0 %d %d %d\n", lineno, ft.start_time, ft.id);
     write_activ_as_pi(ft.a);
@@ -1478,6 +1478,7 @@ read_task_queue(void)
 	    errlog("READ_TASK_QUEUE: Bad activation, count = %d.\n", count);
 	    return 0;
 	}
+	a.temp.type = TYPE_NONE;
 	if (!read_rt_env(&old_names, &old_rt_env, &old_size)) {
 	    errlog("READ_TASK_QUEUE: Bad env, count = %d.\n", count);
 	    return 0;
@@ -2237,10 +2238,14 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
 }
 
-char rcsid_tasks[] = "$Id: tasks.c,v 1.18 2010/03/31 18:02:05 wrog Exp $";
+char rcsid_tasks[] = "$Id: tasks.c,v 1.19 2010/04/22 21:27:25 wrog Exp $";
 
 /* 
  * $Log: tasks.c,v $
+ * Revision 1.19  2010/04/22 21:27:25  wrog
+ * Avoid using uninitialized activation.temp (rob@mars.org)
+ * current_version -> current_db_version
+ *
  * Revision 1.18  2010/03/31 18:02:05  wrog
  * differentiate kinds of BI_KILL; replace make_kill_pack() with make_abort_pack(abort_reason)
  *
