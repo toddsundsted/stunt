@@ -22,6 +22,9 @@
 
 #include "config.h"
 
+#define MAXINT	((int32) 2147483647L)
+#define MAXOBJ	((Objid) MAXINT)
+
 typedef int32 Objid;
 
 /*
@@ -109,10 +112,27 @@ struct Var {
 
 extern Var zero;		/* useful constant */
 
+/*
+ * Hard limits on string and list sizes are imposed mainly to keep
+ * malloc calculations from rolling over, and thus preventing the
+ * ensuing buffer overruns.  Sizes allow space for reference counts
+ * and cached length values.  Actual limits imposed on
+ * user-constructed lists and strings should generally be smaller
+ * (see DEFAULT_MAX_LIST_CONCAT and DEFAULT_MAX_STRING_CONCAT
+ *  in options.h)
+ */
+#define MAX_LIST   (INT32_MAX/sizeof(Var) - 2)
+#define MAX_STRING (INT32_MAX - 9)
+
+
 #endif				/* !Structures_h */
 
 /* 
  * $Log: structures.h,v $
+ * Revision 1.5  2010/04/22 21:56:28  wrog
+ * Fix for-statement infinite loop bug (rob@mars.org)
+ * add MAX_LIST and MAX_STRING
+ *
  * Revision 1.4  1998/12/14 13:19:04  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
  *
