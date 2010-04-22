@@ -1222,16 +1222,19 @@ parse_list_as_program(Var code, Var *errors)
     state.cur_string = 1;
     state.cur_char = 0;
     state.errors = new_list(0);
-    program = parse_program(current_version, list_parser_client, &state);
+    program = parse_program(current_db_version, list_parser_client, &state);
     *errors = state.errors;
 
     return program;
 }
 
-char rcsid_parser[] = "$Id: parser.y,v 1.4 2004/05/22 01:25:44 wrog Exp $";
+char rcsid_parser[] = "$Id: parser.y,v 1.5 2010/04/22 21:30:18 wrog Exp $";
 
 /* 
  * $Log: parser.y,v $
+ * Revision 1.5  2010/04/22 21:30:18  wrog
+ * current_version -> current_db_version
+ *
  * Revision 1.4  2004/05/22 01:25:44  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
  *
