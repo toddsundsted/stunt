@@ -428,17 +428,26 @@ bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-int _server_int_option_cache[SVO__CACHE_SIZE];
-
-void
-load_server_options(void)
+static void
+load_server_protect_function_flags(void)
 {
-    int i, value;
+    int i;
 
     for (i = 0; i < top_bf_table; i++) {
 	bf_table[i].protected
 	    = server_flag_option(bf_table[i].protect_str, 0);
     }
+    oklog("Loaded protect cache for %d builtin functions\n", i);
+}
+
+int _server_int_option_cache[SVO__CACHE_SIZE];
+
+void
+load_server_options(void)
+{
+    int value;
+
+    load_server_protect_function_flags();
 
 # define _BP_DO(PROPERTY, property)				\
       _server_int_option_cache[SVO_PROTECT_##PROPERTY]		\
@@ -457,8 +466,6 @@ load_server_options(void)
     SERVER_OPTIONS_CACHED_MISC(_SVO_DO, value);
 
 # undef _SVO_DO
-
-    oklog("Loaded protect cache for %d builtins\n", i);
 }
 
 static package
@@ -481,10 +488,13 @@ register_functions(void)
     register_function("load_server_options", 0, 0, bf_load_server_options);
 }
 
-char rcsid_functions[] = "$Id: functions.c,v 1.10 2010/03/31 18:02:05 wrog Exp $";
+char rcsid_functions[] = "$Id: functions.c,v 1.11 2010/04/22 21:52:08 wrog Exp $";
 
 /* 
  * $Log: functions.c,v $
+ * Revision 1.11  2010/04/22 21:52:08  wrog
+ * re-separate out load_server_protect_function_flags
+ *
  * Revision 1.10  2010/03/31 18:02:05  wrog
  * differentiate kinds of BI_KILL; replace make_kill_pack() with make_abort_pack(abort_reason)
  *
