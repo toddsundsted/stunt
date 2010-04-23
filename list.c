@@ -315,7 +315,8 @@ unparse_value(Stream * s, Var v)
 	}
 	break;
     default:
-	panic("UNPARSE_VALUE: Unknown Var type");
+	errlog("UNPARSE_VALUE: Unknown Var type = %d\n", v.type);
+	stream_add_string(s, ">>Unknown value<<");
     }
 }
 
@@ -461,10 +462,18 @@ static package
 bf_setadd(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+    Var list = var_ref(arglist.v.list[1]);
 
-    r = setadd(var_ref(arglist.v.list[1]), var_ref(arglist.v.list[2]));
+    r = setadd(list, var_ref(arglist.v.list[2]));
     free_var(arglist);
-    return make_var_pack(r);
+
+    if (r.v.list == list.v.list ||
+	r.v.list[0].v.num <= server_int_option_cached(SVO_MAX_LIST_CONCAT))
+	return make_var_pack(r);
+    else {
+	free_var(r);
+	return make_space_pack();
+    }
 }
 
 
@@ -480,31 +489,45 @@ bf_setremove(Var arglist, Byte next, void *vdata, Objid progr)
 
 
 static package
+insert_or_append(Var arglist, int append1)
+{
+    int pos;
+    Var lst = var_ref(arglist.v.list[1]);
+    Var elt = var_ref(arglist.v.list[2]);
+
+    if (server_int_option_cached(SVO_MAX_LIST_CONCAT) <= lst.v.list[0].v.num) {
+	free_var(lst);
+	free_var(elt);
+	free_var(arglist);
+	return make_space_pack();
+    }
+    if (arglist.v.list[0].v.num == 2)
+	pos = append1 ? lst.v.list[0].v.num + 1 : 1;
+    else {
+	pos = arglist.v.list[3].v.num + append1;
+	if (pos <= 0)
+	    pos = 1;
+	else if (pos > lst.v.list[0].v.num + 1)
+	    pos = lst.v.list[0].v.num + 1;
+    }
+    free_var(arglist);
+    return make_var_pack(doinsert(lst, elt, pos));
+}
+
+
+static package
 bf_listappend(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    if (arglist.v.list[0].v.num == 2)
-	r = listappend(var_ref(arglist.v.list[1]), var_ref(arglist.v.list[2]));
-    else
-	r = listinsert(var_ref(arglist.v.list[1]), var_ref(arglist.v.list[2]),
-		       arglist.v.list[3].v.num + 1);
-    free_var(arglist);
-    return make_var_pack(r);
+    return insert_or_append(arglist, 1);
 }
 
 
 static package
 bf_listinsert(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    if (arglist.v.list[0].v.num == 2)
-	r = listinsert(var_ref(arglist.v.list[1]), var_ref(arglist.v.list[2]), 1);
-    else
-	r = listinsert(var_ref(arglist.v.list[1]),
-		    var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
-    free_var(arglist);
-    return make_var_pack(r);
+    return insert_or_append(arglist, 0);
 }
+
 
 static package
 bf_listdelete(Var arglist, Byte next, void *vdata, Objid progr)
@@ -584,7 +607,7 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
     }
     EXCEPT (stream_too_big) {
 	p = make_space_pack();
-    }	    
+    }
     ENDTRY_STREAM;
     free_stream(s);
     free_var(arglist);
@@ -961,7 +984,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 	ans.type = TYPE_STR;
 	ans.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(ans);
-    oops: ;
+      oops: ;
     }
     EXCEPT (stream_too_big) {
 	p = make_space_pack();
@@ -1222,10 +1245,13 @@ register_list(void)
 }
 
 
-char rcsid_list[] = "$Id: list.c,v 1.11 2010/04/22 22:00:35 wrog Exp $";
+char rcsid_list[] = "$Id: list.c,v 1.12 2010/04/23 05:01:20 wrog Exp $";
 
 /* 
  * $Log: list.c,v $
+ * Revision 1.12  2010/04/23 05:01:20  wrog
+ * Implement max_list_concat for list_insert,list_append,set_add
+ *
  * Revision 1.11  2010/04/22 22:00:35  wrog
  * Fuller explanation of TRY_STREAM, unscramble bf_substitute,
  * stream usage cleanups in bf_tostr, bf_toliteral, bf_value_hash, bf_encode_binary
