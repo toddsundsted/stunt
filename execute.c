@@ -681,12 +681,12 @@ rangeset_check(Var base, Var inst, int from, int to)
 	ilen = inst.v.list[0].v.num;
 	max  = server_int_option_cached(SVO_MAX_LIST_CONCAT);
     }
-    
-    if (from > blen + 1 || to < 0) 
+
+    if (from > blen + 1 || to < 0)
 	return E_RANGE;
 
-    if (0 < max && max < (((from > 1) ? from - 1 : 0) + ilen
-			  + ((blen > to) ? blen - to : 0)))
+    if (max < (((from > 1) ? from - 1 : 0) + ilen
+	       + ((blen > to) ? blen - to : 0)))
 	return E_QUOTA;
 
     return E_NONE;
@@ -953,13 +953,20 @@ do {								\
 	case OP_LIST_ADD_TAIL:
 	    {
 		Var tail, list;
+		enum error e = E_NONE;
 
 		tail = POP();	/* whatever */
 		list = POP();	/* should be list */
-		if (list.type != TYPE_LIST) {
+		if (list.type != TYPE_LIST)
+		    e = E_TYPE;
+		else if (server_int_option_cached(SVO_MAX_LIST_CONCAT)
+			 <= list.v.list[0].v.num)
+		    e = E_QUOTA;
+
+		if (e != E_NONE) {
 		    free_var(list);
 		    free_var(tail);
-		    PUSH_ERROR(E_TYPE);
+		    PUSH_ERROR_UNLESS_QUOTA(e);
 		} else
 		    PUSH(listappend(list, tail));
 	    }
@@ -968,17 +975,16 @@ do {								\
 	case OP_LIST_APPEND:
 	    {
 		Var tail, list;
-		int max = server_int_option_cached(SVO_MAX_LIST_CONCAT);
 		enum error e = E_NONE;
 
 		tail = POP();	/* second, should be list */
 		list = POP();	/* first, should be list */
-		if (tail.type != TYPE_LIST || list.type != TYPE_LIST) {
+		if (tail.type != TYPE_LIST || list.type != TYPE_LIST)
 		    e = E_TYPE;
-		} else if (0 < max && 
-			   max < list.v.list[0].v.num + tail.v.list[0].v.num) {
+		else if (server_int_option_cached(SVO_MAX_LIST_CONCAT)
+			 < list.v.list[0].v.num + tail.v.list[0].v.num)
 		    e = E_QUOTA;
-		}
+
 		if (e != E_NONE) {
 		    free_var(tail);
 		    free_var(list);
@@ -1228,9 +1234,9 @@ do {								\
 		    char *str;
 		    int llen = memo_strlen(lhs.v.str);
 		    int flen = llen + memo_strlen(rhs.v.str);
-		    int max  = server_int_option_cached(SVO_MAX_STRING_CONCAT);
 
-		    if (0 < max && max < flen) {
+		    if (server_int_option_cached(SVO_MAX_STRING_CONCAT)
+			< flen) {
 			ans.type = TYPE_ERR;
 			ans.v.err = E_QUOTA;
 		    } else {
@@ -1508,8 +1514,8 @@ do {								\
 			case BP_NAME:
 			    if (rhs.type != TYPE_STR)
 				err = E_TYPE;
-			    else if (!is_wizard(progr) && 
-				     (is_user(obj.v.obj) || 
+			    else if (!is_wizard(progr) &&
+				     (is_user(obj.v.obj) ||
 				      bi_prop_protected(h.built_in, progr) ||
 				      progr != db_object_owner(obj.v.obj)))
 				err = E_PERM;
@@ -2931,10 +2937,14 @@ read_activ(activation * a, int which_vector)
 }
 
 
-char rcsid_execute[] = "$Id: execute.c,v 1.24 2010/04/23 04:10:50 wrog Exp $";
+char rcsid_execute[] = "$Id: execute.c,v 1.25 2010/04/23 05:03:39 wrog Exp $";
 
 /* 
  * $Log: execute.c,v $
+ * Revision 1.25  2010/04/23 05:03:39  wrog
+ * Implement max_list_concat for OP_LIST_ADD_TAIL
+ * remove max=0 meaning no limit
+ *
  * Revision 1.24  2010/04/23 04:10:50  wrog
  * Fix memory leak in run_interpreter/save_handler_info
  *
