@@ -3,3 +3,6 @@ config.status
 config.h
 y.tab.h
 moo
+moo-*
+*test.c
+*.diff
