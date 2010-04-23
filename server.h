@@ -148,20 +148,20 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 
 #include "db.h"
 
-/* Some server options are cached for performance reasons. 
+/* Some server options are cached for performance reasons.
    Changes to cached options must be followed by load_server_options()
    in order to have any effect.  Three categories of cached options
    (1)  "protect_<bi-function>" cached in bf_table (functions.c).
-   (2)  "protect_<bi-property>" cached here. 
+   (2)  "protect_<bi-property>" cached here.
    (3)  SERVER_OPTIONS_CACHED_MISC cached here.
 
  * Each of the entries in SERVER_OPTIONS_CACHED_MISC
  * should be of the form
- * 
+ *
  *    DEFINE( SVO_OPTION_NAME,     // symbolic name
  *            property_name,	   // $server_options property
  *            kind,		   // 'int' or 'flag'
- *            default_value,	   // 
+ *            default_value,	   //
  *            {value = fn(value);},// canonicalizer
  *          )
  */
@@ -170,20 +170,26 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
   DEFINE( SVO_MAX_LIST_CONCAT, max_list_concat,			\
 								\
 	  int, DEFAULT_MAX_LIST_CONCAT,				\
- 	 _STATEMENT({						\
-	     if (value > 0 && value < 1022) value = 1022;	\
+	 _STATEMENT({						\
+	     if (0 < value && value < MIN_LIST_CONCAT_LIMIT)	\
+		 value = MIN_LIST_CONCAT_LIMIT;			\
+	     else if (value <= 0 || MAX_LIST < value)		\
+		 value = MAX_LIST;				\
 	   }))							\
 								\
   DEFINE( SVO_MAX_STRING_CONCAT, max_string_concat,		\
 								\
 	  int, DEFAULT_MAX_STRING_CONCAT,			\
 	 _STATEMENT({						\
-	     if (value > 0 && value < 1015) value = 1015;	\
+	     if (0 < value && value < MIN_STRING_CONCAT_LIMIT)	\
+		 value = MIN_STRING_CONCAT_LIMIT;		\
+	     else if (value <= 0 || MAX_STRING < value)		\
+		 value = MAX_STRING;				\
 	     stream_alloc_maximum = value + 1;			\
 	   }))							\
 								\
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
- 	  flag, 0, /* already canonical */			\
+	  flag, 0, /* already canonical */			\
 	  )
 
 /* List of all category (2) and (3) cached server options */
@@ -208,7 +214,7 @@ enum Server_Option {
 
 /*
  * Retrieve cached integer server_option values using the SVO_ numbers
- * E.g., use   server_int_option_cached( SVO_MAX_LIST_CONCAT ) 
+ * E.g., use   server_int_option_cached( SVO_MAX_LIST_CONCAT )
  * instead of  server_int_option("max_list_concat")
  */
 #define server_flag_option_cached(srvopt)  (_server_int_option_cache[srvopt])
@@ -317,6 +323,9 @@ extern int read_active_connections(void);
 
 /* 
  * $Log: server.h,v $
+ * Revision 1.8  2010/04/23 04:17:53  wrog
+ * Define minima for .max_list_concat and .max_string_concat
+ *
  * Revision 1.7  2010/04/22 21:46:58  wrog
  * Comment tweaks
  *
