@@ -41,17 +41,17 @@ new_stream(int size)
 }
 
 Exception stream_too_big;
-int stream_alloc_maximum = 0;
+size_t stream_alloc_maximum = 0;
 
 static int allow_stream_exceptions = 0;
 
-void 
+void
 enable_stream_exceptions()
 {
     ++allow_stream_exceptions;
 }
 
-void 
+void
 disable_stream_exceptions()
 {
     --allow_stream_exceptions;
@@ -62,7 +62,7 @@ grow(Stream * s, int newlen, int need)
 {
     char *newbuf;
 
-    if (allow_stream_exceptions > 0 && stream_alloc_maximum != 0) {
+    if (allow_stream_exceptions > 0) {
 	if (newlen > stream_alloc_maximum) {
 	    if (s->current + need < stream_alloc_maximum)
 		newlen = stream_alloc_maximum;
@@ -262,10 +262,13 @@ stream_length(Stream * s)
     return s->current;
 }
 
-char rcsid_streams[] = "$Id: streams.c,v 1.6 2010/04/22 21:47:48 wrog Exp $";
+char rcsid_streams[] = "$Id: streams.c,v 1.7 2010/04/23 05:04:28 wrog Exp $";
 
 /* 
  * $Log: streams.c,v $
+ * Revision 1.7  2010/04/23 05:04:28  wrog
+ * remove max=0 meaning no limit
+ *
  * Revision 1.6  2010/04/22 21:47:48  wrog
  * Improve stream robustness (rob@mars.org)
  *
