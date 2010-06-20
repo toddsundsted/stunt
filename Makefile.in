@@ -32,8 +32,8 @@ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c \
 	db_properties.c db_verbs.c decompile.c disassemble.c \
 	eval_env.c eval_vm.c exceptions.c execute.c extensions.c \
-	functions.c hash.c keywords.c list.c log.c malloc.c match.c \
-	md5.c name_lookup.c network.c net_mplex.c net_proto.c \
+	functions.c hash.c httpd.c keywords.c list.c log.c malloc.c \
+	match.c md5.c name_lookup.c network.c net_mplex.c net_proto.c \
 	numbers.c objects.c parse_cmd.c pattern.c program.c property.c \
 	quota.c ref_count.c regexpr.c server.c storage.c streams.c \
 	str_intern.c sym_table.c tasks.c timers.c unparse.c utils.c \
@@ -51,8 +51,8 @@ YSRCS = parser.y
 
 HDRS = ast.h bf_register.h code_gen.h db.h db_io.h db_private.h \
 	decompile.h disassemble.h eval_env.h eval_vm.h exceptions.h \
-	execute.h functions.h getpagesize.h hash.h keywords.h list.h \
-	log.h match.h md5.h name_lookup.h network.h net_mplex.h \
+	execute.h functions.h getpagesize.h hash.h httpd.h keywords.h \
+	list.h log.h match.h md5.h name_lookup.h network.h net_mplex.h \
 	net_multi.h net_proto.h numbers.h opcode.h options.h \
 	parse_cmd.h parser.h pattern.h program.h quota.h random.h \
 	ref_count.h regexpr.h server.h storage.h streams.h \
@@ -293,7 +293,7 @@ depend: ${ALL_CSRCS}
 # Revision 1.3  1992/07/27  18:30:21  pjames
 # Update what vector.o and vector.po depend on.
 ###############################################################################
-	
+
 # Have to do this one manually, since 'make depend' can't hack yacc files.
 parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
 		ast.h code_gen.h config.h functions.h \

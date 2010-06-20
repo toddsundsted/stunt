@@ -25,7 +25,12 @@
 #include "log.h"
 #include "net_mplex.h"
 
-static fd_set input, output;
+#include "platform.h"
+#include <microhttpd.h>
+
+#include "httpd.h"
+
+static fd_set input, output, except;
 static int max_descriptor;
 
 void
@@ -33,6 +38,7 @@ mplex_clear(void)
 {
     FD_ZERO(&input);
     FD_ZERO(&output);
+    FD_ZERO (&except);
     max_descriptor = -1;
 }
 
@@ -61,7 +67,18 @@ mplex_wait(unsigned timeout)
     tv.tv_sec = timeout;
     tv.tv_usec = 0;
 
-    n = select(max_descriptor + 1, (void *) &input, (void *) &output, 0, &tv);
+    if (mhd_daemon) {
+	if (MHD_YES != MHD_get_fdset (mhd_daemon, &input, &output, &except, &max_descriptor)) {
+	    log_perror("Fatal internal error");
+	    return 2;
+	}
+    }
+
+    n = select(max_descriptor + 1, (void *) &input, (void *) &output, (void *) &except, &tv);
+
+    if (mhd_daemon) {
+	MHD_run (mhd_daemon);
+    }
 
     if (n < 0) {
 	if (errno != EINTR)

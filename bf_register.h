@@ -27,6 +27,8 @@ extern void register_property(void);
 extern void register_server(void);
 extern void register_tasks(void);
 extern void register_verbs(void);
+extern void register_hash(void);
+extern void register_httpd(void);
 
 /* 
  * $Log: bf_register.h,v $
