@@ -9,8 +9,10 @@
 #include "list.h"
 #include "storage.h"
 #include "structures.h"
+#include "execute.h"
 #include "tasks.h"
 #include "utils.h"
+#include "log.h"
 
 #include "httpd.h"
 
@@ -93,18 +95,28 @@ ahc_echo (void *cls,
     {
     }
 
+  Var result;
+  enum outcome outcome;
+
   if (con_info->echostring)
     {
       int len = strlen(con_info->echostring);
       args = new_list(1);
       args.v.list[1].type = TYPE_STR;
       args.v.list[1].v.str = str_dup(raw_bytes_to_binary(con_info->echostring, len));
-      run_server_task(-1, SYSTEM_OBJECT, "do_httpd", args, "", 0);
+      outcome = run_server_task(-1, SYSTEM_OBJECT, "do_httpd", args, "", &result);
     }
   else
     {
-      run_server_task(-1, SYSTEM_OBJECT, "do_httpd", new_list(0), "", 0);
+      outcome = run_server_task(-1, SYSTEM_OBJECT, "do_httpd", new_list(0), "", &result);
     }
+
+  printf("outcome = %d\n", outcome);
+  if (outcome == OUTCOME_DONE) {
+    printf("=> %s\n", value_to_literal(result));
+  }
+
+  free_var(result);
 
   if (con_info->echostring)
     {
@@ -148,6 +160,7 @@ bf_start_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_PERM);
     }
     start_httpd_server();
+    oklog("Started HTTPD server!\n");
     return no_var_pack();
 }
 
@@ -158,6 +171,7 @@ bf_stop_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
     if (!is_wizard(progr)) {
 	return make_error_pack(E_PERM);
     }
+    oklog("Stopped HTTPD server!\n");
     stop_httpd_server();
     return no_var_pack();
 }
