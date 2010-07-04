@@ -14,6 +14,8 @@
 #include "utils.h"
 #include "log.h"
 
+#include "base64.h"
+
 #include "httpd.h"
 
 struct MHD_Daemon *mhd_daemon;
@@ -21,8 +23,98 @@ struct MHD_Daemon *mhd_daemon;
 struct connection_info_struct
 {
   int connectiontype;
+  Objid listener;
   char *echostring;
 };
+
+int ask_for_authentication(struct MHD_Connection *connection, const char *realm)
+{
+  int ret;
+  struct MHD_Response *response;
+  char *headervalue;
+  const char *strbase = "Basic realm=";
+
+  response = MHD_create_response_from_data (0, NULL, MHD_NO, MHD_NO);
+  if (!response)
+    return MHD_NO;
+
+  headervalue = malloc (strlen (strbase) + strlen (realm) + 1);
+  if (!headervalue)
+    return MHD_NO;
+
+  strcpy (headervalue, strbase);
+  strcat (headervalue, realm);
+
+  ret = MHD_add_response_header (response, "WWW-Authenticate", headervalue);
+  free (headervalue);
+  if (!ret)
+    {
+      MHD_destroy_response (response);
+      return MHD_NO;
+    }
+
+  ret = MHD_queue_response (connection, MHD_HTTP_UNAUTHORIZED, response);
+
+  MHD_destroy_response (response);
+
+  return ret;
+}
+
+int is_authenticated(struct MHD_Connection *connection, struct connection_info_struct *con_info)
+{
+  size_t dummy;
+  const char *headervalue;
+  const char *strbase = "Basic ";
+  const unsigned char *decoded;
+  char *separator;
+  int authenticated = 0;
+
+  headervalue =
+    MHD_lookup_connection_value (connection, MHD_HEADER_KIND,
+                                 "Authorization");
+  if (NULL == headervalue)
+    return 0;
+  if (0 != strncmp (headervalue, strbase, strlen (strbase)))
+    return 0;
+
+  decoded = base64_decode(headervalue + strlen(strbase), strlen(headervalue) - strlen(strbase), &dummy);
+
+  if (NULL == decoded)
+    return 0;
+
+  separator = strchr(decoded, ':');
+
+  if (0 == separator) {
+    free((char *)decoded);
+    return 0;
+  }
+
+  const unsigned char *username = decoded;
+  const unsigned char *password = separator + 1;
+  *separator = 0;
+
+  Var args;
+  Var result;
+  enum outcome outcome;
+
+  args = new_list(2);
+  args.v.list[1].type = TYPE_STR;
+  args.v.list[1].v.str = str_dup(username);
+  args.v.list[2].type = TYPE_STR;
+  args.v.list[2].v.str = str_dup(password);
+  outcome = run_server_task(-1, SYSTEM_OBJECT, "authenticate", args, "", &result);
+
+  if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
+    con_info->listener = result.v.obj;
+    authenticated = 1;
+  }
+
+  free_var(result);
+
+  free((char *)decoded);
+
+  return authenticated;
+}
 
 static void
 request_completed (void *cls,
@@ -38,8 +130,6 @@ request_completed (void *cls,
   *ptr = NULL;   
 }
 
-#define PAGE ""
-
 static int
 ahc_echo (void *cls,
           struct MHD_Connection *connection,
@@ -48,7 +138,7 @@ ahc_echo (void *cls,
           const char *version,
           const char *upload_data, size_t *upload_data_size, void **ptr)
 {
-  const char *page = PAGE;
+  const char *page = "";
   struct MHD_Response *response;
   int ret;
   Var args;
@@ -59,6 +149,7 @@ ahc_echo (void *cls,
     {
       con_info = malloc (sizeof (struct connection_info_struct));
       if (NULL == con_info) return MHD_NO;
+      con_info->listener = -1;
       con_info->echostring = NULL;
       *ptr = (void *) con_info; 
       return MHD_YES;
@@ -66,7 +157,10 @@ ahc_echo (void *cls,
 
   con_info = *ptr;
       
-  if (*upload_data_size != 0) 
+  if (!is_authenticated (connection, con_info))
+    return ask_for_authentication (connection, "lambdaMoo");
+
+  if (*upload_data_size != 0)
     {
       if (con_info->echostring)
 	{
@@ -104,23 +198,17 @@ ahc_echo (void *cls,
       args = new_list(1);
       args.v.list[1].type = TYPE_STR;
       args.v.list[1].v.str = str_dup(raw_bytes_to_binary(con_info->echostring, len));
-      outcome = run_server_task(-1, SYSTEM_OBJECT, "do_httpd", args, "", &result);
+      outcome = run_server_task(con_info->listener, SYSTEM_OBJECT, "do_httpd", args, "", &result);
     }
   else
     {
-      outcome = run_server_task(-1, SYSTEM_OBJECT, "do_httpd", new_list(0), "", &result);
+      outcome = run_server_task(con_info->listener, SYSTEM_OBJECT, "do_httpd", new_list(0), "", &result);
     }
 
-  printf("outcome = %d\n", outcome);
-  if (outcome == OUTCOME_DONE) {
-    printf("=> %s\n", value_to_literal(result));
-  }
-
-  free_var(result);
-
-  if (con_info->echostring)
+  if (outcome == OUTCOME_DONE)
     {
-      response = MHD_create_response_from_data (strlen (con_info->echostring), (void *) con_info->echostring, MHD_NO, MHD_NO);
+      char * foo = value_to_literal(result);
+      response = MHD_create_response_from_data (strlen (foo), (void *) foo, MHD_NO, MHD_NO);
       ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
       MHD_destroy_response (response);
     }
@@ -130,6 +218,8 @@ ahc_echo (void *cls,
       ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
       MHD_destroy_response (response);
     }
+
+  free_var(result);
 
   return ret;
 }
