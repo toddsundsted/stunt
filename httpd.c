@@ -38,7 +38,7 @@ static struct connection_info_struct *all_con_info = NULL;
 
 struct connection_info_struct * find_connection_info_struct(Connid id)
 {
-  return all_con_info->id == id ? all_con_info : NULL;
+  return all_con_info && all_con_info->id == id ? all_con_info : NULL;
 }
 
 void remove_connection_info_struct(struct connection_info_struct *con_info)
