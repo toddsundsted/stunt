@@ -32,6 +32,7 @@ struct connection_info_struct
   char *request_uri;
   char *request_type;
   char *request_body;
+  int response_code;
   char *response_type;
   char *response_body;
   int authenticated;
@@ -80,6 +81,7 @@ struct connection_info_struct *new_connection_info_struct()
   con_info->request_uri = NULL;
   con_info->request_type = NULL;
   con_info->request_body = NULL;
+  con_info->response_code = 0;
   con_info->response_type = NULL;
   con_info->response_body = NULL;
   con_info->authenticated = 0;
@@ -211,7 +213,7 @@ dir_reader (void *cls, uint64_t pos, char *buf, int max)
 
   struct connection_info_struct *con_info = (struct connection_info_struct *)cls;
 
-  if (con_info->response_type && con_info->response_body) {
+  if (con_info->response_body) {
     printf("pos = %d\n", pos);
     printf("max = %d\n", max);
     char * foo = strncpy(buf, con_info->response_body + pos, max);
@@ -311,7 +313,18 @@ ahc_echo (void *cls,
   struct MHD_Response *response;
 
   response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &dir_reader, con_info, &dir_free_callback); 
-  ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
+
+  if (con_info->response_type) {
+    MHD_add_response_header(response, "Content-Type", con_info->response_type);
+  }
+
+  int code = MHD_HTTP_OK;
+
+  if (con_info->response_code) {
+    code = con_info->response_code;
+  }
+
+  ret = MHD_queue_response (connection, code, response);
   MHD_destroy_response (response);
 
   free_var(result);
@@ -436,7 +449,7 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
   Connid id = arglist.v.list[1].v.num;
   char *opt = arglist.v.list[2].v.str;
 
-  if (0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
+  if (0 != strcmp(opt, "code") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
     return make_error_pack(E_INVARG);
   }
@@ -448,7 +461,12 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 
   struct connection_info_struct *con_info = find_connection_info_struct(id);
 
-  if (con_info && 0 == strcmp(opt, "body") && con_info->response_body == NULL) {
+  if (con_info && 0 == strcmp(opt, "code") && arglist.v.list[3].type == TYPE_INT) {
+    con_info->response_code = arglist.v.list[3].v.num;
+    free_var(arglist);
+    return no_var_pack();
+  }
+  else if (con_info && 0 == strcmp(opt, "body") && con_info->response_body == NULL) {
     con_info->response_body = strdup(value_to_literal(arglist.v.list[3]));
     free_var(arglist);
     return no_var_pack();
