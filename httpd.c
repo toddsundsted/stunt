@@ -408,6 +408,14 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return make_var_pack(r);
   }
+  else if (con_info && 0 == strcmp(opt, "type")) {
+    char *type = con_info->request_type ? con_info->request_type : "";
+    Var r;
+    r.type = TYPE_STR;
+    r.v.str = str_dup(type);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
   else if (con_info && 0 == strcmp(opt, "body") && con_info->request_body) {
     Var r;
     int len = strlen(con_info->request_body);
@@ -417,20 +425,6 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
   }
   else if (con_info && 0 == strcmp(opt, "body")) {
-    Var r;
-    r.type = TYPE_STR;
-    r.v.str = str_dup("");
-    free_var(arglist);
-    return make_var_pack(r);
-  }
-  else if (con_info && 0 == strcmp(opt, "type") && con_info->request_type) {
-    Var r;
-    r.type = TYPE_STR;
-    r.v.str = str_dup(con_info->request_type);
-    free_var(arglist);
-    return make_var_pack(r);
-  }
-  else if (con_info && 0 == strcmp(opt, "type")) {
     Var r;
     r.type = TYPE_STR;
     r.v.str = str_dup("");
@@ -466,13 +460,13 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "body") && con_info->response_body == NULL) {
-    con_info->response_body = strdup(value_to_literal(arglist.v.list[3]));
+  else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR && con_info->response_type == NULL) {
+    con_info->response_type = strdup(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR && con_info->response_type == NULL) {
-    con_info->response_type = strdup(arglist.v.list[3].v.str);
+  else if (con_info && 0 == strcmp(opt, "body") && con_info->response_body == NULL) {
+    con_info->response_body = strdup(value_to_literal(arglist.v.list[3]));
     free_var(arglist);
     return no_var_pack();
   }
