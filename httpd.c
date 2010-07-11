@@ -471,8 +471,8 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "type") && con_info->response_type == NULL) {
-    con_info->response_type = strdup(value_to_literal(arglist.v.list[3]));
+  else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR && con_info->response_type == NULL) {
+    con_info->response_type = strdup(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
