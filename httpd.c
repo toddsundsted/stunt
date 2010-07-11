@@ -28,6 +28,8 @@ struct connection_info_struct
 {
   Connid id;
   Objid player;
+  char *request_method;
+  char *request_uri;
   char *request_type;
   char *request_body;
   char *response_type;
@@ -44,6 +46,8 @@ void remove_connection_info_struct(struct connection_info_struct *con_info)
   if (con_info) {
     con_info->prev->next = con_info->next;
     con_info->next->prev = con_info->prev;
+    if (con_info->request_method) free(con_info->request_method);
+    if (con_info->request_uri) free(con_info->request_uri);
     if (con_info->request_type) free(con_info->request_type);
     if (con_info->request_body) free(con_info->request_body);
     if (con_info->response_type) free(con_info->response_type);
@@ -72,6 +76,8 @@ struct connection_info_struct *new_connection_info_struct()
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
   con_info->player = NOTHING;
+  con_info->request_method = NULL;
+  con_info->request_uri = NULL;
   con_info->request_type = NULL;
   con_info->request_body = NULL;
   con_info->response_type = NULL;
@@ -242,6 +248,8 @@ ahc_echo (void *cls,
   if (NULL == *ptr) {
     con_info = new_connection_info_struct();
     if (NULL == con_info) return MHD_NO;
+    con_info->request_method = strdup(method);
+    con_info->request_uri = strdup(url);
     *ptr = (void *)con_info;
     return MHD_YES;
   }
@@ -359,7 +367,7 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
   Connid id = arglist.v.list[1].v.num;
   char *opt = arglist.v.list[2].v.str;
 
-  if (0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
+  if (0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
     return make_error_pack(E_INVARG);
   }
@@ -371,7 +379,23 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 
   struct connection_info_struct *con_info = find_connection_info_struct(id);
 
-  if (con_info && 0 == strcmp(opt, "body") && con_info->request_body) {
+  if (con_info && 0 == strcmp(opt, "method")) {
+    char *method = con_info->request_method ? con_info->request_method : "";
+    Var r;
+    r.type = TYPE_STR;
+    r.v.str = str_dup(method);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "uri")) {
+    char *uri = con_info->request_uri ? con_info->request_uri : "";
+    Var r;
+    r.type = TYPE_STR;
+    r.v.str = str_dup(uri);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "body") && con_info->request_body) {
     Var r;
     int len = strlen(con_info->request_body);
     r.type = TYPE_STR;
