@@ -22,6 +22,8 @@ struct MHD_Daemon *mhd_daemon;
 
 typedef unsigned32 Connid;
 
+static Connid max_id = 0;
+
 struct connection_info_struct
 {
   Connid id;
@@ -30,33 +32,69 @@ struct connection_info_struct
   char *request_body;
   char *response_type;
   char *response_body;
+  struct connection_info_struct *prev;
+  struct connection_info_struct *next;
 };
 
-static Connid max_id = 0;
-
-static struct connection_info_struct *all_con_info = NULL;
-
-struct connection_info_struct * find_connection_info_struct(Connid id)
-{
-  return all_con_info && all_con_info->id == id ? all_con_info : NULL;
-}
+static struct connection_info_struct con_info_head;
 
 void remove_connection_info_struct(struct connection_info_struct *con_info)
 {
-  if (con_info != NULL) {
+  if (con_info) {
+    con_info->prev->next = con_info->next;
+    con_info->next->prev = con_info->prev;
     if (con_info->request_type) free(con_info->request_type);
     if (con_info->request_body) free(con_info->request_body);
     if (con_info->response_type) free(con_info->response_type);
     if (con_info->response_body) free(con_info->response_body);
     free(con_info);
   }
-  all_con_info = NULL;
 }
 
 void add_connection_info_struct(struct connection_info_struct *con_info)
 {
-  remove_connection_info_struct(all_con_info);
-  all_con_info = con_info;
+  if (con_info_head.prev == NULL || con_info_head.next == NULL) {
+    con_info_head.prev = &con_info_head;
+    con_info_head.next = &con_info_head;
+  }
+  if (con_info) {
+    con_info->prev = con_info_head.prev;
+    con_info->next = &con_info_head;
+    con_info->prev->next = con_info;
+    con_info->next->prev = con_info;
+  }
+}
+
+struct connection_info_struct *new_connection_info_struct()
+{
+  struct connection_info_struct *con_info = malloc(sizeof(struct connection_info_struct));
+  if (NULL == con_info) return NULL;
+  con_info->id = ++max_id;
+  con_info->player = NOTHING;
+  con_info->request_type = NULL;
+  con_info->request_body = NULL;
+  con_info->response_type = NULL;
+  con_info->response_body = NULL;
+  con_info->prev = NULL;
+  con_info->next = NULL;
+  add_connection_info_struct(con_info);
+  return con_info;
+}
+
+struct connection_info_struct *find_connection_info_struct(Connid id)
+{
+  if (con_info_head.prev == &con_info_head || con_info_head.next == &con_info_head)
+    return NULL;
+
+  struct connection_info_struct *p = con_info_head.next;
+
+  while (p != &con_info_head) {
+    if (p->id == id)
+      return p;
+    p = p->next;
+  }
+
+  return NULL;
 }
 
 int ask_for_authentication(struct MHD_Connection *connection, const char *realm)
@@ -196,18 +234,11 @@ ahc_echo (void *cls,
   struct connection_info_struct *con_info;
 
   if (NULL == *ptr) {
-      con_info = malloc(sizeof(struct connection_info_struct));
-      if (NULL == con_info) return MHD_NO;
-      con_info->id = ++max_id;
-      con_info->player = NOTHING;
-      con_info->request_type = NULL;
-      con_info->request_body = NULL;
-      con_info->response_type = NULL;
-      con_info->response_body = NULL;
-      *ptr = (void *)con_info;
-      add_connection_info_struct(con_info);
-      return MHD_YES;
-    }
+    con_info = new_connection_info_struct();
+    if (NULL == con_info) return MHD_NO;
+    *ptr = (void *)con_info;
+    return MHD_YES;
+  }
 
   con_info = *ptr;
       
