@@ -32,6 +32,7 @@ struct connection_info_struct
   char *request_body;
   char *response_type;
   char *response_body;
+  int authenticated;
   struct connection_info_struct *prev;
   struct connection_info_struct *next;
 };
@@ -75,6 +76,7 @@ struct connection_info_struct *new_connection_info_struct()
   con_info->request_body = NULL;
   con_info->response_type = NULL;
   con_info->response_body = NULL;
+  con_info->authenticated = 0;
   con_info->prev = NULL;
   con_info->next = NULL;
   add_connection_info_struct(con_info);
@@ -139,6 +141,9 @@ int is_authenticated(struct MHD_Connection *connection, struct connection_info_s
   char *separator;
   int authenticated = 0;
 
+  if (con_info->authenticated)
+    return 1;
+
   headervalue =
     MHD_lookup_connection_value (connection, MHD_HEADER_KIND,
                                  "Authorization");
@@ -176,6 +181,7 @@ int is_authenticated(struct MHD_Connection *connection, struct connection_info_s
 
   if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
     con_info->player = result.v.obj;
+    con_info->authenticated = 1;
     authenticated = 1;
   }
 
