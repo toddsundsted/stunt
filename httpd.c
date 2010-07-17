@@ -28,6 +28,7 @@ static Connid max_id = 0;
 struct connection_info_struct
 {
   Connid id;
+  Objid receiver;
   Objid player;
   char *request_method;
   char *request_uri;
@@ -79,6 +80,7 @@ struct connection_info_struct *new_connection_info_struct()
   struct connection_info_struct *con_info = malloc(sizeof(struct connection_info_struct));
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
+  con_info->receiver = NOTHING;
   con_info->player = NOTHING;
   con_info->request_method = NULL;
   con_info->request_uri = NULL;
@@ -152,7 +154,6 @@ int is_authenticated(struct MHD_Connection *connection, struct connection_info_s
   const char *strbase = "Basic ";
   const unsigned char *decoded;
   char *separator;
-  int authenticated = 0;
 
   if (con_info->authenticated)
     return 1;
@@ -184,13 +185,14 @@ int is_authenticated(struct MHD_Connection *connection, struct connection_info_s
   Var args;
   Var result;
   enum outcome outcome;
+  int authenticated = 0;
 
   args = new_list(2);
   args.v.list[1].type = TYPE_STR;
   args.v.list[1].v.str = str_dup(username);
   args.v.list[2].type = TYPE_STR;
   args.v.list[2].v.str = str_dup(password);
-  outcome = run_server_task(-1, SYSTEM_OBJECT, "authenticate", args, "", &result);
+  outcome = run_server_task(NOTHING, SYSTEM_OBJECT, "authenticate", args, "", &result);
 
   if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
     con_info->player = result.v.obj;
@@ -203,6 +205,33 @@ int is_authenticated(struct MHD_Connection *connection, struct connection_info_s
   free((char *)decoded);
 
   return authenticated;
+}
+
+Objid handle_routes(struct connection_info_struct *con_info)
+{
+  if (con_info->receiver != NOTHING)
+    return con_info->receiver;
+
+  Var args;
+  Var result;
+  enum outcome outcome;
+  Objid receiver = SYSTEM_OBJECT;
+
+  args = new_list(2);
+  args.v.list[1].type = TYPE_STR;
+  args.v.list[1].v.str = str_dup(con_info->request_method);
+  args.v.list[2].type = TYPE_STR;
+  args.v.list[2].v.str = str_dup(con_info->request_uri);
+
+  outcome = run_server_task(NOTHING, SYSTEM_OBJECT, "route", args, "", &result);
+
+  if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
+    receiver = con_info->receiver = result.v.obj;
+  }
+
+  free_var(result);
+
+  return receiver;
 }
 
 static void
@@ -276,6 +305,8 @@ ahc_echo (void *cls,
   if (!is_authenticated (connection, con_info))
     return ask_for_authentication (connection, "Moo");
 
+  Objid receiver = handle_routes(con_info);
+
   if (*upload_data_size != 0)
     {
       if (con_info->request_body)
@@ -299,32 +330,20 @@ ahc_echo (void *cls,
       return MHD_YES;
     }
 
-  const char *content_type;
-
-  content_type = MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
+  const char *content_type
+    = MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
 
   con_info->request_type = content_type ? strdup(content_type) : strdup("");
 
   Var args;
-  Var result;
-  enum outcome outcome;
-  int ret;
 
   args = new_list(1);
   args.v.list[1].type = TYPE_INT;
   args.v.list[1].v.num = con_info->id;
-  outcome = run_server_task(con_info->player, SYSTEM_OBJECT, "do_http", args, "", &result);
+  run_server_task(con_info->player, receiver, "do_http", args, "", NULL);
 
-  //  if (outcome == OUTCOME_DONE || outcome == OUTCOME_ABORTED)
-  //    {
-  //    }
-  //  else
-  //    {
-  //    }
-
-  struct MHD_Response *response;
-
-  response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &dir_reader, con_info, &dir_free_callback); 
+  struct MHD_Response *response
+    = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &dir_reader, con_info, &dir_free_callback); 
 
   if (con_info->response_type) {
     MHD_add_response_header(response, "Content-Type", con_info->response_type);
@@ -336,10 +355,8 @@ ahc_echo (void *cls,
     code = con_info->response_code;
   }
 
-  ret = MHD_queue_response (connection, code, response);
+  int ret = MHD_queue_response (connection, code, response);
   MHD_destroy_response (response);
-
-  free_var(result);
 
   return ret;
 }
@@ -351,6 +368,7 @@ struct MHD_Daemon * start_httpd_server(int port)
 				   &ahc_echo, NULL,
 				   MHD_OPTION_URI_LOG_CALLBACK, &full_uri_present, NULL,
 				   MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
+				   MHD_OPTION_CONNECTION_TIMEOUT, 30,
 				   MHD_OPTION_END);
     return mhd_daemon;
 }
