@@ -19,15 +19,11 @@
 
 #include "httpd.h"
 
-struct MHD_Daemon *mhd_daemon;
-
-typedef unsigned32 Connid;
-
-static Connid max_id = 0;
+typedef unsigned32 Conid;
 
 struct connection_info_struct
 {
-  Connid id;
+  Conid id;
   Objid receiver;
   Objid player;
   char *request_method;
@@ -39,14 +35,16 @@ struct connection_info_struct
   char *response_type;
   char *response_body;
   size_t response_body_length;
-  int authenticated;
   struct connection_info_struct *prev;
   struct connection_info_struct *next;
 };
 
 static struct connection_info_struct con_info_head;
 
-void remove_connection_info_struct(struct connection_info_struct *con_info)
+struct MHD_Daemon *mhd_daemon;
+
+static void
+remove_connection_info_struct(struct connection_info_struct *con_info)
 {
   if (con_info) {
     con_info->prev->next = con_info->next;
@@ -61,7 +59,8 @@ void remove_connection_info_struct(struct connection_info_struct *con_info)
   }
 }
 
-void add_connection_info_struct(struct connection_info_struct *con_info)
+static void
+add_connection_info_struct(struct connection_info_struct *con_info)
 {
   if (con_info_head.prev == NULL || con_info_head.next == NULL) {
     con_info_head.prev = &con_info_head;
@@ -75,8 +74,10 @@ void add_connection_info_struct(struct connection_info_struct *con_info)
   }
 }
 
-struct connection_info_struct *new_connection_info_struct()
+static struct connection_info_struct *
+new_connection_info_struct()
 {
+  static Conid max_id = 0;
   struct connection_info_struct *con_info = malloc(sizeof(struct connection_info_struct));
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
@@ -91,14 +92,14 @@ struct connection_info_struct *new_connection_info_struct()
   con_info->response_type = NULL;
   con_info->response_body = NULL;
   con_info->response_body_length = 0;
-  con_info->authenticated = 0;
   con_info->prev = NULL;
   con_info->next = NULL;
   add_connection_info_struct(con_info);
   return con_info;
 }
 
-struct connection_info_struct *find_connection_info_struct(Connid id)
+static struct connection_info_struct *
+find_connection_info_struct(Conid id)
 {
   if (con_info_head.prev == &con_info_head || con_info_head.next == &con_info_head)
     return NULL;
@@ -114,78 +115,64 @@ struct connection_info_struct *find_connection_info_struct(Connid id)
   return NULL;
 }
 
-int ask_for_authentication(struct MHD_Connection *connection, const char *realm)
+static int
+request_authentication(struct MHD_Connection *connection)
 {
-  int ret;
+  const char *realm = "Basic realm = \"LambdaMoo Server\"";
   struct MHD_Response *response;
-  char *headervalue;
-  const char *strbase = "Basic realm=";
+  int ret;
 
-  response = MHD_create_response_from_data (0, NULL, MHD_NO, MHD_NO);
+  response = MHD_create_response_from_data(0, NULL, MHD_NO, MHD_NO);
   if (!response)
     return MHD_NO;
 
-  headervalue = malloc (strlen (strbase) + strlen (realm) + 1);
-  if (!headervalue)
+  ret = MHD_add_response_header(response, "WWW-Authenticate", realm);
+  if (!ret) {
+    MHD_destroy_response(response);
     return MHD_NO;
+  }
 
-  strcpy (headervalue, strbase);
-  strcat (headervalue, realm);
+  ret = MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
 
-  ret = MHD_add_response_header (response, "WWW-Authenticate", headervalue);
-  free (headervalue);
-  if (!ret)
-    {
-      MHD_destroy_response (response);
-      return MHD_NO;
-    }
-
-  ret = MHD_queue_response (connection, MHD_HTTP_UNAUTHORIZED, response);
-
-  MHD_destroy_response (response);
+  MHD_destroy_response(response);
 
   return ret;
 }
 
-int is_authenticated(struct MHD_Connection *connection, struct connection_info_struct *con_info)
+static Objid
+authenticated_as(struct MHD_Connection *connection, struct connection_info_struct *con_info)
 {
+  if (con_info->player != NOTHING)
+    return con_info->player;
+
   size_t dummy;
-  const char *headervalue;
   const char *strbase = "Basic ";
-  const unsigned char *decoded;
-  char *separator;
 
-  if (con_info->authenticated)
-    return 1;
-
-  headervalue =
-    MHD_lookup_connection_value (connection, MHD_HEADER_KIND,
-                                 "Authorization");
+  const char *headervalue =
+    MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
   if (NULL == headervalue)
-    return 0;
-  if (0 != strncmp (headervalue, strbase, strlen (strbase)))
-    return 0;
+    return NOTHING;
+  if (0 != strncmp(headervalue, strbase, strlen(strbase)))
+    return NOTHING;
 
-  decoded = base64_decode(headervalue + strlen(strbase), strlen(headervalue) - strlen(strbase), &dummy);
-
+  const unsigned char *decoded =
+    base64_decode(headervalue + strlen(strbase), strlen(headervalue) - strlen(strbase), &dummy);
   if (NULL == decoded)
-    return 0;
+    return NOTHING;
 
-  separator = strchr(decoded, ':');
-
-  if (0 == separator) {
+  char *separator = strchr(decoded, ':');
+  if (NULL == separator) {
     free((char *)decoded);
-    return 0;
+    return NOTHING;
   }
-
+  *separator = 0;
   const unsigned char *username = decoded;
   const unsigned char *password = separator + 1;
-  *separator = 0;
 
   Var args;
   Var result;
   enum outcome outcome;
-  int authenticated = 0;
+  Objid player = NOTHING;
 
   args = new_list(2);
   args.v.list[1].type = TYPE_STR;
@@ -193,21 +180,18 @@ int is_authenticated(struct MHD_Connection *connection, struct connection_info_s
   args.v.list[2].type = TYPE_STR;
   args.v.list[2].v.str = str_dup(password);
   outcome = run_server_task(NOTHING, SYSTEM_OBJECT, "authenticate", args, "", &result);
-
   if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
-    con_info->player = result.v.obj;
-    con_info->authenticated = 1;
-    authenticated = 1;
+    player = con_info->player = result.v.obj;
   }
 
   free_var(result);
-
   free((char *)decoded);
 
-  return authenticated;
+  return player;
 }
 
-Objid handle_routes(struct connection_info_struct *con_info)
+static Objid
+route_to(struct connection_info_struct *con_info)
 {
   if (con_info->receiver != NOTHING)
     return con_info->receiver;
@@ -222,9 +206,7 @@ Objid handle_routes(struct connection_info_struct *con_info)
   args.v.list[1].v.str = str_dup(con_info->request_method);
   args.v.list[2].type = TYPE_STR;
   args.v.list[2].v.str = str_dup(con_info->request_uri);
-
   outcome = run_server_task(NOTHING, SYSTEM_OBJECT, "route", args, "", &result);
-
   if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
     receiver = con_info->receiver = result.v.obj;
   }
@@ -235,16 +217,13 @@ Objid handle_routes(struct connection_info_struct *con_info)
 }
 
 static void
-dir_free_callback (void *cls)
+response_body_free_callback(void *cls)
 {
-  oklog("DIR FREE CALLBACK!\n");
 }
 
 static int
-dir_reader (void *cls, uint64_t pos, char *buf, int max)
+response_body_reader(void *cls, uint64_t pos, char *buf, int max)
 {
-  oklog("DIR READER!\n");
-
   struct connection_info_struct *con_info = (struct connection_info_struct *)cls;
 
   if (con_info->response_body) {
@@ -258,12 +237,9 @@ dir_reader (void *cls, uint64_t pos, char *buf, int max)
 }
 
 static void *
-full_uri_present(void * cls, const char * uri)
+full_uri_present(void *cls, const char *uri)
 {
-  printf("FULL URI PRESENT! (%s)\n", uri);
-
   struct connection_info_struct *con_info = new_connection_info_struct();
-  if (NULL == con_info) return NULL;
 
   con_info->request_uri = strdup(raw_bytes_to_binary(uri, strlen(uri)));
 
@@ -271,67 +247,55 @@ full_uri_present(void * cls, const char * uri)
 }
 
 static void
-request_completed (void *cls,
-		   struct MHD_Connection *connection,
-		   void **ptr,
-		   enum MHD_RequestTerminationCode toe)
+request_completed(void *cls, struct MHD_Connection *connection,
+		  void **ptr,
+		  enum MHD_RequestTerminationCode term_code)
 {
-  oklog("REQUEST COMPLETED!\n");
-
   remove_connection_info_struct(*ptr);
 }
 
 static int
-ahc_echo (void *cls,
-          struct MHD_Connection *connection,
-          const char *url,
-          const char *method,
-          const char *version,
-          const char *upload_data, size_t *upload_data_size, void **ptr)
+handle_http_request(void *cls, struct MHD_Connection *connection,
+		    const char *url, const char *method, const char *version, const char *upload_data, size_t *upload_data_size,
+		    void **ptr)
 {
-  struct connection_info_struct *con_info;
-
   if (NULL == *ptr) {
     return MHD_NO;
   }
 
-  con_info = *ptr;
+  struct connection_info_struct *con_info = *ptr;
 
   if (NULL == con_info->request_method) {
     con_info->request_method = strdup(raw_bytes_to_binary(method, strlen(method)));
     return MHD_YES;
   }
-      
-  if (!is_authenticated (connection, con_info))
-    return ask_for_authentication (connection, "Moo");
 
-  Objid receiver = handle_routes(con_info);
+  if (authenticated_as(connection, con_info) == NOTHING)
+    return request_authentication(connection);
 
-  if (*upload_data_size != 0)
-    {
-      if (con_info->request_body)
-	{
-	  char *old = con_info->request_body;
-	  size_t len = con_info->request_body_length;
-	  con_info->request_body = malloc(con_info->request_body_length + *upload_data_size);
-	  con_info->request_body_length = con_info->request_body_length + *upload_data_size;
-	  memcpy(con_info->request_body, old, len);
-	  memcpy(con_info->request_body + len, upload_data, *upload_data_size);
-	  free (old);
-	}
-      else
-	{
-	  con_info->request_body = malloc(*upload_data_size);
-	  con_info->request_body_length = *upload_data_size;
-	  memcpy(con_info->request_body, upload_data, *upload_data_size);
-	}
+  Objid receiver = route_to(con_info);
 
-      *upload_data_size = 0;
-      return MHD_YES;
+  if (0 != *upload_data_size) {
+    if (NULL != con_info->request_body) {
+      char *old = con_info->request_body;
+      size_t len = con_info->request_body_length;
+      con_info->request_body = malloc(con_info->request_body_length + *upload_data_size);
+      con_info->request_body_length = con_info->request_body_length + *upload_data_size;
+      memcpy(con_info->request_body, old, len);
+      memcpy(con_info->request_body + len, upload_data, *upload_data_size);
+      free (old);
     }
+    else {
+      con_info->request_body = malloc(*upload_data_size);
+      con_info->request_body_length = *upload_data_size;
+      memcpy(con_info->request_body, upload_data, *upload_data_size);
+    }
+    *upload_data_size = 0;
+    return MHD_YES;
+  }
 
-  const char *content_type
-    = MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
+  const char *content_type =
+    MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
 
   content_type = content_type ? raw_bytes_to_binary(content_type, strlen(content_type)) : "";
 
@@ -344,8 +308,8 @@ ahc_echo (void *cls,
   args.v.list[1].v.num = con_info->id;
   run_server_task(con_info->player, receiver, "do_http", args, "", NULL);
 
-  struct MHD_Response *response
-    = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &dir_reader, con_info, &dir_free_callback); 
+  struct MHD_Response *response =
+    MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &response_body_reader, con_info, &response_body_free_callback); 
 
   if (con_info->response_type) {
     MHD_add_response_header(response, "Content-Type", con_info->response_type);
@@ -363,22 +327,26 @@ ahc_echo (void *cls,
   return ret;
 }
 
-struct MHD_Daemon * start_httpd_server(int port)
+struct MHD_Daemon *
+start_httpd_server(int port)
 {
-    mhd_daemon = MHD_start_daemon (MHD_USE_DEBUG, port,
-				   NULL, NULL,
-				   &ahc_echo, NULL,
-				   MHD_OPTION_URI_LOG_CALLBACK, &full_uri_present, NULL,
-				   MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
-				   MHD_OPTION_CONNECTION_TIMEOUT, 30,
-				   MHD_OPTION_END);
-    return mhd_daemon;
+  mhd_daemon = MHD_start_daemon(MHD_USE_DEBUG, port,
+				NULL, NULL,
+				&handle_http_request, NULL,
+				MHD_OPTION_URI_LOG_CALLBACK, &full_uri_present, NULL,
+				MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
+				MHD_OPTION_CONNECTION_TIMEOUT, 30,
+				MHD_OPTION_END);
+  return mhd_daemon;
 }
 
-void stop_httpd_server()
+void
+stop_httpd_server()
 {
-    MHD_stop_daemon (mhd_daemon);
+  if (mhd_daemon) {
+    MHD_stop_daemon(mhd_daemon);
     mhd_daemon = NULL;
+  }
 }
 
 /**** built in functions ****/
@@ -386,34 +354,34 @@ void stop_httpd_server()
 static package
 bf_start_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int port = arglist.v.list[1].v.num;
-    free_var(arglist);
-    if (!is_wizard(progr)) {
-	return make_error_pack(E_PERM);
-    }
-    if (start_httpd_server(port) == NULL) {
-	return make_error_pack(E_INVARG);
-    }
-    oklog("HTTPD: now running on port %d\n", port);
-    return no_var_pack();
+  int port = arglist.v.list[1].v.num;
+  free_var(arglist);
+  if (!is_wizard(progr)) {
+    return make_error_pack(E_PERM);
+  }
+  if (start_httpd_server(port) == NULL) {
+    return make_error_pack(E_INVARG);
+  }
+  oklog("HTTPD: now running on port %d\n", port);
+  return no_var_pack();
 }
 
 static package
 bf_stop_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    free_var(arglist);
-    if (!is_wizard(progr)) {
-	return make_error_pack(E_PERM);
-    }
-    stop_httpd_server();
-    oklog("HTTPD: no longer running\n");
-    return no_var_pack();
+  free_var(arglist);
+  if (!is_wizard(progr)) {
+    return make_error_pack(E_PERM);
+  }
+  stop_httpd_server();
+  oklog("HTTPD: no longer running\n");
+  return no_var_pack();
 }
 
 static package
 bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  Connid id = arglist.v.list[1].v.num;
+  Conid id = arglist.v.list[1].v.num;
   const char *opt = arglist.v.list[2].v.str;
 
   if (0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
@@ -475,7 +443,7 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  Connid id = arglist.v.list[1].v.num;
+  Conid id = arglist.v.list[1].v.num;
   const char *opt = arglist.v.list[2].v.str;
 
   if (0 != strcmp(opt, "code") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
@@ -509,13 +477,6 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return no_var_pack();
   }
-  /*
-  else if (con_info && 0 == strcmp(opt, "body") && con_info->response_body == NULL) {
-    con_info->response_body = strdup(value_to_literal(arglist.v.list[3]));
-    free_var(arglist);
-    return no_var_pack();
-  }
-  */
   else {
     free_var(arglist);
     return make_error_pack(E_INVARG);
