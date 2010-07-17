@@ -228,6 +228,19 @@ dir_reader (void *cls, uint64_t pos, char *buf, int max)
   }
 }
 
+static char *
+full_uri_present(void * cls, const char * uri)
+{
+  printf("FULL URI PRESENT! (%s)\n", uri);
+
+  struct connection_info_struct *con_info = new_connection_info_struct();
+  if (NULL == con_info) return NULL;
+
+  con_info->request_uri = strdup(uri);
+
+  return con_info;
+}
+
 static void
 request_completed (void *cls,
 		   struct MHD_Connection *connection,
@@ -250,15 +263,15 @@ ahc_echo (void *cls,
   struct connection_info_struct *con_info;
 
   if (NULL == *ptr) {
-    con_info = new_connection_info_struct();
-    if (NULL == con_info) return MHD_NO;
-    con_info->request_method = strdup(method);
-    con_info->request_uri = strdup(url);
-    *ptr = (void *)con_info;
-    return MHD_YES;
+    return MHD_NO;
   }
 
   con_info = *ptr;
+
+  if (NULL == con_info->request_method) {
+    con_info->request_method = strdup(method);
+    return MHD_YES;
+  }
       
   if (!is_authenticated (connection, con_info))
     return ask_for_authentication (connection, "Moo");
@@ -333,8 +346,10 @@ ahc_echo (void *cls,
 
 struct MHD_Daemon * start_httpd_server(int port)
 {
-    mhd_daemon = MHD_start_daemon (MHD_USE_DEBUG, port, NULL, NULL,
+    mhd_daemon = MHD_start_daemon (MHD_USE_DEBUG, port,
+				   NULL, NULL,
 				   &ahc_echo, NULL,
+				   MHD_OPTION_URI_LOG_CALLBACK, &full_uri_present, NULL,
 				   MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
 				   MHD_OPTION_END);
     return mhd_daemon;
