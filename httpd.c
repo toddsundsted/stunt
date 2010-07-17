@@ -257,7 +257,7 @@ dir_reader (void *cls, uint64_t pos, char *buf, int max)
   }
 }
 
-static char *
+static void *
 full_uri_present(void * cls, const char * uri)
 {
   printf("FULL URI PRESENT! (%s)\n", uri);
@@ -414,7 +414,7 @@ static package
 bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 {
   Connid id = arglist.v.list[1].v.num;
-  char *opt = arglist.v.list[2].v.str;
+  const char *opt = arglist.v.list[2].v.str;
 
   if (0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
@@ -476,7 +476,7 @@ static package
 bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 {
   Connid id = arglist.v.list[1].v.num;
-  char *opt = arglist.v.list[2].v.str;
+  const char *opt = arglist.v.list[2].v.str;
 
   if (0 != strcmp(opt, "code") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
@@ -502,7 +502,7 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
   }
   else if (con_info && 0 == strcmp(opt, "body") && arglist.v.list[3].type == TYPE_STR && con_info->response_body == NULL) {
     int len;
-    char *buff = binary_to_raw_bytes(arglist.v.list[3].v.str, &len);
+    const char *buff = binary_to_raw_bytes(arglist.v.list[3].v.str, &len);
     con_info->response_body = malloc(len);
     con_info->response_body_length = len;
     memcpy(con_info->response_body, buff, len);
