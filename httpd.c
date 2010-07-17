@@ -265,7 +265,7 @@ full_uri_present(void * cls, const char * uri)
   struct connection_info_struct *con_info = new_connection_info_struct();
   if (NULL == con_info) return NULL;
 
-  con_info->request_uri = strdup(uri);
+  con_info->request_uri = strdup(raw_bytes_to_binary(uri, strlen(uri)));
 
   return con_info;
 }
@@ -298,7 +298,7 @@ ahc_echo (void *cls,
   con_info = *ptr;
 
   if (NULL == con_info->request_method) {
-    con_info->request_method = strdup(method);
+    con_info->request_method = strdup(raw_bytes_to_binary(method, strlen(method)));
     return MHD_YES;
   }
       
@@ -333,7 +333,9 @@ ahc_echo (void *cls,
   const char *content_type
     = MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
 
-  con_info->request_type = content_type ? strdup(content_type) : strdup("");
+  content_type = content_type ? raw_bytes_to_binary(content_type, strlen(content_type)) : "";
+
+  con_info->request_type = strdup(content_type);
 
   Var args;
 
