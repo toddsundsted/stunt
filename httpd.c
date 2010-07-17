@@ -301,7 +301,7 @@ ahc_echo (void *cls,
   args = new_list(1);
   args.v.list[1].type = TYPE_INT;
   args.v.list[1].v.num = con_info->id;
-  outcome = run_server_task(con_info->player, SYSTEM_OBJECT, "do_httpd", args, "", &result);
+  outcome = run_server_task(con_info->player, SYSTEM_OBJECT, "do_http", args, "", &result);
 
   //  if (outcome == OUTCOME_DONE || outcome == OUTCOME_ABORTED)
   //    {
