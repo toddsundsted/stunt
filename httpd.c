@@ -332,17 +332,16 @@ ahc_echo (void *cls,
   return ret;
 }
 
-void
-start_httpd_server()
+struct MHD_Daemon * start_httpd_server(int port)
 {
-    mhd_daemon = MHD_start_daemon (MHD_USE_DEBUG, 8888, NULL, NULL,
+    mhd_daemon = MHD_start_daemon (MHD_USE_DEBUG, port, NULL, NULL,
 				   &ahc_echo, NULL,
 				   MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
 				   MHD_OPTION_END);
+    return mhd_daemon;
 }
 
-void
-stop_httpd_server()
+void stop_httpd_server()
 {
     MHD_stop_daemon (mhd_daemon);
     mhd_daemon = NULL;
@@ -353,12 +352,15 @@ stop_httpd_server()
 static package
 bf_start_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    int port = arglist.v.list[1].v.num;
     free_var(arglist);
     if (!is_wizard(progr)) {
 	return make_error_pack(E_PERM);
     }
-    start_httpd_server();
-    oklog("Started HTTPD server!\n");
+    if (start_httpd_server(port) == NULL) {
+	return make_error_pack(E_INVARG);
+    }
+    oklog("HTTPD: now running on port %d\n", port);
     return no_var_pack();
 }
 
@@ -369,8 +371,8 @@ bf_stop_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
     if (!is_wizard(progr)) {
 	return make_error_pack(E_PERM);
     }
-    oklog("Stopped HTTPD server!\n");
     stop_httpd_server();
+    oklog("HTTPD: no longer running\n");
     return no_var_pack();
 }
 
@@ -479,8 +481,8 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_httpd(void)
 {
-    register_function("start_httpd_server", 0, 0, bf_start_httpd_server);
-    register_function("stop_httpd_server", 0, 0, bf_stop_httpd_server);
-    register_function("request", 2, 2, bf_request, TYPE_INT, TYPE_STR);
-    register_function("response", 3, 3, bf_response, TYPE_INT, TYPE_STR, TYPE_ANY);
+  register_function("start_httpd_server", 1, 1, bf_start_httpd_server, TYPE_INT);
+  register_function("stop_httpd_server", 0, 0, bf_stop_httpd_server);
+  register_function("request", 2, 2, bf_request, TYPE_INT, TYPE_STR);
+  register_function("response", 3, 3, bf_response, TYPE_INT, TYPE_STR, TYPE_ANY);
 }
