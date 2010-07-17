@@ -1,5 +1,6 @@
 #include "my-types.h"
 #include "my-string.h"
+#include "my-stdlib.h"
 
 #include "platform.h"
 #include <microhttpd.h>
@@ -11,8 +12,8 @@
 #include "structures.h"
 #include "execute.h"
 #include "tasks.h"
-#include "utils.h"
 #include "log.h"
+#include "utils.h"
 
 #include "base64.h"
 
@@ -32,9 +33,11 @@ struct connection_info_struct
   char *request_uri;
   char *request_type;
   char *request_body;
+  size_t request_body_length;
   int response_code;
   char *response_type;
   char *response_body;
+  size_t response_body_length;
   int authenticated;
   struct connection_info_struct *prev;
   struct connection_info_struct *next;
@@ -81,9 +84,11 @@ struct connection_info_struct *new_connection_info_struct()
   con_info->request_uri = NULL;
   con_info->request_type = NULL;
   con_info->request_body = NULL;
+  con_info->request_body_length = 0;
   con_info->response_code = 0;
   con_info->response_type = NULL;
   con_info->response_body = NULL;
+  con_info->response_body_length = 0;
   con_info->authenticated = 0;
   con_info->prev = NULL;
   con_info->next = NULL;
@@ -214,11 +219,8 @@ dir_reader (void *cls, uint64_t pos, char *buf, int max)
   struct connection_info_struct *con_info = (struct connection_info_struct *)cls;
 
   if (con_info->response_body) {
-    printf("pos = %d\n", pos);
-    printf("max = %d\n", max);
-    char * foo = strncpy(buf, con_info->response_body + pos, max);
-    int len = strlen(foo);
-    printf("len = %d\n", len);
+    size_t len = con_info->response_body_length - pos < max ? con_info->response_body_length - pos : max;
+    memcpy(buf, con_info->response_body + pos, len);
     return len ? len : -1;
   }
   else {
@@ -265,22 +267,19 @@ ahc_echo (void *cls,
     {
       if (con_info->request_body)
 	{
-	  char *oldstring = con_info->request_body;
-	  size_t len = strlen(oldstring) + *upload_data_size + 1;
-	  con_info->request_body = malloc(len);
-	  con_info->request_body[0] = 0;
-	  strcat(con_info->request_body, oldstring);
-	  strncat(con_info->request_body, upload_data, *upload_data_size);
-	  con_info->request_body[len - 1] = 0;
-	  free (oldstring);
+	  char *old = con_info->request_body;
+	  size_t len = con_info->request_body_length;
+	  con_info->request_body = malloc(con_info->request_body_length + *upload_data_size);
+	  con_info->request_body_length = con_info->request_body_length + *upload_data_size;
+	  memcpy(con_info->request_body, old, len);
+	  memcpy(con_info->request_body + len, upload_data, *upload_data_size);
+	  free (old);
 	}
       else
 	{
-	  size_t len = *upload_data_size + 1;
-	  con_info->request_body = malloc(len);
-	  con_info->request_body[0] = 0;
-	  strncat(con_info->request_body, upload_data, *upload_data_size);
-	  con_info->request_body[len - 1] = 0;
+	  con_info->request_body = malloc(*upload_data_size);
+	  con_info->request_body_length = *upload_data_size;
+	  memcpy(con_info->request_body, upload_data, *upload_data_size);
 	}
 
       *upload_data_size = 0;
@@ -420,9 +419,8 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
   }
   else if (con_info && 0 == strcmp(opt, "body") && con_info->request_body) {
     Var r;
-    int len = strlen(con_info->request_body);
     r.type = TYPE_STR;
-    r.v.str = str_dup(raw_bytes_to_binary(con_info->request_body, len));
+    r.v.str = str_dup(raw_bytes_to_binary(con_info->request_body, con_info->request_body_length));
     free_var(arglist);
     return make_var_pack(r);
   }
@@ -467,11 +465,22 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return no_var_pack();
   }
+  else if (con_info && 0 == strcmp(opt, "body") && arglist.v.list[3].type == TYPE_STR && con_info->response_body == NULL) {
+    int len;
+    char *buff = binary_to_raw_bytes(arglist.v.list[3].v.str, &len);
+    con_info->response_body = malloc(len);
+    con_info->response_body_length = len;
+    memcpy(con_info->response_body, buff, len);
+    free_var(arglist);
+    return no_var_pack();
+  }
+  /*
   else if (con_info && 0 == strcmp(opt, "body") && con_info->response_body == NULL) {
     con_info->response_body = strdup(value_to_literal(arglist.v.list[3]));
     free_var(arglist);
     return no_var_pack();
   }
+  */
   else {
     free_var(arglist);
     return make_error_pack(E_INVARG);
