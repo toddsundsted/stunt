@@ -32,6 +32,7 @@ struct connection_info_struct
   char *request_body;
   size_t request_body_length;
   int response_code;
+  char *response_location;
   char *response_type;
   char *response_body;
   size_t response_body_length;
@@ -53,6 +54,7 @@ remove_connection_info_struct(struct connection_info_struct *con_info)
     if (con_info->request_uri) free(con_info->request_uri);
     if (con_info->request_type) free(con_info->request_type);
     if (con_info->request_body) free(con_info->request_body);
+    if (con_info->response_location) free(con_info->response_location);
     if (con_info->response_type) free(con_info->response_type);
     if (con_info->response_body) free(con_info->response_body);
     free(con_info);
@@ -89,6 +91,7 @@ new_connection_info_struct()
   con_info->request_body = NULL;
   con_info->request_body_length = 0;
   con_info->response_code = 0;
+  con_info->response_location = NULL;
   con_info->response_type = NULL;
   con_info->response_body = NULL;
   con_info->response_body_length = 0;
@@ -237,7 +240,7 @@ response_body_reader(void *cls, uint64_t pos, char *buf, int max)
 }
 
 static void *
-full_uri_present(void *cls, const char *uri)
+request_started(void *cls, const char *uri)
 {
   struct connection_info_struct *con_info = new_connection_info_struct();
 
@@ -311,6 +314,10 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
   struct MHD_Response *response =
     MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &response_body_reader, con_info, &response_body_free_callback); 
 
+  if (con_info->response_location) {
+    MHD_add_response_header(response, "Location", con_info->response_location);
+  }
+
   if (con_info->response_type) {
     MHD_add_response_header(response, "Content-Type", con_info->response_type);
   }
@@ -333,7 +340,7 @@ start_httpd_server(int port)
   mhd_daemon = MHD_start_daemon(MHD_USE_DEBUG, port,
 				NULL, NULL,
 				&handle_http_request, NULL,
-				MHD_OPTION_URI_LOG_CALLBACK, &full_uri_present, NULL,
+				MHD_OPTION_URI_LOG_CALLBACK, &request_started, NULL,
 				MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
 				MHD_OPTION_CONNECTION_TIMEOUT, 30,
 				MHD_OPTION_END);
@@ -446,7 +453,7 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
   Conid id = arglist.v.list[1].v.num;
   const char *opt = arglist.v.list[2].v.str;
 
-  if (0 != strcmp(opt, "code") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
+  if (0 != strcmp(opt, "code") && 0 != strcmp(opt, "location") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
     return make_error_pack(E_INVARG);
   }
@@ -460,6 +467,11 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (con_info && 0 == strcmp(opt, "code") && arglist.v.list[3].type == TYPE_INT) {
     con_info->response_code = arglist.v.list[3].v.num;
+    free_var(arglist);
+    return no_var_pack();
+  }
+  else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR && con_info->response_type == NULL) {
+    con_info->response_location = strdup(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
