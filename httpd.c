@@ -269,6 +269,7 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
   struct connection_info_struct *con_info = *ptr;
 
   if (NULL == con_info->request_method) {
+    oklog("HTTPD: [%d] %s %s\n", con_info->id, method, url);
     con_info->request_method = strdup(raw_bytes_to_binary(method, strlen(method)));
     return MHD_YES;
   }
