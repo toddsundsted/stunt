@@ -338,13 +338,19 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 struct MHD_Daemon *
 start_httpd_server(int port)
 {
-  mhd_daemon = MHD_start_daemon(MHD_USE_DEBUG, port,
+  struct MHD_OptionItem ops[] = {
+    { MHD_OPTION_URI_LOG_CALLBACK, (intptr_t)&request_started, NULL },
+    { MHD_OPTION_NOTIFY_COMPLETED, (intptr_t)&request_completed, NULL },
+    { MHD_OPTION_CONNECTION_TIMEOUT, 30 },
+    { MHD_OPTION_END, 0, NULL }
+  };
+
+  mhd_daemon = MHD_start_daemon(MHD_NO_FLAG, port,
 				NULL, NULL,
 				&handle_http_request, NULL,
-				MHD_OPTION_URI_LOG_CALLBACK, &request_started, NULL,
-				MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
-				MHD_OPTION_CONNECTION_TIMEOUT, 30,
+				MHD_OPTION_ARRAY, ops,
 				MHD_OPTION_END);
+
   return mhd_daemon;
 }
 
