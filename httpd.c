@@ -24,8 +24,6 @@ typedef unsigned32 Conid;
 struct connection_info_struct
 {
   Conid id;
-  Objid receiver;
-  Objid player;
   char *request_method;
   char *request_uri;
   char *request_type;
@@ -85,8 +83,6 @@ new_connection_info_struct()
   struct connection_info_struct *con_info = malloc(sizeof(struct connection_info_struct));
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
-  con_info->receiver = NOTHING;
-  con_info->player = NOTHING;
   con_info->request_method = NULL;
   con_info->request_uri = NULL;
   con_info->request_type = NULL;
@@ -118,107 +114,6 @@ find_connection_info_struct(Conid id)
   }
 
   return NULL;
-}
-
-static int
-request_authentication(struct MHD_Connection *connection)
-{
-  const char *realm = "Basic realm = \"LambdaMoo Server\"";
-  struct MHD_Response *response;
-  int ret;
-
-  response = MHD_create_response_from_data(0, NULL, MHD_NO, MHD_NO);
-  if (!response)
-    return MHD_NO;
-
-  ret = MHD_add_response_header(response, "WWW-Authenticate", realm);
-  if (!ret) {
-    MHD_destroy_response(response);
-    return MHD_NO;
-  }
-
-  ret = MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-
-  MHD_destroy_response(response);
-
-  return ret;
-}
-
-static Objid
-authenticated_as(struct MHD_Connection *connection, struct connection_info_struct *con_info)
-{
-  if (con_info->player != NOTHING)
-    return con_info->player;
-
-  size_t dummy;
-  const char *strbase = "Basic ";
-
-  const char *headervalue =
-    MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
-  if (NULL == headervalue)
-    return NOTHING;
-  if (0 != strncmp(headervalue, strbase, strlen(strbase)))
-    return NOTHING;
-
-  const unsigned char *decoded =
-    base64_decode(headervalue + strlen(strbase), strlen(headervalue) - strlen(strbase), &dummy);
-  if (NULL == decoded)
-    return NOTHING;
-
-  char *separator = strchr(decoded, ':');
-  if (NULL == separator) {
-    free((char *)decoded);
-    return NOTHING;
-  }
-  *separator = 0;
-  const unsigned char *username = decoded;
-  const unsigned char *password = separator + 1;
-
-  Var args;
-  Var result;
-  enum outcome outcome;
-  Objid player = NOTHING;
-
-  args = new_list(2);
-  args.v.list[1].type = TYPE_STR;
-  args.v.list[1].v.str = str_dup(username);
-  args.v.list[2].type = TYPE_STR;
-  args.v.list[2].v.str = str_dup(password);
-  outcome = run_server_task(NOTHING, SYSTEM_OBJECT, "authenticate", args, "", &result);
-  if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
-    player = con_info->player = result.v.obj;
-  }
-
-  free_var(result);
-  free((char *)decoded);
-
-  return player;
-}
-
-static Objid
-route_to(struct connection_info_struct *con_info)
-{
-  if (con_info->receiver != NOTHING)
-    return con_info->receiver;
-
-  Var args;
-  Var result;
-  enum outcome outcome;
-  Objid receiver = SYSTEM_OBJECT;
-
-  args = new_list(2);
-  args.v.list[1].type = TYPE_STR;
-  args.v.list[1].v.str = str_dup(con_info->request_method);
-  args.v.list[2].type = TYPE_STR;
-  args.v.list[2].v.str = str_dup(con_info->request_uri);
-  outcome = run_server_task(NOTHING, SYSTEM_OBJECT, "route", args, "", &result);
-  if (outcome == OUTCOME_DONE && result.type == TYPE_OBJ) {
-    receiver = con_info->receiver = result.v.obj;
-  }
-
-  free_var(result);
-
-  return receiver;
 }
 
 static void
@@ -275,11 +170,6 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
     con_info->request_method = strdup(raw_bytes_to_binary(method, strlen(method)));
     return MHD_YES;
   }
-
-  if (authenticated_as(connection, con_info) == NOTHING)
-    return request_authentication(connection);
-
-  route_to(con_info);
 
   if (0 != *upload_data_size) {
     if (NULL != con_info->request_body) {
