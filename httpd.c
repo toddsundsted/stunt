@@ -277,7 +277,7 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
   if (authenticated_as(connection, con_info) == NOTHING)
     return request_authentication(connection);
 
-  Objid receiver = route_to(con_info);
+  route_to(con_info);
 
   if (0 != *upload_data_size) {
     if (NULL != con_info->request_body) {
@@ -310,7 +310,7 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
   args = new_list(1);
   args.v.list[1].type = TYPE_INT;
   args.v.list[1].v.num = con_info->id;
-  run_server_task(con_info->player, receiver, "do_http", args, "", NULL);
+  run_server_task(con_info->player, con_info->receiver, "do_http", args, "", NULL);
 
   struct MHD_Response *response =
     MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &response_body_reader, con_info, &response_body_free_callback); 
