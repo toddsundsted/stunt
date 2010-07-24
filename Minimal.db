@@ -88,12 +88,19 @@ Wizard
 return #3;
 .
 #0:1
-start_httpd_server(8888);
+start_httpd_server(8888, {{#-1, #0, "do_http"}, {#-1, #0, "do_http"}, {#-1, #0, "do_http"}});
 .
 #0:2
+server_log("in #0:do_http");
+server_log(toliteral(args));
+try
 response(args[1], "code", 200);
 response(args[1], "type", request(args[1], "type"));
 response(args[1], "body", toliteral(eval(request(args[1], "body"))));
+except ex (ANY)
+server_log(toliteral(ex));
+endtry
+return args[2];
 .
 #0:3
 return #3;

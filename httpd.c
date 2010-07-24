@@ -42,6 +42,8 @@ struct connection_info_struct
 
 static struct connection_info_struct con_info_head;
 
+static Var handler_list;
+
 struct MHD_Daemon *mhd_daemon;
 
 static void
@@ -305,15 +307,55 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
   con_info->request_type = strdup(content_type);
 
-  Var args;
+  int i;
+  Var call_list = new_list(0);
+  for (i = 1; i <= handler_list.v.list[0].v.num; i++) {
+    call_list = listappend(call_list, var_ref(handler_list.v.list[i]));
+  }
 
-  args = new_list(1);
-  args.v.list[1].type = TYPE_INT;
-  args.v.list[1].v.num = con_info->id;
-  run_server_task(con_info->player, con_info->receiver, "do_http", args, "", NULL);
+  enum outcome last_outcome = OUTCOME_DONE;
 
-  struct MHD_Response *response =
-    MHD_create_response_from_callback (MHD_SIZE_UNKNOWN, 32 * 1024, &response_body_reader, con_info, &response_body_free_callback); 
+  while (call_list.type == TYPE_LIST &&
+	 call_list.v.list[0].type == TYPE_INT && call_list.v.list[0].v.num > 0 &&
+	 call_list.v.list[1].type == TYPE_LIST &&
+	 call_list.v.list[1].v.list[0].type == TYPE_INT && call_list.v.list[1].v.list[0].v.num == 3 &&
+	 call_list.v.list[1].v.list[1].type == TYPE_OBJ &&
+	 call_list.v.list[1].v.list[2].type == TYPE_OBJ &&
+	 call_list.v.list[1].v.list[3].type == TYPE_STR) {
+    Objid player = call_list.v.list[1].v.list[1].v.obj;
+    Objid receiver = call_list.v.list[1].v.list[2].v.obj;
+    const char *verb = str_ref(call_list.v.list[1].v.list[3].v.str);
+    Var args;
+
+    args = new_list(1);
+    args.v.list[1].type = TYPE_INT;
+    args.v.list[1].v.num = con_info->id;
+
+    call_list = listdelete(call_list, 1);
+
+    args = listappend(args, call_list);
+
+    last_outcome = run_server_task(player, receiver, verb, args, "", &call_list);
+
+    free_str(verb);
+
+    if (last_outcome != OUTCOME_DONE)
+      break;
+  }
+
+  if (last_outcome == OUTCOME_DONE)
+    free_var(call_list);
+
+  struct MHD_Response *response;
+
+  if (last_outcome == OUTCOME_DONE && con_info->response_body) {
+    response =
+      MHD_create_response_from_data(con_info->response_body_length, con_info->response_body, MHD_NO, MHD_NO);
+  }
+  else {
+    response =
+      MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32 * 1024, &response_body_reader, con_info, &response_body_free_callback); 
+  }
 
   if (con_info->response_location) {
     MHD_add_response_header(response, "Location", con_info->response_location);
@@ -336,8 +378,12 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 }
 
 struct MHD_Daemon *
-start_httpd_server(int port)
+start_httpd_server(int port, Var list)
 {
+  if (mhd_daemon) {
+    return NULL;
+  }
+
   struct MHD_OptionItem ops[] = {
     { MHD_OPTION_URI_LOG_CALLBACK, (intptr_t)&request_started, NULL },
     { MHD_OPTION_NOTIFY_COMPLETED, (intptr_t)&request_completed, NULL },
@@ -350,7 +396,7 @@ start_httpd_server(int port)
 				&handle_http_request, NULL,
 				MHD_OPTION_ARRAY, ops,
 				MHD_OPTION_END);
-
+  handler_list = var_ref(list);
   return mhd_daemon;
 }
 
@@ -359,6 +405,7 @@ stop_httpd_server()
 {
   if (mhd_daemon) {
     MHD_stop_daemon(mhd_daemon);
+    free_var(handler_list);
     mhd_daemon = NULL;
   }
 }
@@ -369,26 +416,30 @@ static package
 bf_start_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 {
   int port = arglist.v.list[1].v.num;
-  free_var(arglist);
+  Var list = arglist.v.list[2];
   if (!is_wizard(progr)) {
+    free_var(arglist);
     return make_error_pack(E_PERM);
   }
-  if (start_httpd_server(port) == NULL) {
+  if (start_httpd_server(port, list) == NULL) {
+    free_var(arglist);
     return make_error_pack(E_INVARG);
   }
-  oklog("HTTPD: now running on port %d\n", port);
+  oklog("HTTPD: started on port %d\n", port);
+  free_var(arglist);
   return no_var_pack();
 }
 
 static package
 bf_stop_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  free_var(arglist);
   if (!is_wizard(progr)) {
+    free_var(arglist);
     return make_error_pack(E_PERM);
   }
   stop_httpd_server();
-  oklog("HTTPD: no longer running\n");
+  oklog("HTTPD: stopped\n");
+  free_var(arglist);
   return no_var_pack();
 }
 
@@ -505,7 +556,7 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_httpd(void)
 {
-  register_function("start_httpd_server", 1, 1, bf_start_httpd_server, TYPE_INT);
+  register_function("start_httpd_server", 2, 2, bf_start_httpd_server, TYPE_INT, TYPE_LIST);
   register_function("stop_httpd_server", 0, 0, bf_stop_httpd_server);
   register_function("request", 2, 2, bf_request, TYPE_INT, TYPE_STR);
   register_function("response", 3, 3, bf_response, TYPE_INT, TYPE_STR, TYPE_ANY);
