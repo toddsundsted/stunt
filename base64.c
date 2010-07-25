@@ -15,6 +15,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "functions.h"
+#include "storage.h"
+#include "utils.h"
+
 #include "base64.h"
 
 static const unsigned char base64_table[64] =
@@ -24,44 +28,36 @@ static const unsigned char base64_table[64] =
  * base64_encode - Base64 encode
  * @src: Data to be encoded
  * @len: Length of the data to be encoded
- * @out_len: Pointer to output length variable, or %NULL if not used
+ * @out_len: Pointer to output length variable; %NULL if not used
  * Returns: Allocated buffer of out_len bytes of encoded data,
  * or %NULL on failure
  *
- * Caller is responsible for freeing the returned buffer. Returned buffer is
- * nul terminated to make it easier to use as a C string. The nul terminator is
- * not included in out_len.
+ * Caller is responsible for freeing the returned buffer. Returned
+ * buffer is null terminated to make it easier to use as a C
+ * string. The null terminator is not included in out_len.
  */
-unsigned char * base64_encode(const unsigned char *src, size_t len,
-			      size_t *out_len)
+unsigned char *
+base64_encode(const unsigned char *src, size_t len, size_t *out_len)
 {
 	unsigned char *out, *pos;
 	const unsigned char *end, *in;
 	size_t olen;
-	int line_len;
 
 	olen = len * 4 / 3 + 4; /* 3-byte blocks to 4-byte */
-	olen += olen / 72; /* line feeds */
 	olen++; /* nul termination */
-	out = malloc(olen);
+	out = mymalloc(olen, M_STRING);
 	if (out == NULL)
 		return NULL;
 
 	end = src + len;
 	in = src;
 	pos = out;
-	line_len = 0;
 	while (end - in >= 3) {
 		*pos++ = base64_table[in[0] >> 2];
 		*pos++ = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
 		*pos++ = base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
 		*pos++ = base64_table[in[2] & 0x3f];
 		in += 3;
-		line_len += 4;
-		if (line_len >= 72) {
-			*pos++ = '\n';
-			line_len = 0;
-		}
 	}
 
 	if (end - in) {
@@ -70,16 +66,11 @@ unsigned char * base64_encode(const unsigned char *src, size_t len,
 			*pos++ = base64_table[(in[0] & 0x03) << 4];
 			*pos++ = '=';
 		} else {
-			*pos++ = base64_table[((in[0] & 0x03) << 4) |
-					      (in[1] >> 4)];
+			*pos++ = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
 			*pos++ = base64_table[(in[1] & 0x0f) << 2];
 		}
 		*pos++ = '=';
-		line_len += 4;
 	}
-
-	if (line_len)
-		*pos++ = '\n';
 
 	*pos = '\0';
 	if (out_len)
@@ -97,8 +88,8 @@ unsigned char * base64_encode(const unsigned char *src, size_t len,
  *
  * Caller is responsible for freeing the returned buffer.
  */
-unsigned char * base64_decode(const unsigned char *src, size_t len,
-			      size_t *out_len)
+unsigned char *
+base64_decode(const unsigned char *src, size_t len, size_t *out_len)
 {
 	unsigned char dtable[256], *out, *pos, in[4], block[4], tmp;
 	size_t i, count, olen;
@@ -118,7 +109,7 @@ unsigned char * base64_decode(const unsigned char *src, size_t len,
 		return NULL;
 
 	olen = count / 4 * 3;
-	pos = out = malloc(count);
+	pos = out = mymalloc(olen + 1, M_STRING);
 	if (out == NULL)
 		return NULL;
 
@@ -148,4 +139,45 @@ unsigned char * base64_decode(const unsigned char *src, size_t len,
 
 	*out_len = pos - out;
 	return out;
+}
+
+static package
+bf_base64_encode(Var arglist, Byte next, void *vdata, Objid progr)
+{
+	size_t dummy;
+	const char *in = arglist.v.list[1].v.str;
+	char *out = base64_encode(in, strlen(in), &dummy);
+	if (out == NULL) {
+		free_var(arglist);
+		return make_error_pack(E_INVARG);
+	}
+	Var ret;
+	ret.type = TYPE_STR;
+	ret.v.str = out;
+	free_var(arglist);
+	return make_var_pack(ret);
+}
+
+static package
+bf_base64_decode(Var arglist, Byte next, void *vdata, Objid progr)
+{
+	size_t dummy;
+	const char *in = arglist.v.list[1].v.str;
+	char *out = base64_decode(in, strlen(in), &dummy);
+	if (out == NULL) {
+		free_var(arglist);
+		return make_error_pack(E_INVARG);
+	}
+	Var ret;
+	ret.type = TYPE_STR;
+	ret.v.str = out;
+	free_var(arglist);
+	return make_var_pack(ret);
+}
+
+void
+register_base64(void)
+{
+	register_function("base64_encode", 1, 1, bf_base64_encode, TYPE_STR);
+	register_function("base64_decode", 1, 1, bf_base64_decode, TYPE_STR);
 }
