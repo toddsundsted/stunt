@@ -418,7 +418,7 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR && con_info->response_type == NULL) {
+  else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR && con_info->response_location == NULL) {
     con_info->response_location = strdup(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
