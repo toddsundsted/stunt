@@ -142,7 +142,7 @@ base64_decode(const unsigned char *src, size_t len, size_t *out_len)
 }
 
 static package
-bf_base64_encode(Var arglist, Byte next, void *vdata, Objid progr)
+bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
 	size_t dummy;
 	const char *in = arglist.v.list[1].v.str;
@@ -159,7 +159,7 @@ bf_base64_encode(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_base64_decode(Var arglist, Byte next, void *vdata, Objid progr)
+bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
 	size_t dummy;
 	const char *in = arglist.v.list[1].v.str;
@@ -178,6 +178,6 @@ bf_base64_decode(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_base64(void)
 {
-	register_function("base64_encode", 1, 1, bf_base64_encode, TYPE_STR);
-	register_function("base64_decode", 1, 1, bf_base64_decode, TYPE_STR);
+	register_function("encode_base64", 1, 1, bf_encode_base64, TYPE_STR);
+	register_function("decode_base64", 1, 1, bf_decode_base64, TYPE_STR);
 }
