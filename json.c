@@ -181,12 +181,38 @@ foobar(yajl_gen g, Var v)
     break;
   }
   case TYPE_LIST:
-    yajl_gen_array_open(g);
-    int i;
-    for (i = 1; i <= v.v.list[0].v.num; i++) {
-      foobar(g, v.v.list[i]);
+    {
+      int i;
+      int map = 1;
+
+      // if each element is not a list
+      // of two elements
+      // in which the first is a string
+      // then it's a regular list
+      for (i = 1; i <= v.v.list[0].v.num; i++) {
+	if (v.v.list[i].type != TYPE_LIST ||
+	    v.v.list[i].v.list[0].v.num != 2 ||
+	    v.v.list[i].v.list[1].type != TYPE_STR) {
+	  map = 0;
+	  break;
+	}
+      }
+      if (map) {
+	yajl_gen_map_open(g);
+	for (i = 1; i <= v.v.list[0].v.num; i++) {
+	  foobar(g, v.v.list[i].v.list[1]);
+	  foobar(g, v.v.list[i].v.list[2]);
+	}
+	yajl_gen_map_close(g);
+      }
+      else {
+	yajl_gen_array_open(g);
+	for (i = 1; i <= v.v.list[0].v.num; i++) {
+	  foobar(g, v.v.list[i]);
+	}
+	yajl_gen_array_close(g);
+      }
     }
-    yajl_gen_array_close(g);
     break;
   }
 }
