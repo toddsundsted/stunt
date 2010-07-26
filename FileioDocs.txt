@@ -1,0 +1,429 @@
+  File I/O
+  Ken Fox and Andy Bakun
+  October 5, 1997
+
+  This is the documentation for the File I/O (FIO) patch for the Lamb-
+  daMOO server.  FIO adds several administrator-only builtins for manip-
+  ulating files from inside the MOO.  Security is enforced by making
+  these builtins executable with wizard permissions only as well as only
+  allowing access to a directory under the current directory (the one
+  the server is running in).
+
+  1.  Introduction
+
+  1.1.  Purpose
+
+  This patch to the LambdaMOO server adds several new builtins that
+  allow the manipulation of files from MOO code.   The new builtins are
+  structured similarly to the stdio library for C.  This allows MOO-code
+  to perform stream-oriented I/O to files.
+
+  Granting MOO code direct access to files opens a hole in the otherwise
+  fairly good wall that the LambdaMOO server puts up between the OS and
+  the database.  The patch contains the risk as much as possible by
+  restricting where files can be opened and allowing the new builtins to
+  be called by wizard permissions only.  It is still possible execute
+  various forms denial of service attacks, but the MOO server allows
+  this form of attack as well.
+
+  There is a related package available that contains a db front end for
+  this package as well as a help database with help for all the builtin
+  functions and for the front end.  It is not recommended that you use
+  these functions directly.
+
+  1.2.  Copyright, License, and Disclaimer
+
+  Copyright 1996, 1997 by Ken Fox.  Copyright 1997 by Andy Bakun.
+
+  All Rights Reserved
+
+  Permission to use, copy, modify, and distribute this software and its
+  documentation for any purpose and without fee is hereby granted,
+  provided that the above copyright notice appear in all copies and that
+  both that copyright notice and this permission notice appear in
+  supporting documentation.
+
+  KEN FOX AND ANDY BAKUN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+  SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+  FITNESS, IN NO EVENT SHALL KEN FOX OR ANDY BAKUN BE LIABLE FOR ANY
+  SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+  RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+  CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+  2.  Installation
+
+  Most of the new code for this patch are in the files extension-
+  fileio.c and extension-fileio.h.  These files contain the header and
+  implementation for all of the new builtin functions.  One line has to
+  be added to bf_register.h and a related line must be added
+  functions.c.
+
+  The distribution archive should contain the text version of this
+  documentation (fileio-README), extension-fileio.c, extension-fileio.h,
+  and fileio.patch.
+
+  If you are going to use patch to install it, just copy fileio.patch
+  into the server directory and apply the patch:
+
+         patch < fileio.patch
+
+  It is recommended that you use patch to install it, but you can also
+  manually make the changes to the server source.  First, copy the
+  extension-fileio.c and .h files into a directory with the freshly
+  untarred server source.  Add extension-fileio.c to the CSRCS line of
+  Makefile.in, add
+
+          extern void register_fileio(void);
+
+  to bf_register.h and add
+
+         register_fileio
+
+  to the list of functions in functions.c.
+
+  Finally, make the files directory in the directory the MOO server is
+  run in.  Only files in this directory will be accessible using this
+  patch.
+
+         mkdir files
+
+  Pathnames passed to these functions are restricted to prevent access
+  outside this directory.
+
+  3.  Functions
+
+  The functions in this patch are grouped into a few categories.  There
+  is a function to open a file and a function for closing a file, a set
+  of functions for doing stream-oriented I/O from files, and a set of
+  housekeeping functions.
+
+  Function documentation includes a prototype, information about the
+  function, and a list of exceptions the function might raise (in
+  addition to the ones outlined in "Error handling".
+
+  WARNING: All of the actual I/O functions in this package are
+  implemented using the stdio portion of libc.  Your system's
+  documentation may have applicable warnings for these functions.  When
+  appropriate, the function documentation will say which libc function
+  is used.
+
+  3.1.  Error handling
+
+  Errors are always handled by raising some kind of exception.  The
+  following exceptions are defined:
+
+     ``E_FILE''
+        This is raised when a stdio call returned an error value.  It is
+        the string value "E_FILE", not a new value of type error.  CODE
+        is set to "E_FILE", MSG is set to the return of strerror()
+        (which may vary from system to system), and VALUE depends on
+        which function raised the error.  When a function fails because
+        the stdio function returned EOF, VALUE is set to "EOF".
+
+     E_INVARG
+        This is raised for a number of reasons.  The common reasons are
+        an invalid FHANDLE being passed to a function and an invalid
+        pathname specification.  In each of these cases MSG will be set
+        to the cause and VALUE will be the offending value.
+
+     E_PERM
+        This is raised when any of these functions are called with non-
+        wizardly permissions.
+
+  3.2.  Version
+
+  Function: STR file_version()
+
+  Returns the package shortname/version number of this package e.g.
+
+         ;file_version()
+         => "FIO/1.5"
+
+  3.3.  Opening and closing of files and related functions
+
+  File streams are associated with FHANDLES.  FHANDLES are similar to
+  the FILE* using stdio.  You get an FHANDLE from file_open.  You should
+  not depend on the actual type of FHANDLEs (currently TYPE_INT).
+  FHANDLEs are not persistent across server restarts.  That is, files
+  open when the server is shut down are closed when it comes back up and
+  no information about open files is saved in the DB.
+
+  3.3.1.  file_open
+
+  Function: FHANDLE file_open(STR pathname, STR mode)
+
+  Raises: E_INVARG if mode is not a valid mode, E_QUOTA if too many
+  files open
+  This opens a file specified by pathname and returns an FHANDLE for it.
+  It ensures pathname is legal.  mode is a string of characters
+  indicating what mode the file is opened in.  The mode string is four
+  characters.
+
+  The first character must be (r)ead, (w)rite, or (a)ppend.  The second
+  must be '+' or '-'.  This modifies the previous argument.
+
+  o  r- opens the file for reading and fails if the file does not exist.
+
+  o  r+ opens the file for reading and writing and fails if the file
+     does not exist.
+
+  o  w- opens the file for writing, truncating if it exists and creating
+     if not.
+
+  o  w+ opens the file for reading and writing, truncating if it exists
+     and creating if not.
+
+  o  a- opens a file for writing, creates it if it does not exist and
+     positions the stream at the end of the file.
+
+  o  a+ opens the file for reading and writing, creates it if does not
+     exist and positions the stream at the end of the file.
+
+     The third character is either (t)ext or (b)inary.  In text mode,
+     data is written as-is from the MOO and data read in by the MOO is
+     stripped of unprintable characters.  In binary mode, data is
+     written filtered through the binary-string->raw-bytes conversion
+     and data is read filtered through the raw-bytes->binary-string
+     conversion.  For example, in text mode writing " 1B" means three
+     bytes are written: ' ' Similarly, in text mode reading " 1B" means
+     the characters ' ' '1' 'B' were present in the file.  In binary
+     mode reading " 1B" means an ASCII ESC was in the file.  In text
+     mode, reading an ESC from a file results in the ESC getting
+     stripped.
+
+  It is not recommended that files containing unprintable ASCII  data be
+  read in text mode, for obvious reasons.
+
+  The final character is either 'n' or 'f'.  If this character is that
+  writes data to the stream.  If it is 'n' then this won't happen.
+
+  This is implemented using fopen().
+
+  3.3.2.  file_close
+
+  Function: void file_close(FHANDLE fh)
+
+  Closes the file associated with fh.
+
+  This is implemented using fclose().
+
+  3.3.3.  file_name
+
+  Function: STR file_name(FHANDLE fh)
+
+  Returns the pathname originally associated with fh by file_open().
+  This is not necessarily the file's current name if it was renamed or
+  unlinked after the fh was opened.
+
+  3.3.4.  file_openmode
+
+  Function: STR file_openmode(FHANDLE fh)
+
+  Returns the mode the file associated with fh was opened in.
+
+  3.4.  Input and Ouput operations
+
+  3.4.1.  file_readline
+
+  Function: STR file_readline(FHANDLE fh)
+
+  Reads the next line in the file and returns it (without the newline).
+
+  Not recommended for use on files in binary mode.
+
+  This is implemented using fgets().
+
+  3.4.2.  file_readlines
+
+  Function: LIST file_readlines(FHANDLE fh, INT start, INT end)
+
+  Rewinds the file and then reads the specified lines from the file,
+  returning them as a list of strings.  After this operation, the stream
+  is positioned right after the last line read.
+
+  Not recommended for use on files in binary mode.
+
+  This is implemented using fgets().
+
+  3.4.3.  file_writeline
+
+  Function: void file_writeline(FHANDLE fh, STR line)
+
+  Writes the specified line to the file (adding a newline).
+
+  Not recommended for use on files in binary mode.
+
+  This is implemented using fputs().
+
+  3.4.4.  file_read
+
+  Function: STR file_read(FHANDLE fh, INT bytes)
+
+  Reads up to the specified number of bytes from the file and returns
+  them.
+
+  Not recommended for use on files in text mode.
+
+  This is implemented using fread().
+
+  3.4.5.  file_write
+
+  Function: INT file_write(FHANDLE fh, STR data)
+
+  Writes the specified data to the file.  Returns number of bytes
+  written.
+
+  Not recommended for use on files in text mode.
+
+  This is implemented using fwrite().
+
+  3.4.6.  Getting and setting stream position
+
+  3.4.7.  file_tell
+
+  Function: INT file_tell(FHANDLE fh)
+
+  Returns position in file.
+
+  This is implemented using ftell().
+
+  3.4.8.  file_seek
+
+  Function: void file_seek(FHANDLE fh, INT loc, STR whence)
+
+  Seeks to a particular location in a file.  whence is one of the
+  strings:
+
+  o  "SEEK_SET" - seek to location relative to beginning
+
+  o  "SEEK_CUR" - seek to location relative to current
+
+  o  "SEEK_END" - seek to location relative to end
+
+  This is implemented using fseek().
+
+  3.4.9.  file_eof
+
+  Function: INT file_eof(FHANDLE fh)
+
+  Returns true if and only if fh's stream is positioned at EOF.
+
+  This is implemented using feof().
+
+  3.5.  Housekeeping operations
+
+  3.5.1.  file_size, file_mode, file_last_access, file_last_modify,
+  file_last_change
+
+  Function: INT file_size(STR pathname)
+  Function: STR file_mode(STR pathname)
+  Function: INT file_last_access(STR pathname)
+  Function: INT file_last_modify(STR pathname)
+  Function: INT file_last_change(STR pathname)
+  Function: INT file_size(FHANDLE fh)
+  Function: STR file_mode(FHANDLE fh)
+  Function: INT file_last_access(FHANDLE fh)
+  Function: INT file_last_modify(FHANDLE fh)
+  Function: INT file_last_change(FHANDLE fh)
+
+  Returns the size, mode, last access time, last modify time, or last
+  change time of the specified file.   All of these functions also take
+  FHANDLE arguments and then operate on the open file.
+
+  These are all implemented using fstat() (for open FHANDLEs) or stat()
+  (for pathnames).
+
+  3.5.2.  file_stat
+
+  Function: void file_stat(STR pathname)
+  Function: void file_stat(FHANDLE fh)
+
+  Returns the result of stat() (or fstat()) on the given file.
+  Specifically a list as follows:
+
+  {file size in bytes, file type, file access mode, owner, group,
+       last access, last modify, and last change}
+
+  owner and group are always the empty string.
+
+  It is recommended that the specific information functions file_size,
+  file_type, file_mode, file_last_access, file_last_modify, and
+  file_last_change be used instead.  In most cases only one of these
+  elements is desired and in those cases there's no reason to make and
+  free a list.
+
+  3.5.3.  file_rename
+
+  Function: void file_rename(STR oldpath, STR newpath)
+
+  Attempts to rename the oldpath to newpath.
+
+  This is implemented using rename().
+
+  3.5.4.  file_remove
+
+  Function: void file_remove(STR pathname)
+
+  Attempts to remove the given file.
+
+  This is implemented using remove().
+
+  3.5.5.  file_mkdir
+
+  Function: void file_mkdir(STR pathname)
+
+  Attempts to create the given directory.
+
+  This is implemented using mkdir().
+
+  3.5.6.  file_rmdir
+
+  Function: void file_rmdir(STR pathname)
+
+  Attempts to remove the given directory.
+
+  This is implemented using rmdir().
+
+  3.5.7.  file_list
+
+  Function: LIST file_list(STR pathname, [ANY detailed])
+
+  Attempts to list the contents of the given directory.  Returns a list
+  of files in the directory.  If the detailed argument is provided and
+  true, then the list contains detailed entries, otherwise it contains a
+  simple list of names.
+
+  detailed entry:
+    {STR filename, STR file type, STR file mode, INT file size}
+  normal entry:
+    STR filename
+
+  This is implemented using scandir().
+
+  3.5.8.  file_type
+
+  Function: STR file_type(STR pathname)
+
+  Returns the type of the given pathname, one of "reg", "dir", "dev",
+  "fifo", or "socket".
+
+  This is implemented using stat().
+
+  3.5.9.  file_mode
+
+  Function: STR file_mode(STR filename)
+
+  Returns octal mode for a file (e.g. "644").
+
+  This is implemented using stat().
+
+  3.5.10.  file_chmod
+
+  Function: void file_chmod(STR filename, STR mode)
+
+  Attempts to set mode of a file using mode as an octal string of
+  exactly three characters.
+
+  This is implemented using chmod().
+
