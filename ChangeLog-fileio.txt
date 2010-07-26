@@ -1,0 +1,15 @@
+Version 1.5p1 - Dec 97
+----------------------
+ - Fixed bug where tabs were not included in the input stream
+ - Added CHANGELOG to the distribution
+ - Added README
+
+Version 1.5
+-----------
+ - First version maintained by Andy Bakun.
+ - Fixed bugs where file_eof and file_tell didn't return meaningful results
+   didn't raise errors on invalid file descriptors.
+
+Versions < 1.5
+--------------
+Maintained by Ken Fox.  Really, the initial public version.

@@ -35,7 +35,8 @@ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
-	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
+	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c \
+	extension-fileio.c
 
 OPT_NET_SRCS = net_single.c net_multi.c \
 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
@@ -54,6 +55,7 @@ HDRS =  ast.h bf_register.h code_gen.h db.h db_io.h db_private.h decompile.h \
 	options.h parse_cmd.h parser.h pattern.h program.h quota.h random.h \
 	ref_count.h regexpr.h server.h storage.h streams.h structures.h  str_intern.h \
 	sym_table.h tasks.h timers.h tokens.h unparse.h utils.h verbs.h \
+	extension-fileio.h \
 	version.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
@@ -290,7 +292,7 @@ depend: ${ALL_CSRCS}
 # Revision 1.3  1992/07/27  18:30:21  pjames
 # Update what vector.o and vector.po depend on.
 ###############################################################################
-	
+
 # Have to do this one manually, since 'make depend' can't hack yacc files.
 parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
 		ast.h code_gen.h config.h functions.h \
