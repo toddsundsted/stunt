@@ -24,6 +24,7 @@ typedef unsigned32 Conid;
 struct connection_info_struct
 {
   Conid id;
+  struct MHD_Connection *connection;
   char *request_method;
   char *request_uri;
   char *request_type;
@@ -83,6 +84,7 @@ new_connection_info_struct()
   struct connection_info_struct *con_info = malloc(sizeof(struct connection_info_struct));
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
+  con_info->connection = NULL;
   con_info->request_method = NULL;
   con_info->request_uri = NULL;
   con_info->request_type = NULL;
@@ -114,6 +116,19 @@ find_connection_info_struct(Conid id)
   }
 
   return NULL;
+}
+
+static int
+iterator_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
+{
+  Var h = new_list(2);
+  h.v.list[1].type = TYPE_STR;
+  h.v.list[1].v.str = str_dup(raw_bytes_to_binary(key, strlen(key)));
+  h.v.list[2].type = TYPE_STR;
+  h.v.list[2].v.str = str_dup(raw_bytes_to_binary(value, strlen(value)));
+  Var *v = (Var *)cls;
+  *v = listappend(*v, h);
+  return MHD_YES;
 }
 
 static void
@@ -165,9 +180,10 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
   struct connection_info_struct *con_info = *ptr;
 
-  if (NULL == con_info->request_method) {
-    oklog("HTTPD: [%d] %s %s\n", con_info->id, method, url);
+  if (NULL == con_info->connection) {
+    con_info->connection = connection;
     con_info->request_method = strdup(raw_bytes_to_binary(method, strlen(method)));
+    oklog("HTTPD: [%d] %s %s\n", con_info->id, con_info->request_method, con_info->request_uri);
     return MHD_YES;
   }
 
@@ -339,7 +355,7 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
   Conid id = arglist.v.list[1].v.num;
   const char *opt = arglist.v.list[2].v.str;
 
-  if (0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
+  if (0 != strcmp(opt, "headers") && 0 != strcmp(opt, "cookies") && 0 != strcmp(opt, "parameters") && 0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
     return make_error_pack(E_INVARG);
   }
@@ -351,7 +367,25 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 
   struct connection_info_struct *con_info = find_connection_info_struct(id);
 
-  if (con_info && 0 == strcmp(opt, "method")) {
+  if (con_info && 0 == strcmp(opt, "headers")) {
+    Var r = new_list(0);
+    MHD_get_connection_values(con_info->connection, MHD_HEADER_KIND, iterator_callback, (void *)&r);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "cookies")) {
+    Var r = new_list(0);
+    MHD_get_connection_values(con_info->connection, MHD_COOKIE_KIND, iterator_callback, (void *)&r);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "parameters")) {
+    Var r = new_list(0);
+    MHD_get_connection_values(con_info->connection, MHD_GET_ARGUMENT_KIND, iterator_callback, (void *)&r);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "method")) {
     char *method = con_info->request_method ? con_info->request_method : "";
     Var r;
     r.type = TYPE_STR;
