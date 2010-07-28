@@ -71,6 +71,8 @@ unparse_error(enum error e)
 	return "Resource limit exceeded";
     case E_FLOAT:
 	return "Floating-point arithmetic error";
+    case E_FILE:
+	return "File error";
     }
 
     return "Unknown Error";
@@ -112,6 +114,8 @@ error_name(enum error e)
 	return "E_QUOTA";
     case E_FLOAT:
 	return "E_FLOAT";
+    case E_FILE:
+	return "E_FILE";
     }
 
     return "E_?";
