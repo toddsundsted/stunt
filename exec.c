@@ -30,11 +30,11 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (1 < strlen(cmd) && '.' == cmd[0] && '.' == cmd[1]) {
     free_var(arglist);
-    return make_raise_pack(E_INVARG, "invalid path", zero);
+    return make_raise_pack(E_INVARG, "Invalid path", zero);
   }
   if (strstr(cmd, "/.")) {
     free_var(arglist);
-    return make_raise_pack(E_INVARG, "invalid path", zero);
+    return make_raise_pack(E_INVARG, "Invalid path", zero);
   }
 
   static Stream *s;
@@ -53,7 +53,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 
   if(stat(cmd, &buf) != 0) {
     free_var(arglist);
-    return make_raise_pack(E_INVARG, "does not exist", zero);
+    return make_raise_pack(E_INVARG, "Does not exist", zero);
   }
 
   const char *args[i];
