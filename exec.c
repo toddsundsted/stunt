@@ -73,8 +73,10 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
   else if (0 == p) {
     /* child */
     static char *env[] = { "PATH=/bin:/usr/bin", NULL };
-    execve(cmd, (char *const *)args, (char *const *)env);
-    /* should never reach here */
+    int res;
+    res = execve(cmd, (char *const *)args, (char *const *)env);
+    oklog("EXEC: Executing %s failed with error code %d...\n", cmd, res);
+    exit(res);
   }
   else {
     /* parent */
