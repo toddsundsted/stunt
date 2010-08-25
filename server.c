@@ -30,6 +30,7 @@
 #include "disassemble.h"
 #include "execute.h"
 #include "functions.h"
+#include "linenoise.h"
 #include "list.h"
 #include "log.h"
 #include "network.h"
@@ -596,31 +597,25 @@ server_connection_options(shandle * h, Var list)
 }
 
 static char *
-read_stdin_line()
+read_stdin_line(const char *prompt)
 {
     static Stream *s = 0;
-    char *line, buffer[1000];
-    int buflen;
+    char *line;
 
     if (!s)
 	s = new_stream(100);
 
-    do {			/* Read even a very long line of input */
-	fgets(buffer, sizeof(buffer), stdin);
-	buflen = strlen(buffer);
-	if (buflen == 0)
-	    return 0;
-	if (buffer[buflen - 1] == '\n') {
-	    buffer[buflen - 1] = '\0';
-	    buflen--;
-	}
-	stream_add_string(s, buffer);
-    } while (buflen == sizeof(buffer) - 1);
-    line = reset_stream(s);
-    while (*line == ' ')
-	line++;
+    if ((line = linenoise(prompt)) != NULL) {
+        if (line[0] != '\0') {
+            stream_add_string(s, line);
+            linenoiseHistoryAdd(line);
+            free(line);
+	    line = reset_stream(s);
+	    return line;
+        }
+    }
 
-    return line;
+    return "";
 }
 
 static void
@@ -675,8 +670,9 @@ emergency_mode()
 	    }
 	    printf("** Now running emergency commands as #%d ...\n", wizard);
 	}
-	printf("\nMOO (#%d)%s: ", wizard, debug ? "" : "[!d]");
-	line = read_stdin_line();
+	char prompt[100];
+	sprintf(prompt, "MOO (#%d)%s: ", wizard, debug ? "" : "[!d]");
+	line = read_stdin_line(prompt);
 
 	if (!line)
 	    start_ok = 0;	/* treat EOF as "quit" */
@@ -702,7 +698,7 @@ emergency_mode()
 		printf("Type one or more lines of code, ending with `.' ");
 		printf("alone on a line.\n");
 		for (;;) {
-		    line = read_stdin_line();
+		    line = read_stdin_line("");
 		    if (!strcmp(line, "."))
 			break;
 		    else {
@@ -773,7 +769,7 @@ emergency_mode()
 		    code = new_list(0);
 		    str.type = TYPE_STR;
 
-		    while (strcmp(line = read_stdin_line(), ".")) {
+		    while (strcmp(line = read_stdin_line(""), ".")) {
 			str.v.str = str_dup(line);
 			code = listappend(code, str);
 		    }
