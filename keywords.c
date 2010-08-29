@@ -35,7 +35,7 @@
 #define MIN_HASH_VALUE 3
 #define MAX_HASH_VALUE 106
 /*
-   36 keywords
+   37 keywords
   104 is the maximum key range
 */
 
@@ -124,7 +124,8 @@ in_word_set (register const char *str, register int len)
       {"",}, {"",}, 
       {"e_perm", 		DBV_Prehistory, tERROR,	E_PERM},
       {"if", 		DBV_Prehistory, tIF},
-      {"",}, {"",}, {"",}, {"",}, 
+      {"",}, {"",}, {"",}, 
+      {"e_exec", 		DBV_Exec,	tERROR,	E_EXEC},
       {"in", 		DBV_Prehistory, tIN},
       {"",}, {"",}, 
       {"while", 		DBV_Prehistory, tWHILE},
