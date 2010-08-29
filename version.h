@@ -47,6 +47,8 @@ typedef enum {
 				 */
     DBV_FileIO,			/* Includes addition of the 'E_FILE' keyword.
 				 */
+    DBV_Exec,			/* Includes addition of the 'E_EXEC' keyword.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 

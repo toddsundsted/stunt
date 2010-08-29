@@ -73,6 +73,8 @@ unparse_error(enum error e)
 	return "Floating-point arithmetic error";
     case E_FILE:
 	return "File error";
+    case E_EXEC:
+	return "Exec error";
     }
 
     return "Unknown Error";
@@ -116,6 +118,8 @@ error_name(enum error e)
 	return "E_FLOAT";
     case E_FILE:
 	return "E_FILE";
+    case E_EXEC:
+	return "E_EXEC";
     }
 
     return "E_?";
