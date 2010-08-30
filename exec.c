@@ -45,6 +45,9 @@
 
 typedef struct tasks_waiting_on_exec {
   pid_t p;
+  int in;
+  int out;
+  int err;
   vm the_vm;
   UT_hash_handle hh;
 } tasks_waiting_on_exec;
@@ -59,11 +62,14 @@ exec_waiter_enumerator(task_closure closure, void *data)
   HASH_FOREACH_SAFE(hh, exec_waiters, tw, tmp) {
     const char *status = "running";
     task_enum_action tea = (*closure)(tw->the_vm, status, data);
-    if (tea == TEA_KILL) {
+    if (TEA_KILL == tea) {
       HASH_DELETE(hh, exec_waiters, tw);
+      close(tw->in);
+      close(tw->out);
+      close(tw->err);
       myfree(tw, M_TASK);
     }
-    if (tea != TEA_CONTINUE)
+    if (TEA_CONTINUE != tea)
       return tea;
   }
   return TEA_CONTINUE;
@@ -133,25 +139,78 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
   args[i - 1] = NULL;
   args[0] = cmd;
 
-  pid_t p = fork();
+  pid_t p;
+  int pipeIn[2];
+  int pipeOut[2];
+  int pipeErr[2];
 
-  if (p == -1) {
-    /* fork failed */
+  if (pipe(pipeIn) < 0) {
+    free_var(arglist);
+    log_perror("EXEC: Couldn't create pipe - pipeIn");
+    return make_raise_pack(E_EXEC, "Exec failed", zero);
+  }
+  else if (pipe(pipeOut) < 0) {
+    close(pipeIn[0]);
+    close(pipeIn[1]);
+    free_var(arglist);
+    log_perror("EXEC: Couldn't create pipe - pipeOut");
+    return make_raise_pack(E_EXEC, "Exec failed", zero);
+  }
+  else if (pipe(pipeErr) < 0) {
+    close(pipeIn[0]);
+    close(pipeIn[1]);
+    close(pipeOut[0]);
+    close(pipeOut[1]);
+    free_var(arglist);
+    log_perror("EXEC: Couldn't create pipe - pipeErr");
+    return make_raise_pack(E_EXEC, "Exec failed", zero);
+  }
+  else if ((p = fork()) < 0) {
+    close(pipeIn[0]);
+    close(pipeIn[1]);
+    close(pipeOut[0]);
+    close(pipeOut[1]);
+    close(pipeErr[0]);
+    close(pipeErr[1]);
+    free_var(arglist);
+    log_perror("EXEC: Couldn't fork");
+    return make_raise_pack(E_EXEC, "Exec failed", zero);
   }
   else if (0 == p) {
     /* child */
+    int status;
+    if ((status = dup2(pipeIn[0], STDIN_FILENO)) < 0) {
+      log_perror("EXEC: ouldn't dup2");
+      exit(status);
+    }
+    if ((status = dup2(pipeOut[1], STDOUT_FILENO)) < 0) {
+      log_perror("EXEC: Couldn't dup2");
+      exit(status);
+    }
+    if ((status = dup2(pipeErr[1], STDERR_FILENO)) < 0) {
+      log_perror("EXEC: Couldn't dup2");
+      exit(status);
+    }
+    close(pipeIn[1]);
+    close(pipeOut[0]);
+    close(pipeErr[0]);
     static char *env[] = { "PATH=/bin:/usr/bin", NULL };
-    int res;
-    res = execve(cmd, (char *const *)args, (char *const *)env);
-    oklog("EXEC: Executing %s failed with error code %d...\n", cmd, res);
+    int res = execve(cmd, (char *const *)args, (char *const *)env);
+    log_perror("EXEC: Executing %s failed with error code %d...\n", cmd, res);
     exit(res);
   }
   else {
     /* parent */
-    oklog("EXEC: Executing %s ...\n", cmd);
-    free_var(arglist);
+    close(pipeIn[0]);
+    close(pipeOut[1]);
+    close(pipeErr[1]);
     tasks_waiting_on_exec *tw = mymalloc(sizeof(tasks_waiting_on_exec), M_TASK);
     tw->p = p;
+    tw->in = pipeIn[1];
+    tw->out = pipeOut[0];
+    tw->err = pipeErr[0];
+    free_var(arglist);
+    oklog("EXEC: Executing %s...\n", cmd);
     return make_suspend_pack(exec_waiter_suspender, tw);
   }
 
@@ -160,19 +219,38 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 pid_t
-child_completed(pid_t p)
+exec_completed(pid_t p, int code)
 {
   tasks_waiting_on_exec *tw;
 
   HASH_FIND(hh, exec_waiters, &p, sizeof(pid_t), tw);
   if (tw) {
+    char buffer[1000];
+    int n;
+
     Var v;
-    v.type = TYPE_INT;
-    v.v.num = (int)p;
+    v = new_list(3);
+    v.v.list[1].type = TYPE_INT;
+    v.v.list[1].v.num = code;
+
+    n = read(tw->out, buffer, sizeof(buffer));
+    buffer[n] = '\0';
+
+    v.v.list[2].type = TYPE_STR;
+    v.v.list[2].v.str = str_dup(buffer);
+
+    n = read(tw->err, buffer, sizeof(buffer));
+    buffer[n] = '\0';
+
+    v.v.list[3].type = TYPE_STR;
+    v.v.list[3].v.str = str_dup(buffer);
 
     resume_task(tw->the_vm, v);
 
     HASH_DELETE(hh, exec_waiters, tw);
+    close(tw->in);
+    close(tw->out);
+    close(tw->err);
     myfree(tw, M_TASK);
 
     return p;
