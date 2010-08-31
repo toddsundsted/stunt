@@ -513,6 +513,19 @@ emit_var_op(Opcode op, unsigned slot, State * state)
 static void generate_expr(Expr *, State *);
 
 static void
+generate_hash_list(Hash_List *mappings, State *state)
+{
+    emit_byte(OP_HASH_CREATE, state);
+    push_stack(1, state);
+    for (; mappings != NULL; mappings = mappings->next) {
+            generate_expr(mappings->value, state);
+            generate_expr(mappings->key, state);
+            emit_byte(OP_HASH_INSERT, state);
+            pop_stack(2, state);
+    }
+}
+
+static void
 generate_arg_list(Arg_List * args, State * state)
 {
     if (!args) {
@@ -737,6 +750,9 @@ generate_expr(Expr * expr, State * state)
 		panic("Missing saved stack for `$' in GENERATE_EXPR()");
 	}
 	break;
+    case EXPR_HASH:
+        generate_hash_list(expr->e.hash, state);
+        break;
     case EXPR_LIST:
 	generate_arg_list(expr->e.list, state);
 	break;

@@ -195,6 +195,17 @@ alloc_verb(Expr * obj, Expr * verb, Arg_List * args)
     return result;
 }
 
+Hash_List *
+alloc_hash_list(Expr * key, Expr * value)
+{
+    Hash_List *result = allocate(sizeof(Hash_List), M_AST);
+
+    result->key = key;
+    result->value = value;
+    result->next = 0;
+    return result;
+}
+
 Arg_List *
 alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 {
@@ -231,6 +242,19 @@ free_arg_list(Arg_List * args)
 	next_arg = arg->next;
 	free_expr(arg->expr);
 	myfree(arg, M_AST);
+    }
+}
+
+static void
+free_hash_list(Hash_List * hash)
+{
+    Hash_List *h, *next_h;
+
+    for (h = hash; h; h = next_h) {
+	next_h = h->next;
+	free_expr(h->key);
+	free_expr(h->value);
+	myfree(h, M_AST);
     }
 }
 
@@ -309,6 +333,10 @@ free_expr(Expr * expr)
     case EXPR_NOT:
 	free_expr(expr->e.expr);
 	break;
+
+    case EXPR_HASH:
+        free_hash_list(expr->e.hash);
+        break;
 
     case EXPR_LIST:
 	free_arg_list(expr->e.list);

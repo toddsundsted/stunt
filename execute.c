@@ -26,6 +26,7 @@
 #include "exceptions.h"
 #include "execute.h"
 #include "functions.h"
+#include "hash.h"
 #include "list.h"
 #include "log.h"
 #include "numbers.h"
@@ -886,6 +887,33 @@ do {    						    	\
 	    }
 	    break;
 
+        case OP_HASH_CREATE:
+            {
+                Var hash;
+
+                hash = new_hash();
+                PUSH(hash);
+            }
+            break;
+
+        case OP_HASH_INSERT:
+            {
+                Var hash, key, value;
+
+                key = POP(); /* any */
+                value = POP(); /* any */
+                hash = POP(); /* should be hash */
+                if (hash.type != TYPE_HASH) {
+                    free_var(key);
+                    free_var(hash);
+                    PUSH_ERROR(E_TYPE);
+                } else {
+                    hashinsert(hash, key, value);
+                    PUSH(hash);
+                }
+            }
+            break;
+
 	case OP_MAKE_EMPTY_LIST:
 	    {
 		Var list;
@@ -930,12 +958,15 @@ do {    						    	\
 		Var value, index, list;
 
 		value = POP();	/* rhs value */
-		index = POP();	/* index, should be integer */
+		index = POP();	/* index, should be integer for list or str */
 		list = POP();	/* lhs except last index, should be list or str */
-		/* whole thing should mean list[index] = value */
-		if ((list.type != TYPE_LIST && list.type != TYPE_STR)
-		    || index.type != TYPE_INT
-		  || (list.type == TYPE_STR && value.type != TYPE_STR)) {
+		/* whole thing should mean list[index] = value OR
+                 * hash[key] = value */
+		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
+                     list.type != TYPE_HASH)
+		    || ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
+                        index.type != TYPE_INT)
+                    || (list.type == TYPE_STR && value.type != TYPE_STR)) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
@@ -964,6 +995,18 @@ do {    						    	\
 		        free_var(list);
 		    }
 		    PUSH(listset(res, value, index.v.num));
+                } else if (list.type == TYPE_HASH) {
+                    Var res;
+
+                    if (var_refcount(list) == 1) {
+                        res = list;
+                    } else {
+                        res = var_dup(list);
+                        free_var(list);
+                    }
+
+                    hashinsert(res, index, value);
+                    PUSH(res);
 		} else {	/* TYPE_STR */
 		    char *tmp_str = str_dup(list.v.str);
 		    free_str(list.v.str);
@@ -1094,9 +1137,9 @@ do {    						    	\
 	    {
 		Var lhs, rhs, ans;
 
-		rhs = POP();	/* should be list */
+		rhs = POP();	/* should be list or hash */
 		lhs = POP();	/* lhs, any type */
-		if (rhs.type != TYPE_LIST) {
+                if (rhs.type != TYPE_LIST && rhs.type != TYPE_HASH) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
@@ -1106,7 +1149,7 @@ do {    						    	\
 		    PUSH(ans);
 		    free_var(rhs);
 		    free_var(lhs);
-		}
+                }
 	    }
 	    break;
 
@@ -1235,11 +1278,14 @@ do {    						    	\
 	    {
 		Var index, list;
 
-		index = POP();	/* should be integer */
-		list = POP();	/* should be list or string */
+		index = POP();	/* should be integer for list or string,
+                                   any for hash */
+		list = POP();	/* should be list, string, or hash */
 
-		if (index.type != TYPE_INT ||
-		    (list.type != TYPE_LIST && list.type != TYPE_STR)) {
+		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
+                     list.type != TYPE_HASH) ||
+                    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
+                     index.type != TYPE_INT)) {
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
@@ -1253,6 +1299,18 @@ do {    						    	\
 			free_var(index);
 			free_var(list);
 		    }
+                } else if (list.type == TYPE_HASH) {
+                    Var value;
+                    int success;
+
+                    success = hashlookup(list, index, &value);
+                    free_var(index);
+                    free_var(list);
+                    if (!success) {
+                        PUSH_ERROR(E_PROPNF);
+                    } else {
+                        PUSH_REF(value);
+                    }
 		} else {	/* list.type == TYPE_STR */
 		    if (index.v.num <= 0
 			|| index.v.num > (int) strlen(list.v.str)) {
@@ -1270,18 +1328,33 @@ do {    						    	\
 
 	case OP_PUSH_REF:
 	    {
-		Var index, list;
+                /* Two cases are possible: list[index] or hash[key] */
+		Var list, index;
 
 		index = TOP_RT_VALUE;
 		list = NEXT_TOP_RT_VALUE;
 
-		if (index.type != TYPE_INT || list.type != TYPE_LIST) {
-		    PUSH_ERROR(E_TYPE);
-		} else if (index.v.num <= 0 ||
-			   index.v.num > list.v.list[0].v.num) {
-		    PUSH_ERROR(E_RANGE);
-		} else
-		    PUSH(var_ref(list.v.list[index.v.num]));
+                if (list.type == TYPE_LIST) {
+                    if (index.type != TYPE_INT) {
+                        PUSH_ERROR(E_TYPE);
+                    } else if (index.v.num <= 0 ||
+                               index.v.num > list.v.list[0].v.num) {
+                        PUSH_ERROR(E_RANGE);
+                    } else
+                        PUSH(var_ref(list.v.list[index.v.num]));
+                } else if (list.type == TYPE_HASH) {
+                    Var value;
+                    int success;
+
+		    success = hashlookup(list, index, &value);
+		    if (!success) {
+			PUSH_ERROR(E_PROPNF);
+		    } else {
+			PUSH(var_ref(value));
+                    }
+                } else {
+                    PUSH_ERROR(E_TYPE);
+                }
 	    }
 	    break;
 

@@ -45,6 +45,7 @@ refcount_overhead(Memory_Type type)
     case M_STRING:
 	return sizeof(int);
     case M_LIST:
+    case M_HASH:
 	/* for systems with picky pointer alignment */
 	return MAX(sizeof(int), sizeof(Var *));
     default:

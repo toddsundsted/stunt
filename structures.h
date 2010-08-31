@@ -24,6 +24,15 @@
 
 typedef int32 Objid;
 
+typedef struct Hash Hash;
+
+struct Hash {
+    unsigned32 size;
+    unsigned32 nnodes;
+    unsigned32 frozen;
+    struct HashNode **nodes;
+};
+
 /*
  * Special Objid's
  */
@@ -53,7 +62,8 @@ typedef enum {
     TYPE_NONE,			/* in uninitialized MOO variables */
     TYPE_CATCH,			/* on-stack marker for an exception handler */
     TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
-    _TYPE_FLOAT			/* floating-point number; user-visible */
+    _TYPE_FLOAT,		/* floating-point number; user-visible */
+    _TYPE_HASH			/* hash table; user-visible */
 } var_type;
 
 /* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
@@ -69,6 +79,7 @@ typedef enum {
 #define TYPE_STR		(_TYPE_STR | TYPE_COMPLEX_FLAG)
 #define TYPE_FLOAT		(_TYPE_FLOAT | TYPE_COMPLEX_FLAG)
 #define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
+#define TYPE_HASH		(_TYPE_HASH | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
@@ -98,6 +109,7 @@ struct Var {
 	Objid obj;		/* OBJ */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
+        Hash *hash;		/* HASH */
 	double *fnum;		/* FLOAT */
     } v;
     var_type type;

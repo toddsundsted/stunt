@@ -23,6 +23,7 @@
 #include "db.h"
 #include "db_io.h"
 #include "exceptions.h"
+#include "hash.h"
 #include "list.h"
 #include "log.h"
 #include "match.h"
@@ -157,6 +158,11 @@ complex_free_var(Var v)
 	    myfree(v.v.list, M_LIST);
 	}
 	break;
+    case TYPE_HASH:
+        if (delref(v.v.hash) == 0) {
+            destroy_hash(v);
+        }
+        break;
     case TYPE_FLOAT:
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
@@ -171,6 +177,9 @@ complex_var_ref(Var v)
     case TYPE_STR:
 	addref(v.v.str);
 	break;
+    case TYPE_HASH:
+        addref(v.v.hash);
+        break;
     case TYPE_LIST:
 	addref(v.v.list);
 	break;
@@ -181,22 +190,33 @@ complex_var_ref(Var v)
     return v;
 }
 
+static void
+complex_hash_dup(Var key, Var value, void *tableptr, int32 first)
+{
+    hashinsert(*((Var *)tableptr), key, value);
+}
+
 Var
 complex_var_dup(Var v)
 {
     int i;
-    Var newlist;
+    Var new;
 
     switch ((int) v.type) {
     case TYPE_STR:
 	v.v.str = str_dup(v.v.str);
 	break;
+    case TYPE_HASH:
+        new = new_hash();
+        hashforeach(v, complex_hash_dup, &new);
+        v = new;
+        break;
     case TYPE_LIST:
-	newlist = new_list(v.v.list[0].v.num);
+	new = new_list(v.v.list[0].v.num);
 	for (i = 1; i <= v.v.list[0].v.num; i++) {
-	    newlist.v.list[i] = var_ref(v.v.list[i]);
+	    new.v.list[i] = var_ref(v.v.list[i]);
 	}
-	v.v.list = newlist.v.list;
+	v.v.list = new.v.list;
 	break;
     case TYPE_FLOAT:
 	v = new_float(*v.v.fnum);
@@ -218,6 +238,9 @@ var_refcount(Var v)
     case TYPE_LIST:
 	return refcount(v.v.list);
 	break;
+    case TYPE_HASH:
+        return refcount(v.v.hash);
+        break;
     case TYPE_FLOAT:
 	return refcount(v.v.fnum);
 	break;
@@ -231,7 +254,8 @@ is_true(Var v)
     return ((v.type == TYPE_INT && v.v.num != 0)
 	    || (v.type == TYPE_FLOAT && *v.v.fnum != 0.0)
 	    || (v.type == TYPE_STR && v.v.str && *v.v.str != '\0')
-	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0));
+	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0)
+            || (v.type == TYPE_HASH && v.v.hash->nnodes > 0));
 }
 
 int
@@ -254,6 +278,9 @@ equality(Var lhs, Var rhs, int case_matters)
 		return !strcmp(lhs.v.str, rhs.v.str);
 	    else
 		return !mystrcasecmp(lhs.v.str, rhs.v.str);
+        case TYPE_HASH:
+            return hash_equal(&lhs, &rhs);
+            break;
 	case TYPE_LIST:
 	    if (lhs.v.list[0].v.num != rhs.v.list[0].v.num)
 		return 0;
@@ -360,6 +387,17 @@ get_system_object(const char *name)
 	return value.v.obj;
 }
 
+static void
+value_bytes_hash(Var key, Var value, void *sizeptr, int32 first)
+{
+    int *size = (int *)sizeptr;
+
+    *size += sizeof(HashNode);
+
+    *size += value_bytes(key);
+    *size += value_bytes(value);
+}
+
 int
 value_bytes(Var v)
 {
@@ -372,6 +410,13 @@ value_bytes(Var v)
     case TYPE_FLOAT:
 	size += sizeof(double);
 	break;
+    case TYPE_HASH:
+        {
+            size += sizeof(v.v.hash);
+            size += sizeof(v.v.hash->nodes[0]) * v.v.hash->size;
+            hashforeach(v, value_bytes_hash, (void *)(&size));
+        }
+        break;
     case TYPE_LIST:
 	len = v.v.list[0].v.num;
 	size += sizeof(Var);	/* for the `length' element */

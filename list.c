@@ -22,6 +22,7 @@
 #include "config.h"
 #include "exceptions.h"
 #include "functions.h"
+#include "hash.h"
 #include "list.h"
 #include "log.h"
 #include "md5.h"
@@ -85,14 +86,21 @@ setremove(Var list, Var value)
 int
 ismember(Var lhs, Var rhs, int case_matters)
 {
-    int i;
+    if (rhs.type == TYPE_LIST) {
+        int i;
 
-    for (i = 1; i <= rhs.v.list[0].v.num; i++) {
-	if (equality(lhs, rhs.v.list[i], case_matters)) {
-	    return i;
-	}
+        for (i = 1; i <= rhs.v.list[0].v.num; i++) {
+            if (equality(lhs, rhs.v.list[i], case_matters)) {
+                return i;
+            }
+        }
+
+        return 0;
+    } else if (rhs.type == TYPE_HASH) {
+        return hashlookup(rhs, lhs, NULL);
+    } else {
+        return 0;
     }
-    return 0;
 }
 
 Var
@@ -246,6 +254,9 @@ list2str(Var * args)
 	case TYPE_FLOAT:
 	    stream_printf(str, "%g", *args[i].v.fnum);
 	    break;
+        case TYPE_HASH:
+            stream_add_string(str, "{hash}");
+            break;
 	case TYPE_LIST:
 	    stream_add_string(str, "{list}");
 	    break;
@@ -268,6 +279,24 @@ value2str(Var value)
     str = list2str(list.v.list);
     free_var(list);
     return str;
+}
+
+static void print_to_stream(Var v, Stream * s);
+
+static void
+print_hash_to_stream(Var key, Var value, void *sptr, int32 first)
+{
+    Stream *s = sptr;
+
+    if (!first) {
+        stream_add_string(s, ", ");
+    }
+//    stream_add_char(s, '{');
+
+    print_to_stream(key, s);
+    stream_add_string(s, " -> ");
+    print_to_stream(value, s);
+//    stream_add_char(s, '}');
 }
 
 static void
@@ -319,6 +348,13 @@ print_to_stream(Var v, Stream * s)
 	    stream_add_char(s, '}');
 	}
 	break;
+    case TYPE_HASH:
+        {
+            stream_add_char(s, '[');
+            hashforeach(v, print_hash_to_stream, (void *)s);
+            stream_add_char(s, ']');
+        }
+        break;
     default:
 	errlog("PRINT_TO_STREAM: Unknown Var type = %d\n", v.type);
 	stream_add_string(s, ">>Unknown value<<");
@@ -414,6 +450,10 @@ bf_length(Var arglist, Byte next, void *vdata, Objid progr)
 	r.type = TYPE_INT;
 	r.v.num = arglist.v.list[1].v.list[0].v.num;
 	break;
+    case TYPE_HASH:
+        r.type = TYPE_INT;
+	r.v.num = hashnodes(arglist.v.list[1]);
+        break;
     case TYPE_STR:
 	r.type = TYPE_INT;
 	r.v.num = strlen(arglist.v.list[1].v.str);
@@ -524,9 +564,15 @@ static package
 bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+    Var rhs = arglist.v.list[2];
+
+    if (rhs.type != TYPE_LIST && rhs.type != TYPE_HASH) {
+        free_var(arglist);
+        return make_error_pack(E_INVARG);
+    }
 
     r.type = TYPE_INT;
-    r.v.num = ismember(arglist.v.list[1], arglist.v.list[2], 1);
+    r.v.num = ismember(arglist.v.list[1], rhs, 1);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1117,7 +1163,7 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
 		      TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
-    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_LIST);
+    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_ANY);
 
     /* string */
     register_function("tostr", 0, -1, bf_tostr);

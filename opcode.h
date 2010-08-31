@@ -83,6 +83,8 @@ enum Opcode {
 
     OP_EXTENDED,		/* Used to add more opcodes */
 
+    OP_HASH_CREATE, OP_HASH_INSERT,
+
     OPTIM_NUM_START,
     /* storage optimized imm-numbers can occupy 113-255, for 143 of them */
     Last_Opcode = 255

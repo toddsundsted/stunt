@@ -75,6 +75,7 @@ static void	check_loop_name(const char *, enum loop_exit_kind);
   char	       *string;
   enum error	error;
   Arg_List     *args;
+  Hash_List    *hash;
   Cond_Arm     *arm;
   Except_Arm   *except;
   Scatter      *scatter;
@@ -84,6 +85,7 @@ static void	check_loop_name(const char *, enum loop_exit_kind);
 %type	<arm>    elseifs
 %type   <expr>   expr default
 %type   <args>   arglist ne_arglist codes
+%type   <hash>   hashlist
 %type	<except> except excepts
 %type	<string> opt_id
 %type	<scatter> scatter scatter_item
@@ -96,7 +98,7 @@ static void	check_loop_name(const char *, enum loop_exit_kind);
 %token	tIF tELSE tELSEIF tENDIF tFOR tIN tENDFOR tRETURN tFORK tENDFORK
 %token  tWHILE tENDWHILE tTRY tENDTRY tEXCEPT tFINALLY tANY tBREAK tCONTINUE
 
-%token	tTO tARROW
+%token	tTO tARROW tHASH
 
 %right	'='
 %nonassoc '?' '|'
@@ -566,6 +568,17 @@ expr:
 		    $$ = alloc_expr(EXPR_LIST);
 		    $$->e.list = $2;
 		}
+        | '[' hashlist ']'
+                {
+                    $$ = alloc_expr(EXPR_HASH);
+                    $$->e.hash = $2;
+                }
+        | '[' ']'
+                {
+                    /* [] is the expression for an empty list */
+                    $$ = alloc_expr(EXPR_HASH);
+                    $$->e.hash = 0;
+                }
 	| expr '?' expr '|' expr
 		{
 		    $$ = alloc_expr(EXPR_COND);
@@ -597,6 +610,25 @@ default:
 		{ $$ = 0; }
 	| tARROW expr
 		{ $$ = $2; }
+
+hashlist:
+          expr tHASH expr
+                { $$ = alloc_hash_list($1, $3); }
+        | hashlist ',' expr tHASH expr
+		{
+		    Hash_List *this_hash = alloc_hash_list($3, $5);
+
+		    if ($1) {
+			Hash_List *tmp = $1;
+
+			while (tmp->next)
+			    tmp = tmp->next;
+			tmp->next = this_hash;
+			$$ = $1;
+		    } else
+			$$ = this_hash;
+		}
+        ;
 
 arglist:
 	  /* NOTHING */
@@ -944,6 +976,7 @@ start_over:
       case '!':         return follow('=', tNE, '!');
       case '|':         return follow('|', tOR, '|');
       case '&':         return follow('&', tAND, '&');
+      case '-':         return follow('>', tHASH, '-');
       normal_dot:
       case '.':		return follow('.', tTO, '.');
       default:          return c;

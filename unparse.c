@@ -218,6 +218,7 @@ static int fully_parenthesize, indent_code;
 
 static void unparse_stmt(Stmt * s, int indent);
 static void unparse_expr(Stream * str, Expr * e);
+static void unparse_hashlist(Stream *str, Hash_List *hash);
 static void unparse_arglist(Stream * str, Arg_List * a);
 static void unparse_scatter(Stream * str, Scatter * sc);
 
@@ -627,6 +628,12 @@ unparse_expr(Stream * str, Expr * expr)
 	stream_add_char(str, '}');
 	break;
 
+    case EXPR_HASH:
+        stream_add_char(str, '[');
+        unparse_hashlist(str, expr->e.hash);
+        stream_add_char(str, ']');
+        break;
+
     case EXPR_SCATTER:
 	stream_add_char(str, '{');
 	unparse_scatter(str, expr->e.scatter);
@@ -658,6 +665,20 @@ unparse_expr(Stream * str, Expr * expr)
 	break;
     }
 }
+
+static void
+unparse_hashlist(Stream *str, Hash_List *hash)
+{
+    while (hash) {
+        unparse_expr(str, hash->key);
+        stream_add_string(str, " -> ");
+        unparse_expr(str, hash->value);
+        if (hash->next)
+            stream_add_string(str, ", ");
+        hash = hash->next;
+    }
+}
+
 
 static void
 unparse_arglist(Stream * str, Arg_List * args)

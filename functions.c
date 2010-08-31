@@ -21,6 +21,7 @@
 #include "config.h"
 #include "db_io.h"
 #include "functions.h"
+#include "hash.h"
 #include "list.h"
 #include "log.h"
 #include "server.h"
@@ -54,7 +55,8 @@ static registry bi_function_registries[] =
     register_property,
     register_server,
     register_tasks,
-    register_verbs
+    register_verbs,
+    register_hash
 };
 
 void
