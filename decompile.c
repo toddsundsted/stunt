@@ -494,25 +494,28 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 				  alloc_binary(EXPR_ASGN, e, rvalue)));
 	    }
 	    break;
-        case OP_HASH_CREATE:
-            e = alloc_expr(EXPR_HASH);
-            e->e.hash = 0;
-            push_expr(HOT_OP(e));
-            break;
-        case OP_HASH_INSERT:
-            {
-                Expr *key, *value;
+	case OP_HASH_CREATE:
+	    e = alloc_expr(EXPR_HASH);
+	    e->e.hash = 0;
+	    push_expr(HOT_OP(e));
+	    break;
+	case OP_HASH_INSERT:
+	    {
+		Expr *key, *value;
 
-                key = pop_expr();
-                value = pop_expr();
-                e = pop_expr();
-                if (e->e.hash)
-                    e->e.hash->next = alloc_hash_list(key, value);
-                else
-                    e->e.hash = alloc_hash_list(key, value);
-                push_expr(HOT_OP2(e->e.hash->key, e->e.hash->value, e));
-            }
-            break;
+		key = pop_expr();
+		value = pop_expr();
+		e = pop_expr();
+		if (e->e.hash) {
+		    Hash_List *last = e->e.hash;
+		    while (last->next) last = last->next;
+		    last->next = alloc_hash_list(key, value);
+		}
+		else
+		    e->e.hash = alloc_hash_list(key, value);
+		push_expr(HOT_OP2(e->e.hash->key, e->e.hash->value, e));
+	    }
+	    break;
 	case OP_MAKE_EMPTY_LIST:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = 0;
