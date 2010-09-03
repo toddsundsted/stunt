@@ -629,10 +629,10 @@ unparse_expr(Stream * str, Expr * expr)
 	break;
 
     case EXPR_HASH:
-        stream_add_char(str, '[');
-        unparse_hashlist(str, expr->e.hash);
-        stream_add_char(str, ']');
-        break;
+	stream_add_char(str, '[');
+	unparse_hashlist(str, expr->e.hash);
+	stream_add_char(str, ']');
+	break;
 
     case EXPR_SCATTER:
 	stream_add_char(str, '{');
@@ -670,12 +670,12 @@ static void
 unparse_hashlist(Stream *str, Hash_List *hash)
 {
     while (hash) {
-        unparse_expr(str, hash->key);
-        stream_add_string(str, " -> ");
-        unparse_expr(str, hash->value);
-        if (hash->next)
-            stream_add_string(str, ", ");
-        hash = hash->next;
+	unparse_expr(str, hash->key);
+	stream_add_string(str, " -> ");
+	unparse_expr(str, hash->value);
+	if (hash->next)
+	    stream_add_string(str, ", ");
+	hash = hash->next;
     }
 }
 

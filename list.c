@@ -87,19 +87,19 @@ int
 ismember(Var lhs, Var rhs, int case_matters)
 {
     if (rhs.type == TYPE_LIST) {
-        int i;
+	int i;
 
-        for (i = 1; i <= rhs.v.list[0].v.num; i++) {
-            if (equality(lhs, rhs.v.list[i], case_matters)) {
-                return i;
-            }
-        }
+	for (i = 1; i <= rhs.v.list[0].v.num; i++) {
+	    if (equality(lhs, rhs.v.list[i], case_matters)) {
+	      return i;
+	    }
+	}
 
-        return 0;
+	return 0;
     } else if (rhs.type == TYPE_HASH) {
-        return hashlookup(rhs, lhs, NULL);
+	return hashlookup(rhs, lhs, NULL);
     } else {
-        return 0;
+	return 0;
     }
 }
 
@@ -254,9 +254,9 @@ list2str(Var * args)
 	case TYPE_FLOAT:
 	    stream_printf(str, "%g", *args[i].v.fnum);
 	    break;
-        case TYPE_HASH:
-            stream_add_string(str, "{hash}");
-            break;
+	case TYPE_HASH:
+	    stream_add_string(str, "{hash}");
+	    break;
 	case TYPE_LIST:
 	    stream_add_string(str, "{list}");
 	    break;
@@ -289,14 +289,12 @@ print_hash_to_stream(Var key, Var value, void *sptr, int32 first)
     Stream *s = sptr;
 
     if (!first) {
-        stream_add_string(s, ", ");
+	stream_add_string(s, ", ");
     }
-//    stream_add_char(s, '{');
 
     print_to_stream(key, s);
     stream_add_string(s, " -> ");
     print_to_stream(value, s);
-//    stream_add_char(s, '}');
 }
 
 static void
@@ -349,12 +347,12 @@ print_to_stream(Var v, Stream * s)
 	}
 	break;
     case TYPE_HASH:
-        {
-            stream_add_char(s, '[');
-            hashforeach(v, print_hash_to_stream, (void *)s);
-            stream_add_char(s, ']');
-        }
-        break;
+	{
+	    stream_add_char(s, '[');
+	    hashforeach(v, print_hash_to_stream, (void *)s);
+	    stream_add_char(s, ']');
+	}
+	break;
     default:
 	errlog("PRINT_TO_STREAM: Unknown Var type = %d\n", v.type);
 	stream_add_string(s, ">>Unknown value<<");
@@ -451,9 +449,9 @@ bf_length(Var arglist, Byte next, void *vdata, Objid progr)
 	r.v.num = arglist.v.list[1].v.list[0].v.num;
 	break;
     case TYPE_HASH:
-        r.type = TYPE_INT;
+	r.type = TYPE_INT;
 	r.v.num = hashnodes(arglist.v.list[1]);
-        break;
+	break;
     case TYPE_STR:
 	r.type = TYPE_INT;
 	r.v.num = strlen(arglist.v.list[1].v.str);
@@ -567,8 +565,8 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
     Var rhs = arglist.v.list[2];
 
     if (rhs.type != TYPE_LIST && rhs.type != TYPE_HASH) {
-        free_var(arglist);
-        return make_error_pack(E_INVARG);
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
     }
 
     r.type = TYPE_INT;

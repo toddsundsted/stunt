@@ -233,15 +233,14 @@ dbio_read_var(void)
 	r.v.num = dbio_read_num();
 	break;
     case _TYPE_HASH:
-        l = dbio_read_num(); /* size of the hash table, in members */
-        r = new_hash();
+	l = dbio_read_num();
+	r = new_hash();
 	for (i = 0; i < l; i++) {
-            Var key, value;
-            key = dbio_read_var();
-            value = dbio_read_var();
-
-            hashinsert(r, key, value);
-        }
+	    Var key, value;
+	    key = dbio_read_var();
+	    value = dbio_read_var();
+	    hashinsert(r, key, value);
+	}
 	break;
     case _TYPE_FLOAT:
 	r = new_float(dbio_read_float());
