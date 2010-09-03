@@ -227,6 +227,25 @@ hashremove(Var v, Var key)
     }
 }
 
+Var
+hashdelete(Var v, Var key)
+{
+    Var new;
+    int n;
+    HashNode *hn;
+
+    new = new_hash();
+    for (n = 0; n < v.v.hash->size; n++) {
+        for (hn = v.v.hash->nodes[n]; hn; hn = hn->next) {
+            if (do_compare(hn->key, key))
+	        hashinsert(new, hn->key, hn->value);
+        }
+    }
+
+    free_var(v);
+    return new;
+}
+
 int
 hashlookup(Var v, Var key, Var *value)
 {
@@ -373,9 +392,28 @@ bf_hash_remove(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(retval);
 }
 
+static package
+bf_hashdelete(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+
+    if (!hashlookup(arglist.v.list[1], arglist.v.list[2], &r)) {
+	free_var(arglist);
+	return make_error_pack(E_RANGE);
+    }
+    else {
+	r = hashdelete(var_ref(arglist.v.list[1]), arglist.v.list[2]);
+    }
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 void
 register_hash(void)
 {
     register_function("hash_remove", 2, 2, bf_hash_remove, TYPE_HASH,
+                      TYPE_ANY);
+    register_function("hashdelete", 2, 2, bf_hashdelete, TYPE_HASH,
                       TYPE_ANY);
 }
