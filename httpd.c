@@ -222,24 +222,27 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
   enum outcome last_outcome = OUTCOME_DONE;
 
   while (call_list.type == TYPE_LIST &&
+	 /* must be a list with at least one member */
 	 call_list.v.list[0].type == TYPE_INT && call_list.v.list[0].v.num > 0 &&
 	 call_list.v.list[1].type == TYPE_LIST &&
-	 call_list.v.list[1].v.list[0].type == TYPE_INT && call_list.v.list[1].v.list[0].v.num == 3 &&
+	 /* sub-list must have at least three members */
+	 call_list.v.list[1].v.list[0].type == TYPE_INT && call_list.v.list[1].v.list[0].v.num > 2 &&
 	 call_list.v.list[1].v.list[1].type == TYPE_OBJ &&
 	 call_list.v.list[1].v.list[2].type == TYPE_OBJ &&
 	 call_list.v.list[1].v.list[3].type == TYPE_STR) {
     Objid player = call_list.v.list[1].v.list[1].v.obj;
     Objid receiver = call_list.v.list[1].v.list[2].v.obj;
     const char *verb = str_ref(call_list.v.list[1].v.list[3].v.str);
-    Var args;
+    Var first, args;
 
     args = new_list(1);
     args.v.list[1].type = TYPE_INT;
     args.v.list[1].v.num = con_info->id;
 
+    first = var_ref(call_list.v.list[1]);
     call_list = listdelete(call_list, 1);
-
     args = listappend(args, call_list);
+    args = listappend(args, first);
 
     last_outcome = run_server_task(player, receiver, verb, args, "", &call_list);
 
@@ -452,17 +455,20 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR && con_info->response_location == NULL) {
+  else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR) {
+    if (con_info->response_location) free(con_info->response_location);
     con_info->response_location = strdup(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR && con_info->response_type == NULL) {
+  else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR) {
+    if (con_info->response_type) free(con_info->response_type);
     con_info->response_type = strdup(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "body") && arglist.v.list[3].type == TYPE_STR && con_info->response_body == NULL) {
+  else if (con_info && 0 == strcmp(opt, "body") && arglist.v.list[3].type == TYPE_STR) {
+    if (con_info->response_body) free(con_info->response_body);
     int len;
     const char *buff = binary_to_raw_bytes(arglist.v.list[3].v.str, &len);
     con_info->response_body = malloc(len);
