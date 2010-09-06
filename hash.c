@@ -24,6 +24,7 @@
 #include "exceptions.h"
 #include "functions.h"
 #include "hash.h"
+#include "list.h"
 #include "log.h"
 #include "md5.h"
 #include "options.h"
@@ -409,11 +410,42 @@ bf_hashdelete(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static void
+do_hash_keys(Var key, Var value, void *data, int32 first)
+{
+    Var *list = (Var *)data;
+    *list = listappend(*list, var_ref(key));
+}
+
+static package
+bf_hashkeys(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r = new_list(0);
+    hashforeach(arglist.v.list[1], do_hash_keys, &r);
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
+static void
+do_hash_values(Var key, Var value, void *data, int32 first)
+{
+    Var *list = (Var *)data;
+    *list = listappend(*list, var_ref(value));
+}
+
+static package
+bf_hashvalues(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r = new_list(0);
+    hashforeach(arglist.v.list[1], do_hash_values, &r);
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 void
 register_hash(void)
 {
-    register_function("hash_remove", 2, 2, bf_hash_remove, TYPE_HASH,
-                      TYPE_ANY);
-    register_function("hashdelete", 2, 2, bf_hashdelete, TYPE_HASH,
-                      TYPE_ANY);
+    register_function("hashdelete", 2, 2, bf_hashdelete, TYPE_HASH, TYPE_ANY);
+    register_function("hashkeys", 1, 1, bf_hashkeys, TYPE_HASH);
+    register_function("hashvalues", 1, 1, bf_hashvalues, TYPE_HASH);
 }
