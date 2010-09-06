@@ -36,23 +36,23 @@
 #include "my-stdlib.h"
 
 #include "functions.h"
-#include "storage.h"
-#include "numbers.h"
-#include "list.h"
-#include "utils.h"
-#include "unparse.h"
-
+#include "hash.h"
 #include "json.h"
+#include "list.h"
+#include "numbers.h"
+#include "storage.h"
+#include "unparse.h"
+#include "utils.h"
 
 struct stack_item {
-  struct stack_item *parent;
+  struct stack_item *prev;
   Var v;
 };
 
 static void
 push(struct stack_item **top, Var v) {
   struct stack_item *item = malloc(sizeof(struct stack_item));
-  item->parent = *top;
+  item->prev = *top;
   item->v = v;
   *top = item;
 }
@@ -60,7 +60,7 @@ push(struct stack_item **top, Var v) {
 static Var
 pop(struct stack_item **top) {
   struct stack_item *item = *top;
-  *top = item->parent;
+  *top = item->prev;
   Var v = item->v;
   free(item);
   return v;
@@ -141,13 +141,10 @@ handle_start_map(void * ctx)
 static int
 handle_end_map(void * ctx)
 {
-  Var list = new_list(0);
+  Var list = new_hash();
   Var k, v;
   for (v = POP(ctx), k = POP(ctx); (int)v.type > -1; v = POP(ctx), k = POP(ctx)) {
-    Var temp = new_list(2);
-    temp.v.list[1] = var_ref(k);
-    temp.v.list[2] = var_ref(v);
-    list = listinsert(list, temp, 1);
+    hashinsert(list, k, v);
   }
   PUSH(ctx, list);
   return 1;
@@ -189,60 +186,48 @@ static yajl_callbacks callbacks = {
 };
 
 static void
-foobar(yajl_gen g, Var v)
+generate(yajl_gen g, Var v);
+
+static void
+do_hash_hash(Var key, Var value, void *data, int32 first)
 {
-  const char *tmp;
+  yajl_gen g = *(yajl_gen *)data;
+  generate(g, key);
+  generate(g, value);
+}
 
+static void
+generate(yajl_gen g, Var v)
+{
   switch (v.type) {
-  case TYPE_INT:
-  case TYPE_OBJ:
-    yajl_gen_integer(g, v.v.num);
-    break;
-  case TYPE_FLOAT:
-    yajl_gen_double(g, *v.v.fnum);
-    break;
-  case TYPE_STR:
-    yajl_gen_string(g, v.v.str, strlen(v.v.str));
-    break;
-  case TYPE_ERR: {
-    tmp = error_name(v.v.err);
-    yajl_gen_string(g, tmp, strlen(tmp));
-    break;
-  }
-  case TYPE_LIST:
-    {
-      int i;
-      int map = 1;
-
-      // if each element is not a list
-      // of two elements
-      // in which the first is a string
-      // then it's a regular list
-      for (i = 1; i <= v.v.list[0].v.num; i++) {
-	if (v.v.list[i].type != TYPE_LIST ||
-	    v.v.list[i].v.list[0].v.num != 2 ||
-	    v.v.list[i].v.list[1].type != TYPE_STR) {
-	  map = 0;
-	  break;
-	}
-      }
-      if (map) {
-	yajl_gen_map_open(g);
-	for (i = 1; i <= v.v.list[0].v.num; i++) {
-	  foobar(g, v.v.list[i].v.list[1]);
-	  foobar(g, v.v.list[i].v.list[2]);
-	}
-	yajl_gen_map_close(g);
-      }
-      else {
-	yajl_gen_array_open(g);
-	for (i = 1; i <= v.v.list[0].v.num; i++) {
-	  foobar(g, v.v.list[i]);
-	}
-	yajl_gen_array_close(g);
-      }
+    case TYPE_INT:
+      yajl_gen_integer(g, v.v.num);
+      break;
+    case TYPE_FLOAT:
+      yajl_gen_double(g, *v.v.fnum);
+      break;
+    case TYPE_STR:
+      yajl_gen_string(g, v.v.str, strlen(v.v.str));
+      break;
+    case TYPE_ERR: {
+      const char *tmp = error_name(v.v.err);
+      yajl_gen_string(g, tmp, strlen(tmp));
+      break;
     }
-    break;
+    case TYPE_HASH: {
+      yajl_gen_map_open(g);
+      hashforeach(v, do_hash_hash, &g);
+      yajl_gen_map_close(g);
+      break;
+    }
+    case TYPE_LIST: {
+      int i;
+      yajl_gen_array_open(g);
+      for (i = 1; i <= v.v.list[0].v.num; i++)
+	generate(g, v.v.list[i]);
+      yajl_gen_array_close(g);
+      break;
+    }
   }
 }
 
@@ -275,7 +260,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     len = 0;
 
     if (done) {
-      if (stat != yajl_status_ok && stat != yajl_status_insufficient_data)
+      if (stat != yajl_status_ok)
 	pack = make_error_pack(E_INVARG);
       else
 	pack = make_var_pack(top->v);
@@ -283,6 +268,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
   }
 
   yajl_free(hand);
+
   free_var(arglist);
   return pack;
 }
@@ -292,25 +278,23 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 {
   yajl_gen g;
   yajl_gen_config cfg = { 0, "" };
+  const unsigned char *buf;
+  unsigned int len;
+  Var json;
+  package pack;
 
   g = yajl_gen_alloc(&cfg, NULL);
 
-  Var v = arglist.v.list[1];
+  generate(g, arglist.v.list[1]);
 
-  foobar(g, v);
-
-  const unsigned char * buf;
-  unsigned int len;
   yajl_gen_get_buf(g, &buf, &len);
 
-  Var json;
   json.type = TYPE_STR;
   json.v.str = str_dup(buf);
 
-  package pack = make_var_pack(json);
+  pack = make_var_pack(json);
 
   yajl_gen_clear(g);
-
   yajl_gen_free(g);
 
   free_var(arglist);
