@@ -104,6 +104,8 @@ new_connection_info_struct()
 static struct connection_info_struct *
 find_connection_info_struct(Conid id)
 {
+  if (con_info_head.prev == NULL || con_info_head.next == NULL)
+    return NULL;
   if (con_info_head.prev == &con_info_head || con_info_head.next == &con_info_head)
     return NULL;
 
