@@ -360,7 +360,7 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
   Conid id = arglist.v.list[1].v.num;
   const char *opt = arglist.v.list[2].v.str;
 
-  if (0 != strcmp(opt, "headers") && 0 != strcmp(opt, "cookies") && 0 != strcmp(opt, "parameters") && 0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
+  if (0 != strcmp(opt, "headers") && 0 != strcmp(opt, "cookies") && 0 != strcmp(opt, "path") && 0 != strcmp(opt, "query") && 0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
     free_var(arglist);
     return make_error_pack(E_INVARG);
   }
@@ -384,9 +384,41 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return make_var_pack(r);
   }
+  /*
   else if (con_info && 0 == strcmp(opt, "parameters")) {
     Var r = new_list(0);
     MHD_get_connection_values(con_info->connection, MHD_GET_ARGUMENT_KIND, iterator_callback, (void *)&r);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  */
+  else if (con_info && 0 == strcmp(opt, "path")) {
+    char *uri = con_info->request_uri ? con_info->request_uri : "";
+    int n = strlen(uri);
+    char buffer[n + 1];
+    int i;
+    for (i = 0; uri[i] && '?' != uri[i]; i++)
+      ;
+    strncpy(buffer, uri, i);
+    buffer[i] = 0;
+    Var r;
+    r.type = TYPE_STR;
+    r.v.str = str_dup(buffer);
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "query")) {
+    char *uri = con_info->request_uri ? con_info->request_uri : "";
+    int n = strlen(uri);
+    char buffer[n + 1];
+    int i;
+    for (i = 0; uri[i] && '?' != uri[i]; i++)
+      ;
+    strcpy(buffer, uri + i + 1);
+    buffer[n - i] = 0;
+    Var r;
+    r.type = TYPE_STR;
+    r.v.str = str_dup(buffer);
     free_var(arglist);
     return make_var_pack(r);
   }
