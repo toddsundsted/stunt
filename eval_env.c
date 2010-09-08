@@ -97,7 +97,7 @@ fill_in_rt_consts(Var * env, DB_Version version)
     }
 
     if (version >= DBV_Hash) {
-	v.v.num = (int) TYPE_HASH;
+	v.v.num = (int) _TYPE_HASH;
 	env[SLOT_HASH] = var_ref(v);
     }
 }
