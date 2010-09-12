@@ -1307,7 +1307,7 @@ do {    						    	\
 		    free_var(index);
 		    free_var(list);
 		    if (!success) {
-			PUSH_ERROR(E_PROPNF);
+			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH_REF(value);
 		    }
@@ -1348,7 +1348,7 @@ do {    						    	\
 
 		    success = hashlookup(list, index, &value);
 		    if (!success) {
-			PUSH_ERROR(E_PROPNF);
+			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH(var_ref(value));
 		    }
