@@ -26,7 +26,6 @@
 #include "hash.h"
 #include "list.h"
 #include "log.h"
-#include "md5.h"
 #include "options.h"
 #include "pattern.h"
 #include "random.h"
