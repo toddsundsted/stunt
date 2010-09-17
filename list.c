@@ -1069,6 +1069,95 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static const char *
+hmac_sha256_bytes(const char *message, int message_length, const char *key, int key_length)
+{
+    unsigned char result[32];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
+    const char *answer = hex;
+
+    hmac_sha256(key, key_length, message, message_length, result, 32);
+
+    for (i = 0; i < 32; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static package
+bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    int bytes_length;
+    char *bytes = str_dup(binary_to_raw_bytes(arglist.v.list[1].v.str, &bytes_length));
+    int key_length;
+    char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
+
+    if (!bytes || !key) {
+	if (bytes) myfree(bytes, M_STRING);
+	if (key) myfree(key, M_STRING);
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
+    r.type = TYPE_STR;
+    r.v.str = hmac_sha256_bytes(bytes, bytes_length, key, key_length);
+
+    myfree(bytes, M_STRING);
+    myfree(key, M_STRING);
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
+static package
+bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    const char *str = arglist.v.list[1].v.str;
+    int str_length = strlen(str);
+    int key_length;
+    char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
+
+    if (!key) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
+    r.type = TYPE_STR;
+    r.v.str = hmac_sha256_bytes(str, str_length, key, key_length);
+
+    myfree(key, M_STRING);
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
+static package
+bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    char *lit = str_dup(value_to_literal(arglist.v.list[1]));
+    int lit_length = strlen(lit);
+    int key_length;
+    char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
+
+    if (!key) {
+	myfree(lit, M_STRING);
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
+    r.type = TYPE_STR;
+    r.v.str = hmac_sha256_bytes(lit, lit_length, key, key_length);
+
+    myfree(lit, M_STRING);
+    myfree(key, M_STRING);
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
 static package
 bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 {
@@ -1195,6 +1284,10 @@ register_list(void)
     register_function("binary_hash", 1, 2, bf_binary_hash, TYPE_STR, TYPE_STR);
     register_function("string_hash", 1, 2, bf_string_hash, TYPE_STR, TYPE_STR);
     register_function("value_hash", 1, 2, bf_value_hash, TYPE_ANY, TYPE_STR);
+
+    register_function("binary_hmac", 2, 2, bf_binary_hmac, TYPE_STR, TYPE_STR);
+    register_function("string_hmac", 2, 2, bf_string_hmac, TYPE_STR, TYPE_STR);
+    register_function("value_hmac", 2, 2, bf_value_hmac, TYPE_ANY, TYPE_STR);
 
     register_function("decode_binary", 1, 2, bf_decode_binary,
 		      TYPE_STR, TYPE_ANY);
