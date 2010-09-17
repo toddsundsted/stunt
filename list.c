@@ -31,6 +31,8 @@
 #include "pattern.h"
 #include "random.h"
 #include "ref_count.h"
+#include "sha1.h"
+#include "sha256.h"
 #include "streams.h"
 #include "storage.h"
 #include "structures.h"
@@ -1015,7 +1017,7 @@ bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static const char *
-hash_bytes(const char *input, int length)
+md5_hash_bytes(const char *input, int length)
 {
     context_md5_t context;
     unsigned char result[16];
@@ -1034,18 +1036,76 @@ hash_bytes(const char *input, int length)
     return answer;
 }
 
+static const char *
+sha1_hash_bytes(const char *input, int length)
+{
+    context_sha1_t context;
+    unsigned char result[20];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890");
+    const char *answer = hex;
+
+    SHA1Init(&context);
+    SHA1Update(&context, (unsigned char *) input, length);
+    SHA1Final(result, &context);
+    for (i = 0; i < 20; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static const char *
+sha256_hash_bytes(const char *input, int length)
+{
+    context_sha256_t context;
+    unsigned char result[32];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
+    const char *answer = hex;
+
+    sha256_starts(&context);
+    sha256_update(&context, (unsigned char *) input, length);
+    sha256_finish(&context, result);
+    for (i = 0; i < 32; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
 static package
 bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     int length;
     const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
+    int nargs = arglist.v.list[0].v.num;
+
+    if (!bytes) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+    if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	r.type = TYPE_STR;
+	r.v.str = sha256_hash_bytes(bytes, length);
+    }
+    else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	r.type = TYPE_STR;
+	r.v.str = sha1_hash_bytes(bytes, length);
+    }
+    else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	r.type = TYPE_STR;
+	r.v.str = md5_hash_bytes(bytes, length);
+    }
+    else {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
 
     free_var(arglist);
-    if (!bytes)
-	return make_error_pack(E_INVARG);
-    r.type = TYPE_STR;
-    r.v.str = hash_bytes(bytes, length);
     return make_var_pack(r);
 }
 
@@ -1054,9 +1114,25 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     const char *str = arglist.v.list[1].v.str;
+    int nargs = arglist.v.list[0].v.num;
 
-    r.type = TYPE_STR;
-    r.v.str = hash_bytes(str, memo_strlen(str));
+    if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	r.type = TYPE_STR;
+	r.v.str = sha256_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	r.type = TYPE_STR;
+	r.v.str = sha1_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	r.type = TYPE_STR;
+	r.v.str = md5_hash_bytes(str, memo_strlen(str));
+    }
+    else {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1069,16 +1145,34 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 
     TRY_STREAM {
 	Var r;
+	int nargs = arglist.v.list[0].v.num;
 
 	unparse_value(s, arglist.v.list[1]);
-	r.type = TYPE_STR;
-	r.v.str = hash_bytes(stream_contents(s), stream_length(s));
-	p = make_var_pack(r);
+
+	if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha256_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha1_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	    r.type = TYPE_STR;
+	    r.v.str = md5_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else {
+	    p = make_error_pack(E_INVARG);
+	}
     }
     EXCEPT (stream_too_big) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
+
     free_stream(s);
     free_var(arglist);
     return p;
@@ -1217,9 +1311,11 @@ void
 register_list(void)
 {
     register_function("value_bytes", 1, 1, bf_value_bytes, TYPE_ANY);
-    register_function("value_hash", 1, 1, bf_value_hash, TYPE_ANY);
-    register_function("string_hash", 1, 1, bf_string_hash, TYPE_STR);
-    register_function("binary_hash", 1, 1, bf_binary_hash, TYPE_STR);
+
+    register_function("binary_hash", 1, 2, bf_binary_hash, TYPE_STR, TYPE_STR);
+    register_function("string_hash", 1, 2, bf_string_hash, TYPE_STR, TYPE_STR);
+    register_function("value_hash", 1, 2, bf_value_hash, TYPE_ANY, TYPE_STR);
+
     register_function("decode_binary", 1, 2, bf_decode_binary,
 		      TYPE_STR, TYPE_ANY);
     register_function("encode_binary", 0, -1, bf_encode_binary);
