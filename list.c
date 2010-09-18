@@ -22,6 +22,7 @@
 #include "config.h"
 #include "exceptions.h"
 #include "functions.h"
+#include "hmac_sha2.h"
 #include "list.h"
 #include "log.h"
 #include "md5.h"
@@ -1097,8 +1098,8 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
 
     if (!bytes || !key) {
-	if (bytes) myfree(bytes, M_STRING);
-	if (key) myfree(key, M_STRING);
+	if (bytes) free_str(bytes);
+	if (key) free_str(key);
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
@@ -1106,8 +1107,8 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = hmac_sha256_bytes(bytes, bytes_length, key, key_length);
 
-    myfree(bytes, M_STRING);
-    myfree(key, M_STRING);
+    free_str(bytes);
+    free_str(key);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1129,7 +1130,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = hmac_sha256_bytes(str, str_length, key, key_length);
 
-    myfree(key, M_STRING);
+    free_str(key);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1144,7 +1145,7 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
 
     if (!key) {
-	myfree(lit, M_STRING);
+	free_str(lit);
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
@@ -1152,8 +1153,8 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     r.type = TYPE_STR;
     r.v.str = hmac_sha256_bytes(lit, lit_length, key, key_length);
 
-    myfree(lit, M_STRING);
-    myfree(key, M_STRING);
+    free_str(lit);
+    free_str(key);
     free_var(arglist);
     return make_var_pack(r);
 }
