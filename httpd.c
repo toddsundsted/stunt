@@ -56,7 +56,7 @@ remove_connection_info_struct(struct connection_info_struct *con_info)
     if (con_info->response_location) free_str(con_info->response_location);
     if (con_info->response_type) free_str(con_info->response_type);
     if (con_info->response_body) free_str(con_info->response_body);
-    free(con_info);
+    myfree(con_info, M_HTTP_CONNECTION);
   }
 }
 
@@ -79,7 +79,7 @@ static struct connection_info_struct *
 new_connection_info_struct()
 {
   static Conid max_id = 0;
-  struct connection_info_struct *con_info = malloc(sizeof(struct connection_info_struct));
+  struct connection_info_struct *con_info = mymalloc(sizeof(struct connection_info_struct), M_HTTP_CONNECTION);
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
   con_info->connection = NULL;

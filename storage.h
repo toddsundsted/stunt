@@ -37,6 +37,8 @@ typedef enum Memory_Type {
 
     M_HASH,
 
+    M_HTTP_CONNECTION,
+
     Sizeof_Memory_Type
 
 } Memory_Type;
