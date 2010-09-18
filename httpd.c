@@ -35,6 +35,7 @@
 #include "config.h"
 #include "execute.h"
 #include "functions.h"
+#include "hash.h"
 #include "httpd.h"
 #include "list.h"
 #include "log.h"
@@ -147,13 +148,13 @@ find_connection_info_struct(Conid id)
 static int
 iterator_callback(void *cls, enum MHD_ValueKind kind, const char *key, const char *value)
 {
-  Var h = new_list(2);
-  h.v.list[1].type = TYPE_STR;
-  h.v.list[1].v.str = str_dup(raw_bytes_to_binary(key, strlen(key)));
-  h.v.list[2].type = TYPE_STR;
-  h.v.list[2].v.str = str_dup(raw_bytes_to_binary(value, strlen(value)));
-  Var *v = (Var *)cls;
-  *v = listappend(*v, h);
+  Var *h = (Var *)cls;
+  Var k, v;
+  k.type = TYPE_STR;
+  k.v.str = str_dup(raw_bytes_to_binary(key, strlen(key)));
+  v.type = TYPE_STR;
+  v.v.str = str_dup(raw_bytes_to_binary(value, strlen(value)));
+  hashinsert(*h, k, v);
   return MHD_YES;
 }
 
@@ -397,13 +398,13 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
   struct connection_info_struct *con_info = find_connection_info_struct(id);
 
   if (con_info && 0 == strcmp(opt, "headers")) {
-    Var r = new_list(0);
+    Var r = new_hash();
     MHD_get_connection_values(con_info->connection, MHD_HEADER_KIND, iterator_callback, (void *)&r);
     free_var(arglist);
     return make_var_pack(r);
   }
   else if (con_info && 0 == strcmp(opt, "cookies")) {
-    Var r = new_list(0);
+    Var r = new_hash();
     MHD_get_connection_values(con_info->connection, MHD_COOKIE_KIND, iterator_callback, (void *)&r);
     free_var(arglist);
     return make_var_pack(r);
