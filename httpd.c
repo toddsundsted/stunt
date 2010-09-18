@@ -408,14 +408,6 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return make_var_pack(r);
   }
-  /*
-  else if (con_info && 0 == strcmp(opt, "parameters")) {
-    Var r = new_list(0);
-    MHD_get_connection_values(con_info->connection, MHD_GET_ARGUMENT_KIND, iterator_callback, (void *)&r);
-    free_var(arglist);
-    return make_var_pack(r);
-  }
-  */
   else if (con_info && 0 == strcmp(opt, "path")) {
     char *uri = con_info->request_uri ? con_info->request_uri : "";
     int n = strlen(uri);
