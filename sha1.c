@@ -14,6 +14,8 @@
 
 /* $Id: sha1.c 49 2008-03-05 02:31:38Z jessekornblum $ */
 
+#include <string.h>
+
 #include "sha1.h"
 
 #define TRUE   1
