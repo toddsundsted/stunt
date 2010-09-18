@@ -15,8 +15,6 @@
 #include "log.h"
 #include "utils.h"
 
-#include "base64.h"
-
 #include "httpd.h"
 
 typedef unsigned32 Conid;
