@@ -29,8 +29,8 @@ struct connection_info_struct
   char *request_body;
   size_t request_body_length;
   int response_code;
-  char *response_location;
-  char *response_type;
+  const char *response_location;
+  const char *response_type;
   char *response_body;
   size_t response_body_length;
   struct connection_info_struct *prev;
@@ -49,13 +49,13 @@ remove_connection_info_struct(struct connection_info_struct *con_info)
   if (con_info) {
     con_info->prev->next = con_info->next;
     con_info->next->prev = con_info->prev;
-    if (con_info->request_method) free(con_info->request_method);
-    if (con_info->request_uri) free(con_info->request_uri);
-    if (con_info->request_type) free(con_info->request_type);
-    if (con_info->request_body) free(con_info->request_body);
-    if (con_info->response_location) free(con_info->response_location);
-    if (con_info->response_type) free(con_info->response_type);
-    if (con_info->response_body) free(con_info->response_body);
+    if (con_info->request_method) free_str(con_info->request_method);
+    if (con_info->request_uri) free_str(con_info->request_uri);
+    if (con_info->request_type) free_str(con_info->request_type);
+    if (con_info->request_body) free_str(con_info->request_body);
+    if (con_info->response_location) free_str(con_info->response_location);
+    if (con_info->response_type) free_str(con_info->response_type);
+    if (con_info->response_body) free_str(con_info->response_body);
     free(con_info);
   }
 }
@@ -156,7 +156,7 @@ request_started(void *cls, const char *uri)
 {
   struct connection_info_struct *con_info = new_connection_info_struct();
 
-  con_info->request_uri = strdup(raw_bytes_to_binary(uri, strlen(uri)));
+  con_info->request_uri = str_dup(raw_bytes_to_binary(uri, strlen(uri)));
 
   return con_info;
 }
@@ -182,23 +182,23 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
   if (NULL == con_info->connection) {
     con_info->connection = connection;
-    con_info->request_method = strdup(raw_bytes_to_binary(method, strlen(method)));
+    con_info->request_method = str_dup(raw_bytes_to_binary(method, strlen(method)));
     oklog("HTTPD: [%d] %s %s\n", con_info->id, con_info->request_method, con_info->request_uri);
     return MHD_YES;
   }
 
   if (0 != *upload_data_size) {
     if (NULL != con_info->request_body) {
-      char *old = con_info->request_body;
-      size_t len = con_info->request_body_length;
-      con_info->request_body = malloc(con_info->request_body_length + *upload_data_size);
+      char *body = con_info->request_body;
+      size_t body_length = con_info->request_body_length;
+      con_info->request_body = mymalloc(con_info->request_body_length + *upload_data_size, M_STRING);
       con_info->request_body_length = con_info->request_body_length + *upload_data_size;
-      memcpy(con_info->request_body, old, len);
-      memcpy(con_info->request_body + len, upload_data, *upload_data_size);
-      free (old);
+      memcpy(con_info->request_body, body, body_length);
+      memcpy(con_info->request_body + body_length, upload_data, *upload_data_size);
+      free_str(body);
     }
     else {
-      con_info->request_body = malloc(*upload_data_size);
+      con_info->request_body = mymalloc(*upload_data_size, M_STRING);
       con_info->request_body_length = *upload_data_size;
       memcpy(con_info->request_body, upload_data, *upload_data_size);
     }
@@ -211,7 +211,7 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
   content_type = content_type ? raw_bytes_to_binary(content_type, strlen(content_type)) : "";
 
-  con_info->request_type = strdup(content_type);
+  con_info->request_type = str_dup(content_type);
 
   int i;
   Var call_list = new_list(0);
@@ -421,40 +421,30 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
   }
   else if (con_info && 0 == strcmp(opt, "method")) {
-    char *method = con_info->request_method ? con_info->request_method : "";
     Var r;
     r.type = TYPE_STR;
-    r.v.str = str_dup(method);
+    r.v.str = con_info->request_method ? str_ref(con_info->request_method) : str_dup("");
     free_var(arglist);
     return make_var_pack(r);
   }
   else if (con_info && 0 == strcmp(opt, "uri")) {
-    char *uri = con_info->request_uri ? con_info->request_uri : "";
     Var r;
     r.type = TYPE_STR;
-    r.v.str = str_dup(uri);
+    r.v.str = con_info->request_uri ? str_ref(con_info->request_uri) : str_dup("");
     free_var(arglist);
     return make_var_pack(r);
   }
   else if (con_info && 0 == strcmp(opt, "type")) {
-    char *type = con_info->request_type ? con_info->request_type : "";
     Var r;
     r.type = TYPE_STR;
-    r.v.str = str_dup(type);
-    free_var(arglist);
-    return make_var_pack(r);
-  }
-  else if (con_info && 0 == strcmp(opt, "body") && con_info->request_body) {
-    Var r;
-    r.type = TYPE_STR;
-    r.v.str = str_dup(raw_bytes_to_binary(con_info->request_body, con_info->request_body_length));
+    r.v.str = con_info->request_type ? str_ref(con_info->request_type) : str_dup("");
     free_var(arglist);
     return make_var_pack(r);
   }
   else if (con_info && 0 == strcmp(opt, "body")) {
     Var r;
     r.type = TYPE_STR;
-    r.v.str = str_dup("");
+    r.v.str = con_info->request_body ? str_dup(raw_bytes_to_binary(con_info->request_body, con_info->request_body_length)) : str_dup("");
     free_var(arglist);
     return make_var_pack(r);
   }
@@ -488,24 +478,24 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     return no_var_pack();
   }
   else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR) {
-    if (con_info->response_location) free(con_info->response_location);
-    con_info->response_location = strdup(arglist.v.list[3].v.str);
+    if (con_info->response_location) free_str(con_info->response_location);
+    con_info->response_location = str_ref(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
   else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR) {
-    if (con_info->response_type) free(con_info->response_type);
-    con_info->response_type = strdup(arglist.v.list[3].v.str);
+    if (con_info->response_type) free_str(con_info->response_type);
+    con_info->response_type = str_ref(arglist.v.list[3].v.str);
     free_var(arglist);
     return no_var_pack();
   }
   else if (con_info && 0 == strcmp(opt, "body") && arglist.v.list[3].type == TYPE_STR) {
-    if (con_info->response_body) free(con_info->response_body);
-    int len;
-    const char *buff = binary_to_raw_bytes(arglist.v.list[3].v.str, &len);
-    con_info->response_body = malloc(len);
-    con_info->response_body_length = len;
-    memcpy(con_info->response_body, buff, len);
+    if (con_info->response_body) free_str(con_info->response_body);
+    int length;
+    const char *buffer = binary_to_raw_bytes(arglist.v.list[3].v.str, &length);
+    con_info->response_body = mymalloc(length, M_STRING);
+    con_info->response_body_length = length;
+    memcpy(con_info->response_body, buffer, length);
     free_var(arglist);
     return no_var_pack();
   }
