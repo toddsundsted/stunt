@@ -56,8 +56,7 @@ struct connection_info_struct
   char *request_body;
   size_t request_body_length;
   int response_code;
-  const char *response_location;
-  const char *response_type;
+  Var response_headers;
   char *response_body;
   size_t response_body_length;
   struct connection_info_struct *prev;
@@ -80,8 +79,7 @@ remove_connection_info_struct(struct connection_info_struct *con_info)
     if (con_info->request_uri) free_str(con_info->request_uri);
     if (con_info->request_type) free_str(con_info->request_type);
     if (con_info->request_body) free_str(con_info->request_body);
-    if (con_info->response_location) free_str(con_info->response_location);
-    if (con_info->response_type) free_str(con_info->response_type);
+    free_var(con_info->response_headers);
     if (con_info->response_body) free_str(con_info->response_body);
     myfree(con_info, M_HTTP_CONNECTION);
   }
@@ -116,8 +114,7 @@ new_connection_info_struct()
   con_info->request_body = NULL;
   con_info->request_body_length = 0;
   con_info->response_code = 0;
-  con_info->response_location = NULL;
-  con_info->response_type = NULL;
+  con_info->response_headers = new_hash();
   con_info->response_body = NULL;
   con_info->response_body_length = 0;
   con_info->prev = NULL;
@@ -156,6 +153,14 @@ iterator_callback(void *cls, enum MHD_ValueKind kind, const char *key, const cha
   v.v.str = str_dup(raw_bytes_to_binary(value, strlen(value)));
   hashinsert(*h, k, v);
   return MHD_YES;
+}
+
+static void
+hash_headers_callback(Var key, Var value, void *data, int32 first)
+{
+  struct MHD_Response *response = (struct MHD_Response *)data;
+
+  MHD_add_response_header(response, key.v.str, value.v.str);
 }
 
 static void
@@ -293,13 +298,7 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
       MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32 * 1024, &response_body_reader, con_info, &response_body_free_callback); 
   }
 
-  if (con_info->response_location) {
-    MHD_add_response_header(response, "Location", con_info->response_location);
-  }
-
-  if (con_info->response_type) {
-    MHD_add_response_header(response, "Content-Type", con_info->response_type);
-  }
+  hashforeach(con_info->response_headers, hash_headers_callback, response);
 
   int code = MHD_HTTP_OK;
 
@@ -382,18 +381,13 @@ bf_stop_httpd_server(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  Conid id = arglist.v.list[1].v.num;
-  const char *opt = arglist.v.list[2].v.str;
-
-  if (0 != strcmp(opt, "headers") && 0 != strcmp(opt, "cookies") && 0 != strcmp(opt, "path") && 0 != strcmp(opt, "query") && 0 != strcmp(opt, "method") && 0 != strcmp(opt, "uri") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
-    free_var(arglist);
-    return make_error_pack(E_INVARG);
-  }
-
   if (!is_wizard(progr)) {
     free_var(arglist);
     return make_error_pack(E_PERM);
   }
+
+  Conid id = arglist.v.list[1].v.num;
+  const char *opt = arglist.v.list[2].v.str;
 
   struct connection_info_struct *con_info = find_connection_info_struct(id);
 
@@ -476,12 +470,15 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_response(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  Conid id = arglist.v.list[1].v.num;
-  const char *opt = arglist.v.list[2].v.str;
-
-  if (0 != strcmp(opt, "code") && 0 != strcmp(opt, "location") && 0 != strcmp(opt, "type") && 0 != strcmp(opt, "body")) {
-    free_var(arglist);
-    return make_error_pack(E_INVARG);
+  static Var location;
+  static Var type;
+  static int initialized = 0;
+  if (!initialized) {
+    initialized = 1;
+    location.type = TYPE_STR;
+    location.v.str = str_dup("Location");
+    type.type = TYPE_STR;
+    type.v.str = str_dup("Content-Type");
   }
 
   if (!is_wizard(progr)) {
@@ -489,26 +486,32 @@ bf_response(Var arglist, Byte next, void *vdata, Objid progr)
     return make_error_pack(E_PERM);
   }
 
+  Conid id = arglist.v.list[1].v.num;
+  const char *opt = arglist.v.list[2].v.str;
+
   struct connection_info_struct *con_info = find_connection_info_struct(id);
 
-  if (con_info && 0 == strcmp(opt, "code") && arglist.v.list[3].type == TYPE_INT) {
+  if (con_info && 0 == strcmp(opt, "code") && 3 == arglist.v.list[0].v.num && TYPE_INT == arglist.v.list[3].type) {
     con_info->response_code = arglist.v.list[3].v.num;
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "location") && arglist.v.list[3].type == TYPE_STR) {
-    if (con_info->response_location) free_str(con_info->response_location);
-    con_info->response_location = str_ref(arglist.v.list[3].v.str);
+  else if (con_info && 0 == strcmp(opt, "header") && 4 == arglist.v.list[0].v.num && TYPE_STR == arglist.v.list[3].type && TYPE_STR == arglist.v.list[4].type) {
+    hashinsert(con_info->response_headers, var_ref(arglist.v.list[3]), var_ref(arglist.v.list[4]));
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "type") && arglist.v.list[3].type == TYPE_STR) {
-    if (con_info->response_type) free_str(con_info->response_type);
-    con_info->response_type = str_ref(arglist.v.list[3].v.str);
+  else if (con_info && 0 == strcmp(opt, "location") && 3 == arglist.v.list[0].v.num && TYPE_STR == arglist.v.list[3].type) {
+    hashinsert(con_info->response_headers, var_ref(location), var_ref(arglist.v.list[3]));
     free_var(arglist);
     return no_var_pack();
   }
-  else if (con_info && 0 == strcmp(opt, "body") && arglist.v.list[3].type == TYPE_STR) {
+  else if (con_info && 0 == strcmp(opt, "type") && 3 == arglist.v.list[0].v.num && TYPE_STR == arglist.v.list[3].type) {
+    hashinsert(con_info->response_headers, var_ref(type), var_ref(arglist.v.list[3]));
+    free_var(arglist);
+    return no_var_pack();
+  }
+  else if (con_info && 0 == strcmp(opt, "body") && 3 == arglist.v.list[0].v.num && TYPE_STR == arglist.v.list[3].type) {
     if (con_info->response_body) free_str(con_info->response_body);
     int length;
     const char *buffer = binary_to_raw_bytes(arglist.v.list[3].v.str, &length);
@@ -530,5 +533,5 @@ register_httpd(void)
   register_function("start_httpd_server", 2, 2, bf_start_httpd_server, TYPE_INT, TYPE_LIST);
   register_function("stop_httpd_server", 0, 0, bf_stop_httpd_server);
   register_function("request", 2, 2, bf_request, TYPE_INT, TYPE_STR);
-  register_function("response", 3, 3, bf_response, TYPE_INT, TYPE_STR, TYPE_ANY);
+  register_function("response", 3, 4, bf_response, TYPE_INT, TYPE_STR, TYPE_ANY, TYPE_ANY);
 }
