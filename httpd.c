@@ -279,12 +279,13 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
     enum outcome outcome = run_server_task(player, receiver, verb, args, "", &result);
 
-    free_str(verb);
-
-    if (OUTCOME_DONE == outcome) {
+    if (OUTCOME_DONE == outcome && is_true(result)) {
       free_var(call_list);
-      call_list = result;
+      call_list = var_ref(result);
     }
+
+    free_var(result);
+    free_str(verb);
   }
 
   free_var(call_list);
