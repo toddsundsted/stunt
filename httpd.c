@@ -245,19 +245,13 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
   con_info->request_type = str_dup(content_type);
 
-  int i;
-  Var call_list = new_list(0);
-  for (i = 1; i <= handler_list.v.list[0].v.num; i++) {
-    call_list = listappend(call_list, var_ref(handler_list.v.list[i]));
-  }
+  Var call_list = var_ref(handler_list);
 
-  enum outcome last_outcome = OUTCOME_DONE;
-
-  while (call_list.type == TYPE_LIST &&
-	 /* must be a list with at least one member */
+  while (/* list must have at least one sub-list */
+	 call_list.type == TYPE_LIST &&
 	 call_list.v.list[0].type == TYPE_INT && call_list.v.list[0].v.num > 0 &&
+ 	 /* sub-list must have at least three members: TYPE_OBJ (player), TYPE_OBJ (receiver), TYPE_STR (verb) */
 	 call_list.v.list[1].type == TYPE_LIST &&
-	 /* sub-list must have at least three members */
 	 call_list.v.list[1].v.list[0].type == TYPE_INT && call_list.v.list[1].v.list[0].v.num > 2 &&
 	 call_list.v.list[1].v.list[1].type == TYPE_OBJ &&
 	 call_list.v.list[1].v.list[2].type == TYPE_OBJ &&
@@ -265,31 +259,45 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
     Objid player = call_list.v.list[1].v.list[1].v.obj;
     Objid receiver = call_list.v.list[1].v.list[2].v.obj;
     const char *verb = str_ref(call_list.v.list[1].v.list[3].v.str);
-    Var first, args;
+
+    Var args;
 
     args = new_list(1);
     args.v.list[1].type = TYPE_INT;
     args.v.list[1].v.num = con_info->id;
 
-    first = var_ref(call_list.v.list[1]);
-    call_list = listdelete(call_list, 1);
-    args = listappend(args, call_list);
-    args = listappend(args, first);
+    Var temp;
 
-    last_outcome = run_server_task(player, receiver, verb, args, "", &call_list);
+    temp = var_ref(call_list.v.list[1]);
+    call_list = listdelete(call_list, 1);
+    args = listappend(args, var_ref(call_list));
+    args = listappend(args, temp);
+
+    Var result;
+
+    result = zero; /* standard procedure before run_server_task in case outcome is not OUTCOME_DONE */
+
+    enum outcome outcome = run_server_task(player, receiver, verb, args, "", &result);
 
     free_str(verb);
 
-    if (last_outcome != OUTCOME_DONE)
-      break;
+    if (OUTCOME_DONE == outcome) {
+      free_var(call_list);
+      call_list = result;
+    }
   }
 
-  if (last_outcome == OUTCOME_DONE)
-    free_var(call_list);
+  free_var(call_list);
+
+  int code = MHD_HTTP_OK;
 
   struct MHD_Response *response;
 
-  if (last_outcome == OUTCOME_DONE && con_info->response_body) {
+  if (con_info->response_code) {
+    code = con_info->response_code;
+  }
+
+  if (con_info->response_body) {
     response =
       MHD_create_response_from_data(con_info->response_body_length, con_info->response_body, MHD_NO, MHD_NO);
   }
@@ -299,12 +307,6 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
   }
 
   hashforeach(con_info->response_headers, hash_headers_callback, response);
-
-  int code = MHD_HTTP_OK;
-
-  if (con_info->response_code) {
-    code = con_info->response_code;
-  }
 
   int ret = MHD_queue_response (connection, code, response);
   MHD_destroy_response (response);
