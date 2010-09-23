@@ -1092,10 +1092,18 @@ static package
 bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+
     int bytes_length;
-    char *bytes = str_dup(binary_to_raw_bytes(arglist.v.list[1].v.str, &bytes_length));
+    char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &bytes_length);
+    char *bytes_new = mymalloc(bytes_length, M_STRING);
+    memcpy(bytes_new, bytes, bytes_length);
+    bytes = bytes_new;
+
     int key_length;
-    char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
+    char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
+    char *key_new = mymalloc(key_length, M_STRING);
+    memcpy(key_new, key, key_length);
+    key = key_new;
 
     if (!bytes || !key) {
 	if (bytes) free_str(bytes);
@@ -1117,10 +1125,15 @@ static package
 bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+
     const char *str = arglist.v.list[1].v.str;
     int str_length = strlen(str);
+
     int key_length;
-    char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
+    char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
+    char *key_new = mymalloc(key_length, M_STRING);
+    memcpy(key_new, key, key_length);
+    key = key_new;
 
     if (!key) {
 	free_var(arglist);
@@ -1139,10 +1152,15 @@ static package
 bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+
     char *lit = str_dup(value_to_literal(arglist.v.list[1]));
     int lit_length = strlen(lit);
+
     int key_length;
-    char *key = str_dup(binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length));
+    char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
+    char *key_new = mymalloc(key_length, M_STRING);
+    memcpy(key_new, key, key_length);
+    key = key_new;
 
     if (!key) {
 	free_str(lit);
