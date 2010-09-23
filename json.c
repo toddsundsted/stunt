@@ -73,13 +73,13 @@ pop(struct stack_item **top) {
 static int
 handle_null(void * ctx)
 {
-  return 1;
+  return 0;
 }
 
 static int
 handle_boolean(void * ctx, int boolean)
 {
-  return 1;
+  return 0;
 }
 
 static int
@@ -172,8 +172,8 @@ handle_end_array(void * ctx)
 }
 
 static yajl_callbacks callbacks = {
-    NULL,
-    NULL,
+    handle_null,
+    handle_boolean,
     handle_integer,
     handle_float,
     NULL,
@@ -200,6 +200,9 @@ static void
 generate(yajl_gen g, Var v)
 {
   switch (v.type) {
+    case TYPE_OBJ:
+      yajl_gen_integer(g, v.v.obj);
+      break;
     case TYPE_INT:
       yajl_gen_integer(g, v.v.num);
       break;
