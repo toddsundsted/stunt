@@ -97,13 +97,10 @@ exec_waiter_enumerator(task_closure closure, void *data)
 }
 
 static void
-write_all(int fd, const char *buffer)
+write_all(int fd, const char *buffer, size_t length)
 {
-  size_t length;
-  ssize_t count;
-  length = strlen(buffer);
   while (length) {
-    count = write(fd, buffer, length);
+    ssize_t count = write(fd, buffer, length);
     buffer += count;
     length -= count;
   }
@@ -147,8 +144,8 @@ exec_waiter_suspender(vm the_vm, void *data)
 static package
 bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  /* The first argument must be a list of strings with at least one
-   * string (the command).
+  /* The first argument must be a list of strings.  The first string
+   * is the command.  The rest are arguments to the command.
    */
   int i;
   for (i = 1; i <= arglist.v.list[1].v.list[0].v.num; i++) {
@@ -163,8 +160,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
   }
   const char *args[i];
   for (i = 1; i <= arglist.v.list[1].v.list[0].v.num; i++) {
-    int len;
-    args[i - 1] = binary_to_raw_bytes(arglist.v.list[1].v.list[i].v.str, &len);
+    args[i - 1] = arglist.v.list[1].v.list[i].v.str;
   }
   args[i - 1] = NULL;
 
@@ -276,7 +272,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     close(pipeErr[1]);
     if (arglist.v.list[0].v.num > 1) {
       int len;
-      write_all(tw->in, binary_to_raw_bytes(arglist.v.list[2].v.str, &len));
+      write_all(tw->in, binary_to_raw_bytes(arglist.v.list[2].v.str, &len), len);
     }
     close(tw->in);
     free_var(arglist);
