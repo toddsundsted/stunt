@@ -32,6 +32,8 @@
 #include "platform.h"
 #include <microhttpd.h>
 
+#include "uthash.h"
+
 #include "config.h"
 #include "execute.h"
 #include "functions.h"
@@ -40,16 +42,26 @@
 #include "list.h"
 #include "log.h"
 #include "storage.h"
+#include "streams.h"
 #include "structures.h"
 #include "tasks.h"
 #include "utils.h"
 
 typedef unsigned32 Conid;
 
+struct form_body_struct {
+  char *key;
+  char *filename;
+  char *content_type;
+  Stream *data;
+  UT_hash_handle hh;
+};
+
 struct connection_info_struct
 {
   Conid id;
   struct MHD_Connection *connection;
+  struct MHD_PostProcessor *post_processor;
   char *request_method;
   char *request_uri;
   char *request_type;
@@ -59,6 +71,7 @@ struct connection_info_struct
   Var response_headers;
   char *response_body;
   size_t response_body_length;
+  struct form_body_struct *form_body;
   struct connection_info_struct *prev;
   struct connection_info_struct *next;
 };
@@ -81,7 +94,16 @@ remove_connection_info_struct(struct connection_info_struct *con_info)
     if (con_info->request_body) free_str(con_info->request_body);
     free_var(con_info->response_headers);
     if (con_info->response_body) free_str(con_info->response_body);
-    myfree(con_info, M_HTTP_CONNECTION);
+    struct form_body_struct *fb, *tmp;
+    HASH_FOREACH_SAFE(hh, con_info->form_body, fb, tmp) {
+      HASH_DELETE(hh, con_info->form_body, fb);
+      if (fb->key) free_str(fb->key);
+      if (fb->filename) free_str(fb->filename);
+      if (fb->content_type) free_str(fb->content_type);
+      if (fb->data) free_stream(fb->data);
+      myfree(fb, M_APPLICATION_DATA);
+    }
+    myfree(con_info, M_APPLICATION_DATA);
   }
 }
 
@@ -104,10 +126,11 @@ static struct connection_info_struct *
 new_connection_info_struct()
 {
   static Conid max_id = 0;
-  struct connection_info_struct *con_info = mymalloc(sizeof(struct connection_info_struct), M_HTTP_CONNECTION);
+  struct connection_info_struct *con_info = mymalloc(sizeof(struct connection_info_struct), M_APPLICATION_DATA);
   if (NULL == con_info) return NULL;
   con_info->id = ++max_id;
   con_info->connection = NULL;
+  con_info->post_processor = NULL;
   con_info->request_method = NULL;
   con_info->request_uri = NULL;
   con_info->request_type = NULL;
@@ -117,6 +140,7 @@ new_connection_info_struct()
   con_info->response_headers = new_hash();
   con_info->response_body = NULL;
   con_info->response_body_length = 0;
+  con_info->form_body = NULL;
   con_info->prev = NULL;
   con_info->next = NULL;
   add_connection_info_struct(con_info);
@@ -140,6 +164,29 @@ find_connection_info_struct(Conid id)
   }
 
   return NULL;
+}
+
+static int 
+iterate_form_body(void *cls, enum MHD_ValueKind kind, 
+		  const char *key, const char *filename, const char *content_type, const char *transfer_encoding, const char *data, 
+		  uint64_t off, size_t size)
+{
+  struct connection_info_struct *con_info = (struct connection_info_struct *)cls;
+  struct form_body_struct *fb;
+
+  HASH_FIND_STR(con_info->form_body, key, fb);
+
+  if (!fb) {
+    fb = mymalloc(sizeof(struct form_body_struct), M_APPLICATION_DATA);
+    fb->key = str_dup(raw_bytes_to_binary(key, strlen(key)));
+    fb->filename = filename ? str_dup(raw_bytes_to_binary(filename, strlen(filename))) : NULL;
+    fb->content_type = content_type ? str_dup(raw_bytes_to_binary(content_type, strlen(content_type))) : NULL;
+    fb->data = new_stream(size);
+    HASH_ADD_KEYPTR(hh, con_info->form_body, fb->key, strlen(fb->key), fb);
+  }
+  stream_add_string(fb->data, raw_bytes_to_binary(data, size));
+
+  return MHD_YES;
 }
 
 static int
@@ -214,6 +261,7 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
 
   if (NULL == con_info->connection) {
     con_info->connection = connection;
+    con_info->post_processor = MHD_create_post_processor(connection, 1024, iterate_form_body, con_info);
     con_info->request_method = str_dup(raw_bytes_to_binary(method, strlen(method)));
     oklog("HTTPD: [%d] %s %s\n", con_info->id, con_info->request_method, con_info->request_uri);
     return MHD_YES;
@@ -234,12 +282,16 @@ handle_http_request(void *cls, struct MHD_Connection *connection,
       con_info->request_body_length = *upload_data_size;
       memcpy(con_info->request_body, upload_data, *upload_data_size);
     }
+    if (con_info->post_processor) MHD_post_process(con_info->post_processor, upload_data, *upload_data_size);
     *upload_data_size = 0;
     return MHD_YES;
   }
+  else {
+    if (con_info->post_processor) MHD_destroy_post_processor(con_info->post_processor);
+    con_info->post_processor = NULL;
+  }
 
-  const char *content_type =
-    MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
+  const char *content_type = MHD_lookup_connection_value (connection, MHD_HEADER_KIND, "Content-Type");
 
   content_type = content_type ? raw_bytes_to_binary(content_type, strlen(content_type)) : "";
 
@@ -461,6 +513,33 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     r.type = TYPE_STR;
     r.v.str = con_info->request_body ? str_dup(raw_bytes_to_binary(con_info->request_body, con_info->request_body_length)) : str_dup("");
+    free_var(arglist);
+    return make_var_pack(r);
+  }
+  else if (con_info && 0 == strcmp(opt, "form")) {
+    Var r = new_hash();
+    struct form_body_struct *fb;
+    HASH_FOREACH(hh, con_info->form_body, fb) {
+      Var key, value;
+      key.type = TYPE_STR;
+      key.v.str = str_ref(fb->key);
+      if (fb->filename) {
+	value = new_list(3);
+	value.v.list[1].type = TYPE_STR;
+	value.v.list[1].v.str = str_ref(fb->filename);
+	value.v.list[2].type = TYPE_STR;
+	value.v.list[2].v.str = str_ref(fb->content_type);
+	value.v.list[3].type = TYPE_STR;
+	value.v.list[3].v.str = str_dup(stream_contents(fb->data));
+      }
+      else {
+	value.type = TYPE_STR;
+	value.v.str = str_dup(stream_contents(fb->data));
+      }
+      hashinsert(r, key, value);
+      free_var(key);
+      free_var(value);
+    }
     free_var(arglist);
     return make_var_pack(r);
   }

@@ -23,6 +23,8 @@
 #include "ref_count.h"
 
 typedef enum Memory_Type {
+    M_APPLICATION_DATA,
+
     M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,
     M_LIST, M_PREP, M_PROPDEF, M_OBJECT_TABLE, M_OBJECT, M_FLOAT,
     M_STREAM, M_NAMES, M_ENV, M_TASK, M_PATTERN,
@@ -36,8 +38,6 @@ typedef enum Memory_Type {
     M_INTERN_POINTER, M_INTERN_ENTRY, M_INTERN_HUNK,
 
     M_HASH,
-
-    M_HTTP_CONNECTION,
 
     Sizeof_Memory_Type
 
