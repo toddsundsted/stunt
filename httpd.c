@@ -523,7 +523,7 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
       Var key, value;
       key.type = TYPE_STR;
       key.v.str = str_ref(fb->key);
-      if (fb->filename) {
+      if (fb->filename && *fb->filename) {
 	value = new_list(3);
 	value.v.list[1].type = TYPE_STR;
 	value.v.list[1].v.str = str_ref(fb->filename);
