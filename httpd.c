@@ -179,8 +179,8 @@ iterate_form_body(void *cls, enum MHD_ValueKind kind,
   if (!fb) {
     fb = mymalloc(sizeof(struct form_body_struct), M_APPLICATION_DATA);
     fb->key = str_dup(raw_bytes_to_binary(key, strlen(key)));
-    fb->filename = filename ? str_dup(raw_bytes_to_binary(filename, strlen(filename))) : NULL;
-    fb->content_type = content_type ? str_dup(raw_bytes_to_binary(content_type, strlen(content_type))) : NULL;
+    fb->filename = filename ? str_dup(raw_bytes_to_binary(filename, strlen(filename))) : str_dup("");
+    fb->content_type = content_type ? str_dup(raw_bytes_to_binary(content_type, strlen(content_type))) : str_dup("");
     fb->data = new_stream(size);
     HASH_ADD_KEYPTR(hh, con_info->form_body, fb->key, strlen(fb->key), fb);
   }
