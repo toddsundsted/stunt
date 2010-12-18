@@ -70,6 +70,9 @@ pop(struct stack_item **top) {
 
 #define POP(stack) pop((struct stack_item **)stack)
 
+#define ARRAY_SENTINEL -1
+#define MAP_SENTINEL -2
+
 static int
 handle_null(void *ctx)
 {
@@ -139,9 +142,9 @@ static int
 handle_start_map(void *ctx)
 {
   Var k, v;
-  k.type = -2;
+  k.type = MAP_SENTINEL;
   PUSH(ctx, k);
-  v.type = -2;
+  v.type = MAP_SENTINEL;
   PUSH(ctx, v);
   return 1;
 }
@@ -151,7 +154,7 @@ handle_end_map(void *ctx)
 {
   Var list = new_hash();
   Var k, v;
-  for (v = POP(ctx), k = POP(ctx); (int)v.type > -1; v = POP(ctx), k = POP(ctx)) {
+  for (v = POP(ctx), k = POP(ctx); (int)v.type > MAP_SENTINEL && (int)k.type > MAP_SENTINEL; v = POP(ctx), k = POP(ctx)) {
     hashinsert(list, k, v);
   }
   PUSH(ctx, list);
@@ -162,7 +165,7 @@ static int
 handle_start_array(void *ctx)
 {
   Var v;
-  v.type = -1;
+  v.type = ARRAY_SENTINEL;
   PUSH(ctx, v);
   return 1;
 }
@@ -172,7 +175,7 @@ handle_end_array(void *ctx)
 {
   Var list = new_list(0);
   Var v;
-  for (v = POP(ctx); (int)v.type > -1; v = POP(ctx)) {
+  for (v = POP(ctx); (int)v.type > ARRAY_SENTINEL; v = POP(ctx)) {
     list = listinsert(list, v, 1);
   }
   PUSH(ctx, list);
