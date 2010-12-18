@@ -73,13 +73,21 @@ pop(struct stack_item **top) {
 static int
 handle_null(void * ctx)
 {
-  return 0;
+  Var v;
+  v.type = TYPE_STR;
+  v.v.str = str_dup("null");
+  PUSH(ctx, v);
+  return 1;
 }
 
 static int
 handle_boolean(void * ctx, int boolean)
 {
-  return 0;
+  Var v;
+  v.type = TYPE_STR;
+  v.v.str = str_dup(boolean ? "true" : "false");
+  PUSH(ctx, v);
+  return 1;
 }
 
 static int
@@ -185,53 +193,69 @@ static yajl_callbacks callbacks = {
     handle_end_array
 };
 
-static void
-generate(yajl_gen g, Var v);
-
-static void
-do_hash_hash(Var key, Var value, void *data, int32 first)
-{
-  yajl_gen g = *(yajl_gen *)data;
-  generate(g, key);
-  generate(g, value);
-}
-
-static void
-generate(yajl_gen g, Var v)
+static yajl_gen_status
+generate_key(yajl_gen g, Var v)
 {
   switch (v.type) {
     case TYPE_OBJ:
-      yajl_gen_integer(g, v.v.obj);
-      break;
     case TYPE_INT:
-      yajl_gen_integer(g, v.v.num);
-      break;
     case TYPE_FLOAT:
-      yajl_gen_double(g, *v.v.fnum);
-      break;
-    case TYPE_STR:
-      yajl_gen_string(g, v.v.str, strlen(v.v.str));
-      break;
     case TYPE_ERR: {
-      const char *tmp = error_name(v.v.err);
-      yajl_gen_string(g, tmp, strlen(tmp));
-      break;
+      const char *tmp = value_to_literal(v);
+      return yajl_gen_string(g, tmp, strlen(tmp));
     }
+    case TYPE_STR:
+      return yajl_gen_string(g, v.v.str, strlen(v.v.str));
+  }
+
+  return yajl_gen_keys_must_be_strings;
+}
+
+static yajl_gen_status
+generate(yajl_gen g, Var v)
+{
+  yajl_gen_status status;
+
+  switch (v.type) {
+    case TYPE_INT:
+      return yajl_gen_integer(g, v.v.num);
+    case TYPE_FLOAT:
+      return yajl_gen_double(g, *v.v.fnum);
+    case TYPE_OBJ:
+    case TYPE_ERR: {
+      const char *tmp = value_to_literal(v);
+      return yajl_gen_string(g, tmp, strlen(tmp));
+    }
+    case TYPE_STR:
+      return yajl_gen_string(g, v.v.str, strlen(v.v.str));
     case TYPE_HASH: {
+      int i;
+      HashNode *hn;
       yajl_gen_map_open(g);
-      hashforeach(v, do_hash_hash, &g);
+      for (i = 0; i < v.v.hash->size; i++) {
+        for (hn = v.v.hash->nodes[i]; hn; hn = hn->next) {
+          status = generate_key(g, hn->key);
+          if (yajl_gen_status_ok != status) return status;
+          status = generate(g, hn->value);
+          if (yajl_gen_status_ok != status) return status;
+        }
+      }
       yajl_gen_map_close(g);
-      break;
+      return yajl_gen_status_ok;
     }
     case TYPE_LIST: {
       int i;
       yajl_gen_array_open(g);
-      for (i = 1; i <= v.v.list[0].v.num; i++)
-	generate(g, v.v.list[i]);
+      for (i = 1; i <= v.v.list[0].v.num; i++) {
+        status = generate(g, v.v.list[i]);
+        if (yajl_gen_status_ok != status) return status;
+      }
       yajl_gen_array_close(g);
-      break;
+      return yajl_gen_status_ok;
     }
   }
+
+  return -1;
 }
 
 static package
@@ -288,14 +312,17 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 
   g = yajl_gen_alloc(&cfg, NULL);
 
-  generate(g, arglist.v.list[1]);
+  if (yajl_gen_status_ok == generate(g, arglist.v.list[1])) {
+    yajl_gen_get_buf(g, &buf, &len);
 
-  yajl_gen_get_buf(g, &buf, &len);
+    json.type = TYPE_STR;
+    json.v.str = str_dup(buf);
 
-  json.type = TYPE_STR;
-  json.v.str = str_dup(buf);
-
-  pack = make_var_pack(json);
+    pack = make_var_pack(json);
+  }
+  else {
+    pack = make_error_pack(E_INVARG);
+  }
 
   yajl_gen_clear(g);
   yajl_gen_free(g);
