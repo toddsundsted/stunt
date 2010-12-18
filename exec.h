@@ -34,6 +34,8 @@
 
 #define BIN_SUBDIR "bin/"
 
+extern void deal_with_child_exits(void);
+
 extern pid_t exec_completed(pid_t p, int code);
 
 #endif

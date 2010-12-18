@@ -495,6 +495,8 @@ main_loop(void)
 
 	run_ready_tasks();
 
+	deal_with_child_exits();
+
 	{			/* Get rid of old un-logged-in or useless connections */
 	    int now = time(0);
 

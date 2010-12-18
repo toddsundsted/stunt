@@ -29,6 +29,7 @@
 
 #include <sys/stat.h>
 
+#include "my-signal.h"
 #include "my-string.h"
 #include "my-unistd.h"
 
@@ -43,8 +44,17 @@
 #include "tasks.h"
 #include "utils.h"
 
+typedef enum {
+  TWA_CONTINUE,
+  TWA_DONE,
+  TWA_KILL
+} tasks_waiting_action;
+
 typedef struct tasks_waiting_on_exec {
+  char *cmd;
   pid_t p;
+  tasks_waiting_action action;
+  int code;
   int in;
   int out;
   int err;
@@ -56,10 +66,20 @@ typedef struct tasks_waiting_on_exec {
 
 static tasks_waiting_on_exec *exec_waiters = NULL;
 
+volatile static sig_atomic_t sigchild_interrupt = 0;
+
+static sigset_t block_sigchld; /* controls access to tasks_waiting_on_exec */
+
+#define BLOCK_SIGCHLD sigprocmask(SIG_BLOCK, &block_sigchld, NULL)
+#define UNBLOCK_SIGCHLD sigprocmask(SIG_UNBLOCK, &block_sigchld, NULL)
+
 static tasks_waiting_on_exec *
 malloc_tasks_waiting_on_exec()
 {
   tasks_waiting_on_exec *tw = mymalloc(sizeof(tasks_waiting_on_exec), M_TASK);
+  tw->cmd = NULL;
+  tw->action = TWA_CONTINUE;
+  tw->code = 0;
   tw->sout = new_stream(1000);
   tw->serr = new_stream(1000);
   return tw;
@@ -68,27 +88,26 @@ malloc_tasks_waiting_on_exec()
 static void
 free_tasks_waiting_on_exec(tasks_waiting_on_exec *tw)
 {
-  free_stream(tw->sout);
-  free_stream(tw->serr);
-  /* close(tw->in); already closed */
-  network_unregister_fd(tw->out);
-  network_unregister_fd(tw->err);
+  if (tw->cmd) free_str(tw->cmd);
   close(tw->out);
   close(tw->err);
+  network_unregister_fd(tw->out);
+  network_unregister_fd(tw->err);
+  if (tw->sout) free_stream(tw->sout);
+  if (tw->serr) free_stream(tw->serr);
   myfree(tw, M_TASK);
 }
 
 static task_enum_action
 exec_waiter_enumerator(task_closure closure, void *data)
 {
-  tasks_waiting_on_exec *tw, *tmp;
-
-  HASH_FOREACH_SAFE(hh, exec_waiters, tw, tmp) {
-    const char *status = "running";
-    task_enum_action tea = (*closure)(tw->the_vm, status, data);
+  tasks_waiting_on_exec *tw;
+  HASH_FOREACH(hh, exec_waiters, tw) {
+    task_enum_action tea = (*closure)(tw->the_vm, tw->cmd, data);
     if (TEA_KILL == tea) {
-      HASH_DELETE(hh, exec_waiters, tw);
-      free_tasks_waiting_on_exec(tw);
+      BLOCK_SIGCHLD;
+      tw->action = TWA_KILL;
+      UNBLOCK_SIGCHLD;
     }
     if (TEA_CONTINUE != tea)
       return tea;
@@ -113,8 +132,7 @@ stdout_readable(int fd, void *data)
   char buffer[1000];
   int n;
   while ((n = read(fd, buffer, sizeof(buffer))) > 0) {
-    buffer[n] = '\0';
-    stream_add_string(tw->sout, raw_bytes_to_binary(buffer, strlen(buffer)));
+    stream_add_string(tw->sout, raw_bytes_to_binary(buffer, n));
   }
 }
 
@@ -125,8 +143,7 @@ stderr_readable(int fd, void *data)
   char buffer[1000];
   int n;
   while ((n = read(fd, buffer, sizeof(buffer))) > 0) {
-    buffer[n] = '\0';
-    stream_add_string(tw->serr, raw_bytes_to_binary(buffer, strlen(buffer)));
+    stream_add_string(tw->serr, raw_bytes_to_binary(buffer, n));
   }
 }
 
@@ -137,7 +154,9 @@ exec_waiter_suspender(vm the_vm, void *data)
   network_register_fd(tw->out, stdout_readable, NULL, tw);
   network_register_fd(tw->err, stderr_readable, NULL, tw);
   tw->the_vm = the_vm;
+  BLOCK_SIGCHLD;
   HASH_ADD(hh, exec_waiters, p, sizeof(pid_t), tw);
+  UNBLOCK_SIGCHLD;
   return E_NONE;
 }
 
@@ -163,6 +182,11 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     args[i - 1] = arglist.v.list[1].v.list[i].v.str;
   }
   args[i - 1] = NULL;
+
+  if (!is_wizard(progr)) {
+    free_var(arglist);
+    return make_error_pack(E_PERM);
+  }
 
   /* Check the path. */
   const char *cmd = args[0];
@@ -263,6 +287,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     /* parent */
     oklog("EXEC: Executing %s...\n", cmd);
     tasks_waiting_on_exec *tw = malloc_tasks_waiting_on_exec();
+    tw->cmd = str_dup(cmd);
     tw->p = p;
     tw->in = pipeIn[1];
     tw->out = pipeOut[0];
@@ -284,27 +309,19 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 pid_t
-exec_completed(pid_t p, int code)
+exec_completed(pid_t p, int code) /* called from server.c : child_completed_signal() */
 {
   tasks_waiting_on_exec *tw;
 
+  /* SIGCHLD is already blocked in signal handler */
+
   HASH_FIND(hh, exec_waiters, &p, sizeof(pid_t), tw);
+
   if (tw) {
-    Var v;
-    v = new_list(3);
-    v.v.list[1].type = TYPE_INT;
-    v.v.list[1].v.num = code;
-    stdout_readable(tw->out, tw);
-    v.v.list[2].type = TYPE_STR;
-    v.v.list[2].v.str = str_dup(reset_stream(tw->sout));
-    stderr_readable(tw->err, tw);
-    v.v.list[3].type = TYPE_STR;
-    v.v.list[3].v.str = str_dup(reset_stream(tw->serr));
+    sigchild_interrupt = 1;
 
-    resume_task(tw->the_vm, v);
-
-    HASH_DELETE(hh, exec_waiters, tw);
-    free_tasks_waiting_on_exec(tw);
+    tw->action = TWA_DONE;
+    tw->code = code;
 
     return p;
   }
@@ -313,8 +330,47 @@ exec_completed(pid_t p, int code)
 }
 
 void
+deal_with_child_exits(void)
+{
+  if (!sigchild_interrupt)
+    return;
+
+  sigchild_interrupt = 0;
+
+  tasks_waiting_on_exec *tw, *tmp;
+
+  BLOCK_SIGCHLD;
+
+  HASH_FOREACH_SAFE(hh, exec_waiters, tw, tmp) {
+    if (TWA_DONE == tw->action) {
+      Var v;
+      v = new_list(3);
+      v.v.list[1].type = TYPE_INT;
+      v.v.list[1].v.num = tw->code;
+      stdout_readable(tw->out, tw);
+      v.v.list[2].type = TYPE_STR;
+      v.v.list[2].v.str = str_dup(reset_stream(tw->sout));
+      stderr_readable(tw->err, tw);
+      v.v.list[3].type = TYPE_STR;
+      v.v.list[3].v.str = str_dup(reset_stream(tw->serr));
+
+      resume_task(tw->the_vm, v);
+    }
+    if (TWA_CONTINUE != tw->action) {
+      HASH_DELETE(hh, exec_waiters, tw);
+      free_tasks_waiting_on_exec(tw);
+    }
+  }
+
+  UNBLOCK_SIGCHLD;
+}
+
+void
 register_exec(void)
 {
+  sigemptyset(&block_sigchld);
+  sigaddset(&block_sigchld, SIGCHLD);
+
   register_task_queue(exec_waiter_enumerator);
   register_function("exec", 1, 2, bf_exec, TYPE_LIST, TYPE_STR);
 }
