@@ -71,7 +71,7 @@ pop(struct stack_item **top) {
 #define POP(stack) pop((struct stack_item **)stack)
 
 static int
-handle_null(void * ctx)
+handle_null(void *ctx)
 {
   Var v;
   v.type = TYPE_STR;
@@ -81,7 +81,7 @@ handle_null(void * ctx)
 }
 
 static int
-handle_boolean(void * ctx, int boolean)
+handle_boolean(void *ctx, int boolean)
 {
   Var v;
   v.type = TYPE_STR;
@@ -91,7 +91,7 @@ handle_boolean(void * ctx, int boolean)
 }
 
 static int
-handle_integer(void * ctx, long integerVal)
+handle_integer(void *ctx, long integerVal)
 {
   Var v;
   v.type = TYPE_INT;
@@ -101,7 +101,7 @@ handle_integer(void * ctx, long integerVal)
 }
 
 static int
-handle_float(void * ctx, double doubleVal)
+handle_float(void *ctx, double doubleVal)
 {
   Var v;
   v = new_float(doubleVal);
@@ -110,7 +110,7 @@ handle_float(void * ctx, double doubleVal)
 }
 
 static int
-handle_string(void * ctx, const unsigned char * stringVal, unsigned int stringLen)
+handle_string(void *ctx, const unsigned char * stringVal, unsigned int stringLen)
 {
   Var v;
   char temp[stringLen + 1];
@@ -123,7 +123,7 @@ handle_string(void * ctx, const unsigned char * stringVal, unsigned int stringLe
 }
 
 static int
-handle_map_key(void * ctx, const unsigned char * stringVal, unsigned int stringLen)
+handle_map_key(void *ctx, const unsigned char * stringVal, unsigned int stringLen)
 {
   Var v;
   char temp[stringLen + 1];
@@ -136,7 +136,7 @@ handle_map_key(void * ctx, const unsigned char * stringVal, unsigned int stringL
 }
 
 static int
-handle_start_map(void * ctx)
+handle_start_map(void *ctx)
 {
   Var k, v;
   k.type = -2;
@@ -147,7 +147,7 @@ handle_start_map(void * ctx)
 }
 
 static int
-handle_end_map(void * ctx)
+handle_end_map(void *ctx)
 {
   Var list = new_hash();
   Var k, v;
@@ -159,7 +159,7 @@ handle_end_map(void * ctx)
 }
 
 static int
-handle_start_array(void * ctx)
+handle_start_array(void *ctx)
 {
   Var v;
   v.type = -1;
@@ -168,7 +168,7 @@ handle_start_array(void * ctx)
 }
 
 static int
-handle_end_array(void * ctx)
+handle_end_array(void *ctx)
 {
   Var list = new_list(0);
   Var v;
@@ -288,9 +288,9 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (done) {
       if (stat != yajl_status_ok)
-	pack = make_error_pack(E_INVARG);
+        pack = make_error_pack(E_INVARG);
       else
-	pack = make_var_pack(top->v);
+        pack = make_var_pack(top->v);
     }
   }
 
