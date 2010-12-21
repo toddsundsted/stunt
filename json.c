@@ -41,8 +41,39 @@
 #include "list.h"
 #include "numbers.h"
 #include "storage.h"
+#include "streams.h"
 #include "unparse.h"
 #include "utils.h"
+
+/*
+  Handle many modes of mapping between JSON and internal MOO types.
+
+  JSON defines types that MOO (currently) does not support, such as
+  boolean true and false, and null.  MOO uses types that JSON does not
+  support, such as object references and errors.
+
+  Mode 0 -- Common Subset
+
+  In Mode 0, only the common subset of types (strings and numbers) are
+  translated with fidelity between MOO types and JSON types.  All
+  other types are treated as alternative representations of the string
+  type.  Furthermore, all MOO types used as keys (_both_ strings and
+  numbers) are treated as strings.  Neither MOO lists nor hashes may
+  be used as keys in this mode.
+
+  Mode 0 is useful for data transfer with non-MOO applications.
+
+  Mode 1 -- Embedded Types
+
+  In Mode 1, MOO types are encoded as strings, suffixed with type
+  information.  Strings and numbers, which are valid JSON types, carry
+  implicit type information, if type information is not specified.
+  The boolean values and null are still interpreted as short-hand for
+  explicit string notation.  Neither MOO lists nor hashes may be
+  used as keys in this mode.
+
+  Mode 1 is useful for serializing/deserializing MOO types.
+ */
 
 struct stack_item {
   struct stack_item *prev;
