@@ -39,6 +39,8 @@ extern void unparse_to_stderr(Program *, int fully_parenthesize,
 extern const char *error_name(enum error);	/* E_NONE -> "E_NONE" */
 extern const char *unparse_error(enum error);	/* E_NONE -> "No error" */
 
+extern int parse_error(const char *error);	/* "E_NONE" -> E_NONE */
+
 #endif
 
 /* 

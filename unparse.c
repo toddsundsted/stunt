@@ -117,6 +117,49 @@ error_name(enum error e)
     return "E_?";
 }
 
+/*
+  This probably doesn't belong here, but it keeps the code that
+  parses/unparses errors in one place, which makes changes easier.
+ */
+int
+parse_error(const char *e)
+{
+    if (!mystrcasecmp("E_NONE", e))
+	return E_NONE;
+    if (!mystrcasecmp("E_TYPE", e))
+	return E_TYPE;
+    if (!mystrcasecmp("E_DIV", e))
+	return E_DIV;
+    if (!mystrcasecmp("E_PERM", e))
+	return E_PERM;
+    if (!mystrcasecmp("E_PROPNF", e))
+	return E_PROPNF;
+    if (!mystrcasecmp("E_VERBNF", e))
+	return E_VERBNF;
+    if (!mystrcasecmp("E_VARNF", e))
+	return E_VARNF;
+    if (!mystrcasecmp("E_INVIND", e))
+	return E_INVIND;
+    if (!mystrcasecmp("E_RECMOVE", e))
+	return E_RECMOVE;
+    if (!mystrcasecmp("E_MAXREC", e))
+	return E_MAXREC;
+    if (!mystrcasecmp("E_RANGE", e))
+	return E_RANGE;
+    if (!mystrcasecmp("E_ARGS", e))
+	return E_ARGS;
+    if (!mystrcasecmp("E_NACC", e))
+	return E_NACC;
+    if (!mystrcasecmp("E_INVARG", e))
+	return E_INVARG;
+    if (!mystrcasecmp("E_QUOTA", e))
+	return E_QUOTA;
+    if (!mystrcasecmp("E_FLOAT", e))
+	return E_FLOAT;
+
+    return -1;
+}
+
 struct prec {
     enum Expr_Kind kind;
     int precedence;
