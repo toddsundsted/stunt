@@ -145,6 +145,22 @@ valid_type(const char **val, size_t *len)
   return TYPE_NONE;
 }
 
+static const char *
+append_type(const char *str, char c)
+{
+  static Stream *stream = NULL;
+
+  if (NULL == stream) stream = new_stream(20);
+
+  stream_add_string(stream, str);
+  stream_add_char(stream, '|');
+  stream_add_char(stream, '*');
+  stream_add_char(stream, c);
+  stream_add_char(stream, '*');
+
+  return reset_stream(stream);
+}
+
 static int
 handle_null(void *ctx)
 {
@@ -293,22 +309,6 @@ handle_end_array(void *ctx)
   }
   PUSH(pctx->top, list);
   return 1;
-}
-
-static const char *
-append_type(const char *str, char c)
-{
-  static Stream *stream = NULL;
-
-  if (NULL == stream) stream = new_stream(20);
-
-  stream_add_string(stream, str);
-  stream_add_char(stream, '|');
-  stream_add_char(stream, '*');
-  stream_add_char(stream, c);
-  stream_add_char(stream, '*');
-
-  return reset_stream(stream);
 }
 
 static yajl_gen_status
