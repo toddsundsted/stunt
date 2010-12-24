@@ -211,40 +211,46 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
   var_type type;
   Var v;
 
-  if (MODE_EMBEDDED_TYPES == pctx->mode && TYPE_NONE != (type = valid_type((const char **)&stringVal, (size_t *)&stringLen))) {
+  /* The original solution (using stringVal and stringLen directly)
+     was causing a crash (EXC_BAD_ACCESS) on OSX.  This was the
+     most straight-forward solution I found. */
+  const char* val = stringVal;
+  size_t len = stringLen;
+
+  if (MODE_EMBEDDED_TYPES == pctx->mode && TYPE_NONE != (type = valid_type(&val, &len))) {
     switch (type) {
       case TYPE_OBJ: {
         char *p;
-        if (*stringVal == '#')
-          stringVal++;
+        if (*val == '#')
+          val++;
         v.type = TYPE_OBJ;
-        v.v.num = strtol(stringVal, &p, 10);
+        v.v.num = strtol(val, &p, 10);
         break;
       }
       case TYPE_INT: {
         char *p;
         v.type = TYPE_INT;
-        v.v.num = strtol(stringVal, &p, 10);
+        v.v.num = strtol(val, &p, 10);
         break;
       }
       case TYPE_FLOAT: {
         char *p;
-        v = new_float(strtod(stringVal, &p));
+        v = new_float(strtod(val, &p));
         break;
       }
       case TYPE_ERR: {
-        char temp[stringLen + 1];
-        strncpy(temp, stringVal, stringLen);
-        temp[stringLen] = '\0';
+        char temp[len + 1];
+        strncpy(temp, val, len);
+        temp[len] = '\0';
         v.type = TYPE_ERR;
         int err = parse_error(temp);
         v.v.err = err > -1 ? err : E_NONE;
         break;
       }
       case TYPE_STR: {
-        char temp[stringLen + 1];
-        strncpy(temp, stringVal, stringLen);
-        temp[stringLen] = '\0';
+        char temp[len + 1];
+        strncpy(temp, val, len);
+        temp[len] = '\0';
         v.type = TYPE_STR;
         v.v.str = str_dup(temp);
         break;
