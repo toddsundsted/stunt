@@ -146,17 +146,30 @@ valid_type(const char **val, size_t *len)
 }
 
 static const char *
-append_type(const char *str, char c)
+append_type(const char *str, var_type type)
 {
   static Stream *stream = NULL;
 
   if (NULL == stream) stream = new_stream(20);
 
   stream_add_string(stream, str);
-  stream_add_char(stream, '|');
-  stream_add_char(stream, '*');
-  stream_add_char(stream, c);
-  stream_add_char(stream, '*');
+  switch (type) {
+  case TYPE_OBJ:
+    stream_add_string(stream, "|*o*");
+    break;
+  case TYPE_INT:
+    stream_add_string(stream, "|*i*");
+    break;
+  case TYPE_FLOAT:
+    stream_add_string(stream, "|*f*");
+    break;
+  case TYPE_ERR:
+    stream_add_string(stream, "|*e*");
+    break;
+  case TYPE_STR:
+    stream_add_string(stream, "|*s*");
+    break;
+  }
 
   return reset_stream(stream);
 }
@@ -322,20 +335,14 @@ generate_key(yajl_gen g, Var v, void *ctx)
 {
   struct generate_context *gctx = (struct generate_context *)ctx;
 
-  char c = 0;
-
   switch (v.type) {
     case TYPE_OBJ:
-      c = 'o';
     case TYPE_INT:
-      if (!c) c = 'i';
     case TYPE_FLOAT:
-      if (!c) c = 'f';
     case TYPE_ERR: {
-      if (!c) c = 'e';
       const char *tmp = value_to_literal(v);
       if (MODE_EMBEDDED_TYPES == gctx->mode)
-        tmp = append_type(tmp, c);
+        tmp = append_type(tmp, v.type);
       return yajl_gen_string(g, tmp, strlen(tmp));
     }
     case TYPE_STR: {
@@ -343,7 +350,7 @@ generate_key(yajl_gen g, Var v, void *ctx)
       size_t len = strlen(tmp);
       if (MODE_EMBEDDED_TYPES == gctx->mode)
         if (TYPE_NONE != valid_type(&tmp, &len))
-          tmp = append_type(tmp, 's');
+          tmp = append_type(tmp, v.type);
       return yajl_gen_string(g, tmp, strlen(tmp));
     }
   }
@@ -356,20 +363,16 @@ generate(yajl_gen g, Var v, void *ctx)
 {
   struct generate_context *gctx = (struct generate_context *)ctx;
 
-  char c = 0;
-
   switch (v.type) {
     case TYPE_INT:
       return yajl_gen_integer(g, v.v.num);
     case TYPE_FLOAT:
       return yajl_gen_double(g, *v.v.fnum);
     case TYPE_OBJ:
-      c = 'o';
     case TYPE_ERR: {
-      if (!c) c = 'e';
       const char *tmp = value_to_literal(v);
       if (MODE_EMBEDDED_TYPES == gctx->mode)
-        tmp = append_type(tmp, c);
+        tmp = append_type(tmp, v.type);
       return yajl_gen_string(g, tmp, strlen(tmp));
     }
     case TYPE_STR: {
@@ -377,7 +380,7 @@ generate(yajl_gen g, Var v, void *ctx)
       size_t len = strlen(tmp);
       if (MODE_EMBEDDED_TYPES == gctx->mode)
         if (TYPE_NONE != valid_type(&tmp, &len))
-          tmp = append_type(tmp, 's');
+          tmp = append_type(tmp, v.type);
       return yajl_gen_string(g, tmp, strlen(tmp));
     }
     case TYPE_HASH: {
