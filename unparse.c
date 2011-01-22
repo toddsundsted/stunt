@@ -164,6 +164,10 @@ parse_error(const char *e)
 	return E_QUOTA;
     if (!mystrcasecmp("E_FLOAT", e))
 	return E_FLOAT;
+    if (!mystrcasecmp("E_FILE", e))
+	return E_FILE;
+    if (!mystrcasecmp("E_EXEC", e))
+	return E_EXEC;
 
     return -1;
 }
