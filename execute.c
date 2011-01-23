@@ -971,11 +971,10 @@ do {    						    	\
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
-		} else if (index.v.num < 1
-			   || (list.type == TYPE_LIST
-		       && index.v.num > list.v.list[0].v.num /* size */ )
-			   || (list.type == TYPE_STR
-			    && index.v.num > (int) strlen(list.v.str))) {
+		} else if ((list.type == TYPE_LIST
+		       && (index.v.num < 1 || index.v.num > list.v.list[0].v.num /* size */))
+			|| (list.type == TYPE_STR
+		       && (index.v.num < 1 || index.v.num > (int)strlen(list.v.str)))) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
