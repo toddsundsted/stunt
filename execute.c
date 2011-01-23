@@ -1082,7 +1082,7 @@ do {    						    	\
 			comparison = ans.v.num;
 			goto finish_comparison;
 		    }
-		} else if (rhs.type != lhs.type || rhs.type == TYPE_LIST) {
+		} else if (rhs.type != lhs.type || rhs.type == TYPE_LIST || rhs.type == TYPE_HASH) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
