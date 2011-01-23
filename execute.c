@@ -1301,7 +1301,6 @@ do {    						    	\
 		} else if (list.type == TYPE_HASH) {
 		    Var value;
 		    int success;
-
 		    success = hashlookup(list, index, &value);
 		    free_var(index);
 		    free_var(list);
@@ -1344,7 +1343,6 @@ do {    						    	\
 		} else if (list.type == TYPE_HASH) {
 		    Var value;
 		    int success;
-
 		    success = hashlookup(list, index, &value);
 		    if (!success) {
 			PUSH_ERROR(E_RANGE);
