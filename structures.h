@@ -110,7 +110,8 @@ struct Var {
 #pragma pointer_size restore
 #endif
 
-extern Var zero;		/* useful constant */
+extern Var zero;		/* see numbers.c */
+extern Var nothing;		/* see objects.c */
 
 /*
  * Hard limits on string and list sizes are imposed mainly to keep
