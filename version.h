@@ -56,6 +56,10 @@ typedef enum {
 				 * change exists solely to turn off special
 				 * bug handling in read_bi_func_data().
 				 */
+    DBV_NextGen,		/* Introduced the next-generation database
+				 * format which fixes the data locality
+				 * problems in the v4 format.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
