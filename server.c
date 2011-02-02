@@ -641,8 +641,7 @@ emergency_mode()
 
     printf("\nLambdaMOO Emergency Holographic Wizard Mode\n");
     printf("-------------------------------------------\n");
-    printf("\"Please state the nature of the wizardly emergency...\"\n");
-    printf("(Type `help' for assistance.)\n\n");
+    printf("(Type `help' for instructions.)\n\n");
 
     while (start_ok < 0) {
 	/* Find/create a wizard to run commands as... */
