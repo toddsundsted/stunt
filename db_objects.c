@@ -19,6 +19,8 @@
  * Routines for manipulating DB objects
  *****************************************************************************/
 
+#include "my-string.h"
+
 #include "config.h"
 #include "db.h"
 #include "db_private.h"
