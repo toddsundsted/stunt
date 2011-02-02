@@ -1222,6 +1222,7 @@ main(int argc, char **argv)
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
 	  virtual_timer_available()? "server CPU" : "wall-clock");
+    oklog("          (Process id %d)\n", getpid());
 
     register_bi_functions();
 
