@@ -671,7 +671,7 @@ emergency_mode()
 	    printf("** Now running emergency commands as #%d ...\n", wizard);
 	}
 	char prompt[100];
-	sprintf(prompt, "MOO (#%d)%s: ", wizard, debug ? "" : "[!d]");
+	sprintf(prompt, "(#%d)%s: ", wizard, debug ? "" : "[!d]");
 	line = read_stdin_line(prompt);
 
 	if (!line)
