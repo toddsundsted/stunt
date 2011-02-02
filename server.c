@@ -824,14 +824,10 @@ emergency_mode()
 	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
 		 && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
 		printf("** Switching to wizard #%d...\n", wizard);
-	    } else {
-		if (mystrcasecmp(command, "help")
-		    && mystrcasecmp(command, "?"))
-		    printf("** Unknown or malformed command.\n");
-
+	    } else if (!mystrcasecmp(command, "help") || !mystrcasecmp(command, "?")) {
 		printf(";EXPR                 "
 		       "Evaluate MOO expression, print result.\n");
-		printf(";;CODE	              "
+		printf(";;CODE                "
 		       "Execute whole MOO verb, print result.\n");
 		printf("    (For above, omitting EXPR or CODE lets you "
 		       "enter several lines\n");
@@ -858,7 +854,8 @@ emergency_mode()
 
 		printf("NOTE: *NO* forked or suspended tasks will run "
 		       "until you exit this mode.\n\n");
-		printf("\"Please remember to turn me off when you go...\"\n");
+	    } else {
+		printf("** Unknown or malformed command.\n");
 	    }
 
 	    free_var(words);
