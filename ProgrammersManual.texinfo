@@ -3736,11 +3736,12 @@ to that, there are a lot of built-in functions for manipulating them.
 
 @deftypefun obj create (obj @var{parent} [, obj @var{owner}])
 Creates and returns a new object whose parent is @var{parent} and whose owner
-is as described below.  Either the given @var{parent} object must be @code{#-1}
-or valid and fertile (i.e., its @samp{f} bit must be set) or else the
+is as described below.  If the given @var{parent} object is neither valid nor
+@code{#-1} then @code{E_INVARG} is raised.  The given @var{parent} object must
+be valid and fertile (i.e., its @samp{f} bit must be set) or else the
 programmer must own @var{parent} or be a wizard; otherwise @code{E_PERM} is
-raised.  @code{E_PERM} is also raised if @var{owner} is provided and not
-the same as the programmer, unless the programmer is a wizard.  After the new
+raised.  @code{E_PERM} is also raised if @var{owner} is provided and not the
+same as the programmer, unless the programmer is a wizard.  After the new
 object is created, its @code{initialize} verb, if any, is called with no
 arguments.
 
@@ -3749,8 +3750,8 @@ yet been used for a created object.  Note that no object number is ever reused,
 even if the object with that number is recycled.
 
 The owner of the new object is either the programmer (if @var{owner} is not
-provided), the new object itself (if @var{owner} was given as @code{#-1}), or
-@var{owner} (otherwise).
+provided), the new object itself (if @var{owner} was given and is invalid,
+or @var{owner} (otherwise).
 
 The other built-in properties of the new object are initialized as follows:
 @example
