@@ -1,0 +1,3 @@
+host: localhost
+port: 9898
+verbose: false

@@ -154,6 +154,11 @@ depend: ${ALL_CSRCS}
 	ed - Makefile.in < eddep
 	rm -f eddep makedep
 
+tests: 
+	for test in test/*.rb ; do \
+	  ruby -rubygems -Itest/lib $$test ; \
+	done
+
 ###############################################################################
 # $Log: Makefile.in,v $
 # Revision 1.11  2010/04/22 21:18:43  wrog

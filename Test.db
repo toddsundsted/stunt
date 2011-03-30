@@ -1,0 +1,132 @@
+** LambdaMOO Database, Format Version 4 **
+5
+2
+0
+2
+3
+4
+#0
+System Object
+
+16
+3
+-1
+-1
+-1
+1
+-1
+2
+1
+do_login_command
+3
+173
+-1
+2
+nothing
+object
+2
+1
+-1
+4
+1
+1
+1
+4
+1
+#1
+Root Class
+
+144
+3
+-1
+-1
+-1
+-1
+0
+-1
+0
+0
+0
+#2
+The First Room
+
+0
+3
+-1
+3
+-1
+1
+-1
+3
+1
+eval
+3
+88
+-2
+0
+0
+#3
+Wizard
+
+7
+3
+2
+-1
+4
+1
+-1
+4
+0
+0
+0
+#4
+Programmer
+
+3
+4
+2
+-1
+-1
+1
+-1
+-1
+0
+0
+0
+#0:0
+if ((args && (length(args) > 1)) && (args[1] == "connect"))
+if (args[2] == "wizard")
+o = create($nothing);
+o.owner = o;
+set_player_flag(o, 1);
+o.programmer = 1;
+o.wizard = 1;
+move(o, #2);
+return o;
+elseif (args[2] == "programmer")
+o = create($nothing);
+o.owner = o;
+set_player_flag(o, 1);
+o.programmer = 1;
+move(o, #2);
+return o;
+elseif (args[2] == "player")
+o = create($nothing);
+o.owner = o;
+set_player_flag(o, 1);
+move(o, #2);
+return o;
+endif
+endif
+.
+#2:0
+set_task_perms(player);
+try
+notify(player, toliteral(eval(argstr)));
+except e (ANY)
+notify(player, toliteral({2, e}));
+endtry
+.
+0 clocks
+0 queued tasks
+0 suspended tasks
