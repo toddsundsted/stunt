@@ -18,6 +18,8 @@
 #ifndef Structures_h
 #define Structures_h 1
 
+#include <stdbool.h>
+
 #include "my-stdio.h"
 
 #include "config.h"
@@ -110,6 +112,36 @@ struct Var {
 extern Var zero;		/* see numbers.c */
 extern Var nothing;		/* see objects.c */
 extern Var clear;		/* see objects.c */
+
+static inline Var
+new_int(int32 num)
+{
+    Var r;
+    r.type = TYPE_INT;
+    r.v.num = num;
+    return r;
+}
+
+static inline bool
+is_int(Var v)
+{
+    return TYPE_INT == v.type;
+}
+
+static inline Var
+new_obj(Objid obj)
+{
+    Var r;
+    r.type = TYPE_OBJ;
+    r.v.obj = obj;
+    return r;
+}
+
+static inline bool
+is_obj(Var v)
+{
+    return TYPE_OBJ == v.type;
+}
 
 #endif				/* !Structures_h */
 
