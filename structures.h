@@ -18,6 +18,8 @@
 #ifndef Structures_h
 #define Structures_h 1
 
+#include <stdbool.h>
+
 #include "my-stdio.h"
 
 #include "config.h"
@@ -126,6 +128,35 @@ extern Var clear;		/* see objects.c */
 #define MAX_LIST   (INT32_MAX/sizeof(Var) - 2)
 #define MAX_STRING (INT32_MAX - 9)
 
+static inline Var
+new_int(int32 num)
+{
+    Var r;
+    r.type = TYPE_INT;
+    r.v.num = num;
+    return r;
+}
+
+static inline bool
+is_int(Var v)
+{
+    return TYPE_INT == v.type;
+}
+
+static inline Var
+new_obj(Objid obj)
+{
+    Var r;
+    r.type = TYPE_OBJ;
+    r.v.obj = obj;
+    return r;
+}
+
+static inline bool
+is_obj(Var v)
+{
+    return TYPE_OBJ == v.type;
+}
 
 #endif				/* !Structures_h */
 
