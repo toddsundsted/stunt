@@ -716,6 +716,26 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(v);
 }
 
+static package
+bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Objid what = arglist.v.list[1].v.obj;
+    Objid target = arglist.v.list[2].v.obj;
+
+    free_var(arglist);
+
+    Var ancestors = db_ancestors(what, true);
+
+    if (ismember(arglist.v.list[2], ancestors, 1)) {
+	free_var(ancestors);
+	return make_var_pack(new_int(1));
+    }
+    else {
+	free_var(ancestors);
+	return make_var_pack(new_int(0));
+    }
+}
+
 Var nothing;			/* useful constant */
 Var clear;			/* useful constant */
 
@@ -750,6 +770,7 @@ register_objects(void)
     register_function_with_read_write("move", 2, 2, bf_move,
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ);
+    register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
 }
 
 char rcsid_objects[] = "$Id: objects.c,v 1.4 1998/12/14 13:18:39 nop Exp $";
