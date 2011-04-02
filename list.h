@@ -45,6 +45,24 @@ listlength(Var l)
 }
 
 /*
+ * Wraps `v' in a list if it is not already a list.  Consumes `v', so
+ * you may want to var_ref/var_dup `v'.  Currently, this function is
+ * called by functions that operate on an object's parents, which can
+ * be either an object reference (TYPE_OBJ) or a list of object
+ * references (TYPE_LIST).
+ */
+static inline Var
+enlist_var(Var v)
+{
+    if (TYPE_LIST == v.type)
+	return v;
+
+    Var r = new_list(1);
+    r.v.list[1] = v;
+    return r;
+}
+
+/*
  * $Log: list.h,v $
  * Revision 1.3  1998/12/14 13:17:58  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
