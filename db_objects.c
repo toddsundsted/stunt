@@ -66,6 +66,13 @@ db_reset_last_used_objid(void)
 	num_objects--;
 }
 
+void
+db_set_last_used_objid(Objid oid)
+{
+    while (!objects[num_objects - 1] && num_objects > oid)
+	num_objects--;
+}
+
 static void
 ensure_new_object(void)
 {
@@ -117,8 +124,12 @@ db_create_object(void)
 
     o->name = str_dup("");
     o->flags = 0;
-    o->parent = o->child = o->sibling = NOTHING;
-    o->location = o->contents = o->next = NOTHING;
+
+    o->parents = nothing;
+    o->children = new_list(0);
+
+    o->location = nothing;
+    o->contents = new_list(0);
 
     o->propval = 0;
 
@@ -143,9 +154,18 @@ db_destroy_object(Objid oid)
     if (!o)
 	panic("DB_DESTROY_OBJECT: Invalid object!");
 
-    if (o->location != NOTHING || o->contents != NOTHING
-	|| o->parent != NOTHING || o->child != NOTHING)
+    if (o->location.v.obj != NOTHING ||
+	o->contents.v.list[0].v.num != 0 ||
+	(o->parents.type == TYPE_OBJ && o->parents.v.obj != NOTHING) ||
+	(o->parents.type == TYPE_LIST && o->parents.v.list[0].v.num != 0) ||
+	o->children.v.list[0].v.num != 0)
 	panic("DB_DESTROY_OBJECT: Not a barren orphan!");
+
+    free_var(o->parents);
+    free_var(o->children);
+
+    free_var(o->location);
+    free_var(o->contents);
 
     if (is_user(oid)) {
 	Var t;
@@ -189,47 +209,49 @@ db_renumber_object(Objid old)
     db_priv_affected_callable_verb_lookup();
 
     for (new = 0; new < old; new++) {
-	if (objects[new] == 0) {
+	if (objects[new] == NULL) {
 	    /* Change the identity of the object. */
 	    o = objects[new] = objects[old];
 	    objects[old] = 0;
 	    objects[new]->id = new;
 
-	    /* Fix up the parent/children hierarchy */
-	    {
-		Objid oid, *oidp;
+	    /* Fix up the parents/children hierarchy and the
+	     * location/contents hierarchy.
+	     */
+	    int i1, c1, i2, c2;
+	    Var obj1, obj2;
 
-		if (o->parent != NOTHING) {
-		    oidp = &objects[o->parent]->child;
-		    while (*oidp != old && *oidp != NOTHING)
-			oidp = &objects[*oidp]->sibling;
-		    if (*oidp == NOTHING)
-			panic("Object not in parent's children list");
-		    *oidp = new;
-		}
-		for (oid = o->child;
-		     oid != NOTHING;
-		     oid = objects[oid]->sibling)
-		    objects[oid]->parent = new;
+#define	    FIX(up, down)							\
+	    if (TYPE_LIST == o->up.type) {					\
+		FOR_EACH(obj1, o->up, i1, c1) {					\
+		    FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)		\
+			if (obj2.v.obj == old)					\
+			    break;						\
+		    objects[obj1.v.obj]->down.v.list[i2].v.obj = new;		\
+		}								\
+	    }									\
+	    else if (TYPE_OBJ == o->up.type && NOTHING != o->up.v.obj) {	\
+		FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)		\
+		if (obj1.v.obj == old)						\
+		    break;							\
+		objects[o->up.v.obj]->down.v.list[i2].v.obj = new;		\
+	    }									\
+	    FOR_EACH(obj1, o->down, i1, c1) {					\
+		if (TYPE_LIST == objects[obj1.v.obj]->up.type) {		\
+		    FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)		\
+			if (obj2.v.obj == old)					\
+			    break;						\
+		    objects[obj1.v.obj]->up.v.list[i2].v.obj = new;		\
+		}								\
+		else {								\
+		    objects[obj1.v.obj]->up.v.obj = new;			\
+		}								\
 	    }
 
-	    /* Fix up the location/contents hierarchy */
-	    {
-		Objid oid, *oidp;
+	    FIX(parents, children);
+	    FIX(location, contents);
 
-		if (o->location != NOTHING) {
-		    oidp = &objects[o->location]->contents;
-		    while (*oidp != old && *oidp != NOTHING)
-			oidp = &objects[*oidp]->next;
-		    if (*oidp == NOTHING)
-			panic("Object not in location's contents list");
-		    *oidp = new;
-		}
-		for (oid = o->contents;
-		     oid != NOTHING;
-		     oid = objects[oid]->next)
-		    objects[oid]->location = new;
-	    }
+#undef	    FIX
 
 	    /* Fix up the list of users, if necessary */
 	    if (is_user(new)) {
@@ -313,6 +335,48 @@ db_object_bytes(Objid oid)
 }
 
 
+/* Define db_ancestors(), db_descendants(), db_all_locations(), and
+ * db_all_contents().  To simplify the construction of the macro, use
+ * enlist_var() to make everything look like a list.
+ */
+#define DEFUNC(name, field)						\
+Var db_##name(Objid oid, bool full)					\
+{									\
+    Var list = new_list(0);						\
+    if (oid == NOTHING)							\
+	return list;							\
+    if (full)								\
+	list = listappend(list, new_obj(oid));				\
+    Var tmp, stack, top, next;						\
+    tmp = dbpriv_find_object(oid)->field;				\
+    stack = enlist_var(var_ref(tmp));					\
+    while (listlength(stack) > 0) {					\
+	top = var_ref(stack.v.list[1]);					\
+	stack = listdelete(stack, 1);					\
+	if (valid(top.v.obj)) {						\
+	    if (top.v.obj != oid) {					\
+		tmp = dbpriv_find_object(top.v.obj)->field;		\
+		next = enlist_var(var_ref(tmp));			\
+		stack = listconcat(next, stack);			\
+	    }								\
+	    list = setadd(list, top);					\
+	}								\
+	else {								\
+	    free_var(top);						\
+	}								\
+    }									\
+    free_var(stack);							\
+    return list;							\
+}
+
+DEFUNC(ancestors, parents)
+DEFUNC(descendants, children);
+DEFUNC(all_locations, location);
+DEFUNC(all_contents, contents);
+
+#undef DEFUNC
+
+
 /*********** Object attributes ***********/
 
 Objid
@@ -343,97 +407,111 @@ db_set_object_name(Objid oid, const char *name)
     o->name = name;
 }
 
-Objid
+Var
 db_object_parent(Objid oid)
 {
-    return objects[oid]->parent;
+    return objects[oid]->parents;
 }
 
 int
 db_count_children(Objid oid)
 {
-    Objid c;
-    int i = 0;
-
-    for (c = objects[oid]->child; c != NOTHING; c = objects[c]->sibling)
-	i++;
-
-    return i;
+    return listlength(objects[oid]->children);
 }
 
 int
 db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
 {
-    Objid c;
+    int i, c = db_count_children(oid);
 
-    for (c = objects[oid]->child; c != NOTHING; c = objects[c]->sibling)
-	if (func(data, c))
+    for (i = 1; i <= c; i++)
+	if (func(data, objects[oid]->children.v.list[i].v.obj))
 	    return 1;
 
     return 0;
 }
 
-#define LL_REMOVE(where, listname, what, nextname) { \
-    Objid lid; \
-    if (objects[where]->listname == what) \
-	objects[where]->listname = objects[what]->nextname; \
-    else { \
-	for (lid = objects[where]->listname; lid != NOTHING; \
-	      lid = objects[lid]->nextname) { \
-	    if (objects[lid]->nextname == what) { \
-		objects[lid]->nextname = objects[what]->nextname; \
-		break; \
-	    } \
-	} \
-    } \
-    objects[what]->nextname = NOTHING; \
-}
+static int
+check_for_duplicate_parents(Var parents)
+{
+    if (TYPE_LIST != parents.type && TYPE_OBJ != parents.type)
+	return 0;
 
-#define LL_APPEND(where, listname, what, nextname) { \
-    Objid lid; \
-    if (objects[where]->listname == NOTHING) { \
-	objects[where]->listname = what; \
-    } else { \
-	for (lid = objects[where]->listname; \
-	     objects[lid]->nextname != NOTHING; \
-	     lid = objects[lid]->nextname) \
-	    ; \
-	objects[lid]->nextname = what; \
-    } \
-    objects[what]->nextname = NOTHING; \
+    if (TYPE_LIST == parents.type && listlength(parents) > 1) {
+	int i, j, c = listlength(parents);
+	for (i = 1; i <= c; i++)
+	    for (j = i + i; j <= c; j++)
+		if (equality(parents.v.list[i], parents.v.list[j], 1))
+		    return 0;
+    }
+
+    return 1;
 }
 
 int
-db_change_parent(Objid oid, Objid parent)
+db_change_parent(Objid oid, Var new_parents)
 {
-    Objid old_parent;
-
-    if (!dbpriv_check_properties_for_chparent(oid, parent))
+    if (!check_for_duplicate_parents(new_parents))
 	return 0;
 
-    if (objects[oid]->child == NOTHING && objects[oid]->verbdefs == NULL) {
+    if (!dbpriv_check_properties_for_chparent(oid, new_parents))
+	return 0;
+
+    if (listlength(objects[oid]->children) == 0 && objects[oid]->verbdefs == NULL) {
 	/* Since this object has no children and no verbs, we know that it
 	   can't have had any part in affecting verb lookup, since we use first
 	   parent with verbs as a key in the verb lookup cache. */
-	/* The "no kids" rule is necessary because potentially one of the kids
-	   could have verbs on it--and that kid could have cache entries for
-	   THIS object's parentage. */
+	/* The "no kids" rule is necessary because potentially one of the
+	   children could have verbs on it--and that child could have cache
+	   entries for THIS object's parentage. */
 	/* In any case, don't clear the cache. */
 	;
     } else {
 	db_priv_affected_callable_verb_lookup();
     }
 
-    old_parent = objects[oid]->parent;
+    Var me = new_obj(oid);
+    Var old_parents = objects[oid]->parents;
 
-    if (old_parent != NOTHING)
-	LL_REMOVE(old_parent, child, oid, sibling);
+    /* save this; we need it later */
+    Var old_ancestors = db_ancestors(oid, true);
 
-    if (parent != NOTHING)
-	LL_APPEND(parent, child, oid, sibling);
+    Var parent;
+    int i, c;
 
-    objects[oid]->parent = parent;
-    dbpriv_fix_properties_after_chparent(oid, old_parent);
+    /* Remove me from my old parents' children. */
+    if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
+	objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, me);
+    else if (old_parents.type == TYPE_LIST)
+	FOR_EACH(parent, old_parents, i, c)
+	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
+
+    /* Add me to my new parents' children. */
+    if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
+	objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, me);
+    else if (new_parents.type == TYPE_LIST)
+	FOR_EACH(parent, new_parents, i, c)
+	    objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, me);
+
+    free_var(objects[oid]->parents);
+
+    /* Clean up the representation.
+     *  {#X} becomes #X
+     *  {} becomes NOTHING
+     */
+    if (new_parents.type == TYPE_LIST && new_parents.v.list[0].v.num == 0)
+	objects[oid]->parents = nothing;
+    else if (new_parents.type == TYPE_LIST && new_parents.v.list[0].v.num == 1)
+	objects[oid]->parents = var_dup(new_parents.v.list[1]);
+    else
+	objects[oid]->parents = var_dup(new_parents);
+
+    Var new_ancestors = db_ancestors(oid, true);
+
+    dbpriv_fix_properties_after_chparent(oid, old_ancestors, new_ancestors);
+
+    free_var(old_ancestors);
+    free_var(new_ancestors);
 
     return 1;
 }
@@ -441,45 +519,43 @@ db_change_parent(Objid oid, Objid parent)
 Objid
 db_object_location(Objid oid)
 {
-    return objects[oid]->location;
+    return objects[oid]->location.v.obj;
 }
 
 int
 db_count_contents(Objid oid)
 {
-    Objid c;
-    int i = 0;
-
-    for (c = objects[oid]->contents; c != NOTHING; c = objects[c]->next)
-	i++;
-
-    return i;
+    return listlength(objects[oid]->contents);
 }
 
 int
 db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
 {
-    Objid c;
+    int i, c = db_count_contents(oid);
 
-    for (c = objects[oid]->contents; c != NOTHING; c = objects[c]->next)
-	if (func(data, c))
+    for (i = 1; i <= c; i++)
+	if (func(data, objects[oid]->contents.v.list[i].v.obj))
 	    return 1;
 
     return 0;
 }
 
 void
-db_change_location(Objid oid, Objid location)
+db_change_location(Objid oid, Objid new_location)
 {
-    Objid old_location = objects[oid]->location;
+    Var me = new_obj(oid);
+
+    Objid old_location = objects[oid]->location.v.obj;
 
     if (valid(old_location))
-	LL_REMOVE(old_location, contents, oid, next);
+	objects[old_location]->contents = setremove(objects[old_location]->contents, var_dup(me));
 
-    if (valid(location))
-	LL_APPEND(location, contents, oid, next);
+    if (valid(new_location))
+	objects[new_location]->contents = setadd(objects[new_location]->contents, me);
 
-    objects[oid]->location = location;
+    free_var(objects[oid]->location);
+
+    objects[oid]->location = new_obj(new_location);
 }
 
 int
@@ -554,7 +630,7 @@ dbpriv_set_all_users(Var v)
 
 char rcsid_db_objects[] = "$Id: db_objects.c,v 1.4 1998/12/14 13:17:36 nop Exp $";
 
-/* 
+/*
  * $Log: db_objects.c,v $
  * Revision 1.4  1998/12/14 13:17:36  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims

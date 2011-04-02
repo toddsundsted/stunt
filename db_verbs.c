@@ -299,7 +299,15 @@ db_find_command_verb(Objid oid, const char *verb,
     static handle h;
     db_verb_handle vh;
 
-    for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent))
+    Var ancestors;
+    Var ancestor;
+    int i, c;
+
+    ancestors = db_ancestors(oid, false);
+    ancestors = listinsert(ancestors, new_obj(oid), 1);
+
+    FOR_EACH(ancestor, ancestors, i, c) {
+	o = dbpriv_find_object(ancestor.v.obj);
 	for (v = o->verbdefs; v; v = v->next) {
 	    db_arg_spec vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
 	    db_arg_spec viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
@@ -312,9 +320,14 @@ db_find_command_verb(Objid oid, const char *verb,
 		h.verbdef = v;
 		vh.ptr = &h;
 
+		free_var(ancestors);
+
 		return vh;
 	    }
 	}
+    }
+
+    free_var(ancestors);
 
     vh.ptr = 0;
 
@@ -450,6 +463,41 @@ db_log_cache_stats(void)
 
 #endif
 
+/*
+ * Used by `db_find_callable_verb' once a suitable starting point
+ * is found.  The function iterates through all ancestors looking
+ * for a matching verbdef.
+ */
+struct verbdef_definer_data {
+    Object *o;
+    Verbdef *v;
+};
+
+static struct verbdef_definer_data
+find_callable_verbdef(Objid oid, const char *verb)
+{
+    Object *o;
+    Verbdef *v = NULL;
+    Var ancestor, ancestors;
+    int i, c;
+
+    ancestors = db_ancestors(oid, true);
+
+    FOR_EACH(ancestor, ancestors, i, c) {
+	o = dbpriv_find_object(ancestor.v.obj);
+	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL) {
+	    break;
+	}
+    }
+
+    free_var(ancestors);
+
+    struct verbdef_definer_data data;
+    data.o = o;
+    data.v = v;
+    return data;
+}
+
 db_verb_handle
 db_find_callable_verb(Objid oid, const char *verb)
 {
@@ -463,78 +511,122 @@ db_find_callable_verb(Objid oid, const char *verb)
     db_verb_handle vh;
 
 #ifdef VERB_CACHE
-    unsigned int hash, bucket;
-    Objid first_parent_with_verbs = oid;
-    vc_entry *vc;
-
-    if (vc_table == NULL)
-	make_vc_table(DEFAULT_VC_SIZE);
-
-    for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent)) {
-	if (o->verbdefs != NULL)
-	    break;
-    }
-
-    if (o) {
-	first_parent_with_verbs = o->id;
-    } else {
-	first_parent_with_verbs = NOTHING;
-    }
-
-    hash = str_hash(verb) ^ (~first_parent_with_verbs);		/* ewww, but who cares */
-    bucket = hash % vc_size;
-
-    for (vc = vc_table[bucket]; vc; vc = vc->next) {
-	if (hash == vc->hash
-	    && first_parent_with_verbs == vc->oid_key
-	    && !mystrcasecmp(verb, vc->verbname)) {
-	    /* we haaave a winnaaah */
-	    if (vc->h.verbdef) {
-		verbcache_hit++;
-		vh.ptr = &vc->h;
-	    } else {
-		verbcache_neg_hit++;
-		vh.ptr = 0;
-	    }
-	    return vh;
-	}
-    }
-
-    /* A swing and a miss. */
-    verbcache_miss++;
-#else
-    o = dbpriv_find_object(oid);
-#endif
-
-#ifdef VERB_CACHE
     /*
-     * Add the entry to the verbcache whether we find it or not.  This means
-     * we do "negative caching", keeping track of failed lookups so that
-     * repeated failures hit the cache instead of going through a lookup.
+     * First, find the `first_parent_with_verbs'.  This is the first
+     * ancestor of a parent that actually defines a verb.  If I define
+     * verbs, then `first_parent_with_verbs' is me.  Otherwise,
+     * iterate through each parent in turn, find the first ancestor
+     * with verbs, and then try to find the verb starting at that
+     * point.
      */
-    new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+    Var stack = new_list(0);
+    stack = listappend(stack, new_obj(oid));
 
-    new_vc->hash = hash;
-    new_vc->oid_key = first_parent_with_verbs;
-    new_vc->verbname = str_dup(verb);
-    new_vc->h.verbdef = NULL;
-    new_vc->next = vc_table[bucket];
-    vc_table[bucket] = new_vc;
+    try_again:
+    while (listlength(stack) > 0) {
+	Var top;
+
+	POP_TOP(top, stack);
+
+	if (!valid(top.v.obj)) {
+	    /* just consume it */
+	    free_var(top);
+	    continue;
+	}
+	else {
+	    o = dbpriv_find_object(top.v.obj);
+	    if (o->verbdefs == NULL) {
+		/* keep looking */
+		if (TYPE_OBJ == o->parents.type)
+		    stack = listinsert(stack, var_ref(o->parents), 1);
+		else
+		    stack = listconcat(var_ref(o->parents), stack);
+		free_var(top);
+		continue;
+	    }
+	}
+
+	free_var(top);
+
+	Objid first_parent_with_verbs = o ? o->id : NOTHING;
+
+	/* found something with verbdefs, now check the cache */
+	unsigned int hash, bucket;
+	vc_entry *vc;
+
+	if (vc_table == NULL)
+	    make_vc_table(DEFAULT_VC_SIZE);
+
+	hash = str_hash(verb) ^ (~first_parent_with_verbs);	/* ewww, but who cares */
+	bucket = hash % vc_size;
+
+	for (vc = vc_table[bucket]; vc; vc = vc->next) {
+	    if (hash == vc->hash
+		&& first_parent_with_verbs == vc->oid_key
+		&& !mystrcasecmp(verb, vc->verbname)) {
+		/* we haaave a winnaaah */
+		if (vc->h.verbdef) {
+		    verbcache_hit++;
+		    vh.ptr = &vc->h;
+		} else {
+		    verbcache_neg_hit++;
+		    vh.ptr = 0;
+		}
+		if (vh.ptr) {
+		    free_var(stack);
+		    return vh;
+		}
+		goto try_again;
+	    }
+	}
+
+	/* a swing and a miss */
+	verbcache_miss++;
+
+#else
+	o = dbpriv_find_object(oid);
 #endif
 
-    for ( /* from above */ ; o; o = dbpriv_find_object(o->parent))
-	if ((v = find_verbdef_by_name(o, verb, 1)) != 0) {
 #ifdef VERB_CACHE
-	    new_vc->h.definer = o->id;
-	    new_vc->h.verbdef = v;
+	/*
+	 * Add the entry to the verbcache whether we find it or not.  This
+	 * means we do "negative caching", keeping track of failed lookups
+	 * so that repeated failures hit the cache instead of going
+	 * through a lookup.
+	 */
+	new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+
+	new_vc->hash = hash;
+	new_vc->oid_key = first_parent_with_verbs;
+	new_vc->verbname = str_dup(verb);
+	new_vc->h.verbdef = NULL;
+	new_vc->next = vc_table[bucket];
+	vc_table[bucket] = new_vc;
+#endif
+
+	struct verbdef_definer_data data = find_callable_verbdef(o->id, verb);
+	if (data.o != NULL && data.v != NULL) {
+
+#ifdef VERB_CACHE
+	    free_var(stack);
+
+	    new_vc->h.definer = data.o->id;
+	    new_vc->h.verbdef = data.v;
 	    vh.ptr = &new_vc->h;
 #else
-	    h.definer = o->id;
-	    h.verbdef = v;
+	    h.definer = data.o->id;
+	    h.verbdef = data.v;
 	    vh.ptr = &h;
 #endif
 	    return vh;
 	}
+
+#ifdef VERB_CACHE
+    }
+
+    free_var(stack);
+#endif
+
     /*
      * note that the verbcache has cleared h.verbdef, so it defaults to a
      * "miss" cache if the for loop doesn't win
