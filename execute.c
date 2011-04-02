@@ -600,17 +600,45 @@ call_verb2(Objid this, const char *vname, Var args, int do_pass)
     Var *env;
     Var v;
 
-    if (do_pass)
+    if (do_pass) {
 	if (!valid(RUN_ACTIV.vloc))
 	    return E_INVIND;
-	else
-	    where = db_object_parent(RUN_ACTIV.vloc);
-    else
-	where = this;
 
-    if (!valid(where))
-	return E_INVIND;
-    h = db_find_callable_verb(where, vname);
+	Var parents = db_object_parent(RUN_ACTIV.vloc);
+
+	if (TYPE_LIST == parents.type) {
+	    /* Loop over each parent, looking for the first parent
+	     * that defines a suitable verb that we can pass to.
+	     */
+	    Var parent;
+	    int i, c;
+	    FOR_EACH(parent, parents, i, c) {
+		where = parent.v.obj;
+		h = db_find_callable_verb(where, vname);
+		if (h.ptr)
+		    break;
+	    }
+	}
+	else if (TYPE_OBJ == parents.type) {
+	    /* Look for a suitable verb on the parent, if the parent
+	     * is valid.
+	     */
+	    where = parents.v.obj;
+	    if (!valid(where))
+		return E_INVIND;
+	    h = db_find_callable_verb(where, vname);
+	}
+	else {
+	    return E_VERBNF;
+	}
+    }
+    else {
+	where = this;
+	if (!valid(where))
+	    return E_INVIND;
+	h = db_find_callable_verb(where, vname);
+    }
+
     if (!h.ptr)
 	return E_VERBNF;
     else if (!push_activation())
