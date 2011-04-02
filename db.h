@@ -18,10 +18,32 @@
 #ifndef DB_h
 #define DB_h 1
 
+#include <stdbool.h>
+
 #include "config.h"
 #include "program.h"
 #include "structures.h"
 
+static inline bool
+is_list_of_objs(Var v)
+{
+    int i;
+
+    if (TYPE_LIST != v.type)
+	return false;
+
+    for (i = 1; i <= v.v.list[0].v.num; i++)
+	if (TYPE_OBJ != v.v.list[i].type)
+	    return false;
+
+    return true;
+}
+
+static inline bool
+is_obj_or_list_of_objs(Var v)
+{
+    return is_obj(v) || is_list_of_objs(v);
+}
 
 /**** file system ****/
 
