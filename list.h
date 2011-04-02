@@ -63,6 +63,30 @@ enlist_var(Var v)
 }
 
 /*
+ * Iterate over the values in the list `lst'.  Sets `val' to each
+ * value, in turn.  `itr' and `cnt' must be int variables.  In the
+ * body of the statement, they hold the current index and total count,
+ * respectively.  Use the macro as follows (assuming you already have
+ * a list in `items'):
+ *   Var item;
+ *   int i, c;
+ *   FOR_EACH(item, items, i, c) {
+ *       printf("%d of %d, item = %s\n", i, c, value_to_literal(item));
+ *   }
+ */
+#define FOR_EACH(val, lst, idx, cnt)				\
+for (idx = 1, cnt = lst.v.list[0].v.num;			\
+     idx <= cnt && (val = lst.v.list[idx], 1);			\
+     idx++)
+
+/*
+ * Pop the first value off `stck' and put it in `tp'.
+ */
+#define POP_TOP(tp, stck)					\
+tp = var_ref(stck.v.list[1]);					\
+stck = listdelete(stck, 1);					\
+
+/*
  * $Log: list.h,v $
  * Revision 1.3  1998/12/14 13:17:58  nop
  * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
