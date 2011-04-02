@@ -35,7 +35,17 @@ extern Var new_list(int size);
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);
 
-/* 
+/*
+ * Returns the length of the given list `l'.  Does *not* check to
+ * ensure `l' is, in fact, a list.
+ */
+static inline int32
+listlength(Var l)
+{
+    return l.v.list[0].v.num;
+}
+
+/*
  * $Log: list.h,v $
  * Revision 1.4  2010/03/30 23:06:51  wrog
  * value_to_literal() replaced by unparse_value()
