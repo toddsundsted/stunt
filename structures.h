@@ -112,6 +112,7 @@ struct Var {
 
 extern Var zero;		/* see numbers.c */
 extern Var nothing;		/* see objects.c */
+extern Var clear;		/* see objects.c */
 
 /*
  * Hard limits on string and list sizes are imposed mainly to keep

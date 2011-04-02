@@ -593,12 +593,16 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 Var nothing;			/* useful constant */
+Var clear;			/* useful constant */
 
 void
 register_objects(void)
 {
     nothing.type = TYPE_OBJ;
     nothing.v.obj = NOTHING;
+    clear.type = TYPE_CLEAR;
+    clear.v.num = 0;
+
     register_function("toobj", 1, 1, bf_toobj, TYPE_ANY);
     register_function("typeof", 1, 1, bf_typeof, TYPE_ANY);
     register_function_with_read_write("create", 1, 2, bf_create,
