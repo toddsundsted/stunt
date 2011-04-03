@@ -1302,12 +1302,14 @@ do {    						    	\
 		    Var value;
 		    int success;
 		    success = hashlookup(list, index, &value);
-		    free_var(index);
-		    free_var(list);
 		    if (!success) {
+			free_var(index);
+			free_var(list);
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH_REF(value);
+			free_var(index);
+			free_var(list);
 		    }
 		} else {	/* list.type == TYPE_STR */
 		    if (index.v.num <= 0
