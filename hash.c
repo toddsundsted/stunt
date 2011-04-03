@@ -303,22 +303,20 @@ hashresize(Var v)
 }
 
 void
-hashinsert(Var v, Var key, Var value)
+hashinsert(Var hash, Var key, Var value)
+/* consumes `key' and `value', does not consume `hash' */
 {
-    HashNode **n;
+    HashNode **n = do_hashlookup(hash, key);
 
-    n = do_hashlookup(v, key);
     if (*n) {
-        var_ref(value);
         free_var((*n)->value);
         (*n)->value = value;
+        free_var(key);
     } else {
-        var_ref(key);
-        var_ref(value);
         *n = new_hashnode(key, value);
-        v.v.hash->nnodes++;
-        if (!v.v.hash->frozen) {
-            hashresize(v);
+        hash.v.hash->nnodes++;
+        if (!hash.v.hash->frozen) {
+            hashresize(hash);
         }
     }
 }

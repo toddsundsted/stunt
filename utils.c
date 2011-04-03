@@ -193,7 +193,7 @@ complex_var_ref(Var v)
 static void
 complex_hash_dup(Var key, Var value, void *tableptr, int32 first)
 {
-    hashinsert(*((Var *)tableptr), key, value);
+    hashinsert(*((Var *)tableptr), var_dup(key), var_dup(value));
 }
 
 Var
