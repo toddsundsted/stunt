@@ -238,7 +238,7 @@ hashdelete(Var v, Var key)
     for (n = 0; n < v.v.hash->size; n++) {
         for (hn = v.v.hash->nodes[n]; hn; hn = hn->next) {
             if (do_compare(hn->key, key))
-	        hashinsert(new, hn->key, hn->value);
+	        hashinsert(new, var_ref(hn->key), var_ref(hn->value));
         }
     }
 
