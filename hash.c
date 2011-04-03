@@ -442,7 +442,7 @@ bf_hashvalues(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_hash(void)
 {
-    register_function("hashdelete", 2, 2, bf_hashdelete, TYPE_HASH, TYPE_ANY);
-    register_function("hashkeys", 1, 1, bf_hashkeys, TYPE_HASH);
-    register_function("hashvalues", 1, 1, bf_hashvalues, TYPE_HASH);
+    register_function("mapdelete", 2, 2, bf_hashdelete, TYPE_HASH, TYPE_ANY);
+    register_function("mapkeys", 1, 1, bf_hashkeys, TYPE_HASH);
+    register_function("mapvalues", 1, 1, bf_hashvalues, TYPE_HASH);
 }

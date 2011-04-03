@@ -99,7 +99,7 @@ new_builtin_names(DB_Version version)
 	    bi->names[SLOT_FLOAT] = str_dup("FLOAT");
 	}
         if (version >= DBV_Hash) {
-            bi->names[SLOT_HASH] = str_dup("HASH");
+            bi->names[SLOT_HASH] = str_dup("MAP");
         }
     }
     return copy_names(builtins[version]);

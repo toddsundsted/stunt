@@ -255,7 +255,7 @@ list2str(Var * args)
 	    stream_printf(str, "%g", *args[i].v.fnum);
 	    break;
 	case TYPE_HASH:
-	    stream_add_string(str, "{hash}");
+	    stream_add_string(str, "{map}");
 	    break;
 	case TYPE_LIST:
 	    stream_add_string(str, "{list}");
