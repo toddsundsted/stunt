@@ -19,32 +19,10 @@ class TestObject < Test::Unit::TestCase
       assert_equal [], children(c)
       assert_equal [], children(d)
 
-      e = create(NOTHING, NOTHING)
-      f = create(NOTHING, AMBIGUOUS_MATCH)
-      g = create(NOTHING, FAILED_MATCH)
-      h = create(NOTHING, invalid_object)
-
       assert_equal player, get(a, 'owner')
       assert_equal player, get(b, 'owner')
       assert_equal player, get(c, 'owner')
       assert_equal a, get(d, 'owner')
-
-      # I am changing how the server interprets the `owner' when it is
-      # not a valid object reference -- in all cases, make the owner
-      # the object itself (if the caller is a wizard).
-      if function_info('create')[3] == [1, 1]
-        # the old way...
-        assert_equal e, get(e, 'owner')
-        assert_equal AMBIGUOUS_MATCH, get(f, 'owner')
-        assert_equal FAILED_MATCH, get(g, 'owner')
-        assert_equal invalid_object, get(h, 'owner')
-      else
-        # the new way...
-        assert_equal e, get(e, 'owner')
-        assert_equal f, get(f, 'owner')
-        assert_equal g, get(g, 'owner')
-        assert_equal h, get(h, 'owner')
-      end
 
       if function_info('create')[3] == [-1, 1]
         i = create([b, c])
@@ -59,13 +37,59 @@ class TestObject < Test::Unit::TestCase
 
         assert_equal [], children(i)
         assert_equal [], children(j)
-        assert_equal [], children(l)
+        assert_equal [], children(k)
         assert_equal [], children(l)
 
         assert_equal player, get(i, 'owner')
         assert_equal i, get(j, 'owner')
         assert_equal k, get(k, 'owner')
         assert_equal player, get(l, 'owner')
+      end
+    end
+
+    # I changed how the server interprets the the second argument to
+    # `create()' when it is not a valid object reference -- raise
+    # E_INVARG unless it #-1 (AKA $nothing).
+
+    run_test_as('wizard') do
+      e = create(NOTHING, NOTHING)
+      f = create(NOTHING, AMBIGUOUS_MATCH)
+      g = create(NOTHING, FAILED_MATCH)
+      h = create(NOTHING, invalid_object)
+
+      if function_info('create')[3] == [1, 1]
+        # the old way...
+        assert_equal e, get(e, 'owner')
+        assert_equal AMBIGUOUS_MATCH, get(f, 'owner')
+        assert_equal FAILED_MATCH, get(g, 'owner')
+        assert_equal invalid_object, get(h, 'owner')
+      else
+        # the new way...
+        assert_equal e, get(e, 'owner')
+        assert_equal E_INVARG, f
+        assert_equal E_INVARG, g
+        assert_equal E_INVARG, h
+      end
+    end
+
+    run_test_as('programmer') do
+      e = create(NOTHING, NOTHING)
+      f = create(NOTHING, AMBIGUOUS_MATCH)
+      g = create(NOTHING, FAILED_MATCH)
+      h = create(NOTHING, invalid_object)
+
+      if function_info('create')[3] == [1, 1]
+        # the old way...
+        assert_equal E_PERM, e
+        assert_equal E_PERM, f
+        assert_equal E_PERM, g
+        assert_equal E_PERM, h
+      else
+        # the new way...
+        assert_equal E_PERM, e
+        assert_equal E_INVARG, f
+        assert_equal E_INVARG, g
+        assert_equal E_INVARG, h
       end
     end
   end
@@ -143,10 +167,22 @@ class TestObject < Test::Unit::TestCase
       programmer = player
 
       assert_equal E_PERM, create(a)
-      assert_equal E_PERM, create(b, wizard)
-      assert_equal E_PERM, create(b, NOTHING)
-      assert_equal E_PERM, create(b, invalid_object)
+
+      # Because of the aforementioned change to `create()'...
+      if function_info('create')[3] == [1, 1]
+        # the old way...
+        assert_equal E_PERM, create(b, invalid_object)
+        assert_equal E_PERM, create(b, wizard)
+        assert_equal E_PERM, create(b, NOTHING)
+      else
+        # the new way...
+        assert_equal E_INVARG, create(b, invalid_object)
+        assert_equal E_PERM, create(b, wizard)
+        assert_equal E_PERM, create(b, NOTHING)
+      end
+
       assert_not_equal E_PERM, create(b)
+
       if function_info('create')[3] == [-1, 1]
         assert_equal E_PERM, create([a, b])
         assert_equal E_PERM, create([b, a])

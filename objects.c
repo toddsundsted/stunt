@@ -301,9 +301,11 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 		       ? arglist.v.list[2].v.obj
 		       : progr);
 
-	if ((arglist.v.list[1].type == TYPE_OBJ
-	     && !valid(arglist.v.list[1].v.obj)
-	     && arglist.v.list[1].v.obj != NOTHING)
+	if ((!valid(owner)
+	     && owner != NOTHING)
+	    || (arglist.v.list[1].type == TYPE_OBJ
+		&& !valid(arglist.v.list[1].v.obj)
+		&& arglist.v.list[1].v.obj != NOTHING)
 	    || (arglist.v.list[1].type == TYPE_LIST
 		&& !all_valid(arglist.v.list[1]))) {
 	    free_var(arglist);
