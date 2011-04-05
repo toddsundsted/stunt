@@ -195,8 +195,10 @@
   It is not recommended that files containing unprintable ASCII  data be
   read in text mode, for obvious reasons.
 
-  The final character is either 'n' or 'f'.  If this character is that
-  writes data to the stream.  If it is 'n' then this won't happen.
+  The final character is either 'n' or 'f'.  If this character is 'f',
+  whenever data is written to the file, the MOO will force it to finish
+  writing to the physical disk before returning.  If it is 'n' then
+  this won't happen.
 
   This is implemented using fopen().
 
