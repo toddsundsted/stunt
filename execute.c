@@ -904,7 +904,9 @@ do {    						    	\
 		value = POP(); /* any */
 		hash = POP(); /* should be hash */
 		if (hash.type != TYPE_HASH) {
+		    /* short of byte-code engineering, it shouldn't even be possible to get here */
 		    free_var(key);
+		    free_var(value);
 		    free_var(hash);
 		    PUSH_ERROR(E_TYPE);
 		} else {
