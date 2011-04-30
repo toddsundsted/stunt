@@ -476,10 +476,18 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
     len = 0;
 
     if (done) {
-      if (stat != yajl_status_ok)
+      if (stat != yajl_status_ok) {
+        /* clean up the stack */
+        while (pctx.top != &pctx.stack) {
+          Var v = POP(pctx.top);
+          free_var(v);
+        }
         pack = make_error_pack(E_INVARG);
-      else
-        pack = make_var_pack(pctx.top->v);
+      }
+      else {
+        Var v = POP(pctx.top);
+        pack = make_var_pack(v);
+      }
     }
   }
 
