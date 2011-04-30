@@ -158,11 +158,17 @@ class TestJson < Test::Unit::TestCase
       assert_equal E_INVARG, parse_json('[')
       assert_equal E_INVARG, parse_json('{')
       assert_equal E_INVARG, parse_json('\"')
-      #assert_equal E_INVARG, parse_json('12abc')
+      assert_equal E_INVARG, parse_json('[12abc]')
       assert_equal E_INVARG, parse_json('1..2')
       assert_equal E_INVARG, parse_json('..')
       assert_equal E_INVARG, parse_json('@$*&#*')
       assert_equal E_INVARG, parse_json('[{[{[')
+    end
+  end
+
+  def test_for_things_I_hate_that_work
+    run_test_as('wizard') do
+      assert_equal 12, parse_json('12abc')
     end
   end
 
