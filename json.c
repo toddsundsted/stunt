@@ -76,25 +76,27 @@
  */
 
 struct stack_item {
-  struct stack_item *prev;
-  Var v;
+    struct stack_item *prev;
+    Var v;
 };
 
 static void
-push(struct stack_item **top, Var v) {
-  struct stack_item *item = malloc(sizeof(struct stack_item));
-  item->prev = *top;
-  item->v = v;
-  *top = item;
+push(struct stack_item **top, Var v)
+{
+    struct stack_item *item = malloc(sizeof(struct stack_item));
+    item->prev = *top;
+    item->v = v;
+    *top = item;
 }
 
 static Var
-pop(struct stack_item **top) {
-  struct stack_item *item = *top;
-  *top = item->prev;
-  Var v = item->v;
-  free(item);
-  return v;
+pop(struct stack_item **top)
+{
+    struct stack_item *item = *top;
+    *top = item->prev;
+    Var v = item->v;
+    free(item);
+    return v;
 }
 
 #define PUSH(top, v) push(&(top), v)
@@ -102,17 +104,17 @@ pop(struct stack_item **top) {
 #define POP(top) pop(&(top))
 
 typedef enum {
-  MODE_COMMON_SUBSET, MODE_EMBEDDED_TYPES
+    MODE_COMMON_SUBSET, MODE_EMBEDDED_TYPES
 } mode_type;
 
 struct parse_context {
-  struct stack_item stack;
-  struct stack_item *top;
-  mode_type mode;
+    struct stack_item stack;
+    struct stack_item *top;
+    mode_type mode;
 };
 
 struct generate_context {
-  mode_type mode;
+    mode_type mode;
 };
 
 #define ARRAY_SENTINEL -1
@@ -122,297 +124,320 @@ struct generate_context {
 static var_type
 valid_type(const char **val, size_t *len)
 {
-  int c;
+    int c;
 
-  /* format: "...|*X*" -- where X is o|i|f|e|s */
+    /* format: "...|*X*" -- where X is o|i|f|e|s */
 
-  if (3 < *len &&
-      '|' == (*val)[*len - 4] &&
-      '*' == (*val)[*len - 3] &&
-      ('o' == (c = (*val)[*len - 2]) || 'i' == c || 'f' == c || 'e' == c || 's' == c) &&
-      '*' == (*val)[*len - 1]
-     ) {
-    *len = *len - 4;
-    switch (c) {
-    case 'o': return TYPE_OBJ;
-    case 'i': return TYPE_INT;
-    case 'f': return TYPE_FLOAT;
-    case 'e': return TYPE_ERR;
-    case 's': return TYPE_STR;
+    if (3 < *len &&
+	'|' == (*val)[*len - 4] &&
+	'*' == (*val)[*len - 3] &&
+	('o' == (c = (*val)[*len - 2]) || 'i' == c || 'f' == c || 'e' == c
+	 || 's' == c) && '*' == (*val)[*len - 1]
+	) {
+	*len = *len - 4;
+	switch (c) {
+	case 'o':
+	    return TYPE_OBJ;
+	case 'i':
+	    return TYPE_INT;
+	case 'f':
+	    return TYPE_FLOAT;
+	case 'e':
+	    return TYPE_ERR;
+	case 's':
+	    return TYPE_STR;
+	}
     }
-  }
 
-  return TYPE_NONE;
+    return TYPE_NONE;
 }
 
 static const char *
 append_type(const char *str, var_type type)
 {
-  static Stream *stream = NULL;
+    static Stream *stream = NULL;
 
-  if (NULL == stream) stream = new_stream(20);
+    if (NULL == stream)
+	stream = new_stream(20);
 
-  stream_add_string(stream, str);
-  switch (type) {
-  case TYPE_OBJ:
-    stream_add_string(stream, "|*o*");
-    break;
-  case TYPE_INT:
-    stream_add_string(stream, "|*i*");
-    break;
-  case TYPE_FLOAT:
-    stream_add_string(stream, "|*f*");
-    break;
-  case TYPE_ERR:
-    stream_add_string(stream, "|*e*");
-    break;
-  case TYPE_STR:
-    stream_add_string(stream, "|*s*");
-    break;
-  }
+    stream_add_string(stream, str);
+    switch (type) {
+    case TYPE_OBJ:
+	stream_add_string(stream, "|*o*");
+	break;
+    case TYPE_INT:
+	stream_add_string(stream, "|*i*");
+	break;
+    case TYPE_FLOAT:
+	stream_add_string(stream, "|*f*");
+	break;
+    case TYPE_ERR:
+	stream_add_string(stream, "|*e*");
+	break;
+    case TYPE_STR:
+	stream_add_string(stream, "|*s*");
+	break;
+    }
 
-  return reset_stream(stream);
+    return reset_stream(stream);
 }
 
 static int
 handle_null(void *ctx)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var v;
-  v.type = TYPE_STR;
-  v.v.str = str_dup("null");
-  PUSH(pctx->top, v);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var v;
+    v.type = TYPE_STR;
+    v.v.str = str_dup("null");
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_boolean(void *ctx, int boolean)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var v;
-  v.type = TYPE_STR;
-  v.v.str = str_dup(boolean ? "true" : "false");
-  PUSH(pctx->top, v);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var v;
+    v.type = TYPE_STR;
+    v.v.str = str_dup(boolean ? "true" : "false");
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_integer(void *ctx, long integerVal)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var v;
-  v.type = TYPE_INT;
-  v.v.num = (int)integerVal;
-  PUSH(pctx->top, v);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var v;
+    v.type = TYPE_INT;
+    v.v.num = (int) integerVal;
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_float(void *ctx, double doubleVal)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var v;
-  v = new_float(doubleVal);
-  PUSH(pctx->top, v);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var v;
+    v = new_float(doubleVal);
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  var_type type;
-  Var v;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    var_type type;
+    Var v;
 
-  /* The original solution (using stringVal and stringLen directly)
-     was causing a crash (EXC_BAD_ACCESS) on OSX.  This was the
-     most straight-forward solution I found. */
-  const char* val = stringVal;
-  size_t len = stringLen;
+    /* The original solution (using stringVal and stringLen directly)
+       was causing a crash (EXC_BAD_ACCESS) on OSX.  This was the
+       most straight-forward solution I found. */
+    const char *val = stringVal;
+    size_t len = stringLen;
 
-  if (MODE_EMBEDDED_TYPES == pctx->mode && TYPE_NONE != (type = valid_type(&val, &len))) {
-    switch (type) {
-      case TYPE_OBJ: {
-        char *p;
-        if (*val == '#')
-          val++;
-        v.type = TYPE_OBJ;
-        v.v.num = strtol(val, &p, 10);
-        break;
-      }
-      case TYPE_INT: {
-        char *p;
-        v.type = TYPE_INT;
-        v.v.num = strtol(val, &p, 10);
-        break;
-      }
-      case TYPE_FLOAT: {
-        char *p;
-        v = new_float(strtod(val, &p));
-        break;
-      }
-      case TYPE_ERR: {
-        char temp[len + 1];
-        strncpy(temp, val, len);
-        temp[len] = '\0';
-        v.type = TYPE_ERR;
-        int err = parse_error(temp);
-        v.v.err = err > -1 ? err : E_NONE;
-        break;
-      }
-      case TYPE_STR: {
-        char temp[len + 1];
-        strncpy(temp, val, len);
-        temp[len] = '\0';
-        v.type = TYPE_STR;
-        v.v.str = str_dup(temp);
-        break;
-      }
+    if (MODE_EMBEDDED_TYPES == pctx->mode
+	&& TYPE_NONE != (type = valid_type(&val, &len))) {
+	switch (type) {
+	case TYPE_OBJ:
+	    {
+		char *p;
+		if (*val == '#')
+		    val++;
+		v.type = TYPE_OBJ;
+		v.v.num = strtol(val, &p, 10);
+		break;
+	    }
+	case TYPE_INT:
+	    {
+		char *p;
+		v.type = TYPE_INT;
+		v.v.num = strtol(val, &p, 10);
+		break;
+	    }
+	case TYPE_FLOAT:
+	    {
+		char *p;
+		v = new_float(strtod(val, &p));
+		break;
+	    }
+	case TYPE_ERR:
+	    {
+		char temp[len + 1];
+		strncpy(temp, val, len);
+		temp[len] = '\0';
+		v.type = TYPE_ERR;
+		int err = parse_error(temp);
+		v.v.err = err > -1 ? err : E_NONE;
+		break;
+	    }
+	case TYPE_STR:
+	    {
+		char temp[len + 1];
+		strncpy(temp, val, len);
+		temp[len] = '\0';
+		v.type = TYPE_STR;
+		v.v.str = str_dup(temp);
+		break;
+	    }
+	}
+    } else {
+	char temp[stringLen + 1];
+	strncpy(temp, stringVal, stringLen);
+	temp[stringLen] = '\0';
+	v.type = TYPE_STR;
+	v.v.str = str_dup(temp);
     }
-  }
-  else {
-    char temp[stringLen + 1];
-    strncpy(temp, stringVal, stringLen);
-    temp[stringLen] = '\0';
-    v.type = TYPE_STR;
-    v.v.str = str_dup(temp);
-  }
 
-  PUSH(pctx->top, v);
-  return 1;
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_start_map(void *ctx)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var k, v;
-  k.type = MAP_SENTINEL;
-  PUSH(pctx->top, k);
-  v.type = MAP_SENTINEL;
-  PUSH(pctx->top, v);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var k, v;
+    k.type = MAP_SENTINEL;
+    PUSH(pctx->top, k);
+    v.type = MAP_SENTINEL;
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_end_map(void *ctx)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var list = new_hash();
-  Var k, v;
-  for (v = POP(pctx->top), k = POP(pctx->top); (int)v.type > MAP_SENTINEL && (int)k.type > MAP_SENTINEL; v = POP(pctx->top), k = POP(pctx->top)) {
-    hashinsert(list, k, v);
-  }
-  PUSH(pctx->top, list);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var list = new_hash();
+    Var k, v;
+    for (v = POP(pctx->top), k = POP(pctx->top);
+	 (int) v.type > MAP_SENTINEL && (int) k.type > MAP_SENTINEL;
+	 v = POP(pctx->top), k = POP(pctx->top)) {
+	hashinsert(list, k, v);
+    }
+    PUSH(pctx->top, list);
+    return 1;
 }
 
 static int
 handle_start_array(void *ctx)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var v;
-  v.type = ARRAY_SENTINEL;
-  PUSH(pctx->top, v);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var v;
+    v.type = ARRAY_SENTINEL;
+    PUSH(pctx->top, v);
+    return 1;
 }
 
 static int
 handle_end_array(void *ctx)
 {
-  struct parse_context *pctx = (struct parse_context *)ctx;
-  Var list = new_list(0);
-  Var v;
-  for (v = POP(pctx->top); (int)v.type > ARRAY_SENTINEL; v = POP(pctx->top)) {
-    list = listinsert(list, v, 1);
-  }
-  PUSH(pctx->top, list);
-  return 1;
+    struct parse_context *pctx = (struct parse_context *) ctx;
+    Var list = new_list(0);
+    Var v;
+    for (v = POP(pctx->top); (int) v.type > ARRAY_SENTINEL;
+	 v = POP(pctx->top)) {
+	list = listinsert(list, v, 1);
+    }
+    PUSH(pctx->top, list);
+    return 1;
 }
 
 static yajl_gen_status
 generate_key(yajl_gen g, Var v, void *ctx)
 {
-  struct generate_context *gctx = (struct generate_context *)ctx;
+    struct generate_context *gctx = (struct generate_context *) ctx;
 
-  switch (v.type) {
+    switch (v.type) {
     case TYPE_OBJ:
     case TYPE_INT:
     case TYPE_FLOAT:
-    case TYPE_ERR: {
-      const char *tmp = value_to_literal(v);
-      if (MODE_EMBEDDED_TYPES == gctx->mode)
-        tmp = append_type(tmp, v.type);
-      return yajl_gen_string(g, tmp, strlen(tmp));
+    case TYPE_ERR:
+	{
+	    const char *tmp = value_to_literal(v);
+	    if (MODE_EMBEDDED_TYPES == gctx->mode)
+		tmp = append_type(tmp, v.type);
+	    return yajl_gen_string(g, tmp, strlen(tmp));
+	}
+    case TYPE_STR:
+	{
+	    const char *tmp = v.v.str;
+	    size_t len = strlen(tmp);
+	    if (MODE_EMBEDDED_TYPES == gctx->mode)
+		if (TYPE_NONE != valid_type(&tmp, &len))
+		    tmp = append_type(tmp, v.type);
+	    return yajl_gen_string(g, tmp, strlen(tmp));
+	}
     }
-    case TYPE_STR: {
-      const char *tmp = v.v.str;
-      size_t len = strlen(tmp);
-      if (MODE_EMBEDDED_TYPES == gctx->mode)
-        if (TYPE_NONE != valid_type(&tmp, &len))
-          tmp = append_type(tmp, v.type);
-      return yajl_gen_string(g, tmp, strlen(tmp));
-    }
-  }
 
-  return yajl_gen_keys_must_be_strings;
+    return yajl_gen_keys_must_be_strings;
 }
 
 static yajl_gen_status
 generate(yajl_gen g, Var v, void *ctx)
 {
-  struct generate_context *gctx = (struct generate_context *)ctx;
+    struct generate_context *gctx = (struct generate_context *) ctx;
 
-  switch (v.type) {
+    switch (v.type) {
     case TYPE_INT:
-      return yajl_gen_integer(g, v.v.num);
+	return yajl_gen_integer(g, v.v.num);
     case TYPE_FLOAT:
-      return yajl_gen_double(g, *v.v.fnum);
+	return yajl_gen_double(g, *v.v.fnum);
     case TYPE_OBJ:
-    case TYPE_ERR: {
-      const char *tmp = value_to_literal(v);
-      if (MODE_EMBEDDED_TYPES == gctx->mode)
-        tmp = append_type(tmp, v.type);
-      return yajl_gen_string(g, tmp, strlen(tmp));
+    case TYPE_ERR:
+	{
+	    const char *tmp = value_to_literal(v);
+	    if (MODE_EMBEDDED_TYPES == gctx->mode)
+		tmp = append_type(tmp, v.type);
+	    return yajl_gen_string(g, tmp, strlen(tmp));
+	}
+    case TYPE_STR:
+	{
+	    const char *tmp = v.v.str;
+	    size_t len = strlen(tmp);
+	    if (MODE_EMBEDDED_TYPES == gctx->mode)
+		if (TYPE_NONE != valid_type(&tmp, &len))
+		    tmp = append_type(tmp, v.type);
+	    return yajl_gen_string(g, tmp, strlen(tmp));
+	}
+    case TYPE_HASH:
+	{
+	    int i;
+	    HashNode *hn;
+	    yajl_gen_status status;
+	    yajl_gen_map_open(g);
+	    for (i = 0; i < v.v.hash->size; i++) {
+		for (hn = v.v.hash->nodes[i]; hn; hn = hn->next) {
+		    status = generate_key(g, hn->key, ctx);
+		    if (yajl_gen_status_ok != status)
+			return status;
+		    status = generate(g, hn->value, ctx);
+		    if (yajl_gen_status_ok != status)
+			return status;
+		}
+	    }
+	    yajl_gen_map_close(g);
+	    return yajl_gen_status_ok;
+	}
+    case TYPE_LIST:
+	{
+	    int i;
+	    yajl_gen_status status;
+	    yajl_gen_array_open(g);
+	    for (i = 1; i <= v.v.list[0].v.num; i++) {
+		status = generate(g, v.v.list[i], ctx);
+		if (yajl_gen_status_ok != status)
+		    return status;
+	    }
+	    yajl_gen_array_close(g);
+	    return yajl_gen_status_ok;
+	}
     }
-    case TYPE_STR: {
-      const char *tmp = v.v.str;
-      size_t len = strlen(tmp);
-      if (MODE_EMBEDDED_TYPES == gctx->mode)
-        if (TYPE_NONE != valid_type(&tmp, &len))
-          tmp = append_type(tmp, v.type);
-      return yajl_gen_string(g, tmp, strlen(tmp));
-    }
-    case TYPE_HASH: {
-      int i;
-      HashNode *hn;
-      yajl_gen_status status;
-      yajl_gen_map_open(g);
-      for (i = 0; i < v.v.hash->size; i++) {
-        for (hn = v.v.hash->nodes[i]; hn; hn = hn->next) {
-          status = generate_key(g, hn->key, ctx);
-          if (yajl_gen_status_ok != status) return status;
-          status = generate(g, hn->value, ctx);
-          if (yajl_gen_status_ok != status) return status;
-        }
-      }
-      yajl_gen_map_close(g);
-      return yajl_gen_status_ok;
-    }
-    case TYPE_LIST: {
-      int i;
-      yajl_gen_status status;
-      yajl_gen_array_open(g);
-      for (i = 1; i <= v.v.list[0].v.num; i++) {
-        status = generate(g, v.v.list[i], ctx);
-        if (yajl_gen_status_ok != status) return status;
-      }
-      yajl_gen_array_close(g);
-      return yajl_gen_status_ok;
-    }
-  }
 
-  return -1;
+    return -1;
 }
 
 static yajl_callbacks callbacks = {
@@ -432,124 +457,118 @@ static yajl_callbacks callbacks = {
 static package
 bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  yajl_handle hand;
-  yajl_parser_config cfg = { 1, 1 };
-  yajl_status stat;
+    yajl_handle hand;
+    yajl_parser_config cfg = { 1, 1 };
+    yajl_status stat;
 
-  struct parse_context pctx;
-  pctx.top = &pctx.stack;
-  pctx.stack.v.type = TYPE_INT;
-  pctx.stack.v.v.num = 0;
-  pctx.mode = MODE_COMMON_SUBSET;
+    struct parse_context pctx;
+    pctx.top = &pctx.stack;
+    pctx.stack.v.type = TYPE_INT;
+    pctx.stack.v.v.num = 0;
+    pctx.mode = MODE_COMMON_SUBSET;
 
-  const char *str = arglist.v.list[1].v.str;
-  size_t len = strlen(str);
+    const char *str = arglist.v.list[1].v.str;
+    size_t len = strlen(str);
 
-  package pack;
+    package pack;
 
-  int done = 0;
+    int done = 0;
 
-  if (1 < arglist.v.list[0].v.num) {
-    if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
-      pctx.mode = MODE_COMMON_SUBSET;
+    if (1 < arglist.v.list[0].v.num) {
+	if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+	    pctx.mode = MODE_COMMON_SUBSET;
+	} else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+	    pctx.mode = MODE_EMBEDDED_TYPES;
+	} else {
+	    free_var(arglist);
+	    return make_error_pack(E_INVARG);
+	}
     }
-    else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
-      pctx.mode = MODE_EMBEDDED_TYPES;
+
+    hand = yajl_alloc(&callbacks, &cfg, NULL, (void *) &pctx);
+
+    while (!done) {
+	if (len == 0)
+	    done = 1;
+
+	if (done)
+	    stat = yajl_parse_complete(hand);
+	else
+	    stat = yajl_parse(hand, str, len);
+
+	len = 0;
+
+	if (done) {
+	    if (stat != yajl_status_ok) {
+		/* clean up the stack */
+		while (pctx.top != &pctx.stack) {
+		    Var v = POP(pctx.top);
+		    free_var(v);
+		}
+		pack = make_error_pack(E_INVARG);
+	    } else {
+		Var v = POP(pctx.top);
+		pack = make_var_pack(v);
+	    }
+	}
     }
-    else {
-      free_var(arglist);
-      return make_error_pack(E_INVARG);
-    }
-  }
 
-  hand = yajl_alloc(&callbacks, &cfg, NULL, (void *)&pctx);
+    yajl_free(hand);
 
-  while (!done) {
-    if (len == 0)
-      done = 1;
-
-    if (done)
-      stat = yajl_parse_complete(hand);
-    else
-      stat = yajl_parse(hand, str, len);
-
-    len = 0;
-
-    if (done) {
-      if (stat != yajl_status_ok) {
-        /* clean up the stack */
-        while (pctx.top != &pctx.stack) {
-          Var v = POP(pctx.top);
-          free_var(v);
-        }
-        pack = make_error_pack(E_INVARG);
-      }
-      else {
-        Var v = POP(pctx.top);
-        pack = make_var_pack(v);
-      }
-    }
-  }
-
-  yajl_free(hand);
-
-  free_var(arglist);
-  return pack;
+    free_var(arglist);
+    return pack;
 }
 
 static package
 bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 {
-  yajl_gen g;
-  yajl_gen_config cfg = { 0, "" };
+    yajl_gen g;
+    yajl_gen_config cfg = { 0, "" };
 
-  struct generate_context gctx;
-  gctx.mode = MODE_COMMON_SUBSET;
+    struct generate_context gctx;
+    gctx.mode = MODE_COMMON_SUBSET;
 
-  const unsigned char *buf;
-  unsigned int len;
+    const unsigned char *buf;
+    unsigned int len;
 
-  Var json;
+    Var json;
 
-  package pack;
+    package pack;
 
-  if (1 < arglist.v.list[0].v.num) {
-    if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
-      gctx.mode = MODE_COMMON_SUBSET;
+    if (1 < arglist.v.list[0].v.num) {
+	if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+	    gctx.mode = MODE_COMMON_SUBSET;
+	} else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+	    gctx.mode = MODE_EMBEDDED_TYPES;
+	} else {
+	    free_var(arglist);
+	    return make_error_pack(E_INVARG);
+	}
     }
-    else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
-      gctx.mode = MODE_EMBEDDED_TYPES;
+
+    g = yajl_gen_alloc(&cfg, NULL);
+
+    if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
+	yajl_gen_get_buf(g, &buf, &len);
+
+	json.type = TYPE_STR;
+	json.v.str = str_dup(buf);
+
+	pack = make_var_pack(json);
+    } else {
+	pack = make_error_pack(E_INVARG);
     }
-    else {
-      free_var(arglist);
-      return make_error_pack(E_INVARG);
-    }
-  }
 
-  g = yajl_gen_alloc(&cfg, NULL);
+    yajl_gen_clear(g);
+    yajl_gen_free(g);
 
-  if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
-    yajl_gen_get_buf(g, &buf, &len);
-
-    json.type = TYPE_STR;
-    json.v.str = str_dup(buf);
-
-    pack = make_var_pack(json);
-  }
-  else {
-    pack = make_error_pack(E_INVARG);
-  }
-
-  yajl_gen_clear(g);
-  yajl_gen_free(g);
-
-  free_var(arglist);
-  return pack;
+    free_var(arglist);
+    return pack;
 }
 
 void
 register_yajl(void)
 {
-  register_function("parse_json", 1, 2, bf_parse_json, TYPE_STR, TYPE_STR);
-  register_function("generate_json", 1, 2, bf_generate_json, TYPE_ANY, TYPE_STR);
+    register_function("parse_json", 1, 2, bf_parse_json, TYPE_STR, TYPE_STR);
+    register_function("generate_json", 1, 2, bf_generate_json, TYPE_ANY, TYPE_STR);
 }
