@@ -462,11 +462,10 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     char *uri = con_info->request_uri ? con_info->request_uri : "";
     int n = strlen(uri);
     char buffer[n + 1];
-    int i;
-    for (i = 0; uri[i] && '?' != uri[i]; i++)
-      ;
-    strncpy(buffer, uri, i);
-    buffer[i] = 0;
+    strcpy(buffer, uri);
+    char *brk = strchr(buffer, '?');
+    if (NULL != brk)
+      *brk = '\0';
     Var r;
     r.type = TYPE_STR;
     r.v.str = str_dup(buffer);
@@ -477,14 +476,15 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
     char *uri = con_info->request_uri ? con_info->request_uri : "";
     int n = strlen(uri);
     char buffer[n + 1];
-    int i;
-    for (i = 0; uri[i] && '?' != uri[i]; i++)
-      ;
-    strcpy(buffer, uri + i + 1);
-    buffer[n - i] = 0;
+    strcpy(buffer, uri);
+    char *brk = strchr(buffer, '?');
+    if (NULL == brk)
+      brk = uri + n;
+    else
+      brk++;
     Var r;
     r.type = TYPE_STR;
-    r.v.str = str_dup(buffer);
+    r.v.str = str_dup(brk);
     free_var(arglist);
     return make_var_pack(r);
   }
@@ -537,8 +537,6 @@ bf_request(Var arglist, Byte next, void *vdata, Objid progr)
 	value.v.str = str_dup(stream_contents(fb->data));
       }
       hashinsert(r, key, value);
-      free_var(key);
-      free_var(value);
     }
     free_var(arglist);
     return make_var_pack(r);
