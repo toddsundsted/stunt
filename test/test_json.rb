@@ -65,8 +65,8 @@ class TestJson < Test::Unit::TestCase
       assert_equal '1', generate_json(1, 'embedded-types')
       assert_equal '1.1', generate_json(1.1, 'embedded-types')
       assert_equal '"1.2"', generate_json("1.2", 'embedded-types')
-      assert_equal '"#13|*o*"', generate_json(MooObj.new(13), 'embedded-types')
-      assert_equal '"E_PERM|*e*"', generate_json(E_PERM, 'embedded-types')
+      assert_equal '"#13|obj"', generate_json(MooObj.new(13), 'embedded-types')
+      assert_equal '"E_PERM|err"', generate_json(E_PERM, 'embedded-types')
       assert_equal '[]', generate_json([], 'embedded-types')
       assert_equal '{}', generate_json({}, 'embedded-types')
     end
@@ -91,21 +91,21 @@ class TestJson < Test::Unit::TestCase
 
   def test_that_parsing_json_works_for_simple_values_with_type_info_in_embedded_types_mode
     run_test_as('wizard') do
-      assert_equal 1, parse_json('\"1|*i*\"', 'embedded-types')
-      assert_equal 1.1, parse_json('\"1.1|*f*\"', 'embedded-types')
-      assert_equal "1.2", parse_json('\"1.2|*s*\"', 'embedded-types')
-      assert_equal MooObj.new("#13"), parse_json('\"#13|*o*\"', 'embedded-types')
-      assert_equal E_PERM, parse_json('\"E_PERM|*e*\"', 'embedded-types')
+      assert_equal 1, parse_json('\"1|int\"', 'embedded-types')
+      assert_equal 1.1, parse_json('\"1.1|float\"', 'embedded-types')
+      assert_equal "1.2", parse_json('\"1.2|str\"', 'embedded-types')
+      assert_equal MooObj.new("#13"), parse_json('\"#13|obj\"', 'embedded-types')
+      assert_equal E_PERM, parse_json('\"E_PERM|err\"', 'embedded-types')
     end
   end
 
   def test_that_parsing_json_with_type_info_does_not_work_in_common_subset_mode
     run_test_as('wizard') do
-      assert_equal "1|*i*", parse_json('\"1|*i*\"', 'common-subset')
-      assert_equal "1.1|*f*", parse_json('\"1.1|*f*\"', 'common-subset')
-      assert_equal "1.2|*s*", parse_json('\"1.2|*s*\"', 'common-subset')
-      assert_equal "#13|*o*", parse_json('\"#13|*o*\"', 'common-subset')
-      assert_equal "E_PERM|*e*", parse_json('\"E_PERM|*e*\"', 'common-subset')
+      assert_equal "1|int", parse_json('\"1|int\"', 'common-subset')
+      assert_equal "1.1|float", parse_json('\"1.1|float\"', 'common-subset')
+      assert_equal "1.2|str", parse_json('\"1.2|str\"', 'common-subset')
+      assert_equal "#13|obj", parse_json('\"#13|obj\"', 'common-subset')
+      assert_equal "E_PERM|err", parse_json('\"E_PERM|err\"', 'common-subset')
     end
   end
 
@@ -125,8 +125,8 @@ class TestJson < Test::Unit::TestCase
 
   def test_that_generating_json_works_for_complex_values_in_embedded_types_mode
     run_test_as('wizard') do
-      assert_equal '[1,1.1,"1.2","#13|*o*","E_ARGS|*e*",[2,2.2,"#-1|*o*","foo"],{"E_PERM|*e*":"E_PERM|*e*"}]', generate_json([1, 1.1, "1.2", MooObj.new(13), E_ARGS, [2, 2.2, :nothing, "foo"], {E_PERM => E_PERM}], 'embedded-types')
-      assert_equal '{"11|*i*":11,"33.3|*f*":33.3,"#13|*o*":[1,2,3,"E_QUOTA|*e*"],"foo":"bar"}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"}, 'embedded-types')
+      assert_equal '[1,1.1,"1.2","#13|obj","E_ARGS|err",[2,2.2,"#-1|obj","foo"],{"E_PERM|err":"E_PERM|err"}]', generate_json([1, 1.1, "1.2", MooObj.new(13), E_ARGS, [2, 2.2, :nothing, "foo"], {E_PERM => E_PERM}], 'embedded-types')
+      assert_equal '{"11|int":11,"33.3|float":33.3,"#13|obj":[1,2,3,"E_QUOTA|err"],"foo":"bar"}', generate_json({11 => 11, 33.3 => 33.3, MooObj.new(13) => [1, 2, 3, E_QUOTA], "foo" => "bar"}, 'embedded-types')
     end
   end
 
@@ -146,8 +146,8 @@ class TestJson < Test::Unit::TestCase
 
   def test_that_parsing_json_works_for_complex_values_in_embedded_types_mode
     run_test_as('wizard') do
-      assert_equal [1, 1.1, "1.2", MooObj.new('#13'), E_ARGS, [2, 2.2, "foo"], {1 => "1"}], parse_json('[1, 1.1, \"1.2\", \"#13|*o*\", \"E_ARGS|*e*\", [2, 2.2, \"foo\"], {\"1|*i*\": \"1\"}]', 'embedded-types')
-      assert_equal ({11.1 => 11, "33.3" => 33.3, MooObj.new('#13') => [1, 2, 3, E_QUOTA], "foo" => "bar"}, parse_json('{\"11.1|*f*\": 11, \"33.3\": 33.3, \"#13|*o*\": [1, 2, 3, \"E_QUOTA|*e*\"], \"foo\": \"bar\"}', 'embedded-types'))
+      assert_equal [1, 1.1, "1.2", MooObj.new('#13'), E_ARGS, [2, 2.2, "foo"], {1 => "1"}], parse_json('[1, 1.1, \"1.2\", \"#13|obj\", \"E_ARGS|err\", [2, 2.2, \"foo\"], {\"1|int\": \"1\"}]', 'embedded-types')
+      assert_equal ({11.1 => 11, "33.3" => 33.3, MooObj.new('#13') => [1, 2, 3, E_QUOTA], "foo" => "bar"}, parse_json('{\"11.1|float\": 11, \"33.3\": 33.3, \"#13|obj\": [1, 2, 3, \"E_QUOTA|err\"], \"foo\": \"bar\"}', 'embedded-types'))
     end
   end
 
@@ -155,9 +155,6 @@ class TestJson < Test::Unit::TestCase
     run_test_as('wizard') do
       assert_equal E_INVARG, parse_json('[1, 1.1, \"1.2\", blah]')
       assert_equal E_INVARG, parse_json('{11: 11, \"33.3\": 33.3, \"foo\": \"bar\"}')
-
-
-
       assert_equal E_INVARG, parse_json('[')
       assert_equal E_INVARG, parse_json('{')
       assert_equal E_INVARG, parse_json('\"')
@@ -166,7 +163,21 @@ class TestJson < Test::Unit::TestCase
       assert_equal E_INVARG, parse_json('..')
       assert_equal E_INVARG, parse_json('@$*&#*')
       assert_equal E_INVARG, parse_json('[{[{[')
+    end
+  end
 
+  def test_that_parsing_types_only_works_for_well_defined_types
+    run_test_as('wizard') do
+      assert_equal "", parse_json('\"\"', 'embedded-types')
+      assert_equal "|", parse_json('\"|\"', 'embedded-types')
+      assert_equal "|x", parse_json('\"|x\"', 'embedded-types')
+      assert_equal "|in", parse_json('\"|in\"', 'embedded-types')
+      assert_equal "|intx", parse_json('\"|intx\"', 'embedded-types')
+      assert_equal 0, parse_json('\"|int\"', 'embedded-types')
+      assert_equal 0, parse_json('\"|float\"', 'embedded-types')
+      assert_equal "", parse_json('\"|str\"', 'embedded-types')
+      assert_equal MooObj.new("#0"), parse_json('\"|obj\"', 'embedded-types')
+      assert_equal E_NONE, parse_json('\"|err\"', 'embedded-types')
     end
   end
 

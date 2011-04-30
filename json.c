@@ -120,38 +120,35 @@ struct generate_context {
 #define ARRAY_SENTINEL -1
 #define MAP_SENTINEL -2
 
-/* If type information is present, extract it and return the MOO type. */
+/* If type information is present, extract it and return the type. */
 static var_type
 valid_type(const char **val, size_t *len)
 {
     int c;
 
-    /* format: "...|*X*" -- where X is o|i|f|e|s */
-
-    if (3 < *len &&
-	'|' == (*val)[*len - 4] &&
-	'*' == (*val)[*len - 3] &&
-	('o' == (c = (*val)[*len - 2]) || 'i' == c || 'f' == c || 'e' == c
-	 || 's' == c) && '*' == (*val)[*len - 1]
-	) {
+    /* format: "...|<TYPE>"
+       where <TYPE> is a MOO type string: "obj", "int", "float", "err", "str" */
+    if (*len > 3 && !strncmp(*val + *len - 4, "|obj", 4)) {
 	*len = *len - 4;
-	switch (c) {
-	case 'o':
-	    return TYPE_OBJ;
-	case 'i':
-	    return TYPE_INT;
-	case 'f':
-	    return TYPE_FLOAT;
-	case 'e':
-	    return TYPE_ERR;
-	case 's':
-	    return TYPE_STR;
-	}
+	return TYPE_OBJ;
+    } if (*len > 3 && !strncmp(*val + *len - 4, "|int", 4)) {
+	*len = *len - 4;
+	return TYPE_INT;
+    } if (*len > 5 && !strncmp(*val + *len - 6, "|float", 6)) {
+	*len = *len - 6;
+	return TYPE_FLOAT;
+    } if (*len > 3 && !strncmp(*val + *len - 4, "|err", 4)) {
+	*len = *len - 4;
+	return TYPE_ERR;
+    } if (*len > 3 && !strncmp(*val + *len - 4, "|str", 4)) {
+	*len = *len - 4;
+	return TYPE_STR;
     }
 
     return TYPE_NONE;
 }
 
+/* Append type information. */
 static const char *
 append_type(const char *str, var_type type)
 {
@@ -161,21 +158,22 @@ append_type(const char *str, var_type type)
 	stream = new_stream(20);
 
     stream_add_string(stream, str);
+
     switch (type) {
     case TYPE_OBJ:
-	stream_add_string(stream, "|*o*");
+	stream_add_string(stream, "|obj");
 	break;
     case TYPE_INT:
-	stream_add_string(stream, "|*i*");
+	stream_add_string(stream, "|int");
 	break;
     case TYPE_FLOAT:
-	stream_add_string(stream, "|*f*");
+	stream_add_string(stream, "|float");
 	break;
     case TYPE_ERR:
-	stream_add_string(stream, "|*e*");
+	stream_add_string(stream, "|err");
 	break;
     case TYPE_STR:
-	stream_add_string(stream, "|*s*");
+	stream_add_string(stream, "|str");
 	break;
     }
 
