@@ -150,7 +150,6 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        puts line
         break if line[0] == 123
       end
 
