@@ -83,7 +83,7 @@ module MooSupport
       acc << line
     end
     acc.each { |a| puts "< " + a } if options['verbose']
-    acc.length > 0 ? acc.length > 1 ? acc : acc[0] : 0
+    acc.length > 0 ? acc.length > 1 ? acc : acc[0] : nil
   end
 
   def simplify(result)
