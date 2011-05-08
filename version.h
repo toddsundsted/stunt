@@ -60,6 +60,8 @@ typedef enum {
 				 * format which fixes the data locality
 				 * problems in the v4 format.
 				 */
+    DBV_TaskLocal,		/* Addition of task local value.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
