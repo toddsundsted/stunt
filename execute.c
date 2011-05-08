@@ -178,7 +178,7 @@ error_backtrace_list(const char *msg)
 static enum error
 suspend_task(package p)
 {
-    vm the_vm = new_vm(current_task_id, top_activ_stack + 1);
+    vm the_vm = new_vm(current_task_id, current_local, top_activ_stack + 1);
     int i;
     enum error e;
 

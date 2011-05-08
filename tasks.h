@@ -95,6 +95,7 @@ extern enum outcome run_server_program_task(Objid this, const char *verb,
 					    const char *argstr,
 					    Var * result);
 
+extern Var current_local;
 extern int current_task_id;
 extern int last_input_task_id(Objid player);
 

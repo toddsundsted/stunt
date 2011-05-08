@@ -129,6 +129,7 @@ typedef struct ext_queue {
 
 #define NO_USAGE	-1
 
+Var current_local;
 int current_task_id;
 static tqueue *idle_tqueues = 0, *active_tqueues = 0;
 static task *waiting_tasks = 0;	/* forked and suspended tasks */
@@ -988,6 +989,7 @@ run_ready_tasks(void)
 
 		tq->reading = 0;
 		current_task_id = tq->reading_vm->task_id;
+		current_local = var_ref(tq->reading_vm->local);
 		v.type = TYPE_ERR;
 		v.v.err = E_INVARG;
 		resume_from_previous_vm(tq->reading_vm, v, TASK_INPUT, 0);
@@ -1013,6 +1015,7 @@ run_ready_tasks(void)
 
 			tq->reading = 0;
 			current_task_id = tq->reading_vm->task_id;
+			current_local = var_ref(tq->reading_vm->local);
 			v.type = TYPE_STR;
 			v.v.str = t->t.input.string;
 			resume_from_previous_vm(tq->reading_vm, v, TASK_INPUT,
@@ -1035,6 +1038,7 @@ run_ready_tasks(void)
 
 			ft = t->t.forked;
 			current_task_id = ft.id;
+			current_local = new_list(0);
 			do_forked_task(ft.program, ft.rt_env, ft.a,
 				       ft.f_index, 0);
 			did_one = 1;
@@ -1042,6 +1046,7 @@ run_ready_tasks(void)
 		    break;
 		case TASK_SUSPENDED:
 		    current_task_id = t->t.suspended.the_vm->task_id;
+		    current_local = var_ref(t->t.suspended.the_vm->local);
 		    resume_from_previous_vm(t->t.suspended.the_vm,
 					    t->t.suspended.value,
 					    TASK_SUSPENDED, 0);
@@ -1090,6 +1095,7 @@ run_server_task_setting_id(Objid player, Objid what, const char *verb,
 {
     db_verb_handle h;
 
+    current_local = new_list(0);
     current_task_id = new_task_id();
     if (task_id)
 	*task_id = current_task_id;
@@ -1114,6 +1120,7 @@ run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
 			int debug, Objid player, const char *argstr,
 			Var * result)
 {
+    current_local = new_list(0);
     current_task_id = new_task_id();
     return do_server_program_task(this, verb, args, vloc, verbname, program,
 				progr, debug, player, argstr, result, 1);
@@ -1929,6 +1936,37 @@ bf_flush_input(Var arglist, Byte next, void *vdata, Objid progr)
     return no_var_pack();
 }
 
+static package
+bf_set_task_local(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (ANY value) */
+    if (!is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    Var v = var_ref(arglist.v.list[1]);
+
+    free_var(current_local);
+    current_local = v;
+
+    free_var(arglist);
+    return no_var_pack();
+}
+
+static package
+bf_task_local(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    Var v = var_ref(current_local);
+
+    free_var(arglist);
+    return make_var_pack(v);
+}
+
 void
 register_tasks(void)
 {
@@ -1942,6 +1980,8 @@ register_tasks(void)
     register_function("force_input", 2, 3, bf_force_input,
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
+    register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
+    register_function("task_local", 0, 0, bf_task_local);
 }
 
 char rcsid_tasks[] = "$Id: tasks.c,v 1.5 1998/12/14 13:19:07 nop Exp $";

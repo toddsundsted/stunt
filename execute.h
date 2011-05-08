@@ -59,6 +59,7 @@ extern void free_activation(activation a, char data_too);
 
 typedef struct {
     int task_id;
+    Var local;
     activation *activ_stack;
     unsigned max_stack_size;
     unsigned top_activ_stack;

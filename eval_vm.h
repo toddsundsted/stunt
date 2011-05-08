@@ -22,7 +22,11 @@
 extern vm read_vm(int task_id);
 extern void write_vm(vm);
 
-extern vm new_vm(int task_id, int stack_size);
+extern vm new_vm(int task_id, Var local, int stack_size); /* Stores task id
+                                                           * and task local
+                                                           * value.  Consumes
+                                                           * `local'.
+                                                           */
 extern void free_vm(vm the_vm, int stack_too);
 
 extern activation top_activ(vm);
