@@ -45,6 +45,8 @@ typedef enum {
 				 * change exists solely to turn off special
 				 * bug handling in read_bi_func_data().
 				 */
+    DBV_TaskLocal,		/* Addition of task local value.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
