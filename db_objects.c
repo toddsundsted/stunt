@@ -495,17 +495,7 @@ db_change_parent(Objid oid, Var new_parents)
 
     free_var(objects[oid]->parents);
 
-    /* Clean up the representation.
-     *  {#X} becomes #X
-     *  {} becomes NOTHING
-     */
-    if (new_parents.type == TYPE_LIST && new_parents.v.list[0].v.num == 0)
-	objects[oid]->parents = nothing;
-    else if (new_parents.type == TYPE_LIST && new_parents.v.list[0].v.num == 1)
-	objects[oid]->parents = var_dup(new_parents.v.list[1]);
-    else
-	objects[oid]->parents = var_dup(new_parents);
-
+    objects[oid]->parents = var_dup(new_parents);
     Var new_ancestors = db_ancestors(oid, true);
 
     dbpriv_fix_properties_after_chparent(oid, old_ancestors, new_ancestors);

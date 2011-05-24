@@ -151,8 +151,16 @@ module MooSupport
     simplify command %Q|; return chparent(#{args.map{|a| value_ref(a)}.join(', ')});|
   end
 
+  def chparents(*args)
+    simplify command %Q|; return chparents(#{args.map{|a| value_ref(a)}.join(', ')});|
+  end
+
   def parent(*args)
     simplify command %Q|; return parent(#{args.map{|a| value_ref(a)}.join(', ')});|
+  end
+
+  def parents(*args)
+    simplify command %Q|; return parents(#{args.map{|a| value_ref(a)}.join(', ')});|
   end
 
   def children(object)

@@ -6,40 +6,46 @@ class TestObject < Test::Unit::TestCase
     run_test_as('wizard') do
       a = create(NOTHING)
       b = create(a)
-      c = create(b)
+      c = create(b, NOTHING)
       d = create(b, a)
 
+      # test that `parent()' works for single inheritance hierarchies
       assert_equal NOTHING, parent(a)
       assert_equal a, parent(b)
       assert_equal b, parent(c)
       assert_equal b, parent(d)
 
+      # test that `children()' works for single inheritance hierarchies
       assert_equal [b], children(a)
       assert_equal [c, d], children(b)
       assert_equal [], children(c)
       assert_equal [], children(d)
 
+      # test that create sets the owner correctly
       assert_equal player, get(a, 'owner')
       assert_equal player, get(b, 'owner')
-      assert_equal player, get(c, 'owner')
+      assert_equal c, get(c, 'owner')
       assert_equal a, get(d, 'owner')
 
-      if function_info('create')[3] == [-1, 1]
+      if function_info('parents') != E_INVARG
         i = create([b, c])
         j = create([b, c], i)
         k = create([], NOTHING)
         l = create([])
 
-        assert_equal [b, c], parent(i)
-        assert_equal [b, c], parent(j)
-        assert_equal NOTHING, parent(k)
-        assert_equal NOTHING, parent(l)
+        # test that `parents()' works for multiple inheritance hierarchies
+        assert_equal [b, c], parents(i)
+        assert_equal [b, c], parents(j)
+        assert_equal [], parents(k)
+        assert_equal [], parents(l)
 
+        # test that `children()' works for multiple inheritance hierarchies
         assert_equal [], children(i)
         assert_equal [], children(j)
         assert_equal [], children(k)
         assert_equal [], children(l)
 
+        # test that create sets the owner correctly
         assert_equal player, get(i, 'owner')
         assert_equal i, get(j, 'owner')
         assert_equal k, get(k, 'owner')
@@ -48,8 +54,9 @@ class TestObject < Test::Unit::TestCase
     end
 
     # I changed how the server interprets the the second argument to
-    # `create()' when it is not a valid object reference -- raise
-    # E_INVARG unless it #-1 (AKA $nothing).
+    # `create()' when it is not a valid object reference.  Test that
+    # `create()' raises E_INVARG if the second argument is not valid
+    # and is not #-1 (AKA $nothing).
 
     run_test_as('wizard') do
       e = create(NOTHING, NOTHING)
@@ -122,8 +129,8 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_INVARG, create([FAILED_MATCH])
         assert_equal E_INVARG, create([invalid_object])
 
-        # If two objects define the same property by name, a new
-        # object cannot be created using both of them as parents.
+        # Test that If two objects define the same property by name, a
+        # new object cannot be created using both of them as parents.
 
         a = create(NOTHING)
         b = create(NOTHING)
@@ -131,13 +138,12 @@ class TestObject < Test::Unit::TestCase
         add_property(a, 'foo', 123, [a, ''])
         add_property(b, 'foo', 'abc', [b, ''])
 
-        # this fails
         max = max_object()
         assert_equal E_INVARG, create([a, b])
         assert_equal E_INVARG, create([b, a])
         assert_equal max, max_object()
 
-        # Duplicate objects are not allowed.
+        # Test that duplicate objects are not allowed.
 
         assert_equal E_INVARG, create([a, a])
         assert_equal E_INVARG, create([b, b])
@@ -169,6 +175,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal E_PERM, create(a)
 
       # Because of the aforementioned change to `create()'...
+
       if function_info('create')[3] == [1, 1]
         # the old way...
         assert_equal E_PERM, create(b, invalid_object)
@@ -239,14 +246,14 @@ class TestObject < Test::Unit::TestCase
       chparent(b, NOTHING)
       chparent(c, NOTHING)
 
-      if function_info('chparent')[3] == [1, -1]
-        chparent(a, [b, c])
-        chparent(b, [c])
-        chparent(c, [])
+      if function_info('chparents') != E_INVARG
+        chparents(a, [b, c])
+        chparents(b, [c])
+        chparents(c, [])
 
-        assert_equal [b, c], parent(a)
-        assert_equal c, parent(b)
-        assert_equal NOTHING, parent(c)
+        assert_equal [b, c], parents(a)
+        assert_equal [c], parents(b)
+        assert_equal [], parents(c)
 
         assert_equal [], children(a)
         assert_equal [a], children(b)
@@ -260,7 +267,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal [a], descendants(b)
         assert_equal [a, b], descendants(c)
 
-        chparent(a, [c])
+        chparents(a, [c])
 
         assert_equal [c], ancestors(a)
         assert_equal [c], ancestors(b)
@@ -270,20 +277,28 @@ class TestObject < Test::Unit::TestCase
         assert_equal [], descendants(b)
         assert_equal [b, a], descendants(c)
 
-        chparent(a, [])
-        chparent(b, [])
+        chparents(a, [])
+        chparents(b, [])
       end
 
       assert_equal NOTHING, parent(a)
       assert_equal NOTHING, parent(b)
       assert_equal NOTHING, parent(c)
 
+      if function_info('parents') != E_INVARG
+        assert_equal [], parents(a)
+        assert_equal [], parents(b)
+        assert_equal [], parents(c)
+      end
+
       assert_equal [], children(a)
       assert_equal [], children(b)
       assert_equal [], children(c)
 
-      # If two objects define the same property by name, the assigned
-      # property value (and info) is not preserved across chparent.
+      # Test that if two objects define the same property by name, the
+      # assigned property value (and info) is not preserved across
+      # chparent.  Test both the single and multiple inheritance
+      # cases.
 
       add_property(a, 'foo', 'foo', [a, 'c'])
       add_property(b, 'foo', 'foo', [b, ''])
@@ -299,23 +314,25 @@ class TestObject < Test::Unit::TestCase
       m = create(NOTHING)
       n = create(NOTHING)
 
-      if function_info('chparent')[3] == [1, -1]
-        chparent(c, [m, n, a])
+      if function_info('chparents') != E_INVARG
+        chparents(c, [m, n, a])
         assert_equal [player, 'c'], property_info(c, 'foo')
         set(c, 'foo', 'bar')
         assert_equal 'bar', get(c, 'foo')
-        chparent(c, [b, m, n])
+        chparents(c, [b, m, n])
         assert_equal [b, ''], property_info(c, 'foo')
         assert_equal 'foo', get(c, 'foo')
       end
 
-      # If a descendent object defines a property with the same name
-      # as one defined either on the new parent or on one of its
-      # ancestors, the chparent fails.
+      # Test that if a descendent object defines a property with the
+      # same name as one defined either on the new parent or on one of
+      # its ancestors, chparent/chparents fails.
 
       chparent c, NOTHING
 
       add_property(n, 'foo', 'foo', [n, 'rw'])
+
+      # `a' and `b' define `foo' -- so does `n'
 
       chparent a, m
       assert_equal E_INVARG, chparent(m, n)
@@ -323,11 +340,11 @@ class TestObject < Test::Unit::TestCase
       chparent b, m
       assert_equal E_INVARG, chparent(m, n)
 
-      if function_info('chparent')[3] == [1, -1]
-        assert_equal E_INVARG, chparent(m, [n])
-        assert_equal E_INVARG, chparent(m, [n, c])
-        assert_equal E_INVARG, chparent(m, [c, n])
-        assert_not_equal E_INVARG, chparent(m, [c])
+      if function_info('chparents') != E_INVARG
+        assert_equal E_INVARG, chparents(m, [n])
+        assert_equal E_INVARG, chparents(m, [n, c])
+        assert_equal E_INVARG, chparents(m, [c, n])
+        assert_not_equal E_INVARG, chparents(m, [c])
       end
 
       delete_property(a, 'foo')
@@ -362,14 +379,14 @@ class TestObject < Test::Unit::TestCase
       assert_equal E_RECMOVE, chparent(:object, :object)
       assert_equal E_RECMOVE, chparent(c, a)
 
-      if function_info('chparent')[3] == [1, -1]
-        assert_equal E_INVARG, chparent(:object, [:nothing])
-        assert_equal E_INVARG, chparent(:object, [invalid_object])
-        assert_equal E_RECMOVE, chparent(:object, [:object])
-        assert_equal E_RECMOVE, chparent(c, [a, b])
+      if function_info('chparents') != E_INVARG
+        assert_equal E_INVARG, chparents(:object, [:nothing])
+        assert_equal E_INVARG, chparents(:object, [invalid_object])
+        assert_equal E_RECMOVE, chparents(:object, [:object])
+        assert_equal E_RECMOVE, chparents(c, [a, b])
 
-        # If two objects define the same property by name, a new
-        # object cannot be created using both of them as parents.
+        # Test that if two objects define the same property by name, a
+        # new object cannot be created using both of them as parents.
 
         d = create(NOTHING)
         e = create(NOTHING)
@@ -377,16 +394,17 @@ class TestObject < Test::Unit::TestCase
         add_property(d, 'foo', 123, [d, ''])
         add_property(e, 'foo', 'abc', [e, ''])
 
-        # this fails
         f = create(NOTHING)
-        assert_equal E_INVARG, chparent(f, [d, e])
+        assert_equal E_INVARG, chparents(f, [d, e])
 
-        # Duplicate objects are not allowed.
+        # Test that duplicate objects are not allowed.
 
-        assert_equal E_INVARG, chparent(f, [d, d])
-        assert_equal E_INVARG, chparent(f, [e, e])
+        assert_equal E_INVARG, chparents(f, [d, d])
+        assert_equal E_INVARG, chparents(f, [e, e])
       end
     end
+
+    # A variety of tests that check permissions.
 
     wizard = nil
     a = b = nil
@@ -414,9 +432,10 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal E_PERM, chparent(c, a)
       assert_not_equal E_PERM, chparent(c, b)
-      if function_info('chparent')[3] == [1, -1]
-        assert_equal E_PERM, chparent(c, [a, b])
-        assert_equal E_PERM, chparent(c, [b, a])
+
+      if function_info('chparents') != E_INVARG
+        assert_equal E_PERM, chparents(c, [a, b])
+        assert_equal E_PERM, chparents(c, [b, a])
       end
 
       assert_equal programmer, get(c, 'owner')
@@ -430,6 +449,32 @@ class TestObject < Test::Unit::TestCase
       assert_not_equal E_PERM, chparent(e, b)
       assert_not_equal E_PERM, chparent(e, c)
       assert_not_equal E_PERM, chparent(e, d)
+    end
+  end
+
+  def test_that_parent_maps_parents_to_parent
+    run_test_as('programmer') do
+      if function_info('parents') != E_INVARG
+        x = create(:nothing)
+        y = create(:nothing)
+        z = create(:nothing)
+        a = create([x, y, z])
+        b = create([x])
+        c = create([])
+
+        # Test that `parent()' performs the following mapping:
+        #   [x, y, z] -> x
+        #   [x] -> x
+        #   [] -> #-1
+
+        assert_equal [x, y, z], parents(a)
+        assert_equal [x], parents(b)
+        assert_equal [], parents(c)
+
+        assert_equal x, parent(a)
+        assert_equal x, parent(b)
+        assert_equal NOTHING, parent(c)
+      end
     end
   end
 
@@ -501,9 +546,9 @@ class TestObject < Test::Unit::TestCase
         m = kahuna(b, b, 'm')
         n = kahuna(b, b, 'n')
 
-        assert_equal NOTHING, parent(x)
-        assert_equal NOTHING, parent(y)
-        assert_equal [x, y], parent(b)
+        assert_equal [], parents(x)
+        assert_equal [], parents(y)
+        assert_equal [x, y], parents(b)
         assert_equal b, parent(m)
         assert_equal b, parent(n)
 
@@ -529,9 +574,9 @@ class TestObject < Test::Unit::TestCase
 
         assert_equal NOTHING, parent(x)
         assert_equal NOTHING, parent(y)
-        assert_equal E_INVARG, parent(b)
-        assert_equal [x, y], parent(m)
-        assert_equal [x, y], parent(n)
+        assert_equal E_INVARG, parents(b)
+        assert_equal [x, y], parents(m)
+        assert_equal [x, y], parents(n)
 
         assert_equal [m, n], children(x)
         assert_equal [m, n], children(y)
@@ -632,11 +677,11 @@ class TestObject < Test::Unit::TestCase
         move(d, a)
         move(e, b)
 
-        assert_equal NOTHING, parent(a)
-        assert_equal NOTHING, parent(b)
+        assert_equal [], parents(a)
+        assert_equal [], parents(b)
         assert_equal NOTHING, parent(c)
-        assert_equal [a, b], parent(d)
-        assert_equal [a, c], parent(e)
+        assert_equal [a, b], parents(d)
+        assert_equal [a, c], parents(e)
 
         assert_equal [d, e], children(a)
         assert_equal [d], children(b)
@@ -659,11 +704,11 @@ class TestObject < Test::Unit::TestCase
         assert_equal l, renumber(d)
 
         assert_equal NOTHING, parent(a)
-        assert_equal NOTHING, parent(b)
-        assert_equal NOTHING, parent(c)
-        assert_equal E_INVARG, parent(d)
-        assert_equal [a, b], parent(l)
-        assert_equal [a, c], parent(e)
+        assert_equal [], parents(b)
+        assert_equal [], parents(c)
+        assert_equal E_INVARG, parents(d)
+        assert_equal [a, b], parents(l)
+        assert_equal [a, c], parents(e)
 
         assert_equal [l, e], children(a)
         assert_equal [l], children(b)
@@ -763,20 +808,20 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal E_INVIND, call(a, 'hoo')
 
-      if function_info('chparent')[3] == [1, -1]
-        chparent(c, [a, b])
+      if function_info('chparents') != E_INVARG
+        chparents(c, [a, b])
 
         assert_equal ['a'], call(a, 'foo')
         assert_equal ['b', 'a'], call(b, 'foo')
         assert_equal ['c', 'a'], call(c, 'foo')
 
-        chparent(c, [b, a])
+        chparents(c, [b, a])
 
         assert_equal ['a'], call(a, 'foo')
         assert_equal ['b', 'a'], call(b, 'foo')
         assert_equal ['c', 'b', 'a'], call(c, 'foo')
 
-        chparent(b, NOTHING)
+        chparents(b, [])
 
         assert_equal ['a'], call(a, 'foo')
         assert_equal ['b'], call(b, 'foo')
@@ -794,14 +839,14 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_VERBNF, call(b, 'foo')
         assert_equal ['c'], call(c, 'foo')
 
-        assert_equal [b, a], parent(c)
+        assert_equal [b, a], parents(c)
 
         assert_equal E_VERBNF, call(c, 'goo')
       end
     end
   end
 
-  def test_verbs_invocation_and_inheritance
+  def test_verbs_and_invocation_and_inheritance
     run_test_as('wizard') do
       a = create(NOTHING)
       b = create(a)
@@ -857,8 +902,8 @@ class TestObject < Test::Unit::TestCase
         vc << %Q|return "foo";|
       end
 
-      if function_info('chparent')[3] == [1, -1]
-        chparent(c, [a, b])
+      if function_info('chparents') != E_INVARG
+        chparents(c, [a, b])
 
         assert_equal 'foo', call(a, 'foo')
         assert_equal E_VERBNF, call(b, 'foo')
@@ -868,7 +913,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal 'b', call(c, 'b')
         assert_equal 'c', call(c, 'c')
 
-        chparent(c, [b, a])
+        chparents(c, [b, a])
 
         assert_equal 'foo', call(a, 'foo')
         assert_equal E_VERBNF, call(b, 'foo')
@@ -910,7 +955,7 @@ class TestObject < Test::Unit::TestCase
       #        a (foo) - b - c
       #
 
-      if function_info('chparent')[3] == [1, -1]
+      if function_info('chparents') != E_INVARG
         chparent c, NOTHING
         chparent b, c
 
@@ -938,7 +983,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_VERBNF, call(n, 'b')
         assert_equal 'b', call(m, 'b')
 
-        chparent(m, [e, b])
+        chparents(m, [e, b])
 
         assert_equal E_VERBNF, call(n, 'c')
         assert_equal 'c', call(m, 'c')
@@ -949,7 +994,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_VERBNF, call(n, 'b')
         assert_equal 'b', call(m, 'b')
 
-        chparent(m, [e, c])
+        chparents(m, [e, c])
 
         assert_equal E_VERBNF, call(n, 'c')
         assert_equal 'c', call(m, 'c')
@@ -960,7 +1005,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_VERBNF, call(n, 'b')
         assert_equal E_VERBNF, call(m, 'b')
 
-        chparent(m, [e])
+        chparents(m, [e])
 
         assert_equal E_VERBNF, call(n, 'c')
         assert_equal E_VERBNF, call(m, 'c')
@@ -976,7 +1021,7 @@ class TestObject < Test::Unit::TestCase
 
   def test_command_verbs_and_inheritance
     run_test_as('wizard') do
-      if function_info('chparent')[3] == [1, -1]
+      if function_info('chparents') != E_INVARG
         a = create(NOTHING)
         b = create(a)
         c = create(b)
@@ -1006,7 +1051,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal 'baz', command(%Q|baz|)
         assert_equal 'qnz', command(%Q|qnz|)
 
-        chparent(d, [c, here])
+        chparents(d, [c, here])
 
         assert_equal 'foo', command(%Q|foo|)
         assert_equal 'bar', command(%Q|bar|)
@@ -1162,8 +1207,8 @@ class TestObject < Test::Unit::TestCase
 
       add_property(c, 'c', location, [player, 'w'])
 
-      if function_info('chparent')[3] == [1, -1]
-        assert chparent(a, [b, c])
+      if function_info('chparents') != E_INVARG
+        assert chparents(a, [b, c])
 
         assert_equal [player, ''], property_info(a, 'a')
         assert_equal [player, ''], property_info(a, 'a1')
@@ -1319,13 +1364,13 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_PROPNF, get(m, 'c')
         assert_equal E_PROPNF, get(n, 'c')
 
-        r = create(NOTHING)
+        r = create([])
 
         add_property(r, 'rrrr', 'rrrr', [player, ''])
         add_property(r, 'rrr', 'rrr', [player, 'r'])
         add_property(r, 'rr', 'rr', [player, 'w'])
 
-        assert chparent(a, [b, r, c])
+        assert chparents(a, [b, r, c])
 
         assert_equal [player, ''], property_info(a, 'a')
         assert_equal [player, ''], property_info(a, 'a1')
@@ -1429,7 +1474,7 @@ class TestObject < Test::Unit::TestCase
         assert_equal E_PROPNF, get(m, 'c')
         assert_equal E_PROPNF, get(n, 'c')
 
-        assert chparent(a, [c, b])
+        assert chparents(a, [c, b])
 
         assert_equal [player, ''], property_info(a, 'a')
         assert_equal [player, ''], property_info(a, 'a1')
@@ -1531,7 +1576,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_parent_children_ancestors_descendants
+  def test_ancestors_and_descendants
     run_test_as('programmer') do
       a = create(NOTHING)
       b = create(a)
@@ -1662,28 +1707,28 @@ class TestObject < Test::Unit::TestCase
       assert_equal 0, chparent(z, c)
       assert_equal 0, chparent(z, NOTHING)
 
-      if function_info('chparent')[3] == [1, -1]
-        assert_equal 0, chparent(c, [z])
-        assert_equal 0, chparent(c, [])
+      if has_function?('chparents')
+        assert_equal 0, chparents(c, [z])
+        assert_equal 0, chparents(c, [])
 
-        assert_equal 0, chparent(z, [c])
-        assert_equal 0, chparent(z, [])
+        assert_equal 0, chparents(z, [c])
+        assert_equal 0, chparents(z, [])
 
-        assert_equal E_INVARG, chparent(c, [a, z])
-        assert_equal E_INVARG, chparent(c, [b, z])
-        assert_equal E_INVARG, chparent(c, [m, z])
-        assert_equal E_INVARG, chparent(c, [n, z])
+        assert_equal E_INVARG, chparents(c, [a, z])
+        assert_equal E_INVARG, chparents(c, [b, z])
+        assert_equal E_INVARG, chparents(c, [m, z])
+        assert_equal E_INVARG, chparents(c, [n, z])
 
-        assert_equal E_INVARG, chparent(z, [a, b])
-        assert_equal E_INVARG, chparent(z, [b, c])
-        assert_equal E_INVARG, chparent(z, [m, n])
+        assert_equal E_INVARG, chparents(z, [a, b])
+        assert_equal E_INVARG, chparents(z, [b, c])
+        assert_equal E_INVARG, chparents(z, [m, n])
       end
     end
   end
 
   def test_ways_of_specifying_nothing
     run_test_as('programmer') do
-      if function_info('chparent')[3] == [1, -1]
+      if function_info('create')[3] == [-1, 1]
         a = create([])
         b = create(NOTHING)
         assert_equal E_INVARG, create([NOTHING])
@@ -1693,6 +1738,8 @@ class TestObject < Test::Unit::TestCase
 
         assert_equal NOTHING, parent(a)
         assert_equal NOTHING, parent(b)
+        assert_equal [], parents(a)
+        assert_equal [], parents(b)
         assert_equal a, parent(m)
         assert_equal b, parent(n)
 

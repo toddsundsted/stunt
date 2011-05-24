@@ -607,6 +607,8 @@ call_verb2(Objid this, const char *vname, Var args, int do_pass)
 	Var parents = db_object_parent(RUN_ACTIV.vloc);
 
 	if (TYPE_LIST == parents.type) {
+	  if (listlength(parents) == 0)
+		return E_INVIND;
 	    /* Loop over each parent, looking for the first parent
 	     * that defines a suitable verb that we can pass to.
 	     */

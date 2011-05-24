@@ -389,7 +389,7 @@ bf_create_read(void)
 }
 
 static package
-bf_chparent(Var arglist, Byte next, void *vdata, Objid progr)
+bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ what, OBJ|LIST new_parent) */
     if (!is_obj_or_list_of_objs(arglist.v.list[2])) {
 	free_var(arglist);
@@ -435,10 +435,12 @@ bf_chparent(Var arglist, Byte next, void *vdata, Objid progr)
     }
 }
 
+/* bf_parent is DEPRECATED!  It returns only the first parent in the
+ * set of parents.  Use bf_parents!
+ */
 static package
 bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
-    Var r;
     Objid obj = arglist.v.list[1].v.obj;
 
     free_var(arglist);
@@ -446,8 +448,33 @@ bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid(obj))
 	return make_error_pack(E_INVARG);
     else {
-	r = db_object_parent(obj);
-	return make_var_pack(var_dup(r));
+	Var r = db_object_parent(obj);
+	if (r.type == TYPE_LIST && listlength(r) == 0)
+	  return make_var_pack(new_obj(NOTHING));
+	else if (r.type == TYPE_LIST)
+	    return make_var_pack(var_ref(r.v.list[1]));
+	else
+	    return make_var_pack(var_ref(r));
+    }
+}
+
+static package
+bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (OBJ object) */
+    Objid obj = arglist.v.list[1].v.obj;
+
+    free_var(arglist);
+
+    if (!valid(obj))
+	return make_error_pack(E_INVARG);
+    else {
+	Var r = db_object_parent(obj);
+	if (r.type == TYPE_OBJ && r.v.obj == NOTHING)
+	  return make_var_pack(new_list(0));
+	if (r.type == TYPE_OBJ)
+	    return make_var_pack(enlist_var(var_ref(r)));
+	else
+	    return make_var_pack(var_ref(r));
     }
 }
 
@@ -756,7 +783,9 @@ register_objects(void)
 				      TYPE_OBJ);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_OBJ);
     register_function("valid", 1, 1, bf_valid, TYPE_OBJ);
-    register_function("chparent", 2, 2, bf_chparent, TYPE_OBJ, TYPE_ANY);
+    register_function("chparents", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_LIST);
+    register_function("chparent", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_OBJ);
+    register_function("parents", 1, 1, bf_parents, TYPE_OBJ);
     register_function("parent", 1, 1, bf_parent, TYPE_OBJ);
     register_function("children", 1, 1, bf_children, TYPE_OBJ);
     register_function("ancestors", 1, 1, bf_ancestors, TYPE_OBJ);
