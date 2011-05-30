@@ -39,21 +39,56 @@ dbpriv_new_propdef(const char *name)
 int
 dbpriv_count_properties(Objid oid)
 {
+    Var ancestor, ancestors;
+    int i, c, nprops = 0;
     Object *o;
-    int nprops = 0;
 
-    for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent))
+    if (NOTHING == oid)
+	return 0;
+
+    ancestors = db_ancestors(oid, true);
+
+    FOR_EACH(ancestor, ancestors, i, c) {
+	o = dbpriv_find_object(ancestor.v.obj);
 	nprops += o->propdefs.cur_length;
+    }
+
+    free_var(ancestors);
 
     return nprops;
 }
 
+/*
+ * Finds the offset of the properties defined on `target' in `this'.
+ * Returns -1 if `target' is not an ancestor of `this'.
+ */
 static int
-property_defined_at_or_below(const char *pname, int phash, Objid oid)
+properties_offset(Objid target, Objid this)
 {
-    /* Return true iff some descendant of OID defines a property named PNAME.
-     */
-    Objid c;
+    Var ancestor, ancestors;
+    int i, c, offset = 0;
+    Object *o;
+
+    ancestors = db_ancestors(this, true);
+
+    FOR_EACH(ancestor, ancestors, i, c) {
+	if (target == ancestor.v.obj)
+	    break;
+	o = dbpriv_find_object(ancestor.v.obj);
+	offset += o->propdefs.cur_length;
+    }
+
+    free_var(ancestors);
+
+    return target == ancestor.v.obj ? offset : -1;
+}
+
+/*
+ * Returns true iff `oid' defines a property named `pname'.
+ */
+static int
+property_defined_at(const char *pname, int phash, Objid oid)
+{
     Proplist *props = &dbpriv_find_object(oid)->propdefs;
     int length = props->cur_length;
     int i;
@@ -63,10 +98,28 @@ property_defined_at_or_below(const char *pname, int phash, Objid oid)
 	    && !mystrcasecmp(props->l[i].name, pname))
 	    return 1;
 
-    for (c = dbpriv_find_object(oid)->child;
-	 c != NOTHING;
-	 c = dbpriv_find_object(c)->sibling)
-	if (property_defined_at_or_below(pname, phash, c))
+    return 0;
+}
+
+/*
+ * Return true iff some descendant of `oid' defines a property named
+ * `pname'.
+ */
+static int
+property_defined_at_or_below(const char *pname, int phash, Objid oid)
+{
+    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    int length = props->cur_length;
+    int i;
+
+    for (i = 0; i < length; i++)
+	if (props->l[i].hash == phash
+	    && !mystrcasecmp(props->l[i].name, pname))
+	    return 1;
+
+    Var children = dbpriv_find_object(oid)->children;
+    for (i = 1; i <= children.v.list[0].v.num; i++)
+	if (property_defined_at_or_below(pname, phash, children.v.list[i].v.obj))
 	    return 1;
 
     return 0;
@@ -101,19 +154,19 @@ insert_prop(Objid oid, int pos, Pval pval)
 }
 
 static void
-insert_prop_recursively(Objid root, int root_pos, Pval pv)
+insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 {
-    Objid c;
+    insert_prop(root, prop_pos, pv);
 
-    insert_prop(root, root_pos, pv);
     pv.var.type = TYPE_CLEAR;	/* do after initial insert_prop so only
 				   children will be TYPE_CLEAR */
-    for (c = dbpriv_find_object(root)->child;
-	 c != NOTHING;
-	 c = dbpriv_find_object(c)->sibling) {
-	int new_prop_count = dbpriv_find_object(c)->propdefs.cur_length;
 
-	insert_prop_recursively(c, new_prop_count + root_pos, pv);
+    Var child, children = dbpriv_find_object(root)->children;
+    int i, c;
+
+    FOR_EACH(child, children, i, c) {
+	int offset = properties_offset(root, child.v.obj);
+	insert_prop_recursively(child.v.obj, offset + prop_pos, pv);
     }
 }
 
@@ -214,17 +267,16 @@ remove_prop(Objid oid, int pos)
 }
 
 static void
-remove_prop_recursively(Objid root, int root_pos)
+remove_prop_recursively(Objid root, int prop_pos)
 {
-    Objid c;
+    remove_prop(root, prop_pos);
 
-    remove_prop(root, root_pos);
-    for (c = dbpriv_find_object(root)->child;
-	 c != NOTHING;
-	 c = dbpriv_find_object(c)->sibling) {
-	int new_prop_count = dbpriv_find_object(c)->propdefs.cur_length;
+    Var child, children = dbpriv_find_object(root)->children;
+    int i, c;
 
-	remove_prop_recursively(c, new_prop_count + root_pos);
+    FOR_EACH(child, children, i, c) {
+	int offset = properties_offset(root, child.v.obj);
+	remove_prop_recursively(child.v.obj, offset + prop_pos);
     }
 }
 
@@ -403,7 +455,15 @@ db_find_property(Objid oid, const char *name, Var * value)
 
     h.built_in = BP_NONE;
     n = 0;
-    for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent)) {
+
+    Var ancestor, ancestors;
+    int i1, c1;
+
+    ancestors = db_ancestors(oid, true);
+
+    FOR_EACH(ancestor, ancestors, i1, c1) {
+	o = dbpriv_find_object(ancestor.v.obj);
+
 	Proplist *props = &(o->propdefs);
 	Propdef *defs = props->l;
 	int length = props->cur_length;
@@ -415,20 +475,38 @@ db_find_property(Objid oid, const char *name, Var * value)
 
 		h.definer = o->id;
 		o = dbpriv_find_object(oid);
-		prop = h.ptr = o->propval + n;
+		h.ptr = o->propval + n;
 
 		if (value) {
+		    prop = h.ptr;
+
 		    while (prop->var.type == TYPE_CLEAR) {
-			n -= o->propdefs.cur_length;
-			o = dbpriv_find_object(o->parent);
-			prop = o->propval + n;
+			if (TYPE_LIST == o->parents.type) {
+			    Var parent, parents = o->parents;
+			    int i2, c2, offset;
+			    FOR_EACH(parent, parents, i2, c2)
+				if ((offset = properties_offset(h.definer, parent.v.obj)) > -1)
+				    break;
+			    o = dbpriv_find_object(parent.v.obj);
+			    prop = o->propval + offset + i;
+			}
+			else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
+			    int offset = properties_offset(h.definer, o->parents.v.obj);
+			    o = dbpriv_find_object(o->parents.v.obj);
+			    prop = o->propval + offset + i;
+			}
 		    }
 		    *value = prop->var;
 		}
+
+		free_var(ancestors);
+
 		return h;
 	    }
 	}
     }
+
+    free_var(ancestors);
 
     h.ptr = 0;
     return h;
@@ -563,94 +641,271 @@ db_property_allows(db_prop_handle h, Objid progr, db_prop_flag flag)
 	    || is_wizard(progr));
 }
 
-static void
-fix_props(Objid oid, int parent_local, int old, int new, int common)
-{
-    Object *me = dbpriv_find_object(oid);
-    Object *parent = dbpriv_find_object(me->parent);
-    Pval *new_propval;
-    int local = parent_local;
-    int i;
-    Objid c;
-
-    local += me->propdefs.cur_length;
-
-    for (i = local; i < local + old; i++)
-	free_var(me->propval[i].var);
-
-    if (local + new + common != 0) {
-	new_propval = mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
-	for (i = 0; i < local; i++)
-	    new_propval[i] = me->propval[i];
-	for (i = 0; i < new; i++) {
-	    Pval pv;
-
-	    pv = parent->propval[parent_local + i];
-	    new_propval[local + i] = pv;
-	    new_propval[local + i].var.type = TYPE_CLEAR;
-	    if (pv.perms & PF_CHOWN)
-		new_propval[local + i].owner = me->owner;
-	}
-	for (i = 0; i < common; i++)
-	    new_propval[local + new + i] = me->propval[local + old + i];
-    } else
-	new_propval = 0;
-
-    if (me->propval)
-	myfree(me->propval, M_PVAL);
-    me->propval = new_propval;
-
-    for (c = me->child; c != NOTHING; c = dbpriv_find_object(c)->sibling)
-	fix_props(c, local, old, new, common);
-}
-
+/*
+ * `parents' is the proposed set of new parents.  Ensure that object
+ * `oid' or one of its descendants does not define a property with the
+ * same name as one defined on `parents' or any of their ancestors.
+ * Ensure that none of the `parents' not their ancestors define a
+ * property with the same name.
+ */
 int
-dbpriv_check_properties_for_chparent(Objid oid, Objid new_parent)
+dbpriv_check_properties_for_chparent(Objid oid, Var parents)
 {
-    Object *o;
-    int i;
+    /* build a list of ancestors from the supplied parents */
 
-    for (o = dbpriv_find_object(new_parent);
-	 o;
-	 o = dbpriv_find_object(o->parent)) {
-	Proplist *props = &o->propdefs;
+    Var ancestors = new_list(0);
+    Var stack = enlist_var(var_dup(parents));
 
-	for (i = 0; i < props->cur_length; i++)
-	    if (property_defined_at_or_below(props->l[i].name,
-					     props->l[i].hash,
-					     oid))
-		return 0;
+    while (listlength(stack) > 0) {
+	Var top;
+	POP_TOP(top, stack);
+	if (valid(top.v.obj)) {
+	    if (top.v.obj != oid) {
+		Var tmp = dbpriv_find_object(top.v.obj)->parents;
+		tmp = enlist_var(var_ref(tmp));
+		stack = listconcat(tmp, stack);
+	    }
+	    ancestors = setadd(ancestors, top);
+	}
     }
 
+    free_var(stack);
+
+    Object *o;
+    Var ancestor;
+    int i, c, x;
+
+    /* check props in descendants */
+
+    FOR_EACH(ancestor, ancestors, i, c) {
+	o = dbpriv_find_object(ancestor.v.obj);
+	Proplist *props = &o->propdefs;
+
+	for (x = 0; x < props->cur_length; x++)
+	    if (property_defined_at_or_below(props->l[x].name,
+					     props->l[x].hash,
+					     oid)) {
+		free_var(ancestors);
+		return 0;
+	    }
+    }
+
+    /* check props in parents */
+
+    while (listlength(ancestors) > 0) {
+	POP_TOP(ancestor, ancestors);
+
+	o = dbpriv_find_object(ancestor.v.obj);
+	Proplist *props = &o->propdefs;
+
+	Var obj;
+
+	FOR_EACH(obj, ancestors, i, c) {
+	    if (obj.v.obj == ancestor.v.obj)
+		continue;
+	    for (x = 0; x < props->cur_length; x++)
+		if (property_defined_at(props->l[x].name,
+					props->l[x].hash,
+					obj.v.obj)) {
+		    free_var(ancestors);
+		    return 0;
+		}
+	    
+	}
+    }
+
+    free_var(ancestors);
     return 1;
 }
 
+/*
+ * Given lists of `old_ancestors' and `new_ancestors', fix the
+ * properties of `oid' by 1) preserving properties whose definition is
+ * present in both `old_ancestors' and `new_ancestors', 2) removing
+ * all properties whose definition is not present in `new_ancestors',
+ * and 3) adding new clear properties for properties whose definition
+ * was added in `new_ancestors'.
+ *
+ * Consider the following graph.  The challenge is to figure out what
+ * properties we must preserve when we chparent `a' to `c' (bypassing
+ * `b' which is still a parent of `f').
+ *
+ *      x - m
+ *     /     \
+ *    z       a ---- b - c
+ *     \     /       /
+ *      y - n       /
+ *           \     /
+ *            e - f
+ *
+ * Ancestors Before
+ *  m - a, b, c
+ *  x - m, a, b, c
+ *  n - a, b, c, e, f
+ *  y - n, a, b, c, e, f
+ *  z - x, m, a, b, c, y, n, e, f
+ *
+ * Ancestors After
+ *  m - a, c
+ *  x - m, a, c
+ *  n - a, c, e, f, b
+ *  y - n, a, c, e, f, b
+ *  z - x, m, a, c, y, n, e, f, b
+ *
+ * Note that for `z', `b' is still an ancestor, however the path
+ * changed from _through `x'_ to _through `y'_.  If `z' changed the
+ * value of a property on `b', then that value should be preserved.
+ * If the value of a property on `b' was clear, then access through
+ * `x' will pick up the non-clear value from an ancestor based on the
+ * new in inheritance path.  This applies to `y' and `n', as well.
+ *
+ * In short, in the case of `z', `y' and `n', the properties of `b'
+ * should be preserved, even though `b' moved in the inheritance path.
+ * The only thing that should change is the apparent value from clear
+ * properties.
+ *
+ * Note!  Ownership of 'c' properties is a sticky issue -- however
+ * ickyness exists in the single-inheritance implementation, too --
+ * once ownership is established in a child via the `c' flag, it is
+ * never revoked, even if the parent changes or the parent changes the
+ * `c' flag!
+ *
+ * Implementation: for this object and all of its descendants,
+ * calculate the set of old ancestors, the set of new ancestors, and
+ * find their intersection.  The layout may change, but as we're
+ * laying out the properties in memory, consult the intersection, and
+ * preserve information about those properties.
+ */
 void
-dbpriv_fix_properties_after_chparent(Objid oid, Objid old_parent)
+dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ancestors)
 {
-    Objid o1, o2, common, new_parent;
-    int common_props, old_props, new_props;
+    Object *o;
+    Var ancestor;
 
-    /* Find the nearest common ancestor between old & new parent */
-    new_parent = db_object_parent(oid);
-    common = NOTHING;
-    for (o1 = new_parent; o1 != NOTHING; o1 = db_object_parent(o1))
-	for (o2 = old_parent; o2 != NOTHING; o2 = db_object_parent(o2))
-	    if (o1 == o2) {
-		common = o1;
-		goto endouter;
+    /*
+     * Property values are laid corresponding to the order of
+     * ancestors in the inheritance hierarchy.  The offsets arrays
+     * hold the starting point of each sub-array.
+     */
+    int offset;
+    int old_count, *old_offsets = mymalloc((listlength(old_ancestors) + 1) * sizeof(int), M_INT);
+    int new_count, *new_offsets = mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
+    int i1, c1;
+
+    offset = 0;
+    FOR_EACH(ancestor, old_ancestors, i1, c1) {
+	o = dbpriv_find_object(ancestor.v.obj);
+	old_offsets[i1 - 1] = offset; /* C arrays start at index 0, MOO arrays start at index 1 */
+	offset += o->propdefs.cur_length;
+    }
+    old_count = old_offsets[i1 - 1] = offset;
+
+    offset = 0;
+    FOR_EACH(ancestor, new_ancestors, i1, c1) {
+	o = dbpriv_find_object(ancestor.v.obj);
+	new_offsets[i1 - 1] = offset;
+	offset += o->propdefs.cur_length;
+    }
+    new_count = new_offsets[i1 - 1] = offset;
+
+    /*
+     * Iterate through the new ancestors.  Copy property values that
+     * are in both the new ancestors and the old ancestors.
+     * Otherwise, add new clear property values and delete any
+     * remaining property values.
+     */
+    Object *me = dbpriv_find_object(oid);
+    Pval *new_propval = NULL;
+
+    if (new_count != 0) {
+	new_propval = mymalloc(new_count * sizeof(Pval), M_PVAL);
+	int i2, c2, i3, c3;
+	FOR_EACH(ancestor, new_ancestors, i2, c2) {
+	    int n1 = new_offsets[i2 - 1];
+	    int n2 = new_offsets[i2];
+	    int l, x;
+	    if ((l = ismember(ancestor, old_ancestors, 1)) > 0) {
+		int o1 = old_offsets[l - 1];
+		int o2 = old_offsets[l];
+		for (x = o1; x < o2; x++, n1++) {
+		    new_propval[n1].var = var_ref(me->propval[x].var);
+		    new_propval[n1].owner = me->propval[x].owner;
+		    new_propval[n1].perms = me->propval[x].perms;
+		}
 	    }
-  endouter:
+	    else {
+		Var parent, parents = enlist_var(var_ref(me->parents));
+		FOR_EACH(parent, parents, i3, c3)
+		    if (valid(parent.v.obj))
+			if ((offset = properties_offset(ancestor.v.obj, parent.v.obj)) > -1)
+			    break;
+		free_var(parents);
+		for (x = 0; n1 < n2; x++, n1++) {
+		    Pval pv = dbpriv_find_object(parent.v.obj)->propval[offset + x];
+		    new_propval[n1].var = clear;
+		    new_propval[n1].owner = pv.perms & PF_CHOWN ? me->owner : pv.owner;
+		    new_propval[n1].perms = pv.perms;
+		}
+	    }
+	}
+    }
 
-    if (common != NOTHING)
-	common_props = dbpriv_count_properties(common);
-    else
-	common_props = 0;
+    /*
+     * Clean up.
+     */
+    int c;
+    if (me->propval) {
+	for (c = 0; c < old_count; c++)
+	  free_var(me->propval[c].var);
+	myfree(me->propval, M_PVAL);
+    }
+    me->propval = new_propval;
 
-    old_props = dbpriv_count_properties(old_parent) - common_props;
-    new_props = dbpriv_count_properties(new_parent) - common_props;
+    myfree(old_offsets, M_INT);
+    myfree(new_offsets, M_INT);
 
-    fix_props(oid, 0, old_props, new_props, common_props);
+    /*
+     * Recursively call dbpriv_fix_properties_after_chparent for each
+     * child.  For each child's parents assemble the old ancestors.
+     * When we come to me (oid) as parent, use my old ancestors
+     * instead of my new ancestors.
+     */
+    Var child, parent;
+    int i4, c4, i5, c5, i6, c6;
+    FOR_EACH(child, dbpriv_find_object(oid)->children, i4, c4) {
+	Object *oc = dbpriv_find_object(child.v.obj);
+	Var new = new_list(1);
+	Var old = new_list(1);
+	new.v.list[1] = var_ref(child);
+	old.v.list[1] = var_ref(child);
+	if (TYPE_LIST == oc->parents.type) {
+	    FOR_EACH(parent, oc->parents, i5, c5) {
+		Object *op = dbpriv_find_object(parent.v.obj);
+		if (op->id == oid) {
+		    Var tmp;
+		    FOR_EACH(tmp, old_ancestors, i6, c6)
+			old = setadd(old, var_ref(tmp));
+		    FOR_EACH(tmp, new_ancestors, i6, c6)
+			new = setadd(new, var_ref(tmp));
+		}
+		else {
+		    Var tmp, all = db_ancestors(op->id, true);
+		    FOR_EACH(tmp, all, i6, c6) {
+			old = setadd(old, var_ref(tmp));
+			new = setadd(new, var_ref(tmp));
+		    }
+		    free_var(all);
+		}
+	    }
+	}
+	else {
+	    new = listconcat(new, var_ref(new_ancestors));
+	    old = listconcat(old, var_ref(old_ancestors));
+	}
+	dbpriv_fix_properties_after_chparent(child.v.obj, old, new);
+	free_var(new);
+	free_var(old);
+    }
 }
 
 char rcsid_db_properties[] = "$Id: db_properties.c,v 1.5 2010/04/23 04:46:18 wrog Exp $";

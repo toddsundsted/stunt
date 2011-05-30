@@ -106,18 +106,22 @@ extern Objid db_create_object(void);
 
 extern Objid db_last_used_objid(void);
 extern void db_reset_last_used_objid(void);
+extern void db_set_last_used_objid(Objid);
 				/* The former returns the highest object number
 				 * ever returned by db_create_object().  The
-				 * latter resets that high-water mark to the
+				 * second resets that high-water mark to the
 				 * highest object number referring to a
-				 * currently-valid object.
+				 * currently-valid object.  The third sets that
+				 * high-water mark to the specified object
+				 * number, or to the highest object number
+				 * referring to a currently-valid object.
 				 */
 
 extern void db_destroy_object(Objid);
 				/* Destroys object, freeing all associated
-				 * storage.  The object's parent and location
-				 * must == #-1 and it must not have any
-				 * children or contents.
+				 * storage.  The object must not have parents,
+				 * children or contents, and the location
+				 * must == #-1.
 				 */
 
 extern Objid db_renumber_object(Objid);
@@ -134,6 +138,38 @@ extern int db_object_bytes(Objid);
 				 * properties.
 				 */
 
+extern Var db_ancestors(Objid, bool);
+				/* Returns a list of the ancestors of the
+				 * given object.  db_ancestors() does not/
+				 * can not free the returned list.  The caller
+				 * should therefore free it once it has finished
+				 * operating on it.
+				 */
+
+extern Var db_descendants(Objid, bool);
+				/* Returns a list of the descendants of the
+				 * given object.  db_descendants() does not/
+				 * can not free the returned list.  The caller
+				 * should therefore free it once it has finished
+				 * operating on it.
+				 */
+
+extern Var db_all_locations(Objid, bool);
+				/* Returns a list of all objects that
+				 * contain the given object.
+				 * db_all_locations() does not/can not free the
+				 * returned list.  The caller should therefore
+				 * free it once it has finished operating on it.
+				 */
+
+extern Var db_all_contents(Objid, bool);
+				/* Returns a list of all objects that are
+				 * contained by the given object.
+				 * db_all_contents() does not/can not free the
+				 * returned list.  The caller should therefore
+				 * free it once it has finished operating on it.
+				 */
+
 /**** object attributes ****/
 
 extern Objid db_object_owner(Objid);
@@ -147,7 +183,7 @@ extern void db_set_object_name(Objid oid, const char *name);
 				 * reference is to be persistent.
 				 */
 
-extern Objid db_object_parent(Objid);
+extern Var db_object_parent(Objid);
 extern int db_count_children(Objid);
 extern int db_for_all_children(Objid,
 			       int (*)(void *, Objid),
@@ -160,7 +196,7 @@ extern int db_for_all_children(Objid,
 				 *      db_renumber_object()
 				 *      db_change_parent()
 				 */
-extern int db_change_parent(Objid oid, Objid parent);
+extern int db_change_parent(Objid oid, Var parents);
 				/* db_change_parent() returns true (and
 				 * actually changes the parent of OID) iff
 				 * neither OID nor any of its descendents
@@ -192,7 +228,7 @@ typedef enum {
     FLAG_READ,
     FLAG_WRITE,
     FLAG_OBSOLETE_2,
-    FLAG_FERTILE,
+    FLAG_FERTILE
     /* NOTE: New permanent flags must always be added here, rather
      *	     than replacing one of the obsolete ones, since old
      *	     databases might have old objects around that still have
@@ -202,10 +238,6 @@ typedef enum {
     /* Temporary flags.
      * (not saved; can be renumbered with impunity)
      * make sure FLAG_FIRST_TEMP > last permanent flag
-     */
-    FLAG_FIRST_TEMP = 14,
-    /* allows space for the 2 needed by validate_hierarchies(),
-     * just in case int is only 16 bits
      */
 } db_object_flag;
 

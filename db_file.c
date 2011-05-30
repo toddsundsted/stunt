@@ -38,15 +38,162 @@
 #include "str_intern.h"
 #include "tasks.h"
 #include "timers.h"
+#include "utils.h"
 #include "version.h"
 
 static char *input_db_name, *dump_db_name;
 static int dump_generation = 0;
 static const char *header_format_string
-= "** LambdaMOO Database, Format Version %u **\n";
+  = "** LambdaMOO Database, Format Version %u **\n";
 
 DB_Version dbio_input_version;
 
+
+/*********** Format version 4 support ***********/
+
+/*
+ * This structure is compatible with the popular database format
+ * version 4.
+ */
+typedef struct Object4 {
+    Objid id;
+    Objid owner;
+    Objid location;
+    Objid contents;
+    Objid next;
+
+    Objid parent;
+    Objid child;
+    Objid sibling;
+
+    const char *name;
+    int flags;
+
+    Verbdef *verbdefs;
+    Proplist propdefs;
+    Pval *propval;
+} Object4;
+
+static Object4 **objects;
+static int num_objects = 0;
+static int max_objects = 0;
+
+static void
+ensure_new_object(void)
+{
+    if (max_objects == 0) {
+	max_objects = 100;
+	objects = mymalloc(max_objects * sizeof(Object4 *), M_OBJECT_TABLE);
+    }
+    if (num_objects >= max_objects) {
+	int i;
+	Object4 **new;
+
+	new = mymalloc(max_objects * 2 * sizeof(Object4 *), M_OBJECT_TABLE);
+	for (i = 0; i < max_objects; i++)
+	    new[i] = objects[i];
+	myfree(objects, M_OBJECT_TABLE);
+	objects = new;
+	max_objects *= 2;
+    }
+}
+
+static Object4 *
+dbv4_new_object(void)
+{
+    Object4 *o;
+
+    ensure_new_object();
+    o = objects[num_objects] = mymalloc(sizeof(Object4), M_OBJECT);
+    o->id = num_objects;
+    num_objects++;
+
+    return o;
+}
+
+static void
+dbv4_new_recycled_object(void)
+{
+    ensure_new_object();
+    objects[num_objects++] = 0;
+}
+
+static Object4 *
+dbv4_find_object(Objid oid)
+{
+    if (oid < 0 || oid >= num_objects)
+	return 0;
+    else
+	return objects[oid];
+}
+
+static int
+dbv4_valid(Objid oid)
+{
+    return dbv4_find_object(oid) != 0;
+}
+
+static Objid
+dbv4_last_used_objid(void)
+{
+    return num_objects - 1;
+}
+
+static int
+dbv4_count_properties(Objid oid)
+{
+    Object4 *o;
+    int nprops = 0;
+
+    for (o = dbv4_find_object(oid); o; o = dbv4_find_object(o->parent))
+	nprops += o->propdefs.cur_length;
+
+    return nprops;
+}
+
+typedef struct {
+    Objid definer;
+    Verbdef *verbdef;
+} handle;
+
+static db_verb_handle
+dbv4_find_indexed_verb(Objid oid, unsigned index)
+{
+    Object4 *o = dbv4_find_object(oid);
+    Verbdef *v;
+    unsigned i;
+    static handle h;
+    db_verb_handle vh;
+
+    for (v = o->verbdefs, i = 0; v; v = v->next)
+	if (++i == index) {
+	    h.definer = o->id;
+	    h.verbdef = v;
+	    vh.ptr = &h;
+
+	    return vh;
+	}
+    vh.ptr = 0;
+
+    return vh;
+}
+
+/*
+ * The following functions work with both the version 4 database and
+ * the latest database version.  If that changes they will need to be
+ * replaced.
+ *
+ * dbpriv_new_propdef
+ * dbpriv_build_prep_table
+ * db_verb_definer
+ * db_verb_names
+ * db_set_verb_program
+ * dbpriv_set_all_users
+ * db_all_users
+ * dbpriv_dbio_failed
+ * dbpriv_set_dbio_output
+ * dbpriv_set_dbio_input
+ */
 
 /*********** Verb and property I/O ***********/
 
@@ -103,26 +250,26 @@ write_propval(Pval * p)
 /*********** Object I/O ***********/
 
 static int
-read_object(void)
+v4_read_object(void)
 {
     Objid oid;
-    Object *o;
+    Object4 *o;
     char s[20];
     int i;
     Verbdef *v, **prevv;
     int nprops;
 
-    if (dbio_scanf("#%d", &oid) != 1 || oid != db_last_used_objid() + 1)
+    if (dbio_scanf("#%d", &oid) != 1 || oid != dbv4_last_used_objid() + 1)
 	return 0;
     dbio_read_line(s, sizeof(s));
 
     if (strcmp(s, " recycled\n") == 0) {
-	dbpriv_new_recycled_object();
+	dbv4_new_recycled_object();
 	return 1;
     } else if (strcmp(s, "\n") != 0)
 	return 0;
 
-    o = dbpriv_new_object();
+    o = dbv4_new_object();
     o->name = dbio_read_string_intern();
     (void) dbio_read_string();	/* discard old handles string */
     o->flags = dbio_read_num();
@@ -169,19 +316,83 @@ read_object(void)
     return 1;
 }
 
-static void
-write_object(Objid oid)
+static int
+ng_read_object(void)
 {
+    Objid oid;
     Object *o;
+    char s[20];
+    int i;
+    Verbdef *v, **prevv;
+    int nprops;
+
+    if (dbio_scanf("#%d", &oid) != 1 || oid != db_last_used_objid() + 1)
+	return 0;
+    dbio_read_line(s, sizeof(s));
+
+    if (strcmp(s, " recycled\n") == 0) {
+	dbpriv_new_recycled_object();
+	return 1;
+    } else if (strcmp(s, "\n") != 0)
+	return 0;
+
+    o = dbpriv_new_object();
+    o->name = dbio_read_string_intern();
+    o->flags = dbio_read_num();
+
+    o->owner = dbio_read_objid();
+
+    o->location = dbio_read_var();
+    o->contents = dbio_read_var();
+
+    o->parents = dbio_read_var();
+    o->children = dbio_read_var();
+
+    o->verbdefs = 0;
+    prevv = &(o->verbdefs);
+    for (i = dbio_read_num(); i > 0; i--) {
+	v = mymalloc(sizeof(Verbdef), M_VERBDEF);
+	read_verbdef(v);
+	*prevv = v;
+	prevv = &(v->next);
+    }
+
+    o->propdefs.cur_length = 0;
+    o->propdefs.max_length = 0;
+    o->propdefs.l = 0;
+    if ((i = dbio_read_num()) != 0) {
+	o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
+	o->propdefs.cur_length = i;
+	o->propdefs.max_length = i;
+	for (i = 0; i < o->propdefs.cur_length; i++)
+	    o->propdefs.l[i] = read_propdef();
+    }
+    nprops = dbio_read_num();
+    if (nprops)
+	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+    else
+	o->propval = 0;
+
+    for (i = 0; i < nprops; i++) {
+	read_propval(o->propval + i);
+    }
+
+    return 1;
+}
+
+static void
+v4_write_object(Objid oid)
+{
+    Object4 *o;
     Verbdef *v;
     int i;
     int nverbdefs, nprops;
 
-    if (!valid(oid)) {
+    if (!dbv4_valid(oid)) {
 	dbio_printf("#%d recycled\n", oid);
 	return;
     }
-    o = dbpriv_find_object(oid);
+    o = dbv4_find_object(oid);
 
     dbio_printf("#%d\n", oid);
     dbio_write_string(o->name);
@@ -209,6 +420,50 @@ write_object(Objid oid)
     for (i = 0; i < o->propdefs.cur_length; i++)
 	write_propdef(&o->propdefs.l[i]);
 
+    nprops = dbv4_count_properties(oid);
+
+    dbio_write_num(nprops);
+    for (i = 0; i < nprops; i++)
+	write_propval(o->propval + i);
+}
+
+static void
+ng_write_object(Objid oid)
+{
+    Object *o;
+    Verbdef *v;
+    int i;
+    int nverbdefs, nprops;
+
+    if (!valid(oid)) {
+	dbio_printf("#%d recycled\n", oid);
+	return;
+    }
+    o = dbpriv_find_object(oid);
+
+    dbio_printf("#%d\n", oid);
+    dbio_write_string(o->name);
+    dbio_write_num(o->flags);
+
+    dbio_write_objid(o->owner);
+
+    dbio_write_var(o->location);
+    dbio_write_var(o->contents);
+
+    dbio_write_var(o->parents);
+    dbio_write_var(o->children);
+
+    for (v = o->verbdefs, nverbdefs = 0; v; v = v->next)
+	nverbdefs++;
+
+    dbio_write_num(nverbdefs);
+    for (v = o->verbdefs; v; v = v->next)
+	write_verbdef(v);
+
+    dbio_write_num(o->propdefs.cur_length);
+    for (i = 0; i < o->propdefs.cur_length; i++)
+	write_propdef(&o->propdefs.l[i]);
+
     nprops = dbpriv_count_properties(oid);
 
     dbio_write_num(nprops);
@@ -220,25 +475,27 @@ write_object(Objid oid)
 /*********** File-level Input ***********/
 
 static int
-validate_hierarchies()
+v4_validate_hierarchies()
 {
-    Objid oid;
-    Objid size = db_last_used_objid() + 1;
+    Objid oid, log_oid;
+    Objid size = dbv4_last_used_objid() + 1;
     int broken = 0;
     int fixed_nexts = 0;
 
     oklog("VALIDATING the object hierarchies ...\n");
 
+#   define PROGRESS_INTERVAL 10000
 #   define MAYBE_LOG_PROGRESS					\
     {								\
-        if (log_report_progress()) {				\
+	if (oid == log_oid) {					\
+	    log_oid += PROGRESS_INTERVAL;			\
 	    oklog("VALIDATE: Done through #%d ...\n", oid);	\
 	}							\
     }
 
     oklog("VALIDATE: Phase 1: Check for invalid objects ...\n");
-    for (oid = 0; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object4 *o = dbv4_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
@@ -249,7 +506,7 @@ validate_hierarchies()
 #	    define CHECK(field, name) 					\
 	    {								\
 	        if (o->field != NOTHING					\
-		    && !dbpriv_find_object(o->field)) {			\
+		    && !dbv4_find_object(o->field)) {			\
 		    errlog("VALIDATE: #%d.%s = #%d <invalid> ... fixed.\n", \
 			   oid, name, o->field);			\
 		    o->field = NOTHING;				  	\
@@ -272,28 +529,24 @@ validate_hierarchies()
 	       fixed_nexts);
 
     oklog("VALIDATE: Phase 2: Check for cycles ...\n");
-    for (oid = 0; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object4 *o = dbv4_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-#	    define CHECK(start, field, name)			\
-	    {							\
-		Objid slower = start;				\
-		Objid faster = slower;				\
-		while (faster != NOTHING) {			\
-		    faster = dbpriv_find_object(faster)->field;	\
-		    if (faster == NOTHING)			\
-			break;					\
-		    faster = dbpriv_find_object(faster)->field;	\
-		    slower = dbpriv_find_object(slower)->field;	\
-		    if (faster == slower) {			\
-			errlog("VALIDATE: Cycle in `%s' chain of #%d\n", \
-			       name, oid);			\
-			broken = 1;				\
-			break;					\
-		    }						\
-		}						\
+#	    define CHECK(start, field, name)				\
+	    {								\
+		Objid	oid2 = start;					\
+		int	count = 0;					\
+		for (; oid2 != NOTHING					\
+		     ; oid2 = dbv4_find_object(oid2)->field) {		\
+		    if (++count > size)	{				\
+			errlog("VALIDATE: Cycle in `%s' chain of #%d\n",\
+			       name, oid);				\
+			broken = 1;					\
+			break;						\
+		    }							\
+		}							\
 	    }
 
 	    CHECK(o->parent, parent, "parent");
@@ -302,79 +555,298 @@ validate_hierarchies()
 	    CHECK(o->contents, next, "contents");
 
 #	    undef CHECK
-
-	    /* setup for phase 3:  set two temp flags on every object */
-	    o->flags |= (3<<FLAG_FIRST_TEMP);
 	}
     }
 
     if (broken)			/* Can't continue if cycles found */
 	return 0;
 
-    oklog("VALIDATE: Phase 3a: Finding delusional parents ...\n");
-    for (oid = 0; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
+    oklog("VALIDATE: Phase 3: Check for inconsistencies ...\n");
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object4 *o = dbv4_find_object(oid);
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-#	    define CHECK(up, down, down_name, across, FLAG)	\
-	    {							\
-		Objid	oidkid;					\
-		Object *okid;					\
-								\
-		for (oidkid = o->down;				\
-		     oidkid != NOTHING;				\
-		     oidkid = okid->across) {			\
-								\
-		    okid = dbpriv_find_object(oidkid);		\
-		    if (okid->up != oid) {			\
-			errlog(					\
-			    "VALIDATE: #%d erroneously on #%d's %s list.\n", \
-			    oidkid, oid, down_name);		\
-			broken = 1;				\
-		    }						\
-		    else {					\
-			/* mark okid as properly claimed */	\
-			okid->flags &= ~(1<<(FLAG));		\
-		    }						\
-		}						\
-	    }
-
-	    CHECK(parent,   child,    "child",    sibling, FLAG_FIRST_TEMP);
-	    CHECK(location, contents, "contents", next,    FLAG_FIRST_TEMP+1);
-
-#	    undef CHECK
-	}
-    }
-
-    oklog("VALIDATE: Phase 3b: Finding delusional children ...\n");
-    for (oid = 0; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
-
-	MAYBE_LOG_PROGRESS;
-	if (o) {
-#	    define CHECK(up, up_name, down_name, FLAG)			\
+#	    define CHECK(up, up_name, down, down_name, across)		\
 	    {								\
-		/* If oid is unclaimed, up must be NOTHING */		\
-		if ((o->flags & (1<<(FLAG))) && o->up != NOTHING) {	\
-		    errlog("VALIDATE: #%d not in %s (#%d)'s %s list.\n", \
-			   oid, up_name, o->up, down_name);		\
-		    broken = 1;						\
+		Objid	up = o->up;					\
+		Objid	oid2;						\
+									\
+		/* Is oid in its up's down list? */			\
+		if (up != NOTHING) {					\
+		    for (oid2 = dbv4_find_object(up)->down;		\
+			 oid2 != NOTHING;				\
+			 oid2 = dbv4_find_object(oid2)->across) {	\
+			if (oid2 == oid) /* found it */			\
+			    break;					\
+		    }							\
+		    if (oid2 == NOTHING) { /* didn't find it */		\
+			errlog("VALIDATE: #%d not in %s (#%d)'s %s list.\n", \
+			       oid, up_name, up, down_name);	        \
+			broken = 1;					\
+		    }							\
 		}							\
 	    }
 
-	    CHECK(parent,   "parent",   "child",    FLAG_FIRST_TEMP);
-	    CHECK(location, "location", "contents", FLAG_FIRST_TEMP+1);
+	    CHECK(parent, "parent", child, "child", sibling);
+	    CHECK(location, "location", contents, "contents", next);
 
-	    /* clear temp flags */
-	    o->flags &= ~(3<<FLAG_FIRST_TEMP);
+#	    undef CHECK
+
+#	    define CHECK(up, down, down_name, across)			\
+	    {								\
+		Objid	oid2;						\
+									\
+		for (oid2 = o->down;					\
+		     oid2 != NOTHING;					\
+		     oid2 = dbv4_find_object(oid2)->across) {		\
+		    if (dbv4_find_object(oid2)->up != oid) {		\
+			errlog(						\
+			    "VALIDATE: #%d erroneously on #%d's %s list.\n", \
+			    oid2, oid, down_name);			\
+			broken = 1;					\
+		    }							\
+		}							\
+	    }
+
+	    CHECK(parent, child, "child", sibling);
+	    CHECK(location, contents, "contents", next);
 
 #	    undef CHECK
 	}
     }
 
+#   undef PROGRESS_INTERVAL
+#   undef MAYBE_LOG_PROGRESS
+
     oklog("VALIDATING the object hierarchies ... finished.\n");
     return !broken;
+}
+
+static int
+ng_validate_hierarchies()
+{
+    Objid oid, log_oid;
+    Objid size = db_last_used_objid() + 1;
+    int i, c;
+    int broken = 0;
+
+    oklog("VALIDATING the object hierarchies ...\n");
+
+#   define PROGRESS_INTERVAL 10000
+#   define MAYBE_LOG_PROGRESS					\
+    {								\
+        if (oid == log_oid) {					\
+	    log_oid += PROGRESS_INTERVAL;			\
+	    oklog("VALIDATE: Done through #%d ...\n", oid);	\
+	}							\
+    }
+
+    oklog("VALIDATE: Phase 1: Check for invalid objects ...\n");
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object *o = dbpriv_find_object(oid);
+	MAYBE_LOG_PROGRESS;
+	if (o) {
+	    if (!is_obj_or_list_of_objs(o->parents)) {
+		errlog("VALIDATE: #%d.parents is not an object or list of objects.\n",
+		       oid);
+		broken = 1;
+	    }
+	    if (!is_list_of_objs(o->children)) {
+		errlog("VALIDATE: #%d.children is not a list of objects.\n",
+		       oid);
+		broken = 1;
+	    }
+	    if (!is_obj(o->location)) {
+		errlog("VALIDATE: #%d.location is not an object.\n",
+		       oid);
+		broken = 1;
+	    }
+	    if (!is_list_of_objs(o->contents)) {
+		errlog("VALIDATE: #%d.contents is not a list of objects.\n",
+		       oid);
+		broken = 1;
+	    }
+#	    define CHECK(field, name)					\
+	    {								\
+		if (TYPE_LIST == o->field.type) {			\
+		    Var tmp;						\
+		    FOR_EACH(tmp, o->field, i, c) {			\
+			if (tmp.v.obj != NOTHING			\
+			    && !dbpriv_find_object(tmp.v.obj)) {	\
+			    errlog("VALIDATE: #%d.%s = #%d <invalid> ... removed.\n", \
+			           oid, name, tmp);			\
+			    o->field = setremove(o->field, tmp);	\
+			}						\
+		    }							\
+		}							\
+		else {							\
+		    if (o->field.v.obj != NOTHING			\
+		        && !dbpriv_find_object(o->field.v.obj)) {	\
+			errlog("VALIDATE: #%d.%s = #%d <invalid> ... fixed.\n", \
+			       oid, name, o->field.v.obj);		\
+			o->field.v.obj = NOTHING;			\
+		    }							\
+		}							\
+	    }
+
+	    if (!broken) {
+		CHECK(parents, "parent");
+		CHECK(children, "child");
+		CHECK(location, "location");
+		CHECK(contents, "content");
+	    }
+
+#	    undef CHECK
+	}
+    }
+
+    if (broken)		/* Can't continue if invalid objects found */
+	return 0;
+
+    oklog("VALIDATE: Phase 2: Check for cycles ...\n");
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object *o = dbpriv_find_object(oid);
+	MAYBE_LOG_PROGRESS;
+	if (o) {
+#           define CHECK(start, func, name)				\
+	    {								\
+		Var tmp;						\
+		tmp.type = TYPE_OBJ;					\
+		tmp.v.obj = start;					\
+		Var all = func(start, false);				\
+		if (ismember(tmp, all, 1)) {				\
+			errlog("VALIDATE: Cycle in %s chain of #%d.\n",	\
+			       name, oid);				\
+			broken = 1;					\
+		}							\
+		free_var(all);						\
+	    }
+
+	    CHECK(oid, db_ancestors, "parent");
+	    CHECK(oid, db_all_locations, "location");
+
+#	    undef CHECK
+	}
+    }
+
+    if (broken)		/* Can't continue if cycles found */
+	return 0;
+
+    oklog("VALIDATE: Phase 3: Check for inconsistencies ...\n");
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object *o = dbpriv_find_object(oid);
+	MAYBE_LOG_PROGRESS;
+	if (o) {
+#	    define CHECK(up, up_name, down, down_name)			\
+	    {								\
+		Var tmp, t1, t2, obj;					\
+		obj.type = TYPE_OBJ;					\
+		obj.v.obj = oid;					\
+		t1 = enlist_var(var_ref(o->up));			\
+		FOR_EACH(tmp, t1, i, c) {				\
+		    if (tmp.v.obj != NOTHING) {				\
+			Object *otmp = dbpriv_find_object(tmp.v.obj);	\
+			t2 = enlist_var(var_ref(otmp->down));		\
+			if (ismember(obj, t2, 1)) {			\
+			    free_var(t2);				\
+			    continue;					\
+			}						\
+			else {						\
+			    errlog("VALIDATE: #%d not in it's %s's (#%d) %s.\n", \
+			           oid, up_name, otmp->id, down_name); \
+			    free_var(t2);				\
+			    broken = 1;					\
+			    break;					\
+			}						\
+		    }							\
+		}							\
+		free_var(t1);						\
+	    }
+
+	    CHECK(location, "location", contents, "contents");
+	    CHECK(contents, "content", location, "location");
+	    CHECK(parents, "parent", children, "children");
+	    CHECK(children, "child", parents, "parents");
+
+#	    undef CHECK
+	}
+    }
+
+#   undef PROGRESS_INTERVAL
+#   undef MAYBE_LOG_PROGRESS
+
+    oklog("VALIDATING the object hierarchies ... finished.\n");
+    return !broken;
+}
+
+static int
+v4_upgrade_objects()
+{
+    Objid oid, log_oid;
+    Objid size = dbv4_last_used_objid() + 1;
+
+    oklog("UPGRADING objects to new structure ...\n");
+
+#   define PROGRESS_INTERVAL 10000
+#   define MAYBE_LOG_PROGRESS					\
+    {								\
+        if (oid == log_oid) {					\
+	    log_oid += PROGRESS_INTERVAL;			\
+	    oklog("UPGRADE: Done through #%d ...\n", oid);	\
+	}							\
+    }
+
+    for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
+	Object4 *o = dbv4_find_object(oid);
+
+	MAYBE_LOG_PROGRESS;
+	if (o) {
+	    Object *new = dbpriv_new_object();
+	    new->name = o->name;
+	    new->flags = o->flags;
+
+	    new->owner = o->owner;
+
+	    Objid iter;
+
+	    new->parents = var_dup(new_obj(o->parent));
+
+	    new->children = new_list(0);
+	    for (iter = o->child; iter != NOTHING; iter = objects[iter]->sibling)
+		new->children = listappend(new->children, var_dup(new_obj(iter)));
+
+	    new->location = var_dup(new_obj(o->location));
+
+	    new->contents = new_list(0);
+	    for (iter = o->contents; iter != NOTHING; iter = objects[iter]->next)
+		new->contents = listappend(new->contents, var_dup(new_obj(iter)));
+
+	    new->verbdefs = o->verbdefs;
+	    new->propdefs = o->propdefs;
+	    new->propval = o->propval;
+	}
+	else {
+	    dbpriv_new_recycled_object();
+	}
+    }
+
+#   undef PROGRESS_INTERVAL
+#   undef MAYBE_LOG_PROGRESS
+
+    for (oid = 0; oid < size; oid++) {
+	if (objects[oid]) {
+	    myfree(objects[oid], M_OBJECT);
+	    objects[oid] = 0;
+	}
+    }
+
+    num_objects = 0;
+    max_objects = 0;
+    myfree(objects, M_OBJECT_TABLE);
+
+    oklog("UPGRADING objects to new structure ... finished.\n");
+    return 1;
 }
 
 static const char *
@@ -408,17 +880,19 @@ read_db_file(void)
 	       dbio_input_version);
 	return 0;
     }
+
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
-     * straightforward error checking; unfortunately, the standard says that
-     * suppressed assignments are not counted in determining the returned value
-     * of `scanf'...
+     * straightforward error checking; unfortunately, the standard
+     * says that suppressed assignments are not counted in determining
+     * the returned value of `scanf'...
      */
     if (dbio_scanf("%d\n%d\n%d\n%d\n",
 		   &nobjs, &nprogs, &dummy, &nusers) != 4) {
 	errlog("READ_DB_FILE: Bad header\n");
 	return 0;
     }
+
     user_list = new_list(nusers);
     for (i = 1; i <= nusers; i++) {
 	user_list.v.list[i].type = TYPE_OBJ;
@@ -426,35 +900,66 @@ read_db_file(void)
     }
     dbpriv_set_all_users(user_list);
 
-    oklog("LOADING: Reading %d objects...\n", nobjs);
+    oklog("LOADING: Reading %d objects ...\n", nobjs);
     for (i = 1; i <= nobjs; i++) {
-	if (!read_object()) {
-	    errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
-	    return 0;
+	if (DBV_NextGen > dbio_input_version) {
+	    if (!v4_read_object()) {
+		errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
+		return 0;
+	    }
 	}
-	if (i == nobjs || log_report_progress())
+	else {
+	    if (!ng_read_object()) {
+		errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
+		return 0;
+	    }
+	}
+	if (i % 10000 == 0 || i == nobjs)
 	    oklog("LOADING: Done reading %d objects ...\n", i);
     }
 
-    if (!validate_hierarchies()) {
-	errlog("READ_DB_FILE: Errors in object hierarchies.\n");
-	return 0;
+    if (DBV_NextGen > dbio_input_version) {
+	if (!v4_validate_hierarchies()) {
+	    errlog("READ_DB_FILE: Errors in object hierarchies.\n");
+	    return 0;
+	}
     }
-    oklog("LOADING: Reading %d MOO verb programs...\n", nprogs);
+    else {
+	if (!ng_validate_hierarchies()) {
+	    errlog("READ_DB_FILE: Errors in object hierarchies.\n");
+	    return 0;
+	}
+    }
+
+    oklog("LOADING: Reading %d MOO verb programs ...\n", nprogs);
     for (i = 1; i <= nprogs; i++) {
 	if (dbio_scanf("#%d:%d\n", &oid, &vnum) != 2) {
 	    errlog("READ_DB_FILE: Bad program header, i = %d.\n", i);
 	    return 0;
 	}
-	if (!valid(oid)) {
-	    errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n",
-		   oid, vnum);
-	    return 0;
+	if (DBV_NextGen > dbio_input_version) {
+	    if (!dbv4_valid(oid)) {
+		errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n",
+		       oid, vnum);
+		return 0;
+	    }
+	    h = dbv4_find_indexed_verb(oid, vnum + 1);	/* DB file is 0-based. */
+	    if (!h.ptr) {
+		errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
+		return 0;
+	    }
 	}
-	h = db_find_indexed_verb(oid, vnum + 1);	/* DB file is 0-based. */
-	if (!h.ptr) {
-	    errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
-	    return 0;
+	else {
+	    if (!valid(oid)) {
+		errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n",
+		       oid, vnum);
+		return 0;
+	    }
+	    h = db_find_indexed_verb(oid, vnum + 1);	/* DB file is 0-based. */
+	    if (!h.ptr) {
+		errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
+		return 0;
+	    }
 	}
 	program = dbio_read_program(dbio_input_version, fmt_verb_name, &h);
 	if (!program) {
@@ -462,20 +967,29 @@ read_db_file(void)
 	    return 0;
 	}
 	db_set_verb_program(h, program);
-	if (i == nprogs || log_report_progress())
-	    oklog("LOADING: Done reading %d verb programs...\n", i);
+	if (i % 5000 == 0 || i == nprogs)
+	    oklog("LOADING: Done reading %d verb programs ...\n", i);
     }
 
-    oklog("LOADING: Reading forked and suspended tasks...\n");
+    oklog("LOADING: Reading forked and suspended tasks ...\n");
     if (!read_task_queue()) {
 	errlog("READ_DB_FILE: Can't read task queue.\n");
 	return 0;
     }
-    oklog("LOADING: Reading list of formerly active connections...\n");
+
+    oklog("LOADING: Reading list of formerly active connections ...\n");
     if (!read_active_connections()) {
 	errlog("DB_READ: Can't read active connections.\n");
 	return 0;
     }
+
+    if (DBV_NextGen > dbio_input_version) {
+	if (!v4_upgrade_objects()) {
+	    errlog("READ_DB_FILE: Errors upgrading objects.\n");
+	    return 0;
+	}
+    }
+
     return 1;
 }
 
@@ -504,40 +1018,46 @@ write_db_file(const char *reason)
 
     TRY {
 	dbio_printf(header_format_string, current_db_version);
+
 	dbio_printf("%d\n%d\n%d\n%d\n",
-		    max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+	            max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+
 	for (i = 1; i <= user_list.v.list[0].v.num; i++)
 	    dbio_write_objid(user_list.v.list[i].v.obj);
-	oklog("%s: Writing %d objects...\n", reason, max_oid + 1);
+
+	oklog("%s: Writing %d objects ...\n", reason, max_oid + 1);
 	for (oid = 0; oid <= max_oid; oid++) {
-	    write_object(oid);
-	    if (oid == max_oid || log_report_progress())
-		oklog("%s: Done writing %d objects...\n", reason, oid + 1);
+	    ng_write_object(oid);
+	    if ((oid + 1) % 10000 == 0 || oid == max_oid)
+		oklog("%s: Done writing %d objects ...\n", reason, oid + 1);
 	}
-	oklog("%s: Writing %d MOO verb programs...\n", reason, nprogs);
-	for (i = 0, oid = 0; oid <= max_oid; oid++)
+
+	oklog("%s: Writing %d MOO verb programs ...\n", reason, nprogs);
+	for (i = 0, oid = 0; oid <= max_oid; oid++) {
 	    if (valid(oid)) {
 		int vcount = 0;
-
 		for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
 		    if (v->program) {
 			dbio_printf("#%d:%d\n", oid, vcount);
 			dbio_write_program(v->program);
-			if (++i == nprogs || log_report_progress())
-			    oklog("%s: Done writing %d verb programs...\n",
-				  reason, i);
+			if (++i % 5000 == 0 || i == nprogs)
+			    oklog("%s: Done writing %d verb programs ...\n",
+			          reason, i);
 		    }
 		    vcount++;
 		}
 	    }
-	oklog("%s: Writing forked and suspended tasks...\n", reason);
+	}
+
+	oklog("%s: Writing forked and suspended tasks ...\n", reason);
 	write_task_queue();
-	oklog("%s: Writing list of formerly active connections...\n", reason);
+
+	oklog("%s: Writing list of formerly active connections ...\n", reason);
 	write_active_connections();
     }
-    EXCEPT(dbpriv_dbio_failed)
+    EXCEPT(dbpriv_dbio_failed) {
 	success = 0;
-    ENDTRY;
+    } ENDTRY;
 
     return success;
 }
@@ -598,12 +1118,12 @@ dump_database(Dump_Reason reason)
 	    fclose(f);
 	    remove(temp_name);
 	    if (reason == DUMP_CHECKPOINT) {
-		errlog("Abandoning checkpoint attempt...\n");
+		errlog("Abandoning checkpoint attempt ...\n");
 		success = 0;
 	    } else {
 		int retry_interval = 60;
 
-		errlog("Waiting %d seconds and retrying dump...\n",
+		errlog("Waiting %d seconds and retrying dump ...\n",
 		       retry_interval);
 		timer_sleep(retry_interval);
 		goto retryDumping;
@@ -739,7 +1259,7 @@ db_shutdown()
 
 char rcsid_db_file[] = "$Id: db_file.c,v 1.7 2010/04/22 21:29:18 wrog Exp $";
 
-/* 
+/*
  * $Log: db_file.c,v $
  * Revision 1.7  2010/04/22 21:29:18  wrog
  * Free database name strings on shutdown (rob@mars.org)
@@ -750,9 +1270,6 @@ char rcsid_db_file[] = "$Id: db_file.c,v 1.7 2010/04/22 21:29:18 wrog Exp $";
  *
  * Revision 1.5  2004/05/22 01:25:43  wrog
  * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
- *
- * Revision 1.4.8.2  2003/06/03 12:21:17  wrog
- * new validation algorithms for cycle-detection and hierarchy checking
  *
  * Revision 1.4.8.1  2003/06/01 12:27:35  wrog
  * added braces and fixed indentation on TRY

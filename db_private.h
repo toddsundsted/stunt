@@ -58,22 +58,26 @@ typedef struct Pval {
 typedef struct Object {
     Objid id;
     Objid owner;
-    Objid location;
-    Objid contents;
-    Objid next;
-
-    Objid parent;
-    Objid child;
-    Objid sibling;
-
 
     const char *name;
     int flags;
+
+    Var location;
+    Var contents;
+    Var parents;
+    Var children;
 
     Verbdef *verbdefs;
     Proplist propdefs;
     Pval *propval;
 } Object;
+
+/*
+ * `parents' can be #-1 (NOTHING), a valid object number, or a list of
+ * valid object numbers.  `location' can be #-1 or a valid object
+ * number.  `children' and `contents' must be a list of valid object
+ * numbers.
+ */
 
 /*********** Verb cache support ***********/
 
@@ -127,18 +131,21 @@ extern Propdef dbpriv_new_propdef(const char *name);
 extern int dbpriv_count_properties(Objid);
 
 extern int dbpriv_check_properties_for_chparent(Objid oid,
-						Objid new_parent);
-				/* Return true iff NEW_PARENT defines no
+						Var parents);
+				/* Return true iff PARENTS defines no
 				 * properties that are also defined by either
-				 * OID or any of OID's descendants.
+				 * OID or any of OID's descendants, or by
+				 * other parents in PARENTS and their
+				 * ancestors.
 				 */
 
 extern void dbpriv_fix_properties_after_chparent(Objid oid,
-						 Objid old_parent);
-				/* OID has just had its parent changed away
-				 * from OLD_PARENT.  Fix up the properties of
-				 * OID and its descendants, removing obsolete
-				 * ones and adding clear new ones, as
+						 Var old_ancestors,
+						 Var new_ancestors);
+				/* OID has just had its parent changed.
+				 * Fix up the properties of OID and its
+				 * descendants, removing obsolete ones
+				 * and adding clear new ones, as
 				 * appropriate for its new parent.
 				 */
 
