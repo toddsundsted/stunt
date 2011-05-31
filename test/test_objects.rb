@@ -1687,6 +1687,25 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_for_identified_but_unfixed_bugs
+    who = nil
+    run_test_as('programmer') do
+      who = player
+    end
+    run_test_as('wizard') do
+      # Test that creating a `c' property ignores the specified owner.
+      # I contend that this is a bug on the basis of the "least surprise"
+      # rule -- I understand why this happens, but ignoring the specified
+      # owner is surprising!
+      a = create(NOTHING)
+      assert_equal player, get(a, 'owner')
+      add_property(a, 'foo', 0, [who, 'r'])
+      add_property(a, 'bar', '', [who, 'rc'])
+      assert_equal [who, 'r'], property_info(a, 'foo')
+      assert_equal [player, 'rc'], property_info(a, 'bar')
+    end
+  end
+
   def test_verb_cache
     run_test_as('wizard') do
       vcs = verb_cache_stats
