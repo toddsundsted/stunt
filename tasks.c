@@ -169,6 +169,7 @@ typedef struct ext_queue {
 
 #define NO_USAGE	-1
 
+Var current_local;
 int current_task_id;
 static tqueue *idle_tqueues = 0, *active_tqueues = 0;
 static task *waiting_tasks = 0;	/* forked and suspended tasks */
@@ -636,7 +637,6 @@ find_verb_on(Objid oid, Parsed_Command * pc, db_verb_handle * vh)
     return vh->ptr != 0;
 }
 
-
 static int
 do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
 {
@@ -667,6 +667,17 @@ do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
     return 1;
 }
 
+/* I made `run_server_task_setting_id' static and removed it from the
+ * header to better control access to a central point of task
+ * creation.  Functions that want to run tasks should call one of the
+ * externally visible entry points -- probably `run_server_task' --
+ * which ensure things get cleaned up properly.
+ */
+static
+enum outcome
+run_server_task_setting_id(Objid player, Objid what, const char *verb,
+			   Var args, const char *argstr, Var *result,
+			   int *task_id);
 
 static int
 do_command_task(tqueue * tq, char *command)
@@ -717,6 +728,9 @@ do_command_task(tqueue * tq, char *command)
 	    if (tq->output_suffix)
 		notify(tq->player, tq->output_suffix);
 
+	    /* clean up after `run_server_task_setting_id' */
+	    current_task_id = -1;
+	    free_var(current_local);
 	    free_var(result);
 	}
 
@@ -770,9 +784,21 @@ do_login_task(tqueue * tq, char *command)
 	    dead_tq->player = NOTHING;	/* it'll be freed by run_ready_tasks */
 	    dead_tq->num_bg_tasks = 0;
 	}
+	/* clean up after `run_server_task_setting_id' before calling
+	 * `player_connected' because `player_connected' may kick off
+	 * another task
+	 */
+	current_task_id = -1;
+	free_var(current_local);
+	free_var(result);
 	player_connected(old_player, new_player, new_player > old_max_object);
+    } else {
+	/* clean up after `run_server_task_setting_id'
+	 */
+	current_task_id = -1;
+	free_var(current_local);
+	free_var(result);
     }
-    free_var(result);
     return 1;
 }
 
@@ -1011,7 +1037,7 @@ enqueue_waiting(task * t)
 }
 
 static void
-enqueue_ft(Program * program, activation a, Var * rt_env,
+enqueue_forked(Program * program, activation a, Var * rt_env,
 	   int f_index, time_t start_time, int id)
 {
     task *t = (task *) mymalloc(sizeof(task), M_TASK);
@@ -1070,6 +1096,11 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
 	return E_QUOTA;
 
     id = new_task_id();
+    /* We eschew the usual pattern of generating the task local value
+     * when we generate the task id to avoid having to store it --
+     * it's sufficient to generate it immediately before a forked task
+     * becomes a real task (see `run_ready_tasks').
+     */
     a.verb = str_ref(a.verb);
     a.verbname = str_ref(a.verbname);
     a.prog = program_ref(a.prog);
@@ -1079,7 +1110,7 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
 	a.rt_env[vid].v.num = id;
     }
     rt_env = copy_rt_env(a.rt_env, a.prog->num_var_names);
-    enqueue_ft(a.prog, a, rt_env, f_index, time(0) + after_seconds, id);
+    enqueue_forked(a.prog, a, rt_env, f_index, time(0) + after_seconds, id);
 
     return E_NONE;
 }
@@ -1191,6 +1222,18 @@ next_task_start(void)
     return -1;
 }
 
+/* There is surprisingness in how tasks actually get created in
+ * response to player input, so I'm documenting it here.
+ * `run_ready_tasks' turns player input into tasks (and verb calls).
+ * `run_server_task_setting_id' is the central point for task
+ * creation -- in the case of command verbs it's important to
+ * understand that correct behavior *depends on side-effects*.  In
+ * particular, `run_server_task_setting_id' must be called *before*
+ * `do_input_task' (see `do_command_task') in order to ensure the task
+ * is set up.  Basically, the server tries to run "do_command" -- if
+ * that fails, it handles the input command.  The same "task" is used
+ * for both.  Messy.
+ */
 void
 run_ready_tasks(void)
 {
@@ -1223,9 +1266,12 @@ run_ready_tasks(void)
 
 		tq->reading = 0;
 		current_task_id = tq->reading_vm->task_id;
+		current_local = var_ref(tq->reading_vm->local);
 		v.type = TYPE_ERR;
 		v.v.err = E_INVARG;
 		resume_from_previous_vm(tq->reading_vm, v);
+		current_task_id = -1;
+		free_var(current_local);
 		did_one = 1;
 	    }
 	    while (!did_one) {	/* Loop over tasks, looking for runnable one */
@@ -1252,9 +1298,12 @@ run_ready_tasks(void)
 
 			tq->reading = 0;
 			current_task_id = tq->reading_vm->task_id;
+			current_local = var_ref(tq->reading_vm->local);
 			v.type = TYPE_STR;
 			v.v.str = t->t.input.string;
 			resume_from_previous_vm(tq->reading_vm, v);
+			current_task_id = -1;
+			free_var(current_local);
 			did_one = 1;
 		    } else {
 			/* Used to insist on tq->connected here, but Pavel
@@ -1273,15 +1322,21 @@ run_ready_tasks(void)
 
 			ft = t->t.forked;
 			current_task_id = ft.id;
+			current_local = new_list(0);
 			do_forked_task(ft.program, ft.rt_env, ft.a,
 				       ft.f_index);
+			current_task_id = -1;
+			free_var(current_local);
 			did_one = 1;
 		    }
 		    break;
 		case TASK_SUSPENDED:
 		    current_task_id = t->t.suspended.the_vm->task_id;
+		    current_local = var_ref(t->t.suspended.the_vm->local);
 		    resume_from_previous_vm(t->t.suspended.the_vm,
 					    t->t.suspended.value);
+		    current_task_id = -1;
+		    free_var(current_local);
 		    did_one = 1;
 		    break;
 		}
@@ -1314,22 +1369,37 @@ run_ready_tasks(void)
 
 enum outcome
 run_server_task(Objid player, Objid what, const char *verb, Var args,
-		const char *argstr, Var * result)
+		const char *argstr, Var *result)
 {
-    return run_server_task_setting_id(player, what, verb, args, argstr, result,
-				      0);
+    enum outcome ret = run_server_task_setting_id(player, what, verb,
+                                                  args, argstr,
+                                                  result, 0);
+
+    current_task_id = -1;
+    free_var(current_local);
+
+    return ret;
 }
 
+/* This is the usual entry point for a new task (the other being the
+ * creation of a forked task.  It allocates the current task local
+ * value -- make sure it gets cleaned up properly when the task
+ * finishes.
+ */
+static
 enum outcome
 run_server_task_setting_id(Objid player, Objid what, const char *verb,
-			   Var args, const char *argstr, Var * result,
+			   Var args, const char *argstr, Var *result,
 			   int *task_id)
 {
     db_verb_handle h;
 
     current_task_id = new_task_id();
+    current_local = new_list(0);
+
     if (task_id)
 	*task_id = current_task_id;
+
     h = db_find_callable_verb(what, verb);
     if (h.ptr)
 	return do_server_verb_task(what, verb, args, h, player, argstr,
@@ -1345,16 +1415,24 @@ run_server_task_setting_id(Objid player, Objid what, const char *verb,
     }
 }
 
+/* for emergency mode */
 enum outcome
 run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
 		    const char *verbname, Program * program, Objid progr,
 			int debug, Objid player, const char *argstr,
-			Var * result)
+			Var *result)
 {
     current_task_id = new_task_id();
-    return do_server_program_task(this, verb, args, vloc, verbname, program,
-				  progr, debug, player, argstr, result,
-				  1/*traceback*/);
+    current_local = new_list(0);
+
+    enum outcome ret = do_server_program_task(this, verb, args, vloc, verbname, program,
+                                              progr, debug, player, argstr,
+                                              result, 1/*traceback*/);
+
+    current_task_id = -1;
+    free_var(current_local);
+
+    return ret;
 }
 
 void
@@ -1491,7 +1569,7 @@ read_task_queue(void)
 	rt_env = reorder_rt_env(old_rt_env, old_names, old_size, program);
 	program->first_lineno = first_lineno;
 
-	enqueue_ft(program, a, rt_env, MAIN_VECTOR, start_time, id);
+	enqueue_forked(program, a, rt_env, MAIN_VECTOR, start_time, id);
     }
 
     suspended_task_header = dbio_scanf("%d suspended tasks\n",
@@ -2223,6 +2301,37 @@ bf_flush_input(Var arglist, Byte next, void *vdata, Objid progr)
     return no_var_pack();
 }
 
+static package
+bf_set_task_local(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (ANY value) */
+    if (!is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    Var v = var_ref(arglist.v.list[1]);
+
+    free_var(current_local);
+    current_local = v;
+
+    free_var(arglist);
+    return no_var_pack();
+}
+
+static package
+bf_task_local(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    if (!is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    Var v = var_ref(current_local);
+
+    free_var(arglist);
+    return make_var_pack(v);
+}
+
 void
 register_tasks(void)
 {
@@ -2236,6 +2345,8 @@ register_tasks(void)
     register_function("force_input", 2, 3, bf_force_input,
 		      TYPE_OBJ, TYPE_STR, TYPE_ANY);
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
+    register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
+    register_function("task_local", 0, 0, bf_task_local);
 }
 
 char rcsid_tasks[] = "$Id: tasks.c,v 1.19 2010/04/22 21:27:25 wrog Exp $";

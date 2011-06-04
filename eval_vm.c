@@ -25,15 +25,17 @@
 #include "storage.h"
 #include "structures.h"
 #include "tasks.h"
+#include "utils.h"
 
 /**** external functions ****/
 
 vm
-new_vm(int task_id, int stack_size)
+new_vm(int task_id, Var local, int stack_size)
 {
     vm the_vm = mymalloc(sizeof(vmstruct), M_VM);
 
     the_vm->task_id = task_id;
+    the_vm->local = local;
     the_vm->activ_stack = mymalloc(sizeof(activation) * stack_size, M_VM);
 
     return the_vm;
@@ -43,6 +45,8 @@ void
 free_vm(vm the_vm, int stack_too)
 {
     int i;
+
+    free_var(the_vm->local);
 
     if (stack_too)
 	for (i = the_vm->top_activ_stack; i >= 0; i--)
@@ -82,6 +86,8 @@ write_vm(vm the_vm)
 {
     unsigned i;
 
+    dbio_write_var(the_vm->local);
+
     dbio_printf("%u %d %u %u\n",
 		the_vm->top_activ_stack, the_vm->root_activ_vector,
 		the_vm->func_id, the_vm->max_stack_size);
@@ -98,14 +104,17 @@ read_vm(int task_id)
     char c;
     vm the_vm;
 
+    Var local = dbio_read_var();
+
     if (dbio_scanf("%u %d %u%c", &top, &vector, &func_id, &c) != 4
 	|| (c == ' '
 	    ? dbio_scanf("%u%c", &max, &c) != 2 || c != '\n'
 	    : (max = DEFAULT_MAX_STACK_DEPTH, c != '\n'))) {
+	free_var(local);
 	errlog("READ_VM: Bad vm header\n");
 	return 0;
     }
-    the_vm = new_vm(task_id, top + 1);
+    the_vm = new_vm(task_id, local, top + 1);
     the_vm->max_stack_size = max;
     the_vm->top_activ_stack = top;
     the_vm->root_activ_vector = vector;

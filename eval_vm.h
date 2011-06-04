@@ -22,9 +22,15 @@
 extern vm read_vm(int task_id);
 extern void write_vm(vm);
 
-extern vm new_vm(int task_id, int stack_size);
-extern void free_vm(vm the_vm, int stack_too);
-
+extern vm new_vm(int task_id, Var local, int stack_size); /* Creates a new vm.
+                                                           * Stores task id and
+                                                           * task local value.
+                                                           * Consumes `local'.
+                                                           */
+extern void free_vm(vm the_vm, int stack_too);            /* Frees vm.  Free
+                                                           * associated allocations
+                                                           * if `stack_too' is 1.
+                                                           */
 extern activation top_activ(vm);
 extern Objid progr_of_cur_verb(vm);
 extern unsigned suspended_lineno_of_vm(vm);
