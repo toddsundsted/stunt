@@ -94,6 +94,9 @@ Programmer
 0
 0
 #0:0
+if ((args && (length(args) == 1)) && (args[1] == "shutdown"))
+shutdown();
+endif
 if ((args && (length(args) > 1)) && (args[1] == "connect"))
 if (args[2] == "wizard")
 o = create($nothing);
