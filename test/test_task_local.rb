@@ -282,30 +282,4 @@ class TestTaskLocal < Test::Unit::TestCase
     end
   end
 
-
-  def set_task_local(value)
-    simplify command %Q|; return set_task_local(#{value_ref(value)});|
-  end
-
-  def task_local()
-    simplify command %Q|; return task_local();|
-  end
-
-  def value_ref(value)
-    case value
-    when String
-      "\"#{value}\""
-    when Symbol
-      "$#{value.to_s}"
-    when MooErr
-      value.to_s
-    when MooObj
-      "##{value.to_s}"
-    when Array
-      '{' + value.map { |o| value_ref(o).to_s }.join(', ') + '}'
-    else
-      value
-    end
-  end
-
 end

@@ -255,6 +255,14 @@ module MooSupport
     true_or_false simplify command %Q|; return `function_info("#{name}") ! E_INVARG => {}';|
   end
 
+  def set_task_local(value)
+    simplify command %Q|; return set_task_local(#{value_ref(value)});|
+  end
+
+  def task_local()
+    simplify command %Q|; return task_local();|
+  end
+
   ## Administrative Operations
 
   def reset_max_object
