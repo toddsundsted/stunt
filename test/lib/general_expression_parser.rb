@@ -62,6 +62,6 @@ class GeneralExpressionTransform < Parslet::Transform
 
   rule(:empty_map => simple(:dummy))   { {} }
   rule(:map => {:key => simple(:key), :value => simple(:value)}) { {key => value} }
-  rule(:map => subtree(:map))          { map.inject({}) { |a, i| a[i[:key]] = i[:value] ; a } }
+  rule(:map => subtree(:map))          { map.instance_of?(Array) ? map.inject({}) { |a, i| a[i[:key]] = i[:value] ; a } : {map[:key] => map[:value]}}
 
 end
