@@ -29,6 +29,7 @@
 #include "functions.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include "match.h"
 #include "options.h"
 #include "parse_cmd.h"
@@ -1322,7 +1323,7 @@ run_ready_tasks(void)
 
 			ft = t->t.forked;
 			current_task_id = ft.id;
-			current_local = new_list(0);
+			current_local = new_map();
 			do_forked_task(ft.program, ft.rt_env, ft.a,
 				       ft.f_index);
 			current_task_id = -1;
@@ -1395,7 +1396,7 @@ run_server_task_setting_id(Objid player, Objid what, const char *verb,
     db_verb_handle h;
 
     current_task_id = new_task_id();
-    current_local = new_list(0);
+    current_local = new_map();
 
     if (task_id)
 	*task_id = current_task_id;
@@ -1423,7 +1424,7 @@ run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
 			Var *result)
 {
     current_task_id = new_task_id();
-    current_local = new_list(0);
+    current_local = new_map();
 
     enum outcome ret = do_server_program_task(this, verb, args, vloc, verbname, program,
                                               progr, debug, player, argstr,

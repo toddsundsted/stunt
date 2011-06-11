@@ -25,7 +25,7 @@ class TestTaskLocal < Test::Unit::TestCase
   def test_that_task_local_takes_no_arguments
     run_test_as('wizard') do
       assert_equal E_ARGS, simplify(command(%Q|; return task_local({});|))
-      assert_equal [], simplify(command(%Q|; return task_local();|))
+      assert_equal({}, simplify(command(%Q|; return task_local();|)))
     end
   end
 
