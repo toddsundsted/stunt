@@ -719,7 +719,7 @@ maplength(Var map)
 /* Iterate over the map, calling the function `func' once per
  * key/value pair.
  */
-void
+int
 mapforeach(Var map, mapfunc func, void *data)
 {				/* does NOT consume `map' */
     rbtrav *trav;
@@ -730,11 +730,16 @@ mapforeach(Var map, mapfunc func, void *data)
 	panic("MAPFOREACH: rbtnew failed");
 
     for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
-	(*func)(pnode->key, pnode->value, data, first);
+	int ret = (*func)(pnode->key, pnode->value, data, first);
+	if (ret) {
+	    rbtdelete(trav);
+	    return ret;
+	}
 	first = 0;
     }
 
     rbtdelete(trav);
+    return 0;
 }
 
 /**** built in functions ****/
@@ -765,11 +770,12 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-static void
+static int
 do_map_keys(Var key, Var value, void *data, int first)
 {
     Var *list = (Var *)data;
     *list = listappend(*list, var_ref(key));
+    return 0;
 }
 
 static package
@@ -781,11 +787,12 @@ bf_mapkeys(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-static void
+static int
 do_map_values(Var key, Var value, void *data, int first)
 {
     Var *list = (Var *)data;
     *list = listappend(*list, var_ref(value));
+    return 0;
 }
 
 static package

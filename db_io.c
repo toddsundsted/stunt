@@ -376,11 +376,12 @@ dbio_write_string(const char *s)
     dbio_printf("%s\n", s ? s : "");
 }
 
-static void
+static int
 dbio_write_map(Var key, Var value, void *data, int first)
 {
     dbio_write_var(key);
     dbio_write_var(value);
+    return 0;
 }
 
 void

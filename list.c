@@ -276,7 +276,7 @@ value2str(Var value)
     }
 }
 
-static void
+static int
 print_map_to_stream(Var key, Var value, void *sptr, int first)
 {
     Stream *s = sptr;
@@ -288,6 +288,8 @@ print_map_to_stream(Var key, Var value, void *sptr, int first)
     unparse_value(s, key);
     stream_add_string(s, " -> ");
     unparse_value(s, value);
+
+    return 0;
 }
 
 void
