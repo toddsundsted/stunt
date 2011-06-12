@@ -136,6 +136,40 @@ module MooSupport
     simplify command %|; #{string}; |
   end
 
+  ## Manipulating MOO Values
+
+  def length(value)
+    simplify command %Q|; return length(#{value_ref(value)});|
+  end
+
+  def is_member(value, collection)
+    simplify command %Q|; return is_member(#{value_ref(value)}, #{value_ref(collection)});|
+  end
+
+  ### General Operations Applicable to all Values
+
+  def tostr(value)
+    simplify command %Q|; return tostr(#{value_ref(value)});|
+  end
+
+  def toliteral(value)
+    simplify command %Q|; return toliteral(#{value_ref(value)});|
+  end
+
+  ### Operations on Maps
+
+  def mapkeys(map)
+    simplify command %Q|; return mapkeys(#{value_ref(map)});|
+  end
+
+  def mapvalues(map)
+    simplify command %Q|; return mapvalues(#{value_ref(map)});|
+  end
+
+  def mapdelete(map, key)
+    simplify command %Q|; return mapdelete(#{value_ref(map)}, #{value_ref(key)});|
+  end
+
   ## Manipulating Objects
   ### Fundamental Operations on Objects
 
