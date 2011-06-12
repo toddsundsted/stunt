@@ -75,6 +75,7 @@ static void	check_loop_name(const char *, enum loop_exit_kind);
   char	       *string;
   enum error	error;
   Arg_List     *args;
+  Map_List     *map;
   Cond_Arm     *arm;
   Except_Arm   *except;
   Scatter      *scatter;
@@ -84,6 +85,7 @@ static void	check_loop_name(const char *, enum loop_exit_kind);
 %type	<arm>    elseifs
 %type   <expr>   expr default
 %type   <args>   arglist ne_arglist codes
+%type   <map>    maplist
 %type	<except> except excepts
 %type	<string> opt_id
 %type	<scatter> scatter scatter_item
@@ -96,7 +98,7 @@ static void	check_loop_name(const char *, enum loop_exit_kind);
 %token	tIF tELSE tELSEIF tENDIF tFOR tIN tENDFOR tRETURN tFORK tENDFORK
 %token  tWHILE tENDWHILE tTRY tENDTRY tEXCEPT tFINALLY tANY tBREAK tCONTINUE
 
-%token	tTO tARROW
+%token	tTO tARROW tMAP
 
 %right	'='
 %nonassoc '?' '|'
@@ -569,6 +571,17 @@ expr:
 		    $$ = alloc_expr(EXPR_LIST);
 		    $$->e.list = $2;
 		}
+        | '[' maplist ']'
+                {
+                    $$ = alloc_expr(EXPR_MAP);
+                    $$->e.map = $2;
+                }
+        | '[' ']'
+                {
+                    /* [] is the expression for an empty map */
+                    $$ = alloc_expr(EXPR_MAP);
+                    $$->e.map = 0;
+                }
 	| expr '?' expr '|' expr
 		{
 		    $$ = alloc_expr(EXPR_COND);
@@ -603,6 +616,25 @@ default:
 	| tARROW expr
 		{ $$ = $2; }
 	;
+
+maplist:
+          expr tMAP expr
+                { $$ = alloc_map_list($1, $3); }
+        | maplist ',' expr tMAP expr
+		{
+		    Map_List *this_map = alloc_map_list($3, $5);
+
+		    if ($1) {
+			Map_List *tmp = $1;
+
+			while (tmp->next)
+			    tmp = tmp->next;
+			tmp->next = this_map;
+			$$ = $1;
+		    } else
+			$$ = this_map;
+		}
+        ;
 
 arglist:
 	  /* NOTHING */
@@ -950,6 +982,7 @@ start_over:
       case '!':         return follow('=', tNE, '!');
       case '|':         return follow('|', tOR, '|');
       case '&':         return follow('&', tAND, '&');
+      case '-':         return follow('>', tMAP, '-');
       normal_dot:
       case '.':		return follow('.', tTO, '.');
       default:          return c;

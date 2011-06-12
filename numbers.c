@@ -115,6 +115,7 @@ become_integer(Var in, int *ret, int called_from_tonum)
 	    return E_FLOAT;
 	*ret = (int) *in.v.fnum;
 	break;
+    case TYPE_MAP:
     case TYPE_LIST:
 	return E_TYPE;
     default:
@@ -143,6 +144,7 @@ become_float(Var in, double *ret)
     case TYPE_FLOAT:
 	*ret = *in.v.fnum;
 	break;
+    case TYPE_MAP:
     case TYPE_LIST:
 	return E_TYPE;
     default:

@@ -58,7 +58,8 @@ typedef enum {
     TYPE_NONE,			/* in uninitialized MOO variables */
     TYPE_CATCH,			/* on-stack marker for an exception handler */
     TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
-    _TYPE_FLOAT			/* floating-point number; user-visible */
+    _TYPE_FLOAT,		/* floating-point number; user-visible */
+    _TYPE_MAP			/* map; user-visible */
 } var_type;
 
 /* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
@@ -74,11 +75,13 @@ typedef enum {
 #define TYPE_STR		(_TYPE_STR | TYPE_COMPLEX_FLAG)
 #define TYPE_FLOAT		(_TYPE_FLOAT | TYPE_COMPLEX_FLAG)
 #define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
+#define TYPE_MAP		(_TYPE_MAP | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
 
 typedef struct Var Var;
+typedef struct rbtree rbtree;
 
 /* Experimental.  On the Alpha, DEC cc allows us to specify certain
  * pointers to be 32 bits, but only if we compile and link with "-taso
@@ -103,6 +106,7 @@ struct Var {
 	Objid obj;		/* OBJ */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
+        rbtree *tree;		/* MAP */
 	double *fnum;		/* FLOAT */
     } v;
     var_type type;
@@ -127,6 +131,12 @@ extern Var clear;		/* see objects.c */
  */
 #define MAX_LIST   (INT32_MAX/sizeof(Var) - 2)
 #define MAX_STRING (INT32_MAX - 9)
+
+static inline bool
+is_collection(Var v)
+{
+    return TYPE_LIST == v.type || TYPE_MAP == v.type;
+}
 
 static inline Var
 new_int(int32 num)

@@ -23,6 +23,7 @@
 #include "functions.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include "server.h"
 #include "storage.h"
 #include "streams.h"
@@ -49,6 +50,7 @@ static registry bi_function_registries[] =
     register_functions,
     register_list,
     register_log,
+    register_map,
     register_numbers,
     register_objects,
     register_property,

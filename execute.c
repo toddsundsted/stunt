@@ -28,6 +28,7 @@
 #include "functions.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include "numbers.h"
 #include "opcode.h"
 #include "options.h"
@@ -971,6 +972,34 @@ do {								\
 	    }
 	    break;
 
+	case OP_MAP_CREATE:
+	    {
+		Var map;
+
+		map = new_map();
+		PUSH(map);
+	    }
+	    break;
+
+	case OP_MAP_INSERT:
+	    {
+		Var map, key, value;
+
+		key = POP(); /* any except list or map */
+		value = POP(); /* any */
+		map = POP(); /* should be map */
+		if (map.type != TYPE_MAP || is_collection(key)) {
+		    free_var(key);
+		    free_var(value);
+		    free_var(map);
+		    PUSH_ERROR(E_TYPE);
+		} else {
+		    map = mapinsert(map, key, value);
+		    PUSH(map);
+		}
+	    }
+	    break;
+
 	case OP_MAKE_EMPTY_LIST:
 	    {
 		Var list;
@@ -1029,21 +1058,24 @@ do {								\
 		Var value, index, list;
 
 		value = POP();	/* rhs value */
-		index = POP();	/* index, should be integer */
+		index = POP();	/* index, should be integer for list or str */
 		list = POP();	/* lhs except last index, should be list or str */
-		/* whole thing should mean list[index] = value */
-		if ((list.type != TYPE_LIST && list.type != TYPE_STR)
-		    || index.type != TYPE_INT
-		  || (list.type == TYPE_STR && value.type != TYPE_STR)) {
+		/* whole thing should mean list[index] = value OR
+		 * map[key] = value */
+		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
+		     list.type != TYPE_MAP)
+		    || ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
+			index.type != TYPE_INT)
+		    || (list.type == TYPE_MAP && is_collection(index))
+		    || (list.type == TYPE_STR && value.type != TYPE_STR)) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
-		} else if (index.v.num < 1
-			   || (list.type == TYPE_LIST
-		       && index.v.num > list.v.list[0].v.num /* size */ )
-			   || (list.type == TYPE_STR
-			    && index.v.num > (int) memo_strlen(list.v.str))) {
+		} else if ((list.type == TYPE_LIST
+		       && (index.v.num < 1 || index.v.num > list.v.list[0].v.num /* size */))
+			|| (list.type == TYPE_STR
+		       && (index.v.num < 1 || index.v.num > (int) memo_strlen(list.v.str)))) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
@@ -1064,6 +1096,9 @@ do {								\
 			free_var(list);
 		    }
 		    PUSH(listset(res, value, index.v.num));
+		} else if (list.type == TYPE_MAP) {
+		    list = mapinsert(list, index, value);
+		    PUSH(list);
 		} else {	/* TYPE_STR */
 		    char *tmp_str = str_dup(list.v.str);
 		    free_str(list.v.str);
@@ -1140,7 +1175,7 @@ do {								\
 			comparison = ans.v.num;
 			goto finish_comparison;
 		    }
-		} else if (rhs.type != lhs.type || rhs.type == TYPE_LIST) {
+		} else if (rhs.type != lhs.type || rhs.type == TYPE_LIST || rhs.type == TYPE_MAP) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
@@ -1194,9 +1229,9 @@ do {								\
 	    {
 		Var lhs, rhs, ans;
 
-		rhs = POP();	/* should be list */
+		rhs = POP();	/* should be list or map */
 		lhs = POP();	/* lhs, any type */
-		if (rhs.type != TYPE_LIST) {
+		if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
@@ -1343,11 +1378,14 @@ do {								\
 	    {
 		Var index, list;
 
-		index = POP();	/* should be integer */
-		list = POP();	/* should be list or string */
+		index = POP();	/* should be integer for list or string,
+				   any for map */
+		list = POP();	/* should be list, string, or map */
 
-		if (index.type != TYPE_INT ||
-		    (list.type != TYPE_LIST && list.type != TYPE_STR)) {
+		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
+		     list.type != TYPE_MAP) ||
+		    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
+		     index.type != TYPE_INT)) {
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
@@ -1358,6 +1396,19 @@ do {								\
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH(var_ref(list.v.list[index.v.num]));
+			free_var(index);
+			free_var(list);
+		    }
+		} else if (list.type == TYPE_MAP) {
+		    Var value;
+		    int success;
+		    success = maplookup(list, index, &value, 0);
+		    if (!success) {
+			free_var(index);
+			free_var(list);
+			PUSH_ERROR(E_RANGE);
+		    } else {
+			PUSH_REF(value);
 			free_var(index);
 			free_var(list);
 		    }
@@ -1378,18 +1429,32 @@ do {								\
 
 	case OP_PUSH_REF:
 	    {
-		Var index, list;
+		/* Two cases are possible: list[index] or map[key] */
+		Var list, index;
 
 		index = TOP_RT_VALUE;
 		list = NEXT_TOP_RT_VALUE;
 
-		if (index.type != TYPE_INT || list.type != TYPE_LIST) {
+		if (list.type == TYPE_LIST) {
+		    if (index.type != TYPE_INT) {
+			PUSH_ERROR(E_TYPE);
+		    } else if (index.v.num <= 0 ||
+			       index.v.num > list.v.list[0].v.num) {
+			PUSH_ERROR(E_RANGE);
+		    } else
+			PUSH(var_ref(list.v.list[index.v.num]));
+		} else if (list.type == TYPE_MAP) {
+		    Var value;
+		    int success;
+		    success = maplookup(list, index, &value, 0);
+		    if (!success) {
+			PUSH_ERROR(E_RANGE);
+		    } else {
+			PUSH(var_ref(value));
+		    }
+		} else {
 		    PUSH_ERROR(E_TYPE);
-		} else if (index.v.num <= 0 ||
-			   index.v.num > list.v.list[0].v.num) {
-		    PUSH_ERROR(E_RANGE);
-		} else
-		    PUSH(var_ref(list.v.list[index.v.num]));
+		}
 	    }
 	    break;
 

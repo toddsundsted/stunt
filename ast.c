@@ -195,6 +195,17 @@ alloc_verb(Expr * obj, Expr * verb, Arg_List * args)
     return result;
 }
 
+Map_List *
+alloc_map_list(Expr * key, Expr * value)
+{
+    Map_List *result = allocate(sizeof(Map_List), M_AST);
+
+    result->key = key;
+    result->value = value;
+    result->next = 0;
+    return result;
+}
+
 Arg_List *
 alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 {
@@ -221,6 +232,19 @@ alloc_scatter(enum Scatter_Kind kind, int id, Expr * expr)
 }
 
 static void free_expr(Expr *);
+
+static void
+free_map_list(Map_List * map)
+{
+    Map_List *m, *next_m;
+
+    for (m = map; m; m = next_m) {
+	next_m = m->next;
+	free_expr(m->key);
+	free_expr(m->value);
+	myfree(m, M_AST);
+    }
+}
 
 static void
 free_arg_list(Arg_List * args)
@@ -309,6 +333,10 @@ free_expr(Expr * expr)
     case EXPR_NOT:
 	free_expr(expr->e.expr);
 	break;
+
+    case EXPR_MAP:
+        free_map_list(expr->e.map);
+        break;
 
     case EXPR_LIST:
 	free_arg_list(expr->e.list);

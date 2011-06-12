@@ -26,6 +26,7 @@ In addition, for visible types, you must:
 	   in eval_env.c
 	-- add a version-contingent clause to each of new_builtin_names() and
 	   first_user_slot(), in sym_table.c
+-- if you're adding a refcounted type, modify refcount_overhead in storage.c
 -- consider adding a new kind of MOO literal or expression that produces values
    of the new type.
 -- add a case to each of list2str() and print_to_stream(), in list.c; the

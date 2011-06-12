@@ -24,6 +24,7 @@
 #include "sym_table.h"
 
 typedef struct Expr Expr;
+typedef struct Map_List Map_List;
 typedef struct Arg_List Arg_List;
 typedef struct Stmt Stmt;
 typedef struct Cond_Arm Cond_Arm;
@@ -32,6 +33,12 @@ typedef struct Scatter Scatter;
 
 struct Expr_Binary {
     Expr *lhs, *rhs;
+};
+
+struct Map_List {
+    Map_List *next;
+    Expr *key;
+    Expr *value;
 };
 
 enum Arg_Kind {
@@ -92,6 +99,7 @@ enum Expr_Kind {
     EXPR_EQ, EXPR_NE, EXPR_LT, EXPR_LE, EXPR_GT, EXPR_GE,
     EXPR_IN, EXPR_LIST, EXPR_COND,
     EXPR_CATCH, EXPR_LENGTH, EXPR_SCATTER,
+    EXPR_MAP,
     SizeOf_Expr_Kind		/* The last element is also the number of elements... */
 };
 
@@ -105,6 +113,7 @@ union Expr_Data {
     struct Expr_Cond cond;
     struct Expr_Catch catch;
     Expr *expr;
+    Map_List *map;
     Arg_List *list;
     Scatter *scatter;
 };
@@ -201,6 +210,7 @@ extern Expr *alloc_expr(enum Expr_Kind);
 extern Expr *alloc_var(var_type);
 extern Expr *alloc_binary(enum Expr_Kind, Expr *, Expr *);
 extern Expr *alloc_verb(Expr *, Expr *, Arg_List *);
+extern Map_List * alloc_map_list(Expr * key, Expr * value);
 extern Arg_List *alloc_arg_list(enum Arg_Kind, Expr *);
 extern Except_Arm *alloc_except(int, Arg_List *, Stmt *);
 extern Scatter *alloc_scatter(enum Scatter_Kind, int, Expr *);

@@ -49,6 +49,7 @@ refcount_overhead(Memory_Type type)
 	return sizeof(int);
 #endif /* MEMO_STRLEN */
     case M_LIST:
+    case M_TREE:
 	/* for systems with picky pointer alignment */
 	return MAX(sizeof(int), sizeof(Var *));
     default:

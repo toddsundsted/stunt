@@ -55,6 +55,9 @@ extern void free_names(Names *);
 #define SLOT_INT	16
 #define SLOT_FLOAT	17
 
+/* Added in DBV_Map: */
+#define SLOT_MAP	18
+
 #endif				/* !Sym_Table_h */
 
 /* 

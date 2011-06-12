@@ -21,6 +21,7 @@ extern void register_execute(void);
 extern void register_functions(void);
 extern void register_list(void);
 extern void register_log(void);
+extern void register_map(void);
 extern void register_numbers(void);
 extern void register_objects(void);
 extern void register_property(void);

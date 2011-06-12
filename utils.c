@@ -25,6 +25,7 @@
 #include "exceptions.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include "match.h"
 #include "numbers.h"
 #include "ref_count.h"
@@ -154,6 +155,10 @@ complex_free_var(Var v)
 	    myfree(v.v.list, M_LIST);
 	}
 	break;
+    case TYPE_MAP:
+	if (delref(v.v.tree) == 0)
+	    destroy_map(v);
+	break;
     case TYPE_FLOAT:
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
@@ -167,6 +172,9 @@ complex_var_ref(Var v)
     switch ((int) v.type) {
     case TYPE_STR:
 	addref(v.v.str);
+	break;
+    case TYPE_MAP:
+	addref(v.v.tree);
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -182,18 +190,21 @@ Var
 complex_var_dup(Var v)
 {
     int i;
-    Var newlist;
+    Var new;
 
     switch ((int) v.type) {
     case TYPE_STR:
 	v.v.str = str_dup(v.v.str);
 	break;
+    case TYPE_MAP:
+	v = map_dup(v);
+	break;
     case TYPE_LIST:
-	newlist = new_list(v.v.list[0].v.num);
+	new = new_list(v.v.list[0].v.num);
 	for (i = 1; i <= v.v.list[0].v.num; i++) {
-	    newlist.v.list[i] = var_ref(v.v.list[i]);
+	    new.v.list[i] = var_ref(v.v.list[i]);
 	}
-	v.v.list = newlist.v.list;
+	v.v.list = new.v.list;
 	break;
     case TYPE_FLOAT:
 	v = new_float(*v.v.fnum);
@@ -215,6 +226,9 @@ var_refcount(Var v)
     case TYPE_LIST:
 	return refcount(v.v.list);
 	break;
+    case TYPE_MAP:
+	return refcount(v.v.tree);
+	break;
     case TYPE_FLOAT:
 	return refcount(v.v.fnum);
 	break;
@@ -228,7 +242,8 @@ is_true(Var v)
     return ((v.type == TYPE_INT && v.v.num != 0)
 	    || (v.type == TYPE_FLOAT && *v.v.fnum != 0.0)
 	    || (v.type == TYPE_STR && v.v.str && *v.v.str != '\0')
-	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0));
+	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0)
+	    || (v.type == TYPE_MAP && !mapempty(v)));
 }
 
 int
@@ -251,6 +266,9 @@ equality(Var lhs, Var rhs, int case_matters)
 		return !strcmp(lhs.v.str, rhs.v.str);
 	    else
 		return !mystrcasecmp(lhs.v.str, rhs.v.str);
+	case TYPE_MAP:
+	    return mapequal(lhs, rhs, case_matters);
+	    break;
 	case TYPE_LIST:
 	    if (lhs.v.list[0].v.num != rhs.v.list[0].v.num)
 		return 0;
@@ -362,6 +380,9 @@ value_bytes(Var v)
 	break;
     case TYPE_FLOAT:
 	size += sizeof(double);
+	break;
+    case TYPE_MAP:
+	size += map_sizeof(v.v.tree);
 	break;
     case TYPE_LIST:
 	len = v.v.list[0].v.num;

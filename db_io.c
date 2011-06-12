@@ -30,6 +30,7 @@
 #include "exceptions.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include "numbers.h"
 #include "parser.h"
 #include "storage.h"
@@ -231,6 +232,16 @@ dbio_read_var(void)
     case TYPE_FINALLY:
 	r.v.num = dbio_read_num();
 	break;
+    case _TYPE_MAP:
+	l = dbio_read_num();
+	r = new_map();
+	for (i = 0; i < l; i++) {
+	    Var key, value;
+	    key = dbio_read_var();
+	    value = dbio_read_var();
+	    r = mapinsert(r, key, value);
+	}
+	break;
     case _TYPE_FLOAT:
 	r = new_float(dbio_read_float());
 	break;
@@ -365,6 +376,13 @@ dbio_write_string(const char *s)
     dbio_printf("%s\n", s ? s : "");
 }
 
+static void
+dbio_write_map(Var key, Var value, void *data, int32 first)
+{
+    dbio_write_var(key);
+    dbio_write_var(value);
+}
+
 void
 dbio_write_var(Var v)
 {
@@ -388,6 +406,10 @@ dbio_write_var(Var v)
     case TYPE_FLOAT:
 	dbio_write_float(*v.v.fnum);
 	break;
+    case TYPE_MAP:
+        dbio_write_num(maplength(v));
+        mapforeach(v, dbio_write_map, NULL);
+        break;
     case TYPE_LIST:
 	dbio_write_num(v.v.list[0].v.num);
 	for (i = 0; i < v.v.list[0].v.num; i++)

@@ -495,6 +495,28 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 				  alloc_binary(EXPR_ASGN, e, rvalue)));
 	    }
 	    break;
+	case OP_MAP_CREATE:
+	    e = alloc_expr(EXPR_MAP);
+	    e->e.map = 0;
+	    push_expr(HOT_OP(e));
+	    break;
+	case OP_MAP_INSERT:
+	    {
+		Expr *key, *value;
+
+		key = pop_expr();
+		value = pop_expr();
+		e = pop_expr();
+		if (e->e.map) {
+		    Map_List *last = e->e.map;
+		    while (last->next) last = last->next;
+		    last->next = alloc_map_list(key, value);
+		}
+		else
+		    e->e.map = alloc_map_list(key, value);
+		push_expr(HOT_OP2(e->e.map->key, e->e.map->value, e));
+	    }
+	    break;
 	case OP_MAKE_EMPTY_LIST:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = 0;

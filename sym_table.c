@@ -60,6 +60,9 @@ first_user_slot(DB_Version version)
     if (version >= DBV_Float)
 	count += 2;
 
+    if (version >= DBV_Map)
+        count += 1;
+
     return count;
 }
 
@@ -95,6 +98,9 @@ new_builtin_names(DB_Version version)
 	    bi->names[SLOT_INT] = str_dup("INT");
 	    bi->names[SLOT_FLOAT] = str_dup("FLOAT");
 	}
+        if (version >= DBV_Map) {
+            bi->names[SLOT_MAP] = str_dup("MAP");
+        }
     }
     return copy_names(builtins[version]);
 }

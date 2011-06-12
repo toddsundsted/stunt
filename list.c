@@ -24,6 +24,7 @@
 #include "functions.h"
 #include "list.h"
 #include "log.h"
+#include "map.h"
 #include "md5.h"
 #include "options.h"
 #include "pattern.h"
@@ -86,14 +87,21 @@ setremove(Var list, Var value)
 int
 ismember(Var lhs, Var rhs, int case_matters)
 {
-    int i;
+    if (rhs.type == TYPE_LIST) {
+	int i;
 
-    for (i = 1; i <= rhs.v.list[0].v.num; i++) {
-	if (equality(lhs, rhs.v.list[i], case_matters)) {
-	    return i;
+	for (i = 1; i <= rhs.v.list[0].v.num; i++) {
+	    if (equality(lhs, rhs.v.list[i], case_matters)) {
+	      return i;
+	    }
 	}
+
+	return 0;
+    } else if (rhs.type == TYPE_MAP) {
+	return maplookup(rhs, lhs, NULL, case_matters);
+    } else {
+	return 0;
     }
-    return 0;
 }
 
 Var
@@ -240,6 +248,9 @@ stream_add_tostr(Stream * s, Var v)
     case TYPE_FLOAT:
 	stream_printf(s, "%g", *v.v.fnum);
 	break;
+    case TYPE_MAP:
+	stream_add_string(s, "[map]");
+	break;
     case TYPE_LIST:
 	stream_add_string(s, "{list}");
 	break;
@@ -263,6 +274,20 @@ value2str(Var value)
 	stream_add_tostr(s, value);
 	return str_dup(reset_stream(s));
     }
+}
+
+static void
+print_map_to_stream(Var key, Var value, void *sptr, int32 first)
+{
+    Stream *s = sptr;
+
+    if (!first) {
+	stream_add_string(s, ", ");
+    }
+
+    unparse_value(s, key);
+    stream_add_string(s, " -> ");
+    unparse_value(s, value);
 }
 
 void
@@ -312,6 +337,13 @@ unparse_value(Stream * s, Var v)
 		unparse_value(s, v.v.list[i]);
 	    }
 	    stream_add_char(s, '}');
+	}
+	break;
+    case TYPE_MAP:
+	{
+	    stream_add_char(s, '[');
+	    mapforeach(v, print_map_to_stream, (void *)s);
+	    stream_add_char(s, ']');
 	}
 	break;
     default:
@@ -443,6 +475,10 @@ bf_length(Var arglist, Byte next, void *vdata, Objid progr)
     case TYPE_LIST:
 	r.type = TYPE_INT;
 	r.v.num = arglist.v.list[1].v.list[0].v.num;
+	break;
+    case TYPE_MAP:
+	r.type = TYPE_INT;
+	r.v.num = maplength(arglist.v.list[1]);
 	break;
     case TYPE_STR:
 	r.type = TYPE_INT;
@@ -576,9 +612,15 @@ static package
 bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+    Var rhs = arglist.v.list[2];
+
+    if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
 
     r.type = TYPE_INT;
-    r.v.num = ismember(arglist.v.list[1], arglist.v.list[2], 1);
+    r.v.num = ismember(arglist.v.list[1], rhs, 1);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1227,7 +1269,7 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
 		      TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
-    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_LIST);
+    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_ANY);
 
     /* string */
     register_function("tostr", 0, -1, bf_tostr);

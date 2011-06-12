@@ -517,6 +517,19 @@ emit_var_op(Opcode op, unsigned slot, State * state)
 static void generate_expr(Expr *, State *);
 
 static void
+generate_map_list(Map_List *mappings, State *state)
+{
+    emit_byte(OP_MAP_CREATE, state);
+    push_stack(1, state);
+    for (; mappings; mappings = mappings->next) {
+	generate_expr(mappings->value, state);
+	generate_expr(mappings->key, state);
+	emit_byte(OP_MAP_INSERT, state);
+	pop_stack(2, state);
+    }
+}
+
+static void
 generate_arg_list(Arg_List * args, State * state)
 {
     if (!args) {
@@ -737,6 +750,9 @@ generate_expr(Expr * expr, State * state)
 	    } else
 		panic("Missing saved stack for `$' in GENERATE_EXPR()");
 	}
+	break;
+    case EXPR_MAP:
+	generate_map_list(expr->e.map, state);
 	break;
     case EXPR_LIST:
 	generate_arg_list(expr->e.list, state);
