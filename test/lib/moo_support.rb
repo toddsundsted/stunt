@@ -311,8 +311,14 @@ module MooSupport
       "\"#{value}\""
     when Symbol
       "$#{value.to_s}"
+    when MooErr
+      value.to_s
+    when MooObj
+      value.to_s
     when Array
       '{' + value.map { |o| value_ref(o) }.join(', ') + '}'
+    when Hash
+      '[' + value.map { |k, v| "#{value_ref(k)} -> #{value_ref(v)}" }.join(', ') + ']'
     else
       value
     end
