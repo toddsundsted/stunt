@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <float.h>
 #include <math.h>
 
 typedef enum {
@@ -219,6 +220,21 @@ yajl_gen_integer(yajl_gen g, long int number)
 #define isinf !_finite
 #endif
 
+/* Pulled from streams.c for consistent formatting of floating point
+ * numbers. */
+static const char *
+dbl_fmt(void)
+{
+    static const char *fmt = NULL;
+    static char buffer[10];
+
+    if (!fmt) {
+	sprintf(buffer, "%%.%dg", DBL_DIG);
+	fmt = buffer;
+    }
+    return fmt;
+}
+
 yajl_gen_status
 yajl_gen_double(yajl_gen g, double number)
 {
@@ -226,7 +242,7 @@ yajl_gen_double(yajl_gen g, double number)
     ENSURE_VALID_STATE; ENSURE_NOT_KEY; 
     if (isnan(number) || isinf(number)) return yajl_gen_invalid_number;
     INSERT_SEP; INSERT_WHITESPACE;
-    sprintf(i, "%.20g", number);
+    sprintf(i, dbl_fmt(), number);
     g->print(g->ctx, i, (unsigned int)strlen(i));
     APPENDED_ATOM;
     FINAL_NEWLINE;
