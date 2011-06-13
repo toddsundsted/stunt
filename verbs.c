@@ -537,8 +537,17 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
 
     Var r;
 
-    r.type = TYPE_INT;
-    r.v.num = h.ptr ? 1 : 0;
+    if (h.ptr) {
+      r = new_list(2);
+      r.v.list[1].type = TYPE_OBJ;
+      r.v.list[1].v.obj = db_verb_definer(h);
+      r.v.list[2].type = TYPE_STR;
+      r.v.list[2].v.str = str_ref(db_verb_names(h));
+    }
+    else {
+	r.type = TYPE_INT;
+	r.v.num = 0;
+    }
 
     return make_var_pack(r);
 }
