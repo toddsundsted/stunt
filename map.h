@@ -34,7 +34,7 @@ extern void destroy_map(Var map);
 extern Var mapinsert(Var map, Var key, Var value);
 extern int maplookup(Var map, Var key, Var *value, int case_matters);
 extern int mapequal(Var lhs, Var rhs, int case_matters);
-typedef void (*mapfunc) (Var key, Var value, void *data, int32 first);
+typedef void (*mapfunc) (Var key, Var value, void *data, int first);
 extern void mapforeach(Var map, mapfunc func, void *data);
 extern int32 maplength(Var map);
 extern int mapempty(Var map);

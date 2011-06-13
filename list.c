@@ -277,7 +277,7 @@ value2str(Var value)
 }
 
 static void
-print_map_to_stream(Var key, Var value, void *sptr, int32 first)
+print_map_to_stream(Var key, Var value, void *sptr, int first)
 {
     Stream *s = sptr;
 

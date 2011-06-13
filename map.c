@@ -766,7 +766,7 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static void
-do_map_keys(Var key, Var value, void *data, int32 first)
+do_map_keys(Var key, Var value, void *data, int first)
 {
     Var *list = (Var *)data;
     *list = listappend(*list, var_ref(key));
@@ -782,7 +782,7 @@ bf_mapkeys(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static void
-do_map_values(Var key, Var value, void *data, int32 first)
+do_map_values(Var key, Var value, void *data, int first)
 {
     Var *list = (Var *)data;
     *list = listappend(*list, var_ref(value));
