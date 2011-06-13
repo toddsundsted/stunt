@@ -526,7 +526,7 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    if (!db_object_allows(object, progr, VF_READ)) {
+    if (!db_object_allows(object, progr, FLAG_READ)) {
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
