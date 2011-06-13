@@ -15,7 +15,22 @@ server:
    built-ins `parent()' and `chparent()' exist for backward
    compatibility.
 
-2) Testing Framework
+2) Task Local Storage
+   The built-ins `task_local' and `set_task_local' retrieve/store a
+   task local value.
+
+3) Map Datatype
+   The server includes a native map datatype based on a binary search
+   tree (specifically, a red-black tree).  The implementation allows
+   in-order traversal, efficient lookup/insertion/deletion, and
+   supports existing MOO datatypes as values (keys may not be lists or
+   maps).
+
+4) JSON Parsing/Generation
+   The built-ins `parse_json' and `generate_json' transform MOO
+   datatypes from/to JSON.
+
+5) Testing Framework
    The server includes a unit testing framework based on Ruby's
    Test-Unit.  It includes a Parslet parser (two, actually) for
    turning moo-code values into Ruby values, which makes writing tests
