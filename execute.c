@@ -2723,6 +2723,16 @@ bf_set_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
+bf_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* () */
+    Var r;
+    r.type = TYPE_OBJ;
+    r.v.obj = RUN_ACTIV.progr;
+    free_var(arglist);
+    return make_var_pack(r);
+}
+
+static package
 bf_caller_perms(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* () */
     Var r;
@@ -2784,6 +2794,7 @@ register_execute(void)
     register_function("ticks_left", 0, 0, bf_ticks_left);
     register_function("pass", 0, -1, bf_pass);
     register_function("set_task_perms", 1, 1, bf_set_task_perms, TYPE_OBJ);
+    register_function("task_perms", 0, 0, bf_task_perms);
     register_function("caller_perms", 0, 0, bf_caller_perms);
     register_function("callers", 0, 1, bf_callers, TYPE_ANY);
     register_function("task_stack", 1, 2, bf_task_stack, TYPE_INT, TYPE_ANY);
