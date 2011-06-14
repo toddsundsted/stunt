@@ -42,7 +42,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 123 # '{'
+        break if line[0] == ?{
       end
 
       assert_equal ["foo", "bar", 2, 3, 4], simplify(line)
@@ -56,7 +56,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 123 # '{'
+        break if line[0] == ?{
       end
 
       assert_equal [[1, 2], ["foo", "bar", 3, 4, 5]], simplify(line)
@@ -76,7 +76,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 123 # '{'
+        break if line[0] == ?{
       end
 
       assert_equal E_DIV, simplify(line)
@@ -90,7 +90,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 123 # '{'
+        break if line[0] == ?{
       end
 
       assert_equal E_DIV, simplify(line)
@@ -117,7 +117,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 62 # '>'
+        break if line[0] == ?>
       end
 
       assert_equal "> {\"#{x} to the #{x}\"}", line
@@ -143,7 +143,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 62 # '>'
+        break if line[0] == ?>
       end
 
       assert_equal "> {1, {2, {3}}}", line
@@ -215,7 +215,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 123 # '{'
+        break if line[0] == ?{
       end
 
       assert_equal 97.65625, simplify(line)
@@ -264,7 +264,7 @@ class TestTaskLocal < Test::Unit::TestCase
       line = nil
       while (true)
         line = @sock.gets.chomp
-        break if line[0] == 123 # '{'
+        break if line[0] == ?{
       end
 
       assert_equal 97.65625, simplify(line)

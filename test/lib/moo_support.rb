@@ -87,7 +87,7 @@ module MooSupport
   end
 
   def simplify(result)
-    result ? (result[1] == 50 ? fast_error_parse(result) : general_expression_parse(result)) : false
+    result ? (result[1] == ?2 ? fast_error_parse(result) : general_expression_parse(result)) : false
   end
 
   def true_or_false(result)
