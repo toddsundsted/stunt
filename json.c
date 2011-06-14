@@ -42,7 +42,7 @@
 #include "unparse.h"
 #include "utils.h"
 #include "yajl_parse.h"
-#include "yajl/yajl_gen.h"
+#include "yajl_gen.h"
 
 /*
   Handle many modes of mapping between JSON and internal MOO types.
