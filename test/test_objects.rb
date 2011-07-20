@@ -576,6 +576,51 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_that_recycling_a_parent_does_not_blow_away_all_parents
+    run_test_as('programmer') do
+      a = create([])
+      b = create([])
+      c = create([])
+
+      m = create([a, b, c])
+
+      assert_equal [a, b, c], parents(m)
+
+      recycle(b)
+
+      assert_equal [a, c], parents(m)
+    end
+  end
+
+  def test_that_recycling_a_parent_merges_remaining_parents_correctly
+    run_test_as('programmer') do
+      a = create([])
+      b = create([a])
+      c = create([])
+
+      d = create([])
+      e = create([])
+
+      m = create([d, e])
+
+      x = create([a, b, c, m])
+
+      assert_equal [a, b, c, m], parents(x)
+
+      recycle(b)
+
+      assert_equal [a, c, m], parents(x)
+
+      recycle(m)
+
+      assert_equal [a, c, d, e], parents(x)
+
+      recycle(e)
+
+      assert_equal [a, c, d], parents(x)
+    end
+  end
+
   def test_renumber
     run_test_as('wizard') do
       recycle(create(:nothing)) # create a hole

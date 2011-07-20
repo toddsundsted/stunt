@@ -633,9 +633,39 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 
 	/* We can now be confident that OID has no contents and no location */
 
-	/* Do the same thing for the inheritance hierarchy (much easier!) */
-	while ((c = get_first(oid, db_for_all_children)) != NOTHING)
-	    db_change_parent(c, db_object_parent(oid));
+	/* Do the same thing for the inheritance hierarchy */
+	while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
+	    Var cp = db_object_parent(c);
+	    Var op = db_object_parent(oid);
+	    if (is_obj(cp)) {
+		db_change_parent(c, op);
+	    }
+	    else {
+		int i = 1;
+		int j = 1;
+		Var new = new_list(0);
+		while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
+		    new = setadd(new, var_ref(cp.v.list[i]));
+		    i++;
+		}
+		if (is_obj(op)) {
+		    new = setadd(new, var_ref(op));
+		}
+		else {
+		    while (j <= op.v.list[0].v.num) {
+			new = setadd(new, var_ref(op.v.list[j]));
+			j++;
+		    }
+		}
+		i++;
+		while (i <= cp.v.list[0].v.num) {
+		    new = setadd(new, var_ref(cp.v.list[i]));
+		    i++;
+		}
+		db_change_parent(c, new);
+		free_var(new);
+	    }
+	}
 
 	db_change_parent(oid, nothing);
 
