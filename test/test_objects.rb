@@ -1526,6 +1526,100 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_that_adding_and_deleting_properties_works_with_multiple_inheritance
+    run_test_as('programmer') do
+      a = create(NOTHING)
+      add_property(a, 'x', 1, [player, ''])
+      add_property(a, 'y', 2, [player, ''])
+      add_property(a, 'z', 3, [player, ''])
+
+      b = create(a)
+      add_property(b, 'm', 4, [player, ''])
+      add_property(b, 'n', 5, [player, ''])
+
+      c = create(b)
+      add_property(c, 'c', 6, [player, ''])
+
+      d = create([a, c])
+
+      assert_equal 1, get(d, 'x')
+      assert_equal 2, get(d, 'y')
+      assert_equal 3, get(d, 'z')
+      assert_equal 4, get(d, 'm')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal 2, get(c, 'y')
+      assert_equal 3, get(c, 'z')
+      assert_equal 4, get(c, 'm')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+
+      delete_property(a, 'y')
+
+      assert_equal 1, get(d, 'x')
+      assert_equal E_PROPNF, get(d, 'y')
+      assert_equal 3, get(d, 'z')
+      assert_equal 4, get(d, 'm')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal E_PROPNF, get(c, 'y')
+      assert_equal 3, get(c, 'z')
+      assert_equal 4, get(c, 'm')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+
+      delete_property(b, 'm')
+
+      assert_equal 1, get(d, 'x')
+      assert_equal E_PROPNF, get(d, 'y')
+      assert_equal 3, get(d, 'z')
+      assert_equal E_PROPNF, get(d, 'm')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal E_PROPNF, get(c, 'y')
+      assert_equal 3, get(c, 'z')
+      assert_equal E_PROPNF, get(c, 'm')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+
+      add_property(a, 's', 7, [player, ''])
+
+      assert_equal 1, get(d, 'x')
+      assert_equal 3, get(d, 'z')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+      assert_equal 7, get(d, 's')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal 3, get(c, 'z')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+      assert_equal 7, get(c, 's')
+
+      add_property(b, 't', 8, [player, ''])
+
+      assert_equal 1, get(d, 'x')
+      assert_equal 3, get(d, 'z')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+      assert_equal 7, get(d, 's')
+      assert_equal 8, get(d, 't')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal 3, get(c, 'z')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+      assert_equal 7, get(c, 's')
+      assert_equal 8, get(c, 't')
+    end
+  end
+
   def test_clear_properties
     x = nil
 

@@ -161,13 +161,21 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
     pv.var.type = TYPE_CLEAR;	/* do after initial insert_prop so only
 				   children will be TYPE_CLEAR */
 
-    Var child, children = dbpriv_find_object(root)->children;
-    int i, c;
+    Var descendant, descendants = db_descendants(root, false);
+    int i, c, offset = 0;
+    int offsets[listlength(descendants)];
 
-    FOR_EACH(child, children, i, c) {
-	int offset = properties_offset(root, child.v.obj);
-	insert_prop_recursively(child.v.obj, offset + prop_pos, pv);
+    FOR_EACH(descendant, descendants, i, c) {
+	offset = properties_offset(root, descendant.v.obj);
+	offsets[i - 1] = offset;
     }
+
+    FOR_EACH(descendant, descendants, i, c) {
+	offset = offsets[i - 1];
+	insert_prop(descendant.v.obj, offset + prop_pos, pv);
+    }
+
+    free_var(descendants);
 }
 
 int
@@ -271,13 +279,21 @@ remove_prop_recursively(Objid root, int prop_pos)
 {
     remove_prop(root, prop_pos);
 
-    Var child, children = dbpriv_find_object(root)->children;
-    int i, c;
+    Var descendant, descendants = db_descendants(root, false);
+    int i, c, offset = 0;
+    int offsets[listlength(descendants)];
 
-    FOR_EACH(child, children, i, c) {
-	int offset = properties_offset(root, child.v.obj);
-	remove_prop_recursively(child.v.obj, offset + prop_pos);
+    FOR_EACH(descendant, descendants, i, c) {
+	offset = properties_offset(root, descendant.v.obj);
+	offsets[i - 1] = offset;
     }
+
+    FOR_EACH(descendant, descendants, i, c) {
+	offset = offsets[i - 1];
+	remove_prop(descendant.v.obj, offset + prop_pos);
+    }
+
+    free_var(descendants);
 }
 
 int
@@ -792,10 +808,12 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
     int new_count, *new_offsets = mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
     int i1, c1;
 
+    /* C arrays start at index 0, MOO arrays start at index 1 */
+
     offset = 0;
     FOR_EACH(ancestor, old_ancestors, i1, c1) {
 	o = dbpriv_find_object(ancestor.v.obj);
-	old_offsets[i1 - 1] = offset; /* C arrays start at index 0, MOO arrays start at index 1 */
+	old_offsets[i1 - 1] = offset;
 	offset += o->propdefs.cur_length;
     }
     old_count = old_offsets[i1 - 1] = offset;
