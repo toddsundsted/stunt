@@ -594,12 +594,12 @@ class TestObject < Test::Unit::TestCase
 
   def test_that_recycling_a_parent_merges_remaining_parents_correctly
     run_test_as('programmer') do
-      a = create([])
+      a = create(:object)
       b = create([a])
       c = create([])
 
       d = create([])
-      e = create([])
+      e = create(NOTHING)
 
       m = create([d, e])
 

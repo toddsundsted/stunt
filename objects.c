@@ -649,7 +649,8 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 		    i++;
 		}
 		if (is_obj(op)) {
-		    new = setadd(new, var_ref(op));
+		    if (valid(op.v.obj))
+			new = setadd(new, var_ref(op));
 		}
 		else {
 		    while (j <= op.v.list[0].v.num) {
