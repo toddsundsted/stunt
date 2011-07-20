@@ -422,17 +422,18 @@ class TestObject < Test::Unit::TestCase
 
   def test_that_parent_maps_parents_to_parent
     run_test_as('programmer') do
+
+      # Test that `parent()' performs the following mapping:
+      #   [x, y, z] -> x
+      #   [x] -> x
+      #   [] -> #-1
+
       x = create(:nothing)
       y = create(:nothing)
       z = create(:nothing)
       a = create([x, y, z])
       b = create([x])
       c = create([])
-
-      # Test that `parent()' performs the following mapping:
-      #   [x, y, z] -> x
-      #   [x] -> x
-      #   [] -> #-1
 
       assert_equal [x, y, z], parents(a)
       assert_equal [x], parents(b)
