@@ -17,6 +17,7 @@
 
 #include "my-string.h"
 
+#include "collection.h"
 #include "config.h"
 #include "db.h"
 #include "db_io.h"

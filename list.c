@@ -19,6 +19,7 @@
 #include "my-string.h"
 
 #include "bf_register.h"
+#include "collection.h"
 #include "config.h"
 #include "exceptions.h"
 #include "functions.h"
@@ -81,26 +82,6 @@ setremove(Var list, Var value)
 	return listdelete(list, i);
     } else {
 	return list;
-    }
-}
-
-int
-ismember(Var lhs, Var rhs, int case_matters)
-{
-    if (rhs.type == TYPE_LIST) {
-	int i;
-
-	for (i = 1; i <= rhs.v.list[0].v.num; i++) {
-	    if (equality(lhs, rhs.v.list[i], case_matters)) {
-	      return i;
-	    }
-	}
-
-	return 0;
-    } else if (rhs.type == TYPE_MAP) {
-	return maplookup(rhs, lhs, NULL, case_matters);
-    } else {
-	return 0;
     }
 }
 
@@ -606,23 +587,6 @@ bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
 
     r.type = TYPE_INT;
     r.v.num = equality(arglist.v.list[1], arglist.v.list[2], 1);
-    free_var(arglist);
-    return make_var_pack(r);
-}
-
-static package
-bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    Var r;
-    Var rhs = arglist.v.list[2];
-
-    if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
-	free_var(arglist);
-	return make_error_pack(E_INVARG);
-    }
-
-    r.type = TYPE_INT;
-    r.v.num = ismember(arglist.v.list[1], rhs, 1);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1271,7 +1235,6 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
 		      TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
-    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_ANY);
 
     /* string */
     register_function("tostr", 0, -1, bf_tostr);

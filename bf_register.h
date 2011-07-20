@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+extern void register_collection(void);
 extern void register_disassemble(void);
 extern void register_extensions(void);
 extern void register_execute(void);

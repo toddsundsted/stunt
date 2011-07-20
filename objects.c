@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include "collection.h"
 #include "db.h"
 #include "db_io.h"
 #include "exceptions.h"

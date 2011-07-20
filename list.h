@@ -24,7 +24,6 @@ extern Var listdelete(Var list, int pos);
 extern Var listset(Var list, Var value, int pos);
 extern Var listrangeset(Var list, int from, int to, Var value);
 extern Var listconcat(Var first, Var second);
-extern int ismember(Var value, Var list, int case_matters);
 extern Var setadd(Var list, Var value);
 extern Var setremove(Var list, Var value);
 extern Var sublist(Var list, int lower, int upper);
