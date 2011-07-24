@@ -156,6 +156,16 @@ module MooSupport
     simplify command %Q|; return toliteral(#{value_ref(value)});|
   end
 
+  ### Operations on Strings
+
+  def encode_base64(str)
+    simplify command %Q|; return encode_base64(#{value_ref(str)});|
+  end
+
+  def decode_base64(str)
+    simplify command %Q|; return decode_base64(#{value_ref(str)});|
+  end
+
   ### Operations on Maps
 
   def mapkeys(map)
