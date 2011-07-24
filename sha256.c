@@ -279,6 +279,15 @@ void sha256_finish( context_sha256_t *ctx, uint8_t digest[32] )
   PUT_UINT32( ctx->state[7], digest, 28 );
 }
 
+void sha256( uint8_t *input, uint32_t length, uint8_t *digest )
+{
+    context_sha256_t ctx;
+
+    sha256_starts(&ctx);
+    sha256_update(&ctx, input, length);
+    sha256_finish(&ctx, digest);
+}
+
 #ifdef TEST
 
 #include <stdlib.h>
