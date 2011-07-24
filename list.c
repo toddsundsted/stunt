@@ -1017,16 +1017,16 @@ bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 static const char *
 hash_bytes(const char *input, int length)
 {
-    md5ctx_t context;
-    uint8 result[16];
+    context_md5_t context;
+    unsigned char result[16];
     int i;
     const char digits[] = "0123456789ABCDEF";
     char *hex = str_dup("12345678901234567890123456789012");
     const char *answer = hex;
 
-    md5_Init(&context);
-    md5_Update(&context, (uint8 *) input, length);
-    md5_Final(&context, result);
+    MD5Init(&context);
+    MD5Update(&context, (unsigned char *) input, length);
+    MD5Final(result, &context);
     for (i = 0; i < 16; i++) {
 	*hex++ = digits[result[i] >> 4];
 	*hex++ = digits[result[i] & 0xF];

@@ -36,10 +36,10 @@ CSRCS = ast.c base64.c code_gen.c collection.c db_file.c db_io.c \
 	malloc.c map.c match.c md5.c name_lookup.c network.c \
 	net_mplex.c net_proto.c numbers.c objects.c parse_cmd.c \
 	pattern.c program.c property.c quota.c ref_count.c regexpr.c \
-	server.c storage.c streams.c str_intern.c sym_table.c tasks.c \
-	timers.c unparse.c utils.c verbs.c version.c yajl.c \
-	yajl_alloc.c yajl_buf.c yajl_encode.c yajl_gen.c yajl_lex.c \
-	yajl_parser.c yajl_version.c
+	server.c sha1.c sha256.c storage.c streams.c str_intern.c \
+	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c \
+	version.c yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c \
+	yajl_gen.c yajl_lex.c yajl_parser.c yajl_version.c
 
 OPT_NET_SRCS = net_single.c net_multi.c \
 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
@@ -59,11 +59,11 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
 	md5.h name_lookup.h network.h net_mplex.h net_multi.h \
 	net_proto.h numbers.h opcode.h options.h parse_cmd.h parser.h \
 	pattern.h program.h quota.h random.h ref_count.h regexpr.h \
-	server.h storage.h streams.h structures.h str_intern.h \
-	sym_table.h tasks.h timers.h tokens.h unparse.h utils.h \
-	verbs.h version.h yajl_alloc.h yajl_buf.h yajl_bytestack.h \
-	yajl_common.h yajl_encode.h yajl_gen.h yajl_lex.h \
-	yajl_parse.h yajl_parser.h yajl_version.h
+	server.h sha1.h sha256.h storage.h streams.h structures.h \
+	str_intern.h sym_table.h tasks.h timers.h tokens.h unparse.h \
+	utils.h verbs.h version.h yajl_alloc.h yajl_buf.h \
+	yajl_bytestack.h yajl_common.h yajl_encode.h yajl_gen.h \
+	yajl_lex.h yajl_parse.h yajl_parser.h yajl_version.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
