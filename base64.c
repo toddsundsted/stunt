@@ -43,11 +43,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "base64.h"
+#include "exceptions.h"
 #include "functions.h"
 #include "storage.h"
+#include "streams.h"
 #include "utils.h"
-
-#include "base64.h"
+#include "server.h"
 
 static const unsigned char base64_table[64] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -169,47 +171,98 @@ base64_decode(const unsigned char *src, size_t len, size_t *out_len)
 	return out;
 }
 
+/**** built in functions ****/
+
+/**** helpers for catching overly large allocations ****/
+
+#define TRY_STREAM     { enable_stream_exceptions(); TRY
+#define ENDTRY_STREAM  ENDTRY  disable_stream_exceptions(); }
+
+static package
+make_space_pack()
+{
+    if (server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
+	return make_error_pack(E_QUOTA);
+    else
+	return make_abort_pack(ABORT_SECONDS);
+}
+
 static package
 bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
-	int len;
-	size_t length;
-	const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
-	char *out = base64_encode(in, len, &length);
-	if (NULL == out) {
-		free_var(arglist);
-		return make_error_pack(E_INVARG);
-	}
-	Var ret;
-	ret.type = TYPE_STR;
-	ret.v.str = str_dup(raw_bytes_to_binary(out, length));
+    int len;
+    size_t length;
+    const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
+    if (NULL == in) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+    char *out = base64_encode(in, (size_t)len, &length);
+    if (NULL == out) { /* only happens if the encoder can't malloc */
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+    static Stream *s = 0;
+    if (!s)
+	s = new_stream(100);
+    TRY_STREAM {
+	stream_add_raw_bytes_to_binary(s, out, (int)length);
+    }
+    EXCEPT (stream_too_big) {
 	free_str(out);
 	free_var(arglist);
-	return make_var_pack(ret);
+	return make_space_pack();
+    }
+    ENDTRY_STREAM;
+    Var ret;
+    ret.type = TYPE_STR;
+    ret.v.str = str_dup(reset_stream(s));
+    free_str(out);
+    free_var(arglist);
+    return make_var_pack(ret);
 }
 
 static package
 bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
-	int len;
-	size_t length;
-	const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
-	char *out = base64_decode(in, len, &length);
-	if (NULL == out) {
-		free_var(arglist);
-		return make_error_pack(E_INVARG);
-	}
-	Var ret;
-	ret.type = TYPE_STR;
-	ret.v.str = str_dup(raw_bytes_to_binary(out, length));
+    int len;
+    size_t length;
+    const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
+    if (NULL == in) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+    char *out = base64_decode(in, (size_t)len, &length);
+    if (NULL == out) { /* there are problems with the input string or the decoder can't malloc */
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+    static Stream *s = 0;
+    if (!s)
+	s = new_stream(100);
+    TRY_STREAM {
+	stream_add_raw_bytes_to_binary(s, out, (int)length);
+    }
+    EXCEPT (stream_too_big) {
 	free_str(out);
 	free_var(arglist);
-	return make_var_pack(ret);
+	return make_space_pack();
+    }
+    ENDTRY_STREAM;
+    Var ret;
+    ret.type = TYPE_STR;
+    ret.v.str = str_dup(reset_stream(s));
+    free_str(out);
+    free_var(arglist);
+    return make_var_pack(ret);
 }
+
+#undef TRY_STREAM
+#undef ENDTRY_STREAM
 
 void
 register_base64(void)
 {
-	register_function("encode_base64", 1, 1, bf_encode_base64, TYPE_STR);
-	register_function("decode_base64", 1, 1, bf_decode_base64, TYPE_STR);
+    register_function("encode_base64", 1, 1, bf_encode_base64, TYPE_STR);
+    register_function("decode_base64", 1, 1, bf_decode_base64, TYPE_STR);
 }
