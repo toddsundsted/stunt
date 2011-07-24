@@ -156,6 +156,18 @@ module MooSupport
     simplify command %Q|; return toliteral(#{value_ref(value)});|
   end
 
+  def value_hash(str, algo = nil)
+    if algo
+      simplify command %Q|; return value_hash(#{value_ref(str)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return value_hash(#{value_ref(str)});|
+    end
+  end
+
+  def value_hmac(str, key)
+    simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  end
+
   ### Operations on Strings
 
   def encode_base64(str)
@@ -164,6 +176,30 @@ module MooSupport
 
   def decode_base64(str)
     simplify command %Q|; return decode_base64(#{value_ref(str)});|
+  end
+
+  def string_hash(str, algo = nil)
+    if algo
+      simplify command %Q|; return string_hash(#{value_ref(str)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return string_hash(#{value_ref(str)});|
+    end
+  end
+
+  def binary_hash(str, algo = nil)
+    if algo
+      simplify command %Q|; return binary_hash(#{value_ref(str)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return binary_hash(#{value_ref(str)});|
+    end
+  end
+
+  def string_hmac(str, key)
+    simplify command %Q|; return string_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  end
+
+  def binary_hmac(str, key)
+    simplify command %Q|; return binary_hmac(#{value_ref(str)}, #{value_ref(key)});|
   end
 
   ### Operations on Maps
@@ -352,7 +388,7 @@ module MooSupport
   def value_ref(value)
     case value
     when String
-      "\"#{value}\""
+      "\"#{value.gsub('\\', '\\\\').gsub('"', '\"')}\""
     when Symbol
       "$#{value.to_s}"
     when MooErr
