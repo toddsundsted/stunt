@@ -124,7 +124,7 @@ y.tab.h: parser.o
 	touch y.tab.h
 
 keywords.c: keywords.gperf
-	pgperf -aCIptT -k1,3,$$ keywords.gperf \
+	pgperf/pgperf -aCIptT -k1,3,$$ keywords.gperf \
 		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
 		> keywords.c
 

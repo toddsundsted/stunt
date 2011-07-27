@@ -20,6 +20,8 @@ along with GNU GPERF; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <stdio.h>
+#include <errno.h>
+
 #include "stderr.h"
 
 /* Holds the name of the currently active program. */
@@ -46,20 +48,17 @@ set_program_name (prog_name)
    '%': print out a single percent sign, '%' */
 
 void 
-report_error (va_alist) 
-     va_dcl
+report_error (char *fmt, ...) 
 {
-  extern int errno, sys_nerr;
-  extern char *sys_errlist[];
   typedef void (*PTF)();
 	typedef char *CHARP;
   va_list argp;
   int     abort = 0;
   char   *format;
 
-  va_start (argp);
+  va_start (argp, fmt);
 
-  for (format = va_arg (argp, char *); *format; format++) 
+  for (format = fmt; *format; format++) 
     {
       if (*format != '%') 
         putc (*format, stderr);
@@ -74,12 +73,7 @@ report_error (va_alist)
             case 'e' : (*va_arg (argp, PTF))(); break;
             case 'f' : fprintf (stderr, "%g", va_arg (argp, double)); break;
             case 'n' : fputs (program_name ? program_name : "error", stderr); break;
-            case 'p' : 
-              if (errno < sys_nerr) 
-                fprintf (stderr, "%s: %s", va_arg (argp, CHARP), sys_errlist[errno]);
-              else 
-                fprintf (stderr, "<unknown error> %d", errno);
-              break;
+            case 'p' : fprintf (stderr, "%s: %s", va_arg (argp, CHARP), strerror(errno)); break;
             case 's' : fputs (va_arg (argp, CHARP), stderr); break;
             }
         }

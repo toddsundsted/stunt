@@ -18,60 +18,37 @@
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
 
 CC = gcc
-DFLAGS= -DLO_CAL -DGATHER_STATISTICS #-DRLIMIT_STACK 
-OFLAGS= -O -p -g -fstrength-reduce -fomit-frame-pointer -fdelayed-branch -finline-functions # gcc options 
+DFLAGS= -DLO_CAL -DGATHER_STATISTICS
+OFLAGS= -O -p -g -fstrength-reduce -fomit-frame-pointer -fdelayed-branch -finline-functions 
 CFLAGS= $(DFLAGS) $(OFLAGS)
 OBJS = options.o iterator.o main.o perfect.o keylist.o listnode.o xmalloc.o \
        hashtable.o boolarray.o readline.o stderr.o version.o getopt.o
 SOURCES = options.c iterator.c main.c perfect.c keylist.c listnode.c xmalloc.c \
        hashtable.c boolarray.c readline.c stderr.c version.c getopt.c
 
-all: gperf
+all: pgperf
 
-gperf: $(OBJS) 
+pgperf: $(OBJS) 
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean: 
 	-rm -f *.o core *~ #*#
 
 realclean: clean
-	-rm -f gperf
+	-rm -f pgperf
 
-# dependencies
-# DO NOT DELETE THIS LINE -- mkdep uses it.
-# DO NOT PUT ANYTHING AFTER THIS LINE, IT WILL GO AWAY.
+# DO NOT DELETE
 
-boolarray.o: boolarray.c /usr/include/stdio.h boolarray.h prototype.h options.h
-boolarray.o: /usr/include/stdio.h prototype.h
-getopt.o: getopt.c /usr/include/stdio.h
-hashtable.o: hashtable.c /usr/include/stdio.h hashtable.h keylist.h
-hashtable.o: /usr/include/stdio.h listnode.h prototype.h prototype.h options.h
-hashtable.o: /usr/include/stdio.h prototype.h
-iterator.o: iterator.c /usr/include/stdio.h /usr/include/ctype.h iterator.h
-iterator.o: prototype.h
-keylist.o: keylist.c /usr/include/assert.h /usr/include/stdio.h options.h
-keylist.o: /usr/include/stdio.h prototype.h readline.h prototype.h keylist.h
-keylist.o: /usr/include/stdio.h listnode.h prototype.h hashtable.h keylist.h
-keylist.o: prototype.h stderr.h prototype.h /usr/include/varargs.h
-listnode.o: listnode.c /usr/include/stdio.h options.h /usr/include/stdio.h
-listnode.o: prototype.h listnode.h prototype.h stderr.h prototype.h
-listnode.o: /usr/include/varargs.h
-main.o: main.c /usr/include/stdio.h stderr.h prototype.h /usr/include/varargs.h
-main.o: options.h /usr/include/stdio.h prototype.h perfect.h prototype.h
-main.o: keylist.h /usr/include/stdio.h listnode.h prototype.h boolarray.h
-main.o: prototype.h
-options.o: options.c /usr/include/stdio.h /usr/include/assert.h options.h
-options.o: /usr/include/stdio.h prototype.h iterator.h prototype.h stderr.h
-options.o: prototype.h /usr/include/varargs.h
-perfect.o: perfect.c /usr/include/stdio.h /usr/include/assert.h
-perfect.o: /usr/include/ctype.h options.h /usr/include/stdio.h prototype.h
-perfect.o: perfect.h prototype.h keylist.h /usr/include/stdio.h listnode.h
-perfect.o: prototype.h boolarray.h prototype.h stderr.h prototype.h
-perfect.o: /usr/include/varargs.h
-readline.o: readline.c /usr/include/stdio.h readline.h prototype.h
-stderr.o: stderr.c /usr/include/stdio.h stderr.h prototype.h
-stderr.o: /usr/include/varargs.h
-version.o: version.c
-xmalloc.o: xmalloc.c /usr/include/stdio.h
-
-# IF YOU PUT ANYTHING HERE IT WILL GO AWAY
+boolarray.o: boolarray.h prototype.h options.h
+hashtable.o: hashtable.h keylist.h listnode.h prototype.h options.h
+iterator.o: iterator.h prototype.h
+keylist.o: options.h prototype.h readline.h keylist.h listnode.h hashtable.h
+keylist.o: stderr.h
+listnode.o: options.h prototype.h listnode.h stderr.h
+main.o: stderr.h prototype.h options.h perfect.h keylist.h listnode.h
+main.o: boolarray.h
+options.o: options.h prototype.h iterator.h stderr.h
+perfect.o: options.h prototype.h perfect.h keylist.h listnode.h boolarray.h
+perfect.o: stderr.h
+readline.o: readline.h prototype.h
+stderr.o: stderr.h prototype.h
