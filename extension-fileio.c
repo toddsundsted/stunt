@@ -115,13 +115,6 @@ struct line_buffer {
   struct line_buffer *next;
 };
 
-
-/*
- * this is in server.c 
- */
-
-int notify_bytes(Objid player, const char *bytes, int len);
-
 /***************************************************************
  * Version and package informaion
  ***************************************************************/
@@ -796,46 +789,6 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
   return r;			 
 }
 
-/********************************************************
- * For sending I/O directly to connections
- ********************************************************
-
-static package
-bf_file_send(Var arglist, Byte next, void *vdata, Objid progr)
-{
-  package r;
-  Objid victim = arglist.v.list[1].v.obj;
-  const char *filename = arglist.v.list[2].v.str;
-  Var rv;
-  const char *real_filename;
-  char buffer[FILE_IO_BUFFER_LENGTH];
-  FILE *f;
-  int read = 0, total_sent = 0;
-
-    
-  if(!file_verify_caller(progr)) {
-	 r = file_raise_notokcall("file_send", progr);
-  } else if((real_filename = file_resolve_path(filename)) == NULL) {
-	 r =  file_raise_notokfilename("file_send", filename);
-  } else {
-	 if((f = fopen(real_filename, "rb")) == NULL) {
-		return file_raise_errno("file_send");
-	 } else {
-		while((read = fread(buffer, sizeof(char), sizeof(buffer), f))) {
-		  total_sent += read;
-		  notify_bytes(victim, buffer, read);
-		}
-		fclose(f);
-	 }
-  }
-  rv.type = TYPE_INT;
-  rv.v.num = total_sent;
-  return make_var_pack(rv);
-}
-
-* removed due to the server.c hack and not being really necessary
-********************************************************/
-		
 /********************************************************
  * binary i/o
  ********************************************************/
@@ -1558,17 +1511,14 @@ bf_file_chmod(Var arglist, Byte next, void *vdata, Objid progr)
   }
   free_var(arglist);
   return r;
-}			 
-
-
+}
 
 /************************************************************************/
 
 void
 register_fileio(void)
 {
-#if FILE_IO  
-
+#if FILE_IO
 
   register_function("file_version", 0, 0, bf_file_version);
 
@@ -1592,26 +1542,20 @@ register_fileio(void)
 
   register_function("file_eof", 1, 1, bf_file_eof, TYPE_INT);
 
-  /*
-  register_function("file_send", 2, 2, bf_file_send, TYPE_OBJ, TYPE_STR);
-  */
-
   register_function("file_list", 1, 2, bf_file_list, TYPE_STR, TYPE_ANY);
   register_function("file_mkdir", 1, 1, bf_file_mkdir, TYPE_STR);
   register_function("file_rmdir", 1, 1, bf_file_rmdir, TYPE_STR);
   register_function("file_remove", 1, 1, bf_file_remove, TYPE_STR);
   register_function("file_rename", 2, 2, bf_file_rename, TYPE_STR, TYPE_STR);
   register_function("file_chmod", 2, 2, bf_file_chmod, TYPE_STR, TYPE_STR);
- 
+
   register_function("file_size", 1, 1, bf_file_size, TYPE_ANY);
   register_function("file_mode", 1, 1, bf_file_mode, TYPE_ANY);
   register_function("file_type", 1, 1, bf_file_type, TYPE_ANY);
   register_function("file_last_access", 1, 1, bf_file_last_access, TYPE_ANY);
   register_function("file_last_modify", 1, 1, bf_file_last_modify, TYPE_ANY);
-  register_function("file_last_change", 1, 1, bf_file_last_change, TYPE_ANY);  
-  register_function("file_stat", 1, 1, bf_file_stat, TYPE_ANY);  
-    
+  register_function("file_last_change", 1, 1, bf_file_last_change, TYPE_ANY);
+  register_function("file_stat", 1, 1, bf_file_stat, TYPE_ANY);
+
 #endif
 }
-
-
