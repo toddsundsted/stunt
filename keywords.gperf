@@ -62,6 +62,7 @@ E_NACC,		DBV_Prehistory, tERROR,	E_NACC
 E_INVARG,	DBV_Prehistory, tERROR,	E_INVARG
 E_QUOTA,	DBV_Prehistory, tERROR,	E_QUOTA
 E_FLOAT,	DBV_Float,	tERROR,	E_FLOAT
+E_FILE,		DBV_FileIO,	tERROR,	E_FILE
 %%
 
 const struct keyword *
