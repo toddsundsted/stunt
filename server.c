@@ -28,6 +28,7 @@
 #include "db.h"
 #include "db_io.h"
 #include "disassemble.h"
+#include "exec.h"
 #include "execute.h"
 #include "functions.h"
 #include "list.h"
@@ -280,28 +281,46 @@ call_checkpoint_notifier(int successful)
 static void
 child_completed_signal(int sig)
 {
+    pid_t p;
+    pid_t checkpoint_child = 0;
     int status;
+
+    /* Signal every child's completion to the exec subsystem and let
+     * it decide if it's relevant.
+     */
 
     /* (Void *) casts to avoid warnings on systems that mis-declare the
      * argument type.
      */
 #if HAVE_WAITPID
-    while (waitpid(-1, (void *) &status, WNOHANG) > 0);
+    while ((p = waitpid(-1, (void *) &status, WNOHANG)) > 0) {
+	if (!exec_complete(p, WEXITSTATUS(status)))
+	    checkpoint_child = p;
+    }
 #else
 #if HAVE_WAIT3
-    while (wait3((void *) &status, WNOHANG, 0) >= 0);
+    while ((p = wait3((void *) &status, WNOHANG, 0)) >= 0) {
+	if (!exec_complete(p, WEXITSTATUS(status)))
+	    checkpoint_child = p;
+    }
 #else
 #if HAVE_WAIT2
-    while (wait2((void *) &status, WNOHANG) >= 0);
+    while ((p = wait2((void *) &status, WNOHANG)) >= 0) {
+	if (!exec_complete(p, WEXITSTATUS(status)))
+	    checkpoint_child = p;
+    }
 #else
-    wait((void *) &status);
+    p = wait((void *) &status);
+    if (!exec_complete(p, WEXITSTATUS(status)))
+	checkpoint_child = p;
 #endif
 #endif
 #endif
 
     signal(sig, child_completed_signal);
 
-    checkpoint_finished = (status == 0) + 1;	/* 1 = failure, 2 = success */
+    if (checkpoint_child)
+	checkpoint_finished = (status == 0) + 1;	/* 1 = failure, 2 = success */
 }
 
 static void
@@ -474,6 +493,9 @@ main_loop(void)
 	    db_flush(FLUSH_IF_FULL);
 
 	run_ready_tasks();
+
+	/* If a exec'd child process exited, deal with it here */
+	deal_with_child_exit();
 
 	{			/* Get rid of old un-logged-in or useless connections */
 	    int now = time(0);
