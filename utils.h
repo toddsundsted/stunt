@@ -82,6 +82,7 @@ extern int value_bytes(Var);
 
 extern void stream_add_raw_bytes_to_binary(Stream *, const char *buffer, int buflen);
 extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
+extern const char *raw_bytes_to_binary(const char *buffer, int buflen);
 
 #endif
 
