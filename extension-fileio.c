@@ -5,7 +5,6 @@
 #define FILE_IO 1
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "my-stat.h"
 
@@ -652,20 +651,20 @@ void free_line_buffer(line_buffer *head, int strings_too) {
   line_buffer *next;
   if(head) {
 	 next = head->next;
-	 free(head);
+	 myfree(head, M_STRUCT);
 	 head = next;
 	 while(head != NULL) {
 		next = head->next;
 		if(strings_too)
 		  free_str(head->line);
-		myfree(head, M_STRING);
+		myfree(head, M_STRUCT);
 		head = next;
 	 }   
   }
 }
     
 line_buffer *new_line_buffer(char *line) {
-  line_buffer *p = mymalloc(sizeof(line_buffer), M_STRING);
+  line_buffer *p = mymalloc(sizeof(line_buffer), M_STRUCT);
   p->line = line;
   p->next = NULL;
   return p;
