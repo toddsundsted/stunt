@@ -28,6 +28,8 @@ module MooSupport
   E_INVARG = MooErr.new('E_INVARG')
   E_QUOTA = MooErr.new('E_QUOTA')
   E_FLOAT = MooErr.new('E_FLOAT')
+  E_FILE = MooErr.new('E_FILE')
+  E_EXEC = MooErr.new('E_EXEC')
 
   raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
 
@@ -361,6 +363,120 @@ module MooSupport
 
   def verb_cache_stats
     simplify command %|; return verb_cache_stats();|
+  end
+
+  ## FileIO Operations
+
+  def file_version
+    simplify command %|; return file_version();|
+  end
+
+  def file_open(pathname, mode)
+    simplify command %|; return file_open(#{value_ref(pathname)}, #{value_ref(mode)});|
+  end
+
+  def file_close(fh)
+    simplify command %|; return file_close(#{value_ref(fh)});|
+  end
+
+  def file_name(fh)
+    simplify command %|; return file_name(#{value_ref(fh)});|
+  end
+
+  def file_openmode(fh)
+    simplify command %|; return file_openmode(#{value_ref(fh)});|
+  end
+
+  def file_readline(fh)
+    simplify command %|; return file_readline(#{value_ref(fh)});|
+  end
+
+  def file_readlines(fh, s, e)
+    simplify command %|; return file_readlines(#{value_ref(fh)}, #{value_ref(s)}, #{value_ref(e)});|
+  end
+
+  def file_writeline(fh, line)
+    simplify command %|; return file_writeline(#{value_ref(fh)}, #{value_ref(line)});|
+  end
+
+  def file_read(fh, bytes)
+    simplify command %|; return file_read(#{value_ref(fh)}, #{value_ref(bytes)});|
+  end
+
+  def file_write(fh, data)
+    simplify command %|; return file_write(#{value_ref(fh)}, #{value_ref(data)});|
+  end
+
+  def file_tell(fh)
+    simplify command %|; return file_tell(#{value_ref(fh)});|
+  end
+
+  def file_seek(fh, loc, whence)
+    simplify command %|; return file_seek(#{value_ref(fh)}, #{value_ref(loc)}, #{value_ref(whence)});|
+  end
+
+  def file_eof(fh)
+    simplify command %|; return file_eof(#{value_ref(fh)});|
+  end
+
+  def file_size(value)
+    simplify command %|; return file_size(#{value_ref(value)});|
+  end
+
+  def file_mode(value)
+    simplify command %|; return file_mode(#{value_ref(value)});|
+  end
+
+  def file_last_access(value)
+    simplify command %|; return file_last_access(#{value_ref(value)});|
+  end
+
+  def file_last_modify(value)
+    simplify command %|; return file_last_modify(#{value_ref(value)});|
+  end
+
+  def file_last_change(value)
+    simplify command %|; return file_last_change(#{value_ref(value)});|
+  end
+
+  def file_stat(value)
+    simplify command %|; return file_stat(#{value_ref(value)});|
+  end
+
+  def file_rename(oldpath, newpath)
+    simplify command %|; return file_rename(#{value_ref(oldpath)}, #{value_ref(newpath)});|
+  end
+
+  def file_remove(pathname)
+    simplify command %|; return file_remove(#{value_ref(pathname)});|
+  end
+
+  def file_mkdir(pathname)
+    simplify command %|; return file_mkdir(#{value_ref(pathname)});|
+  end
+
+  def file_rmdir(pathname)
+    simplify command %|; return file_rmdir(#{value_ref(pathname)});|
+  end
+
+  def file_list(pathname, detailed = nil)
+    if detailed
+      simplify command %|; return file_list(#{value_ref(pathname)}, #{value_ref(detailed)});|
+    else
+      simplify command %|; return file_list(#{value_ref(pathname)});|
+    end
+  end
+
+  def file_type(pathname)
+    simplify command %|; return file_type(#{value_ref(pathname)});|
+  end
+
+  def file_mode(filename)
+    simplify command %|; return file_mode(#{value_ref(filename)});|
+  end
+
+  def file_chmod(filename, mode)
+    simplify command %|; return file_chmod(#{value_ref(filename)}, #{value_ref(mode)});|
   end
 
   private
