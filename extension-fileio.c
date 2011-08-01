@@ -572,15 +572,9 @@ static const char *file_read_line(Var fhandle, int *count) {
  try_again:
 
   if(fgets(buffer, sizeof(buffer), f) == NULL) {
-	 
-	 /* Yes, this means it's an error to read an incomplete line
-	  * at the end of a file.  No magic vanishing \n's.
-	  * Since it's not possible to WRITEline a line with no \n
-	  * it shouldn't be possible read one.
-	  */
-	 
-	 if(used_stream) 
+	 if(used_stream)
 		reset_stream(str);
+	 total_len--;
 	 rv = NULL;
   } else {
 	 len = strlen(buffer);
@@ -593,8 +587,10 @@ static const char *file_read_line(Var fhandle, int *count) {
 		goto try_again;
 	 }
 	 
-	 if(buffer[len - 1] == '\n')
-		buffer[len-1] = '\0';
+	 if(buffer[len - 1] == '\n') {
+		buffer[len - 1] = '\0';
+		total_len--;
+	 }
 	 
 	 if(used_stream) {
 		stream_add_string(str, buffer);
@@ -603,7 +599,7 @@ static const char *file_read_line(Var fhandle, int *count) {
 		rv = buffer;
 	 }
   }
-  *count = total_len - 1;
+  *count = total_len;
   return rv;	    
 }
   
