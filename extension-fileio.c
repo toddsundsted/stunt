@@ -305,7 +305,7 @@ package file_raise_errno(const char *value_str) {
 	 strerr = strerror(errno);
 	 return file_make_error(value_str, strerr);
   }  else {
-	 return file_make_error("EOF", "EOF");
+	 return file_make_error("End of file", "End of file");
   }
 
 }
@@ -432,6 +432,8 @@ bf_file_open(Var arglist, Byte next, void *vdata, Objid progr)
   file_type type;
   FILE *f;
 
+  errno = 0;
+
   if(!file_verify_caller(progr))
 	 r = file_raise_notokcall("file_open", progr);
   else if ((real_filename = file_resolve_path(filename)) == NULL)
@@ -462,6 +464,8 @@ bf_file_close(Var arglist, Byte next, void *vdata, Objid progr)
   package r;
   Var fhandle = arglist.v.list[1];
   FILE *f;
+
+  errno = 0;
 
   if(!file_verify_caller(progr))
 	 r = file_raise_notokcall("file_close", progr);
@@ -619,6 +623,8 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
   file_type type;
   const char *line;
 
+  errno = 0;
+
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_readline", progr);
   } else if (!file_handle_valid(fhandle)) {
@@ -681,8 +687,9 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
   const char *line = NULL;
   FILE *f;
   line_buffer *linebuf_head = NULL, *linebuf_cur = NULL;
-  
-  
+
+  errno = 0;
+
   if((begin < 1) || (begin > end))
 	 return make_error_pack(E_INVARG);
   if(!file_verify_caller(progr)) {
@@ -762,6 +769,8 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
   file_type type;
   FILE *f;
 
+  errno = 0;
+
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_writeline", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
@@ -811,6 +820,8 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
   int len = 0, read = 0;
 
   FILE *f;
+
+  errno = 0;
 
   read_length = (record_length > sizeof(buffer)) ? sizeof(buffer) : record_length;
 
@@ -872,6 +883,8 @@ bf_file_flush(Var arglist, Byte next, void *vdata, Objid progr)
   Var fhandle = arglist.v.list[1];
   FILE *f;
 
+  errno = 0;
+
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_flush", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
@@ -903,6 +916,8 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
   int len;
   int written;
   FILE *f;
+
+  errno = 0;
 
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_write", progr);
@@ -948,6 +963,8 @@ bf_file_seek(Var arglist, Byte next, void *vdata, Objid progr)
   int whnce = 0, whence_ok = 1;
   FILE *f;
 
+  errno = 0;
+
   if(!mystrcasecmp(whence, "SEEK_SET"))
 	 whnce = SEEK_SET;
   else if (!mystrcasecmp(whence, "SEEK_CUR"))
@@ -985,6 +1002,8 @@ bf_file_tell(Var arglist, Byte next, void *vdata, Objid progr)
   Var rv;
   FILE *f;
 
+  errno = 0;
+
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_tell", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
@@ -1011,6 +1030,8 @@ bf_file_eof(Var arglist, Byte next, void *vdata, Objid progr)
   Var fhandle = arglist.v.list[1];
   Var rv;
   FILE *f;
+
+  errno = 0;
 
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_eof", progr);
