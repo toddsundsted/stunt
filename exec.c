@@ -27,6 +27,7 @@
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
 
+#include <errno.h>
 #include <sys/stat.h>
 
 #include "my-fcntl.h"
@@ -122,14 +123,18 @@ exec_waiter_enumerator(task_closure closure, void *data)
     return TEA_CONTINUE;
 }
 
-static void
+static int
 write_all(int fd, const char *buffer, size_t length)
 {
+    ssize_t count;
     while (length) {
-	ssize_t count = write(fd, buffer, length);
+	if ((count = write(fd, buffer, length)) < 0)
+	    return -1;
 	buffer += count;
 	length -= count;
     }
+    fsync(fd);
+    return 1;
 }
 
 static void
@@ -308,7 +313,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 	exit(res);
     } else {
 	/* parent */
-	oklog("EXEC: Executing %s...\n", cmd);
+	oklog("EXEC: Executing %s (%d)...\n", cmd, p);
 	tasks_waiting_on_exec *tw = malloc_tasks_waiting_on_exec();
 	tw->cmd = str_dup(cmd);
 	tw->p = p;
@@ -323,9 +328,17 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 	set_nonblocking(tw->err);
 	if (arglist.v.list[0].v.num > 1) {
 	    int len;
-	    write_all(tw->in,
-		      binary_to_raw_bytes(arglist.v.list[2].v.str, &len),
-		      len);
+	    const char *in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len);
+	    if (in == NULL) {
+		close(tw->in);
+		free_var(arglist);
+		return make_error_pack(E_INVARG);
+	    }
+	    if (write_all(tw->in, in, len) < 0) {
+		close(tw->in);
+		free_var(arglist);
+		return make_raise_pack(E_INVARG, str_dup(strerror(errno)), zero);
+	    }
 	}
 	close(tw->in);
 	free_var(arglist);
