@@ -49,18 +49,26 @@ module MooSupport
     @sock.puts string
   end
 
-  def run_test_as(*params)
+  def reset
     # The helpers below are unchanged during a test run.
     # Reset them before running a new test.
     @me = nil
     @here = nil
+  end
 
+  def run_test_with_prefix_and_suffix_as(*params)
+    reset
     @host = options['host']
     @port = options['port']
     @sock = TCPSocket.open @host, @port
     send_string "connect #{params.join(' ')}"
-    send_string "PREFIX -+-+-"
-    send_string "SUFFIX =+=+="
+    # I haven't found a better solution than both run_test_as/
+    # run_test_with_prefix_and_suffix_as.  I need to handle both
+    # commands and the evaluation of moocode (by far the most
+    # common case) which suspends (not a common, but still more
+    # common than commands).
+    send_string "PREFIX -=!-^-!=-"
+    send_string "SUFFIX -=!-v-!=-"
     begin
       yield
     rescue
@@ -69,20 +77,31 @@ module MooSupport
     end
   end
 
-  alias run_as run_test_as
+  def run_test_as(*params)
+    reset
+    @host = options['host']
+    @port = options['port']
+    @sock = TCPSocket.open @host, @port
+    send_string "connect #{params.join(' ')}"
+    begin
+      yield
+    rescue
+      @sock.close
+      raise $!
+    end
+  end
 
   def command(command)
-    raise 'failed to enclose test in "run_test_as/run_as" block' unless @sock
+    raise 'failed to enclose test in "run_test_as" block' unless @sock
     send_string command
-    while (true)
-      line = @sock.gets.chomp
-      break if line == '-+-+-'
-    end
+
     acc = []
-    while (true)
+    state = :looking
+    while (state != :done)
       line = @sock.gets.chomp
-      break if line == '=+=+='
-      acc << line
+      state = :found and next if line == '-=!-^-!=-' and (state == :looking or state == :found)
+      state = :done and next if line == '-=!-v-!=-' and state == :found
+      acc << line and next if state == :found
     end
     acc.each { |a| puts "< " + a } if options['verbose']
     acc.length > 0 ? acc.length > 1 ? acc : acc[0] : nil

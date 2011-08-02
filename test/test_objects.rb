@@ -1021,7 +1021,7 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_command_verbs_and_inheritance
-    run_test_as('wizard') do
+    run_test_with_prefix_and_suffix_as('wizard') do
       a = create(NOTHING)
       b = create(a)
       c = create(b)

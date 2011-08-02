@@ -125,9 +125,14 @@ endif
 #2:0
 set_task_perms(player);
 try
+try
+notify(player, "-=!-^-!=-");
 notify(player, toliteral(eval(argstr)));
 except e (ANY)
 notify(player, toliteral({2, e}));
+endtry
+finally
+notify(player, "-=!-v-!=-");
 endtry
 .
 0 clocks
