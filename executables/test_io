@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+read i
+echo -n $i >&1
+echo -n $i >&2

@@ -502,6 +502,16 @@ module MooSupport
     simplify command %|; return file_chmod(#{value_ref(filename)}, #{value_ref(mode)});|
   end
 
+  ## Exec Operations
+
+  def exec(args, input = nil)
+    if input
+      simplify command %|; return exec(#{value_ref(args)}, #{value_ref(input)});|
+    else
+      simplify command %|; return exec(#{value_ref(args)});|
+    end
+  end
+
   private
 
   def obj_ref(obj_ref)
