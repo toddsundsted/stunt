@@ -1,6 +1,5 @@
   File I/O
-  Ken Fox and Andy Bakun
-  October 5, 1997
+  Ken Fox, Andy Bakun, Todd Sundsted
 
   This is the documentation for the File I/O (FIO) patch for the Lamb-
   daMOO server.  FIO adds several administrator-only builtins for manip-
@@ -34,6 +33,7 @@
   1.2.  Copyright, License, and Disclaimer
 
   Copyright 1996, 1997 by Ken Fox.  Copyright 1997 by Andy Bakun.
+  Copyright 2011 by Todd Sundsted.
 
   All Rights Reserved
 
@@ -43,13 +43,14 @@
   both that copyright notice and this permission notice appear in
   supporting documentation.
 
-  KEN FOX AND ANDY BAKUN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
-  SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-  FITNESS, IN NO EVENT SHALL KEN FOX OR ANDY BAKUN BE LIABLE FOR ANY
-  SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
-  RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
-  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-  CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+  KEN FOX AND ANDY BAKUN AND TODD SUNDSTED DISCLAIM ALL WARRANTIES WITH
+  REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL KEN FOX OR ANDY BAKUN
+  OR TODD SUNDSTED BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+  CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+  OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+  NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+  WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
   2.  Installation
 
@@ -113,13 +114,13 @@
   Errors are always handled by raising some kind of exception.  The
   following exceptions are defined:
 
-     ``E_FILE''
-        This is raised when a stdio call returned an error value.  It is
-        the string value "E_FILE", not a new value of type error.  CODE
-        is set to "E_FILE", MSG is set to the return of strerror()
+     E_FILE
+        This is raised when a stdio call returned an error value.
+        CODE is set to E_FILE, MSG is set to the return of strerror()
         (which may vary from system to system), and VALUE depends on
-        which function raised the error.  When a function fails because
-        the stdio function returned EOF, VALUE is set to "EOF".
+        which function raised the error.  When a function fails
+        because the stdio function returned EOF, VALUE is set to
+        "EOF".
 
      E_INVARG
         This is raised for a number of reasons.  The common reasons are
@@ -138,7 +139,7 @@
   Returns the package shortname/version number of this package e.g.
 
          ;file_version()
-         => "FIO/1.5"
+         => "FIO/1.5p3"
 
   3.3.  Opening and closing of files and related functions
 
@@ -234,7 +235,7 @@
 
   Not recommended for use on files in binary mode.
 
-  This is implemented using fgets().
+  This is implemented using fgetc().
 
   3.4.2.  file_readlines
 
@@ -246,7 +247,7 @@
 
   Not recommended for use on files in binary mode.
 
-  This is implemented using fgets().
+  This is implemented using fgetc().
 
   3.4.3.  file_writeline
 
