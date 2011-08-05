@@ -764,9 +764,10 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
   package r;
   Var fhandle = arglist.v.list[1];  
   const char *buffer = arglist.v.list[2].v.str;
-  int len;
+  const char *rawbuffer;
   file_mode mode;
   file_type type;
+  int len;
   FILE *f;
 
   errno = 0;
@@ -779,12 +780,13 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = make_raise_pack(E_INVARG, "File is open read-only", fhandle);
   else {
 	 type = file_handle_type(fhandle);
-	 if((fputs((type->out_filter)(buffer, &len), f) == EOF) || (fputc('\n', f) != '\n'))
+	 if((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
+		r = make_raise_pack(E_INVARG, "Invalid binary string", fhandle);
+	 else if((fputs(rawbuffer, f) == EOF) || (fputc('\n', f) != '\n'))
 		r = file_raise_errno(file_handle_name(fhandle));
 	 else {
 		  if(mode & FILE_O_FLUSH) {
-			/*	printf("flushing...\n"); */
-				fflush(f);
+			 fflush(f);
 		  }
 		r = no_var_pack();
 	 }
@@ -927,9 +929,9 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
 	 r = make_raise_pack(E_INVARG, "File is open read-only", fhandle);
   else {
 	 type = file_handle_type(fhandle);
-	 rawbuffer = (type->out_filter)(buffer, &len);
-	 written = fwrite(rawbuffer, sizeof(char), len, f);
-	 if(!written)
+	 if((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
+		r = make_raise_pack(E_INVARG, "Invalid binary string", fhandle);
+	 else if(!(written = fwrite(rawbuffer, sizeof(char), len, f)))
 		r = file_raise_errno(file_handle_name(fhandle));
 	 else {
 		if(mode & FILE_O_FLUSH)
