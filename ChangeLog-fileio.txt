@@ -1,3 +1,17 @@
+Version 1.5p3 - Jul 11
+----------------------
+ - Added return value check on calls to binary_to_raw_bytes (via out_filter)
+ - Replaced use of fgets to better handle files with null bytes
+ - No longer accept the tab character as valid clean input data
+
+Version 1.5p2 - Jun 11
+----------------------
+ - Fixed mismatch mymalloc/free
+ - Removed restriction that the final line in text mode must be terminated by a newline
+ - Reset errno before each call
+ - Removed vestigial file_send
+ - Replaced "E_FILE" error with true E_FILE
+
 Version 1.5p1 - Dec 97
 ----------------------
  - Fixed bug where tabs were not included in the input stream
