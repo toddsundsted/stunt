@@ -563,48 +563,25 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
 
 static const char *file_read_line(Var fhandle, int *count) {
   static Stream *str = 0;
-  const char *rv;
-  char buffer[FILE_IO_BUFFER_LENGTH];
-  int len = 0, total_len = 0, used_stream = 0;
   FILE *f;
+  int c;
 
   f = file_handle_file(fhandle);
   
   if(str == 0)
 	 str = new_stream(FILE_IO_BUFFER_LENGTH);
   
- try_again:
+  while((c = fgetc(f)) != EOF && c != '\n')
+	 stream_add_char(str, c);
 
-  if(fgets(buffer, sizeof(buffer), f) == NULL) {
-	 if(used_stream)
-		reset_stream(str);
-	 total_len--;
-	 rv = NULL;
-  } else {
-	 len = strlen(buffer);
-
-	 total_len += len;
-
-	 if(len == sizeof(buffer) - 1 && buffer[len - 1] != '\n') {
-		used_stream = 1;
-		stream_add_string(str, buffer);
-		goto try_again;
-	 }
-	 
-	 if(buffer[len - 1] == '\n') {
-		buffer[len - 1] = '\0';
-		total_len--;
-	 }
-	 
-	 if(used_stream) {
-		stream_add_string(str, buffer);
-		rv = reset_stream(str);
-	 } else {
-		rv = buffer;
-	 }
+  if(c == EOF && stream_length(str) == 0) {
+	 reset_stream(str);
+	 *count = 0;
+	 return NULL;
   }
-  *count = total_len;
-  return rv;	    
+
+  *count = stream_length(str);
+  return reset_stream(str);
 }
   
 

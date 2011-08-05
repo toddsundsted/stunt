@@ -70,10 +70,12 @@ class TestFileio < Test::Unit::TestCase
     end
   end
 
+  # In both tests below the null byte is intentional.
+
   def test_that_reading_binary_data_in_text_mode_ignores_the_binary_data
     run_test_as('wizard') do
       fh = file_open('test_fileio.tmp', 'w-bn')
-      file_write(fh, 'abc~A7~CE~F7~8E~0C~D2~16~C9~F6~F2~01~19123~0A')
+      file_write(fh, 'abc~A7~CE~F7~8E~00~D2~16~C9~F6~F2~01~19123~0A')
       file_close(fh)
       fh = file_open('test_fileio.tmp', 'r-tn')
       line = file_readline(fh)
@@ -83,7 +85,7 @@ class TestFileio < Test::Unit::TestCase
     end
     run_test_as('wizard') do
       fh = file_open('test_fileio.tmp', 'w-bn')
-      file_write(fh, 'abc~A7~CE~F7~8E~0C~D2~16~C9~F6~F2~01~19123')
+      file_write(fh, 'abc~A7~CE~F7~8E~00~D2~16~C9~F6~F2~01~19123')
       file_close(fh)
       fh = file_open('test_fileio.tmp', 'r-tn')
       line = file_readline(fh)
