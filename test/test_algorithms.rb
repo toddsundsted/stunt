@@ -138,4 +138,39 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_a_variety_of_fuzzy_inputs_do_not_break_binary_hash
+    run_test_as('wizard') do
+      with_mutating_binary_string("~A7~CED~8E~D2L~16a~F6~F2~01UZ2~BC~B0)~EC~02~86v~CD~9B~05~E66~F3.vx<~F0~D1E@~C7~DA~F3~C7~C0~AAC~1E~D2~D0~03]!~F7~0C~C9~19~F0~82gv~E4~19:~02~F0~7E~F8~BE") do |g|
+        100.times do
+          s = g.next
+          server_log s
+          v = binary_hash(s)
+          assert v == E_INVARG || v.class == String
+          v = binary_hash(s, 'md5')
+          assert v == E_INVARG || v.class == String
+          v = binary_hash(s, 'sha1')
+          assert v == E_INVARG || v.class == String
+          v = binary_hash(s, 'sha256')
+          assert v == E_INVARG || v.class == String
+        end
+      end
+    end
+  end
+
+  def test_that_a_variety_of_fuzzy_inputs_do_not_break_binary_hmac
+    run_test_as('wizard') do
+      x = "~6A~27~46~C2~C3~B8~1C~91~1F~7E~F7~F5~50~D9~0E~D8~D6~89~DA~86~B5~95~E0~66~0C~4A~92~01~2B~8A~AE~2E~7F~3B~88"
+      with_mutating_binary_string("~A7~CED~8E~D2L~16a~F6~F2~01UZ2~BC~B0)~EC~02~86v~CD~9B~05~E66~F3.vx<~F0~D1E@~C7~DA~F3~C7~C0~AAC~1E~D2~D0~03]!~F7~0C~C9~19~F0~82gv~E4~19:~02~F0~7E~F8~BE") do |g|
+        100.times do
+          s = g.next
+          server_log s
+          v = binary_hmac(x, s)
+          assert v == E_INVARG || v.class == String
+          v = binary_hmac(s, x)
+          assert v == E_INVARG || v.class == String
+        end
+      end
+    end
+  end
+
 end
