@@ -93,6 +93,16 @@ class TestFileio < Test::Unit::TestCase
     end
   end
 
+  def test_that_writing_an_invalid_binary_string_fails
+    run_test_as('wizard') do
+      fh = file_open('test_fileio.tmp', 'w-bn')
+      file_writeline(fh, 'abc~ZZ')
+      file_write(fh, 'abc~ZZ')
+      file_close(fh)
+      file_remove('test_fileio.tmp')
+    end
+  end
+
   def test_that_readlines_reads_lines
     run_test_as('wizard') do
       fh = file_open('test_fileio.tmp', 'w-tn')
@@ -131,7 +141,7 @@ class TestFileio < Test::Unit::TestCase
     end
   end
 
-  def test_that_readlines_reads_lines_written_in_binary_mode
+  def test_that_readlines_reads_lines_written_with_write
     run_test_as('wizard') do
       fh = file_open('test_fileio.tmp', 'w-tn')
       file_write(fh, 'one')
