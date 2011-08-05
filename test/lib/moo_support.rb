@@ -355,6 +355,10 @@ module MooSupport
     simplify command %|; return renumber(#{obj_ref(object)});|
   end
 
+  def server_log(message)
+    simplify command %|; return server_log(#{value_ref(message)});|
+  end
+
   def shutdown
     simplify command %|; shutdown();|
   end
