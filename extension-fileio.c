@@ -47,13 +47,14 @@ typedef unsigned short umode_t;
 const char *raw_bytes_to_clean(const char *buffer, int buflen) {
   static Stream *s = 0;
   int i;
+
   if(!s) 
 	 s = new_stream(100);
 
   for (i = 0; i < buflen; i++) {
-	 unsigned char	c = buffer[i];
+	 unsigned char c = buffer[i];
 	 
-	 if (isgraph(c)  ||  c == ' ' || c == '\t')
+	 if (isgraph(c) || c == ' ')
 		stream_add_char(s, c);
 	 /* else drop it on the floor */
   }
@@ -233,7 +234,7 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
 
   if(!file_type_binary) {
 	 file_type_binary = mymalloc(sizeof(struct file_type), M_STRING);
-	 file_type_text= mymalloc(sizeof(struct file_type), M_STRING);
+	 file_type_text = mymalloc(sizeof(struct file_type), M_STRING);
 	 file_type_binary->in_filter = raw_bytes_to_binary;
 	 file_type_binary->out_filter = binary_to_raw_bytes;
 	 file_type_text->in_filter = raw_bytes_to_clean;
