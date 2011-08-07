@@ -64,6 +64,7 @@ E_QUOTA,	DBV_Prehistory, tERROR,	E_QUOTA
 E_FLOAT,	DBV_Float,	tERROR,	E_FLOAT
 E_FILE,		DBV_FileIO,	tERROR,	E_FILE
 E_EXEC,		DBV_Exec,	tERROR,	E_EXEC
+E_INTRPT,	DBV_Interrupt,	tERROR,	E_INTRPT
 %%
 
 const struct keyword *

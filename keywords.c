@@ -33,10 +33,10 @@
 #define MIN_WORD_LENGTH 2
 #define MAX_WORD_LENGTH 9
 #define MIN_HASH_VALUE 3
-#define MAX_HASH_VALUE 106
+#define MAX_HASH_VALUE 103
 /*
-   37 keywords
-  104 is the maximum key range
+   38 keywords
+  101 is the maximum key range
 */
 
 static int
@@ -44,19 +44,19 @@ hash (register const char *str, register int len)
 {
   static const unsigned char hash_table[] =
     {
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
-     106, 106, 106, 106, 106, 106, 106,  10,   0,  45,
-      20,   0,   0,  10, 106,  45, 106,  10, 106,  35,
-       5, 106,   5,  10,   0,  25,  55, 106,  35,   5,
-     106,  10, 106, 106, 106, 106, 106, 106,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103, 103, 103, 103,
+     103, 103, 103, 103, 103, 103, 103,  10,   0,  45,
+      20,   0,   0,  10, 103,  45, 103,  10, 103,  35,
+      50, 103,   5,  10,   0,  25,  15, 103,  35,   5,
+     103,  10, 103, 103, 103, 103, 103, 103,
     };
   register int hval = len;
 
@@ -96,14 +96,13 @@ in_word_set (register const char *str, register int len)
       {"e_range", 	DBV_Prehistory, tERROR,	E_RANGE},
       {"",}, 
       {"e_recmove", 	DBV_Prehistory, tERROR,	E_RECMOVE},
-      {"",}, 
-      {"e_none", 		DBV_Prehistory, tERROR,	E_NONE},
-      {"",}, 
+      {"",}, {"",}, {"",}, 
       {"e_propnf", 	DBV_Prehistory, tERROR,	E_PROPNF},
       {"fork", 		DBV_Prehistory, tFORK},
       {"break", 		DBV_BreakCont, tBREAK},
-      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
-      {"finally", 	DBV_Exceptions, tFINALLY},
+      {"",}, {"",}, {"",}, {"",}, {"",}, 
+      {"e_type", 		DBV_Prehistory, tERROR,	E_TYPE},
+      {"e_float", 	DBV_Float,	tERROR,	E_FLOAT},
       {"",}, {"",}, 
       {"endif", 		DBV_Prehistory, tENDIF},
       {"endfor", 		DBV_Prehistory, tENDFOR},
@@ -117,7 +116,8 @@ in_word_set (register const char *str, register int len)
       {"",}, {"",}, 
       {"endtry", 		DBV_Exceptions, tENDTRY},
       {"endfork", 	DBV_Prehistory, tENDFORK},
-      {"",}, {"",}, {"",}, 
+      {"try", 		DBV_Exceptions, tTRY},
+      {"",}, {"",}, 
       {"e_args", 		DBV_Prehistory, tERROR,	E_ARGS},
       {"e_varnf", 	DBV_Prehistory, tERROR,	E_VARNF},
       {"e_verbnf", 	DBV_Prehistory, tERROR,	E_VERBNF},
@@ -126,28 +126,30 @@ in_word_set (register const char *str, register int len)
       {"if", 		DBV_Prehistory, tIF},
       {"",}, {"",}, {"",}, 
       {"e_exec", 		DBV_Exec,	tERROR,	E_EXEC},
-      {"in", 		DBV_Prehistory, tIN},
-      {"",}, {"",}, 
+      {"",}, {"",}, {"",}, 
       {"while", 		DBV_Prehistory, tWHILE},
+      {"e_none", 		DBV_Prehistory, tERROR,	E_NONE},
+      {"",}, {"",}, {"",}, 
+      {"e_div", 		DBV_Prehistory, tERROR,	E_DIV},
+      {"",}, {"",}, 
+      {"e_invarg", 	DBV_Prehistory, tERROR,	E_INVARG},
+      {"",}, {"",}, 
+      {"except", 		DBV_Exceptions, tEXCEPT},
+      {"finally", 	DBV_Exceptions, tFINALLY},
+      {"e_intrpt", 	DBV_Interrupt,	tERROR,	E_INTRPT},
+      {"",}, {"",}, 
+      {"return", 		DBV_Prehistory, tRETURN},
+      {"",}, 
+      {"e_invind", 	DBV_Prehistory, tERROR,	E_INVIND},
+      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
+      {"",}, {"",}, {"",}, {"",}, {"",}, 
+      {"e_maxrec", 	DBV_Prehistory, tERROR,	E_MAXREC},
+      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
+      {"in", 		DBV_Prehistory, tIN},
+      {"",}, {"",}, {"",}, 
       {"e_nacc", 		DBV_Prehistory, tERROR,	E_NACC},
       {"",}, 
       {"continue", 	DBV_BreakCont, tCONTINUE},
-      {"",}, 
-      {"e_div", 		DBV_Prehistory, tERROR,	E_DIV},
-      {"e_type", 		DBV_Prehistory, tERROR,	E_TYPE},
-      {"e_float", 	DBV_Float,	tERROR,	E_FLOAT},
-      {"e_invarg", 	DBV_Prehistory, tERROR,	E_INVARG},
-      {"",}, {"",}, 
-      {"return", 		DBV_Prehistory, tRETURN},
-      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
-      {"e_invind", 	DBV_Prehistory, tERROR,	E_INVIND},
-      {"",}, {"",}, {"",}, {"",}, 
-      {"try", 		DBV_Exceptions, tTRY},
-      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
-      {"e_maxrec", 	DBV_Prehistory, tERROR,	E_MAXREC},
-      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
-      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
-      {"except", 		DBV_Exceptions, tEXCEPT},
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)

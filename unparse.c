@@ -75,6 +75,8 @@ unparse_error(enum error e)
 	return "File error";
     case E_EXEC:
 	return "Exec error";
+    case E_INTRPT:
+	return "Interrupted";
     }
 
     return "Unknown Error";
@@ -120,6 +122,8 @@ error_name(enum error e)
 	return "E_FILE";
     case E_EXEC:
 	return "E_EXEC";
+    case E_INTRPT:
+	return "E_INTRPT";
     }
 
     return "E_?";
@@ -168,6 +172,8 @@ parse_error(const char *e)
 	return E_FILE;
     if (!mystrcasecmp("E_EXEC", e))
 	return E_EXEC;
+    if (!mystrcasecmp("E_INTRPT", e))
+	return E_INTRPT;
 
     return -1;
 }

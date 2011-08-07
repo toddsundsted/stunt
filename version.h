@@ -68,6 +68,8 @@ typedef enum {
 				 */
     DBV_Exec,			/* Includes addition of the 'E_EXEC' keyword.
 				 */
+    DBV_Interrupt,		/* Includes addition of the 'E_INTRPT' keyword.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
