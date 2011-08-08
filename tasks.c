@@ -86,6 +86,12 @@ typedef struct task {
     } t;
 } task;
 
+inline time_t
+get_start_time(task *t)
+{
+    return t->kind == TASK_FORKED ? t->t.forked.start_time : t->t.suspended.start_time;
+}
+
 enum icmd_flag {
     /* fix icmd_index() if you change any of the following numbers: */
     ICMD_SUFFIX       = 1,
@@ -176,13 +182,26 @@ static tqueue *idle_tqueues = 0, *active_tqueues = 0;
 static task *waiting_tasks = 0;	/* forked and suspended tasks */
 static ext_queue *external_queues = 0;
 
-#define GET_START_TIME(ttt) \
-    (ttt->kind == TASK_FORKED \
-     ? ttt->t.forked.start_time \
-     : ttt->t.suspended.start_time)
+/*
+ * Forward declarations for functions that operate on external queues.
+ */
+struct qcl_data {
+    Objid progr;
+    int show_all;
+    int i;
+    Var tasks;
+};
 
+static task_enum_action
+counting_closure(vm the_vm, const char *status, void *data);
 
-/* 
+static task_enum_action
+listing_closure(vm the_vm, const char *status, void *data);
+
+static task_enum_action
+writing_closure(vm the_vm, const char *status, void *data);
+
+/*
  *  ICMD_FOR_EACH(DEFINE,verb)
  *   expands to a table of intrinsic commands,
  *   each entry of the form
@@ -1016,21 +1035,21 @@ static void
 enqueue_waiting(task * t)
 {				/* either FORKED or SUSPENDED */
 
-    time_t start_time = GET_START_TIME(t);
+    time_t start_time = get_start_time(t);
     Objid progr = (t->kind == TASK_FORKED
 		   ? t->t.forked.a.progr
 		   : progr_of_cur_verb(t->t.suspended.the_vm));
     tqueue *tq = find_tqueue(progr, 1);
 
     tq->num_bg_tasks++;
-    if (!waiting_tasks || start_time < GET_START_TIME(waiting_tasks)) {
+    if (!waiting_tasks || start_time < get_start_time(waiting_tasks)) {
 	t->next = waiting_tasks;
 	waiting_tasks = t;
     } else {
 	task *tt;
 
 	for (tt = waiting_tasks; tt->next; tt = tt->next)
-	    if (start_time < GET_START_TIME(tt->next))
+	    if (start_time < get_start_time(tt->next))
 		break;
 	t->next = tt->next;
 	tt->next = t;
@@ -1242,7 +1261,7 @@ run_ready_tasks(void)
     time_t now = time(0);
     tqueue *tq, *next_tq;
 
-    for (t = waiting_tasks; t && GET_START_TIME(t) <= now; t = next_t) {
+    for (t = waiting_tasks; t && get_start_time(t) <= now; t = next_t) {
 	Objid progr = (t->kind == TASK_FORKED
 		       ? t->t.forked.a.progr
 		       : progr_of_cur_verb(t->t.suspended.the_vm));
@@ -1488,7 +1507,6 @@ write_task_queue(void)
 	    else		/* t->kind == TASK_SUSPENDED */
 		suspended_count++;
 
-
     dbio_printf("%d queued tasks\n", forked_count);
 
     for (t = waiting_tasks; t; t = t->next)
@@ -1510,12 +1528,30 @@ write_task_queue(void)
 	for (t = tq->first_bg; t; t = t->next)
 	    if (t->kind == TASK_SUSPENDED)
 		write_suspended_task(t->t.suspended);
+
+    int interrupted_count = 0;
+    struct qcl_data qdata;
+    ext_queue *eq;
+
+    qdata.progr = NOTHING;
+    qdata.show_all = 1;
+    qdata.i = 0;
+    for (eq = external_queues; eq; eq = eq->next)
+	(*eq->enumerator) (counting_closure, &qdata);
+    interrupted_count = qdata.i;
+
+    dbio_printf("%d interrupted tasks\n", interrupted_count);
+
+    for (eq = external_queues; eq; eq = eq->next)
+	(*eq->enumerator) (writing_closure, &qdata);
 }
 
 int
 read_task_queue(void)
 {
-    int count, dummy, suspended_count, suspended_task_header;
+    int count, dummy;
+    int suspended_count, suspended_task_header;
+    int interrupted_count, interrupted_task_header;
 
     /* Skip obsolete clock stuff */
     if (dbio_scanf("%d clocks\n", &count) != 1) {
@@ -1577,7 +1613,6 @@ read_task_queue(void)
 				       &suspended_count);
     if (suspended_task_header == EOF)
 	return 1;		/* old version */
-
     if (suspended_task_header != 1) {
 	errlog("READ_TASK_QUEUE: Bad suspended task count.\n");
 	return 0;
@@ -1611,6 +1646,46 @@ read_task_queue(void)
 	}
 	enqueue_waiting(t);
     }
+
+    interrupted_task_header = dbio_scanf("%d interrupted tasks\n",
+					 &interrupted_count);
+    if (interrupted_task_header == EOF)
+	return 1;		/* old version */
+    if (interrupted_task_header != 1) {
+	errlog("READ_TASK_QUEUE: Bad interrupted task count.\n");
+	return 0;
+    }
+    for (; interrupted_count > 0; interrupted_count--) {
+	int task_id;
+	const char *status;
+	vm the_vm;
+
+	if (dbio_scanf("%d ", &task_id) != 1) {
+	    errlog("READ_TASK_QUEUE: Bad interrupted task header, count = %d\n",
+		   interrupted_count);
+	    return 0;
+	}
+	if ((status = dbio_read_string()) == NULL) {
+	    errlog("READ_TASK_QUEUE: Bad interrupted task status, count = %d\n",
+		   interrupted_count);
+	    return 0;
+	}
+
+	if (!(the_vm = read_vm(task_id))) {
+	    errlog("READ_TASK_QUEUE: Bad interrupted task vm, count = %d\n",
+		   interrupted_count);
+	    return 0;
+	}
+
+	task *t = (task *) mymalloc(sizeof(task), M_TASK);
+	t->kind = TASK_SUSPENDED;
+	t->t.suspended.start_time = 0;
+	t->t.suspended.value.type = TYPE_ERR;
+	t->t.suspended.value.v.err = E_INTRPT;
+	t->t.suspended.the_vm = the_vm;
+	enqueue_waiting(t);
+    }
+
     return 1;
 }
 
@@ -1865,13 +1940,6 @@ list_for_reading_task(Objid player, vm the_vm)
     return list;
 }
 
-struct qcl_data {
-    Objid progr;
-    int show_all;
-    int i;
-    Var tasks;
-};
-
 static task_enum_action
 counting_closure(vm the_vm, const char *status, void *data)
 {
@@ -1895,6 +1963,20 @@ listing_closure(vm the_vm, const char *status, void *data)
 	list.v.list[2].v.str = str_dup(status);
 	qdata->tasks.v.list[qdata->i++] = list;
     }
+
+    return TEA_CONTINUE;
+}
+
+static task_enum_action
+writing_closure(vm the_vm, const char *status, void *data)
+{
+    struct qcl_data *qdata = data;
+
+    if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
+	dbio_printf("%d %s\n", the_vm->task_id, status);
+	write_vm(the_vm);
+    }
+
     return TEA_CONTINUE;
 }
 
