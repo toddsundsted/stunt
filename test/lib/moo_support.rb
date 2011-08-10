@@ -30,6 +30,7 @@ module MooSupport
   E_FLOAT = MooErr.new('E_FLOAT')
   E_FILE = MooErr.new('E_FILE')
   E_EXEC = MooErr.new('E_EXEC')
+  E_INTRPT = MooErr.new('E_INTRPT')
 
   raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
 
@@ -354,6 +355,26 @@ module MooSupport
 
   def has_function?(name)
     true_or_false simplify command %Q|; return `function_info("#{name}") ! E_INVARG => {}';|
+  end
+
+  def queued_tasks()
+    simplify command %Q|; return queued_tasks();|
+  end
+
+  def kill_task(task_id)
+    simplify command %Q|; return kill_task(#{value_ref(task_id)});|
+  end
+
+  def resume(task_id)
+    simplify command %Q|; return resume(#{value_ref(task_id)});|
+  end
+
+  def callers()
+    simplify command %Q|; return callers();|
+  end
+
+  def task_stack(task_id)
+    simplify command %Q|; return task_stack(#{value_ref(task_id)});|
   end
 
   def set_task_local(value)
