@@ -1355,6 +1355,8 @@ run_ready_tasks(void)
 		    current_local = var_ref(t->t.suspended.the_vm->local);
 		    resume_from_previous_vm(t->t.suspended.the_vm,
 					    t->t.suspended.value);
+		    /* must free value passed in to resume_task() and do_resume() */
+		    free_var(t->t.suspended.value);
 		    current_task_id = -1;
 		    free_var(current_local);
 		    did_one = 1;
