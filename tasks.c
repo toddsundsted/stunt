@@ -1649,6 +1649,9 @@ read_task_queue(void)
 	enqueue_waiting(t);
     }
 
+    if (dbio_input_version < DBV_Interrupt)
+	return 1;
+
     interrupted_task_header = dbio_scanf("%d interrupted tasks\n",
 					 &interrupted_count);
     if (interrupted_task_header == EOF)
