@@ -144,6 +144,16 @@ class TestExec < Test::Unit::TestCase
     end
   end
 
+  def test_that_a_lot_of_fast_execs_work
+    run_test_as('wizard') do
+      assert_equal [], queued_tasks()
+      task_ids = []
+      TIMES.times { task_ids << eval('fork go (0); exec({"true"}); endfork; suspend(0); return go;') }
+      sleep 1
+      assert_equal [], queued_tasks()
+    end
+  end
+
   def test_that_a_variety_of_fuzzy_inputs_do_not_break_exec
     run_test_as('wizard') do
       with_mutating_binary_string("~A7~CED~D2L~16a~01UZ2~BC~B0)~EC~02~86v~CD~9B~05~E66~F3.vx<~F0~D1E@~C7~DA~F3~C7~C0C~1E~D2~D0~03]!~F7~0C~C9~19~F0~82gv~E4:~02~F0~BE") do |g|
