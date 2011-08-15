@@ -36,9 +36,12 @@
 #include "my-string.h"
 #include "my-unistd.h"
 
+#include "net_multi.h"
+
 #include "exec.h"
 #include "functions.h"
 #include "list.h"
+#include "log.h"
 #include "storage.h"
 #include "structures.h"
 #include "streams.h"
@@ -57,20 +60,23 @@ typedef enum {
 				 */
 } task_waiting_status;
 
-typedef struct tasks_waiting_on_exec {
-    char *cmd;
+typedef struct task_waiting_on_exec {
+    const char *cmd;
+    const char **args;
+    const char *in;
+    int len;
     pid_t pid;
     task_waiting_status status;
     int code;
-    int in;
-    int out;
-    int err;
+    int fin;
+    int fout;
+    int ferr;
     Stream *sout;
     Stream *serr;
     vm the_vm;
-} tasks_waiting_on_exec;
+} task_waiting_on_exec;
 
-static tasks_waiting_on_exec *process_table[EXEC_MAX_PROCESSES];
+static task_waiting_on_exec *process_table[EXEC_MAX_PROCESSES];
 
 volatile static sig_atomic_t sigchild_interrupt = 0;
 
@@ -79,12 +85,14 @@ static sigset_t block_sigchld;
 #define BLOCK_SIGCHLD sigprocmask(SIG_BLOCK, &block_sigchld, NULL)
 #define UNBLOCK_SIGCHLD sigprocmask(SIG_UNBLOCK, &block_sigchld, NULL)
 
-static tasks_waiting_on_exec *
-malloc_tasks_waiting_on_exec()
+static task_waiting_on_exec *
+malloc_task_waiting_on_exec()
 {
-    tasks_waiting_on_exec *tw =
-	mymalloc(sizeof(tasks_waiting_on_exec), M_TASK);
+    task_waiting_on_exec *tw =
+	mymalloc(sizeof(task_waiting_on_exec), M_TASK);
     tw->cmd = NULL;
+    tw->args = NULL;
+    tw->in = NULL;
     tw->status = TWS_CONTINUE;
     tw->code = 0;
     tw->sout = new_stream(1000);
@@ -93,14 +101,23 @@ malloc_tasks_waiting_on_exec()
 }
 
 static void
-free_tasks_waiting_on_exec(tasks_waiting_on_exec * tw)
+free_task_waiting_on_exec(task_waiting_on_exec * tw)
 {
+    int i;
+
     if (tw->cmd)
 	free_str(tw->cmd);
-    close(tw->out);
-    close(tw->err);
-    network_unregister_fd(tw->out);
-    network_unregister_fd(tw->err);
+    if (tw->args) {
+	for (i = 0; tw->args[i]; i++)
+	    free_str(tw->args[i]);
+	myfree(tw->args, M_ARRAY);
+    }
+    if (tw->in)
+	free_str(tw->in);
+    close(tw->fout);
+    close(tw->ferr);
+    network_unregister_fd(tw->fout);
+    network_unregister_fd(tw->ferr);
     if (tw->sout)
 	free_stream(tw->sout);
     if (tw->serr)
@@ -111,29 +128,28 @@ free_tasks_waiting_on_exec(tasks_waiting_on_exec * tw)
 static task_enum_action
 exec_waiter_enumerator(task_closure closure, void *data)
 {
-    task_waiting_status status;
+    task_enum_action action = TEA_CONTINUE;
+
+    BLOCK_SIGCHLD;
+
     int i;
     for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
 	if (process_table[i]) {
-	    BLOCK_SIGCHLD;
-	    status = process_table[i]->status;
-	    UNBLOCK_SIGCHLD;
-	    if (TWS_KILL != status) {
-		task_enum_action tea =
-		    (*closure) (process_table[i]->the_vm,
-				process_table[i]->cmd,
-				data);
-		if (TEA_KILL == tea) {
-		    BLOCK_SIGCHLD;
+	    if (TWS_KILL != process_table[i]->status) {
+		action = (*closure) (process_table[i]->the_vm,
+				     process_table[i]->cmd,
+				     data);
+		if (TEA_KILL == action)
 		    process_table[i]->status = TWS_KILL;
-		    UNBLOCK_SIGCHLD;
-		}
-		if (TEA_CONTINUE != tea)
-		    return tea;
+		if (TEA_CONTINUE != action)
+		    break;
 	    }
 	}
     }
-    return TEA_CONTINUE;
+
+    UNBLOCK_SIGCHLD;
+
+    return action;
 }
 
 static int
@@ -153,7 +169,7 @@ write_all(int fd, const char *buffer, size_t length)
 static void
 stdout_readable(int fd, void *data)
 {
-    tasks_waiting_on_exec *tw = data;
+    task_waiting_on_exec *tw = data;
     char buffer[1000];
     int n;
     while ((n = read(fd, buffer, sizeof(buffer))) > 0) {
@@ -164,7 +180,7 @@ stdout_readable(int fd, void *data)
 static void
 stderr_readable(int fd, void *data)
 {
-    tasks_waiting_on_exec *tw = data;
+    task_waiting_on_exec *tw = data;
     char buffer[1000];
     int n;
     while ((n = read(fd, buffer, sizeof(buffer))) > 0) {
@@ -172,25 +188,80 @@ stderr_readable(int fd, void *data)
     }
 }
 
-static enum error
-exec_waiter_suspender(vm the_vm, void *data)
+static pid_t
+fork_and_exec(const char *cmd, const char *const args[], const char *const env[],
+	      int *in, int *out, int *err)
 {
-    enum error err = E_QUOTA;
-    tasks_waiting_on_exec *tw = data;
-    network_register_fd(tw->out, stdout_readable, NULL, tw);
-    network_register_fd(tw->err, stderr_readable, NULL, tw);
-    tw->the_vm = the_vm;
-    BLOCK_SIGCHLD;
-    int i;
-    for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
-	if (process_table[i] == NULL) {
-	    process_table[i] = tw;
-	    err = E_NONE;
-	    break;
-	}
+    pid_t pid;
+    int pipeIn[2];
+    int pipeOut[2];
+    int pipeErr[2];
+
+    if (pipe(pipeIn) < 0) {
+	log_perror("EXEC: Couldn't create pipe - in");
+	goto fail;
     }
-    UNBLOCK_SIGCHLD;
-    return err;
+    else if (pipe(pipeOut) < 0) {
+	log_perror("EXEC: Couldn't create pipe - out");
+	goto close_in;
+    }
+    else if (pipe(pipeErr) < 0) {
+	log_perror("EXEC: Couldn't create pipe - err");
+	goto close_out;
+    }
+    else if ((pid = fork()) < 0) {
+	log_perror("EXEC: Couldn't fork");
+	goto close_err;
+    }
+    else if (0 == pid) { /* child */
+	int status;
+
+	if ((status = dup2(pipeIn[0], STDIN_FILENO)) < 0) {
+	    perror("dup2");
+	    exit(status);
+	}
+	if ((status = dup2(pipeOut[1], STDOUT_FILENO)) < 0) {
+	    perror("dup2");
+	    exit(status);
+	}
+	if ((status = dup2(pipeErr[1], STDERR_FILENO)) < 0) {
+	    perror("dup2");
+	    exit(status);
+	}
+
+	close(pipeIn[1]);
+	close(pipeOut[0]);
+	close(pipeErr[0]);
+
+	status = execve(cmd, (char *const *)args, (char *const *)env);
+	perror("execve");
+	exit(status);
+    }
+
+    close(pipeIn[0]);
+    close(pipeOut[1]);
+    close(pipeErr[1]);
+
+    *in = pipeIn[1];
+    *out = pipeOut[0];
+    *err = pipeErr[0];
+
+    return pid;
+
+ close_err:
+    close(pipeErr[0]);
+    close(pipeErr[1]);
+
+ close_out:
+    close(pipeOut[0]);
+    close(pipeOut[1]);
+
+ close_in:
+    close(pipeIn[0]);
+    close(pipeIn[1]);
+
+ fail:
+    return 0;
 }
 
 static int
@@ -205,170 +276,172 @@ set_nonblocking(int fd)
 	return 1;
 }
 
+static enum error
+exec_waiter_suspender(vm the_vm, void *data)
+{
+    task_waiting_on_exec *tw = data;
+    enum error error = E_QUOTA;
+
+    BLOCK_SIGCHLD;
+
+    int i;
+    for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
+	if (process_table[i] == NULL) {
+	    process_table[i] = tw;
+	    break;
+	}
+    }
+    if (i == EXEC_MAX_PROCESSES) {
+	error = E_QUOTA;
+	goto free_task_waiting_on_exec;
+    }
+
+    static const char *env[] = { "PATH=/bin:/usr/bin", NULL };
+
+    if ((tw->pid = fork_and_exec(tw->cmd, tw->args, env, &tw->fin, &tw->fout, &tw->ferr)) == 0) {
+	error = E_EXEC;
+	goto clear_process_slot;
+    }
+
+    oklog("EXEC: %s (%d)...\n", tw->cmd, tw->pid);
+
+    set_nonblocking(tw->fin);
+    set_nonblocking(tw->fout);
+    set_nonblocking(tw->ferr);
+
+    if (tw->in) {
+	if (write_all(tw->fin, tw->in, tw->len) < 0) {
+	    error = E_EXEC;
+	    goto close_fin;
+	}
+    }
+
+    close(tw->fin);
+
+    network_register_fd(tw->fout, stdout_readable, NULL, tw);
+    network_register_fd(tw->ferr, stderr_readable, NULL, tw);
+
+    tw->the_vm = the_vm;
+
+ success:
+    UNBLOCK_SIGCHLD;
+    return E_NONE;
+
+ close_fin:
+    close(tw->fin);
+
+ clear_process_slot:
+    process_table[i] = NULL;
+
+ free_task_waiting_on_exec:
+    free_task_waiting_on_exec(tw);
+
+ fail:
+    UNBLOCK_SIGCHLD;
+    return error;
+}
+
 static package
 bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    package pack;
+
     /* The first argument must be a list of strings.  The first string
-     * is the command.  The rest are arguments to the command.
+     * is the command (required).  The rest are command line arguments
+     * to the command.
      */
-    int i;
-    for (i = 1; i <= arglist.v.list[1].v.list[0].v.num; i++) {
-	if (arglist.v.list[1].v.list[i].type != TYPE_STR) {
-	    free_var(arglist);
-	    return make_error_pack(E_INVARG);
+    Var v;
+    int i, c;
+    FOR_EACH(v, arglist.v.list[1], i, c) {
+	if (TYPE_STR != v.type) {
+	    pack = make_error_pack(E_INVARG);
+	    goto free_arglist;
 	}
     }
+    /* check for the empty list */
     if (1 == i) {
-	free_var(arglist);
-	return make_error_pack(E_ARGS);
-    }
-    const char *args[i];
-    for (i = 1; i <= arglist.v.list[1].v.list[0].v.num; i++) {
-	args[i - 1] = arglist.v.list[1].v.list[i].v.str;
-    }
-    args[i - 1] = NULL;
-
-    if (!is_wizard(progr)) {
-	free_var(arglist);
-	return make_error_pack(E_PERM);
+	pack = make_error_pack(E_INVARG);
+	goto free_arglist;
     }
 
-    /* Check the path. */
-    const char *cmd = args[0];
+    /* check the path */
+    const char *cmd = arglist.v.list[1].v.list[1].v.str;
     if (0 == strlen(cmd)) {
-	free_var(arglist);
-	return make_raise_pack(E_INVARG, "Invalid path", zero);
+	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
+	goto free_arglist;
     }
     if (('/' == cmd[0])
 	|| (1 < strlen(cmd) && '.' == cmd[0] && '.' == cmd[1])) {
-	free_var(arglist);
-	return make_raise_pack(E_INVARG, "Invalid path", zero);
+	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
+	goto free_arglist;
     }
     if (strstr(cmd, "/.") || strstr(cmd, "./")) {
-	free_var(arglist);
-	return make_raise_pack(E_INVARG, "Invalid path", zero);
+	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
+	goto free_arglist;
     }
 
-    /* Prepend the exec subdirectory path. */
+    /* prepend the exec subdirectory path */
     static Stream *s;
     if (!s)
-	s = new_stream(0);
+	s = new_stream(strlen(EXEC_SUBDIR) * 2);
     stream_add_string(s, EXEC_SUBDIR);
     stream_add_string(s, cmd);
-    cmd = reset_stream(s);
+    cmd = str_dup(reset_stream(s));
 
-    /* Stat the command. */
+    /* clean input */
+    const char *in = NULL;
+    int len = 0;
+    if (listlength(arglist) > 1) {
+	if ((in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len)) == NULL) {
+	    pack = make_error_pack(E_INVARG);
+	    goto free_cmd;
+	}
+	in = str_dup(in);
+    }
+
+    /* check perms */
+    if (!is_wizard(progr)) {
+	pack = make_error_pack(E_PERM);
+	goto free_in;
+    }
+
+    /* stat the command */
     struct stat buf;
     if (stat(cmd, &buf) != 0) {
-	free_var(arglist);
-	return make_raise_pack(E_INVARG, "Does not exist", zero);
+	pack = make_raise_pack(E_INVARG, "Does not exist", var_ref(zero));
+	goto free_in;
     }
     if (!S_ISREG(buf.st_mode)) {
-	free_var(arglist);
-	return make_raise_pack(E_INVARG, "Is not a file", zero);
+	pack = make_raise_pack(E_INVARG, "Is not a file", var_ref(zero));
+	goto free_in;
     }
 
-    /* Create pipes, fork, and exec. */
-    pid_t pid;
-    int pipeIn[2];
-    int pipeOut[2];
-    int pipeErr[2];
+    const char **args = mymalloc(sizeof(const char *) * i, M_ARRAY);
+    FOR_EACH(v, arglist.v.list[1], i, c)
+	args[i - 1] = str_dup(v.v.str);
+    args[i - 1] = NULL;
 
-    if (pipe(pipeIn) < 0) {
-	free_var(arglist);
-	log_perror("EXEC: Couldn't create pipe - pipeIn");
-	return make_raise_pack(E_EXEC, "Exec failed", zero);
-    } else if (pipe(pipeOut) < 0) {
-	close(pipeIn[0]);
-	close(pipeIn[1]);
-	free_var(arglist);
-	log_perror("EXEC: Couldn't create pipe - pipeOut");
-	return make_raise_pack(E_EXEC, "Exec failed", zero);
-    } else if (pipe(pipeErr) < 0) {
-	close(pipeIn[0]);
-	close(pipeIn[1]);
-	close(pipeOut[0]);
-	close(pipeOut[1]);
-	free_var(arglist);
-	log_perror("EXEC: Couldn't create pipe - pipeErr");
-	return make_raise_pack(E_EXEC, "Exec failed", zero);
-    } else if ((pid = fork()) < 0) {
-	close(pipeIn[0]);
-	close(pipeIn[1]);
-	close(pipeOut[0]);
-	close(pipeOut[1]);
-	close(pipeErr[0]);
-	close(pipeErr[1]);
-	free_var(arglist);
-	log_perror("EXEC: Couldn't fork");
-	return make_raise_pack(E_EXEC, "Exec failed", zero);
-    } else if (0 == pid) {
-	/* child */
-	int status;
-	if ((status = dup2(pipeIn[0], STDIN_FILENO)) < 0) {
-	    perror("dup2");
-	    exit(status);
-	}
-	if ((status = dup2(pipeOut[1], STDOUT_FILENO)) < 0) {
-	    perror("dup2");
-	    exit(status);
-	}
-	if ((status = dup2(pipeErr[1], STDERR_FILENO)) < 0) {
-	    perror("dup2");
-	    exit(status);
-	}
-	close(pipeIn[1]);
-	close(pipeOut[0]);
-	close(pipeErr[0]);
-	static char *env[] = { "PATH=/bin:/usr/bin", NULL };
-	int res = execve(cmd, (char *const *)args, (char *const *)env);
-	perror("execve");
-	exit(res);
-    }
+    task_waiting_on_exec *tw = malloc_task_waiting_on_exec();
+    tw->cmd = cmd;
+    tw->args = args;
+    tw->in = in;
+    tw->len = len;
 
-    package pack = no_var_pack();
-
-    oklog("EXEC: %s (%d)...\n", cmd, pid);
-
-    tasks_waiting_on_exec *tw = malloc_tasks_waiting_on_exec();
-
-    tw->cmd = str_dup(cmd);
-    tw->pid = pid;
-    tw->in = pipeIn[1];
-    tw->out = pipeOut[0];
-    tw->err = pipeErr[0];
-
-    set_nonblocking(tw->in);
-    set_nonblocking(tw->out);
-    set_nonblocking(tw->err);
-
-    close(pipeIn[0]);
-    close(pipeOut[1]);
-    close(pipeErr[1]);
-
-    if (arglist.v.list[0].v.num > 1) {
-	int len;
-	const char *in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len);
-	if (in == NULL) {
-	    pack = make_error_pack(E_INVARG);
-	    goto call_free_tasks_waiting_on_exec;
-	}
-	if (write_all(tw->in, in, len) < 0) {
-	    pack = make_raise_pack(E_INVARG, str_dup(strerror(errno)), zero);
-	    goto call_free_tasks_waiting_on_exec;
-	}
-    }
-
-    pack = make_suspend_pack(exec_waiter_suspender, tw);
-    goto done;
-
- call_free_tasks_waiting_on_exec:
-    free_tasks_waiting_on_exec(tw);
-
- done:
     free_var(arglist);
-    close(tw->in);
 
+    return make_suspend_pack(exec_waiter_suspender, tw);
+
+ free_in:
+    if (in)
+	free_str(in);
+
+ free_cmd:
+    free_str(cmd);
+
+ free_arglist:
+    free_var(arglist);
+
+ fail:
     return pack;
 }
 
@@ -379,7 +452,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 pid_t
 exec_complete(pid_t pid, int code)
 {
-    tasks_waiting_on_exec *tw = NULL;
+    task_waiting_on_exec *tw = NULL;
 
     int i;
     for (i = 0; i < EXEC_MAX_PROCESSES; i++)
@@ -399,6 +472,10 @@ exec_complete(pid_t pid, int code)
 	return pid;
     }
 
+    /* We wind up here if the child process was a checkpoint process,
+     * or if an exec task was explicitly killed while the process
+     * itself was still executing.
+     */
     return 0;
 }
 
@@ -411,11 +488,11 @@ deal_with_child_exit(void)
     if (!sigchild_interrupt)
 	return;
 
+    BLOCK_SIGCHLD;
+
     sigchild_interrupt = 0;
 
-    tasks_waiting_on_exec *tw = NULL;
-
-    BLOCK_SIGCHLD;
+    task_waiting_on_exec *tw = NULL;
 
     int i;
     for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
@@ -425,17 +502,17 @@ deal_with_child_exit(void)
 	    v = new_list(3);
 	    v.v.list[1].type = TYPE_INT;
 	    v.v.list[1].v.num = tw->code;
-	    stdout_readable(tw->out, tw);
+	    stdout_readable(tw->fout, tw);
 	    v.v.list[2].type = TYPE_STR;
 	    v.v.list[2].v.str = str_dup(reset_stream(tw->sout));
-	    stderr_readable(tw->err, tw);
+	    stderr_readable(tw->ferr, tw);
 	    v.v.list[3].type = TYPE_STR;
 	    v.v.list[3].v.str = str_dup(reset_stream(tw->serr));
 
 	    resume_task(tw->the_vm, v);
 	}
 	if (tw && TWS_CONTINUE != tw->status) {
-	    free_tasks_waiting_on_exec(tw);
+	    free_task_waiting_on_exec(tw);
 	    process_table[i] = NULL;
 	}
     }
