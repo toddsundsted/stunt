@@ -1115,12 +1115,18 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
     if (!check_user_task_limit(a.progr))
 	return E_QUOTA;
 
-    id = new_task_id();
     /* We eschew the usual pattern of generating the task local value
      * when we generate the task id to avoid having to store it --
      * it's sufficient to generate it immediately before a forked task
-     * becomes a real task (see `run_ready_tasks').
+     * becomes a real task (see `run_ready_tasks()').
      */
+    id = new_task_id();
+    /* The following code is crap.  It cost me long hours of debugging
+     * to track this down when adding support for verb calls on
+     * primitive types and a few minutes of head scratching to figure
+     * out why it's assigning back a ref'd copy of each field.
+     */
+    a.this = var_ref(a.this);
     a.verb = str_ref(a.verb);
     a.verbname = str_ref(a.verbname);
     a.prog = program_ref(a.prog);
@@ -1869,8 +1875,7 @@ list_for_forked_task(forked_task ft)
     list.v.list[7].v.str = str_ref(ft.a.verbname);
     list.v.list[8].type = TYPE_INT;
     list.v.list[8].v.num = find_line_number(ft.program, ft.f_index, 0);
-    list.v.list[9].type = TYPE_OBJ;
-    list.v.list[9].v.obj = ft.a.this;
+    list.v.list[9] = var_ref(ft.a.this);
     list.v.list[10].type = TYPE_INT;
     list.v.list[10].v.num = forked_task_bytes(ft);
 
@@ -1911,8 +1916,7 @@ list_for_vm(vm the_vm)
     list.v.list[7].v.str = str_ref(top_activ(the_vm).verbname);
     list.v.list[8].type = TYPE_INT;
     list.v.list[8].v.num = suspended_lineno_of_vm(the_vm);
-    list.v.list[9].type = TYPE_OBJ;
-    list.v.list[9].v.obj = top_activ(the_vm).this;
+    list.v.list[9] = var_ref(top_activ(the_vm).this);
     list.v.list[10].type = TYPE_INT;
     list.v.list[10].v.num = suspended_task_bytes(the_vm);
 

@@ -70,6 +70,8 @@ typedef enum {
 				 */
     DBV_Interrupt,		/* Includes addition of the 'E_INTRPT' keyword.
 				 */
+    DBV_This,			/* Varification of `this'.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 

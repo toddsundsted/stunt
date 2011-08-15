@@ -123,7 +123,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	    accepts = 1;
 	else {
 	    args = make_arglist(what);
-	    e = call_verb(where, "accept", args, 0);
+	    e = call_verb(where, "accept", new_obj(where), args, 0);
 	    /* e will not be E_INVIND */
 
 	    if (e == E_NONE)
@@ -159,7 +159,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	db_change_location(what, where);
 
 	args = make_arglist(what);
-	e = call_verb(oldloc, "exitfunc", args, 0);
+	e = call_verb(oldloc, "exitfunc", new_obj(oldloc), args, 0);
 
 	if (e == E_NONE)
 	    return make_call_pack(3, data);
@@ -174,7 +174,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	if (valid(where) && valid(what)
 	    && db_object_location(what) == where) {
 	    args = make_arglist(what);
-	    e = call_verb(where, "enterfunc", args, 0);
+	    e = call_verb(where, "enterfunc", new_obj(where), args, 0);
 	    /* e != E_INVIND */
 
 	    if (e == E_NONE)
@@ -347,7 +347,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    data = alloc_data(sizeof(*data));
 	    *data = oid;
 	    args = new_list(0);
-	    e = call_verb(oid, "initialize", args, 0);
+	    e = call_verb(oid, "initialize", new_obj(oid), args, 0);
 	    /* e will not be E_INVIND */
 
 	    if (e == E_NONE)
@@ -555,7 +555,7 @@ move_to_nothing(Objid oid)
     db_change_location(oid, NOTHING);
 
     args = make_arglist(oid);
-    e = call_verb(oldloc, "exitfunc", args, 0);
+    e = call_verb(oldloc, "exitfunc", new_obj(oldloc), args, 0);
 
     if (e == E_NONE)
 	return 1;
@@ -604,7 +604,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	data = alloc_data(sizeof(*data));
 	*data = oid;
 	args = new_list(0);
-	e = call_verb(oid, "recycle", args, 0);
+	e = call_verb(oid, "recycle", new_obj(oid), args, 0);
 	/* e != E_INVIND */
 
 	if (e == E_NONE)

@@ -45,10 +45,16 @@ typedef struct {
     void *bi_func_data;
     Var temp;			/* VM's temp register */
 
-    /* verb information */
-    Objid this;
+    /* `this' is the value on which the verb was invoked.  `recv' is
+     * the object number of the receiver of the verb invocation (the
+     * object number of the handler in the case of primitive values),
+     * and 'vloc' is the object number of the object on which the verb
+     * is actually defined.
+     */
+    Var this;
     Objid player;
     Objid progr;
+    Objid recv;
     Objid vloc;
     const char *verb;
     const char *verbname;
@@ -76,12 +82,12 @@ typedef vmstruct *vm;
 
 /* call_verb will only return E_MAXREC, E_INVIND, E_VERBNF,
    or E_NONE.  the vm will only be changed if E_NONE is returned */
-extern enum error call_verb(Objid obj, const char *vname, Var args,
-			    int do_pass);
+extern enum error call_verb(Objid obj, const char *vname,
+			    Var this, Var args, int do_pass);
 /* if your vname is already a moo str (via str_dup) then you can
    use this interface instead */
-extern enum error call_verb2(Objid obj, const char *vname, Var args,
-			     int do_pass);
+extern enum error call_verb2(Objid obj, const char *vname,
+			     Var this, Var args, int do_pass);
 
 extern int setup_activ_for_eval(Program * prog);
 
@@ -95,12 +101,12 @@ enum outcome {
 extern enum outcome do_forked_task(Program * prog, Var * rt_env,
 				   activation a, int f_id);
 extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
-				  Objid this, db_verb_handle vh);
-extern enum outcome do_server_verb_task(Objid this, const char *verb,
+				  Objid recv, db_verb_handle vh);
+extern enum outcome do_server_verb_task(Objid recv, const char *verb,
 					Var args, db_verb_handle h,
 					Objid player, const char *argstr,
 					Var * result, int do_db_tracebacks);
-extern enum outcome do_server_program_task(Objid this, const char *verb,
+extern enum outcome do_server_program_task(Objid recv, const char *verb,
 					   Var args, Objid vloc,
 					   const char *verbname,
 					   Program * program, Objid progr,
@@ -114,7 +120,7 @@ extern int task_timed_out;
 extern void abort_running_task(void);
 extern void print_error_backtrace(const char *, void (*)(const char *));
 extern void output_to_log(const char *);
-extern Objid caller();
+extern Var caller();
 
 extern void write_activ_as_pi(activation);
 extern int read_activ_as_pi(activation *);
