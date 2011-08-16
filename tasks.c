@@ -736,9 +736,14 @@ do_command_task(tqueue * tq, char *command)
 		       || find_verb_on(this = location, pc, &vh)
 		       || find_verb_on(this = pc->dobj, pc, &vh)
 		       || find_verb_on(this = pc->iobj, pc, &vh)
-		       || (valid(this = location)
-			 && (vh = db_find_callable_verb(location, "huh"),
-			     vh.ptr))) {
+#ifndef PLAYER_HUH
+		       || (valid(location)
+			   && (vh = db_find_callable_verb(this = location, "huh"),
+			       vh.ptr))) {
+#else
+		       || (vh = db_find_callable_verb(this = tq->player, "huh"),
+			   vh.ptr)) {
+#endif
 		do_input_task(tq->player, pc, this, vh);
 	    } else {
 		notify(tq->player, "I couldn't understand that.");
