@@ -346,7 +346,7 @@ do {                                                                 \
 
 
 /* Map errno values to strings for human-readable output */
-#define HTTP_STRERROR_GEN(n, s) { "HPE_" #n, s },
+#define HTTP_STRERROR_GEN(n, s) { #n, s },
 static struct {
   const char *name;
   const char *description;
