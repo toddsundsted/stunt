@@ -43,6 +43,10 @@ extern enum error enqueue_suspended_task(vm the_vm, void *data);
 				/* data == &(int after_seconds) */
 extern enum error make_reading_task(vm the_vm, void *data);
 				/* data == &(Objid connection) */
+extern enum error make_parsing_http_request_task(vm the_vm, void *data);
+				/* data == &(Objid connection) */
+extern enum error make_parsing_http_response_task(vm the_vm, void *data);
+				/* data == &(Objid connection) */
 extern void resume_task(vm the_vm, Var value);
 				/* Make THE_VM (a suspended task) runnable on
 				 * the appropriate task queue; when it resumes

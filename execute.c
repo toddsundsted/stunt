@@ -2676,7 +2676,7 @@ bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_read(Var arglist, Byte next, void *vdata, Objid progr)
-{
+{				/* ([object [, non_blocking]]) */
     int argc = arglist.v.list[0].v.num;
     static Objid connection;
     int non_blocking = (argc >= 2
@@ -2710,6 +2710,46 @@ bf_read(Var arglist, Byte next, void *vdata, Objid progr)
 	    return make_var_pack(r);
     }
     return make_suspend_pack(make_reading_task, &connection);
+}
+
+static package
+bf_read_http(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* ("request" | "response" [, object]) */
+    int argc = arglist.v.list[0].v.num;
+    static Objid connection;
+    int request;
+
+    if (!mystrcasecmp(arglist.v.list[1].v.str, "request"))
+	request = 1;
+    else if (!mystrcasecmp(arglist.v.list[1].v.str, "response"))
+	request = 0;
+    else {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
+    if (argc > 1)
+	connection = arglist.v.list[2].v.obj;
+    else
+	connection = activ_stack[0].player;
+
+    free_var(arglist);
+
+    /* Permissions checking */
+    if (argc > 1) {
+	if (!is_wizard(progr)
+	    && (!valid(connection)
+		|| progr != db_object_owner(connection)))
+	    return make_error_pack(E_PERM);
+    } else {
+	if (!is_wizard(progr)
+	    || last_input_task_id(connection) != current_task_id)
+	    return make_error_pack(E_PERM);
+    }
+
+    return make_suspend_pack(request ? make_parsing_http_request_task
+			     : make_parsing_http_response_task,
+			     &connection);
 }
 
 static package
@@ -2826,6 +2866,7 @@ register_execute(void)
     register_function("raise", 1, 3, bf_raise, TYPE_ANY, TYPE_STR, TYPE_ANY);
     register_function("suspend", 0, 1, bf_suspend, TYPE_INT);
     register_function("read", 0, 2, bf_read, TYPE_OBJ, TYPE_ANY);
+    register_function("read_http", 1, 2, bf_read_http, TYPE_STR, TYPE_OBJ);
 
     register_function("seconds_left", 0, 0, bf_seconds_left);
     register_function("ticks_left", 0, 0, bf_ticks_left);
