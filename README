@@ -1,6 +1,6 @@
 Read `README.lambdamoo' for general information on LambdaMOO.
 
-This is release 4 of the Stunt extensions to the LambdaMOO server.  It
+This is release 7 of the Stunt extensions to the LambdaMOO server.  It
 is based on wrog's "1.8.4" version from SourceForge.  Read the very
 important WARNING below before running this on your existing
 database!!
@@ -13,7 +13,8 @@ server:
    numbers in the first argument position.  Two new built-ins,
    `parents()' and `chparents()', manipulate an object's parents.  The
    built-ins `parent()' and `chparent()' exist for backward
-   compatibility.
+   compatibility -- when an object has multiple parents these
+   built-ins operate on the first parent.
 
 2) Task Local Storage
    The built-ins `task_local' and `set_task_local' retrieve/store a
@@ -30,12 +31,57 @@ server:
    The built-ins `parse_json' and `generate_json' transform MOO
    datatypes from/to JSON.
 
-5) Testing Framework
-   The server includes a unit testing framework based on Ruby's
-   Test-Unit.  It includes a Parslet parser (two, actually) for
-   turning moo-code values into Ruby values, which makes writing tests
-   much easier.  The new code is covered very well by the existing
-   tests.
+5) New Built-in Cryptographic Operations
+   The new cryptographic operations include SHA-1 and SHA-256 hashes.
+   The existing MD5 hash algorithm is broken from a cryptographic
+   standpoint, as is SHA-1 -- both are included for interoperability
+   with existing applications (both are still popular) but the default
+   for `string_hash'/`binary_hash'/`value_hash' is now SHA-256.  Stunt
+   also includes the HMAC-SHA-256 algorithm for generating secure,
+   hash- based message authentication codes.
+
+6) Built-in Base64 Encoding/Decoding
+   The built-ins `encode_base64' and `decode_base64' encode and decode
+   Base64-encoded strings.
+
+7) An Improved FileIO Patch
+   The 1.5p1 patch that is in wide circulation has flaws, including two
+   server crashing bugs.  This patch fixes those bugs/flaws without
+   changing the API.
+
+8) Secure Suspending Process Exec
+   The exec functionality adds an `exec' built-in which securely
+   forks/execs an external executable.  It doesn't use the `system()'
+   call, which is hard to secure and which blocks the server.
+   `exec()' takes two parameters, a list of strings comprising the
+   program and its arguments, and a MOO binary string that is sent to
+   stdin.  It suspends the current task so the server can continue
+   serving other tasks, and eventually returns the process termination
+   code, stdout, and stderr in a list.
+
+9) Verb Calls on Primitive Types
+   The server supports verbs calls on primitive types (numbers,
+   strings, etc.) so calls like `"foo bar":split()' can be implemented
+   and work as expected (they were always syntactically correct but
+   resulted in an E_TYPE error).  Verbs are implemented on prototype
+   object delegates ($int_proto, $float_proto, $str_proto, etc.).  The
+   server transparently invokes the correct verb on the appropriate
+   prototype -- the primitive value is the value of `this'.
+
+10) In Server HTTP Parsing
+    The server uses the excellent Node HTTP parsing library to
+    natively parse HTTP requests and responses into key/value pairs in
+    a map datatype.  The parser handles corner cases correctly and
+    supports things like HTTP upgrade (for using WebSockets, for
+    example).  It's also much much faster than parsers implemented in
+    MOO code.
+
+11) Testing Framework
+    The server includes a unit testing framework based on Ruby's
+    Test-Unit.  It includes a Parslet parser (two, actually) for
+    turning moo-code values into Ruby values, which makes writing
+    tests much easier.  The new code is covered very well by the
+    existing tests.
 
 WARNING: This server changes the database format in a non-backward
 compatible way in order to persist multiple-parent relationships.  The
