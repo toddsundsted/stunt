@@ -1058,6 +1058,38 @@ server_resume_input(Objid connection)
 }
 
 void
+player_connected_silent(Objid old_id, Objid new_id, int is_newly_created)
+{
+    shandle *existing_h = find_shandle(new_id);
+    shandle *new_h = find_shandle(old_id);
+
+    if (!new_h)
+	panic("Non-existent shandle connected");
+
+    new_h->player = new_id;
+    new_h->connection_time = time(0);
+
+    if (existing_h) {
+	/* network_connection_name is allowed to reuse the same string
+	 * storage, so we have to copy one of them.
+	 */
+	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
+	oklog("REDIRECTED: %s, was %s, now %s\n",
+	      object_name(new_id),
+	      name1,
+	      network_connection_name(new_h->nhandle));
+	free_str(name1);
+	network_close(existing_h->nhandle);
+	free_shandle(existing_h);
+    } else {
+	oklog("%s: %s on %s\n",
+	      is_newly_created ? "CREATED" : "CONNECTED",
+	      object_name(new_h->player),
+	      network_connection_name(new_h->nhandle));
+    }
+}
+
+void
 player_connected(Objid old_id, Objid new_id, int is_newly_created)
 {
     shandle *existing_h = find_shandle(new_id);
@@ -1080,7 +1112,6 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	 * storage, so we have to copy one of them.
 	 */
 	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
-
 	oklog("REDIRECTED: %s, was %s, now %s\n",
 	      object_name(new_id),
 	      name1,
@@ -1120,6 +1151,13 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	call_notifier(new_id, new_h->listener,
 		      is_newly_created ? "user_created" : "user_connected");
     }
+}
+
+int
+is_player_connected(Objid player)
+{
+    shandle *h = find_shandle(player);
+    return !h || h->disconnect_me ? 0 : 1;
 }
 
 void

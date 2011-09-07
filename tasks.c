@@ -848,7 +848,11 @@ do_login_task(tqueue * tq, char *command)
     run_server_task_setting_id(tq->player, tq->handler, "do_login_command",
 			       args, command, &result,
 			       &(tq->last_input_task_id));
-    if (tq->connected && result.type == TYPE_OBJ && is_user(result.v.obj)) {
+    /* The connected player (tq->player) may be non-negative if
+     * `do_login_command' already called the `switch_player' built-in
+     * to log the connection in to a player.
+     */
+    if (tq->connected && tq->player < 0 && result.type == TYPE_OBJ && is_user(result.v.obj)) {
 	Objid new_player = result.v.obj;
 	Objid old_player = tq->player;
 	tqueue *dead_tq = find_tqueue(new_player, 0);
@@ -866,7 +870,8 @@ do_login_task(tqueue * tq, char *command)
 		enqueue_bg_task(old_tq, t);
 	    tq->num_bg_tasks = 0;
 	}
-	if (dead_tq) {		/* Copy over tasks from old queue for player */
+	if (dead_tq) {
+	    /* Copy over tasks from old queue for player */
 	    tq->num_bg_tasks = dead_tq->num_bg_tasks;
 	    while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != 0) {
 		free_task(t, 0);
@@ -2789,6 +2794,70 @@ bf_task_local(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(v);
 }
 
+/* Concept courtesy of Ryan Smith (http://zanosoft.net/rsgames/moo-switchcon/).
+ */
+static package
+bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Objid old_player = arglist.v.list[1].v.obj;
+    Objid new_player = arglist.v.list[2].v.obj;
+    int new = 0;
+
+    if (listlength(arglist) > 2)
+	new = is_true(arglist.v.list[3]);
+
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+	return make_error_pack(E_PERM);
+
+    if (old_player == new_player)
+	return make_error_pack(E_INVARG);
+
+    if (is_player_connected(old_player) == 0)
+	return make_error_pack(E_INVARG);
+
+    if (is_user(new_player) == 0)
+	return make_error_pack(E_INVARG);
+
+    tqueue *tq = find_tqueue(old_player, 0);
+    if (!tq)
+	return make_error_pack(E_INVARG);
+
+    tqueue *dead_tq = find_tqueue(new_player, 0);
+    task *t;
+
+    tq->player = new_player;
+    if (tq->num_bg_tasks) {
+	/* Cute; this un-logged-in connection has some queued tasks!
+	 * Must copy them over to their own tqueue for accounting...
+	 */
+	tqueue *old_tq = find_tqueue(old_player, 1);
+
+	old_tq->num_bg_tasks = tq->num_bg_tasks;
+	while ((t = dequeue_bg_task(tq)) != 0)
+	    enqueue_bg_task(old_tq, t);
+	tq->num_bg_tasks = 0;
+    }
+    if (dead_tq) {
+	/* Copy over tasks from old queue for player */
+	tq->num_bg_tasks = dead_tq->num_bg_tasks;
+	while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != 0) {
+	    free_task(t, 0);
+	}
+	while ((t = dequeue_bg_task(dead_tq)) != 0) {
+	    enqueue_bg_task(tq, t);
+	}
+	dead_tq->player = NOTHING;	/* it'll be freed by run_ready_tasks */
+	dead_tq->num_bg_tasks = 0;
+    }
+
+    player_connected_silent(old_player, new_player, new);
+    boot_player(old_player);
+
+    return no_var_pack();
+}
+
 void
 register_tasks(void)
 {
@@ -2804,6 +2873,8 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
     register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
     register_function("task_local", 0, 0, bf_task_local);
+    register_function("switch_player", 2, 3, bf_switch_player,
+		      TYPE_OBJ, TYPE_OBJ, TYPE_ANY);
 }
 
 char rcsid_tasks[] = "$Id: tasks.c,v 1.19 2010/04/22 21:27:25 wrog Exp $";

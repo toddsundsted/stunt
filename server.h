@@ -230,8 +230,11 @@ enum Fork_Result {
 };
 extern enum Fork_Result fork_server(const char *subtask_name);
 
+extern void player_connected_silent(Objid old_id, Objid new_id,
+				    int is_newly_created);
 extern void player_connected(Objid old_id, Objid new_id,
 			     int is_newly_created);
+extern int is_player_connected(Objid player);
 extern void notify(Objid player, const char *message);
 extern void boot_player(Objid player);
 
