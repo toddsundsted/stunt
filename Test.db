@@ -110,20 +110,23 @@ set_player_flag(o, 1);
 o.programmer = 1;
 o.wizard = 1;
 move(o, #2);
-return o;
+switch_player(player, o, 1);
+return;
 elseif (args[2] == "programmer")
 o = create($nothing);
 o.owner = o;
 set_player_flag(o, 1);
 o.programmer = 1;
 move(o, #2);
-return o;
+switch_player(player, o, 1);
+return;
 elseif (args[2] == "player")
 o = create($nothing);
 o.owner = o;
 set_player_flag(o, 1);
 move(o, #2);
-return o;
+switch_player(player, o, 1);
+return;
 endif
 endif
 .
