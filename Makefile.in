@@ -26,6 +26,11 @@ CFLAGS = -O
 # upgrade).
 # CFLAGS = -O2 -Dinline=
 
+MI_OPTS = --fill-column 79 --no-split
+
+DOCS = ProgrammersManual.txt ProgrammersManual.html ProgrammersManual.info \
+	ProgrammersManual.dvi ProgrammersManual.pdf ProgrammersManual.ps
+
 YFLAGS = -d
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
@@ -101,6 +106,54 @@ client_bsd: client_bsd.o
 client_sysv: client_sysv.o
 	$(CC) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
 
+doc: ${DOCS}
+
+info: ProgrammersManual.info
+ProgrammersManual.info: ProgrammersManual.texinfo
+	makeinfo ${MI_OPTS} -D INFO -D INDEX ProgrammersManual.texinfo
+
+txt: ProgrammersManual.txt
+ProgrammersManual.txt: ProgrammersManual.tex-no-info
+	makeinfo ${MI_OPTS} ProgrammersManual.tex-no-info
+
+# ought to be
+#ProgrammersManual.txt: ProgrammersManual.texinfo
+#	makeinfo ${MI_OPTS} -D INDEX --no-headers ProgrammersManual.texinfo > ProgrammersManual.txt
+
+ProgrammersManual.tex-no-info: ProgrammersManual.texinfo
+	sed -e '/^@node/d' \
+	    -e '/^@set INDEX/d' \
+	    -e '/^@menu/,/^@end menu/d' \
+	    -e '/^@setfilename/s/info/txt/' \
+	    -e 's/@ref{\([^,}]*,\)*\([^}]*\)}/the section "\2"/' \
+	    -e 's/@pxref{\([^,}]*,\)*\([^}]*\)}/see the section "\2"/' \
+	    -e 's/@xref{\([^,}]*,\)*\([^}]*\)}/See the section "\2"/' \
+	    < ProgrammersManual.texinfo > ProgrammersManual.tex-no-info
+
+ps: ProgrammersManual.ps
+ProgrammersManual.ps: ProgrammersManual.dvi
+	dvips ProgrammersManual.dvi > ProgrammersManual.ps
+
+dvi: ProgrammersManual.dvi
+ProgrammersManual.dvi: ProgrammersManual.texinfo
+	tex ProgrammersManual.texinfo
+	texindex ProgrammersManual.fn
+	tex ProgrammersManual.texinfo
+
+pdf: ProgrammersManual.pdf
+ProgrammersManual.pdf: ProgrammersManual.texinfo
+	texi2pdf --clean --batch ProgrammersManual.texinfo
+
+html: ProgrammersManual.html
+ProgrammersManual.html: ProgrammersManual.texinfo
+	texi2html -menu -split none -init_file t2hinit.pl -expand info ProgrammersManual.texinfo
+
+%.Z: %
+	compress -c $< > $@
+
+%.gz: %
+	gzip -c $< > $@
+
 # This rule gets around some "make"s' desire to `derive' it from `restart.sh'.
 restart:
 	touch restart
@@ -149,9 +202,18 @@ tags:
 
 clean:
 	rm -f $(OBJS) $(OPT_NET_OBJS) core parser.c y.tab.c y.tab.h y.output makedep eddep
+	rm -f *~ ProgrammersManual.tex-no-info
+	rm -f ProgrammersManual.cp ProgrammersManual.fn ProgrammersManual.ky
+	rm -f ProgrammersManual.pg ProgrammersManual.tp ProgrammersManual.vr
+	rm -f ProgrammersManual.log ProgrammersManual.aux ProgrammersManual.toc
+	rm -f ProgrammersManual.fns
+	rm -f ProgrammersManual.tmp
 
 distclean:	clean
 	rm -f config.h Makefile config.status
+	rm -f ProgrammersManual.dvi* ProgrammersManual.p* ProgrammersManual.i*
+	rm -f ProgrammersManual.txt
+	rm -f ProgrammersManual.html
 
 depend: ${ALL_CSRCS}
 	rm -f eddep makedep
