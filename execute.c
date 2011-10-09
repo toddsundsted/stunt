@@ -2909,21 +2909,33 @@ read_activ_as_pi(activation * a)
 
     free_var(dbio_read_var());
 
+    Var this;
+    if (dbio_input_version >= DBV_This)
+	this = dbio_read_var();
+
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
      * straightforward error checking; unfortunately, the standard says that
      * suppressed assignments are not counted in determining the returned value
      * of `scanf'...
      */
-    if (dbio_input_version >= DBV_This)
-	a->this = dbio_read_var();
     if (dbio_scanf("%d %d %d %d %d %d %d %d %d%c",
 		 &a->recv, &dummy, &dummy, &a->player, &dummy, &a->progr,
 		   &a->vloc, &dummy, &a->debug, &c) != 10
 	|| c != '\n') {
+	if (dbio_input_version >= DBV_This)
+	    free_var(this);
 	errlog("READ_A: Bad numbers.\n");
 	return 0;
     }
+
+    /* Earlier versions of the database use the receiver for this.
+     */
+    if (dbio_input_version >= DBV_This)
+	a->this = this;
+    else
+	a->this = new_obj(a->recv);
+
     dbio_read_string();		/* was argstr */
     dbio_read_string();		/* was dobjstr */
     dbio_read_string();		/* was iobjstr */
