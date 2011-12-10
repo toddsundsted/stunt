@@ -40,3 +40,11 @@ extern int32 maplength(Var map);
 extern int mapempty(Var map);
 extern Var map_dup(Var map);
 extern int map_sizeof(rbtree *tree);
+
+typedef struct rbnode rbnode;
+
+extern rbnode *mapfirst(Var map);
+extern rbnode *maplast(Var map);
+
+extern Var nodekey(rbnode *node);
+extern Var nodevalue(rbnode *node);

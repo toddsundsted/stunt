@@ -1893,13 +1893,20 @@ do {								\
 			unsigned i = READ_BYTES(bv, bc.numbytes_stack);
 			Var item, v;
 
-			v.type = TYPE_INT;
 			item = RUN_ACTIV.base_rt_stack[i];
 			if (item.type == TYPE_STR) {
+			    v.type = TYPE_INT;
 			    v.v.num = memo_strlen(item.v.str) > 0 ? 1 : 0;
 			    PUSH(v);
 			} else if (item.type == TYPE_LIST) {
+			    v.type = TYPE_INT;
 			    v.v.num = item.v.list[0].v.num > 0 ? 1 : 0;
+			    PUSH(v);
+			} else if (item.type == TYPE_MAP) {
+			    v.type = TYPE_NONE;
+			    rbnode *node = mapfirst(item);
+			    if (node)
+				v = nodekey(node);
 			    PUSH(v);
 			} else
 			    PUSH_ERROR(E_TYPE);
@@ -1911,13 +1918,20 @@ do {								\
 			unsigned i = READ_BYTES(bv, bc.numbytes_stack);
 			Var item, v;
 
-			v.type = TYPE_INT;
 			item = RUN_ACTIV.base_rt_stack[i];
 			if (item.type == TYPE_STR) {
+			    v.type = TYPE_INT;
 			    v.v.num = memo_strlen(item.v.str);
 			    PUSH(v);
 			} else if (item.type == TYPE_LIST) {
+			    v.type = TYPE_INT;
 			    v.v.num = item.v.list[0].v.num;
+			    PUSH(v);
+			} else if (item.type == TYPE_MAP) {
+			    v.type = TYPE_NONE;
+			    rbnode *node = maplast(item);
+			    if (node)
+				v = nodekey(node);
 			    PUSH(v);
 			} else
 			    PUSH_ERROR(E_TYPE);

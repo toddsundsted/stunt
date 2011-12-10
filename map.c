@@ -57,7 +57,6 @@
 
 #define HEIGHT_LIMIT 64		/* Tallest allowable tree */
 
-typedef struct rbnode rbnode;
 typedef struct rbtrav rbtrav;
 
 struct rbtree {
@@ -740,6 +739,40 @@ mapforeach(Var map, mapfunc func, void *data)
 
     rbtdelete(trav);
     return 0;
+}
+
+rbnode *
+mapfirst(Var map)
+{
+    rbtrav *trav = rbtnew();
+    rbnode *node = rbtfirst(trav, map.v.tree);
+
+    rbtdelete(trav);
+
+    return node;
+}
+
+rbnode *
+maplast(Var map)
+{
+    rbtrav *trav = rbtnew();
+    rbnode *node = rbtlast(trav, map.v.tree);
+
+    rbtdelete(trav);
+
+    return node;
+}
+
+Var
+nodekey(rbnode *node)
+{
+    return var_ref(node->key);
+}
+
+Var
+nodevalue(rbnode *node)
+{
+    return var_ref(node->value);
 }
 
 /**** built in functions ****/
