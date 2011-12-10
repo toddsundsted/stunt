@@ -221,7 +221,8 @@ static struct prec prec_table[] =
     {EXPR_ID, 10},
     {EXPR_LIST, 10},
     {EXPR_CALL, 10},
-    {EXPR_LENGTH, 10},
+    {EXPR_FIRST, 10},
+    {EXPR_LAST, 10},
     {EXPR_CATCH, 10}
 };
 
@@ -716,7 +717,11 @@ unparse_expr(Stream * str, Expr * expr)
 	stream_add_string(str, "'");
 	break;
 
-    case EXPR_LENGTH:
+    case EXPR_FIRST:
+	stream_add_string(str, "^");
+	break;
+
+    case EXPR_LAST:
 	stream_add_string(str, "$");
 	break;
 

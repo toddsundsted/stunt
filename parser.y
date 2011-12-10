@@ -421,11 +421,17 @@ expr:
 		    $$->e.range.from = $4;
 		    $$->e.range.to = $6;
 		}
+	| '^'
+		{
+		    if (!dollars_ok)
+			yyerror("Illegal context for `^' expression.");
+		    $$ = alloc_expr(EXPR_FIRST);
+		}
 	| '$'
 		{
 		    if (!dollars_ok)
 			yyerror("Illegal context for `$' expression.");
-		    $$ = alloc_expr(EXPR_LENGTH);
+		    $$ = alloc_expr(EXPR_LAST);
 		}
 	| expr '=' expr
                 {
@@ -1145,7 +1151,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
     client = c;
     client_data = data;
     local_names = new_builtin_names(version);
-    dollars_ok = 0;
+    dollars_ok = 0; /* true when the special symbols `^' and `$' are valid */
     loop_stack = 0;
     language_version = version;
     

@@ -739,12 +739,24 @@ generate_expr(Expr * expr, State * state)
 	    pop_stack(2, state);
 	}
 	break;
-    case EXPR_LENGTH:
+    case EXPR_FIRST:
 	{
 	    unsigned saved = saved_stack_top(state);
 
 	    if (saved != UINT_MAX) {
-		emit_extended_byte(EOP_LENGTH, state);
+		emit_extended_byte(EOP_FIRST, state);
+		add_stack_ref(saved, state);
+		push_stack(1, state);
+	    } else
+		panic("Missing saved stack for `^' in GENERATE_EXPR()");
+	}
+	break;
+    case EXPR_LAST:
+	{
+	    unsigned saved = saved_stack_top(state);
+
+	    if (saved != UINT_MAX) {
+		emit_extended_byte(EOP_LAST, state);
 		add_stack_ref(saved, state);
 		push_stack(1, state);
 	    } else

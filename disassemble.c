@@ -96,7 +96,8 @@ struct mapping mappings[] =
 struct mapping ext_mappings[] =
 {
     {EOP_RANGESET, "RANGESET"},
-    {EOP_LENGTH, "LENGTH"},
+    {EOP_FIRST, "FIRST"},
+    {EOP_LAST, "LAST"},
     {EOP_PUSH_LABEL, "PUSH_LABEL"},
     {EOP_SCATTER, "SCATTER"},
     {EOP_EXP, "EXPONENT"},
@@ -284,7 +285,8 @@ disassemble(Program * prog, Printer p, void *data)
 		case EOP_TRY_EXCEPT:
 		    stream_printf(insn, " %d", ADD_BYTES(1));
 		    break;
-		case EOP_LENGTH:
+		case EOP_FIRST:
+		case EOP_LAST:
 		    stream_printf(insn, " %d", ADD_BYTES(bc.numbytes_stack));
 		    break;
 		case EOP_SCATTER:

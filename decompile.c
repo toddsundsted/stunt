@@ -574,9 +574,14 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 				    alloc_binary(EXPR_ASGN, e, rvalue)));
 		    }
 		    goto finish_indexed_assignment;
-		case EOP_LENGTH:
+		case EOP_FIRST:
 		    READ_STACK();
-		    e = alloc_expr(EXPR_LENGTH);
+		    e = alloc_expr(EXPR_FIRST);
+		    push_expr(HOT_OP(e));
+		    break;
+		case EOP_LAST:
+		    READ_STACK();
+		    e = alloc_expr(EXPR_LAST);
 		    push_expr(HOT_OP(e));
 		    break;
 		case EOP_EXP:
