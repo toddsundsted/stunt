@@ -27,6 +27,7 @@ extern Var listconcat(Var first, Var second);
 extern Var setadd(Var list, Var value);
 extern Var setremove(Var list, Var value);
 extern Var sublist(Var list, int lower, int upper);
+extern int listequal(Var lhs, Var rhs, int case_matters);
 extern Var strrangeset(Var list, int from, int to, Var value);
 extern Var substr(Var str, int lower, int upper);
 extern Var strget(Var str, int i);

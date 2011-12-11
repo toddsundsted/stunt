@@ -68,8 +68,9 @@ var_dup(Var v)
 	return v;
 }
 
-extern int equality(Var lhs, Var rhs, int case_matters);
 extern int is_true(Var v);
+extern int compare(Var lhs, Var rhs, int case_matters);
+extern int equality(Var lhs, Var rhs, int case_matters);
 
 extern void stream_add_strsub(Stream *, const char *, const char *, const char *, int);
 extern int strindex(const char *, const char *, int);
