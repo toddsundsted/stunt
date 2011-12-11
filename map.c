@@ -81,31 +81,7 @@ struct rbtrav {
 static int
 node_compare(const rbnode *node1, const rbnode *node2, int case_matters)
 {
-    if (node1->key.type == node2->key.type) {
-	switch ((int)node1->key.type) {
-	case TYPE_STR:
-	    if (node1->key.v.str == node2->key.v.str)
-		return 0;
-	    else if (case_matters)
-		return strcmp(node1->key.v.str, node2->key.v.str);
-	    else
-		return mystrcasecmp(node1->key.v.str, node2->key.v.str);
-	case TYPE_FLOAT:
-	    if (node1->key.v.fnum == node2->key.v.fnum)
-		return 0;
-	    else
-		return *(node1->key.v.fnum) - *(node2->key.v.fnum);
-	case TYPE_OBJ:
-	    return node1->key.v.obj - node2->key.v.obj;
-	case TYPE_INT:
-	    return node1->key.v.num - node2->key.v.num;
-	case TYPE_ERR:
-	    return (int)node1->key.v.err - (int)node2->key.v.err;
-	default:
-	    panic("NODE_COMPARE: Unsupported type");
-	}
-    } else
-	return node1->key.type - node2->key.type;
+    return compare(node1->key, node2->key, case_matters);
 }
 
 static void
