@@ -804,16 +804,15 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			unsigned top = (ptr - 2) - bc.vector;
 			int id = READ_ID();
 			unsigned done = READ_LABEL();
-			Expr *one = pop_expr();
+			Expr *iter = pop_expr();
 			Expr *list = pop_expr();
 			int jump_hot;
 
-			if (one->kind != EXPR_VAR
-			    || one->e.var.type != TYPE_INT
-			    || one->e.var.v.num != 1)
-			    panic("Not a literal one in DECOMPILE!");
+			if (iter->kind != EXPR_VAR
+			    || iter->e.var.type != TYPE_NONE)
+			    panic("Not a `none' value in DECOMPILE!");
 			else
-			    dealloc_node(one);
+			    dealloc_node(iter);
 			s = alloc_stmt(STMT_LIST);
 			s->s.list.id = id;
 			s->s.list.index = -1;
@@ -823,7 +822,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (top != READ_JUMP(jump_hot))
 			    panic("FOR_LIST_1 jumps to wrong place in DECOMPILE!");
 			HOT_BOTTOM(jump_hot, s);
-			ADD_STMT(HOT_OP2(one, list, s));
+			ADD_STMT(HOT_OP2(iter, list, s));
 		    }
 		    break;
 
@@ -833,16 +832,15 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			int id = READ_ID();
 			int index = READ_ID();
 			unsigned done = READ_LABEL();
-			Expr *one = pop_expr();
+			Expr *iter = pop_expr();
 			Expr *list = pop_expr();
 			int jump_hot;
 
-			if (one->kind != EXPR_VAR
-			    || one->e.var.type != TYPE_INT
-			    || one->e.var.v.num != 1)
-			    panic("Not a literal one in DECOMPILE!");
+			if (iter->kind != EXPR_VAR
+			    || iter->e.var.type != TYPE_NONE)
+			    panic("Not a `none' value in DECOMPILE!");
 			else
-			    dealloc_node(one);
+			    dealloc_node(iter);
 			s = alloc_stmt(STMT_LIST);
 			s->s.list.id = id;
 			s->s.list.index = index;
@@ -852,7 +850,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (top != READ_JUMP(jump_hot))
 			    panic("FOR_LIST_2 jumps to wrong place in DECOMPILE!");
 			HOT_BOTTOM(jump_hot, s);
-			ADD_STMT(HOT_OP2(one, list, s));
+			ADD_STMT(HOT_OP2(iter, list, s));
 		    }
 		    break;
 

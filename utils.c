@@ -286,6 +286,10 @@ equality(Var lhs, Var rhs, int case_matters)
 {
     if (lhs.type == rhs.type) {
 	switch (lhs.type) {
+	case TYPE_CLEAR:
+	    return 1;
+	case TYPE_NONE:
+	    return 1;
 	case TYPE_INT:
 	    return lhs.v.num == rhs.v.num;
 	case TYPE_OBJ:

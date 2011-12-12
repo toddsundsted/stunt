@@ -958,7 +958,8 @@ generate_stmt(Stmt * stmt, State * state)
 		int end_label;
 
 		generate_expr(stmt->s.list.expr, state);
-		emit_byte(OPTIM_NUM_TO_OPCODE(1), state);	/* loop list index */
+		emit_byte(OP_IMM, state);
+		add_literal(none, state);	/* loop index initializer */
 		push_stack(1, state);
 		loop_top = capture_label(state);
 		if (stmt->s.list.index > -1) {
