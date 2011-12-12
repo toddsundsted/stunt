@@ -9,6 +9,13 @@ class TestLooping < Test::Unit::TestCase
     end
   end
 
+  def test_that_for_loops_work_with_maps
+    run_test_as('programmer') do
+      assert_equal [1, 3.0, 'two'], eval(%|x = {}; for v in (["one" -> 1, "two" -> "two", "three" -> 3.0]); x = {@x, v}; endfor; return x;|)
+      assert_equal [[1, 'one'], [3.0, 'three'], ['two', 'two']], eval(%|x = {}; for v, k in (["one" -> 1, "two" -> "two", "three" -> 3.0]); x = {@x, {v, k}}; endfor; return x;|)
+    end
+  end
+
   def test_that_for_loops_support_two_variables
     run_test_as('programmer') do
       assert_equal [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5]], eval(%|x = {}; for i, j in ({"1", "2", "3", "4", "5"}); x = {@x, {i, j}}; endfor; return x;|)
@@ -48,7 +55,6 @@ class TestLooping < Test::Unit::TestCase
       assert_equal E_TYPE, eval(%|for x in (5.0); endfor|)
       assert_equal E_TYPE, eval(%|for x in (#5); endfor|)
       assert_equal E_TYPE, eval(%|for x in (E_PERM); endfor|)
-      assert_equal E_TYPE, eval(%|for x in ([]); endfor|)
     end
   end
 
@@ -86,6 +92,13 @@ class TestLooping < Test::Unit::TestCase
       end
       vc = simplify command %|; return verb_code(#{o}, "test");|
       assert_equal ['for i, j in ("foobar")', '  break j;', '  continue i;', 'endfor'], vc
+
+      # maps
+      set_verb_code(o, 'test') do |vc|
+        vc << 'for v, k in (["one" -> 1, "two" -> "two", "three" -> 3.0]); break k; continue v; endfor;'
+      end
+      vc = simplify command %|; return verb_code(#{o}, "test");|
+      assert_equal ['for v, k in (["one" -> 1, "two" -> "two", "three" -> 3.0])', '  break k;', '  continue v;', 'endfor'], vc
     end
   end
 
