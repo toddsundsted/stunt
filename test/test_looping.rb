@@ -2,6 +2,13 @@ require 'test_helper'
 
 class TestLooping < Test::Unit::TestCase
 
+  def test_that_for_loops_work_with_strings
+    run_test_as('programmer') do
+      assert_equal ['1', '2', '3', '4', '5'], eval(%|x = {}; for i in ("12345"); x = {@x, i}; endfor; return x;|)
+      assert_equal [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5]], eval(%|x = {}; for i, j in ("12345"); x = {@x, {i, j}}; endfor; return x;|)
+    end
+  end
+
   def test_that_for_loops_support_two_variables
     run_test_as('programmer') do
       assert_equal [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5]], eval(%|x = {}; for i, j in ({"1", "2", "3", "4", "5"}); x = {@x, {i, j}}; endfor; return x;|)
@@ -35,6 +42,16 @@ class TestLooping < Test::Unit::TestCase
     end
   end
 
+  def test_that_for_loops_cannot_loop_over_non_sequences
+    run_test_as('programmer') do
+      assert_equal E_TYPE, eval(%|for x in (5); endfor|)
+      assert_equal E_TYPE, eval(%|for x in (5.0); endfor|)
+      assert_equal E_TYPE, eval(%|for x in (#5); endfor|)
+      assert_equal E_TYPE, eval(%|for x in (E_PERM); endfor|)
+      assert_equal E_TYPE, eval(%|for x in ([]); endfor|)
+    end
+  end
+
   def test_that_for_loops_decompile
     run_test_as('programmer') do
       o = create(:nothing)
@@ -62,6 +79,13 @@ class TestLooping < Test::Unit::TestCase
       end
       vc = simplify command %|; return verb_code(#{o}, "test");|
       assert_equal ['for i, j in ({})', '  break j;', '  continue i;', 'endfor'], vc
+
+      # strings
+      set_verb_code(o, 'test') do |vc|
+        vc << 'for i, j in ("foobar"); break j; continue i; endfor;'
+      end
+      vc = simplify command %|; return verb_code(#{o}, "test");|
+      assert_equal ['for i, j in ("foobar")', '  break j;', '  continue i;', 'endfor'], vc
     end
   end
 
