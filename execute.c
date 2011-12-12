@@ -887,32 +887,6 @@ do {								\
 	    }
 	    break;
 
-	case OP_FOR_LIST: /* retired */
-	    {
-		unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
-		unsigned lab = READ_BYTES(bv, bc.numbytes_label);
-		Var count, list;
-
-		count = TOP_RT_VALUE;	/* will be a integer */
-		list = NEXT_TOP_RT_VALUE;	/* should be a list */
-		if (list.type != TYPE_LIST) {
-		    RAISE_ERROR(E_TYPE);
-		    free_var(POP());
-		    free_var(POP());
-		    JUMP(lab);
-		} else if (count.v.num > list.v.list[0].v.num /* size */ ) {
-		    free_var(POP());
-		    free_var(POP());
-		    JUMP(lab);
-		} else {
-		    free_var(RUN_ACTIV.rt_env[id]);
-		    RUN_ACTIV.rt_env[id] = var_ref(list.v.list[count.v.num]);
-		    count.v.num++;	/* increment count */
-		    TOP_RT_VALUE = count;
-		}
-	    }
-	    break;
-
 	case OP_FOR_RANGE:
 	    {
 		unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
