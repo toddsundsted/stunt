@@ -2111,27 +2111,32 @@ do {								\
 		    {
 			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
-			Var iter, list;
+			Var iter, base;
 
 			iter = TOP_RT_VALUE;
-			list = NEXT_TOP_RT_VALUE;
-			if (list.type != TYPE_LIST) {
+			base = NEXT_TOP_RT_VALUE;
+			if (base.type != TYPE_STR && base.type != TYPE_LIST
+			    && base.type != TYPE_MAP) {
 			    RAISE_ERROR(E_TYPE);
 			    free_var(POP());
 			    free_var(POP());
 			    JUMP(lab);
-			} else if (list.type == TYPE_LIST) {
+			} else if (base.type == TYPE_STR || base.type == TYPE_LIST) {
+			    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
+				       : base.v.list[0].v.num);
 			    if (iter.type == TYPE_NONE) {
 				free_var(iter);
 				iter = new_int(1);
 			    }
-			    if (iter.v.num > list.v.list[0].v.num /* size */ ) {
+			    if (iter.v.num > len) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = var_ref(list.v.list[iter.v.num]);
+				RUN_ACTIV.rt_env[id] = (base.type == TYPE_STR)
+				  ? strget(base, iter.v.num)
+				  : var_ref(base.v.list[iter.v.num]);
 				iter.v.num++;	/* increment iter */
 				TOP_RT_VALUE = iter;
 			    }
@@ -2144,27 +2149,32 @@ do {								\
 			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned index = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
-			Var iter, list;
+			Var iter, base;
 
 			iter = TOP_RT_VALUE;
-			list = NEXT_TOP_RT_VALUE;
-			if (list.type != TYPE_LIST) {
+			base = NEXT_TOP_RT_VALUE;
+			if (base.type != TYPE_STR && base.type != TYPE_LIST
+			    && base.type != TYPE_MAP) {
 			    RAISE_ERROR(E_TYPE);
 			    free_var(POP());
 			    free_var(POP());
 			    JUMP(lab);
-			} else if (list.type == TYPE_LIST) {
+			} else if (base.type == TYPE_STR || base.type == TYPE_LIST) {
+			    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
+				       : base.v.list[0].v.num);
 			    if (iter.type == TYPE_NONE) {
 				free_var(iter);
 				iter = new_int(1);
 			    }
-			    if (iter.v.num > list.v.list[0].v.num /* size */ ) {
+			    if (iter.v.num > len) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = var_ref(list.v.list[iter.v.num]);
+				RUN_ACTIV.rt_env[id] = (base.type == TYPE_STR)
+				  ? strget(base, iter.v.num)
+				  : var_ref(base.v.list[iter.v.num]);
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(iter);
 				iter.v.num++;	/* increment iter */
