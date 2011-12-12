@@ -159,6 +159,10 @@ complex_free_var(Var v)
 	if (delref(v.v.tree) == 0)
 	    destroy_map(v);
 	break;
+    case TYPE_ITER:
+	if (delref(v.v.trav) == 0)
+	    destroy_iter(v);
+	break;
     case TYPE_FLOAT:
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
@@ -175,6 +179,9 @@ complex_var_ref(Var v)
 	break;
     case TYPE_MAP:
 	addref(v.v.tree);
+	break;
+    case TYPE_ITER:
+	addref(v.v.trav);
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -198,6 +205,9 @@ complex_var_dup(Var v)
 	break;
     case TYPE_MAP:
 	v = map_dup(v);
+	break;
+    case TYPE_ITER:
+	v = iter_dup(v);
 	break;
     case TYPE_LIST:
 	new = new_list(v.v.list[0].v.num);
@@ -228,6 +238,9 @@ var_refcount(Var v)
 	break;
     case TYPE_MAP:
 	return refcount(v.v.tree);
+	break;
+    case TYPE_ITER:
+	return refcount(v.v.trav);
 	break;
     case TYPE_FLOAT:
 	return refcount(v.v.fnum);

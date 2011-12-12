@@ -2140,6 +2140,22 @@ do {								\
 				iter.v.num++;	/* increment iter */
 				TOP_RT_VALUE = iter;
 			    }
+			} else if (base.type == TYPE_MAP) {
+			    if (iter.type == TYPE_NONE) {
+				free_var(iter);
+				iter = new_iter(base);
+			    }
+			    struct mapitem item;
+			    if (!iterget(iter, &item)) {
+				free_var(POP());
+				free_var(POP());
+				JUMP(lab);
+			    } else {
+				free_var(RUN_ACTIV.rt_env[id]);
+				RUN_ACTIV.rt_env[id] = var_ref(item.value);
+				iternext(iter);	/* increment iter */
+				TOP_RT_VALUE = iter;
+			    }
 			}
 		    }
 		    break;
@@ -2178,6 +2194,24 @@ do {								\
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(iter);
 				iter.v.num++;	/* increment iter */
+				TOP_RT_VALUE = iter;
+			    }
+			} else if (base.type == TYPE_MAP) {
+			    if (iter.type == TYPE_NONE) {
+				free_var(iter);
+				iter = new_iter(base);
+			    }
+			    struct mapitem item;
+			    if (!iterget(iter, &item)) {
+				free_var(POP());
+				free_var(POP());
+				JUMP(lab);
+			    } else {
+				free_var(RUN_ACTIV.rt_env[id]);
+				RUN_ACTIV.rt_env[id] = var_ref(item.value);
+				free_var(RUN_ACTIV.rt_env[index]);
+				RUN_ACTIV.rt_env[index] = var_ref(item.key);
+				iternext(iter);	/* increment iter */
 				TOP_RT_VALUE = iter;
 			    }
 			}

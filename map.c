@@ -749,6 +749,55 @@ nodevalue(rbnode *node)
     return var_ref(node->value);
 }
 
+Var
+new_iter(Var map)
+{
+    Var iter;
+
+    iter.type = TYPE_ITER;
+    if ((iter.v.trav = rbtnew()) == NULL)
+	panic("NEW_ITER: rbtnew failed");
+
+    rbtfirst(iter.v.trav, map.v.tree);
+
+    return iter;
+}
+
+/* called from utils.c */
+void
+destroy_iter(Var iter)
+{
+    rbtdelete(iter.v.trav);
+}
+
+/* called from utils.c */
+Var
+iter_dup(Var iter)
+{
+    panic("ITER_DUP: don't do this");
+
+    return none;
+}
+
+int
+iterget(Var iter, struct mapitem *item)
+{
+    if (iter.v.trav->it) {
+	item->key = iter.v.trav->it->key;
+	item->value = iter.v.trav->it->value;
+
+	return 1;
+    }
+
+    return 0;
+}
+
+void
+iternext(Var iter)
+{
+    rbtnext(iter.v.trav);
+}
+
 /**** built in functions ****/
 
 static package

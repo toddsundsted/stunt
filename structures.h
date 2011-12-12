@@ -60,7 +60,8 @@ typedef enum {
     TYPE_CATCH,			/* on-stack marker for an exception handler */
     TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
     _TYPE_FLOAT,		/* floating-point number; user-visible */
-    _TYPE_MAP			/* map; user-visible */
+    _TYPE_MAP,			/* map; user-visible */
+    _TYPE_ITER			/* map iterator; not visible */
 } var_type;
 
 /* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
@@ -77,6 +78,7 @@ typedef enum {
 #define TYPE_FLOAT		(_TYPE_FLOAT | TYPE_COMPLEX_FLAG)
 #define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
 #define TYPE_MAP		(_TYPE_MAP | TYPE_COMPLEX_FLAG)
+#define TYPE_ITER		(_TYPE_ITER | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
@@ -112,6 +114,7 @@ struct Var {
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
         rbtree *tree;		/* MAP */
+        rbtrav *trav;		/* ITER */
 	double *fnum;		/* FLOAT */
     } v;
     var_type type;
