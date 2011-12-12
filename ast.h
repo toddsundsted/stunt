@@ -146,6 +146,7 @@ struct Stmt_Cond {
 
 struct Stmt_List {
     int id;
+    int index;
     Expr *expr;
     Stmt *body;
 };

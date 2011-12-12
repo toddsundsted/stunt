@@ -887,7 +887,7 @@ do {								\
 	    }
 	    break;
 
-	case OP_FOR_LIST:
+	case OP_FOR_LIST: /* retired */
 	    {
 		unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
 		unsigned lab = READ_BYTES(bv, bc.numbytes_label);
@@ -2130,6 +2130,61 @@ do {								\
 			STORE_STATE_VARIABLES();
 			(void) unwind_stack(FIN_EXIT, v, 0);
 			LOAD_STATE_VARIABLES();
+		    }
+		    break;
+
+		case EOP_FOR_LIST_1:
+		    {
+			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
+			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
+			Var count, list;
+
+			count = TOP_RT_VALUE;	/* will be a integer */
+			list = NEXT_TOP_RT_VALUE;	/* should be a list */
+			if (list.type != TYPE_LIST) {
+			    RAISE_ERROR(E_TYPE);
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			} else if (count.v.num > list.v.list[0].v.num /* size */ ) {
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			} else {
+			    free_var(RUN_ACTIV.rt_env[id]);
+			    RUN_ACTIV.rt_env[id] = var_ref(list.v.list[count.v.num]);
+			    count.v.num++;	/* increment count */
+			    TOP_RT_VALUE = count;
+			}
+		    }
+		    break;
+
+		case EOP_FOR_LIST_2:
+		    {
+			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
+			unsigned index = READ_BYTES(bv, bc.numbytes_var_name);
+			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
+			Var count, list;
+
+			count = TOP_RT_VALUE;	/* will be a integer */
+			list = NEXT_TOP_RT_VALUE;	/* should be a list */
+			if (list.type != TYPE_LIST) {
+			    RAISE_ERROR(E_TYPE);
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			} else if (count.v.num > list.v.list[0].v.num /* size */ ) {
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			} else {
+			    free_var(RUN_ACTIV.rt_env[id]);
+			    RUN_ACTIV.rt_env[id] = var_ref(list.v.list[count.v.num]);
+			    free_var(RUN_ACTIV.rt_env[index]);
+			    RUN_ACTIV.rt_env[index] = var_ref(count);
+			    count.v.num++;	/* increment count */
+			    TOP_RT_VALUE = count;
+			}
 		    }
 		    break;
 

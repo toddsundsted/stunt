@@ -150,8 +150,24 @@ statement:
 		{
 		    $$ = alloc_stmt(STMT_LIST);
 		    $$->s.list.id = find_id($2);
+		    $$->s.list.index = -1;
 		    $$->s.list.expr = $5;
 		    $$->s.list.body = $8;
+		    pop_loop_name();
+		}
+	| tFOR tID ',' tID tIN '(' expr ')'
+		{
+		    push_loop_name($2);
+		    push_loop_name($4);
+		}
+	  statements tENDFOR
+		{
+		    $$ = alloc_stmt(STMT_LIST);
+		    $$->s.list.id = find_id($2);
+		    $$->s.list.index = find_id($4);
+		    $$->s.list.expr = $7;
+		    $$->s.list.body = $10;
+		    pop_loop_name();
 		    pop_loop_name();
 		}
 	| tFOR tID tIN '[' expr tTO expr ']'
@@ -385,7 +401,7 @@ expr:
 		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
 	| expr '.' '(' expr ')'
-    		{
+		{
 		    $$ = alloc_binary(EXPR_PROP, $1, $4);
 		}
 	| expr ':' tID '(' arglist ')'

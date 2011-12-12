@@ -216,7 +216,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		stmt_start = ptr - bc.vector;
 	    }
 	    break;
-	case OP_FOR_LIST:
+	case OP_FOR_LIST: /* retired */
 	    {
 		unsigned top = (ptr - 1) - bc.vector;
 		int id = READ_ID();
@@ -824,6 +824,64 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			s->kind = STMT_CONTINUE;
 		    ADD_STMT(HOT_OP(s));
 		    break;
+
+		case EOP_FOR_LIST_1:
+		    {
+			unsigned top = (ptr - 2) - bc.vector;
+			int id = READ_ID();
+			unsigned done = READ_LABEL();
+			Expr *one = pop_expr();
+			Expr *list = pop_expr();
+			int jump_hot;
+
+			if (one->kind != EXPR_VAR
+			    || one->e.var.type != TYPE_INT
+			    || one->e.var.v.num != 1)
+			    panic("Not a literal one in DECOMPILE!");
+			else
+			    dealloc_node(one);
+			s = alloc_stmt(STMT_LIST);
+			s->s.list.id = id;
+			s->s.list.index = -1;
+			s->s.list.expr = list;
+			DECOMPILE(bc, ptr, bc.vector + done - jump_len,
+				  &(s->s.list.body), 0);
+			if (top != READ_JUMP(jump_hot))
+			    panic("FOR_LIST_1 jumps to wrong place in DECOMPILE!");
+			HOT_BOTTOM(jump_hot, s);
+			ADD_STMT(HOT_OP2(one, list, s));
+		    }
+		    break;
+
+		case EOP_FOR_LIST_2:
+		    {
+			unsigned top = (ptr - 2) - bc.vector;
+			int id = READ_ID();
+			int index = READ_ID();
+			unsigned done = READ_LABEL();
+			Expr *one = pop_expr();
+			Expr *list = pop_expr();
+			int jump_hot;
+
+			if (one->kind != EXPR_VAR
+			    || one->e.var.type != TYPE_INT
+			    || one->e.var.v.num != 1)
+			    panic("Not a literal one in DECOMPILE!");
+			else
+			    dealloc_node(one);
+			s = alloc_stmt(STMT_LIST);
+			s->s.list.id = id;
+			s->s.list.index = index;
+			s->s.list.expr = list;
+			DECOMPILE(bc, ptr, bc.vector + done - jump_len,
+				  &(s->s.list.body), 0);
+			if (top != READ_JUMP(jump_hot))
+			    panic("FOR_LIST_2 jumps to wrong place in DECOMPILE!");
+			HOT_BOTTOM(jump_hot, s);
+			ADD_STMT(HOT_OP2(one, list, s));
+		    }
+		    break;
+
 		default:
 		    panic("Unknown extended opcode in DECOMPILE!");
 		}

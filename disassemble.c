@@ -91,7 +91,8 @@ struct mapping mappings[] =
     {OP_RETURN, "RETURN"},
     {OP_RETURN0, "RETURN 0"},
     {OP_DONE, "DONE"},
-    {OP_POP, "POP"}};
+    {OP_POP, "POP"}
+};
 
 struct mapping ext_mappings[] =
 {
@@ -110,7 +111,10 @@ struct mapping ext_mappings[] =
     {EOP_CONTINUE, "CONTINUE"},
     {EOP_WHILE_ID, "WHILE_ID"},
     {EOP_EXIT, "EXIT"},
-    {EOP_EXIT_ID, "EXIT_ID"}};
+    {EOP_FOR_LIST_1, "FOR_LIST_1"},
+    {EOP_FOR_LIST_2, "FOR_LIST_2"},
+    {EOP_EXIT_ID, "EXIT_ID"}
+};
 
 static void
 initialize_tables(void)
@@ -241,7 +245,7 @@ disassemble(Program * prog, Printer p, void *data)
 #	    define ADD_BYTES(n)	(arg = add_bytes(s, bc.vector, pc, n),	\
 				 pc += n,				\
 				 arg)
-	    unsigned a1, a2;
+	    unsigned a1, a2, a3;
 
 	    new_insn(s, pc);
 	    b = add_bytes(s, bc.vector, pc++, 1);
@@ -304,6 +308,17 @@ disassemble(Program * prog, Printer p, void *data)
 			stream_printf(insn, " %d",
 				      ADD_BYTES(bc.numbytes_label));
 		    }
+		    break;
+		case EOP_FOR_LIST_1:
+		    a1 = ADD_BYTES(bc.numbytes_var_name);
+		    a2 = ADD_BYTES(bc.numbytes_label);
+		    stream_printf(insn, " %s %d", NAMES(a1), a2);
+		    break;
+		case EOP_FOR_LIST_2:
+		    a1 = ADD_BYTES(bc.numbytes_var_name);
+		    a2 = ADD_BYTES(bc.numbytes_var_name);
+		    a3 = ADD_BYTES(bc.numbytes_label);
+		    stream_printf(insn, " %s %s %d", NAMES(a1), NAMES(a2), a3);
 		    break;
 		default:
 		    break;
