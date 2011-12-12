@@ -57,8 +57,6 @@
 
 #define HEIGHT_LIMIT 64		/* Tallest allowable tree */
 
-typedef struct rbtrav rbtrav;
-
 struct rbtree {
     rbnode *root;		/* Top of the tree */
     size_t size;		/* Number of items */

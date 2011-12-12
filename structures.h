@@ -82,7 +82,11 @@ typedef enum {
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
 
 typedef struct Var Var;
+
+/* see map.c */
 typedef struct rbtree rbtree;
+typedef struct rbnode rbnode;
+typedef struct rbtrav rbtrav;
 
 /* Experimental.  On the Alpha, DEC cc allows us to specify certain
  * pointers to be 32 bits, but only if we compile and link with "-taso
