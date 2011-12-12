@@ -29,7 +29,7 @@ extern Var setremove(Var list, Var value);
 extern Var sublist(Var list, int lower, int upper);
 extern Var strrangeset(Var list, int from, int to, Var value);
 extern Var substr(Var str, int lower, int upper);
-extern Var strget(Var str, Var i);
+extern Var strget(Var str, int i);
 extern Var new_list(int size);
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);

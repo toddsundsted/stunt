@@ -1425,7 +1425,7 @@ do {								\
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH(strget(list, index));
+			PUSH(strget(list, index.v.num));
 			free_var(index);
 			free_var(list);
 		    }

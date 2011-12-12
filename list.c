@@ -391,14 +391,14 @@ substr(Var str, int lower, int upper)
 }
 
 Var
-strget(Var str, Var i)
+strget(Var str, int i)
 {
     Var r;
     char *s;
 
     r.type = TYPE_STR;
     s = str_dup(" ");
-    s[0] = str.v.str[i.v.num - 1];
+    s[0] = str.v.str[i - 1];
     r.v.str = s;
     return r;
 }
