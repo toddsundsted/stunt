@@ -120,6 +120,12 @@ struct Var {
     var_type type;
 };
 
+/* generic tuples */
+typedef struct var_pair {
+    Var a;
+    Var b;
+} var_pair;
+
 #ifdef SHORT_ALPHA_VAR_POINTERS
 #pragma pointer_size restore
 #endif
