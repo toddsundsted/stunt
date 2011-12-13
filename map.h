@@ -52,12 +52,7 @@ extern Var new_iter(Var map);
 extern void destroy_iter(Var iter);
 extern Var iter_dup(Var iter);
 
-struct mapitem {
-    Var key;
-    Var value;
-};
-
-extern int iterget(Var iter, struct mapitem *item);
+extern int iterget(Var iter, var_pair *pair);
 extern void iternext(Var iter);
 
 extern Var map_seek(Var map, Var key);

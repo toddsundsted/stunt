@@ -2149,14 +2149,14 @@ do {								\
 				free_var(iter);
 				iter = iter2;
 			    }
-			    struct mapitem item;
-			    if (iter.type == TYPE_NONE || !iterget(iter, &item)) {
+			    var_pair pair;
+			    if (iter.type == TYPE_NONE || !iterget(iter, &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = var_ref(item.value);
+				RUN_ACTIV.rt_env[id] = var_ref(pair.b);
 				iternext(iter);	/* increment iter */
 				TOP_RT_VALUE = iter;
 			    }
@@ -2209,16 +2209,16 @@ do {								\
 				free_var(iter);
 				iter = iter2;
 			    }
-			    struct mapitem item;
-			    if (iter.type == TYPE_NONE || !iterget(iter, &item)) {
+			    var_pair pair;
+			    if (iter.type == TYPE_NONE || !iterget(iter, &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = var_ref(item.value);
+				RUN_ACTIV.rt_env[id] = var_ref(pair.b);
 				free_var(RUN_ACTIV.rt_env[index]);
-				RUN_ACTIV.rt_env[index] = var_ref(item.key);
+				RUN_ACTIV.rt_env[index] = var_ref(pair.a);
 				iternext(iter);	/* increment iter */
 				TOP_RT_VALUE = iter;
 			    }

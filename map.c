@@ -789,11 +789,11 @@ iter_dup(Var iter)
 }
 
 int
-iterget(Var iter, struct mapitem *item)
+iterget(Var iter, var_pair *pair)
 {
     if (iter.v.trav->it) {
-	item->key = iter.v.trav->it->key;
-	item->value = iter.v.trav->it->value;
+	pair->a = iter.v.trav->it->key;
+	pair->b = iter.v.trav->it->value;
 
 	return 1;
     }
