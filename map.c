@@ -610,6 +610,15 @@ map_sizeof(rbtree *tree)
 Var
 mapinsert(Var map, Var key, Var value)
 {				/* consumes `map', `key', `value' */
+    /* Prevent the insertion of invalid values -- specifically keys
+     * that have the values `none' and `clear' (which are used as
+     * boundary conditions in the looping logic), and keys that are
+     * collections (for which `compare' does not currently work).
+     */
+    if (key.type == TYPE_NONE || key.type == TYPE_CLEAR
+	|| is_collection(key))
+	panic("MAPINSERT: invalid key");
+
     Var new = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
 
     rbnode node;
