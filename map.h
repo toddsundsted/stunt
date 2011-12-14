@@ -35,18 +35,17 @@ extern Var map_dup(Var map);
 
 extern Var mapinsert(Var map, Var key, Var value);
 extern int maplookup(Var map, Var key, Var *value, int case_matters);
+extern int mapseek(Var map, Var key, Var *iter, int case_matters);
 extern int mapequal(Var lhs, Var rhs, int case_matters);
 typedef int (*mapfunc) (Var key, Var value, void *data, int first);
 extern int mapforeach(Var map, mapfunc func, void *data);
 extern int32 maplength(Var map);
 extern int mapempty(Var map);
+
 extern int map_sizeof(rbtree *tree);
 
-extern rbnode *mapfirst(Var map);
-extern rbnode *maplast(Var map);
-
-extern Var nodekey(rbnode *node);
-extern Var nodevalue(rbnode *node);
+extern int mapfirst(Var map, var_pair *pair);
+extern int maplast(Var map, var_pair *pair);
 
 extern Var new_iter(Var map);
 extern void destroy_iter(Var iter);
@@ -55,4 +54,5 @@ extern Var iter_dup(Var iter);
 extern int iterget(Var iter, var_pair *pair);
 extern void iternext(Var iter);
 
-extern Var map_seek(Var map, Var key);
+extern Var maprange(Var map, rbtrav *from, rbtrav *to);
+extern Var maprangeset(Var map, rbtrav *from, rbtrav *to, Var value);

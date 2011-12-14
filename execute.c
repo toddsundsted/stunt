@@ -1442,16 +1442,55 @@ do {								\
 	    {
 		Var base, from, to;
 
-		to = POP();	/* should be integer */
-		from = POP();	/* should be integer */
-		base = POP();	/* should be list or string */
+		to = POP();
+		from = POP();
+		base = POP();	/* should be map, list or string */
 
-		if ((base.type != TYPE_LIST && base.type != TYPE_STR)
-		    || to.type != TYPE_INT || from.type != TYPE_INT) {
+		if (base.type != TYPE_MAP && base.type != TYPE_LIST
+		    && base.type != TYPE_STR) {
 		    free_var(to);
 		    free_var(from);
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
+		} else if (base.type == TYPE_MAP
+			   && (is_collection(to) || is_collection(from))) {
+		    free_var(to);
+		    free_var(from);
+		    free_var(base);
+		    PUSH_ERROR(E_TYPE);
+		} else if ((base.type == TYPE_LIST || base.type == TYPE_STR)
+			   && (to.type != TYPE_INT || from.type != TYPE_INT)) {
+		    free_var(to);
+		    free_var(from);
+		    free_var(base);
+		    PUSH_ERROR(E_TYPE);
+		} else if (base.type == TYPE_MAP) {
+		    Var iterfrom;
+		    Var iterto;
+		    int rfrom = mapseek(base, from, &iterfrom, 0);
+		    int rto = mapseek(base, to, &iterto, 0);
+		    int rel = compare(from, to, 0);
+		    if (rel <= 0 && (!rfrom || !rto)) {
+			free_var(to);
+			free_var(from);
+			free_var(iterto);
+			free_var(iterfrom);
+			free_var(base);
+			PUSH_ERROR(E_RANGE);
+		    } else if (rel > 0) {
+			PUSH(new_map());
+			free_var(to);
+			free_var(from);
+			free_var(iterto);
+			free_var(iterfrom);
+			free_var(base);
+		    } else {
+			PUSH(maprange(base, iterfrom.v.trav, iterto.v.trav));
+			free_var(from);
+			free_var(to);
+			free_var(iterto);
+			free_var(iterfrom);
+		    }
 		} else {
 		    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
 			       : base.v.list[0].v.num);
@@ -1835,24 +1874,58 @@ do {								\
 			Var base, from, to, value;
 			enum error e;
 
-			value = POP();	/* rhs value (list or string) */
-			to = POP();	/* end of range (integer) */
-			from = POP();	/* start of range (integer) */
-			base = POP();	/* lhs (list or string) */
-			/* base[from..to] = value */
-			if (to.type != TYPE_INT || from.type != TYPE_INT
-			    || (base.type != TYPE_LIST && base.type != TYPE_STR)
-			    || (value.type != TYPE_LIST && value.type != TYPE_STR)
-			    || (base.type != value.type)) {
-			    free_var(base);
+			value = POP();
+			to = POP();
+			from = POP();
+			base = POP();	/* map, list or string */
+
+			if ((base.type != TYPE_MAP && base.type != TYPE_LIST
+			     && base.type != TYPE_STR)
+                            || (base.type != value.type)) {
 			    free_var(to);
 			    free_var(from);
+			    free_var(base);
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
-			} else if (E_NONE != (e = rangeset_check(base, value, from.v.num, to.v.num))) {
-			    free_var(base);
+			} else if (base.type == TYPE_MAP
+				   && (is_collection(to) || is_collection(from))) {
 			    free_var(to);
 			    free_var(from);
+			    free_var(base);
+			    free_var(value);
+			    PUSH_ERROR(E_TYPE);
+			} else if ((base.type == TYPE_LIST || base.type == TYPE_STR)
+				   && (to.type != TYPE_INT || from.type != TYPE_INT)) {
+			    free_var(to);
+			    free_var(from);
+			    free_var(base);
+			    free_var(value);
+			    PUSH_ERROR(E_TYPE);
+			} else if (base.type == TYPE_MAP) {
+			    Var iterfrom;
+			    Var iterto;
+			    int rfrom = mapseek(base, from, &iterfrom, 0);
+			    int rto = mapseek(base, to, &iterto, 0);
+			    int rel = compare(from, to, 0);
+			    if (rel <= 0 && (!rfrom || !rto)) {
+				free_var(to);
+				free_var(from);
+				free_var(iterto);
+				free_var(iterfrom);
+				free_var(base);
+				free_var(value);
+				PUSH_ERROR(E_RANGE);
+			    } else {
+				PUSH(maprangeset(base, iterfrom.v.trav, iterto.v.trav, value));
+				free_var(to);
+				free_var(from);
+				free_var(iterto);
+				free_var(iterfrom);
+			    }
+			} else if (E_NONE != (e = rangeset_check(base, value, from.v.num, to.v.num))) {
+			    free_var(to);
+			    free_var(from);
+			    free_var(base);
 			    free_var(value);
 			    PUSH_ERROR_UNLESS_QUOTA(e);
 			} else if (base.type == TYPE_LIST)
@@ -1877,10 +1950,10 @@ do {								\
 			    v.v.num = item.v.list[0].v.num > 0 ? 1 : 0;
 			    PUSH(v);
 			} else if (item.type == TYPE_MAP) {
-			    v.type = TYPE_NONE;
-			    rbnode *node = mapfirst(item);
-			    if (node)
-				v = nodekey(node);
+			    var_pair pair;
+			    v = mapfirst(item, &pair)
+				? var_ref(pair.a)
+				: var_ref(none);
 			    PUSH(v);
 			} else
 			    PUSH_ERROR(E_TYPE);
@@ -1902,10 +1975,10 @@ do {								\
 			    v.v.num = item.v.list[0].v.num;
 			    PUSH(v);
 			} else if (item.type == TYPE_MAP) {
-			    v.type = TYPE_NONE;
-			    rbnode *node = maplast(item);
-			    if (node)
-				v = nodekey(node);
+			    var_pair pair;
+			    v = maplast(item, &pair)
+				? var_ref(pair.a)
+				: var_ref(none);
 			    PUSH(v);
 			} else
 			    PUSH_ERROR(E_TYPE);
@@ -2145,7 +2218,8 @@ do {								\
 				free_var(iter);
 				iter = new_iter(base);
 			    } else if (iter.type != TYPE_ITER) {
-				Var iter2 = map_seek(base, iter);
+				Var iter2;
+				mapseek(base, iter, &iter2, 0);
 				free_var(iter);
 				iter = iter2;
 			    }
@@ -2205,7 +2279,8 @@ do {								\
 				free_var(iter);
 				iter = new_iter(base);
 			    } else if (iter.type != TYPE_ITER) {
-				Var iter2 = map_seek(base, iter);
+				Var iter2;
+				mapseek(base, iter, &iter2, 0);
 				free_var(iter);
 				iter = iter2;
 			    }
