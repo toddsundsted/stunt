@@ -626,7 +626,6 @@ int
 map_sizeof(rbtree *tree)
 {
     rbtrav *trav;
-    rbnode node;
     const rbnode *pnode;
     int c = sizeof(rbtree);
 
@@ -865,7 +864,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value)
 
     rbtdelete(trav);
 
-    while (pnode = rbtnext(to)) {
+    while ((pnode = rbtnext(to))) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	rberase(new.v.tree, &node);
