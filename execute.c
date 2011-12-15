@@ -1358,27 +1358,17 @@ do {								\
 	    {
 		Var index, list;
 
-		index = POP();	/* should be integer for list or string,
-				   any for map */
+		index = POP();
 		list = POP();	/* should be list, string, or map */
 
 		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
 		     list.type != TYPE_MAP) ||
 		    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
-		     index.type != TYPE_INT)) {
+		     index.type != TYPE_INT) ||
+		    (list.type == TYPE_MAP && is_collection(index))) {
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
-		} else if (list.type == TYPE_LIST) {
-		    if (index.v.num <= 0 || index.v.num > list.v.list[0].v.num) {
-			free_var(index);
-			free_var(list);
-			PUSH_ERROR(E_RANGE);
-		    } else {
-			PUSH(var_ref(list.v.list[index.v.num]));
-			free_var(index);
-			free_var(list);
-		    }
 		} else if (list.type == TYPE_MAP) {
 		    Var value;
 		    int success;
@@ -1389,6 +1379,16 @@ do {								\
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH_REF(value);
+			free_var(index);
+			free_var(list);
+		    }
+		} else if (list.type == TYPE_LIST) {
+		    if (index.v.num <= 0 || index.v.num > list.v.list[0].v.num) {
+			free_var(index);
+			free_var(list);
+			PUSH_ERROR(E_RANGE);
+		    } else {
+			PUSH(var_ref(list.v.list[index.v.num]));
 			free_var(index);
 			free_var(list);
 		    }
@@ -1415,7 +1415,17 @@ do {								\
 		index = TOP_RT_VALUE;
 		list = NEXT_TOP_RT_VALUE;
 
-		if (list.type == TYPE_LIST) {
+		if (list.type == TYPE_MAP) {
+		    Var value;
+		    int success;
+		    if (is_collection(index)) {
+			PUSH_ERROR(E_TYPE);
+		    } else if (!(success = maplookup(list, index, &value, 0))) {
+			PUSH_ERROR(E_RANGE);
+		    } else {
+			PUSH(var_ref(value));
+		    }
+		} else if (list.type == TYPE_LIST) {
 		    if (index.type != TYPE_INT) {
 			PUSH_ERROR(E_TYPE);
 		    } else if (index.v.num <= 0 ||
@@ -1423,15 +1433,6 @@ do {								\
 			PUSH_ERROR(E_RANGE);
 		    } else
 			PUSH(var_ref(list.v.list[index.v.num]));
-		} else if (list.type == TYPE_MAP) {
-		    Var value;
-		    int success;
-		    success = maplookup(list, index, &value, 0);
-		    if (!success) {
-			PUSH_ERROR(E_RANGE);
-		    } else {
-			PUSH(var_ref(value));
-		    }
 		} else {
 		    PUSH_ERROR(E_TYPE);
 		}
