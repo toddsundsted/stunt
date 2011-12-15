@@ -785,26 +785,38 @@ mapforeach(Var map, mapfunc func, void *data)
 int
 mapfirst(Var map, var_pair *pair)
 {
-    rbtrav *trav = rbtnew();
-    rbnode *node = rbtfirst(trav, map.v.tree);
-    if (node && pair) {
+    rbnode *node = map.v.tree->root;
+
+    if (node != NULL) {
+	while (node->link[0] != NULL) {
+	    node = node->link[0];
+	}
+    }
+
+    if (node != NULL && pair != NULL) {
 	pair->a = node->key;
 	pair->b = node->value;
     }
-    rbtdelete(trav);
+
     return node != NULL;
 }
 
 int
 maplast(Var map, var_pair *pair)
 {
-    rbtrav *trav = rbtnew();
-    rbnode *node = rbtlast(trav, map.v.tree);
-    if (node && pair) {
+    rbnode *node = map.v.tree->root;
+
+    if (node != NULL) {
+	while (node->link[1] != NULL) {
+	    node = node->link[1];
+	}
+    }
+
+    if (node != NULL && pair != NULL) {
 	pair->a = node->key;
 	pair->b = node->value;
     }
-    rbtdelete(trav);
+
     return node != NULL;
 }
 
