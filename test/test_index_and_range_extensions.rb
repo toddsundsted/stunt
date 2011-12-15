@@ -160,8 +160,8 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
 
   def test_that_mismatched_types_fails
     run_test_as('programmer') do
-      #assert_equal E_TYPE, eval(%|[1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5][[]];|)
-      #assert_equal E_TYPE, eval(%|[1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5][{}];|)
+      assert_equal E_TYPE, eval(%|[1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5][[]];|)
+      assert_equal E_TYPE, eval(%|[1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5][{}];|)
       assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; x[^..$] = "foobar"; return x;|)
       assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; x[^..$] = {1, 2, 3}; return x;|)
 
@@ -178,6 +178,25 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
       assert_equal E_TYPE, eval(%|x = "12345"; x["foo"] = {1, 2, 3}; return x;|)
       assert_equal E_TYPE, eval(%|x = "12345"; x[^..$] = {1, 2, 3}; return x;|)
       assert_equal E_TYPE, eval(%|x = "12345"; x[^..$] = [#1 -> "foobar"]; return x;|)
+    end
+  end
+
+  def test_that_collections_are_invalid_as_indexes_and_in_ranges
+    run_test_as('programmer') do
+      assert_equal E_TYPE, eval(%|return [[] -> []];|)
+      assert_equal E_TYPE, eval(%|return [{} -> {}];|)
+
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; return x[[]];|)
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; return x[{}];|)
+
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; x[[]] = "1"; return x;|)
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; x[{}] = #1; return x;|)
+
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; return x[1..[]];|)
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; return x[1..{}];|)
+
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; x[1..[]] = ["1" -> "1"]; return x;|)
+      assert_equal E_TYPE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5]; x[1..{}] = [#1 -> #1]; return x;|)
     end
   end
 
