@@ -59,3 +59,5 @@ struct mapitem {
 
 extern int iterget(Var iter, struct mapitem *item);
 extern void iternext(Var iter);
+
+extern Var map_seek(Var map, Var key);

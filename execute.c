@@ -2144,9 +2144,13 @@ do {								\
 			    if (iter.type == TYPE_NONE) {
 				free_var(iter);
 				iter = new_iter(base);
+			    } else if (iter.type != TYPE_ITER) {
+				Var iter2 = map_seek(base, iter);
+				free_var(iter);
+				iter = iter2;
 			    }
 			    struct mapitem item;
-			    if (!iterget(iter, &item)) {
+			    if (iter.type == TYPE_NONE || !iterget(iter, &item)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
@@ -2200,9 +2204,13 @@ do {								\
 			    if (iter.type == TYPE_NONE) {
 				free_var(iter);
 				iter = new_iter(base);
+			    } else if (iter.type != TYPE_ITER) {
+				Var iter2 = map_seek(base, iter);
+				free_var(iter);
+				iter = iter2;
 			    }
 			    struct mapitem item;
-			    if (!iterget(iter, &item)) {
+			    if (iter.type == TYPE_NONE || !iterget(iter, &item)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);

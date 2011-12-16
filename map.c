@@ -807,6 +807,33 @@ iternext(Var iter)
     rbtnext(iter.v.trav);
 }
 
+/* Seeks to the item with the specified key in the specified map and
+ * returns an iterator value for the map starting at that key.
+ */
+Var
+map_seek(Var map, Var key)
+{
+    rbtrav *trav;
+    rbnode node;
+    const rbnode *pnode;
+    Var iter;
+
+    if ((trav = rbtnew()) == NULL)
+	panic("MAP_DUP: rbtnew failed");
+
+    for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
+	if (equality(key, pnode->key, 0)) {
+	    iter.type = TYPE_ITER;
+	    iter.v.trav = trav;
+	    return iter;
+	}
+    }
+
+    rbtdelete(trav);
+
+    return none;
+}
+
 /**** built in functions ****/
 
 static package
