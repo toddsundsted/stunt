@@ -158,4 +158,23 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
+  def test_that_first_and_last_indexes_work_on_maps
+    run_test_as('programmer') do
+      o = create(:nothing)
+      add_verb(o, [player, 'xd', 'grow'], ['this', 'none', 'this'])
+      set_verb_code(o, 'grow') do |vc|
+        vc << 'x = [];';
+        vc << 'r = {};';
+        vc << 'x[1] = 1; x[(a = ^)..(b = $)]; r = {@r, {a, b}};'
+        vc << 'x[2] = 2; x[(a = ^)..(b = $)]; r = {@r, {a, b}};'
+        vc << 'x[3] = 3; x[(a = ^)..(b = $)]; r = {@r, {a, b}};'
+        vc << 'x[5] = 5; x[(a = ^)..(b = $)]; r = {@r, {a, b}};'
+        vc << 'x[8] = 8; x[(a = ^)..(b = $)]; r = {@r, {a, b}};'
+        vc << 'return r;'
+      end
+      r = call(o, 'grow')
+      assert_equal [[1, 1], [1, 2], [1, 3], [1, 5], [1, 8]], r
+    end
+  end
+
 end
