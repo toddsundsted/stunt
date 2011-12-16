@@ -680,12 +680,10 @@ maplookup(Var map, Var key, Var *value, int case_matters)
 
     node.key = key;
     pnode = rbfind(map.v.tree, &node, case_matters);
-    if (pnode == NULL)
-	return 0;
-    if (value)
+    if (pnode && value)
 	*value = pnode->value;
 
-    return 1;
+    return pnode != NULL;
 }
 
 /* Seeks to the item with the specified key in the specified map and
@@ -694,20 +692,20 @@ maplookup(Var map, Var key, Var *value, int case_matters)
 int
 mapseek(Var map, Var key, Var *iter, int case_matters)
 {				/* does NOT consume `map' or `'key',
-				   does NOT increment the ref count on `iter' */
+				   ALWAYS returns a newly allocated value in `iter' */
     rbnode node;
     rbtrav *ptrav;
 
     node.key = key;
     ptrav = rbseek(map.v.tree, &node, case_matters);
-    if (ptrav == NULL)
-	return 0;
-    if (iter) {
+    if (ptrav && iter) {
 	iter->type = TYPE_ITER;
 	iter->v.trav = ptrav;
+    } else if (iter) {
+	*iter = none;
     }
 
-    return 1;
+    return ptrav != NULL;
 }
 
 int
