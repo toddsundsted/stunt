@@ -34,7 +34,7 @@ extern void destroy_map(Var map);
 extern Var map_dup(Var map);
 
 extern Var mapinsert(Var map, Var key, Var value);
-extern int maplookup(Var map, Var key, Var *value, int case_matters);
+extern const rbnode *maplookup(Var map, Var key, Var *value, int case_matters);
 extern int mapseek(Var map, Var key, Var *iter, int case_matters);
 extern int mapequal(Var lhs, Var rhs, int case_matters);
 typedef int (*mapfunc) (Var key, Var value, void *data, int first);
@@ -56,3 +56,13 @@ extern void iternext(Var iter);
 
 extern Var maprange(Var map, rbtrav *from, rbtrav *to);
 extern Var maprangeset(Var map, rbtrav *from, rbtrav *to, Var value);
+
+/* You're never going to need to use this!
+ * Clears a node in place by setting the associated value type to
+ * `E_NONE'.  This _destructively_ updates the associated tree.  The
+ * method is used in `execute.c' to clear a node's value in a map when
+ * the vm knows that it will eventually replace that value.  This
+ * removes a `var_ref' and eventual `map_dup' when the vm can
+ * guarantee that a nested map is not shared.
+ */
+extern void clear_node_value(const rbnode *node);

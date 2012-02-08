@@ -671,7 +671,7 @@ mapinsert(Var map, Var key, Var value)
     return new;
 }
 
-int
+const rbnode *
 maplookup(Var map, Var key, Var *value, int case_matters)
 {				/* does NOT consume `map' or `'key',
 				   does NOT increment the ref count on `value' */
@@ -683,7 +683,7 @@ maplookup(Var map, Var key, Var *value, int case_matters)
     if (pnode && value)
 	*value = pnode->value;
 
-    return pnode != NULL;
+    return pnode;
 }
 
 /* Seeks to the item with the specified key in the specified map and
@@ -935,6 +935,14 @@ void
 iternext(Var iter)
 {
     rbtnext(iter.v.trav);
+}
+
+/* called from execute.c */
+
+void
+clear_node_value(const rbnode *node)
+{
+    ((rbnode *)node)->value.type = E_NONE;
 }
 
 /**** built in functions ****/

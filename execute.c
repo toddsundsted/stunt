@@ -1371,9 +1371,7 @@ do {								\
 		    PUSH_ERROR(E_TYPE);
 		} else if (list.type == TYPE_MAP) {
 		    Var value;
-		    int success;
-		    success = maplookup(list, index, &value, 0);
-		    if (!success) {
+		    if (maplookup(list, index, &value, 0) == NULL) {
 			free_var(index);
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
@@ -1409,6 +1407,25 @@ do {								\
 
 	case OP_PUSH_REF:
 	    {
+		/* This is about the sketchiest manoeuvre I can
+		 * imagine.  The goal is to mutate a nested list/map
+		 * in place when nothing else is hanging on to a
+		 * reference to the list/map.  The original code
+		 * defensively called `var_ref' here and `OP_INDEXSET'
+		 * obligingly let the value be duplicated.  We try to
+		 * be a bit smarter about it by duplicating the
+		 * list/map itself when there's more than one
+		 * reference to it, thereby ensuring a captive copy.
+		 * We then mutate it in place -- we can safely clear
+		 * values below because we know that `OP_INDEXSET'
+		 * will fill them back in for us.
+		 */
+		if (var_refcount(NEXT_TOP_RT_VALUE) > 1) {
+		    Var temp = var_dup(NEXT_TOP_RT_VALUE);
+		    free_var(NEXT_TOP_RT_VALUE);
+		    NEXT_TOP_RT_VALUE = temp;
+		}
+
 		/* Two cases are possible: list[index] or map[key] */
 		Var list, index;
 
@@ -1417,13 +1434,14 @@ do {								\
 
 		if (list.type == TYPE_MAP) {
 		    Var value;
-		    int success;
+		    const rbnode *node;
 		    if (is_collection(index)) {
 			PUSH_ERROR(E_TYPE);
-		    } else if (!(success = maplookup(list, index, &value, 0))) {
+		    } else if (!(node = maplookup(list, index, &value, 0))) {
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH(var_ref(value));
+			PUSH(value);
+			clear_node_value(node);
 		    }
 		} else if (list.type == TYPE_LIST) {
 		    if (index.type != TYPE_INT) {
@@ -1431,8 +1449,10 @@ do {								\
 		    } else if (index.v.num <= 0 ||
 			       index.v.num > list.v.list[0].v.num) {
 			PUSH_ERROR(E_RANGE);
-		    } else
-			PUSH(var_ref(list.v.list[index.v.num]));
+		    } else {
+			PUSH(list.v.list[index.v.num]);
+			list.v.list[index.v.num].type = E_NONE;
+		    }
 		} else {
 		    PUSH_ERROR(E_TYPE);
 		}
