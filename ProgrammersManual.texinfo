@@ -444,26 +444,25 @@ There are three fundamental @dfn{attributes} to every object:
 A flag (either true or false) specifying whether or not the object represents
 a player,
 @item
-The object that is its @dfn{parent}, and
+A list of object that are its @dfn{parents}, and
 @item
 A list of the objects that are its @dfn{children}; that is, those objects for
-which this object is their parent.
+which this object is one of their parents.
 @end enumerate
 
 The act of creating a character sets the player attribute of an object and
 only a wizard (using the function @code{set_player_flag()}) can change that
 setting.  Only characters have the player bit set to 1.
 
-The parent/child hierarchy is used for classifying objects into general classes
-and then sharing behavior among all members of that class.  For example, the
-LambdaCore database contains an object representing a sort of ``generic'' room.
-All other rooms are @dfn{descendants} (i.e., children or children's children,
-or @dots{}) of that one.  The generic room defines those pieces of behavior
-that are common to all rooms; other rooms specialize that behavior for their
-own purposes.  The notion of classes and specialization is the very essence of
-what is meant by @dfn{object-oriented} programming.  Only the functions
-@code{create()}, @code{recycle()}, @code{chparent()}, and @code{renumber()} can
-change the parent and children attributes.
+The parent/child relationship is used for sharing behavior among objects.
+For example, the LambdaCore database contains an object representing a sort of
+``generic'' room.  All other rooms are @dfn{descendants} (i.e., children or
+children's children, or @dots{}) of that one.  The generic room defines those
+pieces of behavior that are common to all rooms; other rooms specialize that
+behavior for their own purposes.  The notion of objects and specialization is
+the very essence of what is meant by @dfn{object-oriented} programming.  Only
+the functions @code{create()}, @code{recycle()}, @code{chparents()}, and
+@code{renumber()} can change the parents and children attributes.
 
 @node Properties, Verbs, Attributes, Objects
 @comment  node-name,  next,  previous,  up
@@ -517,8 +516,8 @@ can only be set by a wizard or by the owner of the object.
 
 The @samp{f} bit specifies whether or not this object is @dfn{fertile}, whether
 or not players other than the owner of this object can create new objects with
-this one as the parent.  It also controls whether or not non-owners can use the
-@code{chparent()} built-in function to make this object the parent of an
+this one as a parent.  It also controls whether or not non-owners can use the
+@code{chparents()} built-in function to make this object a parent of an
 existing object.  The @samp{f} bit can only be set by a wizard or by the owner
 of the object.
 
@@ -531,7 +530,7 @@ As mentioned above, it is possible, and very useful, for objects to have other
 properties aside from the built-in ones.  These can come from two sources.
 
 First, an object has a property corresponding to every property in its parent
-object.  To use the jargon of object-oriented programming, this is a kind of
+objects.  To use the jargon of object-oriented programming, this is a kind of
 @dfn{inheritance}.  If some object has a property named @samp{foo}, then so
 will all of its children and thus its children's children, and so on.
 
@@ -558,9 +557,9 @@ permission lets non-owners get the value of the property and, of course, write
 permission lets them set that value.  The @samp{c} permission bit is a little
 more complicated.
 
-Recall that every object has all of the properties that its parent does and
+Recall that every object has all of the properties that its parents do and
 perhaps some more.  Ordinarily, when a child object inherits a property from
-its parent, the owner of the child becomes the owner of that property.  This
+its parents, the owner of the child becomes the owner of that property.  This
 is because the @samp{c} permission bit is ``on'' by default.  If the @samp{c}
 bit is not on, then the inherited property has the same owner in the child as
 it does in the parent.
@@ -2918,13 +2917,13 @@ on server assumptions about the database for details.
 @subsection Object-Oriented Programming
 
 One of the most important facilities in an object-oriented programming language
-is ability for a child object to make use of a parent's implementation of some
+is ability for a child object to make use of a parents' implementation of some
 operation, even when the child provides its own definition for that operation.
 The @code{pass()} function provides this facility in MOO.
 
 @deftypefun value pass (@var{arg}, @dots{})
 Often, it is useful for a child object to define a verb that @emph{augments}
-the behavior of a verb on its parent object.  For example, in the LambdaCore
+the behavior of a verb on a parent object.  For example, in the LambdaCore
 database, the root object (which is an ancestor of every other object) defines
 a verb called @samp{description} that simply returns the value of
 @code{this.description}; this verb is used by the implementation of the
@@ -2937,11 +2936,10 @@ the sentence onto the end of that description.  The function @samp{pass()} is
 for exactly such situations.
 
 @code{pass} calls the verb with the same name as the current verb but as
-defined on the parent of the object that defines the current verb.  The
-arguments given to @code{pass} are the ones given to the called verb and the
-returned value of the called verb is returned from the call to @code{pass}.
-The initial value of @code{this} in the called verb is the same as in the
-calling verb.
+defined on a parent of the object that defines the current verb.  The arguments
+given to @code{pass} are the ones given to the called verb and the returned
+value of the called verb is returned from the call to @code{pass}.  The initial
+value of @code{this} in the called verb is the same as in the calling verb.
 
 Thus, in the example above, the child-object's @code{description} verb might
 have the following implementation:
@@ -3764,16 +3762,17 @@ to that, there are a lot of built-in functions for manipulating them.
 @comment  node-name,  next,  previous,  up
 @subsubsection Fundamental Operations on Objects
 
-@deftypefun obj create (obj @var{parent} [, obj @var{owner}])
-Creates and returns a new object whose parent is @var{parent} and whose owner
-is as described below.  If the given @var{parent} object is neither valid nor
-@code{#-1} then @code{E_INVARG} is raised.  The given @var{parent} object must
-be valid and fertile (i.e., its @samp{f} bit must be set) or else the
-programmer must own @var{parent} or be a wizard; otherwise @code{E_PERM} is
-raised.  @code{E_PERM} is also raised if @var{owner} is provided and not the
-same as the programmer, unless the programmer is a wizard.  After the new
-object is created, its @code{initialize} verb, if any, is called with no
-arguments.
+@deftypefun obj create (list @var{parents} [, obj @var{owner}])
+@deftypefunx obj create (obj @var{parent} [, obj @var{owner}])
+Creates and returns a new object whose parents are @var{parents} (or whose
+parent is @var{parent}) and whose owner is as described below.  If any of the
+given @var{parents} objects are neither valid nor @code{#-1} then
+@code{E_INVARG} is raised.  The given @var{parents} objects must be valid and
+fertile (i.e., their @samp{f} bit must be set) or else the programmer must own
+@var{parents} or be a wizard; otherwise @code{E_PERM} is raised.  @code{E_PERM}
+is also raised if @var{owner} is provided and not the same as the programmer,
+unless the programmer is a wizard.  After the new object is created, its
+@code{initialize} verb, if any, is called with no arguments.
 
 The new object is assigned the least non-negative object number that has not
 yet been used for a created object.  Note that no object number is ever reused,
@@ -3796,14 +3795,14 @@ f            0
 @end example
 The function @samp{is_player()} returns false for newly created objects.
 
-In addition, the new object inherits all of the other properties on
-@var{parent}.  These properties have the same permission bits as on
-@var{parent}.  If the @samp{c} permissions bit is set, then the owner of the
+In addition, the new object inherits all of the other properties on its
+@var{parents}.  These properties have the same permission bits as on the
+@var{parents}.  If the @samp{c} permissions bit is set, then the owner of the
 property on the new object is the same as the owner of the new object itself;
 otherwise, the owner of the property on the new object is the same as that on
-@var{parent}.  The initial value of every inherited property is @dfn{clear};
-see the description of the built-in function @code{clear_property()} for
-details.
+the @var{parent}.  The initial value of every inherited property is
+@dfn{clear}; see the description of the built-in function
+@code{clear_property()} for details.
 
 If the intended owner of the new object has a property named
 @samp{ownership_quota} and the value of that property is an integer, then
@@ -3814,17 +3813,18 @@ Otherwise, the quota is decremented and stored back into the
 @samp{ownership_quota} property as a part of the creation of the new object.
 @end deftypefun
 
-@deftypefun none chparent (obj @var{object}, obj @var{new-parent})
-Changes the parent of @var{object} to be @var{new-parent}.  If @var{object} is
-not valid, or if @var{new-parent} is neither valid nor equal to @code{#-1},
-then @code{E_INVARG} is raised.  If the programmer is neither a wizard or the
-owner of @var{object}, or if @var{new-parent} is not fertile (i.e., its
-@samp{f} bit is not set) and the programmer is neither the owner of
-@var{new-parent} nor a wizard, then @code{E_PERM} is raised.  If
-@var{new-parent} is equal to @var{object} or one of its current descendants,
+@deftypefun none chparents (obj @var{object}, list @var{new-parents})
+@deftypefunx none chparent (obj @var{object}, obj @var{new-parent})
+Changes the parents of @var{object} to be @var{new-parents}.  If @var{object}
+is not valid, or if any of the @var{new-parents} are neither valid nor equal to
+@code{#-1}, then @code{E_INVARG} is raised.  If the programmer is neither a
+wizard or the owner of @var{object}, or if any of the @var{new-parents} are not
+fertile (i.e., the @samp{f} bit is not set) and the programmer is neither the
+owner of the object nor a wizard, then @code{E_PERM} is raised.  If
+@var{new-parents} contains @var{object} or one of its current descendants,
 @code{E_RECMOVE} is raised.  If @var{object} or one of its descendants defines
-a property with the same name as one defined either on @var{new-parent} or on
-one of its ancestors, then @code{E_INVARG} is raised.
+a property with the same name as one defined on @var{new-parents} or on one of
+their ancestors, then @code{E_INVARG} is raised.
 
 Changing an object's parent can have the effect of removing some properties
 from and adding some other properties to that object and all of its descendants
@@ -3844,7 +3844,7 @@ description of the built-in function @code{clear_property()} for details.  All
 properties that are not removed or added in the reparenting process are
 completely unchanged.
 
-If @var{new-parent} is equal to @code{#-1}, then @var{object} is given no
+If @var{new-parents} is equal to @code{@{@}}, then @var{object} is given no
 parent at all; it becomes a new root of the parent/child hierarchy.  In this
 case, all formerly inherited properties on @var{object} are simply removed.
 @end deftypefun
@@ -3860,20 +3860,25 @@ valid(#-1)   @result{}   0
 @end example
 @end deftypefun
 
-@deftypefun obj parent (obj @var{object})
-@deftypefunx list children (obj @var{object})
-These functions return the parent and a list of the children of @var{object},
-respectively.  If @var{object} is not valid, then @code{E_INVARG} is raised.
+@deftypefun list parents (obj @var{object})
+@deftypefunx obj parent (obj @var{object})
+These functions return the parents of @var{object}.  If @var{object} is not
+valid, then @code{E_INVARG} is raised.
+@end deftypefun
+
+@deftypefun list children (obj @var{object})
+This function returns a list of the children of @var{object}.  If @var{object}
+is not valid, then @code{E_INVARG} is raised.
 @end deftypefun
 
 @deftypefun none recycle (obj @var{object})
 The given @var{object} is destroyed, irrevocably.  The programmer must either
 own @var{object} or be a wizard; otherwise, @code{E_PERM} is raised.  If
 @var{object} is not valid, then @code{E_INVARG} is raised.  The children of
-@var{object} are reparented to the parent of @var{object}.  Before @var{object}
-is recycled, each object in its contents is moved to @code{#-1} (implying a
-call to @var{object}'s @code{exitfunc} verb, if any) and then @var{object}'s
-@samp{recycle} verb, if any, is called with no arguments.
+@var{object} are reparented to the parents of @var{object}.  Before
+@var{object} is recycled, each object in its contents is moved to @code{#-1}
+(implying a call to @var{object}'s @code{exitfunc} verb, if any) and then
+@var{object}'s @samp{recycle} verb, if any, is called with no arguments.
 
 After @var{object} is recycled, if the owner of the former object has a
 property named @samp{ownership_quota} and the value of that property is a
@@ -3957,7 +3962,7 @@ is performed and its result is ignored; again, it is not an error if
 
 @deftypefun list properties (obj @var{object})
 Returns a list of the names of the properties defined directly on the given
-@var{object}, not inherited from its parent.  If @var{object} is not valid,
+@var{object}, not inherited from its parents.  If @var{object} is not valid,
 then @code{E_INVARG} is raised.  If the programmer does not have read
 permission on @var{object}, then @code{E_PERM} is raised.
 @end deftypefun
@@ -4008,7 +4013,7 @@ Removes the property named @var{prop-name} from the given @var{object} and all
 of its descendants.  If @var{object} is not valid, then @code{E_INVARG} is
 raised.  If the programmer does not have write permission on @var{object},
 then @code{E_PERM} is raised.  If @var{object} does not directly define a
-property named @var{prop-name} (as opposed to inheriting one from its parent),
+property named @var{prop-name} (as opposed to inheriting one from its parents),
 then @code{E_PROPNF} is raised.
 @end deftypefun
 
@@ -4021,7 +4026,7 @@ named @var{prop-name}, then @code{E_PROPNF} is raised.  If the programmer
 does not have read (write) permission on the property in question, then
 @code{is_clear_property()} (@code{clear_property()}) raises @code{E_PERM}.
 If a property is clear, then when the value of that property is queried the
-value of the parent's property of the same name is returned.  If the parent's
+value of the parents' property of the same name is returned.  If the parents'
 property is clear, then the parent's parent's value is examined, and so on.
 If @var{object} is the definer of the property @var{prop-name}, as opposed to
 an inheritor of the property, then @code{clear_property()} raises
@@ -4034,7 +4039,7 @@ an inheritor of the property, then @code{clear_property()} raises
 
 @deftypefun list verbs (obj @var{object})
 Returns a list of the names of the verbs defined directly on the given
-@var{object}, not inherited from its parent.  If @var{object} is not valid,
+@var{object}, not inherited from its parents.  If @var{object} is not valid,
 then @code{E_INVARG} is raised.  If the programmer does not have read
 permission on @var{object}, then @code{E_PERM} is raised.
 @end deftypefun
@@ -5059,7 +5064,7 @@ raised.  If the programmer is not a wizard, then @code{E_PERM} is raised.
 If there are no unused nonnegative object numbers less than @var{object}, then
 @var{object} is returned and no changes take place.
 
-The references to @var{object} in the parent/children and location/contents
+The references to @var{object} in the parents/children and location/contents
 hierarchies are updated to use the new object number, and any verbs, properties
 and/or objects owned by @var{object} are also changed to be owned by the new
 object number.  The latter operation can be quite time consuming if the
