@@ -1155,12 +1155,13 @@ which one must `declare' each variable before using it; MOO has no such
 declarations.)  The following variables always have values:
 
 @example
-INT         FLOAT        OBJ
-STR         LIST         ERR
-player      this         caller
-verb        args         argstr
-dobj        dobjstr      prepstr
-iobj        iobjstr      NUM
+INT         FLOAT       OBJ
+STR         LIST        MAP
+ERR         player      this
+caller      verb        args
+argstr      dobj        dobjstr
+prepstr     iobj        iobjstr
+NUM
 @end example
 
 The values of some of these variables always start out the same:
@@ -1175,6 +1176,8 @@ the same as @code{INT} (for historical reasons)
 an integer, the type code for floating-point numbers
 @item LIST
 an integer, the type code for lists
+@item MAP
+an integer, the type code for maps
 @item STR
 an integer, the type code for strings
 @item OBJ
@@ -1390,6 +1393,8 @@ all floating-point numbers not equal to @code{0.0},
 all non-empty strings (i.e., other than @samp{""}), and
 @item
 all non-empty lists (i.e., other than @samp{@{@}}).
+@item
+all non-empty maps (i.e., other than @samp{[]}).
 @end itemize
 
 @noindent
@@ -1404,6 +1409,8 @@ the floating-point numbers @code{0.0} and @code{-0.0},
 the empty string (@samp{""}),
 @item
 the empty list (@samp{@{@}}),
+@item
+the empty map (@samp{[]}),
 @item
 all object numbers, and
 @item
@@ -2983,8 +2990,8 @@ section following this one.
 @deftypefun int typeof (@var{value})
 Takes any MOO value and returns an integer representing the type of @var{value}.
 The result is the same as the initial value of one of these built-in variables:
-@code{INT}, @code{FLOAT}, @code{STR}, @code{LIST}, @code{OBJ}, or @code{ERR}.
-Thus, one usually writes code like this:
+@code{INT}, @code{FLOAT}, @code{STR}, @code{LIST}, @code{MAP}, @code{OBJ}, or
+@code{ERR}.  Thus, one usually writes code like this:
 
 @example
 if (typeof(x) == LIST) @dots{}
