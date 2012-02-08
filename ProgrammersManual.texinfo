@@ -1,17 +1,17 @@
 \input texinfo   @c -*-texinfo-*-
-@comment %**start of header (This is for running Texinfo on a region.)
+@comment %**start of header
 @set INDEX
 @setfilename ProgrammersManual.info
 @settitle LambdaMOO Programmer's Manual
 @c Uncomment the following line for two-sided printing.
 @c @setchapternewpage odd
 @macro lmversion
-1.8.3
+1.8.4
 @end macro
 @macro lmdate
-August 2006
+December 2011
 @end macro
-@comment %**end of header (This is for running Texinfo on a region.)
+@comment %**end of header
 
 @ifinfo
 @format
@@ -30,6 +30,7 @@ August 2006
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
 Copyright @copyright{} 1997 by Erik Ostrom.
 Copyright @copyright{} 2004 by Roger F. Crew.
+Copyright @copyright{} 2011 by Todd Sundsted.
 @end format
 
 Permission is granted to make and distribute verbatim copies of this manual
@@ -69,7 +70,8 @@ author.
 @vskip 0pt plus 1filll
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.@*
 Copyright @copyright{} 1997 by Erik Ostrom.@*
-Copyright @copyright{} 2004 by Roger F. Crew.
+Copyright @copyright{} 2004 by Roger F. Crew.@*
+Copyright @copyright{} 2011 by Todd Sundsted.
 
 Copies of the electronic source for this document can be obtained using
 anonymous FTP on the Internet.  At the site @code{ftp.lambda.moo.mud.org} the
@@ -111,6 +113,7 @@ author.
           Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
           Copyright @copyright{} 1997 by Erik Ostrom.
           Copyright @copyright{} 2004 by Roger F. Crew.
+          Copyright @copyright{} 2011 by Todd Sundsted.
 @end format
 @end ifset
 @end ifnothtml
