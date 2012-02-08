@@ -1,3 +1,3 @@
 source 'http://rubygems.org'
 
-gem 'parslet', '1.1.1'
+gem 'parslet', '1.2.3'
