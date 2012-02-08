@@ -52,9 +52,9 @@ class GeneralExpressionTransform < Parslet::Transform
 
   rule(:float => simple(:float))       { float.to_f }
 
-  rule(:obj => simple(:obj))           { MooObj.new(obj) }
+  rule(:obj => simple(:obj))           { MooObj.new(obj.to_s) }
 
-  rule(:err => simple(:err))           { MooErr.new(err) }
+  rule(:err => simple(:err))           { MooErr.new(err.to_s) }
 
   rule(:empty_list => simple(:dummy))  { [] }
   rule(:list => simple(:value))        { [value] }
