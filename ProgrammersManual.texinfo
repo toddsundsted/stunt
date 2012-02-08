@@ -214,18 +214,38 @@ There are only a few kinds of values that MOO programs can manipulate:
 
 @itemize @bullet
 @item
+object numbers (of the objects in the database)
+@item
 integers (in a specific, large range)
 @item
 real numbers (represented with floating-point numbers)
 @item
 strings (of characters)
 @item
-objects (in the virtual reality)
-@item
 errors (arising during program execution)
 @item
 lists (of all of the above, including lists)
+@item
+maps (or collections of key/value pairs)
 @end itemize
+
+@dfn{Objects} are the backbone of the MOO database and, as such, deserve a
+great deal of discussion; the entire next section is devoted to them.  For now,
+let it suffice to say that every object has an @dfn{object number}, unique to
+that object.  In programs, we write a reference to a particular object by
+putting a hash mark (@samp{#}) followed by the number, like this:
+
+@example
+#495
+@end example
+
+@noindent
+Object numbers are always integers.
+
+There are three special object numbers used for a variety of purposes:
+@code{#-1}, @code{#-2}, and @code{#-3}, usually referred to in the
+LambdaCore database as @code{$nothing}, @code{$ambiguous_match}, and
+@code{$failed_match}, respectively.
 
 MOO supports the integers from @minus{}2^31 (that is, negative two to the power
 of 31) up to 2^31 @minus{} 1 (one less than two to the power of 31); that's
@@ -307,24 +327,6 @@ in binary mode.  See the descriptions of the @code{set_connection_option()},
 @code{encode_binary()}, and @code{decode_binary()} functions for more details.
 @end quotation
 
-@dfn{Objects} are the backbone of the MOO database and, as such, deserve a
-great deal of discussion; the entire next section is devoted to them.  For now,
-let it suffice to say that every object has a number, unique to that object.
-In programs, we write a reference to a particular object by putting a hash mark
-(@samp{#}) followed by the number, like this:
-
-@example
-#495
-@end example
-
-@noindent
-Object numbers are always integers.
-
-There are three special object numbers used for a variety of purposes:
-@code{#-1}, @code{#-2}, and @code{#-3}, usually referred to in the
-LambdaCore database as @code{$nothing}, @code{$ambiguous_match}, and
-@code{$failed_match}, respectively.
-
 @dfn{Errors} are, by far, the least frequently used values in MOO.  In the
 normal case, when a program attempts an operation that is erroneous for some
 reason (for example, trying to add a number to a character string), the server
@@ -353,14 +355,20 @@ E_NACC      @r{Move refused by destination}
 E_INVARG    @r{Invalid argument}
 E_QUOTA     @r{Resource limit exceeded}
 E_FLOAT     @r{Floating-point arithmetic error}
+E_FILE      @r{File error}
+E_EXEC      @r{Exec error}
+E_INTRPT    @r{Interrupted}
 @end example
 
-The final kind of value in MOO programs is @dfn{lists}.  A list is a sequence
-of arbitrary MOO values, possibly including other lists.  In programs,
+MOO supports two kinds of collections.  Collections hold zero or more related
+MOO values, including other collections.
+
+The first kind of collection in MOO programs is a @dfn{list}.  A list is a
+sequence of arbitrary MOO values, possibly including other lists.  In programs,
 lists are written in mathematical set notation with each of the elements
-written out in order, separated by commas, the whole enclosed in curly
-braces (@samp{@{} and @samp{@}}).  For example, a list of the names of
-the days of the week is written like this:
+written out in order, separated by commas, the whole enclosed in curly braces
+(@samp{@{} and @samp{@}}).  For example, a list of the names of the days of the
+week is written like this:
 
 @example
 @{"Sunday", "Monday", "Tuesday", "Wednesday",
@@ -372,6 +380,25 @@ Note that it doesn't matter that we put a line-break in the middle of
 the list.  This is true in general in MOO: anywhere that a space can go,
 a line-break can go, with the same meaning.  The only exception is
 inside character strings, where line-breaks are not allowed.
+
+The other kind of collection is a @dfn{map}.  A map, which is sometimes called
+a ``dictionary'', implements an ordered associative relationship between pairs
+of MOO values.  The first value in the pair is typically called the ``key'' and
+the second value is typically called the ``value''.  The value can hold any MOO
+value, including lists and other maps.  The key can hold any non-collection
+value (that is, it cannot hold a list or map) and each key in a map must be
+unique.  In programs, maps are written as a sequence of key/value pairs,
+separated by commas, enclosed in brackets (@samp{[} and @samp{]}).  In each
+pair, the key and value are separated by an arrow (@samp{->}).  A map of names
+to ages is written like this:
+
+@example
+["Bob" -> 23, "Sally" -> 13, "Dave" -> 19,
+ "Peter" -> 27, "Karen" -> 27]
+@end example
+
+@noindent
+Note that while the keys must be unique, the values are not required to be so.
 
 @node Objects,  , Values, Database
 @comment  node-name,  next,  previous,  up
