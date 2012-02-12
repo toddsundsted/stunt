@@ -16,6 +16,19 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_a_variety_of_fuzzy_inputs_base64_encode_decode_correctly
+    run_test_as('wizard') do
+      100.times do
+        s = (1..20).inject('') { |a, i| a + "~#{'%02X' % rand(256)}" }
+        s = simplify command %Q|; return encode_binary(decode_binary("#{s}"));|
+        server_log s
+        v = encode_base64(s)
+        x = decode_base64(v)
+        assert_equal s, x
+      end
+    end
+  end
+
   def test_that_hashing_works
     run_test_as('programmer') do
       assert_equal "900150983CD24FB0D6963F7D28E17F72", string_hash("abc", "md5")
