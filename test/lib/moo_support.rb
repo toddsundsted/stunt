@@ -596,7 +596,7 @@ module MooSupport
   def value_ref(value)
     case value
     when String
-      "\"#{value.gsub('\\', '\\\\').gsub('"', '\"')}\""
+      "\"#{value.gsub('\\', '\\\\\\\\').gsub('"', '\"')}\""
     when Symbol
       "$#{value.to_s}"
     when MooErr
