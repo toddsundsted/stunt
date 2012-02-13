@@ -506,7 +506,6 @@ db_verb_handle
 db_find_callable_verb(Objid oid, const char *verb)
 {
     Object *o;
-    Verbdef *v;
 #ifdef VERB_CACHE
     vc_entry *new_vc;
 #else
