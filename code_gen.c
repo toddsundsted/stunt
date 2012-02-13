@@ -1245,7 +1245,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     for (fixup = state.fixups, fix_i = 0; fix_i < state.num_fixups; ++fix_i, ++fixup)
 	if (fixup->kind == FIXUP_LABEL || fixup->kind == FIXUP_FORK)
 	    bbd[n_bbd++] = fixup->pc;
-    qsort(bbd, n_bbd, sizeof(*bbd), bbd_cmp);
+    qsort(bbd, n_bbd, sizeof(*bbd), (int (*)(const void *, const void *))bbd_cmp);
 
     /*
      * For every basic block, search backwards for PUT ops.  The first
