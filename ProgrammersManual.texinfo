@@ -2456,25 +2456,27 @@ endif
 @subsection Statements for Looping
 
 MOO provides three different kinds of looping statements, allowing you to have
-a set of statements executed (1) once for each element of a given list, (2)
-once for each integer or object number in a given range, and (3) over and over
-until a given condition stops being true.
+a set of statements executed (1) once for each element of a given sequence
+(list, map or string); (2) once for each integer or object number in a given
+range; and (3) over and over until a given condition stops being true.
 
-To perform some statements once for each element of a given list, use this
+To perform some statements once for each element of a given sequence, use this
 syntax:
 
 @example
-for @var{variable} in (@var{expression})
+for @var{value}, @var{key-or-index} in (@var{expression})
   @var{statements}
 endfor
 @end example
 
 @noindent
-The expression is evaluated and should return a list; if it does not,
-@code{E_TYPE} is raised.  The @var{statements} are then executed once for
-each element of that list in turn; each time, the given @var{variable} is
-assigned the value of the element in question.  For example, consider
-the following statements:
+The expression is evaluated and should return a list, map or string; if it does
+not, @code{E_TYPE} is raised.  The @var{statements} are then executed once for
+each element of that sequence in turn; each time, the given @var{value} is
+assigned the value of the element in question, and @var{key-or-index} is
+assigned the index of @var{value} in the list or string, or its key if the
+sequence is a map.  @var{key-or-index} is optional.  For example, consider the
+following statements:
 
 @example
 odds = @{1, 3, 5, 7, 9@};
@@ -2490,6 +2492,25 @@ is the list
 
 @example
 @{2, 4, 6, 8, 10@}
+@end example
+
+@noindent
+If the example were modified:
+
+@example
+odds = @{1, 3, 5, 7, 9@};
+pairs = [];
+for n, i in (odds)
+  pairs[i] = n + 1;
+endfor
+@end example
+
+@noindent
+The value of the variable @samp{pairs} after executing these statements
+is the map
+
+@example
+[1 -> 2, 2 -> 4, 3 -> 6, 4 -> 8, 5 -> 10]
 @end example
 
 To perform a set of statements once for each integer or object number in a given
