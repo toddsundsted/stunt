@@ -32,6 +32,7 @@
 #include "my-string.h"
 #include "my-stdlib.h"
 
+#include "exceptions.h"
 #include "functions.h"
 #include "json.h"
 #include "list.h"
@@ -123,12 +124,9 @@ static const char *
 value_to_literal(Var v)
 {
     static Stream *s = NULL;
-
     if (!s)
 	s = new_stream(100);
-
     unparse_value(s, v);
-
     return reset_stream(s);
 }
 
@@ -136,28 +134,25 @@ value_to_literal(Var v)
 static var_type
 valid_type(const char **val, size_t *len)
 {
-    int c;
-
     /* format: "...|<TYPE>"
        where <TYPE> is a MOO type string: "obj", "int", "float", "err", "str" */
     if (*len > 3 && !strncmp(*val + *len - 4, "|obj", 4)) {
 	*len = *len - 4;
 	return TYPE_OBJ;
-    } if (*len > 3 && !strncmp(*val + *len - 4, "|int", 4)) {
+    } else if (*len > 3 && !strncmp(*val + *len - 4, "|int", 4)) {
 	*len = *len - 4;
 	return TYPE_INT;
-    } if (*len > 5 && !strncmp(*val + *len - 6, "|float", 6)) {
+    } else if (*len > 5 && !strncmp(*val + *len - 6, "|float", 6)) {
 	*len = *len - 6;
 	return TYPE_FLOAT;
-    } if (*len > 3 && !strncmp(*val + *len - 4, "|err", 4)) {
+    } else if (*len > 3 && !strncmp(*val + *len - 4, "|err", 4)) {
 	*len = *len - 4;
 	return TYPE_ERR;
-    } if (*len > 3 && !strncmp(*val + *len - 4, "|str", 4)) {
+    } else if (*len > 3 && !strncmp(*val + *len - 4, "|str", 4)) {
 	*len = *len - 4;
 	return TYPE_STR;
-    }
-
-    return TYPE_NONE;
+    } else
+	return TYPE_NONE;
 }
 
 /* Append type information. */
@@ -165,12 +160,9 @@ static const char *
 append_type(const char *str, var_type type)
 {
     static Stream *stream = NULL;
-
     if (NULL == stream)
 	stream = new_stream(20);
-
     stream_add_string(stream, str);
-
     switch (type) {
     case TYPE_OBJ:
 	stream_add_string(stream, "|obj");
@@ -187,8 +179,9 @@ append_type(const char *str, var_type type)
     case TYPE_STR:
 	stream_add_string(stream, "|str");
 	break;
+    default:
+	panic("Unsupported type in append_type()");
     }
-
     return reset_stream(stream);
 }
 
@@ -219,8 +212,7 @@ handle_integer(void *ctx, long integerVal)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
     Var v;
-    v.type = TYPE_INT;
-    v.v.num = (int)integerVal;
+    v = new_int((int)integerVal);
     PUSH(pctx->top, v);
     return 1;
 }
@@ -242,11 +234,8 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
     var_type type;
     Var v;
 
-    /* The original solution (using stringVal and stringLen directly)
-       was causing a crash (EXC_BAD_ACCESS) on OSX.  This was the
-       most straight-forward solution I found. */
-    const char *val = stringVal;
-    size_t len = stringLen;
+    const char *val = (const char *)stringVal;
+    size_t len = (size_t)stringLen;
 
     if (MODE_EMBEDDED_TYPES == pctx->mode
 	&& TYPE_NONE != (type = valid_type(&val, &len))) {
@@ -263,8 +252,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 	case TYPE_INT:
 	    {
 		char *p;
-		v.type = TYPE_INT;
-		v.v.num = strtol(val, &p, 10);
+		v = new_int(strtol(val, &p, 10));
 		break;
 	    }
 	case TYPE_FLOAT:
@@ -292,11 +280,13 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 		v.v.str = str_dup(temp);
 		break;
 	    }
+	default:
+	    panic("Unsupported type in handle_string()");
 	}
     } else {
-	char temp[stringLen + 1];
-	strncpy(temp, stringVal, stringLen);
-	temp[stringLen] = '\0';
+	char temp[len + 1];
+	strncpy(temp, val, len);
+	temp[len] = '\0';
 	v.type = TYPE_STR;
 	v.v.str = str_dup(temp);
     }
@@ -370,7 +360,7 @@ generate_key(yajl_gen g, Var v, void *ctx)
 	    const char *tmp = value_to_literal(v);
 	    if (MODE_EMBEDDED_TYPES == gctx->mode)
 		tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, tmp, strlen(tmp));
+	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
 	}
     case TYPE_STR:
 	{
@@ -379,8 +369,10 @@ generate_key(yajl_gen g, Var v, void *ctx)
 	    if (MODE_EMBEDDED_TYPES == gctx->mode)
 		if (TYPE_NONE != valid_type(&tmp, &len))
 		    tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, tmp, strlen(tmp));
+	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
 	}
+    default:
+	panic("Unsupported type in generate_key()");
     }
 
     return yajl_gen_keys_must_be_strings;
@@ -426,7 +418,7 @@ generate(yajl_gen g, Var v, void *ctx)
 	    const char *tmp = value_to_literal(v);
 	    if (MODE_EMBEDDED_TYPES == gctx->mode)
 		tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, tmp, strlen(tmp));
+	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
 	}
     case TYPE_STR:
 	{
@@ -435,11 +427,10 @@ generate(yajl_gen g, Var v, void *ctx)
 	    if (MODE_EMBEDDED_TYPES == gctx->mode)
 		if (TYPE_NONE != valid_type(&tmp, &len))
 		    tmp = append_type(tmp, v.type);
-	    return yajl_gen_string(g, tmp, strlen(tmp));
+	    return yajl_gen_string(g, (const unsigned char *)tmp, strlen(tmp));
 	}
     case TYPE_MAP:
 	{
-	    yajl_gen_status status;
 	    struct do_map_closure dmc;
 	    dmc.g = g;
 	    dmc.gctx = gctx;
@@ -463,6 +454,8 @@ generate(yajl_gen g, Var v, void *ctx)
 	    yajl_gen_array_close(g);
 	    return yajl_gen_status_ok;
 	}
+    default:
+	panic("Unsupported type in generate()");
     }
 
     return -1;
@@ -481,6 +474,8 @@ static yajl_callbacks callbacks = {
     handle_start_array,
     handle_end_array
 };
+
+/**** built in functions ****/
 
 static package
 bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
@@ -522,7 +517,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 	if (done)
 	    stat = yajl_parse_complete(hand);
 	else
-	    stat = yajl_parse(hand, str, len);
+	    stat = yajl_parse(hand, (const unsigned char *)str, len);
 
 	len = 0;
 
@@ -556,7 +551,7 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
     struct generate_context gctx;
     gctx.mode = MODE_COMMON_SUBSET;
 
-    const unsigned char *buf;
+    const char *buf;
     unsigned int len;
 
     Var json;
@@ -577,7 +572,7 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
     g = yajl_gen_alloc(&cfg, NULL);
 
     if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
-	yajl_gen_get_buf(g, &buf, &len);
+	yajl_gen_get_buf(g, (const unsigned char **)&buf, &len);
 
 	json.type = TYPE_STR;
 	json.v.str = str_dup(buf);
