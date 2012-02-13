@@ -1037,7 +1037,7 @@ There are many kinds of expressions in MOO, all of them discussed below.
 * Arithmetic::               Arithmetic Operators
 * Comparisons::              Comparing Values
 * Truth Values::             Values as True and False
-* Indexing::                 Indexing into Lists and Strings
+* Indexing::                 Indexing into Lists, Maps and Strings
 * More On Lists::            Other Operations on Lists
 * Scattering::               Spreading List Elements Among Variables
 * Property Values::          Getting and Setting the Values of Properties
@@ -1511,69 +1511,76 @@ These two operators behave very much like ``and'' and ``or'' in English:
 
 @node Indexing, More On Lists, Truth Values, Expressions
 @comment  node-name,  next,  previous,  up
-@subsection Indexing into Lists and Strings
+@subsection Indexing into Lists, Maps and Strings
 
-Both strings and lists can be seen as ordered sequences of MOO values.  In the
+Lists, maps and strings can be seen as ordered sequences of MOO values.  In the
 case of strings, each is a sequence of single-character strings; that is, one
 can view the string @code{"bar"} as a sequence of the strings @code{"b"},
 @code{"a"}, and @code{"r"}.  MOO allows you to refer to the elements of lists
 and strings by number, by the @dfn{index} of that element in the list or
 string.  The first element in a list or string has index 1, the second has
-index 2, and so on.
+index 2, and so on.  MOO allows you to refer to the values of maps by the
+@dfn{key} associated with each @dfn{value}.
 
 @menu
-* Extracting::               Extracting an Element from a List or String
-* Replacing::                Replacing an Element of a List or String
-* Subsequences::             Extracting a Subsequence of a List or String
-* Subsequence Replacement::  Replacing a Subsequence of a List or String
+* Extracting::               Extracting an Element from a List, Map or String
+* Replacing::                Replacing an Element of a List, Map or String
+* Subsequences::             Extracting a Subsequence of a List, Map or String
+* Subsequence Replacement::  Replacing a Subsequence of a List, Map or String
 @end menu
 
 @node Extracting, Replacing, Indexing, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Extracting an Element from a List or String
+@subsubsection Extracting an Element from a List, Map or String
 
-The indexing expression in MOO extracts a specified element from a list or
+The indexing expression in MOO extracts a specified element from a list, map or
 string:
 
 @example
 @var{expression-1}[@var{expression-2}]
 @end example
 
-First, @var{expression-1} is evaluated; it must return a list or a string (the
-@dfn{sequence}).  Then, @var{expression-2} is evaluated and must return an
-integer (the @dfn{index}).  If either of the expressions returns some other type
-of value, @code{E_TYPE} is returned.  The index must be between 1 and the
-length of the sequence, inclusive; if it is not, then @code{E_RANGE} is raised.
-The value of the indexing expression is the index'th element in the sequence.
-Anywhere within @var{expression-2}, you can use the symbol @code{$} as an
-expression returning the length of the value of @var{expression-1}.
+First, @var{expression-1} is evaluated; it must return a list, map or a string
+(the @dfn{sequence}).  Then, @var{expression-2} is evaluated and must return an
+integer (the @dfn{index}) for lists and strings, or a non-collection value (the
+@dfn{key}) for maps.  If either of the expressions returns some other type of
+value, @code{E_TYPE} is returned.  For lists and strings, the index must be
+between 1 and the length of the sequence, inclusive; if it is not, then
+@code{E_RANGE} is raised.  The value of the indexing expression is the index'th
+element in the sequence.  For maps, the key must be present; if it is not, then
+@code{E_RANGE} is raised.  The value of the indexing expression is the value
+associated with the given key.  Anywhere within @var{expression-2}, you can use
+the symbol @code{^} as an expression returning the index or key of the first
+element in the sequence.  Likewise, you can use the symbol @code{$} as an
+expression returning the index or key of the last element in
+@var{expression-1}.
 
 @example
-"fob"[2]                @result{}  "o"
-"fob"[1]                @result{}  "f"
-@{#12, #23, #34@}[$ - 1]  @result{}  #23
+"fob"[2]                     @result{}  "o"
+"fob"[1]                     @result{}  "f"
+@{#12, #23, #34@}[$ - 1]       @result{}  #23
+["foo" -> 1, "bar" -> 2][^]  @result{}  1
 @end example
 
 @noindent
-Note that there are no legal indices for the empty string or list, since
-there are no integers between 1 and 0 (the length of the empty string or
-list).
+Note that there are no legal indices/keys for the empty string, list or map.
 
 @quotation
-@emph{Fine point:} The @code{$} expression actually returns the length of the
-value of the expression just before the nearest enclosing @code{[@dots{}]}
-indexing or subranging brackets.  For example:
+@emph{Fine point:} The @code{^} and @code{$} expressions actually return the
+first/last index/key of the expression just before the nearest enclosing
+@code{[@dots{}]} indexing or subranging brackets.  For example:
 @example
+"frob"[@{3, 2, 4@}[^]]     @result{}  "o"
 "frob"[@{3, 2, 4@}[$]]     @result{}  "b"
 @end example
 @end quotation
 
 @node Replacing, Subsequences, Extracting, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Replacing an Element of a List or String
+@subsubsection Replacing an Element of a List, Map or String
 
-It often happens that one wants to change just one particular slot of a list or
-string, which is stored in a variable or a property.  This can be done
+It often happens that one wants to change just one particular slot of a list,
+map or string, which is stored in a variable or a property.  This can be done
 conveniently using an @dfn{indexed assignment} having one of the following
 forms:
 
@@ -1593,31 +1600,39 @@ discussion of object property expressions below for details.  Correspondingly,
 if @var{variable} does not yet have a value (i.e., it has never been assigned
 to), @code{E_VARNF} will be raised.
 
-If @var{index-expr} is not an integer, or if the value of @var{variable} or the
-property is not a list or string, @code{E_TYPE} is raised.  If
-@var{result-expr} is a string, but not of length 1, @code{E_INVARG} is
-raised.  Now suppose @var{index-expr} evaluates to an integer @var{k}.  If
-@var{k} is outside the range of the list or string (i.e.  smaller than 1 or
-greater than the length of the list or string), @code{E_RANGE} is raised.
-Otherwise, the actual assignment takes place.  For lists, the variable or the
-property is assigned a new list that is identical to the original one except at
-the @var{k}-th position, where the new list contains the result of
-@var{result-expr} instead.  For strings, the variable or the property is
-assigned a new string that is identical to the original one, except the
-@var{k}-th character is changed to be @var{result-expr}.
+If @var{index-expr} is not an integer (for lists and strings) or is a
+collection value (for maps), or if the value of @var{variable} or the property
+is not a list, map or string, @code{E_TYPE} is raised.  If @var{result-expr} is
+a string, but not of length 1, @code{E_INVARG} is raised.  Suppose
+@var{index-expr} evaluates to a value @var{k}.  If @var{k} is an integer and is
+outside the range of the list or string (i.e.  smaller than 1 or greater than
+the length of the list or string), @code{E_RANGE} is raised.  If @var{k} is not
+a valid key of the map, @code{E_RANGE} is raised.  Otherwise, the actual
+assignment takes place.  For lists, the variable or the property is assigned a
+new list that is identical to the original one except at the @var{k}-th
+position, where the new list contains the result of @var{result-expr} instead.
+Likewise for maps, the variable or the property is assigned a new map that is
+identical to the original one except for the @var{k} key, where the new map
+contains the result of @var{result-expr} instead.  For strings, the variable or
+the property is assigned a new string that is identical to the original one,
+except the @var{k}-th character is changed to be @var{result-expr}.
 
 The assignment expression itself returns the value of @var{result-expr}.  For
 the following examples, assume that @code{l} initially contains the list
-@code{@{1, 2, 3@}} and that @code{s} initially contains the string "foobar":
+@code{@{1, 2, 3@}}, that @code{m} initially contains the map @code{["one" ->
+1, "two" -> 2]} and that @code{s} initially contains the string "foobar":
 
 @example
 l[5] = 3          @error{}   E_RANGE
 l["first"] = 4    @error{}   E_TYPE
+m[@{@}] = 5         @error{}   E_TYPE
 s[3] = "baz"      @error{}   E_INVARG
 l[2] = l[2] + 3   @result{}   5
 l                 @result{}   @{1, 5, 3@}
 l[2] = "foo"      @result{}   "foo"
 l                 @result{}   @{1, "foo", 3@}
+m["five"] = "bar" @result{}   "bar"
+m                 @result{}   ["one" -> 1, "two" -> 2, "five" -> 5]
 s[2] = "u"        @result{}   "u"
 s                 @result{}   "fuobar"
 s[$] = "z"        @result{}   "z"
@@ -1625,22 +1640,23 @@ s                 @result{}   "fuobaz"
 @end example
 
 @noindent
-Note that the @code{$} expression may also be used in indexed assignments with
-the same meaning as before.
+Note that the @code{^} and @code{$} expressions may also be used in indexed
+assignments with the same meaning as before.
 
 @quotation
 @emph{Fine point:} After an indexed assignment, the variable or property
-contains a @emph{new} list or string, a copy of the original list in all but
+contains a @emph{new} list, map or string, a copy of the original in all but
 the @var{k}-th place, where it contains a new value.  In programming-language
-jargon, the original list is not mutated, and there is no aliasing.  (Indeed,
-no MOO value is mutable and no aliasing ever occurs.)
+jargon, the original sequence is not mutated, and there is no aliasing.
+(Indeed, no MOO value is mutable and no aliasing ever occurs.)
 @end quotation
 
-In the list case, indexed assignment can be nested to many levels, to work on
-nested lists.  Assume that @code{l} initially contains the list
+In the list and map case, indexed assignment can be nested to many levels, to
+work on nested lists and maps.  Assume that @code{l} initially contains the
+following
 
 @example
-@{@{1, 2, 3@}, @{4, 5, 6@}, "foo"@}
+@{@{1, 2, 3@}, @{4, 5, 6@}, "foo", ["bar" -> "baz"]@}
 @end example
 
 @noindent
@@ -1652,11 +1668,13 @@ l[1][8] = 35         @error{}   E_RANGE
 l[3][2] = 7          @error{}   E_TYPE
 l[1][1][1] = 3       @error{}   E_TYPE
 l[2][2] = -l[2][2]   @result{}   -5
-l                    @result{}   @{@{1, 2, 3@}, @{4, -5, 6@}, "foo"@}
+l                    @result{}   @{@{1, 2, 3@}, @{4, -5, 6@}, "foo", ["bar" -> "baz"]@}
 l[2] = "bar"         @result{}   "bar"
-l                    @result{}   @{@{1, 2, 3@}, "bar", "foo"@}
+l                    @result{}   @{@{1, 2, 3@}, "bar", "foo", ["bar" -> "baz"]@}
 l[2][$] = "z"        @result{}   "z"
-l                    @result{}   @{@{1, 2, 3@}, "baz", "foo"@}
+l                    @result{}   @{@{1, 2, 3@}, "baz", "foo", ["bar" -> "baz"]@}
+l[$][^] = #3         @result{}   #3
+l                    @result{}   @{@{1, 2, 3@}, "baz", "foo", ["bar" -> #3]@}
 @end example
 
 @noindent
@@ -1666,27 +1684,30 @@ raise @code{E_TYPE} because @code{l[3]} and @code{l[1][1]} are not lists.
 
 @node Subsequences, Subsequence Replacement, Replacing, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Extracting a Subsequence of a List or String
+@subsubsection Extracting a Subsequence of a List, Map or String
 
-The range expression extracts a specified subsequence from a list or string:
+The range expression extracts a specified subsequence from a list, map or
+string:
 
 @example
 @var{expression-1}[@var{expression-2}..@var{expression-3}]
 @end example
 
 The three expressions are evaluated in order.  @var{Expression-1} must return a
-list or string (the @dfn{sequence}) and the other two expressions must return
-integers (the @dfn{low} and @dfn{high} indices, respectively); otherwise,
-@code{E_TYPE} is raised.  The @code{$} expression can be used in either or both
-of @var{expression-2} and @var{expression-3} just as before, meaning the length
-of the value of @var{expression-1}.
+list, map or string (the @dfn{sequence}) and the other two expressions must
+return integers (the @dfn{low} and @dfn{high} indices, respectively) for lists
+and strings, or non-collection values (the @dfn{begin} and @dfn{end} keys in
+the ordered map, respectively) for maps; otherwise, @code{E_TYPE} is raised.
+The @code{^} and @code{$} expressions can be used in either or both of
+@var{expression-2} and @var{expression-3} just as before.
 
-If the low index is greater than the high index, then the empty string or list
-is returned, depending on whether the sequence is a string or a list.
-Otherwise, both indices must be between 1 and the length of the sequence;
-@code{E_RANGE} is raised if they are not.  A new list or string is returned
-that contains just the elements of the sequence with indices between the low
-and high bounds.
+If the low/begin index/key is greater than/after the high/end index, then the
+empty string, list or map is returned, depending on whether the sequence is a
+string, list or map.  Otherwise, both indices must be between 1 and the length
+of the sequence (for lists or strings) or valid keys (for maps); @code{E_RANGE}
+is raised if they are not.  A new list, map or string is returned that contains
+just the elements of the sequence with indices between the low/begin and
+high/end bounds.
 
 @example
 "foobar"[2..$]                       @result{}  "oobar"
@@ -1695,14 +1716,15 @@ and high bounds.
 @{"one", "two", "three"@}[$ - 1..$]    @result{}  @{"two", "three"@}
 @{"one", "two", "three"@}[3..3]        @result{}  @{"three"@}
 @{"one", "two", "three"@}[17..12]      @result{}  @{@}
+[1 -> "one", 2 -> "two"][1..1]       @result{}  [1 -> "one"]
 @end example
 
 @node Subsequence Replacement,  , Subsequences, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Replacing a Subsequence of a List or String
+@subsubsection Replacing a Subsequence of a List, Map or String
 
-  The subrange assigment replaces a specified subsequence of a list or string
-with a supplied subsequence.  The allowed forms are:
+The subrange assignment replaces a specified subsequence of a list, map or
+string with a supplied subsequence.  The allowed forms are:
 
 @example
 @var{variable}[@var{start-index-expr}..@var{end-index-expr}] = @var{result-expr}
@@ -1711,24 +1733,26 @@ with a supplied subsequence.  The allowed forms are:
 $@var{name}[@var{start-index-expr}..@var{end-index-expr}] = @var{result-expr}
 @end example
 
-As with indexed assigments, the first form writes into a variable, and the last
+As with indexed assignments, the first form writes into a variable, and the last
 three forms write into a property.  The same errors (@code{E_TYPE},
 @code{E_INVIND}, @code{E_PROPNF} and @code{E_PERM} for lack of read/write
 permission on the property) may be raised.  If @var{variable} does not yet have
 a value (i.e., it has never been assigned to), @code{E_VARNF} will be raised.
-As before, the @code{$} expression can be used in either @var{start-index-expr}
-or @var{end-index-expr}, meaning the length of the original value of the
-expression just before the @code{[@dots{}]} part.
+As before, the @code{^} and @code{$} expressions can be used in either
+@var{start-index-expr} or @var{end-index-expr}.
 
-If @var{start-index-expr} or @var{end-index-expr} is not an integer, if the value
-of @var{variable} or the property is not a list or string, or @var{result-expr}
-is not the same type as @var{variable} or the property, @code{E_TYPE} is
-raised.  @code{E_RANGE} is raised if @var{end-index-expr} is less than zero
-or if @var{start-index-expr} is greater than the length of the list or string
-plus one.  Note: the length of @var{result-expr} does not need to be the same
-as the length of the specified range.
+If @var{start-index-expr} or @var{end-index-expr} is not an integer (for lists
+and strings) or is a collection value (for maps), if the value of
+@var{variable} or the property is not a list, map or string, or
+@var{result-expr} is not the same type as @var{variable} or the property,
+@code{E_TYPE} is raised.  For lists and strings, @code{E_RANGE} is raised if
+@var{end-index-expr} is less than zero or if @var{start-index-expr} is greater
+than the length of the list or string plus one.  Note: the length of
+@var{result-expr} does not need to be the same as the length of the specified
+range.  For maps, @code{E_RANGE} is raised if @var{start-index-expr} or
+@var{end-index-expr} are not keys in the map.
 
-In precise terms, the subrange assigment
+In precise terms, the subrange assignment
 @example
 @var{v}[@var{start}..@var{end}] = @var{value}
 @end example
@@ -1742,27 +1766,35 @@ if @var{v} is a list and to
 @end example
 if @var{v} is a string.
 
-The assigment expression itself returns the value of @var{result-expr}.  For
+There is no literal representation of the operation if @var{v} is a map.  In
+this case the range given by @var{start-index-expr} and @var{end-index-expr} is
+removed, and the the values in @var{result-expr} are added.
+
+The assignment expression itself returns the value of @var{result-expr}.  For
 the following examples, assume that @code{l} initially contains the list
-@code{@{1, 2, 3@}} and that @code{s} initially contains the string "foobar":
+@code{@{1, 2, 3@}}, that @code{m} initially contains the map @code{[1 -> "one",
+2 -> "two", 3 -> "three"]} and that @code{s} initially contains the string
+"foobar":
 
 @example
-l[5..6] = @{7, 8@}       @error{}   E_RANGE
-l[2..3] = 4            @error{}   E_TYPE
-l[#2..3] = @{7@}         @error{}   E_TYPE
-s[2..3] = @{6@}          @error{}   E_TYPE
-l[2..3] = @{6, 7, 8, 9@} @result{}   @{6, 7, 8, 9@}
-l                      @result{}   @{1, 6, 7, 8, 9@}
-l[2..1] = @{10, "foo"@}  @result{}   @{10, "foo"@}
-l                      @result{}   @{1, 10, "foo", 6, 7, 8, 9@}
-l[3][2..$] = "u"       @result{}   "u"
-l                      @result{}   @{1, 10, "fu", 6, 7, 8, 9@}
-s[7..12] = "baz"       @result{}   "baz"
-s                      @result{}   "foobarbaz"
-s[1..3] = "fu"         @result{}   "fu"
-s                      @result{}   "fubarbaz"
-s[1..0] = "test"       @result{}   "test"
-s                      @result{}   "testfubarbaz"
+l[5..6] = @{7, 8@}          @error{}   E_RANGE
+l[2..3] = 4               @error{}   E_TYPE
+l[#2..3] = @{7@}            @error{}   E_TYPE
+s[2..3] = @{6@}             @error{}   E_TYPE
+l[2..3] = @{6, 7, 8, 9@}    @result{}   @{6, 7, 8, 9@}
+l                         @result{}   @{1, 6, 7, 8, 9@}
+l[2..1] = @{10, "foo"@}     @result{}   @{10, "foo"@}
+l                         @result{}   @{1, 10, "foo", 6, 7, 8, 9@}
+l[3][2..$] = "u"          @result{}   "u"
+l                         @result{}   @{1, 10, "fu", 6, 7, 8, 9@}
+s[7..12] = "baz"          @result{}   "baz"
+s                         @result{}   "foobarbaz"
+s[1..3] = "fu"            @result{}   "fu"
+s                         @result{}   "fubarbaz"
+s[1..0] = "test"          @result{}   "test"
+s                         @result{}   "testfubarbaz"
+m[1..2] = ["abc" -> #1]   @result{}   ["abc" -> #1]
+m                         @result{}   [3 -> "three", "abc" -> #1]
 @end example
 
 @node More On Lists, Scattering, Indexing, Expressions
