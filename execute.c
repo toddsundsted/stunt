@@ -601,7 +601,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
        E_NONE */
 
     Objid where;
-    db_verb_handle h;
+    db_verb_handle h = { .ptr = NULL };
     Program *program;
     Var *env;
     Var v;
