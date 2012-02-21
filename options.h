@@ -315,11 +315,14 @@
  *                            of the largest constructible list.
  * DEFAULT_MAX_STRING_CONCAT, if set to a postive value, is the length
  *                            of the largest constructible string.
+ * DEFAULT_MAX_MAP_CONCAT,    if set to a postive value, is the length
+ *                            of the largest constructible map.
  * Limits on "constructible" values apply to values built by concatenation,
  * splicing, subrange assignment and various builtin functions.
- * If defined in the database, $server_options.max_list_concat and
- * and $server_options.max_string_concat override these defaults.
- * A zero value disables limit checking.
+ *
+ * If defined in the database, $server_options.max_list_concat,
+ * $server_options.max_string_concat and $server_options.max_map_concat
+ * override these defaults.  A zero value disables limit checking.
  *
  * $server_options.max_concat_catchable, if defined, causes an E_QUOTA error
  * to be raised when an overly-large value is spotted.  Otherwise, the task
@@ -331,6 +334,7 @@
 
 #define DEFAULT_MAX_LIST_CONCAT    4194302
 #define DEFAULT_MAX_STRING_CONCAT 33554423
+#define DEFAULT_MAX_MAP_CONCAT     2097151
 
 /* In order to avoid weirdness from these limits being set too small,
  * we impose the following (arbitrary) respective minimum values.
@@ -340,6 +344,7 @@
  */
 #define MIN_LIST_CONCAT_LIMIT   1022
 #define MIN_STRING_CONCAT_LIMIT 1015
+#define MIN_MAP_CONCAT_LIMIT    1022
 
 /******************************************************************************
  * In the original LambdaMOO server, last chance command processessing
@@ -369,6 +374,9 @@
 #endif
 #if DEFAULT_MAX_STRING_CONCAT < MIN_STRING_CONCAT_LIMIT
 #error DEFAULT_MAX_STRING_CONCAT < MIN_STRING_CONCAT_LIMIT ??
+#endif
+#if DEFAULT_MAX_MAP_CONCAT < MIN_MAP_CONCAT_LIMIT
+#error DEFAULT_MAX_MAP_CONCAT < MIN_MAP_CONCAT_LIMIT ??
 #endif
 
 #if PATTERN_CACHE_SIZE < 1

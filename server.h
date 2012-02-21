@@ -188,6 +188,16 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 	     stream_alloc_maximum = value + 1;			\
 	   }))							\
 								\
+  DEFINE( SVO_MAX_MAP_CONCAT, max_map_concat,			\
+								\
+	  int, DEFAULT_MAX_MAP_CONCAT,				\
+	 _STATEMENT({						\
+	     if (0 < value && value < MIN_MAP_CONCAT_LIMIT)	\
+		 value = MIN_MAP_CONCAT_LIMIT;			\
+	     else if (value <= 0 || MAX_MAP < value)		\
+		 value = MAX_MAP;				\
+	   }))							\
+								\
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
 	  flag, 0, /* already canonical */			\
 	  )

@@ -702,6 +702,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
     return E_NONE;
 }
 
+/* only user for lists and strings */
 static enum error
 rangeset_check(Var base, Var inst, int from, int to)
 {
@@ -964,19 +965,24 @@ do {								\
 	case OP_MAP_INSERT:
 	    {
 		Var map, key, value;
+		enum error e = E_NONE;
 
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
-		if (map.type != TYPE_MAP || is_collection(key)) {
+		if (map.type != TYPE_MAP || is_collection(key))
+		    e = E_TYPE;
+		else if (server_int_option_cached(SVO_MAX_MAP_CONCAT)
+			 <= maplength(map))
+		    e = E_QUOTA;
+
+		if (e != E_NONE) {
 		    free_var(key);
 		    free_var(value);
 		    free_var(map);
-		    PUSH_ERROR(E_TYPE);
-		} else {
-		    map = mapinsert(map, key, value);
-		    PUSH(map);
-		}
+		    PUSH_ERROR_UNLESS_QUOTA(e);
+		} else
+		    PUSH(mapinsert(map, key, value));
 	    }
 	    break;
 
@@ -1033,6 +1039,10 @@ do {								\
 	    }
 	    break;
 
+	/* This opcode will not increase the length of a list or
+	 * string but it may increase the size of a map, thus the
+	 * check on maps.
+	 */
 	case OP_INDEXSET:
 	    {
 		Var value, index, list;
@@ -1068,7 +1078,6 @@ do {								\
 		    PUSH_ERROR(E_INVARG);
 		} else if (list.type == TYPE_LIST) {
 		    Var res;
-
 		    if (var_refcount(list) == 1)
 			res = list;
 		    else {
@@ -1077,8 +1086,14 @@ do {								\
 		    }
 		    PUSH(listset(res, value, index.v.num));
 		} else if (list.type == TYPE_MAP) {
-		    list = mapinsert(list, index, value);
-		    PUSH(list);
+		    if (server_int_option_cached(SVO_MAX_MAP_CONCAT)
+			 <= maplength(list)) {
+			free_var(value);
+			free_var(index);
+			free_var(list);
+			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+		    } else
+			PUSH(mapinsert(list, index, value));
 		} else {	/* TYPE_STR */
 		    char *tmp_str = str_dup(list.v.str);
 		    free_str(list.v.str);
@@ -1486,12 +1501,11 @@ do {								\
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
 		} else if (base.type == TYPE_MAP) {
-		    Var iterfrom;
-		    Var iterto;
-		    int rfrom = mapseek(base, from, &iterfrom, 0);
-		    int rto = mapseek(base, to, &iterto, 0);
+		    Var iterfrom, iterto;
 		    int rel = compare(from, to, 0);
-		    if (rel <= 0 && (!rfrom || !rto)) {
+		    mapseek(base, from, &iterfrom, 0);
+		    mapseek(base, to, &iterto, 0);
+		    if ((rel <= 0) && (is_none(iterfrom) || is_none(iterto))) {
 			free_var(to);
 			free_var(from);
 			free_var(iterto);
@@ -1923,12 +1937,11 @@ do {								\
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
 			} else if (base.type == TYPE_MAP) {
-			    Var iterfrom;
-			    Var iterto;
-			    int rfrom = mapseek(base, from, &iterfrom, 0);
-			    int rto = mapseek(base, to, &iterto, 0);
-			    int rel = compare(from, to, 0);
-			    if (rel <= 0 && (!rfrom || !rto)) {
+			    Var res = none;
+			    Var iterfrom, iterto;
+			    mapseek(base, from, &iterfrom, 0);
+			    mapseek(base, to, &iterto, 0);
+			    if (is_none(iterfrom) || is_none(iterto)) {
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
@@ -1936,12 +1949,19 @@ do {								\
 				free_var(base);
 				free_var(value);
 				PUSH_ERROR(E_RANGE);
-			    } else {
-				PUSH(maprangeset(base, iterfrom.v.trav, iterto.v.trav, value));
+			    } else if (E_NONE != (e = maprangeset(base, iterfrom.v.trav, iterto.v.trav, value, &res))) {
+				free_var(res);
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
 				free_var(iterfrom);
+				PUSH_ERROR_UNLESS_QUOTA(e);
+			    } else {
+				free_var(to);
+				free_var(from);
+				free_var(iterto);
+				free_var(iterfrom);
+				PUSH(res);
 			    }
 			} else if (E_NONE != (e = rangeset_check(base, value, from.v.num, to.v.num))) {
 			    free_var(to);

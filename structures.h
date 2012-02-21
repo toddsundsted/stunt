@@ -144,8 +144,19 @@ extern Var none;		/* see objects.c */
  * (see DEFAULT_MAX_LIST_CONCAT and DEFAULT_MAX_STRING_CONCAT
  *  in options.h)
  */
-#define MAX_LIST   (INT32_MAX/sizeof(Var) - 2)
-#define MAX_STRING (INT32_MAX - 9)
+#define MAX_LIST	(INT32_MAX/sizeof(Var) - 2)
+#define MAX_STRING	(INT32_MAX - 9)
+
+/*
+ * Maps are not allocated in chunks so set the max to the default.
+ */
+#define MAX_MAP		DEFAULT_MAX_MAP_CONCAT
+
+static inline bool
+is_none(Var v)
+{
+    return TYPE_NONE == v.type;
+}
 
 static inline bool
 is_collection(Var v)

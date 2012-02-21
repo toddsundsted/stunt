@@ -55,7 +55,7 @@ extern int iterget(Var iter, var_pair *pair);
 extern void iternext(Var iter);
 
 extern Var maprange(Var map, rbtrav *from, rbtrav *to);
-extern Var maprangeset(Var map, rbtrav *from, rbtrav *to, Var value);
+extern enum error maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new);
 
 /* You're never going to need to use this!
  * Clears a node in place by setting the associated value type to
