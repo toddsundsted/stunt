@@ -231,7 +231,7 @@ enum Server_Option {
 #define server_int_option_cached(srvopt)   (_server_int_option_cache[srvopt])
 
 
-extern int _server_int_option_cache[]; /* private */
+extern int32 _server_int_option_cache[]; /* private */
 
 
 
