@@ -177,4 +177,22 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
+  def test_that_ranged_set_works_on_maps
+    run_test_as('programmer') do
+      assert_equal E_RANGE, simplify(command('; x = [1 -> 1]; x[3..2] = ["a" -> "a", "b" -> "b"]; return x;'))
+      assert_equal E_RANGE, simplify(command('; x = [1 -> 1]; x[2..1] = ["a" -> "a", "b" -> "b"]; return x;'))
+      assert_equal E_RANGE, simplify(command('; x = [1 -> 1]; x[1..0] = ["a" -> "a", "b" -> "b"]; return x;'))
+      assert_equal({'a' => 'a', 'b' => 'b'}, simplify(command('; x = [1 -> 1]; x[1..1] = ["a" -> "a", "b" -> "b"]; return x;')))
+      assert_equal({1 => 1, 2 => 2, 'a' => 'a', 'b' => 'b'}, simplify(command('; x = [1 -> 1, 2 -> 2]; x[2..1] = ["a" -> "a", "b" -> "b"]; return x;')))
+      assert_equal({1 => 1, 2 => 2, 'a' => 'foo', 'b' => 'b'}, simplify(command('; x = [1 -> 1, 2 -> 2, "a" -> "foo"]; x[2..1] = ["a" -> "a", "b" -> "b"]; return x;')))
+      assert_equal({'a' => 'a', 'b' => 'b'}, simplify(command('; x = [1 -> 1, 2 -> 2]; x[1..2] = ["a" -> "a", "b" -> "b"]; return x;')))
+    end
+  end
+
+  def test_that_inverted_ranged_set_does_not_crash_the_server
+    run_test_as('programmer') do
+      assert_equal E_RANGE, simplify(command(%Q(; x = []; for i in [1..10]; x[1..0] = [i -> i]; endfor; return length(x);)))
+    end
+  end
+
 end
