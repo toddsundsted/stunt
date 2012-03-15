@@ -602,22 +602,17 @@ destroy_map(Var map)
 Var
 map_dup(Var map)
 {
-    rbtrav *trav;
+    rbtrav trav;
     rbnode node;
     const rbnode *pnode;
     Var new = empty_map();
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAP_DUP: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
+    for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
-
-    rbtdelete(trav);
 
     return new;
 }
@@ -626,20 +621,15 @@ map_dup(Var map)
 int
 map_sizeof(rbtree *tree)
 {
-    rbtrav *trav;
+    rbtrav trav;
     const rbnode *pnode;
     int c = sizeof(rbtree);
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAP_SIZEOF: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, tree); pnode; pnode = rbtnext(trav)) {
+    for (pnode = rbtfirst(&trav, tree); pnode; pnode = rbtnext(&trav)) {
 	c += sizeof(rbnode) - 2 * sizeof(Var);
 	c += value_bytes(pnode->key);
 	c += value_bytes(pnode->value);
     }
-
-    rbtdelete(trav);
 
     return c;
 }
@@ -712,33 +702,25 @@ mapseek(Var map, Var key, Var *iter, int case_matters)
 int
 mapequal(Var lhs, Var rhs, int case_matters)
 {
-    rbtrav *trav_lhs, *trav_rhs;
+    rbtrav trav_lhs, trav_rhs;
     const rbnode *pnode_lhs = NULL, *pnode_rhs = NULL;
 
     if (lhs.v.tree == rhs.v.tree)
 	return 1;
 
-    if ((trav_lhs = rbtnew()) == NULL)
-	panic("MAPEQUAL: rbtnew failed");
-    if ((trav_rhs = rbtnew()) == NULL)
-	panic("MAPEQUAL: rbtnew failed");
-
     while (1) {
 	pnode_lhs =
-	    pnode_lhs == NULL ? rbtfirst(trav_lhs, lhs.v.tree)
-	                      : rbtnext(trav_lhs);
+	    pnode_lhs == NULL ? rbtfirst(&trav_lhs, lhs.v.tree)
+	                      : rbtnext(&trav_lhs);
 	pnode_rhs =
-	    pnode_rhs == NULL ? rbtfirst(trav_rhs, rhs.v.tree)
-	                      : rbtnext(trav_rhs);
+	    pnode_rhs == NULL ? rbtfirst(&trav_rhs, rhs.v.tree)
+	                      : rbtnext(&trav_rhs);
 	if (pnode_lhs == NULL || pnode_rhs == NULL)
 	    break;
 	if (!equality(pnode_lhs->key, pnode_rhs->key, case_matters)
 	    || !equality(pnode_lhs->value, pnode_rhs->value, case_matters))
 	    break;
     }
-
-    rbtdelete(trav_lhs);
-    rbtdelete(trav_rhs);
 
     return pnode_lhs == NULL && pnode_rhs == NULL;
 }
@@ -756,28 +738,24 @@ maplength(Var map)
 }
 
 /* Iterate over the map, calling the function `func' once per
- * key/value pair.
+ * key/value pair.  Don't dynamically allocate `rbtrav' because
+ * `mapforeach()' can be called from contexts where exception handling
+ * is in effect.
  */
 int
 mapforeach(Var map, mapfunc func, void *data)
 {				/* does NOT consume `map' */
-    rbtrav *trav;
+    rbtrav trav;
     const rbnode *pnode;
     int first = 1;
+    int ret;
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAPFOREACH: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
-	int ret = (*func)(pnode->key, pnode->value, data, first);
-	if (ret) {
-	    rbtdelete(trav);
+    for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
+	if ((ret = (*func)(pnode->key, pnode->value, data, first)))
 	    return ret;
-	}
 	first = 0;
     }
 
-    rbtdelete(trav);
     return 0;
 }
 
@@ -851,7 +829,7 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 enum error
 maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 {				/* consumes `map', `value' */
-    rbtrav *trav;
+    rbtrav trav;
     rbnode node;
     const rbnode *pnode = NULL;
     int32 len = 0;
@@ -869,10 +847,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     free_var(*new);
     *new = empty_map();
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAP_DUP: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
+    for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	if (pnode == from->it)
 	    break;
 	node.key = var_ref(pnode->key);
@@ -882,12 +857,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 	CHECK_LENGTH;
     }
 
-    rbtdelete(trav);
-
-    if ((trav = rbtnew()) == NULL)
-	panic("MAP_DUP: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, value.v.tree); pnode; pnode = rbtnext(trav)) {
+    for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	rberase(new->v.tree, &node);
@@ -895,8 +865,6 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 	    panic("MAP_DUP: rbinsert failed");
 	CHECK_LENGTH;
     }
-
-    rbtdelete(trav);
 
     while ((pnode = rbtnext(to))) {
 	node.key = var_ref(pnode->key);
