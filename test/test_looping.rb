@@ -102,4 +102,11 @@ class TestLooping < Test::Unit::TestCase
     end
   end
 
+  def test_that_for_loop_edge_cases_do_not_leak_memory
+    run_test_as('programmer') do
+      assert_equal 0, eval(%|for i in ([]); endfor; return 0;|)
+      assert_equal 0, eval(%|for v, k in ([]); endfor; return 0;|)
+    end
+  end
+
 end
