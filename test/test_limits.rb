@@ -67,4 +67,12 @@ class TestLimits < Test::Unit::TestCase
     end
   end
 
+  # `mapforeach()' was not exception safe and leaked memory when
+  #  a quota error was thrown while iterating
+  def test_that_quota_errors_do_not_leak_memory
+    run_test_as('programmer') do
+      assert_equal E_QUOTA, simplify(command('; x = []; for i in [1..500]; x[tostr(random())] = {tostr(random())}; endfor; return toliteral(x);'))
+    end
+  end
+
 end
