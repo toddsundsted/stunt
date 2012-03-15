@@ -2223,110 +2223,113 @@ do {								\
 
 		case EOP_FOR_LIST_1:
 		    {
+#			define ITER TOP_RT_VALUE
+#			define BASE NEXT_TOP_RT_VALUE
+
 			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
-			Var iter, base;
 
-			iter = TOP_RT_VALUE;
-			base = NEXT_TOP_RT_VALUE;
-			if (base.type != TYPE_STR && base.type != TYPE_LIST
-			    && base.type != TYPE_MAP) {
+			if (BASE.type != TYPE_STR && BASE.type != TYPE_LIST
+			    && BASE.type != TYPE_MAP) {
 			    RAISE_ERROR(E_TYPE);
 			    free_var(POP());
 			    free_var(POP());
 			    JUMP(lab);
-			} else if (base.type == TYPE_STR || base.type == TYPE_LIST) {
-			    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
-				       : base.v.list[0].v.num);
-			    if (iter.type == TYPE_NONE) {
-				free_var(iter);
-				iter = new_int(1);
+			} else if (BASE.type == TYPE_STR || BASE.type == TYPE_LIST) {
+			    int len = (BASE.type == TYPE_STR
+				       ? memo_strlen(BASE.v.str)
+				       : BASE.v.list[0].v.num);
+			    if (ITER.type == TYPE_NONE) {
+				free_var(ITER);
+				ITER = new_int(1);
 			    }
-			    if (iter.v.num > len) {
+			    if (ITER.v.num > len) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = (base.type == TYPE_STR)
-				  ? strget(base, iter.v.num)
-				  : var_ref(base.v.list[iter.v.num]);
-				iter.v.num++;	/* increment iter */
-				TOP_RT_VALUE = iter;
+				RUN_ACTIV.rt_env[id] = (BASE.type == TYPE_STR)
+				  ? strget(BASE, ITER.v.num)
+				  : var_ref(BASE.v.list[ITER.v.num]);
+				ITER.v.num++;	/* increment iter */
 			    }
-			} else if (base.type == TYPE_MAP) {
-			    if (iter.type == TYPE_NONE) {
-				free_var(iter);
-				iter = new_iter(base);
-			    } else if (iter.type != TYPE_ITER) {
-				Var iter2;
-				mapseek(base, iter, &iter2, 0);
-				free_var(iter);
-				iter = iter2;
+			} else if (BASE.type == TYPE_MAP) {
+			    if (ITER.type == TYPE_NONE) {
+				/* starting iteration */
+				free_var(ITER);
+				ITER = new_iter(BASE);
+			    } else if (ITER.type != TYPE_ITER) {
+				/* resuming an iteration after a db load */
+				Var iter;
+				mapseek(BASE, ITER, &iter, 0);
+				free_var(ITER);
+				ITER = iter;
 			    }
 			    var_pair pair;
-			    if (iter.type == TYPE_NONE || !iterget(iter, &pair)) {
+			    if (ITER.type == TYPE_NONE || !iterget(ITER, &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
 				RUN_ACTIV.rt_env[id] = var_ref(pair.b);
-				iternext(iter);	/* increment iter */
-				TOP_RT_VALUE = iter;
+				iternext(ITER);	/* increment iter */
 			    }
 			}
+#			undef ITER
+#			undef BASE
 		    }
 		    break;
 
 		case EOP_FOR_LIST_2:
 		    {
+#			define ITER TOP_RT_VALUE
+#			define BASE NEXT_TOP_RT_VALUE
+
 			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned index = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
-			Var iter, base;
 
-			iter = TOP_RT_VALUE;
-			base = NEXT_TOP_RT_VALUE;
-			if (base.type != TYPE_STR && base.type != TYPE_LIST
-			    && base.type != TYPE_MAP) {
+			if (BASE.type != TYPE_STR && BASE.type != TYPE_LIST
+			    && BASE.type != TYPE_MAP) {
 			    RAISE_ERROR(E_TYPE);
 			    free_var(POP());
 			    free_var(POP());
 			    JUMP(lab);
-			} else if (base.type == TYPE_STR || base.type == TYPE_LIST) {
-			    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
-				       : base.v.list[0].v.num);
-			    if (iter.type == TYPE_NONE) {
-				free_var(iter);
-				iter = new_int(1);
+			} else if (BASE.type == TYPE_STR || BASE.type == TYPE_LIST) {
+			    int len = (BASE.type == TYPE_STR
+				       ? memo_strlen(BASE.v.str)
+				       : BASE.v.list[0].v.num);
+			    if (ITER.type == TYPE_NONE) {
+				free_var(ITER);
+				ITER = new_int(1);
 			    }
-			    if (iter.v.num > len) {
+			    if (ITER.v.num > len) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = (base.type == TYPE_STR)
-				  ? strget(base, iter.v.num)
-				  : var_ref(base.v.list[iter.v.num]);
+				RUN_ACTIV.rt_env[id] = (BASE.type == TYPE_STR)
+				  ? strget(BASE, ITER.v.num)
+				  : var_ref(BASE.v.list[ITER.v.num]);
 				free_var(RUN_ACTIV.rt_env[index]);
-				RUN_ACTIV.rt_env[index] = var_ref(iter);
-				iter.v.num++;	/* increment iter */
-				TOP_RT_VALUE = iter;
+				RUN_ACTIV.rt_env[index] = var_ref(ITER);
+				ITER.v.num++;	/* increment iter */
 			    }
-			} else if (base.type == TYPE_MAP) {
-			    if (iter.type == TYPE_NONE) {
-				free_var(iter);
-				iter = new_iter(base);
-			    } else if (iter.type != TYPE_ITER) {
-				Var iter2;
-				mapseek(base, iter, &iter2, 0);
-				free_var(iter);
-				iter = iter2;
+			} else if (BASE.type == TYPE_MAP) {
+			    if (ITER.type == TYPE_NONE) {
+				free_var(ITER);
+				ITER = new_iter(BASE);
+			    } else if (ITER.type != TYPE_ITER) {
+				Var iter;
+				mapseek(BASE, ITER, &iter, 0);
+				free_var(ITER);
+				ITER = iter;
 			    }
 			    var_pair pair;
-			    if (iter.type == TYPE_NONE || !iterget(iter, &pair)) {
+			    if (ITER.type == TYPE_NONE || !iterget(ITER, &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
@@ -2335,10 +2338,11 @@ do {								\
 				RUN_ACTIV.rt_env[id] = var_ref(pair.b);
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(pair.a);
-				iternext(iter);	/* increment iter */
-				TOP_RT_VALUE = iter;
+				iternext(ITER);	/* increment iter */
 			    }
 			}
+#			undef ITER
+#			undef BASE
 		    }
 		    break;
 
