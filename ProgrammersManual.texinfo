@@ -3335,7 +3335,6 @@ byte represented in @var{bin_string}.  Raises @code{E_INVARG} if
 
 @example
 decode_binary("foo")            @result{}   @{"foo"@}
-decode_binary("~~foo")          @result{}   @{"~foo"@}
 decode_binary("foo~0D~0A")      @result{}   @{"foo", 13, 10@}
 decode_binary("foo~0Abar~0A")   @result{}   @{"foo", 10, "bar", 10@}
 decode_binary("foo~0D~0A", 1)   @result{}   @{102, 111, 111, 13, 10@}
