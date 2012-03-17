@@ -1,11 +1,45 @@
-Read `README.lambdamoo' for general information on LambdaMOO.
+See `README.lambdamoo' for general information on LambdaMOO.
 
-More information on Stunt is available here: http://stunt.io/.
+More information on Stunt is available here: http://stunt.io/.  If you
+want to get up and running quickly, consider starting with Improvise,
+the Stunt starter kit: https://github.com/toddsundsted/improvise.
 
-This is release 7 of the Stunt extensions to the LambdaMOO server.  It
-is based on wrog's "1.8.4" version from SourceForge.  Read the very
-important WARNING below before running this on your existing
-database!!
+This is Release 8 of the Stunt extensions to the LambdaMOO server.  It
+is based on the latest "1.8.3+" version from SourceForge.  Read the
+very important WARNING below before running this on your existing
+database!!!
+
+Release 8 enhances existing features and improves performance in
+specific areas:
+
+* `^' is an alias for the first element in a sequence (to go along
+  with `$').
+
+* The map datatype supports index/range access/assignment using `^'
+  and `$' (previously these only worked on lists).
+
+* The `for' loop now sports the following syntax:
+
+    for v, i in (...)
+
+When used in this way, the first variable is assigned the value from
+the sequence and the second variable is assigned the index (the
+position in the case of lists and strings) or key (in the case of
+maps).
+
+The last change makes iterating over a map more performant.  Iteration
+no longer requires a lengthly call to get the keys before actually
+performing the iteration.
+
+    m = [... map ...];
+    for v, k in (m)
+      ...
+    endfor
+
+This release also improves the performance of code that uses indexed
+assignment (code like `foo[x][y][x] = "blah"').  In my specific case
+(package import in the Stunt core), it knocked off ~20% of the overall
+time required to import a large package (LambdaCore, for example).
 
 Stunt includes the following functionality not found in the main
 server:
@@ -20,14 +54,16 @@ server:
 
 2) Task Local Storage
    The built-ins `task_local' and `set_task_local' retrieve/store a
-   task local value.
+   task local value.  The value is automatically freed when the task
+   finishes.
 
 3) Map Datatype
    The server includes a native map datatype based on a binary search
    tree (specifically, a red-black tree).  The implementation allows
    in-order traversal, efficient lookup/insertion/deletion, and
    supports existing MOO datatypes as values (keys may not be lists or
-   maps).
+   maps).  Index, range, and looping operations on lists and strings
+   also work on maps.
 
 4) JSON Parsing/Generation
    The built-ins `parse_json' and `generate_json' transform MOO
