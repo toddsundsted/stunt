@@ -31,7 +31,6 @@
 #include "options.h"
 #include "pattern.h"
 #include "random.h"
-#include "ref_count.h"
 #include "sha1.h"
 #include "sha256.h"
 #include "streams.h"
