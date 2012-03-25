@@ -264,11 +264,8 @@
  *
  ******************************************************************************
  */
-/* #define BYTECODE_REDUCE_REF */
 
-#ifdef BYTECODE_REDUCE_REF
-#error Think carefully before enabling BYTECODE_REDUCE_REF.  This feature is still beta.  Comment out this line if you are sure.
-#endif
+#define BYTECODE_REDUCE_REF /* */
 
 /******************************************************************************
  * The server can merge duplicate strings on load to conserve memory.  This
