@@ -2914,9 +2914,9 @@ counts one tick for every expression evaluation (other than variables and
 literals), one for every @samp{if}, @samp{fork} or @samp{return} statement, and
 one for every iteration of a loop.  If the count gets all the way down to zero,
 the task is immediately and unceremoniously aborted.  By default, command and
-server tasks begin with an store of 30,000 ticks; this is enough for almost all
-normal uses.  Forked, suspended, and reading tasks are allotted 15,000 ticks
-each.  
+server tasks begin with an store of 60,000 ticks; this is enough for almost all
+normal uses.  Forked, suspended, and reading tasks are allotted 30,000 ticks
+each.
 
 These limits on seconds and ticks may be changed from within the database, as
 can the behavior of the server after it aborts a task for running out; see the
@@ -5910,8 +5910,8 @@ network connections, clearing out certain tables, etc.).
 As described earlier, in the section describing MOO tasks, the server places
 limits on the number of seconds for which any task may run continuously and the
 number of ``ticks,'' or low-level operations, any task may execute in one
-unbroken period.  By default, foreground tasks may use 30,000 ticks and five
-seconds, and background tasks may use 15,000 ticks and three seconds.  These
+unbroken period.  By default, foreground tasks may use 60,000 ticks and five
+seconds, and background tasks may use 30,000 ticks and three seconds.  These
 defaults can be overridden from within the database by defining any or all of
 the following properties on @code{$server_options} and giving them integer
 values:
