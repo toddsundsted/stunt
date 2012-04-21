@@ -1913,6 +1913,46 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_that_descendants_returns_an_empty_list_if_an_object_has_no_children
+    run_test_as('programmer') do
+      o = create(:nothing)
+      assert_equal [], descendants(o)
+    end
+  end
+
+  def test_that_ancestors_returns_an_empty_list_if_an_object_has_no_children
+    run_test_as('programmer') do
+      o = create(:nothing)
+      assert_equal [], ancestors(o)
+    end
+  end
+
+  def test_that_ancestors_serializes_the_inheritance_graph_correctly
+    run_test_as('programmer') do
+      o = create(:nothing)
+      a = create(o)
+      b = create(o)
+      c = create(o)
+      m = create([a, b])
+      n = create([b, c])
+      z = create([m, n])
+      assert_equal [m, a, o, b, n, c], ancestors(z)
+    end
+  end
+
+  def test_that_descendants_serializes_the_inheritance_graph_correctly
+    run_test_as('programmer') do
+      o = create(:nothing)
+      a = create(o)
+      b = create(o)
+      c = create(o)
+      m = create([a, b])
+      n = create([b, c])
+      z = create([m, n])
+      assert_equal [a, m, z, b, n, c], descendants(o)
+    end
+  end
+
   private
 
   def kahuna(parent, location, name)
