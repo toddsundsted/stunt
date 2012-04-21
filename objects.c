@@ -479,23 +479,6 @@ bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
     }
 }
 
-struct children_data {
-    Var r;
-    int i;
-};
-
-static int
-add_to_list(void *data, Objid child)
-{
-    struct children_data *d = data;
-
-    d->i++;
-    d->r.v.list[d->i].type = TYPE_OBJ;
-    d->r.v.list[d->i].v.obj = child;
-
-    return 0;
-}
-
 static package
 bf_children(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
@@ -505,15 +488,8 @@ bf_children(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (!valid(oid))
 	return make_error_pack(E_INVARG);
-    else {
-	struct children_data d;
-
-	d.r = new_list(db_count_children(oid));
-	d.i = 0;
-	db_for_all_children(oid, add_to_list, &d);
-
-	return make_var_pack(d.r);
-    }
+    else
+	return make_var_pack(db_children(oid));
 }
 
 static package

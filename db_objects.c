@@ -501,6 +501,12 @@ db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
     return 0;
 }
 
+Var
+db_children(Objid oid)
+{
+    return var_ref(objects[oid]->children);
+}
+
 static int
 check_for_duplicate_parents(Var parents)
 {

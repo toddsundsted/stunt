@@ -138,6 +138,14 @@ extern int db_object_bytes(Objid);
 				 * properties.
 				 */
 
+extern Var db_children(Objid);
+				/* Returns a list of the children of the
+				 * given object.  db_children() does not/
+				 * can not free the returned list.  The caller
+				 * should therefore free it once it has finished
+				 * operating on it.
+				 */
+
 extern Var db_ancestors(Objid, bool);
 				/* Returns a list of the ancestors of the
 				 * given object.  db_ancestors() does not/
