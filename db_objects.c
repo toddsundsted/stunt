@@ -28,12 +28,20 @@
 #include "program.h"
 #include "storage.h"
 #include "utils.h"
+#include "xtrapbits.h"
 
 static Object **objects;
 static int num_objects = 0;
 static int max_objects = 0;
 
 static Var all_users;
+
+/* used in graph traversals */
+static unsigned char *bit_array;
+static size_t array_size = 0;
+
+#define ARRAY_SIZE_IN_BYTES (array_size / 8)
+#define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
 
 
 /*********** Objects qua objects ***********/
@@ -77,7 +85,7 @@ static void
 ensure_new_object(void)
 {
     if (max_objects == 0) {
-	max_objects = 100;
+	max_objects = 128;
 	objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
     }
     if (num_objects >= max_objects) {
@@ -90,6 +98,16 @@ ensure_new_object(void)
 	myfree(objects, M_OBJECT_TABLE);
 	objects = new;
 	max_objects *= 2;
+    }
+
+    if (array_size == 0) {
+	array_size = 4096;
+	bit_array = mymalloc(ARRAY_SIZE_IN_BYTES * sizeof(unsigned char), M_ARRAY);
+    }
+    if (num_objects >= array_size) {
+	myfree(bit_array, M_ARRAY);
+	bit_array = mymalloc(ARRAY_SIZE_IN_BYTES * 2 * sizeof(unsigned char), M_ARRAY);
+	array_size *= 2;
     }
 }
 
@@ -335,42 +353,94 @@ db_object_bytes(Objid oid)
 }
 
 
-/* Define db_ancestors(), db_descendants(), db_all_locations(), and
- * db_all_contents().  To simplify the construction of the macro, use
- * enlist_var() to make everything look like a list.
+/* Traverse the tree/graph twice.  First to count the maximal number
+ * of members, and then to copy the members.  Use the bit array to
+ * mark objects that have been copied, to prevent double copies.
+ * Note: the final step forcibly sets the length of the list, which
+ * may be less than the allocated length.  It's possible to calculate
+ * the correct length, but that would require one more round of bit
+ * array bookkeeping.
  */
+
 #define DEFUNC(name, field)						\
-Var db_##name(Objid oid, bool full)					\
+static									\
+int32 db1_##name(Object *o)						\
 {									\
-    Var list = new_list(0);						\
-    if (oid == NOTHING)							\
-	return list;							\
-    if (full)								\
-	list = listappend(list, new_obj(oid));				\
-    Var tmp, stack, top, next;						\
-    tmp = dbpriv_find_object(oid)->field;				\
-    stack = enlist_var(var_ref(tmp));					\
-    while (listlength(stack) > 0) {					\
-	top = var_ref(stack.v.list[1]);					\
-	stack = listdelete(stack, 1);					\
-	if (valid(top.v.obj)) {						\
-	    if (top.v.obj != oid) {					\
-		tmp = dbpriv_find_object(top.v.obj)->field;		\
-		next = enlist_var(var_ref(tmp));			\
-		stack = listconcat(next, stack);			\
-	    }								\
-	    list = setadd(list, top);					\
-	}								\
-	else {								\
-	    free_var(top);						\
+    int i, c;								\
+    Var tmp, field = enlist_var(var_ref(o->field));			\
+    Object *o2;								\
+    Objid oid;								\
+    int32 n = 0;							\
+									\
+    FOR_EACH(tmp, field, i, c) {					\
+	oid = tmp.v.obj;						\
+	if (valid(oid)) {						\
+	    o2 = dbpriv_find_object(oid);				\
+	    n += db1_##name(o2) + 1;					\
 	}								\
     }									\
-    free_var(stack);							\
+									\
+    free_var(field);							\
+									\
+    return n;								\
+}									\
+static									\
+void db2_##name(Object *o, Var *plist, int *px)				\
+{									\
+    int i, c;								\
+    Var tmp, field = enlist_var(var_ref(o->field));			\
+    Object *o2;								\
+    Objid oid;								\
+									\
+    FOR_EACH(tmp, field, i, c) {					\
+	oid = tmp.v.obj;						\
+	if (valid(oid)) {						\
+	    if (bit_is_false(bit_array, oid)) {				\
+		bit_true(bit_array, oid);				\
+		plist->v.list[++(*px)] = new_obj(oid);			\
+		o2 = dbpriv_find_object(oid);				\
+		db2_##name(o2, plist, px);				\
+	    }								\
+	}								\
+    }									\
+									\
+    free_var(field);							\
+}									\
+									\
+Var db_##name(Objid oid, bool full)					\
+{									\
+    if (oid == NOTHING)							\
+	return new_list(0);						\
+									\
+    Object *o = dbpriv_find_object(oid);				\
+									\
+    if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) ||	\
+	(o->field.type == TYPE_LIST && listlength(o->field) == 0))	\
+	return full ? enlist_var(new_obj(oid)) : new_list(0);		\
+									\
+    int32 n = db1_##name(o) + (full ? 1 : 0);				\
+									\
+    CLEAR_BIT_ARRAY();							\
+									\
+    Var list = new_list(n);						\
+    int i = 0;								\
+									\
+    if (full) {								\
+	list.v.list[++i] = new_obj(oid);				\
+	bit_true(bit_array, oid);					\
+    }									\
+									\
+    db2_##name(o, &list, &i);						\
+									\
+    list.v.list[0].v.num = i; /* sketchy */				\
+									\
     return list;							\
 }
 
-DEFUNC(ancestors, parents)
+DEFUNC(ancestors, parents);
 DEFUNC(descendants, children);
+
+/* the following two could be replace by better/more specific implementations */
 DEFUNC(all_locations, location);
 DEFUNC(all_contents, contents);
 
