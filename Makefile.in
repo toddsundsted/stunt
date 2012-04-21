@@ -428,7 +428,8 @@ db_io.o: db_io.c my-ctype.h config.h my-stdarg.h my-stdio.h my-stdlib.h \
   str_intern.h unparse.h
 db_objects.o: db_objects.c my-string.h config.h db.h program.h \
   structures.h my-stdio.h version.h db_private.h exceptions.h list.h \
-  streams.h storage.h utils.h execute.h opcode.h options.h parse_cmd.h
+  streams.h storage.h utils.h execute.h opcode.h options.h parse_cmd.h \
+  xtrapbits.h
 db_properties.o: db_properties.c collection.h structures.h my-stdio.h \
   config.h db.h program.h version.h db_private.h exceptions.h list.h \
   streams.h storage.h my-string.h utils.h execute.h opcode.h options.h \
