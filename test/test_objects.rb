@@ -1953,6 +1953,58 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_that_ancestors_includes_the_object_if_the_second_argument_is_true
+    run_test_as('programmer') do
+      o = create(:nothing)
+      a = create(o)
+      b = create(o)
+      c = create(o)
+      m = create([a, b])
+      n = create([b, c])
+      z = create([m, n])
+      assert_equal [z, m, a, o, b, n, c], ancestors(z, 1)
+    end
+  end
+
+  def test_that_descendants_includes_the_object_if_the_second_argument_is_true
+    run_test_as('programmer') do
+      o = create(:nothing)
+      a = create(o)
+      b = create(o)
+      c = create(o)
+      m = create([a, b])
+      n = create([b, c])
+      z = create([m, n])
+      assert_equal [o, a, m, z, b, n, c], descendants(o, 1)
+    end
+  end
+
+  def test_that_ancestors_does_not_include_the_object_if_the_second_argument_is_false
+    run_test_as('programmer') do
+      o = create(:nothing)
+      a = create(o)
+      b = create(o)
+      c = create(o)
+      m = create([a, b])
+      n = create([b, c])
+      z = create([m, n])
+      assert_equal [m, a, o, b, n, c], ancestors(z, 0)
+    end
+  end
+
+  def test_that_descendants_does_not_include_the_object_if_the_second_argument_is_false
+    run_test_as('programmer') do
+      o = create(:nothing)
+      a = create(o)
+      b = create(o)
+      c = create(o)
+      m = create([a, b])
+      n = create([b, c])
+      z = create([m, n])
+      assert_equal [a, m, z, b, n, c], descendants(o, 0)
+    end
+  end
+
   private
 
   def kahuna(parent, location, name)

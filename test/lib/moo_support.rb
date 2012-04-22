@@ -269,12 +269,12 @@ module MooSupport
     simplify command %Q|; return children(#{obj_ref(object)});|
   end
 
-  def ancestors(object)
-    simplify command %Q|; return ancestors(#{obj_ref(object)});|
+  def ancestors(*args)
+    simplify command %Q|; return ancestors(#{args.map{|a| value_ref(a)}.join(', ')});|
   end
 
-  def descendants(object)
-    simplify command %Q|; return descendants(#{obj_ref(object)});|
+  def descendants(*args)
+    simplify command %Q|; return descendants(#{args.map{|a| value_ref(a)}.join(', ')});|
   end
 
   def recycle(object)
