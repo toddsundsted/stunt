@@ -496,28 +496,28 @@ static package
 bf_ancestors(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Objid oid = arglist.v.list[1].v.obj;
+    bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
     free_var(arglist);
 
     if (!valid(oid))
 	return make_error_pack(E_INVARG);
-    else {
-	return make_var_pack(db_ancestors(oid, false));
-    }
+    else
+	return make_var_pack(db_ancestors(oid, full));
 }
 
 static package
 bf_descendants(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Objid oid = arglist.v.list[1].v.obj;
+    bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
     free_var(arglist);
 
     if (!valid(oid))
 	return make_error_pack(E_INVARG);
-    else {
-	return make_var_pack(db_descendants(oid, false));
-    }
+    else
+	return make_var_pack(db_descendants(oid, full));
 }
 
 static int
@@ -804,8 +804,8 @@ register_objects(void)
     register_function("parents", 1, 1, bf_parents, TYPE_OBJ);
     register_function("parent", 1, 1, bf_parent, TYPE_OBJ);
     register_function("children", 1, 1, bf_children, TYPE_OBJ);
-    register_function("ancestors", 1, 1, bf_ancestors, TYPE_OBJ);
-    register_function("descendants", 1, 1, bf_descendants, TYPE_OBJ);
+    register_function("ancestors", 1, 2, bf_ancestors, TYPE_OBJ, TYPE_ANY);
+    register_function("descendants", 1, 2, bf_descendants, TYPE_OBJ, TYPE_ANY);
     register_function("max_object", 0, 0, bf_max_object);
     register_function("players", 0, 0, bf_players);
     register_function("is_player", 1, 1, bf_is_player, TYPE_OBJ);
