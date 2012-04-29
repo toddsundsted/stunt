@@ -4401,6 +4401,73 @@ set_connection_option(player, "hold-input", 0)
 to allow commands once again to be read and interpreted normally.
 @end deftypefun
 
+@deftypefun map read_http (@var{request-or-response} [, obj @var{conn}])
+Reads lines from the connection @var{conn} (or, if not provided, from the
+player that typed the command that initiated the current task) and attempts to
+parse the lines as if they are an HTTP request or response.
+@var{request-or-response} must be either the string @code{"request"} or
+@code{"response"}.  It dictates the type of parsing that will be done.
+
+Just like @code{read()}, if @var{conn} is provided, then the programmer must
+either be a wizard or the owner of @var{conn}; if @var{conn} is not provided,
+then @code{read_http()} may only be called by a wizard and only in the task
+that was last spawned by a command from the connection in question.  Otherwise,
+@code{E_PERM} is raised.  Likewise, if @var{conn} is not currently connected
+and has no pending lines of input, or if the connection is closed while a task
+is waiting for input but before any lines of input are received, then
+@code{read_http()} raises @code{E_INVARG}.
+
+If parsing fails because the request or response is syntactically incorrect,
+@code{read_http()} will return a map with the single key @code{"error"} and a
+list of values describing the reason for the error.  If parsing succeeds,
+@code{read_http()} will return a map with an appropriate subset of the
+following keys, with values parsed from the HTTP request or response:
+@code{"method"}, @code{"uri"}, @code{"headers"}, @code{"body"}, @code{"status"}
+and @code{"upgrade"}.
+
+@quotation
+@emph{Fine point:}
+@code{read_http()} assumes the input strings are binary strings.  When called
+interactively, as in the example below, the programmer must insert the literal
+line terminators or parsing will fail.
+@end quotation
+
+The following example interactively reads an HTTP request from the player's
+connection.
+
+@example
+read_http("request", player)
+GET /path HTTP/1.1~0D~0A
+Host: example.com~0D~0A
+~0D~0A
+@end example
+
+In this example, the string @code{~0D~0A} ends the request.  The call returns
+the following (the request has no body):
+
+@example
+["headers" -> ["Host" -> "example.com"], "method" -> "GET", "uri" -> "/path"]
+@end example
+
+The following example interactively reads an HTTP response from the player's
+connection.
+
+@example
+read_http("response", player)
+HTTP/1.1 200 Ok~0D~0A
+Content-Length: 10~0D~0A
+~0D~0A
+1234567890
+@end example
+
+The call returns the following:
+
+@example
+["body" -> "1234567890", "headers" -> ["Content-Length" -> "10"], "status" -> 200]
+@end example
+
+@end deftypefun
+
 @deftypefun none force_input (obj @var{conn}, str @var{line} [, @var{at-front}])
 Inserts the string @var{line} as an input task in the queue for the connection
 @var{conn}, just as if it had arrived as input over the network.  If
