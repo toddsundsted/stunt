@@ -1,0 +1,3739 @@
+** LambdaMOO Database, Format Version 12 **
+11
+94
+0
+2
+5
+6
+#0
+System
+16
+2
+1
+2
+4
+0
+4
+1
+1
+3
+4
+0
+19
+_log_error
+5
+172
+-1
+server_started
+5
+172
+-1
+do_login_command
+5
+172
+-1
+authenticate
+2
+172
+-1
+private
+2
+172
+-1
+protected
+2
+172
+-1
+restrict_to_server
+2
+172
+-1
+restrict_to_builtin
+2
+172
+-1
+restrict_to_caller
+2
+172
+-1
+permit
+2
+172
+-1
+check_create_permission
+2
+172
+-1
+check_controls
+2
+172
+-1
+_unpack_verb_code
+2
+172
+-1
+_pack_verb_code
+2
+172
+-1
+bf_verb_code verb_code
+5
+172
+-1
+bf_set_verb_code set_verb_code
+5
+172
+-1
+verb_detail
+5
+172
+-1
+_parse_content_type
+2
+172
+-1
+_generate_content_type
+2
+172
+-1
+10
+system
+server_options
+nothing
+ambiguous_match
+failed_match
+passkey_players
+disable_passkey_login
+external_compilers
+last_login_connection
+welcome_message
+14
+1
+0
+2
+1
+1
+1
+2
+1
+1
+-1
+2
+1
+1
+-2
+2
+1
+1
+-3
+2
+1
+4
+2
+1
+5
+1
+6
+5
+0
+0
+0
+5
+0
+10
+0
+2
+1
+1
+-2
+2
+1
+2
+Welcome to Stunt!  For information about Stunt, check out http://stunt.io/.  To connect to the server, type "connect <credentials>".
+2
+1
+5
+2
+1
+5
+2
+1
+5
+2
+1
+5
+2
+1
+#1
+Server Options
+16
+2
+1
+2
+4
+0
+4
+0
+4
+0
+0
+8
+support_numeric_verbname_strings
+protect_verb_code
+protect_set_verb_code
+max_concat_catchable
+fg_seconds
+fg_ticks
+bg_seconds
+bg_ticks
+8
+0
+0
+2
+1
+0
+1
+2
+0
+0
+1
+2
+0
+0
+1
+2
+0
+0
+5
+2
+0
+0
+60000
+2
+0
+0
+3
+2
+0
+0
+30000
+2
+0
+#2
+Kernel Package
+0
+2
+1
+-1
+4
+8
+1
+0
+1
+1
+1
+3
+1
+10
+1
+4
+1
+7
+1
+8
+1
+9
+1
+4
+4
+0
+0
+11
+identifier
+version
+manifest
+requires
+relocate
+provides
+instructions
+description
+authors
+homepage
+license
+12
+2
+kernel
+2
+1
+2
+1.0.8
+2
+1
+4
+7
+4
+2
+1
+0
+2
+system
+4
+2
+1
+1
+2
+server_options
+4
+2
+1
+3
+2
+dictionary
+4
+2
+1
+10
+2
+changelog
+4
+2
+1
+4
+2
+object
+4
+2
+1
+8
+2
+shapes
+4
+2
+1
+9
+2
+composed
+2
+1
+4
+0
+2
+1
+4
+7
+2
+system.system
+2
+system.server_options
+2
+dictionary.kernel
+2
+dictionary.object
+2
+dictionary.shapes
+2
+dictionary.composed
+2
+system.passkey_players
+2
+1
+4
+0
+2
+1
+4
+1
+2
+install-dictionary
+2
+1
+2
+The kernel package comprises the minimal set of objects necessary to hack on and/or bootstrap a core.
+2
+1
+4
+1
+2
+Todd Sundsted
+2
+1
+2
+http://stunt.io/packages/kernel
+2
+1
+2
+FreeBSD License
+2
+1
+5
+2
+4
+#3
+Kernel Dictionary
+16
+2
+1
+2
+4
+0
+4
+0
+4
+1
+1
+0
+5
+handle_uncaught_error
+5
+172
+-1
+handle_task_timeout
+5
+172
+-1
+server_started
+5
+172
+-1
+authenticate
+5
+172
+-1
+lookup*_reference
+5
+172
+-1
+4
+kernel
+object
+shapes
+composed
+4
+1
+3
+2
+1
+1
+4
+2
+1
+1
+8
+2
+1
+1
+9
+2
+1
+#4
+Object
+144
+2
+1
+2
+4
+0
+1
+-1
+4
+6
+1
+8
+1
+9
+1
+6
+1
+7
+1
+2
+1
+5
+0
+1
+aliases
+1
+4
+0
+2
+4
+#5
+Wizard
+7
+5
+1
+7
+4
+0
+1
+4
+4
+0
+2
+@strip-core-and-shutdown
+5
+8
+-1
+huh
+5
+172
+-1
+1
+passkey
+2
+0
+0
+5
+0
+5
+5
+4
+#6
+Programmer
+3
+6
+1
+7
+4
+0
+1
+4
+4
+0
+0
+1
+passkey
+2
+0
+0
+5
+0
+5
+6
+4
+#7
+Home
+0
+6
+1
+2
+4
+2
+1
+5
+1
+6
+1
+4
+4
+0
+1
+eval*uate
+5
+88
+-2
+0
+1
+5
+6
+4
+#8
+Shapes, Serialization/Deserialization Library
+0
+2
+1
+2
+4
+0
+1
+4
+4
+0
+23
+_log
+5
+172
+-1
+_suspend_if_necessary
+2
+172
+-1
+_controls
+5
+164
+-1
+_controls_verb
+5
+164
+-1
+_controls_property
+5
+164
+-1
+objects
+5
+172
+-1
+read_object
+5
+172
+-1
+write_object
+5
+172
+-1
+_parent_property_info
+5
+172
+-1
+_values
+5
+172
+-1
+values
+5
+172
+-1
+read_value
+5
+172
+-1
+write_value
+5
+172
+-1
+_write_parents
+5
+172
+-1
+_write_player
+5
+172
+-1
+read_verb
+5
+172
+-1
+write_verb
+5
+172
+-1
+read_property
+5
+172
+-1
+write_property
+5
+172
+-1
+bare_object
+2
+172
+-1
+add_value
+2
+172
+-1
+add_property_definition
+2
+172
+-1
+add_verb_definition
+2
+172
+-1
+0
+1
+5
+2
+4
+#9
+Composed, Component Library
+0
+2
+1
+2
+4
+0
+1
+4
+4
+0
+43
+_log
+5
+172
+-1
+_move
+5
+172
+-1
+_suspend_if_necessary
+2
+172
+-1
+_parse_specifier
+2
+172
+-1
+_parse_operation
+2
+172
+-1
+_parse_version
+2
+172
+-1
+_compare_versions
+2
+172
+-1
+_sort_versions
+2
+172
+-1
+_match match
+2
+172
+-1
+_map_specifier
+2
+172
+-1
+_unmap_specifier
+2
+172
+-1
+_install
+2
+172
+-1
+_uninstall
+2
+172
+-1
+_find_requires_provider
+2
+172
+-1
+reinitialize
+2
+172
+-1
+_check_required_provides
+2
+172
+-1
+_check_provided_requires
+2
+172
+-1
+_generate_global_mapping_keyed_on_object_number
+5
+172
+-1
+_generate_global_mapping_keyed_on_identifier
+5
+172
+-1
+_map
+2
+172
+-1
+_lookup_by_object_number
+2
+172
+-1
+_lookup_by_label
+2
+172
+-1
+_is_ancestor
+2
+172
+-1
+_contents
+2
+172
+-1
+install
+5
+172
+-1
+uninstall
+5
+172
+-1
+delete
+5
+172
+-1
+_set_seconds_and_ticks
+5
+172
+-1
+_reset_seconds_and_ticks
+5
+172
+-1
+import
+5
+172
+-1
+export
+5
+172
+-1
+_fetch_from_archive
+5
+172
+-1
+fetch_index
+2
+172
+-1
+fetch_package_to_cache
+2
+172
+-1
+import_package_from_archive
+5
+172
+-1
+import_package_from_cache
+5
+172
+-1
+export_package_to_cache
+5
+172
+-1
+import_package_from_file
+5
+172
+-1
+export_package_to_file
+5
+172
+-1
+pretty_print_cached_package
+5
+172
+-1
+@install
+5
+156
+0
+@uninstall
+5
+156
+0
+@list
+5
+156
+0
+9
+packages
+provides_cache
+requires_cache
+last_fetch_index
+archived
+cached
+archive_host
+archive_port
+archive_base_uri
+10
+4
+1
+1
+2
+2
+0
+10
+1
+2
+kernel
+10
+1
+2
+1.0.8
+4
+1
+1
+2
+2
+0
+10
+0
+2
+0
+0
+0
+2
+0
+10
+0
+2
+0
+10
+0
+2
+0
+2
+stunt.io
+2
+0
+0
+80
+2
+0
+2
+/v1
+2
+0
+5
+2
+4
+#10
+Changelog
+16
+2
+1
+2
+4
+0
+1
+-1
+4
+0
+1
+log
+2
+172
+-1
+26
+1311681611
+1311705199
+1313452513
+1315679164
+1315956214
+1316093967
+1316094064
+1317297266
+1317487599
+1317741809
+1319025014
+1319537884
+1320954195
+1321316054
+1321356258
+1321643106
+1321643582
+1323085326
+1323087749
+1328836140
+1329004700
+1329006449
+1329757584
+1329871032
+1329874322
+1338986016
+26
+2
+Added code to disable login by passkey players.
+2
+1
+2
+Added code to write a warning to the log when passkey authentication is enabled.
+2
+1
+2
+Moved passkey_login and passkey_players to the system object (#0) so that they are harder to subvert.
+2
+1
+2
+Updated `strip-core-and-shutdown' verb to reflect passkey changes.
+2
+1
+2
+Fixed incorrect implementation of specified test for a built-in function entry.
+2
+1
+2
+Added kernel support for enhanced verb programming.
+2
+1
+2
+Removed all verbs on core wiz/prog location except `map' and `eval'.
+2
+1
+2
+Added support for `chunk_length'.
+2
+1
+2
+Added support for `content_type'.
+2
+1
+2
+Removed `map' verb from core wiz/prog location.
+2
+1
+2
+Changed `restrict_to_caller' to check the object on which the verb was defined, instead of used.
+2
+1
+2
+Fixed scope bug in `$lookup()'.
+2
+1
+2
+Added `$configuration' -- package independent, per-environment, per-server configuration goes/stays here.
+2
+1
+2
+`$lookup()' now allows wizards to specify the package to search.
+2
+1
+2
+`$composed' no longer assumes the existence of `$sysobj'.
+2
+1
+2
+Remove `$configuration' -- replaced it with an app-specific property.
+2
+1
+2
+Added `import_package_from_file()' and `export_package_to_file' to `$composed'.
+2
+1
+2
+Added a welcome message and cleaned up `do_login_command()' and `authenticate()'.
+2
+1
+2
+Shape" is now called "Shapes".
+2
+1
+2
+Reset `#0.last_login_connection' on server start.
+2
+1
+2
+Tweaks to use the new for loop syntax.
+2
+1
+2
+Moved verb `audit' out of $composed.
+2
+1
+2
+`$verb_detail()' handles the case where `caller_perms()' is `$nothing'.
+2
+1
+2
+Added `fg/bg_seconds', `fg/bg_ticks' and `max_concat_catchable' properties to `$server_options'.
+2
+1
+2
+In the `@import' command, set the seconds/ticks to a large number so suspending is not necessary.
+2
+1
+2
+Properly check the file handle when importing/exporting from/to a file.
+2
+1
+#0:0
+$private();
+{e} = args;
+desc = e[2];
+{line, @lines} = e[4];
+server_log(tostr(line[4], ":", line[2], (line[4] != line[1]) ? tostr(" (this == ", line[1], ")") | "", ", line ", line[6], ":  ", desc));
+for line in (lines)
+server_log(tostr("... called from ", line[4], ":", line[2], (line[4] != line[1]) ? tostr(" (this == ", line[1], ")") | "", ", line ", line[6]));
+endfor
+server_log("(End of traceback)");
+.
+#0:1
+$restrict_to_server();
+for parent in (parents(this))
+if (respond_to(parent, "server_started"))
+try
+parent:server_started(@args);
+except e (ANY)
+this:_log_error(e);
+endtry
+endif
+endfor
+.
+#0:2
+$restrict_to_server();
+try
+subject = $nothing;
+set_connection_option(player, "hold-input", 1);
+if (!args)
+if ((player < this.last_login_connection) && this.welcome_message)
+this.last_login_connection = player;
+notify(player, this.welcome_message);
+endif
+return;
+elseif (args[1] != "connect")
+notify(player, "*** Invalid ***");
+return;
+endif
+try
+subject = $authenticate(@args[2..$]);
+except e (ANY)
+this:_log_error(e);
+notify(player, "*** Failed ***");
+subject = $nothing;
+return;
+endtry
+if ((!valid(subject)) || (!is_player(subject)))
+suspend(2);
+notify(player, "*** Failed ***");
+subject = $nothing;
+return;
+endif
+finally
+set_connection_option(player, "hold-input", 0);
+return subject;
+endtry
+.
+#0:3
+$permit("wizard");
+valid = 1;
+for arg in (args)
+if (typeof(arg) != STR)
+valid = 0;
+endif
+endfor
+valid || raise(E_INVARG);
+for parent in (parents(this))
+if (respond_to(parent, "authenticate") && `valid(subject = parent:authenticate(@args)) ! ANY')
+return subject;
+endif
+endfor
+return $failed_match;
+.
+#0:4
+clients = args;
+callers = callers();
+(length(callers) > 1) || raise(E_PERM, "Private verb");
+((((callers[1][4] == callers[2][4]) && valid(callers[1][4])) && (callers[1][1] == callers[2][1])) && valid(callers[1][1])) || raise(E_PERM, "Private verb");
+((!clients) || (callers[2][2] in clients)) || raise(E_PERM, tostr("Private verb:  \"", callers[2][2], "\" not in verb list ", toliteral(clients)));
+return;
+"clients = args;";
+"callers = callers();";
+"length(callers) > 1 || raise(E_PERM, \"Private verb\");";
+"callers[1][4] == callers[2][4] && valid(callers[1][4]) && callers[1][1] == callers[2][1] && valid(callers[1][1]) || raise(E_PERM, \"Private verb\");";
+"!clients || callers[2][2] in clients || raise(E_PERM, tostr(\"Private verb:  \\\"\", callers[2][2], \"\\\" not in verb list \", toliteral(clients)));";
+"/*";
+"Only allow the call if the caller and the callee were both defined";
+"on the same object and the call between caller and callee was";
+"performed on the same instance.";
+"*/";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"content_type:application/x-moocode";
+"updated_at:Tue Sep 13 19:26:52 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:5
+clients = args;
+callers = callers();
+(length(callers) > 1) || raise(E_PERM, "Protected verb");
+((callers[1][1] == callers[2][1]) && valid(callers[1][1])) || raise(E_PERM, "Protected verb");
+((!clients) || (callers[2][2] in clients)) || raise(E_PERM, tostr("Protected verb:  \"", callers[2][2], "\" not in verb list ", toliteral(clients)));
+return;
+"clients = args;";
+"callers = callers();";
+"length(callers) > 1 || raise(E_PERM, \"Protected verb\");";
+"callers[1][1] == callers[2][1] && valid(callers[1][1]) || raise(E_PERM, \"Protected verb\");";
+"!clients || callers[2][2] in clients || raise(E_PERM, tostr(\"Protected verb:  \\\"\", callers[2][2], \"\\\" not in verb list \", toliteral(clients)));";
+"/*";
+"Only allow the call if the call between caller and the callee was";
+"performed on the same instance.";
+"*/";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"content_type:application/x-moocode";
+"updated_at:Tue Sep 13 19:26:52 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:6
+args && raise(E_ARGS);
+{dummy, @callers} = callers();
+callers && raise(E_PERM, "Server-only verb");
+return;
+"args && raise(E_ARGS);";
+"{dummy, @callers} = callers();";
+"callers && raise(E_PERM, \"Server-only verb\");";
+"/*";
+"Only allow the call if the caller is the server.";
+"*/";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"chunk_length:7";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Tue Oct 18 07:27:43 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:7
+clients = args;
+{dummy, @callers} = callers();
+callers || raise(E_PERM, "Builtin-only verb");
+(((callers[1][4] == $nothing) && (callers[1][3] == $nothing)) && (callers[1][2] != "")) || raise(E_PERM, "Builtin-only verb");
+((!clients) || (callers[1][2] in clients)) || raise(E_PERM, tostr("Builtin-only verb:  \"", callers[1][2], "\" not in verb list ", toliteral(clients)));
+return;
+"clients = args;";
+"{dummy, @callers} = callers();";
+"callers || raise(E_PERM, \"Builtin-only verb\");";
+"callers[1][4] == $nothing && callers[1][3] == $nothing && callers[1][2] != \"\" || raise(E_PERM, \"Builtin-only verb\");";
+"!clients || callers[1][2] in clients || raise(E_PERM, tostr(\"Builtin-only verb:  \\\"\", callers[1][2], \"\\\" not in verb list \", toliteral(clients)));";
+"/*";
+"Only allow the call if the caller is a built-in function.";
+"*/";
+"/* fixed incorrect implementation of specified test Sat Sep 10 15:39:39 2011 EDT*/";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"chunk_length:10";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Tue Oct 18 07:27:43 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:8
+{caller, @clients} = args;
+{dummy, @callers} = callers();
+callers || raise(E_PERM, "Restricted verb");
+((callers[1][4] == caller) && valid(callers[1][1])) || raise(E_PERM, "Restricted verb");
+((!clients) || (callers[1][2] in clients)) || raise(E_PERM, tostr("Restricted verb:  \"", callers[1][2], "\" not in verb list ", toliteral(clients)));
+return;
+"{caller, @clients} = args;";
+"{dummy, @callers} = callers();";
+"callers || raise(E_PERM, \"Restricted verb\");";
+"callers[1][4] == caller && valid(callers[1][1]) || raise(E_PERM, \"Restricted verb\");";
+"!clients || callers[1][2] in clients || raise(E_PERM, tostr(\"Restricted verb:  \\\"\", callers[1][2], \"\\\" not in verb list \", toliteral(clients)));";
+"/*";
+"Only allow the call if the specified caller matches the actual";
+"caller.";
+"*/";
+"/* changed to check the object on which the verb was defined, instead of used Tue Oct 18 07:26:02 2011 EDT */";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"chunk_length:11";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Tue Oct 18 07:27:43 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:9
+subjects = args;
+callers = callers();
+(length(callers) > 1) || raise(E_PERM);
+(valid(callers[2][3]) && valid(callers[1][1])) || raise(E_PERM);
+if (("wizard" in subjects) && callers[2][3].wizard)
+return;
+endif
+if (("owner" in subjects) && (callers[2][3] == callers[1][1].owner))
+return;
+endif
+if (("programmer" in subjects) && (callers[2][3] == callers[1][3]))
+return;
+endif
+raise(E_PERM);
+return;
+"subjects = args;";
+"callers = callers();";
+"length(callers) > 1 || raise(E_PERM);";
+"valid(callers[2][3]) && valid(callers[1][1]) || raise(E_PERM);";
+"if (\"wizard\" in subjects && callers[2][3].wizard)";
+"  return;";
+"endif";
+"if (\"owner\" in subjects && callers[2][3] == callers[1][1].owner)";
+"  return;";
+"endif";
+"if (\"programmer\" in subjects && callers[2][3] == callers[1][3])";
+"  return;";
+"endif";
+"raise(E_PERM);";
+"/*";
+"Only allow the call if the caller is a wizard (if the subject";
+"\"wizard\" is specified) or the owner of the object the verb was";
+"called on (AKA this) (if the subject \"owner\" is specified) or the";
+"verb's programmer (if the subject \"programmer\" is specified).";
+"*/";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"chunk_length:21";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Mon Oct 24 00:04:09 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:10
+{owner, object} = args;
+(caller_perms().wizard || (caller_perms() == owner)) || raise(E_PERM);
+if (LIST == typeof(object))
+for object in (object)
+(((object == $nothing) || (valid(object) && object.f)) || (valid(object) && (owner.wizard || (owner == object.owner)))) || raise(E_PERM);
+endfor
+else
+(((object == $nothing) || (valid(object) && object.f)) || (valid(object) && (owner.wizard || (owner == object.owner)))) || raise(E_PERM);
+endif
+return;
+"{owner, object} = args;";
+"caller_perms().wizard || caller_perms() == owner || raise(E_PERM);";
+"/* `object' can be $nothing, an object number, or a list of object numbers */";
+"if (LIST == typeof(object))";
+"  for object in (object)";
+"    object == $nothing || (valid(object) && object.f) || (valid(object) && (owner.wizard || owner == object.owner)) || raise(E_PERM);";
+"  endfor";
+"else";
+"  object == $nothing || (valid(object) && object.f) || (valid(object) && (owner.wizard || owner == object.owner)) || raise(E_PERM);";
+"endif";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"content_type:application/x-moocode";
+"updated_at:Tue Sep 13 19:26:52 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:11
+{owner, object} = args;
+(caller_perms().wizard || (caller_perms() == owner)) || raise(E_PERM);
+(valid(object) && (owner.wizard || (owner == object.owner))) || raise(E_PERM);
+return;
+"{owner, object} = args;";
+"caller_perms().wizard || caller_perms() == owner || raise(E_PERM);";
+"valid(object) && (owner.wizard || owner == object.owner) || raise(E_PERM);";
+"/* security audit on Tue Jul 26 15:51:17 2011 EDT */";
+"";
+"content_type:application/x-moocode";
+"updated_at:Tue Sep 13 19:26:52 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:12
+{code} = args;
+(typeof(code) == LIST) || raise(E_INVARG);
+state = 1;
+chunks = {};
+chunk = [];
+chunk_length = 0;
+i = length(code);
+while (state && i)
+line = code[i];
+i = i - 1;
+if ((state == 1) && (line == "\"-=-=-mxyzptlk-=-=-\";"))
+chunk = ["metadata" -> []];
+chunk_length = 0;
+state = 2;
+elseif (state == 1)
+i = i + 1;
+state = 0;
+elseif ((state == 2) && (r = match(line, "^\"%([-_a-z0-9]+%)%:%(.+%)\";$")))
+key = r[4][r[3][1][1]..r[3][1][2]];
+value = r[4][r[3][2][1]..r[3][2][2]];
+chunk_length = (key == "chunk_length") ? toint(value) | 0;
+chunk["metadata"][key] = value;
+elseif ((state == 2) && (line == "\"\";"))
+chunk["source"] = {};
+for line in (code[(i - chunk_length) + 1..i])
+chunk["source"] = {@chunk["source"], strsub(strsub(line[2..$ - 2], "\\\"", "\""), "\\\\", "\\")};
+endfor
+i = i - chunk_length;
+state = 3;
+elseif ((state == 3) && (line == "return;"))
+chunks = {chunk, @chunks};
+state = 0;
+elseif ((state == 3) && (line == "\"-=-=-mxyzptlk-=-=-\";"))
+chunks = {chunk, @chunks};
+chunk = ["metadata" -> []];
+chunk_length = 0;
+state = 2;
+elseif ((state == 3) && (r = match(line, ((((("^\"%(%(" + "[^\\\"]+") + "%|") + "\\\\") + "%|") + "\\\"") + "%)*%)\";$")))
+line = strsub(strsub(r[4][r[3][1][1]..r[3][1][2]], "\\\"", "\""), "\\\\", "\\");
+chunk["source"] = {line, @chunk["source"]};
+elseif (state == 2)
+raise(E_INVARG, tostr("Bad metadata:  ", line));
+elseif (state == 3)
+raise(E_INVARG, tostr("Missing return:  ", line));
+else
+raise(E_INVARG);
+endif
+endwhile
+if (state > 1)
+raise(E_INVARG, "Corrupt source");
+endif
+chunks = {["code" -> code[1..i]], @chunks};
+return chunks;
+return;
+"{code} = args;";
+"";
+"/* Not $private() but maybe should be.  The existance and interface";
+" * are subject to change.  No obvious security problems, though.";
+" */";
+"";
+"typeof(code) == LIST || raise(E_INVARG);";
+"";
+"/* State:";
+" *   0 = done";
+" *   1 = looking for a boundary";
+" *   2 = reading metadata";
+" *   3 = reading source";
+" */";
+"state = 1;";
+"";
+"/* Strinctly speaking, \"chunk_length\" is optional.  If it's present,";
+" * use the value to skip past lines of source.  Otherwise, use the";
+" * more error-prone search-for-the-boundary method.";
+" */";
+"chunks = {};";
+"chunk = [];";
+"chunk_length = 0;";
+"";
+"i = length(code);";
+"while (state && i)";
+"  line = code[i];";
+"  i = i - 1;";
+"  if (state == 1 && line == \"\\\"-=-=-mxyzptlk-=-=-\\\";\")";
+"    chunk = [\"metadata\" -> []];";
+"    chunk_length = 0;";
+"    state = 2;";
+"  elseif (state == 1)";
+"    i = i + 1;";
+"    state = 0;";
+"  elseif (state == 2 && (r = match(line, \"^\\\"%([-_a-z0-9]+%)%:%(.+%)\\\";$\")))";
+"    key = r[4][r[3][1][1]..r[3][1][2]];";
+"    value = r[4][r[3][2][1]..r[3][2][2]];";
+"    chunk_length = (key == \"chunk_length\" ) ? toint(value) | 0;";
+"    chunk[\"metadata\"][key] = value;";
+"  elseif (state == 2 && line == \"\\\"\\\";\")";
+"    chunk[\"source\"] = {};";
+"    for line in (code[i - chunk_length + 1..i])";
+"      chunk[\"source\"] = {@chunk[\"source\"], strsub(strsub(line[2..$ - 2], \"\\\\\\\"\", \"\\\"\"), \"\\\\\\\\\", \"\\\\\")};";
+"    endfor";
+"    i = i - chunk_length;";
+"    state = 3;";
+"  elseif (state == 3 && line == \"return;\")";
+"    chunks = {chunk, @chunks};";
+"    state = 0;";
+"  elseif (state == 3 && line == \"\\\"-=-=-mxyzptlk-=-=-\\\";\")";
+"    chunks = {chunk, @chunks};";
+"    chunk = [\"metadata\" -> []];";
+"    chunk_length = 0;";
+"    state = 2;";
+"  elseif (state == 3 && (r = match(line, \"^\\\"%(%(\" + \"[^\\\\\\\"]+\" +  \"%|\" + \"\\\\\\\\\" +  \"%|\" + \"\\\\\\\"\" + \"%)*%)\\\";$\")))";
+"    line = strsub(strsub(r[4][r[3][1][1]..r[3][1][2]], \"\\\\\\\"\", \"\\\"\"), \"\\\\\\\\\", \"\\\\\");";
+"    chunk[\"source\"] = {line, @chunk[\"source\"]};";
+"  elseif (state == 2)";
+"    raise(E_INVARG, tostr(\"Bad metadata:  \", line));";
+"  elseif (state == 3)";
+"    raise(E_INVARG, tostr(\"Missing return:  \", line));";
+"  else";
+"    raise(E_INVARG);";
+"  endif";
+"endwhile";
+"if (state > 1)";
+"  raise(E_INVARG, \"Corrupt source\");";
+"endif";
+"chunks = {[\"code\" -> code[1..i]], @chunks};";
+"";
+"return chunks;";
+"";
+"/* security audit on Tue Sep 13 18:59:04 2011 EDT */";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:75";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sat Oct  1 18:22:18 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:13
+{chunks} = args;
+(typeof(chunks) == LIST) || raise(E_INVARG);
+state = 1;
+code = {};
+for chunk in (chunks)
+if (state > 1)
+source = {};
+if (state == 2)
+source = {"return;"};
+state = 3;
+endif
+for line in (chunk["source"])
+source = {@source, toliteral(line) + ";"};
+endfor
+metadata = {};
+for value, key in (chunk["metadata"])
+metadata = {@metadata, toliteral(tostr(key, ":", value)) + ";"};
+endfor
+code = {@code, @source, "\"\";", @metadata, "\"-=-=-mxyzptlk-=-=-\";"};
+else
+code = chunk["code"];
+state = 2;
+endif
+endfor
+return code;
+return;
+"{chunks} = args;";
+"";
+"/* Not $private() but maybe should be.  The existance and interface";
+" * are subject to change.  No obvious security problems, though.";
+" */";
+"";
+"typeof(chunks) == LIST || raise(E_INVARG);";
+"";
+"/* State:";
+" *   1 = adding code chunk";
+" *   2 = adding first source chunk";
+" *   3 = adding source chunk";
+" */";
+"state = 1;";
+"";
+"code = {};";
+"";
+"for chunk in (chunks)";
+"  if (state > 1)";
+"    source = {};";
+"    if (state == 2)";
+"      source = {\"return;\"};";
+"      state = 3;";
+"    endif";
+"    for line in (chunk[\"source\"])";
+"      source = {@source, toliteral(line) + \";\"};";
+"    endfor";
+"    metadata = {};";
+"    for value, key in (chunk[\"metadata\"])";
+"      metadata = {@metadata, toliteral(tostr(key, \":\", value)) + \";\"};";
+"    endfor";
+"    code = {@code, @source, \"\\\"\\\";\", @metadata, \"\\\"-=-=-mxyzptlk-=-=-\\\";\"};";
+"  else";
+"    code = chunk[\"code\"];";
+"    state = 2;";
+"  endif";
+"endfor";
+"";
+"return code;";
+"";
+"/* security audit on Tue Sep 13 18:59:04 2011 EDT */";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:42";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sun Feb 12 12:30:45 2012 EST";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:14
+{object, verb, @options} = args;
+valid(object) || raise(E_INVARG);
+`{owner, flags, name} = verb_info(object, verb) ! ANY' || raise(E_VERBNF);
+perms = caller_perms();
+((perms.wizard || (perms == owner)) || index(flags, "r")) || raise(E_PERM);
+perms.programmer || raise(E_PERM);
+set_task_perms(perms);
+raw = 0;
+fully_parenthesize = 0;
+indent = 0;
+if (options)
+if (typeof(options[1]) == MAP)
+raw = `options[1]["raw"] ! E_RANGE';
+fully_parenthesize = `options[1]["fully_parenthesize"] ! E_RANGE';
+indent = `options[1]["indent"] ! E_RANGE';
+elseif (typeof(options[1]) == STR)
+raw = ("raw" in options) && "raw";
+fully_parenthesize = ("fully_parenthesize" in options) && "fully_parenthesize";
+indent = ("indent" in options) && "indent";
+elseif (typeof(options[1]) == INT)
+raw = 1;
+`fully_parenthesize = options[1] ! E_RANGE';
+`indent = options[2] ! E_RANGE';
+endif
+if (fully_parenthesize || indent)
+raw = 1;
+endif
+endif
+code = verb_code(object, verb, fully_parenthesize, indent);
+chunks = this:_unpack_verb_code(code);
+return ((!raw) && (length(chunks) > 1)) ? chunks[2]["source"] | chunks[1]["code"];
+return;
+"{object, verb, @options} = args;";
+"";
+"/* check arguments and permissions */";
+"valid(object) || raise(E_INVARG);";
+"`{owner, flags, name} = verb_info(object, verb) ! ANY' || raise(E_VERBNF);";
+"perms = caller_perms();";
+"perms.wizard || (perms == owner) || index(flags, \"r\") || raise(E_PERM);";
+"perms.programmer || raise(E_PERM);";
+"";
+"/* drop wiz-perms */";
+"set_task_perms(perms);";
+"";
+"/* interpret optional arguments */";
+"raw = 0;";
+"fully_parenthesize = 0;";
+"indent = 0;";
+"if (options)";
+"  if (typeof(options[1]) == MAP)";
+"    raw = `options[1][\"raw\"] ! E_RANGE';";
+"    fully_parenthesize = `options[1][\"fully_parenthesize\"] ! E_RANGE';";
+"    indent = `options[1][\"indent\"] ! E_RANGE';";
+"  elseif (typeof(options[1]) == STR)";
+"    raw = (\"raw\" in options) && \"raw\";";
+"    fully_parenthesize = (\"fully_parenthesize\" in options) && \"fully_parenthesize\";";
+"    indent = (\"indent\" in options) && \"indent\";";
+"  elseif (typeof(options[1]) == INT)";
+"    raw = 1;";
+"    `fully_parenthesize = options[1] ! E_RANGE';";
+"    `indent = options[2] ! E_RANGE';";
+"  endif";
+"  if (fully_parenthesize || indent)";
+"    raw = 1;";
+"  endif";
+"endif";
+"";
+"code = verb_code(object, verb, fully_parenthesize, indent);";
+"";
+"chunks = this:_unpack_verb_code(code);";
+"";
+"return (!raw && length(chunks) > 1) ? chunks[2][\"source\"] | chunks[1][\"code\"];";
+"";
+"/* security audit on Tue Sep 13 18:59:04 2011 EDT */";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:43";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sat Oct  1 18:22:18 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:15
+{object, verb, code, @options} = args;
+valid(object) || raise(E_INVARG);
+`{owner, flags, name} = verb_info(object, verb) ! ANY' || raise(E_VERBNF);
+perms = caller_perms();
+((perms.wizard || (perms == owner)) || index(flags, "w")) || raise(E_PERM);
+perms.programmer || raise(E_PERM);
+set_task_perms(perms);
+raw = 1;
+content_type = 0;
+if (options)
+if (typeof(options[1]) == MAP)
+raw = `options[1]["raw"] ! E_RANGE';
+content_type = `options[1]["content_type"] ! E_RANGE';
+elseif (typeof(options[1]) == STR)
+raw = ("raw" in options) && "raw";
+content_type = ("application/x-moocode" in options) && "application/x-moocode";
+endif
+if (raw && content_type)
+raise(E_INVARG);
+endif
+endif
+if ((raw && code) && (code[$] == "\"-=-=-mxyzptlk-=-=-\";"))
+return {"Illegal use of marker"};
+elseif (content_type)
+source = code;
+{type, attributes} = this:_parse_content_type(content_type);
+content_type = this:_generate_content_type({type, attributes});
+if (type == "application/x-moocode")
+elseif (`valid(compiler = $external_compilers[type]) ! E_RANGE, E_TYPE')
+code = compiler:compile(code, attributes);
+else
+return {tostr("Invalid content type:  ", type)};
+endif
+metadata = ["chunk_type" -> "source", "chunk_length" -> length(source), "content_type" -> content_type, "updated_at" -> ctime(time())];
+code = this:_pack_verb_code({["code" -> code], ["metadata" -> metadata, "source" -> source]});
+endif
+return set_verb_code(object, verb, code);
+return;
+"{object, verb, code, @options} = args;";
+"";
+"/* check arguments and permissions */";
+"valid(object) || raise(E_INVARG);";
+"`{owner, flags, name} = verb_info(object, verb) ! ANY' || raise(E_VERBNF);";
+"perms = caller_perms();";
+"perms.wizard || (perms == owner) || index(flags, \"w\") || raise(E_PERM);";
+"perms.programmer || raise(E_PERM);";
+"";
+"/* drop wiz-perms */";
+"set_task_perms(perms);";
+"";
+"/* interpret optional arguments */";
+"raw = 1;";
+"content_type = 0;";
+"if (options)";
+"  if (typeof(options[1]) == MAP)";
+"    raw = `options[1][\"raw\"] ! E_RANGE';";
+"    content_type = `options[1][\"content_type\"] ! E_RANGE';";
+"  elseif (typeof(options[1]) == STR)";
+"    raw = (\"raw\" in options) && \"raw\";";
+"    content_type = (\"application/x-moocode\" in options) && \"application/x-moocode\";";
+"  endif";
+"  if (raw && content_type)";
+"    raise(E_INVARG);";
+"  endif";
+"endif";
+"";
+"if (raw && code && code[$] == \"\\\"-=-=-mxyzptlk-=-=-\\\";\")";
+"  return {\"Illegal use of marker\"};";
+"";
+"elseif (content_type)";
+"  source = code;";
+"";
+"  /* parse the content type to validate it, then generate it in canonical form */";
+"  {type, attributes} = this:_parse_content_type(content_type);";
+"  content_type = this:_generate_content_type({type, attributes});";
+"";
+"  /* natively supported... no external compilation necessary */";
+"  if (type == \"application/x-moocode\")";
+"    ;";
+"";
+"  /* find an external compiler and compile */";
+"  elseif (`valid(compiler = $external_compilers[type]) ! E_RANGE, E_TYPE')";
+"    code = compiler:compile(code, attributes);";
+"";
+"  /* fail */";
+"  else";
+"    return {tostr(\"Invalid content type:  \", type)};";
+"  endif";
+"";
+"  metadata = [\"chunk_type\" -> \"source\", \"chunk_length\" -> length(source), \"content_type\" -> content_type, \"updated_at\" -> ctime(time())];";
+"  code = this:_pack_verb_code({[\"code\" -> code], [\"metadata\" -> metadata, \"source\" -> source]});";
+"";
+"endif";
+"";
+"return set_verb_code(object, verb, code);";
+"";
+"/* security audit on Tue Sep 13 18:59:04 2011 EDT */";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:60";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sat Oct  1 18:22:18 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:16
+{object, verb, @options} = args;
+valid(object) || raise(E_INVARG);
+`{owner, perms, name} = verb_info(object, verb) ! ANY' || raise(E_VERBNF);
+caller = caller_perms();
+((`caller.wizard ! E_INVIND' || (caller == owner)) || index(perms, "r")) || raise(E_PERM);
+`caller.programmer ! E_INVIND' || raise(E_PERM);
+set_task_perms(caller);
+{dobj, prep, iobj} = verb_args(object, verb);
+ret = ["owner" -> owner, "perms" -> perms, "names" -> name, "dobj" -> dobj, "prep" -> prep, "iobj" -> iobj];
+code = verb_code(object, verb);
+chunks = this:_unpack_verb_code(code);
+`ret["content_type"] = chunks[2]["metadata"]["content_type"] ! E_RANGE';
+return ret;
+return;
+"{object, verb, @options} = args;";
+"";
+"/* check arguments */";
+"valid(object) || raise(E_INVARG);";
+"`{owner, perms, name} = verb_info(object, verb) ! ANY' || raise(E_VERBNF);";
+"";
+"/* check permissions */";
+"caller = caller_perms();";
+"`caller.wizard ! E_INVIND' || (caller == owner) || index(perms, \"r\") || raise(E_PERM);";
+"`caller.programmer ! E_INVIND' || raise(E_PERM);";
+"";
+"/* drop wiz-perms */";
+"set_task_perms(caller);";
+"";
+"{dobj, prep, iobj} = verb_args(object, verb);";
+"";
+"ret = [\"owner\" -> owner, \"perms\" -> perms, \"names\" -> name, \"dobj\" -> dobj, \"prep\" -> prep, \"iobj\" -> iobj];";
+"";
+"code = verb_code(object, verb);";
+"chunks = this:_unpack_verb_code(code);";
+"";
+"`ret[\"content_type\"] = chunks[2][\"metadata\"][\"content_type\"] ! E_RANGE';";
+"";
+"return ret;";
+"";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:26";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Mon Feb 20 12:04:49 2012 EST";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:17
+{content_type} = args;
+parts = {};
+while (content_type && (i = index(content_type, ";")))
+parts = {@parts, content_type[1..i - 1]};
+content_type = content_type[i + 1..$];
+endwhile
+parts = {@parts, content_type};
+if (parts)
+{type, @parts} = parts;
+r = match(type, "^ *%([^ ]+%) *$");
+type = type[r[3][1][1]..r[3][1][2]];
+attributes = [];
+for part in (parts)
+r = match(part, "^ *%([^ ]+%) *%= *%([^ ]+%) *$");
+key = part[r[3][1][1]..r[3][1][2]];
+value = part[r[3][2][1]..r[3][2][2]];
+attributes[key] = value;
+endfor
+return {type, attributes};
+endif
+return {};
+return;
+"{content_type} = args;";
+"";
+"/* Not $private() but maybe should be.  The existance and interface";
+" * are subject to change.  No obvious security problems, though.";
+" */";
+"";
+"parts = {};";
+"while (content_type && (i = index(content_type, \";\")))";
+"  parts = {@parts, content_type[1..i - 1]};";
+"  content_type = content_type[i + 1..$];";
+"endwhile";
+"parts = {@parts, content_type};";
+"if (parts)";
+"  {type, @parts} = parts;";
+"  r = match(type, \"^ *%([^ ]+%) *$\");";
+"  type = type[r[3][1][1]..r[3][1][2]];";
+"  attributes = [];";
+"  for part in (parts)";
+"    r = match(part, \"^ *%([^ ]+%) *%= *%([^ ]+%) *$\");";
+"    key = part[r[3][1][1]..r[3][1][2]];";
+"    value = part[r[3][2][1]..r[3][2][2]];";
+"    attributes[key] = value;";
+"  endfor";
+"  return {type, attributes};";
+"endif";
+"";
+"return {};";
+"";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:29";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sat Oct  1 18:22:18 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#0:18
+{content_type} = args;
+{type, attributes} = content_type;
+for attribute in (mapkeys(attributes))
+type = tostr(type, ";", attribute, "=", attributes[attribute]);
+endfor
+return type;
+return;
+"{content_type} = args;";
+"";
+"/* Not $private() but maybe should be.  The existance and interface";
+" * are subject to change.  No obvious security problems, though.";
+" */";
+"";
+"{type, attributes} = content_type;";
+"";
+"for attribute in (mapkeys(attributes))";
+"  type = tostr(type, \";\", attribute, \"=\", attributes[attribute]);";
+"endfor";
+"";
+"return type;";
+"";
+"/* security audit on Sat Oct  1 18:04:47 2011 EDT */";
+"";
+"chunk_length:15";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sat Oct  1 18:22:18 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+#3:0
+{code, message, value, traceback, formatted} = args;
+callers() && raise(E_PERM, "Server task");
+for line in (formatted)
+server_log(line);
+endfor
+.
+#3:1
+{resource, traceback, formatted} = args;
+callers() && raise(E_PERM, "Server task");
+for line in (formatted)
+server_log(line);
+endfor
+.
+#3:2
+$restrict_to_caller($system, "server_started");
+$last_login_connection = #-1;
+if (!$disable_passkey_login)
+server_log(tostr("WARNING: Log-in via passkey is enabled for the following players (specified in $passkey_players):"));
+for player in ($passkey_players)
+server_log(tostr("WARNING:   \"", player.name, "\" (", player, ")"));
+endfor
+server_log("WARNING: This is a severe security vulnerability.  In a secure environment you should:");
+server_log("WARNING:   disable passkey login:");
+server_log("WARNING:     ; $disable_passkey_login = 1");
+server_log("WARNING:     ; $passkey_players = {}");
+server_log("WARNING:   disable existing passkeys:");
+for player in ($passkey_players)
+server_log(tostr("WARNING:     ; ", player, ".passkey = 0"));
+endfor
+server_log("WARNING:   and for good measure:");
+for player in ($passkey_players)
+server_log(tostr("WARNING:     ; set_player_flag(", player, ", 0)"));
+endfor
+i = random(100000) + 100000;
+for player in ($passkey_players)
+passkey = string_hash((tostr(random()) + ctime(time())) + player.name);
+while (i)
+((!(i % 100)) && ((ticks_left() < 2000) || (seconds_left() < 2))) && suspend(0);
+passkey = string_hash(passkey);
+i = i - 1;
+endwhile
+server_log(tostr("PASSKEY for \"", player.name, "\" (", player, ("): " + passkey) + " (keep it secret)"));
+player.passkey = passkey;
+endfor
+endif
+.
+#3:3
+$restrict_to_caller($system, "authenticate");
+if (length(args) == 1)
+{passkey} = args;
+if (!$disable_passkey_login)
+for player in ($passkey_players)
+if (length(passkey) == length(player.passkey))
+count = 0;
+for i in [1..length(passkey)]
+count = ((passkey[i] == player.passkey[i]) ? 1 | 0) + count;
+endfor
+if (length(passkey) == count)
+return player;
+endif
+endif
+endfor
+endif
+endif
+return $failed_match;
+.
+#3:4
+{reference, ?options = []} = args;
+packages = $composed.packages;
+set_task_perms(perms = caller_perms());
+if ((package = `options["package"] ! E_RANGE') != E_RANGE)
+if ((valid(package) && (package in packages)) && perms.wizard)
+elseif (perms.wizard)
+raise(E_INVARG);
+else
+raise(E_PERM);
+endif
+else
+package = callers()[1][4];
+while (valid(package) && (!(package in packages)))
+package = package.location;
+endwhile
+endif
+if (!valid(package))
+raise(E_INVIND, "Invalid indirection:  no enclosing installed package");
+endif
+if (reference == "__package__")
+return package;
+endif
+for entry in (`package.manifest ! ANY => {}')
+{object, label} = entry;
+if (reference == label)
+return object;
+endif
+endfor
+return $failed_match;
+.
+#5:0
+if (player != this)
+notify(player, "I couldn't understand that.");
+return;
+endif
+if (!player.wizard)
+notify(player, "You must be a wizard to do that!");
+return;
+endif
+notify(player, "Bye!");
+boot_player(player);
+for task in (queued_tasks())
+kill_task(task[1]);
+endfor
+$external_compilers = [];
+$disable_passkey_login = 0;
+#5.passkey = 0;
+#6.passkey = 0;
+$composed.last_fetch_index = 0;
+$composed.archived = [];
+$composed.cached = [];
+$composed.archive_host = "stunt.io";
+$composed.archive_port = 80;
+$composed.archive_base_uri = "/v1";
+chparents(#0, {#3});
+package = $composed:export(#2);
+json = generate_json(package, "embedded-types");
+while (len = length(json))
+len = (len > 60000) ? 60000 | len;
+line = json[1..len];
+json[1..len] = "";
+server_log(line);
+endwhile
+reset_max_object();
+shutdown();
+return;
+"if (player != this)";
+"  notify(player, \"I couldn't understand that.\");";
+"  return;";
+"endif";
+"if (!player.wizard)";
+"  notify(player, \"You must be a wizard to do that!\");";
+"  return;";
+"endif";
+"";
+"notify(player, \"Bye!\");";
+"boot_player(player);";
+"";
+"for task in (queued_tasks())";
+"  kill_task(task[1]);";
+"endfor";
+"";
+"#0.external_compilers = [];";
+"";
+"#0.disable_passkey_login = 0;";
+"#5.passkey = 0;";
+"#6.passkey = 0;";
+"";
+"$composed.last_fetch_index = 0;";
+"$composed.archived = [];";
+"$composed.cached = [];";
+"$composed.archive_host = \"stunt.io\";";
+"$composed.archive_port = 80;";
+"$composed.archive_base_uri = \"/v1\";";
+"";
+"chparents(#0, {#3});";
+"";
+"package = $composed:export(#2);";
+"json = generate_json(package, \"embedded-types\");";
+"while (len = length(json))";
+"  len = len > 60000 ? 60000 | len;";
+"  line = json[1..len];";
+"  json[1..len] = \"\";";
+"  server_log(line);";
+"endwhile";
+"";
+"reset_max_object();";
+"shutdown();";
+"";
+"chunk_length:42";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Sun Feb 12 14:07:36 2012 EST";
+"-=-=-mxyzptlk-=-=-";
+.
+#5:1
+callers() && raise(E_PERM, "Server task");
+set_task_perms(player);
+"very simple, really primitive matching";
+if (((prepstr == "with") && (iobjstr == "$composed")) && `valid($composed) ! ANY')
+if ((verb in {"@install", "@uninstall", "@list"}) && `respond_to($composed, verb) ! ANY')
+return $composed:(verb)(@args);
+endif
+endif
+notify(player, "I couldn't understand that.");
+.
+#7:0
+if (player.location != this)
+notify(player, "I couldn't understand that.");
+return;
+elseif (!player.programmer)
+notify(player, "You need to be a programmer to evaluate code.");
+return;
+endif
+set_task_perms(player);
+if (!(args[1] in {";", "if", "for", "while", "fork", "return"}))
+notify(player, toliteral(eval(("return " + argstr) + ";")[2]));
+else
+notify(player, toliteral(eval(argstr + ";")[2]));
+endif
+.
+#8:0
+$private();
+notify(player, tostr(@args));
+.
+#8:1
+((ticks_left() < 10000) || (seconds_left() < 2)) && suspend(0);
+.
+#8:2
+{who, what} = args;
+$private();
+return (who == what.owner) || who.wizard;
+.
+#8:3
+{who, what, name} = args;
+$private();
+return (who == verb_info(what, name)[1]) || who.wizard;
+.
+#8:4
+{who, what, name} = args;
+$private();
+return (who == property_info(what, name)[1]) || who.wizard;
+.
+#8:5
+args && raise(E_ARGS);
+set_task_perms(caller_perms());
+r = [];
+r["Objects"] = {};
+return r;
+.
+#8:6
+{o, ?options = []} = args;
+((ticks_left() < 2000) || (seconds_left() < 2)) && suspend(0);
+if (`valid(o) ! E_TYPE => 0')
+pcount = length(properties(o));
+vcount = length(verbs(o));
+set_task_perms(caller_perms());
+r = ["Attributes" -> []];
+v = parents(o);
+m = ["id" -> "parents"];
+m["status"] = this:_controls(caller_perms(), o) ? "writable" | "readable";
+r["Attributes"]["parents"] = ["Meta" -> m, "Value" -> ["value" -> v]];
+v = is_player(o);
+m = ["id" -> "player"];
+m["status"] = `caller_perms().wizard ! E_INVIND' ? "writable" | "readable";
+r["Attributes"]["player"] = ["Meta" -> m, "Value" -> ["value" -> v]];
+r["Values"] = [];
+for a in (this:_values(o))
+this:_suspend_if_necessary();
+r["Values"][a] = this:read_value(o, a);
+endfor
+r["Properties"] = {};
+for p in [1..pcount]
+this:_suspend_if_necessary();
+r["Properties"] = {@r["Properties"], this:read_property(o, p)};
+endfor
+r["Verbs"] = {};
+for v in [1..vcount]
+this:_suspend_if_necessary();
+r["Verbs"] = {@r["Verbs"], this:read_verb(o, v)};
+endfor
+if (o.r)
+status = "readable";
+elseif (p = o.w || this:_controls(caller_perms(), o))
+status = "writable";
+else
+status = "";
+endif
+r["Meta"] = ["id" -> toint(o), "status" -> status];
+return r;
+else
+r = ["Meta" -> ["id" -> toint(o), "status" -> "invalid"]];
+return r;
+endif
+.
+#8:7
+{o, r} = args;
+((ticks_left() < 2000) || (seconds_left() < 2)) && suspend(0);
+if (`valid(o) ! E_TYPE => 0')
+properties = properties(o);
+verbs = verbs(o);
+set_task_perms(caller_perms());
+try
+r["Attributes"];
+r["Values"];
+r["Properties"];
+r["Verbs"];
+errors = 0;
+parents = `r["Attributes"]["parents"]["Value"]["value"] ! E_RANGE => parents(o)';
+if (parents(o) != parents)
+x = this:_write_parents(o, ["Value" -> ["value" -> {}]]);
+errors = errors + ("Error" in mapkeys(x));
+endif
+location = `r["Values"]["location"]["Value"]["value"] ! E_RANGE => o.location';
+if (o.location != location)
+x = this:write_value(o, "location", ["Value" -> ["value" -> $nothing]]);
+errors = errors + ("Error" in mapkeys(x));
+endif
+owner = `r["Values"]["owner"]["Value"]["value"] ! E_RANGE => o.owner';
+if ("owner" in mapkeys(r["Values"]))
+r["Values"]["owner"] = this:write_value(o, "owner", r["Values"]["owner"]);
+errors = errors + ("Error" in mapkeys(r["Values"]["owner"]));
+endif
+if ("parents" in mapkeys(r["Attributes"]))
+r["Attributes"]["parents"] = this:_write_parents(o, r["Attributes"]["parents"]);
+errors = errors + ("Error" in mapkeys(r["Attributes"]["parents"]));
+endif
+if ("player" in mapkeys(r["Attributes"]))
+r["Attributes"]["player"] = this:_write_player(o, r["Attributes"]["player"]);
+errors = errors + ("Error" in mapkeys(r["Attributes"]["player"]));
+endif
+if ("location" in mapkeys(r["Values"]))
+r["Values"]["location"] = this:write_value(o, "location", r["Values"]["location"]);
+errors = errors + ("Error" in mapkeys(r["Values"]["location"]));
+endif
+if ((lp1 = length(properties)) < (lp2 = length(r["Properties"])))
+for p in [lp1 + 1..lp2]
+this:_suspend_if_necessary();
+`add_property(o, tostr("___", p, "___"), 0, {owner, ""}) ! E_PERM';
+endfor
+else
+for p in [lp2 + 1..lp1]
+this:_suspend_if_necessary();
+delete_property(o, properties[p]);
+endfor
+endif
+if ((lv1 = length(verbs)) < (lv2 = length(r["Verbs"])))
+for v in [lv1 + 1..lv2]
+this:_suspend_if_necessary();
+`add_verb(o, {owner, "", tostr("___", v, "___")}, {"this", "none", "this"}) ! E_PERM';
+endfor
+else
+for v in [lv2 + 1..lv1]
+this:_suspend_if_necessary();
+delete_verb(o, lv2 + 1);
+endfor
+endif
+for p in [1..length(r["Properties"])]
+this:_suspend_if_necessary();
+r["Properties"][p] = this:write_property(o, p, r["Properties"][p]);
+if ("Error" in mapkeys(r["Properties"][p]))
+if ((lp1 < lp2) && (r["Properties"][p]["Error"]["diagnostic"] == "property is invalid"))
+r["Properties"][p]["Error"]["diagnostic"] = "permission denied";
+endif
+errors = errors + 1;
+endif
+endfor
+for v in [1..length(r["Verbs"])]
+this:_suspend_if_necessary();
+r["Verbs"][v] = this:write_verb(o, v, r["Verbs"][v]);
+if ("Error" in mapkeys(r["Verbs"][v]))
+if ((lv1 < lv2) && (r["Verbs"][v]["Error"]["diagnostic"] == "verb is invalid"))
+r["Verbs"][v]["Error"]["diagnostic"] = "permission denied";
+endif
+errors = errors + 1;
+endif
+endfor
+values = setremove(setremove(mapkeys(r["Values"]), "location"), "owner");
+for a in (values)
+this:_suspend_if_necessary();
+r["Values"][a] = this:write_value(o, a, r["Values"][a]);
+errors = errors + ("Error" in mapkeys(r["Values"][a]));
+endfor
+if (errors < 1)
+r = this:read_object(o);
+else
+r["Meta"] = ["id" -> toint(o), "status" -> "unknown"];
+r["Error"] = ["diagnostic" -> "errors in sub-operations"];
+endif
+return r;
+except (E_RANGE, E_TYPE)
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+except (E_PERM)
+r["Error"] = ["diagnostic" -> "permission denied"];
+return r;
+endtry
+else
+r["Error"] = ["diagnostic" -> "object reference is invalid"];
+return r;
+endif
+.
+#8:8
+{object, property} = args;
+$private();
+for parent in (parents(object))
+this:_suspend_if_necessary();
+if (ret = `property_info(parent, property) ! E_PROPNF')
+return ret;
+endif
+endfor
+return {};
+.
+#8:9
+{o} = args;
+$private();
+x = {};
+for t in ({o, @ancestors(o)})
+this:_suspend_if_necessary();
+y = {};
+for z in (properties(t))
+this:_suspend_if_necessary();
+y = {z, @y};
+endfor
+x = {@y, @x};
+endfor
+x = {"name", "owner", "location", "programmer", "wizard", "r", "w", "f", @x};
+return x;
+.
+#8:10
+{o} = args;
+set_task_perms(caller_perms());
+r = ["Values" -> {}];
+for value in (this:_values(o))
+this:_suspend_if_necessary();
+r["Values"] = {@r["Values"], this:read_value(o, value)};
+endfor
+return r;
+.
+#8:11
+{o, a} = args;
+set_task_perms(caller_perms());
+try
+if (a == "location")
+v = o.location;
+p = this:_controls(caller_perms(), o) ? "rw" | "r";
+elseif (a in {"owner", "programmer", "wizard"})
+v = o.(a);
+p = `caller_perms().wizard ! E_INVIND => 0' ? "rw" | "r";
+elseif (a in {"r", "w", "f"})
+v = o.(a);
+p = this:_controls(caller_perms(), o) ? "rw" | "r";
+elseif (a in {"name"})
+v = o.(a);
+p = (`caller_perms().wizard ! E_INVIND' || (this:_controls(caller_perms(), o) && (!is_player(o)))) ? "rw" | "r";
+else
+v = o.(a);
+pi = property_info(o, a);
+p = (index(pi[2], "w") || this:_controls_property(caller_perms(), o, a)) ? "rw" | "r";
+c = is_clear_property(o, a);
+endif
+except (E_INVIND, E_PROPNF)
+r = ["Meta" -> ["id" -> a, "status" -> "invalid"]];
+return r;
+except (E_PERM)
+r = ["Meta" -> ["id" -> a, "status" -> "denied"]];
+return r;
+endtry
+m = ["id" -> a];
+m["status"] = index(p, "w") ? "writable" | "readable";
+r = ["Meta" -> m, "Value" -> ["value" -> v]];
+`r["Value"]["clear"] = c ! E_VARNF';
+if (`pi ! E_VARNF')
+if ((ppi = this:_parent_property_info(o, a)) && (ppi != pi))
+r["Value"]["owner"] = pi[1];
+r["Value"]["perms"] = pi[2];
+endif
+endif
+return r;
+.
+#8:12
+{o, a, r} = args;
+set_task_perms(caller_perms());
+mk = mapkeys(r);
+if ((!("Meta" in mk)) && (!("Value" in mk)))
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+endif
+old = this:read_value(o, a);
+if (`old["Value"] ! E_RANGE' == `r["Value"] ! E_RANGE')
+return old;
+endif
+try
+mk = mapkeys(r["Value"]);
+if (a in {"name", "owner", "location", "programmer", "wizard", "r", "w", "f"})
+if ("clear" in mk)
+r["Error"] = ["diagnostic" -> "clear is not applicable"];
+return r;
+endif
+if ("owner" in mk)
+r["Error"] = ["diagnostic" -> "owner is not applicable"];
+return r;
+endif
+if ("perms" in mk)
+r["Error"] = ["diagnostic" -> "perms is not applicable"];
+return r;
+endif
+endif
+c = `r["Value"]["clear"] ! E_RANGE';
+if (c)
+clear_property(o, a);
+else
+v = r["Value"]["value"];
+if (a == "location")
+(o.location != v) && move(o, v);
+else
+o.(a) = v;
+endif
+endif
+if (("owner" in mk) || ("perms" in mk))
+set_property_info(o, a, {`r["Value"]["owner"] ! E_RANGE => caller_perms()', r["Value"]["perms"]});
+endif
+except (E_RANGE)
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+except (E_INVIND)
+r["Error"] = ["diagnostic" -> "object reference is invalid"];
+return r;
+except (E_PROPNF)
+r["Error"] = ["diagnostic" -> "value is invalid"];
+return r;
+except (E_PERM)
+r["Error"] = ["diagnostic" -> "permission denied"];
+return r;
+except (E_TYPE)
+r["Error"] = ["diagnostic" -> "data type is invalid"];
+return r;
+except (E_NACC)
+r["Error"] = ["diagnostic" -> "move refused by destination"];
+return r;
+except (E_RECMOVE)
+r["Error"] = ["diagnostic" -> "recursive move"];
+return r;
+endtry
+return this:read_value(o, a);
+.
+#8:13
+{o, r} = args;
+$private();
+set_task_perms(caller_perms());
+try
+v = r["Value"]["value"];
+(parents(o) != v) && chparents(o, v);
+except (E_RANGE)
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+except (E_INVARG)
+r["Error"] = ["diagnostic" -> "argument is invalid"];
+return r;
+except (E_TYPE)
+r["Error"] = ["diagnostic" -> "data type is invalid"];
+return r;
+except (E_PERM)
+r["Error"] = ["diagnostic" -> "permission denied"];
+return r;
+endtry
+v = parents(o);
+m = ["id" -> "parents"];
+m["status"] = this:_controls(caller_perms(), o) ? "writable" | "readable";
+return ["Meta" -> m, "Value" -> ["value" -> v]];
+.
+#8:14
+{o, r} = args;
+$private();
+set_task_perms(caller_perms());
+try
+v = r["Value"]["value"];
+(is_player(o) != v) && set_player_flag(o, v);
+except (E_RANGE)
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+except (E_INVARG)
+r["Error"] = ["diagnostic" -> "argument is invalid"];
+return r;
+except (E_TYPE)
+r["Error"] = ["diagnostic" -> "data type is invalid"];
+return r;
+except (E_PERM)
+r["Error"] = ["diagnostic" -> "permission denied"];
+return r;
+endtry
+v = is_player(o);
+m = ["id" -> "player"];
+m["status"] = `caller_perms().wizard ! E_INVIND' ? "writable" | "readable";
+return ["Meta" -> m, "Value" -> ["value" -> v]];
+.
+#8:15
+{o, v} = args;
+try
+vx = verbs(o);
+except (E_TYPE, E_INVARG)
+r = ["Meta" -> ["id" -> o, "status" -> "invalid"]];
+return r;
+endtry
+try
+vn = vx[v];
+except (E_TYPE, E_RANGE)
+r = ["Meta" -> ["id" -> v, "status" -> "invalid"]];
+return r;
+endtry
+set_task_perms(caller_perms());
+try
+d = $verb_detail(o, v);
+d["code"] = verb_code(o, v);
+p = (index(d["perms"], "w") || this:_controls_verb(caller_perms(), o, v)) ? "rw" | "r";
+except (E_TYPE, E_INVARG, E_VERBNF)
+r = ["Meta" -> ["id" -> v, "status" -> "invalid"]];
+return r;
+except (E_PERM)
+r = ["Meta" -> ["id" -> v, "status" -> "denied"]];
+return r;
+endtry
+m = ["id" -> v];
+m["status"] = index(p, "w") ? "writable" | "readable";
+r = ["Meta" -> m, "Verb" -> d];
+return r;
+.
+#8:16
+{o, v, r} = args;
+error1 = error2 = 0;
+try
+vx = verbs(o);
+except (E_TYPE, E_INVARG)
+error1 = 1;
+endtry
+try
+vn = vx[v];
+except (E_VARNF)
+except (E_TYPE, E_RANGE)
+error2 = 1;
+endtry
+set_task_perms(caller_perms());
+old = this:read_verb(o, v);
+if (`old["Verb"] ! E_RANGE' == `r["Verb"] ! E_RANGE')
+return old;
+endif
+if (error1)
+r["Error"] = ["diagnostic" -> "object reference is invalid"];
+return r;
+elseif (error2)
+r["Error"] = ["diagnostic" -> "verb is invalid"];
+return r;
+endif
+try
+r1 = r["Verb"];
+set_verb_info(o, v, {`r1["owner"] ! E_RANGE => caller_perms()', r1["perms"], r1["names"]});
+set_verb_args(o, v, {r1["dobj"], r1["prep"], r1["iobj"]});
+vc = `r1["code"] ! E_RANGE => {}';
+t = [];
+`t["content_type"] = r1["content_type"] ! E_RANGE';
+if (set_verb_code(o, v, vc, t))
+r["Error"] = ["diagnostic" -> "compilation errors"];
+return r;
+endif
+except (E_RANGE)
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+except (E_INVIND, E_INVARG)
+r["Error"] = ["diagnostic" -> "object reference is invalid"];
+return r;
+except (E_PERM)
+r["Error"] = ["diagnostic" -> "permission denied"];
+return r;
+except (E_TYPE)
+r["Error"] = ["diagnostic" -> "data type is invalid"];
+return r;
+endtry
+return this:read_verb(o, v);
+.
+#8:17
+{o, p} = args;
+try
+px = properties(o);
+except (E_TYPE, E_INVARG)
+r = ["Meta" -> ["id" -> o, "status" -> "invalid"]];
+return r;
+endtry
+try
+pn = px[p];
+except (E_TYPE, E_RANGE)
+r = ["Meta" -> ["id" -> p, "status" -> "invalid"]];
+return r;
+endtry
+set_task_perms(caller_perms());
+try
+pi = property_info(o, pn);
+pv = o.(pn);
+s = (index(pi[2], "w") || this:_controls_property(caller_perms(), o, pn)) ? "rw" | "r";
+except (E_TYPE, E_INVARG, E_PROPNF)
+r = ["Meta" -> ["id" -> p, "status" -> "invalid"]];
+return r;
+except (E_PERM)
+r = ["Meta" -> ["id" -> p, "status" -> "denied"]];
+return r;
+endtry
+m = ["id" -> p];
+m["status"] = index(s, "w") ? "writable" | "readable";
+r = ["Meta" -> m, "Property" -> ["owner" -> pi[1], "perms" -> pi[2], "name" -> pn, "value" -> pv]];
+return r;
+.
+#8:18
+{o, p, r} = args;
+error1 = error2 = 0;
+try
+px = properties(o);
+except (E_TYPE, E_INVARG)
+error1 = 1;
+endtry
+try
+pn = px[p];
+except (E_VARNF)
+except (E_TYPE, E_RANGE)
+error2 = 1;
+endtry
+set_task_perms(caller_perms());
+old = this:read_property(o, p);
+if (`old["Property"] ! E_RANGE' == `r["Property"] ! E_RANGE')
+return old;
+endif
+if (error1)
+r["Error"] = ["diagnostic" -> "object reference is invalid"];
+return r;
+elseif (error2)
+r["Error"] = ["diagnostic" -> "property is invalid"];
+return r;
+endif
+try
+r1 = r["Property"];
+set_property_info(o, pn, {`r1["owner"] ! E_RANGE => caller_perms()', r1["perms"], r1["name"]});
+o.(r1["name"]) = r1["value"];
+except (E_RANGE)
+r["Error"] = ["diagnostic" -> "bad message format"];
+return r;
+except (E_INVIND, E_INVARG)
+r["Error"] = ["diagnostic" -> "object reference is invalid"];
+return r;
+except (E_PERM)
+r["Error"] = ["diagnostic" -> "permission denied"];
+return r;
+except (E_TYPE)
+r["Error"] = ["diagnostic" -> "data type is invalid"];
+return r;
+endtry
+return this:read_property(o, p);
+.
+#8:19
+{?parents = {}} = args;
+o = ["Attributes" -> [], "Values" -> [], "Properties" -> {}, "Verbs" -> {}];
+if (parents)
+o["Attributes"]["parents"] = ["Value" -> ["value" -> parents]];
+endif
+return o;
+.
+#8:20
+{t, n, v} = args;
+t["Values"][n] = ["Value" -> ["value" -> v]];
+return t;
+.
+#8:21
+{t, pn, pv, pi} = args;
+p = ["Property" -> ["owner" -> pi[1], "perms" -> pi[2], "name" -> pn, "value" -> pv]];
+t["Properties"] = {@t["Properties"], p};
+return t;
+.
+#8:22
+{t, vi, va, ?vc = {}} = args;
+v = ["Verb" -> ["owner" -> vi[1], "perms" -> vi[2], "names" -> vi[3], "dobj" -> va[1], "prep" -> va[2], "iobj" -> va[3], "code" -> vc]];
+t["Verbs"] = {@t["Verbs"], v};
+return t;
+.
+#9:0
+$private();
+notify(player, tostr(@args));
+.
+#9:1
+{what, where} = args;
+$private();
+`move(what, where) ! ANY';
+.
+#9:2
+((ticks_left() < 5000) || (seconds_left() < 2)) && suspend(0);
+.
+#9:3
+{specifier} = args;
+$private();
+if (r = match(specifier, "^%([0-9]+.[0-9]+.[0-9]+%),%([_a-zA-Z0-9]+%)$"))
+version = specifier[r[3][1][1]..r[3][1][2]];
+identifier = specifier[r[3][2][1]..r[3][2][2]];
+return {identifier, version};
+else
+raise(E_INVARG, tostr("Invalid package specifier:  ", specifier));
+endif
+.
+#9:4
+{operation} = args;
+$private();
+if (r = match(operation, "^%(<=%|>=%|<%|>%|=%)? *%([0-9]+%)?%(%.%([0-9]+%)%)?%(%.%([0-9]+%)%)?$"))
+op = operation[r[3][1][1]..r[3][1][2]] || "=";
+major = operation[r[3][2][1]..r[3][2][2]];
+minor = operation[r[3][4][1]..r[3][4][2]];
+build = operation[r[3][6][1]..r[3][6][2]];
+return {op, major, minor, build};
+else
+raise(E_INVARG, tostr("Invalid operation:  ", operation));
+endif
+.
+#9:5
+{version} = args;
+$private();
+if (r = match(version, "^%([0-9]+%)%(%.%([0-9]+%)%)%(%.%([0-9]+%)%)$"))
+major = version[r[3][1][1]..r[3][1][2]];
+minor = version[r[3][3][1]..r[3][3][2]];
+build = version[r[3][5][1]..r[3][5][2]];
+return {major, minor, build};
+else
+raise(E_INVARG, tostr("Invalid version:  ", version));
+endif
+.
+#9:6
+{ver1, ver2} = args;
+$private();
+res = 0;
+if (ver1[1] && ver2[1])
+if (((!(res = toint(ver1[1]) - toint(ver2[1]))) && ver1[2]) && ver2[2])
+if (((!(res = toint(ver1[2]) - toint(ver2[2]))) && ver1[3]) && ver2[3])
+res = toint(ver1[3]) - toint(ver2[3]);
+endif
+endif
+endif
+return res;
+.
+#9:7
+{vers} = args;
+$private();
+l = length(vers);
+i = 1;
+while (i <= l)
+v = vers[i];
+j = i - 1;
+while (j > 0)
+if (this:_compare_versions(vers[j], v) >= 0)
+break;
+endif
+vers[j + 1] = vers[j];
+j = j - 1;
+endwhile
+vers[j + 1] = v;
+i = i + 1;
+endwhile
+return vers;
+.
+#9:8
+{identifier, @args} = args;
+if (args && (typeof(args[$]) == MAP))
+patterns = args[1..$ - 1];
+provides = args[$];
+else
+patterns = args;
+provides = this.provides_cache;
+endif
+if ((patterns && (length(patterns) == 1)) && (typeof(patterns[1]) == LIST))
+patterns = patterns[1];
+endif
+if ((versions = `provides[identifier] ! E_RANGE => $nothing') == $nothing)
+return {$failed_match};
+endif
+operations = {};
+for pattern in (patterns)
+this:_suspend_if_necessary();
+operations = {@operations, this:_parse_operation(pattern)};
+endfor
+for _, version in (versions)
+this:_suspend_if_necessary();
+v1 = this:_parse_version(version);
+for operation in (operations)
+this:_suspend_if_necessary();
+{op, @v2} = operation;
+if (((((("=" == op) && this:_compare_versions(v1, v2)) || ((">=" == op) && (this:_compare_versions(v1, v2) < 0))) || (("<=" == op) && (this:_compare_versions(v1, v2) > 0))) || ((">" == op) && (this:_compare_versions(v1, v2) <= 0))) || (("<" == op) && (this:_compare_versions(v1, v2) >= 0)))
+versions = mapdelete(versions, version);
+break;
+endif
+endfor
+endfor
+if (length(versions) < 1)
+return {$failed_match};
+elseif (length(versions) > 1)
+return {$ambiguous_match};
+else
+version = mapkeys(versions)[1];
+object = mapvalues(versions)[1][1];
+return {object, identifier, version};
+endif
+.
+#9:9
+{MAP, specifier, object} = args;
+$private();
+if (typeof(specifier) == LIST)
+{identifier, version} = specifier;
+else
+{identifier, version} = this:_parse_specifier(specifier);
+endif
+(identifier in mapkeys(MAP)) || (MAP[identifier] = []);
+(version in mapkeys(MAP[identifier])) || (MAP[identifier][version] = {});
+MAP[identifier][version] = setadd(MAP[identifier][version], object);
+return MAP;
+.
+#9:10
+{MAP, specifier, object} = args;
+$private();
+if (typeof(specifier) == LIST)
+{identifier, version} = specifier;
+else
+{identifier, version} = this:_parse_specifier(specifier);
+endif
+((identifier in mapkeys(MAP)) && (version in mapkeys(MAP[identifier]))) && (MAP[identifier][version] = setremove(MAP[identifier][version], object));
+`MAP[identifier][version] ! E_RANGE => 1' || (MAP[identifier] = mapdelete(MAP[identifier], version));
+`MAP[identifier] ! E_RANGE => 1' || (MAP = mapdelete(MAP, identifier));
+return MAP;
+.
+#9:11
+{identifier, version, object} = args;
+$private();
+this.packages = setadd(this.packages, object);
+this.provides_cache = this:_map_specifier(this.provides_cache, {identifier, version}, object);
+for provides in (`object.provides ! E_INVIND, E_TYPE, E_PROPNF => {}')
+this.provides_cache = this:_map_specifier(this.provides_cache, provides, object);
+endfor
+for requires in (`object.requires ! E_INVIND, E_TYPE, E_PROPNF => {}')
+provider = this:_match(@requires, this.provides_cache);
+this.requires_cache = this:_map_specifier(this.requires_cache, provider[2..3], object);
+endfor
+.
+#9:12
+{identifier, version, object} = args;
+$private();
+this.packages = setremove(this.packages, object);
+this.provides_cache = this:_unmap_specifier(this.provides_cache, {identifier, version}, object);
+for provides in (`object.provides ! E_INVIND, E_TYPE, E_PROPNF => {}')
+this.provides_cache = this:_unmap_specifier(this.provides_cache, provides, object);
+endfor
+for requires in (`object.requires ! E_INVIND, E_TYPE, E_PROPNF => {}')
+provider = this:_find_requires_provider(requires[1], object);
+this.requires_cache = this:_unmap_specifier(this.requires_cache, provider[2..3], object);
+endfor
+.
+#9:13
+{identifier, object} = args;
+$private();
+for _, version in (this.requires_cache[identifier])
+if (object in this.requires_cache[identifier][version])
+return {this.provides_cache[identifier][version][1], identifier, version};
+endif
+endfor
+.
+#9:14
+objects = args;
+$permit("wizard");
+this.packages = {};
+this.provides_cache = [];
+this.requires_cache = [];
+for object in (objects)
+this:_install(object.identifier, object.version, object);
+endfor
+.
+#9:15
+{required} = args;
+$private();
+for selector in (required)
+object = this:_match(@selector, this.provides_cache)[1];
+if (valid(object))
+required = setremove(required, selector);
+endif
+endfor
+return required;
+.
+#9:16
+{provided} = args;
+$private();
+for package in (provided)
+{identifier, version} = package;
+object = `this.requires_cache[identifier][version][1] ! E_RANGE => $failed_match';
+if (!valid(object))
+provided = setremove(provided, package);
+endif
+endfor
+return provided;
+.
+#9:17
+{specifiers} = args;
+$private();
+global = [];
+for specifier in (specifiers)
+this:_suspend_if_necessary();
+{package, ?identifier, ?version} = this:_match(@specifier, this.provides_cache);
+if ($failed_match == package)
+raise(E_INVARG, tostr("Failed match:  ", toliteral(specifier)));
+elseif ($ambiguous_match == package)
+raise(E_INVARG, tostr("Ambiguous match:  ", toliteral(specifier)));
+endif
+for item in (`package.manifest ! E_PROPNF => {}')
+{object, label} = item;
+global[object] = tostr(label, "|", identifier);
+endfor
+endfor
+global[$nothing] = "__nothing__";
+return global;
+.
+#9:18
+{specifiers} = args;
+$private();
+global = [];
+for specifier in (specifiers)
+this:_suspend_if_necessary();
+{package, ?identifier, ?version} = this:_match(@specifier, this.provides_cache);
+if ($failed_match == package)
+raise(E_INVARG, tostr("Failed match:  ", toliteral(specifier)));
+elseif ($ambiguous_match == package)
+raise(E_INVARG, tostr("Ambiguous match:  ", toliteral(specifier)));
+endif
+for item in (`package.manifest ! E_PROPNF => {}')
+{object, label} = item;
+global[tostr(label, "|", identifier)] = object;
+endfor
+endfor
+global["__nothing__"] = $nothing;
+return global;
+.
+#9:19
+{verb, LIST, @options} = args;
+$private();
+for i in [1..length(LIST)]
+this:_suspend_if_necessary();
+LIST[i] = this:(verb)(LIST[i], @options);
+endfor
+return LIST;
+.
+#9:20
+{object, global, local, package, ?target = ""} = args;
+$private();
+if (typeof(object) == LIST)
+return this:_map(verb, @args);
+endif
+if (`ret = local[object] ! E_RANGE' != E_RANGE)
+return ret;
+elseif (`ret = global[object] ! E_RANGE' != E_RANGE)
+return ret;
+elseif (`object.wizard ! E_INVIND')
+return "__wizard__";
+elseif (object == caller_perms())
+return "__owner__";
+elseif (object == package)
+return "__package__";
+endif
+if (target)
+raise(E_INVARG, tostr("Lookup failed for:  ", object, " on ", target));
+else
+raise(E_INVARG, tostr("Lookup failed for:  ", object));
+endif
+.
+#9:21
+{label, global, local, package} = args;
+$private();
+if (typeof(label) == LIST)
+return this:_map(verb, @args);
+endif
+if ("__nothing__" == label)
+return global["__nothing__"];
+elseif ("__wizard__" == label)
+return caller_perms();
+elseif ("__owner__" == label)
+return caller_perms();
+elseif ("__package__" == label)
+return package;
+elseif (r = match(label, "^%([a-z_][a-z0-9_]*%)%(|%([a-z][a-z0-9_]*%)%)?$"))
+reference = label[r[3][1][1]..r[3][1][2]];
+identifier = label[r[3][3][1]..r[3][3][2]];
+try
+if (reference && identifier)
+return global[label];
+else
+return local[label];
+endif
+except (E_RANGE)
+endtry
+endif
+raise(E_INVARG, tostr("Lookup failed for:  ", toliteral(label)));
+.
+#9:22
+{subject, target, MAP} = args;
+$private();
+keys = mapkeys(MAP);
+stack = {target};
+while (stack)
+this:_suspend_if_necessary();
+{target, @stack} = stack;
+if (target in keys)
+parents = `MAP[target]["Attributes"]["parents"]["Value"]["value"] ! E_RANGE => "__nothing__"';
+if (typeof(parents) == LIST)
+if (subject in parents)
+return 1;
+else
+stack = {@parents, @stack};
+endif
+else
+if (subject == parents)
+return 1;
+else
+stack = {parents, @stack};
+endif
+endif
+endif
+endwhile
+return 0;
+.
+#9:23
+{object} = args;
+$private();
+objects = {};
+if (valid(object))
+stack = {object};
+while (stack)
+top = stack[1];
+stack = {@top.contents, @stack[2..$]};
+objects = {@objects, top};
+endwhile
+endif
+return objects;
+.
+#9:24
+`{package, ?identifier, ?version} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  package, ?identifier, ?version")';
+$permit("wizard");
+try
+identifier;
+version;
+except (E_VARNF)
+identifier = package.identifier;
+version = package.version;
+endtry
+(!valid(package.location)) || raise(E_INVARG, "Not in $nothing");
+(package in this.packages) && raise(E_INVARG, "Package is already installed");
+provides = `package.provides ! E_PROPNF => {}';
+provides = {{identifier, version}, @provides};
+for p in (provides)
+{id, v} = p;
+valid(this:_match(id, v)[1]) && raise(E_INVARG, tostr("Package is already installed:  identifier = ", id, ", version = ", v));
+endfor
+requires = `package.requires ! E_PROPNF => {}';
+(requires = this:_check_required_provides(requires)) && raise(E_INVARG, tostr("Package requires:  ", toliteral(requires)));
+errors = [];
+if (respond_to(package, "before_install"))
+try
+package:before_install();
+except ex (ANY)
+errors["before_install"] = ex;
+endtry
+endif
+this:_install(identifier, version, package);
+if (respond_to(package, "after_install"))
+try
+package:after_install();
+except ex (ANY)
+errors["after_install"] = ex;
+endtry
+endif
+return errors || 0;
+.
+#9:25
+`{identifier, version} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  identifier, version")';
+$permit("wizard");
+valid(object = this:_match(identifier, version)[1]) || raise(E_INVARG, tostr("Package is not installed:  identifier = ", identifier, ", version = ", version));
+provides = `object.provides ! E_PROPNF => {}';
+provides = {{identifier, version}, @provides};
+(provides = this:_check_provided_requires(provides)) && raise(E_INVARG, tostr("Package provides:  ", toliteral(provides)));
+errors = [];
+if (respond_to(object, "before_uninstall"))
+try
+object:before_uninstall();
+except ex (ANY)
+errors["before_uninstall"] = ex;
+endtry
+endif
+this:_uninstall(identifier, version, object);
+if (respond_to(object, "after_uninstall"))
+try
+object:after_uninstall();
+except ex (ANY)
+errors["after_uninstall"] = ex;
+endtry
+endif
+return errors || 0;
+.
+#9:26
+args || raise(E_ARGS);
+packages = this.packages;
+set_task_perms(caller_perms());
+if (length(args) == 1)
+{object} = args;
+identifier = version = "";
+else
+{identifier, version} = args;
+object = this:_match(identifier, version)[1];
+(object == $failed_match) && raise(E_INVARG, tostr("Package is not installed:  identifier = ", identifier, ", version = ", version));
+endif
+(object <= #2) && raise(E_INVARG, tostr("Privileged package:  identifier = ", object.identifier, ", version = ", object.version));
+errors = [];
+if (object in packages)
+identifier = identifier || object.identifier;
+version = version || object.version;
+provides = {{identifier, version}};
+(provides = this:_check_provided_requires(provides)) && raise(E_INVARG, tostr("Package provides:  ", toliteral(provides)));
+if (valid(object) && respond_to(object, "before_uninstall"))
+try
+object:before_uninstall();
+except ex (ANY)
+errors["before_uninstall"] = ex;
+endtry
+endif
+this:_uninstall(identifier, version, object);
+if (valid(object) && respond_to(object, "after_uninstall"))
+try
+object:after_uninstall();
+except ex (ANY)
+errors["after_uninstall"] = ex;
+endtry
+endif
+endif
+if (valid(object))
+for item in (this:_contents(object))
+`recycle(item) ! ANY => 0';
+endfor
+endif
+return errors || 0;
+.
+#9:27
+$private();
+bg_seconds = $server_options.bg_seconds;
+bg_ticks = $server_options.bg_ticks;
+$server_options.bg_seconds = 60 * 60;
+$server_options.bg_ticks = (1024 * 1024) * 1024;
+suspend(0);
+return {bg_seconds, bg_ticks};
+.
+#9:28
+$private();
+{args} = args;
+{bg_seconds, bg_ticks} = args;
+$server_options.bg_seconds = bg_seconds;
+$server_options.bg_ticks = bg_ticks;
+.
+#9:29
+{package} = args;
+set_task_perms(caller_perms());
+try
+configuration = package["Configuration"];
+version = configuration["version"];
+top = configuration["top"];
+objects = package["Objects"];
+objects[top];
+except ex (E_TYPE, E_RANGE)
+raise(E_INVARG, "Incompatible package format");
+endtry
+(version == "0.1") || raise(E_INVARG, "Unsupported package version");
+requires = `objects[top]["Values"]["requires"]["Value"]["value"] ! E_RANGE => {}';
+manifest = `objects[top]["Values"]["manifest"]["Value"]["value"] ! E_RANGE => {}';
+relocate = `objects[top]["Values"]["relocate"]["Value"]["value"] ! E_RANGE => {}';
+(missing = this:_check_required_provides(requires)) && raise(E_INVARG, tostr("Package requires:  ", toliteral(missing)));
+global = this:_generate_global_mapping_keyed_on_identifier(requires);
+labels = {};
+mapkeys_objects = mapkeys(objects);
+for label in (manifest)
+(label in mapkeys_objects) || raise(E_INVARG, tostr("Invalid value in `manifest':  ", label));
+labels = setadd(labels, label);
+endfor
+for label in (mapkeys_objects)
+labels = setadd(labels, label);
+endfor
+unsorted = labels;
+labels = {};
+for label in (unsorted)
+i = 1;
+for target in (labels)
+if (this:_is_ancestor(label, target, objects))
+break;
+endif
+i = i + 1;
+endfor
+labels = {@labels[1..i - 1], label, @labels[i..$]};
+endfor
+success = 0;
+try
+local = [];
+locations = [];
+local[top] = create($nothing);
+for label in (setremove(labels, top))
+this:_suspend_if_necessary();
+local[label] = create($nothing);
+this:_move(local[label], local[top]);
+endfor
+relocate_map = [];
+for reference in (relocate)
+this:_suspend_if_necessary();
+if (r = match(reference, "^%([a-z_][a-z0-9_]*%).%([a-z_][a-z0-9_]*%)$"))
+r1 = reference[r[3][1][1]..r[3][1][2]];
+r2 = reference[r[3][2][1]..r[3][2][2]];
+if (!(r2 in {"owner", "parents", "location"}))
+(r1 in mapkeys(relocate_map)) || (relocate_map[r1] = {});
+relocate_map[r1] = {@relocate_map[r1], r2};
+endif
+else
+raise(E_INVARG, tostr("Invalid reference in `relocate':  ", reference));
+endif
+endfor
+for label in (labels)
+this:_suspend_if_necessary();
+object = local[label];
+definition = objects[label];
+if (`definition["Values"]["owner"] ! E_RANGE' != E_RANGE)
+if (caller_perms().wizard)
+definition["Values"]["owner"]["Value"]["value"] = this:_lookup_by_label(definition["Values"]["owner"]["Value"]["value"], global, local, local[top]);
+else
+definition["Values"] = mapdelete(definition["Values"], "owner");
+endif
+endif
+if (`definition["Attributes"]["parents"] ! E_RANGE' != E_RANGE)
+definition["Attributes"]["parents"]["Value"]["value"] = this:_lookup_by_label(definition["Attributes"]["parents"]["Value"]["value"], global, local, local[top]);
+endif
+if (`definition["Values"]["location"] ! E_RANGE' != E_RANGE)
+locations[label] = definition["Values"]["location"]["Value"]["value"];
+definition["Values"] = mapdelete(definition["Values"], "location");
+endif
+if (`relocate_map[label] ! E_RANGE => 0')
+for name in (relocate_map[label])
+this:_suspend_if_necessary();
+if (`definition["Values"][name]["Value"]["value"] ! E_RANGE => 0')
+definition["Values"][name]["Value"]["value"] = this:_lookup_by_label(definition["Values"][name]["Value"]["value"], global, local, local[top]);
+else
+for property in (definition["Properties"])
+this:_suspend_if_necessary();
+if (property["Property"]["name"] == name)
+value = this:_lookup_by_label(property["Property"]["value"], global, local, local[top]);
+definition["Values"][name] = ["Value" -> ["value" -> value]];
+endif
+endfor
+endif
+endfor
+endif
+for _, value in (definition["Values"])
+this:_suspend_if_necessary();
+if (`definition["Values"][value]["Value"]["owner"] ! E_RANGE' != E_RANGE)
+if (caller_perms().wizard)
+definition["Values"][value]["Value"]["owner"] = this:_lookup_by_label(definition["Values"][value]["Value"]["owner"], global, local, local[top]);
+else
+definition["Values"][value]["Value"] = mapdelete(definition["Values"][value]["Value"], "owner");
+endif
+endif
+endfor
+for index in [1..length(definition["Verbs"])]
+this:_suspend_if_necessary();
+if (`definition["Verbs"][index]["Verb"]["owner"] ! E_RANGE' != E_RANGE)
+if (caller_perms().wizard)
+definition["Verbs"][index]["Verb"]["owner"] = this:_lookup_by_label(definition["Verbs"][index]["Verb"]["owner"], global, local, local[top]);
+else
+definition["Verbs"][index]["Verb"] = mapdelete(definition["Verbs"][index]["Verb"], "owner");
+endif
+endif
+endfor
+for index in [1..length(definition["Properties"])]
+this:_suspend_if_necessary();
+if (`definition["Properties"][index]["Property"]["owner"] ! E_RANGE' != E_RANGE)
+if (caller_perms().wizard)
+definition["Properties"][index]["Property"]["owner"] = this:_lookup_by_label(definition["Properties"][index]["Property"]["owner"], global, local, local[top]);
+else
+definition["Properties"][index]["Property"] = mapdelete(definition["Properties"][index]["Property"], "owner");
+endif
+endif
+endfor
+definition = $shapes:write_object(object, definition);
+objects[label] = definition;
+package["Objects"] = objects;
+endfor
+for label in (labels)
+this:_suspend_if_necessary();
+if ("Error" in mapkeys(package["Objects"][label]))
+raise("E_PACKAGE", "Error in package operation", package);
+endif
+endfor
+for label in (labels)
+this:_suspend_if_necessary();
+if (label != top)
+object = local[label];
+value = `locations[label] ! E_RANGE => "__package__"';
+value = (value == "__package__") ? local[top] | local[value];
+this:_move(object, value);
+endif
+endfor
+for entry in [1..`length(local[top].manifest) ! E_PROPNF => 0']
+this:_suspend_if_necessary();
+local[top].manifest[entry] = {local[local[top].manifest[entry]], local[top].manifest[entry]};
+endfor
+success = 1;
+finally
+success || this:delete(local[top]);
+endtry
+return local[top];
+.
+#9:30
+{package, ?options = []} = args;
+set_task_perms(caller_perms());
+strip = `options["strip"] ! E_RANGE => {}';
+truncate = `options["truncate"] ! E_RANGE => {}';
+`valid(package) ! E_TYPE => 0' || raise(E_INVARG, "Not a valid package");
+(!valid(package.location)) || raise(E_INVARG, "Not a valid package:  must not have a location");
+requires = `package.requires ! E_PROPNF => {}';
+manifest = `package.manifest ! E_PROPNF => {}';
+relocate = `package.relocate ! E_PROPNF => {}';
+objects = this:_contents(package);
+definition = ["Configuration" -> ["Version" -> "0.1"], "Objects" -> []];
+(missing = this:_check_required_provides(requires)) && raise(E_INVARG, tostr("Package requires:  ", toliteral(missing)));
+global = this:_generate_global_mapping_keyed_on_object_number(requires);
+for key in (`mapkeys(options["global"]) ! E_RANGE => {}')
+this:_suspend_if_necessary();
+global[key] = options["global"][key];
+endfor
+local = [];
+for object in (objects)
+this:_suspend_if_necessary();
+label = tostr("__", toint(object), "__");
+if (object == package)
+label = "__package__";
+endif
+for entry in (manifest)
+if (entry[1] == object)
+label = entry[2];
+break;
+endif
+endfor
+local[object] = label;
+definition["Objects"][label] = $shapes:read_object(object);
+if (object in strip)
+values = [];
+for name in ({"name", "owner", "location", "programmer", "wizard", "r", "w", "f"})
+values[name] = definition["Objects"][label]["Values"][name];
+endfor
+for index in [1..length(definition["Objects"][label]["Properties"])]
+name = definition["Objects"][label]["Properties"][index]["property"]["name"];
+values[name] = definition["Objects"][label]["Values"][name];
+endfor
+definition["Objects"][label]["Values"] = values;
+endif
+endfor
+top = definition["Configuration"]["top"] = local[package];
+labels = {};
+for entry in (manifest)
+this:_suspend_if_necessary();
+labels = {@labels, entry[2]};
+endfor
+for object in (objects)
+this:_suspend_if_necessary();
+label = local[object];
+for _, v in (definition["Objects"][label]["Values"])
+this:_suspend_if_necessary();
+if (`"owner" in mapkeys(definition["Objects"][label]["Values"][v]["Value"]) ! E_RANGE')
+definition["Objects"][label]["Values"][v]["Value"]["owner"] = this:_lookup_by_object_number(definition["Objects"][label]["Values"][v]["Value"]["owner"], global, local, package, label);
+endif
+endfor
+for i in [1..length(definition["Objects"][label]["Properties"])]
+this:_suspend_if_necessary();
+definition["Objects"][label]["Properties"][i]["Property"]["owner"] = this:_lookup_by_object_number(definition["Objects"][label]["Properties"][i]["Property"]["owner"], global, local, package, label);
+endfor
+for i in [1..length(definition["Objects"][label]["Verbs"])]
+this:_suspend_if_necessary();
+definition["Objects"][label]["Verbs"][i]["Verb"]["owner"] = this:_lookup_by_object_number(definition["Objects"][label]["Verbs"][i]["Verb"]["owner"], global, local, package, label);
+endfor
+if ("owner" in mapkeys(definition["Objects"][label]["Values"]))
+definition["Objects"][label]["Values"]["owner"]["Value"]["value"] = this:_lookup_by_object_number(definition["Objects"][label]["Values"]["owner"]["Value"]["value"], global, local, package, label);
+endif
+definition["Objects"][label]["Attributes"]["parents"]["Value"]["value"] = this:_lookup_by_object_number(definition["Objects"][label]["Attributes"]["parents"]["Value"]["value"], global, local, package, label);
+definition["Objects"][label]["Values"]["location"]["Value"]["value"] = this:_lookup_by_object_number(definition["Objects"][label]["Values"]["location"]["Value"]["value"], global, local, package, label);
+endfor
+for reference in (relocate)
+this:_suspend_if_necessary();
+if (r = match(reference, "^%([a-z_][a-z0-9_]*%).%([a-z_][a-z0-9_]*%)$"))
+r1 = reference[r[3][1][1]..r[3][1][2]];
+r2 = reference[r[3][2][1]..r[3][2][2]];
+if (r1 in labels)
+if (((r2 != "parents") && (r2 != "location")) && (r2 != "owner"))
+definition["Objects"][r1]["Values"][r2]["Value"]["value"] = this:_lookup_by_object_number(definition["Objects"][r1]["Values"][r2]["Value"]["value"], global, local, package, r1);
+for property in [1..length(definition["Objects"][r1]["Properties"])]
+this:_suspend_if_necessary();
+if (definition["Objects"][r1]["Properties"][property]["Property"]["name"] == r2)
+definition["Objects"][r1]["Properties"][property]["Property"]["value"] = definition["Objects"][r1]["Values"][r2]["Value"]["value"];
+break property;
+endif
+endfor
+endif
+else
+raise(E_INVARG, tostr("Invalid reference in `relocate':  ", reference));
+endif
+else
+raise(E_INVARG, tostr("Invalid reference in `relocate':  ", reference));
+endif
+endfor
+for object in (truncate)
+this:_suspend_if_necessary();
+if (object in objects)
+label = local[object];
+values = [];
+for _, value in (definition["Objects"][label]["Values"])
+this:_suspend_if_necessary();
+if (value in {"name", "owner", "location", "programmer", "wizard", "r", "w", "f"})
+values[value] = definition["Objects"][label]["Values"][value];
+endif
+endfor
+definition["Objects"][label]["Values"] = values;
+endif
+endfor
+if ("manifest" in mapkeys(definition["Objects"][top]["Values"]))
+for entry in [1..length(definition["Objects"][top]["Values"]["manifest"]["Value"]["value"])]
+this:_suspend_if_necessary();
+definition["Objects"][top]["Values"]["manifest"]["Value"]["value"][entry] = definition["Objects"][top]["Values"]["manifest"]["Value"]["value"][entry][2];
+endfor
+endif
+for property in [1..length(definition["Objects"][top]["Properties"])]
+this:_suspend_if_necessary();
+if (definition["Objects"][top]["Properties"][property]["Property"]["name"] == "manifest")
+for entry in [1..length(definition["Objects"][top]["Properties"][property]["Property"]["value"])]
+this:_suspend_if_necessary();
+definition["Objects"][top]["Properties"][property]["Property"]["value"][entry] = definition["Objects"][top]["Properties"][property]["Property"]["value"][entry][2];
+endfor
+break;
+endif
+endfor
+return definition;
+.
+#9:31
+{host, port, uri} = args;
+$private();
+cnct = 0;
+try
+cnct = open_network_connection(host, port);
+set_connection_option(cnct, "hold-input", 1);
+notify(cnct, tostr("GET ", uri, " HTTP/1.1"));
+notify(cnct, tostr("Host: ", host, ":", port));
+notify(cnct, "");
+while (line = read(cnct))
+endwhile
+json = read(cnct);
+return parse_json(json, "embedded-types");
+finally
+(typeof(cnct) == OBJ) && boot_player(cnct);
+endtry
+.
+#9:32
+args && raise(E_ARGS);
+$permit("wizard");
+index = this:_fetch_from_archive(this.archive_host, this.archive_port, this.archive_base_uri + "/packages.json");
+packages = [];
+for package in (index["Packages"])
+mk = mapkeys(package);
+if ((("identifier" in mk) && ("version" in mk)) && ("link" in mk))
+mk = mapkeys(package["link"]);
+if ((("uri" in mk) && ("rel" in mk)) && (package["link"]["rel"] == "package"))
+identifier = package["identifier"];
+version = package["version"];
+uri = package["link"]["uri"];
+`packages[identifier] ! E_RANGE' || (packages[identifier] = []);
+packages[identifier][version] = uri;
+endif
+endif
+endfor
+this.archived = packages;
+this.last_fetch_index = time();
+return packages;
+.
+#9:33
+{identifier, version} = args;
+$permit("wizard");
+package = this:_fetch_from_archive(this.archive_host, this.archive_port, (this.archive_base_uri + "/") + this.archived[identifier][version]);
+packages = this.cached;
+`packages[identifier] ! E_RANGE' || (packages[identifier] = []);
+packages[identifier][version] = package;
+this.cached = packages;
+return package;
+.
+#9:34
+`{identifier, version, ?upgrade = 0} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  identifier, version, ?upgrade = 0")';
+$permit("wizard");
+package = this:_fetch_from_archive(this.archive_host, this.archive_port, (this.archive_base_uri + "/") + this.archived[identifier][version]);
+try
+package = this:import(package);
+except ex ("E_PACKAGE")
+package = ex[3];
+endtry
+return package;
+.
+#9:35
+`{identifier, version, ?upgrade = 0} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  identifier, version, ?upgrade = 0")';
+$permit("wizard");
+package = this.cached[identifier][version];
+try
+package = this:import(package);
+except ex ("E_PACKAGE")
+package = ex[3];
+endtry
+return package;
+.
+#9:36
+`{identifier, version, ?force = 1} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  identifier, version, ?force = 1")';
+$permit("wizard");
+package = this:_match(identifier, version)[1];
+package = this:export(package);
+packages = this.cached;
+`packages[identifier] ! E_RANGE' || (packages[identifier] = []);
+packages[identifier][version] = package;
+this.cached = packages;
+return package;
+.
+#9:37
+$permit("wizard");
+`{pathname, ?options = []} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  pathname, ?options")';
+fh = -1;
+try
+fh = file_open(pathname, "r-tn");
+package = parse_json(file_readline(fh), "embedded-types");
+finally
+(fh > -1) && file_close(fh);
+endtry
+try
+package = this:import(package);
+except ex ("E_PACKAGE")
+package = ex[3];
+endtry
+return package;
+.
+#9:38
+$permit("wizard");
+`{identifier, version, pathname, ?options = []} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  identifier, version, pathname, ?options")';
+package = this:_match(identifier, version)[1];
+package = this:export(package, options);
+fh = -1;
+try
+fh = file_open(pathname, "w-tn");
+file_writeline(fh, generate_json(package, "embedded-types"));
+finally
+(fh > -1) && file_close(fh);
+endtry
+return package;
+.
+#9:39
+`{identifier, version} = args ! E_ARGS => raise(E_ARGS, "Incorrect number of arguments:  identifier, version")';
+$permit("wizard");
+package = this.cached[identifier][version];
+json = generate_json(package, "embedded-types");
+suspend(0);
+while (len = length(json))
+suspend(0);
+len = (len > 60000) ? 60000 | len;
+line = json[1..len];
+json[1..len] = "";
+while (buffered_output_length(player))
+suspend(0);
+endwhile
+notify(player, line);
+endwhile
+.
+#9:40
+if (callers() && (caller_perms() != player))
+raise(E_PERM);
+endif
+if (!player.wizard)
+notify(player, "Only wizards can do that!");
+return;
+endif
+if (r = match(dobjstr, "^ *%([_a-z0-9]+%) *%([0-9]+%.[0-9]+%.[0-9]+%)? *$"))
+seconds_and_ticks = 0;
+try
+seconds_and_ticks = this:_set_seconds_and_ticks();
+notify(player, "Updating...");
+this:fetch_index();
+identifier = dobjstr[r[3][1][1]..r[3][1][2]];
+version = dobjstr[r[3][2][1]..r[3][2][2]];
+if (`this.provides_cache[identifier] ! E_RANGE' != E_RANGE)
+notify(player, tostr("Package \"", identifier, "\" is already installed."));
+return;
+elseif ((`this.archived[identifier] ! E_RANGE' == E_RANGE) && (`this.cached[identifier] ! E_RANGE' == E_RANGE))
+notify(player, tostr("Package \"", identifier, "\" doesn't exist in either the remote archive or local cache."));
+return;
+else
+if (version)
+if ((`this.archived[identifier][version] ! E_RANGE' == E_RANGE) && (`this.cached[identifier][version] ! E_RANGE' == E_RANGE))
+notify(player, tostr("Version \"", version, "\" of package \"", identifier, "\" doesn't exist in either the remote archive or local cache."));
+return;
+endif
+else
+cached = `mapkeys(this.cached[identifier]) ! E_RANGE => {}';
+archived = `mapkeys(this.archived[identifier]) ! E_RANGE => {}';
+versions = {@cached, @archived};
+versions = this:_map("_parse_version", versions);
+versions = this:_sort_versions(versions);
+version = versions[1];
+version = tostr(version[1], ".", version[2], ".", version[3]);
+endif
+endif
+if (`this.cached[identifier][version] ! E_RANGE' != E_RANGE)
+notify(player, tostr("Installing version \"", version, "\" of package \"", identifier, "\" from the local cache..."));
+package = this:import_package_from_cache(identifier, version);
+else
+notify(player, tostr("Installing version \"", version, "\" of package \"", identifier, "\" from the remote archive..."));
+package = this:import_package_from_archive(identifier, version);
+endif
+if (typeof(package) == OBJ)
+manifest = `package.manifest ! E_PROPNF => {}';
+instructions = `package.instructions ! E_PROPNF => {}';
+if ("install-dictionary" in instructions)
+for item in (manifest)
+{object, label} = item;
+if ("dictionary" == label)
+notify(player, tostr("Adding package dictionary (", object.name, ") to parents of $system..."));
+parents = {@parents($system), object};
+chparents($system, parents);
+break;
+endif
+endfor
+endif
+if ("install-namespace" in instructions)
+for item in (manifest)
+{object, label} = item;
+if ("dictionary" == label)
+notify(player, tostr("Adding namespace (", identifier, ") as a property on $system..."));
+add_property($system, identifier, object, {package, "r"});
+break;
+endif
+endfor
+endif
+for instruction in (instructions)
+if ((typeof(`$sysobj ! ANY') == OBJ) && (r = match(instruction, "^install-%([_a-z0-9]+%)-on-legacy-core$")))
+property = instruction[r[3][1][1]..r[3][1][2]];
+for item in (manifest)
+{object, label} = item;
+if (property == label)
+notify(player, tostr("Adding property (", label, ") to $sysobj..."));
+add_property($sysobj, label, object, {package, "r"});
+endif
+endfor
+endif
+endfor
+this:install(package);
+else
+notify(player, tostr("Version \"", version, "\" of package \"", identifier, "\" couldn't be installed (raw package below)."));
+notify(player, toliteral(package));
+return;
+endif
+notify(player, tostr("Version \"", version, "\" of package \"", identifier, "\" (", package.name, ") was successfully installed as ", package, "."));
+finally
+this:_reset_seconds_and_ticks(seconds_and_ticks);
+endtry
+else
+notify(player, tostr("Correct usage is:  @install <package identifier> <package version> with $composed"));
+notify(player, tostr("     for example:  @install foobar 1.2.3 with $composed"));
+endif
+.
+#9:41
+if (callers() && (caller_perms() != player))
+raise(E_PERM);
+endif
+if (!player.wizard)
+notify(player, "Only wizards can do that!");
+return;
+endif
+if (r = match(dobjstr, "^ *%([_a-z0-9]+%) *%([0-9]+%.[0-9]+%.[0-9]+%) *$"))
+identifier = dobjstr[r[3][1][1]..r[3][1][2]];
+version = dobjstr[r[3][2][1]..r[3][2][2]];
+if (`this.provides_cache[identifier][version] ! E_RANGE' == E_RANGE)
+notify(player, tostr("Version \"", version, "\" of package \"", identifier, "\" is not installed."));
+return;
+endif
+package = this.provides_cache[identifier][version][1];
+manifest = `package.manifest ! E_PROPNF => {}';
+instructions = `package.instructions ! E_PROPNF => {}';
+if ("install-dictionary" in instructions)
+for item in (manifest)
+{object, label} = item;
+if (("dictionary" == label) && (object in parents($system)))
+notify(player, tostr("Removing package dictionary (", object.name, ") from parents of $system..."));
+parents = setremove(parents($system), object);
+chparents($system, parents);
+break;
+endif
+endfor
+endif
+if ("install-namespace" in instructions)
+for item in (manifest)
+{object, label} = item;
+if (("dictionary" == label) && (identifier in properties($system)))
+notify(player, tostr("Removing namespace (", identifier, ") as a property on $system..."));
+delete_property($system, identifier);
+break;
+endif
+endfor
+endif
+for instruction in (instructions)
+if ((typeof(`$sysobj ! ANY') == OBJ) && (r = match(instruction, "^install-%([_a-z0-9]+%)-on-legacy-core$")))
+property = instruction[r[3][1][1]..r[3][1][2]];
+for item in (manifest)
+{object, label} = item;
+if ((property == label) && (property in properties($sysobj)))
+notify(player, tostr("Removing property (", label, ") from $sysobj..."));
+delete_property($sysobj, label);
+endif
+endfor
+endif
+endfor
+this:delete(package);
+notify(player, tostr("Version \"", version, "\" of package \"", identifier, "\" was successfully uninstalled."));
+else
+notify(player, tostr("Correct usage is:  @uninstall <package identifier> <package version> with $composed"));
+notify(player, tostr("     for example:  @uninstall foobar 1.2.3 with $composed"));
+endif
+.
+#9:42
+if (callers() && (caller_perms() != player))
+raise(E_PERM);
+endif
+if (!player.wizard)
+notify(player, "Only wizards can do that!");
+return;
+endif
+if (dobjstr != "packages")
+notify(player, tostr("Correct usage is:  @list packages with $composed"));
+return;
+endif
+notify(player, "Updating...");
+this:fetch_index();
+cached = this.cached;
+archived = this.archived;
+notify(player, "Installed packages");
+for identifier in (mapkeys(this.provides_cache))
+for version in (mapkeys(this.provides_cache[identifier]))
+if ((version in `mapkeys(cached[identifier]) ! E_RANGE => []') || (version in `mapkeys(archived[identifier]) ! E_RANGE => {}'))
+flags = "   ";
+else
+flags = " ! ";
+endif
+notify(player, tostr(flags, identifier, ", ", version, " (", objnum = this.provides_cache[identifier][version][1], ") ", objnum.name));
+endfor
+endfor
+notify(player, "Cached packages [local]");
+for identifier in (mapkeys(this.cached))
+versions = "";
+for version in (mapkeys(this.cached[identifier]))
+versions = (versions + ", ") + version;
+endfor
+notify(player, tostr("   ", identifier, versions));
+endfor
+notify(player, msg = tostr("Archived packages [", this.archive_host, "]"));
+for identifier in (mapkeys(this.archived))
+versions = "";
+for version in (mapkeys(this.archived[identifier]))
+versions = (versions + ", ") + version;
+endfor
+notify(player, tostr("   ", identifier, versions));
+endfor
+notify(player, "(done)");
+.
+#10:0
+{message} = args;
+$permit("owner", "wizard");
+add_property(this, tostr(time()), message, {this.owner, "r"});
+return;
+"{message} = args;";
+"";
+"$permit(\"owner\", \"wizard\");";
+"";
+"add_property(this, tostr(time()), message, {this.owner, \"r\"});";
+"";
+"chunk_length:5";
+"chunk_type:source";
+"content_type:application/x-moocode";
+"updated_at:Tue Oct 25 06:17:39 2011 EDT";
+"-=-=-mxyzptlk-=-=-";
+.
+0 clocks
+0 queued tasks
+0 suspended tasks
+0 interrupted tasks
+0 active connections with listeners
