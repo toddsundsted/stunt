@@ -1,0 +1,8 @@
+*.orig
+*.rej
+version_src.h
+config.h
+config.status
+config.log
+autom4te.cache
+Makefile
