@@ -886,7 +886,7 @@ generate_expr(Expr * expr, State * state)
 	{
 	    int handler_label, end_label;
 
-	    generate_codes(expr->e.catch.codes, state);
+	    generate_codes(expr->e._catch.codes, state);
 	    emit_extended_byte(EOP_PUSH_LABEL, state);
 	    handler_label = add_label(state);
 	    push_stack(1, state);
@@ -903,10 +903,10 @@ generate_expr(Expr * expr, State * state)
 	     * instead of it being the value of the main expression, we have
 	     * the exception tuple pushed before entering the handler.
 	     */
-	    if (expr->e.catch.except) {
+	    if (expr->e._catch.except) {
 		emit_byte(OP_POP, state);
 		pop_stack(1, state);
-		generate_expr(expr->e.catch.except, state);
+		generate_expr(expr->e._catch.except, state);
 	    } else {
 		/* Select code from tuple */
 		emit_byte(OPTIM_NUM_TO_OPCODE(1), state);
@@ -1056,7 +1056,7 @@ generate_stmt(Stmt * stmt, State * state)
 		int end_label, arm_count = 0;
 		Except_Arm *ex;
 
-		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
+		for (ex = stmt->s._catch.excepts; ex; ex = ex->next) {
 		    generate_codes(ex->codes, state);
 		    emit_extended_byte(EOP_PUSH_LABEL, state);
 		    ex->label = add_label(state);
@@ -1067,12 +1067,12 @@ generate_stmt(Stmt * stmt, State * state)
 		emit_byte(arm_count, state);
 		push_stack(1, state);
 		INCR_TRY_DEPTH(state);
-		generate_stmt(stmt->s.catch.body, state);
+		generate_stmt(stmt->s._catch.body, state);
 		DECR_TRY_DEPTH(state);
 		emit_extended_byte(EOP_END_EXCEPT, state);
 		end_label = add_label(state);
 		pop_stack(2 * arm_count + 1, state);	/* 2(codes,pc) + catch */
-		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
+		for (ex = stmt->s._catch.excepts; ex; ex = ex->next) {
 		    define_label(ex->label, state);
 		    push_stack(1, state);	/* exception tuple */
 		    if (ex->id >= 0)

@@ -673,9 +673,9 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (ptr != bc.vector + done)
 			    panic("CATCH ends in wrong place in DECOMPILE!");
 			e = alloc_expr(EXPR_CATCH);
-			e->e.catch.try = try_expr;
-			e->e.catch.codes = a;
-			e->e.catch.except = default_expr;
+			e->e._catch.try = try_expr;
+			e->e._catch.codes = a;
+			e->e._catch.except = default_expr;
 			push_expr(HOT3(is_hot || (default_expr
 					    && default_expr == hot_node),
 				       label_expr, codes, try_expr,
@@ -694,7 +694,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			unsigned done;
 
 			s = HOT_OP(alloc_stmt(STMT_TRY_EXCEPT));
-			s->s.catch.excepts = 0;
+			s->s._catch.excepts = 0;
 			while (count--) {
 			    label_expr = pop_expr();
 			    if (label_expr->kind != EXPR_VAR
@@ -714,16 +714,16 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			    dealloc_node(e);
 			    ex = alloc_except(-1, a, 0);
 			    ex->label = label;
-			    ex->next = s->s.catch.excepts;
+			    ex->next = s->s._catch.excepts;
 			    HOT2(0, label_expr, e, ex);
-			    s->s.catch.excepts = ex;
+			    s->s._catch.excepts = ex;
 			}
-			DECOMPILE(bc, ptr, end, &(s->s.catch.body), 0);
+			DECOMPILE(bc, ptr, end, &(s->s._catch.body), 0);
 			HOT_POS(ptr++ == hot_byte, s, ENDBODY);
 			if (*ptr++ != EOP_END_EXCEPT)
 			    panic("Missing END_EXCEPT in DECOMPILE!");
 			done = READ_LABEL();
-			for (ex = s->s.catch.excepts; ex; ex = ex->next) {
+			for (ex = s->s._catch.excepts; ex; ex = ex->next) {
 			    Byte *stop;
 			    int jump_hot = 0;
 
@@ -984,13 +984,13 @@ find_hot_node(Stmt * stmt)
 		Except_Arm *ex;
 
 		lineno++;	/* Skip `try' line */
-		if (find_hot_node(stmt->s.catch.body))
+		if (find_hot_node(stmt->s._catch.body))
 		    return 1;
 		if (stmt == hot_node && hot_position == ENDBODY) {
 		    lineno--;	/* blame it on last line of body */
 		    return 1;
 		}
-		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
+		for (ex = stmt->s._catch.excepts; ex; ex = ex->next) {
 		    if (ex == hot_node && hot_position == TOP)
 			return 1;
 		    lineno++;	/* skip `except' line */

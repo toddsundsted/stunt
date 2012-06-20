@@ -1,0 +1,190 @@
+commit 4ecb6adc0266d48a34503988b547c2a6ab64cb49
+Author: Steve Wainstead <wainstead@gmail.com>
+Date:   Sun Jun 7 18:28:36 2009 +0000
+
+    convert catch to _catch to get around c++ keyword
+
+diff --git a/server/code_gen.c b/server/code_gen.c
+index 494b4c1..c8f04e5 100644
+--- a/server/code_gen.c
++++ b/server/code_gen.c
+@@ -852,7 +852,7 @@ generate_expr(Expr * expr, State * state)
+ 	{
+ 	    int handler_label, end_label;
+ 
+-	    generate_codes(expr->e.catch.codes, state);
++	    generate_codes(expr->e._catch.codes, state);
+ 	    emit_extended_byte(EOP_PUSH_LABEL, state);
+ 	    handler_label = add_label(state);
+ 	    push_stack(1, state);
+@@ -869,10 +869,10 @@ generate_expr(Expr * expr, State * state)
+ 	     * instead of it being the value of the main expression, we have
+ 	     * the exception tuple pushed before entering the handler.
+ 	     */
+-	    if (expr->e.catch.except) {
++	    if (expr->e._catch.except) {
+ 		emit_byte(OP_POP, state);
+ 		pop_stack(1, state);
+-		generate_expr(expr->e.catch.except, state);
++		generate_expr(expr->e._catch.except, state);
+ 	    } else {
+ 		/* Select code from tuple */
+ 		emit_byte(OPTIM_NUM_TO_OPCODE(1), state);
+@@ -1014,7 +1014,7 @@ generate_stmt(Stmt * stmt, State * state)
+ 		int end_label, arm_count = 0;
+ 		Except_Arm *ex;
+ 
+-		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
++		for (ex = stmt->s._catch.excepts; ex; ex = ex->next) {
+ 		    generate_codes(ex->codes, state);
+ 		    emit_extended_byte(EOP_PUSH_LABEL, state);
+ 		    ex->label = add_label(state);
+@@ -1025,12 +1025,12 @@ generate_stmt(Stmt * stmt, State * state)
+ 		emit_byte(arm_count, state);
+ 		push_stack(1, state);
+ 		INCR_TRY_DEPTH(state);
+-		generate_stmt(stmt->s.catch.body, state);
++		generate_stmt(stmt->s._catch.body, state);
+ 		DECR_TRY_DEPTH(state);
+ 		emit_extended_byte(EOP_END_EXCEPT, state);
+ 		end_label = add_label(state);
+ 		pop_stack(2 * arm_count + 1, state);	/* 2(codes,pc) + catch */
+-		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
++		for (ex = stmt->s._catch.excepts; ex; ex = ex->next) {
+ 		    define_label(ex->label, state);
+ 		    push_stack(1, state);	/* exception tuple */
+ 		    if (ex->id >= 0)
+diff --git a/server/decompile.c b/server/decompile.c
+index cc3d287..918d009 100644
+--- a/server/decompile.c
++++ b/server/decompile.c
+@@ -672,9 +672,9 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
+ 			if (ptr != bc.vector + done)
+ 			    panic("CATCH ends in wrong place in DECOMPILE!");
+ 			e = alloc_expr(EXPR_CATCH);
+-			e->e.catch.try = try_expr;
+-			e->e.catch.codes = a;
+-			e->e.catch.except = default_expr;
++			e->e._catch.try = try_expr;
++			e->e._catch.codes = a;
++			e->e._catch.except = default_expr;
+ 			push_expr(HOT3(is_hot || (default_expr
+ 					    && default_expr == hot_node),
+ 				       label_expr, codes, try_expr,
+@@ -693,7 +693,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
+ 			unsigned done;
+ 
+ 			s = HOT_OP(alloc_stmt(STMT_TRY_EXCEPT));
+-			s->s.catch.excepts = 0;
++			s->s._catch.excepts = 0;
+ 			while (count--) {
+ 			    label_expr = pop_expr();
+ 			    if (label_expr->kind != EXPR_VAR
+@@ -713,16 +713,16 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
+ 			    dealloc_node(e);
+ 			    ex = alloc_except(-1, a, 0);
+ 			    ex->label = label;
+-			    ex->next = s->s.catch.excepts;
++			    ex->next = s->s._catch.excepts;
+ 			    HOT2(0, label_expr, e, ex);
+-			    s->s.catch.excepts = ex;
++			    s->s._catch.excepts = ex;
+ 			}
+-			DECOMPILE(bc, ptr, end, &(s->s.catch.body), 0);
++			DECOMPILE(bc, ptr, end, &(s->s._catch.body), 0);
+ 			HOT_POS(ptr++ == hot_byte, s, ENDBODY);
+ 			if (*ptr++ != EOP_END_EXCEPT)
+ 			    panic("Missing END_EXCEPT in DECOMPILE!");
+ 			done = READ_LABEL();
+-			for (ex = s->s.catch.excepts; ex; ex = ex->next) {
++			for (ex = s->s._catch.excepts; ex; ex = ex->next) {
+ 			    Byte *stop;
+ 			    int jump_hot = 0;
+ 
+@@ -927,13 +927,13 @@ find_hot_node(Stmt * stmt)
+ 		Except_Arm *ex;
+ 
+ 		lineno++;	/* Skip `try' line */
+-		if (find_hot_node(stmt->s.catch.body))
++		if (find_hot_node(stmt->s._catch.body))
+ 		    return 1;
+ 		if (stmt == hot_node && hot_position == ENDBODY) {
+ 		    lineno--;	/* blame it on last line of body */
+ 		    return 1;
+ 		}
+-		for (ex = stmt->s.catch.excepts; ex; ex = ex->next) {
++		for (ex = stmt->s._catch.excepts; ex; ex = ex->next) {
+ 		    if (ex == hot_node && hot_position == TOP)
+ 			return 1;
+ 		    lineno++;	/* skip `except' line */
+diff --git a/server/parser.y b/server/parser.y
+index f0dd6f1..009d666 100644
+--- a/server/parser.y
++++ b/server/parser.y
+@@ -257,8 +257,8 @@ statement:
+     	| tTRY statements excepts tENDTRY
+ 		{
+ 		    $$ = alloc_stmt(STMT_TRY_EXCEPT);
+-		    $$->s.catch.body = $2;
+-		    $$->s.catch.excepts = $3;
++		    $$->s._catch.body = $2;
++		    $$->s._catch.excepts = $3;
+ 		}
+     	| tTRY statements tFINALLY statements tENDTRY
+ 		{
+@@ -579,9 +579,9 @@ expr:
+ 	| '`' expr '!' codes default '\''
+ 		{
+ 		    $$ = alloc_expr(EXPR_CATCH);
+-		    $$->e.catch.try = $2;
+-		    $$->e.catch.codes = $4;
+-		    $$->e.catch.except = $5;
++		    $$->e._catch.try = $2;
++		    $$->e._catch.codes = $4;
++		    $$->e._catch.except = $5;
+ 		}
+ 	;
+ 
+diff --git a/server/unparse.c b/server/unparse.c
+index 7888bce..71a9dd1 100644
+--- a/server/unparse.c
++++ b/server/unparse.c
+@@ -347,14 +347,14 @@ unparse_stmt_fork(Stream * str, struct Stmt_Fork fork_stmt, int indent)
+ }
+ 
+ static void
+-unparse_stmt_catch(Stream * str, struct Stmt_Catch catch, int indent)
++unparse_stmt_catch(Stream * str, struct Stmt_Catch _catch, int indent)
+ {
+     Except_Arm *ex;
+ 
+     stream_add_string(str, "try");
+     output(str);
+-    unparse_stmt(catch.body, indent + 2);
+-    for (ex = catch.excepts; ex; ex = ex->next) {
++    unparse_stmt(_catch.body, indent + 2);
++    for (ex = _catch.excepts; ex; ex = ex->next) {
+ 	indent_stmt(str, indent);
+ 	stream_add_string(str, "except ");
+ 	if (ex->id >= 0)
+@@ -635,15 +635,15 @@ unparse_expr(Stream * str, Expr * expr)
+ 
+     case EXPR_CATCH:
+ 	stream_add_string(str, "`");
+-	unparse_expr(str, expr->e.catch.try);
++	unparse_expr(str, expr->e._catch.try);
+ 	stream_add_string(str, " ! ");
+-	if (expr->e.catch.codes)
+-	    unparse_arglist(str, expr->e.catch.codes);
++	if (expr->e._catch.codes)
++	    unparse_arglist(str, expr->e._catch.codes);
+ 	else
+ 	    stream_add_string(str, "ANY");
+-	if (expr->e.catch.except) {
++	if (expr->e._catch.except) {
+ 	    stream_add_string(str, " => ");
+-	    unparse_expr(str, expr->e.catch.except);
++	    unparse_expr(str, expr->e._catch.except);
+ 	}
+ 	stream_add_string(str, "'");
+ 	break;
