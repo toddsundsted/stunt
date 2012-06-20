@@ -270,32 +270,3 @@ index 4ddddb9..95015ad 100644
   *
   * Revision 1.1  1992/07/20  23:23:12  pavel
   * Initial RCS-controlled version.
-diff --git a/server/execute.h b/server/execute.h
-index 2bbbdf1..bda4271 100644
---- a/server/execute.h
-+++ b/server/execute.h
-@@ -46,7 +46,7 @@ typedef struct {
-     Var temp;			/* VM's temp register */
- 
-     /* verb information */
--    Objid this;
-+    Objid _this;
-     Objid player;
-     Objid progr;
-     Objid vloc;
-@@ -94,12 +94,12 @@ enum outcome {
- extern enum outcome do_forked_task(Program * prog, Var * rt_env,
- 				   activation a, int f_id);
- extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
--				  Objid this, db_verb_handle vh);
--extern enum outcome do_server_verb_task(Objid this, const char *verb,
-+				  Objid _this, db_verb_handle vh);
-+extern enum outcome do_server_verb_task(Objid _this, const char *verb,
- 					Var args, db_verb_handle h,
- 					Objid player, const char *argstr,
- 					Var * result, int do_db_tracebacks);
--extern enum outcome do_server_program_task(Objid this, const char *verb,
-+extern enum outcome do_server_program_task(Objid _this, const char *verb,
- 					   Var args, Objid vloc,
- 					   const char *verbname,
- 					   Program * program, Objid progr,
