@@ -298,7 +298,7 @@ extern int db_add_propdef(Objid oid, const char *pname,
 				 */
 
 extern int db_rename_propdef(Objid oid, const char *old,
-			     const char *new);
+			     const char *_new);
 				/* Returns true (and actually renames the
 				 * propdef on OID) iff (1) a propdef with the
 				 * name OLD existed on OID, (2) no property

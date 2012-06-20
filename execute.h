@@ -51,7 +51,7 @@ typedef struct {
      * and 'vloc' is the object number of the object on which the verb
      * is actually defined.
      */
-    Var this;
+    Var _this;
     Objid player;
     Objid progr;
     Objid recv;
@@ -83,11 +83,11 @@ typedef vmstruct *vm;
 /* call_verb will only return E_MAXREC, E_INVIND, E_VERBNF,
    or E_NONE.  the vm will only be changed if E_NONE is returned */
 extern enum error call_verb(Objid obj, const char *vname,
-			    Var this, Var args, int do_pass);
+			    Var _this, Var args, int do_pass);
 /* if your vname is already a moo str (via str_dup) then you can
    use this interface instead */
 extern enum error call_verb2(Objid obj, const char *vname,
-			     Var this, Var args, int do_pass);
+			     Var _this, Var args, int do_pass);
 
 extern int setup_activ_for_eval(Program * prog);
 
