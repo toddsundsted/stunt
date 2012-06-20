@@ -274,7 +274,7 @@ add_literal(Var v, State * state)
 	    /* intern string if we can */
 	    Var nv;
 
-	    nv.type = TYPE_STR;
+	    nv.type = (var_type)TYPE_STR;
 	    nv.v.str = str_intern(v.v.str);
 	    gstate->literals[i = gstate->num_literals++] = nv;
 	} else {
@@ -1378,7 +1378,7 @@ generate_code(Stmt * stmt, DB_Version version)
 	unsigned i;
 
 	prog->fork_vectors =
-	    mymalloc(sizeof(Bytecodes) * gstate.num_fork_vectors,
+          (Bytecodes *) mymalloc(sizeof(Bytecodes) * gstate.num_fork_vectors,
 		     M_FORK_VECTORS);
 	prog->fork_vectors_size = gstate.num_fork_vectors;
 	for (i = 0; i < gstate.num_fork_vectors; i++)

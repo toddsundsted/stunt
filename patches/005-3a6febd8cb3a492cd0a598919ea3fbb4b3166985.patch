@@ -1,0 +1,41 @@
+commit 3a6febd8cb3a492cd0a598919ea3fbb4b3166985
+Author: Steve Wainstead <wainstead@gmail.com>
+Date:   Sun Jun 7 18:36:44 2009 +0000
+
+    two minor fixes
+
+diff --git a/server/code_gen.c b/server/code_gen.c
+index c8f04e5..ef96d88 100644
+--- a/server/code_gen.c
++++ b/server/code_gen.c
+@@ -273,7 +273,7 @@ add_literal(Var v, State * state)
+ 	    /* intern string if we can */
+ 	    Var nv;
+ 
+-	    nv.type = TYPE_STR;
++	    nv.type = (var_type)TYPE_STR;
+ 	    nv.v.str = str_intern(v.v.str);
+ 	    gstate->literals[i = gstate->num_literals++] = nv;
+ 	} else {
+@@ -1335,7 +1335,7 @@ generate_code(Stmt * stmt, DB_Version version)
+ 	unsigned i;
+ 
+ 	prog->fork_vectors =
+-	    mymalloc(sizeof(Bytecodes) * gstate.num_fork_vectors,
++          (Bytecodes *) mymalloc(sizeof(Bytecodes) * gstate.num_fork_vectors,
+ 		     M_FORK_VECTORS);
+ 	prog->fork_vectors_size = gstate.num_fork_vectors;
+ 	for (i = 0; i < gstate.num_fork_vectors; i++)
+diff --git a/server/db_file.c b/server/db_file.c
+index c04f1f9..382def6 100644
+--- a/server/db_file.c
++++ b/server/db_file.c
+@@ -380,7 +380,7 @@ validate_hierarchies()
+ static const char *
+ fmt_verb_name(void *data)
+ {
+-    db_verb_handle *h = data;
++  db_verb_handle *h = (db_verb_handle *) data;
+     static Stream *s = 0;
+ 
+     if (!s)
