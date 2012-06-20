@@ -5,47 +5,38 @@
 # derivative works must comply with all applicable United States export
 # control laws.  This software is made available AS IS, and Xerox Corporation
 # makes no warranty about the software, its performance or its conformity to
-# any specification.  Any person obtaining a copy of this software is requested
-# to send their name and post office or electronic mail address to:
-#   Pavel Curtis
-#   Xerox PARC
-#   3333 Coyote Hill Rd.
-#   Palo Alto, CA 94304
-#   Pavel@Xerox.Com
+# any specification.
 
-CC = @CC@
-LIBRARIES = @LIBS@
-YACC = @YACC@
+# @configure_input@
 
-CFLAGS = -O
-# If you're using GCC, you may prefer:
-# CFLAGS = -O2 -finline-functions
-#
-# If you're not using GCC, and your compiler doesn't understand the
-# inline keyword, use the following.  (This will be fixed in autoconf2
-# upgrade).
-# CFLAGS = -O2 -Dinline=
+CC	= @CXX@
+DEFS	= @DEFS@
+LIBS	= @LIBS@
+YACC	= @YACC@
 
-MI_OPTS = --fill-column 79 --no-split
+# for debugging you might prefer:
+# CFLAGS='-g -m32 -O0 -Wall'
 
-DOCS = ProgrammersManual.txt ProgrammersManual.html ProgrammersManual.info \
-	ProgrammersManual.dvi ProgrammersManual.pdf ProgrammersManual.ps
+CFLAGS		= -m32 -O
+CPPFLAGS	= @CPPFLAGS@
+INSTALL         = @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
 
 YFLAGS = -d
-COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
+COMPILE.c = $(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) -c
 
-CSRCS = ast.c base64.c code_gen.c collection.c db_file.c db_io.c \
-	db_objects.c db_properties.c db_verbs.c decompile.c \
-	disassemble.c eval_env.c eval_vm.c exceptions.c exec.c \
-	execute.c extensions.c functions.c hmac_sha2.c http_parser.c \
-	json.c keywords.c list.c log.c malloc.c map.c match.c md5.c \
-	name_lookup.c network.c net_mplex.c net_proto.c numbers.c \
-	objects.c parse_cmd.c pattern.c program.c property.c quota.c \
-	regexpr.c server.c sha1.c sha256.c storage.c streams.c \
-	str_intern.c sym_table.c tasks.c timers.c unparse.c utils.c \
-	verbs.c version.c yajl.c yajl_alloc.c yajl_buf.c \
-	yajl_encode.c yajl_gen.c yajl_lex.c yajl_parser.c \
-	yajl_version.c extension-fileio.c
+CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+	db_verbs.c decompile.c disassemble.c eval_env.c eval_vm.c \
+	exceptions.c execute.c extensions.c functions.c keywords.c list.c \
+	log.c match.c md5.c name_lookup.c network.c net_mplex.c \
+	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c \
+	bg_name_lookup.c
+
+OPT_EXT_XML_SRC = ext-xml.c
+OPT_EXT_FUP_SRC = ext-FUP.c
+OPT_FILEIO_SRC  = extension-fileio.c
 
 OPT_NET_SRCS = net_single.c net_multi.c \
 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
@@ -54,23 +45,17 @@ OPT_NET_SRCS = net_single.c net_multi.c \
 
 OPT_NET_OBJS = $(OPT_NET_SRCS:.c=.o)
 
-OPT_CSRCS = gnu-malloc.c $(OPT_NET_SRCS)
-
 YSRCS = parser.y
 
-HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
-	db_io.h db_private.h decompile.h db_tune.h disassemble.h \
-	eval_env.h eval_vm.h exceptions.h exec.h execute.h \
-	functions.h getpagesize.h hmac_sha2.h http_parser.h json.h \
-	keywords.h list.h log.h map.h match.h md5.h name_lookup.h \
-	network.h net_mplex.h net_multi.h net_proto.h numbers.h \
-	opcode.h options.h parse_cmd.h parser.h pattern.h program.h \
-	quota.h random.h regexpr.h server.h sha1.h sha256.h storage.h \
-	streams.h structures.h str_intern.h sym_table.h tasks.h \
-	timers.h tokens.h unparse.h utils.h verbs.h version.h \
-	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h \
-	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h \
-	yajl_parser.h yajl_version.h extension-fileio.h
+HDRS =  ast.h bf_register.h code_gen.h db.h db_io.h db_private.h decompile.h \
+	db_tune.h \
+	disassemble.h eval_env.h eval_vm.h exceptions.h execute.h functions.h \
+	getpagesize.h keywords.h list.h log.h match.h md5.h name_lookup.h \
+	network.h net_mplex.h net_multi.h net_proto.h numbers.h opcode.h \
+	options.h parse_cmd.h parser.h pattern.h program.h quota.h random.h \
+	ref_count.h regexpr.h server.h storage.h streams.h structures.h  str_intern.h \
+	sym_table.h tasks.h timers.h tokens.h unparse.h utils.h verbs.h \
+	version.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
@@ -79,87 +64,30 @@ SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 
 CLIENT_SRCS = client_bsd.c client_sysv.c
 
-ALL_CSRCS = $(CSRCS) $(OPT_CSRCS) $(CLIENT_SRCS)
+ALL_CSRCS = $(CSRCS) $(OPT_EXT_FUP_SRC) $(OPT_EXT_XML_SRC) $(OPT_FILEIO_SRC) $(CLIENT_SRCS)
 
 SRCS = $(ALL_CSRCS) keywords.gperf $(YSRCS) $(HDRS) $(SYSHDRS)
 
-DISTFILES = $(SRCS) Makefile.in restart restart.sh \
-	Minimal.db README.Minimal \
-	ChangeLog.txt README configure.in configure config.h.in \
-	MOOCodeSequences.txt AddingNewMOOTypes.txt pgperf aclocal.m4
-
-COBJS = $(CSRCS:.c=.o)
+COBJS = $(CSRCS:.c=.o) $(OPT_EXT_FUP_SRC:.c=.o)  $(OPT_EXT_XML_SRC:.c=.o) $(OPT_FILEIO_SRC:.c=.o)
 
 YOBJS = $(YSRCS:.y=.o)
 
 OBJS = $(COBJS) $(YOBJS)
 
 moo:	$(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+	$(CC) $(CFLAGS) $(DEFS) $(OBJS) $(LIBS) -o $@
 
+# 'purify' is a memory leak checker, now IBM Rational Purify. --sw
 pure_moo: moo
-	purify $(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+	purify $(CC) $(CFLAGS) $(DEFS) $(OBJS) $(LIBS) -o $@
 
 client_bsd: client_bsd.o
-	$(CC) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
+	$(CC) $(CFLAGS) $(DEFS) client_bsd.o $(LIBS) -o $@
 
 client_sysv: client_sysv.o
-	$(CC) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
+	$(CC) $(CFLAGS) $(DEFS) client_sysv.o $(LIBS) -o $@
 
-doc: ${DOCS}
-
-info: ProgrammersManual.info
-ProgrammersManual.info: ProgrammersManual.texinfo
-	makeinfo ${MI_OPTS} -D INFO -D INDEX ProgrammersManual.texinfo
-
-txt: ProgrammersManual.txt
-ProgrammersManual.txt: ProgrammersManual.tex-no-info
-	makeinfo ${MI_OPTS} ProgrammersManual.tex-no-info
-
-# ought to be
-#ProgrammersManual.txt: ProgrammersManual.texinfo
-#	makeinfo ${MI_OPTS} -D INDEX --no-headers ProgrammersManual.texinfo > ProgrammersManual.txt
-
-ProgrammersManual.tex-no-info: ProgrammersManual.texinfo
-	sed -e '/^@node/d' \
-	    -e '/^@set INDEX/d' \
-	    -e '/^@menu/,/^@end menu/d' \
-	    -e '/^@setfilename/s/info/txt/' \
-	    -e 's/@ref{\([^,}]*,\)*\([^}]*\)}/the section "\2"/' \
-	    -e 's/@pxref{\([^,}]*,\)*\([^}]*\)}/see the section "\2"/' \
-	    -e 's/@xref{\([^,}]*,\)*\([^}]*\)}/See the section "\2"/' \
-	    < ProgrammersManual.texinfo > ProgrammersManual.tex-no-info
-
-ps: ProgrammersManual.ps
-ProgrammersManual.ps: ProgrammersManual.dvi
-	dvips ProgrammersManual.dvi > ProgrammersManual.ps
-
-dvi: ProgrammersManual.dvi
-ProgrammersManual.dvi: ProgrammersManual.texinfo
-	tex ProgrammersManual.texinfo
-	texindex ProgrammersManual.fn
-	tex ProgrammersManual.texinfo
-
-pdf: ProgrammersManual.pdf
-ProgrammersManual.pdf: ProgrammersManual.texinfo
-	texi2pdf --clean --batch ProgrammersManual.texinfo
-
-html: ProgrammersManual.html
-ProgrammersManual.html: ProgrammersManual.texinfo
-	texi2html -menu -split none -init_file t2hinit.pl -expand info ProgrammersManual.texinfo
-
-%.Z: %
-	compress -c $< > $@
-
-%.gz: %
-	gzip -c $< > $@
-
-# This rule gets around some "make"s' desire to `derive' it from `restart.sh'.
-restart:
-	touch restart
-
-configure: configure.in
-	# autoconf
+configure: configure.ac
 	@echo "Not running autoconf; you must do this by hand."
 	touch configure
 
@@ -177,213 +105,59 @@ config.h: config.h.in config.status
 y.tab.h: parser.o
 	touch y.tab.h
 
+# The LambdaMOO server project originally shipped with a lightly
+# hacked version 2.1 of GNU gperf, renamed 'pgperf'; Pavel Curtis
+# added a new command line option, '-l', to make the generated hash
+# table case-insensitive. In 2002, the option '--ignore-case' was
+# added to GNU gperf, and by 2011 the 'pgperf' shipped with LambdaMOO
+# no longer compiled due to obsolesence (it used varargs.h, which is
+# no longer supported). Also, the '-a' command line flag was replaced
+# by '--language' and the flag '-p' was dropped (and no explanation
+# given in gperf's ChangeLog). I've expanded the short options into
+# long options here for readability. For the sake of history, this was
+# the original incantation:
+# pgperf -aCIptT -k1,3,$$ keywords.gperf
+# --sw July 2011
 keywords.c: keywords.gperf
-	pgperf/pgperf -aCIptT -k1,3,$$ keywords.gperf \
-		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
+	gperf --language=C++ --ignore-case --readonly-tables --struct-type \
+		--omit-struct-type --key-positions=1,3,$$ keywords.gperf   \
+		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/'     \
 		> keywords.c
 
-dist.tar.Z:	$(DISTFILES)
-	rm -f version_number
-	grep "server_version = " version.c \
-		| sed -e 's/^.* = "//' -e 's/";//' > version_number
-	rm -fr MOO-`cat version_number`
-	mkdir MOO-`cat version_number`
-	chmod 755 MOO-`cat version_number`
-	cp -pr $(DISTFILES) MOO-`cat version_number`
-	chmod u+w MOO-`cat version_number`/*
-	tar cvf - MOO-`cat version_number` | compress -c > dist.tar.Z.NEW
-	mv dist.tar.Z.NEW dist.tar.Z
-	rm -f LambdaMOO-`cat version_number`.tar.Z
-	ln dist.tar.Z LambdaMOO-`cat version_number`.tar.Z
-	rm -fr MOO-`cat version_number` version_number
-
-tags:
-	etags -t $(SRCS)
+TAGS:
+	etags $(SRCS)
 
 clean:
 	rm -f $(OBJS) $(OPT_NET_OBJS) core parser.c y.tab.c y.tab.h y.output makedep eddep
-	rm -f *~ ProgrammersManual.tex-no-info
-	rm -f ProgrammersManual.cp ProgrammersManual.fn ProgrammersManual.ky
-	rm -f ProgrammersManual.pg ProgrammersManual.tp ProgrammersManual.vr
-	rm -f ProgrammersManual.log ProgrammersManual.aux ProgrammersManual.toc
-	rm -f ProgrammersManual.fns
-	rm -f ProgrammersManual.tmp
 
 distclean:	clean
-	rm -f config.h Makefile config.status
-	rm -f ProgrammersManual.dvi* ProgrammersManual.p* ProgrammersManual.i*
-	rm -f ProgrammersManual.txt
-	rm -f ProgrammersManual.html
+	rm -f config.h Makefile config.status config.log config.cache
+
+# You have to run "make," thus compiling the project first before you
+# can run "make depend." This is because "y.tab.h" is generated by flex
+# during the compilation process:
+#   In file included from keywords.c:29:
+#   tokens.h:23:19: error: y.tab.h: No such file or directory
+# Without y.tab.h "make depend" fails with this error.
 
 depend: ${ALL_CSRCS}
+# remove the temporary files made by this target
 	rm -f eddep makedep
+# use gcc to figure out all dependencies in the source files
 	gcc -MM ${CFLAGS} ${ALL_CSRCS} | sed -e '/:$$/d' > makedep
 	echo '/^# DO NOT DELETE THIS LINE/+1,$$d' >eddep
+# add the line you see in this Makefile below
 	echo '$$r makedep' >>eddep
 	echo 'w' >>eddep
 	cp Makefile.in Makefile.in.bak
-	ed - Makefile.in < eddep
-	rm -f eddep makedep
+# use the line editor "ex" to transform Makefile.in
+	ex - Makefile.in < eddep
+	rm -f eddep makedep # remove the temporary files
 
-tests: 
-	for test in test/*.rb ; do \
-	  ruby -rubygems -Itest/lib $$test ; \
-	done
+all: moo
 
-###############################################################################
-# $Log: Makefile.in,v $
-# Revision 1.11  2010/04/22 21:18:43  wrog
-# Support for version_hook and version_src.h
-#
-# Revision 1.10  2006/12/06 23:44:24  wrog
-# Add parser.c to clean target
-#
-# Revision 1.9  2004/05/22 01:25:43  wrog
-# merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
-#
-# Revision 1.8.10.1  2003/06/01 12:33:07  wrog
-# added net_tcp.c; (put db_tune.h in HDRS); ran makedepend
-#
-# Revision 1.8  2000/05/11 06:32:27  xythian
-# fixed bloody "suspicious line 293" emacs warning when saving Makefile.in
-# by tweaking quotes
-#
-# Revision 1.7  2000/01/11 01:54:05  nop
-# CFLAGS line for poor users without inline keyword.
-#
-# Revision 1.6  2000/01/11 01:39:14  nop
-# Long overdue make depend
-#
-# Revision 1.5  1998/02/19 07:36:16  nop
-# Initial string interning during db load.
-#
-# Revision 1.4  1997/03/03 06:36:23  nop
-# clean target doesn't force reconfiguration; distclean now does.
-#
-# Revision 1.3  1997/03/03 05:55:14  nop
-# Changed to ed for make depend, since ex is a cheap plastic imitation of ed
-# on many Linux systems.  Added better optimization suggestion.
-#
-# Revision 1.2  1997/03/03 04:40:46  nop
-# Avoid running autoconf automatically
-#
-# Revision 1.1.1.1  1997/03/03 03:45:05  nop
-# LambdaMOO 1.8.0p5
-#
-# Revision 2.10  1996/04/19  01:28:40  pavel
-# Ran a new `make depend'.  Release 1.8.0p4.
-#
-# Revision 2.9  1996/03/10  01:31:24  pavel
-# Added pgperf directory and aclocal.m4 file to the distribution.
-# Release 1.8.0.
-#
-# Revision 2.8  1996/02/18  23:18:02  pavel
-# Added md5.[ch].  Release 1.8.0beta3.
-#
-# Revision 2.7  1996/02/08  07:26:19  pavel
-# Updated copyright notice for 1996.  Release 1.8.0beta1 (again).
-#
-# Revision 2.6  1996/02/08  05:46:27  pavel
-# Added numbers.h, AddingNewMOOTypes.txt.  Updated dependencies.  Made pure_moo
-# depend on moo.  Release 1.8.0beta1.
-#
-# Revision 2.5  1996/01/16  07:35:55  pavel
-# Fixed dependencies.  Release 1.8.0alpha6.
-#
-# Revision 2.4  1996/01/11  07:58:54  pavel
-# Fixed dependencies for parser.o.  Release 1.8.0alpha5.
-#
-# Revision 2.3  1995/12/31  03:29:29  pavel
-# Fixed dependencies for parser.y and the networking modules.
-# Release 1.8.0alpha4.
-#
-# Revision 2.2  1995/12/28  00:32:32  pavel
-# Added verbs.h.  Release 1.8.0alpha3.
-#
-# Revision 2.1  1995/12/11  08:07:47  pavel
-# Added a few more derived files to `make clean'.  Release 1.8.0alpha2.
-#
-# Revision 2.0  1995/11/30  05:45:03  pavel
-# New baseline version, corresponding to release 1.8.0alpha1.
-#
-# Revision 1.26  1992/10/23  23:10:29  pavel
-# Updated dependency information for release 1.7.0 and added copyright notice.
-#
-# Revision 1.25  1992/10/23  19:12:08  pavel
-# A few last portability changes for release 1.7.0.
-#
-# Revision 1.24  1992/10/21  03:02:35  pavel
-# Converted to use new automatic configuration system.
-#
-# Revision 1.23  1992/10/17  20:14:17  pavel
-# Numerous changes in response to beta-testing portability problems.
-#
-# Revision 1.22  1992/10/06  01:32:41  pavel
-# Dyked out useless XNS network support.
-# Added sources for clients and a few new my-*.h files.
-# Fixed nasty bug in `make depend' code.
-#
-# Revision 1.21  1992/09/23  17:23:08  pavel
-# Added support for the whole family of networking protocol and multiplexing
-# wait implementations; it should now be easy to add new `optional' sources,
-# only used if certain combinations of preprocessor flags are set.
-#
-# Revision 1.20  1992/09/14  18:42:47  pjames
-# Updated.
-#
-# Revision 1.19  1992/09/14  17:46:39  pjames
-# Updated.
-#
-# Revision 1.18  1992/09/08  22:49:59  pjames
-# Took out bf_move.c
-#
-# Revision 1.17  1992/09/08  22:09:23  pjames
-# Updated for new bf_ filenames
-#
-# Revision 1.16  1992/09/03  23:49:13  pavel
-# Added support for multiple complete network implementations.
-#
-# Revision 1.15  1992/09/03  16:32:40  pjames
-# Updated.
-#
-# Revision 1.14  1992/08/31  23:43:57  pavel
-# Added math library to the LIBRARIES line for A/UX.
-#
-# Revision 1.13  1992/08/28  16:32:18  pjames
-# Added ref_count modules.
-#
-# Revision 1.12  1992/08/21  01:09:56  pavel
-# Minor fix.
-#
-# Revision 1.11  1992/08/21  00:56:39  pavel
-# Shortened the names of several files to fit within the 14-character limit
-# imposed on certain systems.
-# Moved the specification of all configuration options other than those
-# directly related to the compiler command line into config.h.  Also
-# reorganized the ones that are left to make it easier for folks to see what's
-# necessary.
-#
-# Revision 1.10  1992/08/14  00:35:21  pavel
-# Fixed rule for dist.tar.Z to be idempotent.
-#
-# Revision 1.9  1992/08/13  23:35:42  pavel
-# Cleaned up CFLAGS organization.
-#
-# Revision 1.8  1992/08/13  23:24:34  pavel
-# Did a more recent `make depend'...
-#
-# Revision 1.7  1992/08/13  22:48:20  pjames
-# Added my-math.h
-#
-# Revision 1.6  1992/08/13  21:29:58  pjames
-# Added -DMOO to COMPILE.c
-#
-# Revision 1.5  1992/08/11  17:06:45  pjames
-# Updated with new source files, removed old source files, fixed dependencies.
-#
-# Revision 1.3  1992/07/27  18:30:21  pjames
-# Update what vector.o and vector.po depend on.
-###############################################################################
+.PHONY: all clean distclean TAGS depend pure_moo
+
 
 # Have to do this one manually, since make depend cannot hack yacc files.
 parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
@@ -395,247 +169,180 @@ parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
 network.o: 	net_single.o net_multi.o
 net_proto.o:	net_bsd_tcp.o net_bsd_lcl.o net_sysv_tcp.o net_sysv_lcl.o
 net_mplex.o:	net_mp_selct.o net_mp_poll.o net_mp_fake.o
-version.o:	version_src.h version_options.h
-version_src.h:
-	if [ ! -e $@ ]; then touch $@; fi
 
 $(OPT_NET_OBJS):
 	touch $@
 
 # DO NOT DELETE THIS LINE -- 'make depend' replaces everything below it.
 ast.o: ast.c my-string.h config.h ast.h parser.h program.h structures.h \
-  my-stdio.h version.h sym_table.h list.h streams.h exceptions.h log.h \
-  storage.h utils.h execute.h db.h opcode.h options.h parse_cmd.h
-base64.o: base64.c base64.h exceptions.h config.h functions.h my-stdio.h \
-  execute.h db.h program.h structures.h version.h opcode.h options.h \
-  parse_cmd.h storage.h my-string.h streams.h utils.h server.h network.h
+  my-stdio.h version.h sym_table.h list.h log.h storage.h ref_count.h \
+  utils.h execute.h db.h opcode.h options.h parse_cmd.h
 code_gen.o: code_gen.c ast.h config.h parser.h program.h structures.h \
   my-stdio.h version.h sym_table.h exceptions.h opcode.h options.h \
-  storage.h my-string.h str_intern.h utils.h execute.h db.h parse_cmd.h \
-  streams.h my-stdlib.h
-collection.o: collection.c bf_register.h collection.h structures.h \
-  my-stdio.h config.h functions.h execute.h db.h program.h version.h \
-  opcode.h options.h parse_cmd.h list.h streams.h exceptions.h map.h \
-  utils.h
+  storage.h my-string.h ref_count.h str_intern.h utils.h execute.h db.h \
+  parse_cmd.h my-stdlib.h
 db_file.o: db_file.c my-stat.h config.h my-unistd.h my-stdio.h \
-  my-stdlib.h collection.h structures.h db.h program.h version.h db_io.h \
-  db_private.h exceptions.h list.h streams.h log.h options.h server.h \
-  network.h storage.h my-string.h str_intern.h tasks.h execute.h opcode.h \
-  parse_cmd.h timers.h my-time.h utils.h
+  my-stdlib.h db.h program.h structures.h version.h db_io.h db_private.h \
+  exceptions.h list.h log.h options.h server.h network.h storage.h \
+  my-string.h ref_count.h streams.h str_intern.h tasks.h execute.h \
+  opcode.h parse_cmd.h timers.h my-time.h
 db_io.o: db_io.c my-ctype.h config.h my-stdarg.h my-stdio.h my-stdlib.h \
   db_io.h program.h structures.h version.h db_private.h exceptions.h \
-  list.h streams.h log.h map.h numbers.h parser.h storage.h my-string.h \
-  str_intern.h unparse.h
-db_objects.o: db_objects.c my-string.h config.h db.h program.h \
-  structures.h my-stdio.h version.h db_private.h exceptions.h list.h \
-  streams.h storage.h utils.h execute.h opcode.h options.h parse_cmd.h \
-  xtrapbits.h
-db_properties.o: db_properties.c collection.h structures.h my-stdio.h \
-  config.h db.h program.h version.h db_private.h exceptions.h list.h \
-  streams.h storage.h my-string.h utils.h execute.h opcode.h options.h \
+  list.h log.h numbers.h parser.h storage.h my-string.h ref_count.h \
+  streams.h str_intern.h unparse.h
+db_objects.o: db_objects.c config.h db.h program.h structures.h \
+  my-stdio.h version.h db_private.h exceptions.h list.h storage.h \
+  my-string.h ref_count.h utils.h execute.h opcode.h options.h \
+  parse_cmd.h
+db_properties.o: db_properties.c config.h db.h program.h structures.h \
+  my-stdio.h version.h db_private.h exceptions.h list.h storage.h \
+  my-string.h ref_count.h utils.h execute.h opcode.h options.h \
   parse_cmd.h
 db_verbs.o: db_verbs.c my-stdlib.h config.h my-string.h db.h program.h \
   structures.h my-stdio.h version.h db_private.h exceptions.h db_tune.h \
-  list.h streams.h log.h parse_cmd.h storage.h utils.h execute.h opcode.h \
-  options.h
+  list.h log.h parse_cmd.h storage.h ref_count.h utils.h execute.h \
+  opcode.h options.h
 decompile.o: decompile.c ast.h config.h parser.h program.h structures.h \
   my-stdio.h version.h sym_table.h decompile.h exceptions.h opcode.h \
-  options.h storage.h my-string.h utils.h execute.h db.h parse_cmd.h \
-  streams.h
+  options.h storage.h my-string.h ref_count.h utils.h execute.h db.h \
+  parse_cmd.h
 disassemble.o: disassemble.c my-stdio.h config.h bf_register.h db.h \
   program.h structures.h version.h functions.h execute.h opcode.h \
-  options.h parse_cmd.h list.h streams.h exceptions.h storage.h \
-  my-string.h unparse.h utils.h verbs.h
+  options.h parse_cmd.h list.h storage.h my-string.h ref_count.h \
+  streams.h unparse.h utils.h verbs.h
 eval_env.o: eval_env.c config.h eval_env.h structures.h my-stdio.h \
-  version.h storage.h my-string.h sym_table.h utils.h execute.h db.h \
-  program.h opcode.h options.h parse_cmd.h streams.h exceptions.h
+  version.h storage.h my-string.h ref_count.h sym_table.h utils.h \
+  execute.h db.h program.h opcode.h options.h parse_cmd.h
 eval_vm.o: eval_vm.c config.h db_io.h program.h structures.h my-stdio.h \
   version.h decompile.h ast.h parser.h sym_table.h eval_vm.h execute.h \
-  db.h opcode.h options.h parse_cmd.h log.h map.h storage.h my-string.h \
-  tasks.h utils.h streams.h exceptions.h
+  db.h opcode.h options.h parse_cmd.h log.h storage.h my-string.h \
+  ref_count.h tasks.h
 exceptions.o: exceptions.c exceptions.h config.h
-exec.o: exec.c my-fcntl.h config.h my-signal.h my-stdlib.h my-string.h \
-  my-unistd.h net_multi.h exec.h functions.h my-stdio.h execute.h db.h \
-  program.h structures.h version.h opcode.h options.h parse_cmd.h list.h \
-  streams.h exceptions.h log.h storage.h tasks.h utils.h
-execute.o: execute.c my-string.h config.h collection.h structures.h \
-  my-stdio.h db.h program.h version.h db_io.h decompile.h ast.h parser.h \
-  sym_table.h eval_env.h eval_vm.h execute.h opcode.h options.h \
-  parse_cmd.h exceptions.h functions.h list.h streams.h log.h map.h \
-  numbers.h server.h network.h storage.h tasks.h timers.h my-time.h \
-  utils.h
-extensions.o: extensions.c bf_register.h functions.h my-stdio.h config.h \
+execute.o: execute.c my-string.h config.h db.h program.h structures.h \
+  my-stdio.h version.h db_io.h decompile.h ast.h parser.h sym_table.h \
+  eval_env.h eval_vm.h execute.h opcode.h options.h parse_cmd.h \
+  exceptions.h functions.h list.h log.h numbers.h server.h network.h \
+  storage.h ref_count.h streams.h tasks.h timers.h my-time.h utils.h
+extensions.o: extensions.c config.h bf_register.h functions.h my-stdio.h \
   execute.h db.h program.h structures.h version.h opcode.h options.h \
-  parse_cmd.h db_tune.h utils.h streams.h exceptions.h
+  parse_cmd.h db_tune.h my-unistd.h exceptions.h log.h net_multi.h \
+  storage.h my-string.h ref_count.h tasks.h utils.h list.h numbers.h
 functions.o: functions.c my-stdarg.h config.h bf_register.h db_io.h \
   program.h structures.h my-stdio.h version.h functions.h execute.h db.h \
-  opcode.h options.h parse_cmd.h list.h streams.h exceptions.h log.h \
-  map.h server.h network.h storage.h my-string.h unparse.h utils.h
-hmac_sha2.o: hmac_sha2.c hmac_sha2.h sha256.h
-http_parser.o: http_parser.c http_parser.h
-json.o: json.c my-string.h config.h my-stdlib.h exceptions.h functions.h \
-  my-stdio.h execute.h db.h program.h structures.h version.h opcode.h \
-  options.h parse_cmd.h json.h list.h streams.h map.h numbers.h storage.h \
-  unparse.h utils.h yajl_parse.h yajl_common.h yajl_gen.h
+  opcode.h options.h parse_cmd.h list.h log.h server.h network.h \
+  storage.h my-string.h ref_count.h streams.h unparse.h utils.h
 keywords.o: keywords.c my-ctype.h config.h my-string.h keywords.h \
   structures.h my-stdio.h version.h tokens.h ast.h parser.h program.h \
   sym_table.h y.tab.h utils.h execute.h db.h opcode.h options.h \
-  parse_cmd.h streams.h exceptions.h
-list.o: list.c my-ctype.h config.h my-string.h bf_register.h collection.h \
-  structures.h my-stdio.h exceptions.h functions.h execute.h db.h \
-  program.h version.h opcode.h options.h parse_cmd.h hmac_sha2.h sha256.h \
-  list.h streams.h log.h map.h md5.h pattern.h random.h sha1.h storage.h \
-  unparse.h utils.h server.h network.h
+  parse_cmd.h
+list.o: list.c my-ctype.h config.h my-string.h bf_register.h exceptions.h \
+  functions.h my-stdio.h execute.h db.h program.h structures.h version.h \
+  opcode.h options.h parse_cmd.h list.h log.h md5.h pattern.h random.h \
+  ref_count.h streams.h storage.h unparse.h utils.h
 log.o: log.c my-stdarg.h config.h my-stdio.h my-string.h my-time.h \
   bf_register.h functions.h execute.h db.h program.h structures.h \
-  version.h opcode.h options.h parse_cmd.h log.h storage.h streams.h \
-  exceptions.h utils.h
-malloc.o: malloc.c options.h config.h
-map.o: map.c my-string.h config.h functions.h my-stdio.h execute.h db.h \
-  program.h structures.h version.h opcode.h options.h parse_cmd.h list.h \
-  streams.h exceptions.h log.h map.h server.h network.h storage.h utils.h
+  version.h opcode.h options.h parse_cmd.h log.h storage.h ref_count.h \
+  streams.h utils.h
 match.o: match.c my-stdlib.h config.h my-string.h db.h program.h \
   structures.h my-stdio.h version.h exceptions.h match.h parse_cmd.h \
-  storage.h unparse.h utils.h execute.h opcode.h options.h streams.h
-md5.o: md5.c md5.h
+  storage.h ref_count.h unparse.h utils.h execute.h opcode.h options.h
+md5.o: md5.c my-string.h config.h md5.h
 name_lookup.o: name_lookup.c options.h config.h my-signal.h my-stdlib.h \
   my-unistd.h my-inet.h my-in.h my-types.h my-socket.h my-wait.h \
-  my-string.h log.h my-stdio.h structures.h server.h network.h db.h \
-  program.h version.h storage.h timers.h my-time.h
+  my-string.h log.h my-stdio.h structures.h server.h network.h storage.h \
+  ref_count.h timers.h my-time.h
 network.o: network.c options.h config.h net_multi.c my-ctype.h my-fcntl.h \
   my-ioctl.h my-signal.h my-stdio.h my-stdlib.h my-string.h my-unistd.h \
-  exceptions.h list.h structures.h streams.h log.h net_mplex.h \
-  net_multi.h net_proto.h network.h server.h db.h program.h version.h \
-  storage.h timers.h my-time.h utils.h execute.h opcode.h parse_cmd.h
+  exceptions.h list.h structures.h log.h net_mplex.h net_multi.h \
+  net_proto.h network.h server.h streams.h storage.h ref_count.h timers.h \
+  my-time.h utils.h execute.h db.h program.h version.h opcode.h \
+  parse_cmd.h
 net_mplex.o: net_mplex.c options.h config.h net_mp_selct.c my-string.h \
   my-sys-time.h my-types.h log.h my-stdio.h structures.h net_mplex.h
 net_proto.o: net_proto.c options.h config.h net_bsd_tcp.c my-inet.h \
   my-in.h my-types.h my-socket.h my-stdlib.h my-string.h my-unistd.h \
-  list.h structures.h my-stdio.h streams.h exceptions.h log.h \
-  name_lookup.h net_proto.h server.h network.h db.h program.h version.h \
-  timers.h my-time.h utils.h execute.h opcode.h parse_cmd.h net_tcp.c
+  list.h structures.h my-stdio.h log.h name_lookup.h net_proto.h server.h \
+  network.h streams.h timers.h my-time.h utils.h execute.h db.h program.h \
+  version.h opcode.h parse_cmd.h net_tcp.c exceptions.h
 numbers.o: numbers.c my-math.h my-stdlib.h config.h my-string.h my-time.h \
   functions.h my-stdio.h execute.h db.h program.h structures.h version.h \
-  opcode.h options.h parse_cmd.h log.h random.h storage.h utils.h \
-  streams.h exceptions.h
-objects.o: objects.c collection.h structures.h my-stdio.h config.h db.h \
-  program.h version.h db_io.h exceptions.h execute.h opcode.h options.h \
-  parse_cmd.h functions.h list.h streams.h numbers.h quota.h server.h \
-  network.h storage.h my-string.h utils.h
+  opcode.h options.h parse_cmd.h log.h random.h storage.h ref_count.h \
+  utils.h
+objects.o: objects.c db.h config.h program.h structures.h my-stdio.h \
+  version.h db_io.h exceptions.h execute.h opcode.h options.h parse_cmd.h \
+  functions.h list.h numbers.h quota.h server.h network.h storage.h \
+  my-string.h ref_count.h utils.h
 parse_cmd.o: parse_cmd.c my-ctype.h config.h my-stdio.h my-stdlib.h \
   my-string.h my-time.h db.h program.h structures.h version.h list.h \
-  streams.h exceptions.h match.h parse_cmd.h storage.h utils.h execute.h \
-  opcode.h options.h
+  match.h parse_cmd.h storage.h ref_count.h utils.h execute.h opcode.h \
+  options.h
 pattern.o: pattern.c my-ctype.h config.h my-stdlib.h my-string.h \
-  pattern.h regexpr.h storage.h structures.h my-stdio.h streams.h \
-  exceptions.h
+  pattern.h regexpr.h storage.h structures.h my-stdio.h ref_count.h \
+  streams.h
 program.o: program.c ast.h config.h parser.h program.h structures.h \
-  my-stdio.h version.h sym_table.h exceptions.h list.h streams.h \
-  storage.h my-string.h utils.h execute.h db.h opcode.h options.h \
+  my-stdio.h version.h sym_table.h exceptions.h list.h storage.h \
+  my-string.h ref_count.h utils.h execute.h db.h opcode.h options.h \
   parse_cmd.h
 property.o: property.c db.h config.h program.h structures.h my-stdio.h \
   version.h functions.h execute.h opcode.h options.h parse_cmd.h list.h \
-  streams.h exceptions.h storage.h my-string.h utils.h
+  storage.h my-string.h ref_count.h utils.h
 quota.o: quota.c config.h db.h program.h structures.h my-stdio.h \
   version.h quota.h
+ref_count.o: ref_count.c config.h exceptions.h ref_count.h storage.h \
+  my-string.h structures.h my-stdio.h
 regexpr.o: regexpr.c my-stdio.h config.h regexpr.h my-stdlib.h \
   my-string.h
 server.o: server.c my-types.h config.h my-signal.h my-stdarg.h my-stdio.h \
   my-stdlib.h my-string.h my-unistd.h my-wait.h db.h program.h \
-  structures.h version.h db_io.h disassemble.h exec.h execute.h opcode.h \
-  options.h parse_cmd.h functions.h list.h streams.h exceptions.h log.h \
-  network.h server.h parser.h random.h storage.h tasks.h timers.h \
+  structures.h version.h db_io.h disassemble.h execute.h opcode.h \
+  options.h parse_cmd.h functions.h list.h log.h network.h server.h \
+  parser.h random.h storage.h ref_count.h streams.h tasks.h timers.h \
   my-time.h unparse.h utils.h
-sha1.o: sha1.c sha1.h
-sha256.o: sha256.c sha256.h
 storage.o: storage.c my-stdlib.h config.h exceptions.h list.h \
-  structures.h my-stdio.h streams.h options.h storage.h my-string.h \
+  structures.h my-stdio.h options.h ref_count.h storage.h my-string.h \
   utils.h execute.h db.h program.h version.h opcode.h parse_cmd.h
 streams.o: streams.c my-stdarg.h config.h my-string.h my-stdio.h log.h \
-  structures.h storage.h streams.h exceptions.h
+  structures.h storage.h ref_count.h streams.h
 str_intern.o: str_intern.c my-stdlib.h config.h log.h my-stdio.h \
-  structures.h storage.h my-string.h str_intern.h utils.h execute.h db.h \
-  program.h version.h opcode.h options.h parse_cmd.h streams.h \
-  exceptions.h
+  structures.h storage.h my-string.h ref_count.h str_intern.h utils.h \
+  execute.h db.h program.h version.h opcode.h options.h parse_cmd.h
 sym_table.o: sym_table.c my-stdio.h config.h ast.h parser.h program.h \
   structures.h version.h sym_table.h exceptions.h log.h storage.h \
-  my-string.h utils.h execute.h db.h opcode.h options.h parse_cmd.h \
-  streams.h
+  my-string.h ref_count.h utils.h execute.h db.h opcode.h options.h \
+  parse_cmd.h
 tasks.o: tasks.c my-string.h config.h my-time.h db.h program.h \
   structures.h my-stdio.h version.h db_io.h decompile.h ast.h parser.h \
   sym_table.h eval_env.h eval_vm.h execute.h opcode.h options.h \
-  parse_cmd.h exceptions.h functions.h http_parser.h list.h streams.h \
-  log.h map.h match.h random.h server.h network.h storage.h tasks.h \
+  parse_cmd.h exceptions.h functions.h list.h log.h match.h numbers.h \
+  random.h server.h network.h storage.h ref_count.h streams.h tasks.h \
   utils.h verbs.h
 timers.o: timers.c my-signal.h config.h my-stdlib.h my-sys-time.h \
   options.h my-types.h my-time.h my-unistd.h timers.h
 unparse.o: unparse.c my-ctype.h config.h my-stdio.h ast.h parser.h \
   program.h structures.h version.h sym_table.h decompile.h exceptions.h \
   functions.h execute.h db.h opcode.h options.h parse_cmd.h keywords.h \
-  list.h streams.h log.h unparse.h storage.h my-string.h utils.h
+  list.h log.h unparse.h storage.h my-string.h ref_count.h streams.h \
+  utils.h
 utils.o: utils.c my-ctype.h config.h my-stdio.h my-string.h db.h \
-  program.h structures.h version.h db_io.h exceptions.h list.h streams.h \
-  log.h map.h match.h numbers.h server.h network.h options.h storage.h \
-  utils.h execute.h opcode.h parse_cmd.h
+  program.h structures.h version.h db_io.h exceptions.h list.h log.h \
+  match.h numbers.h ref_count.h server.h network.h options.h storage.h \
+  streams.h utils.h execute.h opcode.h parse_cmd.h
 verbs.o: verbs.c my-string.h config.h db.h program.h structures.h \
   my-stdio.h version.h exceptions.h execute.h opcode.h options.h \
-  parse_cmd.h functions.h list.h streams.h log.h match.h parser.h \
-  server.h network.h storage.h unparse.h utils.h verbs.h
-version.o: version.c config.h version.h structures.h my-stdio.h list.h \
-  streams.h exceptions.h storage.h my-string.h utils.h execute.h db.h \
-  program.h opcode.h options.h parse_cmd.h version_src.h \
-  version_options.h
-yajl.o: yajl.c yajl_lex.h yajl_common.h yajl_parse.h yajl_parser.h \
-  yajl_bytestack.h yajl_buf.h yajl_alloc.h
-yajl_alloc.o: yajl_alloc.c yajl_alloc.h yajl_common.h
-yajl_buf.o: yajl_buf.c yajl_buf.h yajl_alloc.h yajl_common.h
-yajl_encode.o: yajl_encode.c yajl_encode.h yajl_buf.h yajl_alloc.h \
-  yajl_common.h yajl_gen.h
-yajl_gen.o: yajl_gen.c yajl_buf.h yajl_alloc.h yajl_common.h \
-  yajl_encode.h yajl_gen.h
-yajl_lex.o: yajl_lex.c yajl_lex.h yajl_common.h yajl_buf.h yajl_alloc.h
-yajl_parser.o: yajl_parser.c yajl_lex.h yajl_common.h yajl_parser.h \
-  yajl_bytestack.h yajl_buf.h yajl_alloc.h yajl_parse.h yajl_encode.h \
-  yajl_gen.h
-yajl_version.o: yajl_version.c yajl_version.h yajl_common.h
-extension-fileio.o: extension-fileio.c my-stat.h config.h my-unistd.h \
-  my-ctype.h my-string.h structures.h my-stdio.h exceptions.h \
-  bf_register.h functions.h execute.h db.h program.h version.h opcode.h \
-  options.h parse_cmd.h list.h streams.h storage.h utils.h server.h \
-  network.h tasks.h log.h extension-fileio.h
-gnu-malloc.o: gnu-malloc.c getpagesize.h
-net_single.o: net_single.c my-ctype.h config.h my-fcntl.h my-stdio.h \
-  my-unistd.h log.h structures.h network.h options.h server.h db.h \
-  program.h version.h streams.h exceptions.h utils.h execute.h opcode.h \
-  parse_cmd.h
-net_multi.o: net_multi.c my-ctype.h config.h my-fcntl.h my-ioctl.h \
-  my-signal.h my-stdio.h my-stdlib.h my-string.h my-unistd.h exceptions.h \
-  list.h structures.h streams.h log.h net_mplex.h net_multi.h net_proto.h \
-  options.h network.h server.h db.h program.h version.h storage.h \
-  timers.h my-time.h utils.h execute.h opcode.h parse_cmd.h
-net_mp_selct.o: net_mp_selct.c my-string.h config.h my-sys-time.h \
-  options.h my-types.h log.h my-stdio.h structures.h net_mplex.h
-net_mp_poll.o: net_mp_poll.c my-poll.h config.h log.h my-stdio.h \
-  structures.h net_mplex.h storage.h my-string.h
-net_tcp.o: net_tcp.c
-net_bsd_tcp.o: net_bsd_tcp.c my-inet.h config.h my-in.h my-types.h \
-  my-socket.h my-stdlib.h my-string.h my-unistd.h list.h structures.h \
-  my-stdio.h streams.h exceptions.h log.h name_lookup.h net_proto.h \
-  options.h server.h network.h db.h program.h version.h timers.h \
-  my-time.h utils.h execute.h opcode.h parse_cmd.h net_tcp.c
-net_bsd_lcl.o: net_bsd_lcl.c my-socket.h config.h my-stdio.h my-string.h \
-  my-unistd.h log.h structures.h net_proto.h options.h storage.h utils.h \
-  execute.h db.h program.h version.h opcode.h parse_cmd.h streams.h \
-  exceptions.h
-net_sysv_tcp.o: net_sysv_tcp.c my-inet.h config.h my-fcntl.h my-in.h \
-  my-types.h my-ioctl.h my-socket.h my-stdlib.h my-string.h my-stropts.h \
-  my-tiuser.h my-unistd.h log.h my-stdio.h structures.h name_lookup.h \
-  net_proto.h options.h server.h network.h db.h program.h version.h \
-  streams.h exceptions.h timers.h my-time.h net_tcp.c
-net_sysv_lcl.o: net_sysv_lcl.c my-fcntl.h config.h my-stat.h my-stdio.h \
-  my-stdlib.h my-unistd.h exceptions.h list.h structures.h streams.h \
-  log.h net_multi.h net_proto.h options.h storage.h my-string.h utils.h \
-  execute.h db.h program.h version.h opcode.h parse_cmd.h
+  parse_cmd.h functions.h list.h log.h match.h parser.h server.h \
+  network.h storage.h ref_count.h unparse.h utils.h verbs.h
+version.o: version.c config.h version.h
+bg_name_lookup.o: bg_name_lookup.c tasks.h config.h execute.h db.h \
+  program.h structures.h my-stdio.h version.h opcode.h options.h \
+  parse_cmd.h functions.h utils.h list.h my-in.h my-types.h log.h \
+  exceptions.h net_multi.h storage.h my-string.h ref_count.h server.h \
+  network.h
+ext-FUP.o: ext-FUP.c config.h
+ext-xml.o: ext-xml.c config.h bf_register.h functions.h my-stdio.h \
+  execute.h db.h program.h structures.h version.h opcode.h options.h \
+  parse_cmd.h db_tune.h storage.h my-string.h ref_count.h list.h \
+  streams.h utils.h exceptions.h tasks.h
+extension-fileio.o: extension-fileio.c
 client_bsd.o: client_bsd.c my-socket.h config.h my-stdio.h my-stdlib.h \
   my-string.h my-sys-time.h options.h my-types.h my-unistd.h
 client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h my-stdio.h \
