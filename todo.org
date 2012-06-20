@@ -1,0 +1,6 @@
+* tasks
+** TODO Run 'make depend' and build correct list of depencencies
+
+* bugs
+
+* completed
