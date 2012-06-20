@@ -117,7 +117,7 @@ dbpriv_new_object(void)
     Object *o;
 
     ensure_new_object();
-    o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
+    o = objects[num_objects] = (Object *) mymalloc(sizeof(Object), M_OBJECT);
     o->id = num_objects;
     num_objects++;
 

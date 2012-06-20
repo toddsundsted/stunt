@@ -1,0 +1,682 @@
+commit 5a0d34a4692a390b4cb212f2443e5e951b64a3e5
+Author: Steve Wainstead <wainstead@gmail.com>
+Date:   Sun Jun 7 18:23:47 2009 +0000
+
+    Changed 'this' to 'self' to get around c++ keyword collision
+
+diff --git a/server/execute.c b/server/execute.c
+index ec8c4aa..e9d65e8 100644
+--- a/server/execute.c
++++ b/server/execute.c
+@@ -126,8 +126,8 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
+ 	    stream_printf(str, "... called from ");
+ 	stream_printf(str, "#%d:%s", activ_stack[t].vloc,
+ 		      activ_stack[t].verbname);
+-	if (activ_stack[t].vloc != activ_stack[t].this)
+-	    stream_printf(str, " (this == #%d)", activ_stack[t].this);
++	if (activ_stack[t].vloc != activ_stack[t].self)
++	    stream_printf(str, " (self == #%d)", activ_stack[t].self);
+ 
+ 	stream_printf(str, ", line %d",
+ 		      find_line_number(activ_stack[t].prog,
+@@ -401,7 +401,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
+ 	if (include_end || i != end) {
+ 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
+ 	    v.v.list[1].type = TYPE_OBJ;
+-	    v.v.list[1].v.obj = stack[i].this;
++	    v.v.list[1].v.obj = stack[i].self;
+ 	    v.v.list[2].type = TYPE_STR;
+ 	    v.v.list[2].v.str = str_ref(stack[i].verb);
+ 	    v.v.list[3].type = TYPE_OBJ;
+@@ -534,26 +534,26 @@ free_activation(activation * ap, char data_too)
+ /** Set up another activation for calling a verb
+   does not change the vm in case of any error **/
+ 
+-enum error call_verb2(Objid this, const char *vname, Var args, int do_pass);
++enum error call_verb2(Objid self, const char *vname, Var args, int do_pass);
+ 
+ /*
+  * Historical interface for things which want to call with vname not
+  * already in a moo-str.
+  */
+ enum error
+-call_verb(Objid this, const char *vname_in, Var args, int do_pass)
++call_verb(Objid self, const char *vname_in, Var args, int do_pass)
+ {
+     const char *vname = str_dup(vname_in);
+     enum error result;
+ 
+-    result = call_verb2(this, vname, args, do_pass);
++    result = call_verb2(self, vname, args, do_pass);
+     /* call_verb2 got any refs it wanted */
+     free_str(vname);
+     return result;
+ }
+ 
+ enum error
+-call_verb2(Objid this, const char *vname, Var args, int do_pass)
++call_verb2(Objid self, const char *vname, Var args, int do_pass)
+ {
+     /* if call succeeds, args will be consumed.  If call fails, args
+        will NOT be consumed  -- it must therefore be freed by caller */
+@@ -577,7 +577,7 @@ call_verb2(Objid this, const char *vname, Var args, int do_pass)
+ 	else
+ 	    where = db_object_parent(RUN_ACTIV.vloc);
+     else
+-	where = this;
++	where = self;
+ 
+     if (!valid(where))
+ 	return E_INVIND;
+@@ -589,7 +589,7 @@ call_verb2(Objid this, const char *vname, Var args, int do_pass)
+ 
+     program = db_verb_program(h);
+     RUN_ACTIV.prog = program_ref(program);
+-    RUN_ACTIV.this = this;
++    RUN_ACTIV.self = self;
+     RUN_ACTIV.progr = db_verb_owner(h);
+     RUN_ACTIV.vloc = db_verb_definer(h);
+     RUN_ACTIV.verb = str_ref(vname);
+@@ -606,8 +606,8 @@ call_verb2(Objid this, const char *vname, Var args, int do_pass)
+ 
+     fill_in_rt_consts(env, program->version);
+ 
+-    set_rt_env_obj(env, SLOT_THIS, this);
+-    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
++    set_rt_env_obj(env, SLOT_THIS, self);
++    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.self);
+ 
+ #define ENV_COPY(slot) \
+     set_rt_env_var(env, slot, var_ref(CALLER_ACTIV.rt_env[slot]))
+@@ -2159,7 +2159,7 @@ run_interpreter(char raise, enum error e,
+ Objid
+ caller()
+ {
+-    return RUN_ACTIV.this;
++    return RUN_ACTIV.self;
+ }
+ 
+ static void
+@@ -2243,11 +2243,11 @@ resume_from_previous_vm(vm the_vm, Var v)
+ /*** external functions ***/
+ 
+ enum outcome
+-do_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,
++do_server_verb_task(Objid self, const char *verb, Var args, db_verb_handle h,
+ 		    Objid player, const char *argstr, Var * result,
+ 		    int do_db_tracebacks)
+ {
+-    return do_server_program_task(this, verb, args, db_verb_definer(h),
++    return do_server_program_task(self, verb, args, db_verb_definer(h),
+ 				  db_verb_names(h), db_verb_program(h),
+ 				  db_verb_owner(h),
+ 				  db_verb_flags(h) & VF_DEBUG,
+@@ -2255,7 +2255,7 @@ do_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,
+ }
+ 
+ enum outcome
+-do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
++do_server_program_task(Objid self, const char *verb, Var args, Objid vloc,
+ 		    const char *verbname, Program * program, Objid progr,
+ 		       int debug, Objid player, const char *argstr,
+ 		       Var * result, int do_db_tracebacks)
+@@ -2266,7 +2266,7 @@ do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+     top_activ_stack = 0;
+ 
+     RUN_ACTIV.rt_env = env = new_rt_env(program->num_var_names);
+-    RUN_ACTIV.this = this;
++    RUN_ACTIV.self = self;
+     RUN_ACTIV.player = player;
+     RUN_ACTIV.progr = progr;
+     RUN_ACTIV.vloc = vloc;
+@@ -2276,7 +2276,7 @@ do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+     fill_in_rt_consts(env, program->version);
+     set_rt_env_obj(env, SLOT_PLAYER, player);
+     set_rt_env_obj(env, SLOT_CALLER, -1);
+-    set_rt_env_obj(env, SLOT_THIS, this);
++    set_rt_env_obj(env, SLOT_THIS, self);
+     set_rt_env_obj(env, SLOT_DOBJ, NOTHING);
+     set_rt_env_obj(env, SLOT_IOBJ, NOTHING);
+     set_rt_env_str(env, SLOT_DOBJSTR, str_dup(""));
+@@ -2290,7 +2290,7 @@ do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+ }
+ 
+ enum outcome
+-do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
++do_input_task(Objid user, Parsed_Command * pc, Objid self, db_verb_handle vh)
+ {
+     Program *prog = db_verb_program(vh);
+     Var *env;
+@@ -2299,7 +2299,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
+     top_activ_stack = 0;
+ 
+     RUN_ACTIV.rt_env = env = new_rt_env(prog->num_var_names);
+-    RUN_ACTIV.this = this;
++    RUN_ACTIV.self = self;
+     RUN_ACTIV.player = user;
+     RUN_ACTIV.progr = db_verb_owner(vh);
+     RUN_ACTIV.vloc = db_verb_definer(vh);
+@@ -2309,7 +2309,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
+     fill_in_rt_consts(env, prog->version);
+     set_rt_env_obj(env, SLOT_PLAYER, user);
+     set_rt_env_obj(env, SLOT_CALLER, user);
+-    set_rt_env_obj(env, SLOT_THIS, this);
++    set_rt_env_obj(env, SLOT_THIS, self);
+     set_rt_env_obj(env, SLOT_DOBJ, pc->dobj);
+     set_rt_env_obj(env, SLOT_IOBJ, pc->iobj);
+     set_rt_env_str(env, SLOT_DOBJSTR, str_ref(pc->dobjstr));
+@@ -2348,7 +2348,7 @@ setup_activ_for_eval(Program * prog)
+     RUN_ACTIV.rt_env = env = new_rt_env(prog->num_var_names);
+     fill_in_rt_consts(env, prog->version);
+     set_rt_env_obj(env, SLOT_PLAYER, CALLER_ACTIV.player);
+-    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
++    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.self);
+     set_rt_env_obj(env, SLOT_THIS, NOTHING);
+     set_rt_env_obj(env, SLOT_DOBJ, NOTHING);
+     set_rt_env_obj(env, SLOT_IOBJ, NOTHING);
+@@ -2359,7 +2359,7 @@ setup_activ_for_eval(Program * prog)
+     set_rt_env_str(env, SLOT_VERB, str_dup(""));
+     set_rt_env_var(env, SLOT_ARGS, new_list(0));
+ 
+-    RUN_ACTIV.this = NOTHING;
++    RUN_ACTIV.self = NOTHING;
+     RUN_ACTIV.player = CALLER_ACTIV.player;
+     RUN_ACTIV.progr = CALLER_ACTIV.progr;
+     RUN_ACTIV.vloc = NOTHING;
+@@ -2544,7 +2544,7 @@ bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
+ static package
+ bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+-    enum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
++    enum error e = call_verb2(RUN_ACTIV.self, RUN_ACTIV.verb, arglist, 1);
+ 
+     if (e == E_NONE)
+ 	return tail_call_pack();
+@@ -2648,7 +2648,7 @@ write_activ_as_pi(activation a)
+     dbio_write_var(dummy);
+ 
+     dbio_printf("%d %d %d %d %d %d %d %d %d\n",
+-	    a.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
++	    a.self, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
+     dbio_write_string("No");
+     dbio_write_string("More");
+     dbio_write_string("Parse");
+@@ -2672,7 +2672,7 @@ read_activ_as_pi(activation * a)
+      * of `scanf'...
+      */
+     if (dbio_scanf("%d %d %d %d %d %d %d %d %d%c",
+-		 &a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,
++		 &a->self, &dummy, &dummy, &a->player, &dummy, &a->progr,
+ 		   &a->vloc, &dummy, &a->debug, &c) != 10
+ 	|| c != '\n') {
+ 	errlog("READ_A: Bad numbers.\n");
+diff --git a/server/fixthese.pl b/server/fixthese.pl
+new file mode 100755
+index 0000000..ebacf88
+--- /dev/null
++++ b/server/fixthese.pl
+@@ -0,0 +1,86 @@
++#!/usr/bin/perl
++
++while ($input = <DATA>) {
++    next if $input =~ /_this/;
++    chomp $input;
++    ($file, $lineno, $string) = split /:\s*/, $input;
++    print "# $file has $string\n";
++    $newstring = $string;
++    $newstring =~ s/this/self/g;
++    print "perl -pi -e 's/\\Q$string\\E/$newstring/' $file\n";
++}
++
++__END__
++execute.h:102:extern enum outcome do_server_program_task(Objid _this, const char *verb,
++tasks.h:91:extern enum outcome run_server_program_task(Objid this, const char *verb,
++execute.c:129:	if (activ_stack[t].vloc != activ_stack[t].this)
++execute.c:130:	    stream_printf(str, " (this == #%d)", activ_stack[t].this);
++execute.c:404:	    v.v.list[1].v.obj = stack[i].this;
++execute.c:537:enum error call_verb2(Objid this, const char *vname, Var args, int do_pass);
++execute.c:544:call_verb(Objid this, const char *vname_in, Var args, int do_pass)
++execute.c:549:    result = call_verb2(this, vname, args, do_pass);
++execute.c:556:call_verb2(Objid this, const char *vname, Var args, int do_pass)
++execute.c:580:	where = this;
++execute.c:592:    RUN_ACTIV.this = this;
++execute.c:609:    set_rt_env_obj(env, SLOT_THIS, this);
++execute.c:610:    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
++execute.c:2162:    return RUN_ACTIV.this;
++execute.c:2246:do_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,
++execute.c:2250:    return do_server_program_task(this, verb, args, db_verb_definer(h),
++execute.c:2258:do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
++execute.c:2269:    RUN_ACTIV.this = this;
++execute.c:2279:    set_rt_env_obj(env, SLOT_THIS, this);
++execute.c:2293:do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
++execute.c:2302:    RUN_ACTIV.this = this;
++execute.c:2312:    set_rt_env_obj(env, SLOT_THIS, this);
++execute.c:2351:    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
++execute.c:2362:    RUN_ACTIV.this = NOTHING;
++execute.c:2547:    enum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
++execute.c:2651:	    a.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
++execute.c:2675:		 &a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,
++server.c:1186:    char *this_program = str_dup(argv[0]);
++tasks.c:689:	    Objid this;
++tasks.c:704:	    } else if (find_verb_on(this = tq->player, pc, &vh)
++tasks.c:705:		       || find_verb_on(this = location, pc, &vh)
++tasks.c:706:		       || find_verb_on(this = pc->dobj, pc, &vh)
++tasks.c:707:		       || find_verb_on(this = pc->iobj, pc, &vh)
++tasks.c:708:		       || (valid(this = location)
++tasks.c:711:		do_input_task(tq->player, pc, this, vh);
++tasks.c:1345:run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
++tasks.c:1351:    return do_server_program_task(this, verb, args, vloc, verbname, program,
++tasks.c:1709:    list.v.list[9].v.obj = ft.a.this;
++tasks.c:1751:    list.v.list[9].v.obj = top_activ(the_vm).this;
++timers.c:50:	Timer_Entry *this = free_timers;
++timers.c:52:	free_timers = this->next;
++timers.c:53:	return this;
++timers.c:59:free_timer(Timer_Entry * this)
++timers.c:61:    this->next = free_timers;
++timers.c:62:    free_timers = this;
++timers.c:70:    Timer_Entry *this = active_timers;
++timers.c:71:    Timer_Proc proc = this->proc;
++timers.c:72:    Timer_ID id = this->id;
++timers.c:73:    Timer_Data data = this->data;
++timers.c:76:    free_timer(this);
++timers.c:87:    Timer_Entry *this = virtual_timer;
++timers.c:88:    Timer_Proc proc = this->proc;
++timers.c:89:    Timer_ID id = this->id;
++timers.c:90:    Timer_Data data = this->data;
++timers.c:93:    free_timer(this);
++timers.c:160:    Timer_Entry *this = allocate_timer();
++timers.c:163:    this->id = next_id++;
++timers.c:164:    this->when = time(0) + seconds;
++timers.c:165:    this->proc = proc;
++timers.c:166:    this->data = data;
++timers.c:171:    while (*t && this->when >= (*t)->when)
++timers.c:173:    this->next = *t;
++timers.c:174:    *t = this;
++timers.c:178:    return this->id;
++parser.y:276:		    Cond_Arm *this_arm = alloc_cond_arm($4, $6);
++parser.y:283:			tmp->next = this_arm;
++parser.y:286:			$$ = this_arm;
++parser.y:621:		    Arg_List *this_arg = alloc_arg_list(ARG_NORMAL, $3);
++parser.y:628:			tmp->next = this_arg;
++parser.y:631:			$$ = this_arg;
++parser.y:635:		    Arg_List *this_arg = alloc_arg_list(ARG_SPLICE, $4);
++parser.y:642:			tmp->next = this_arg;
++parser.y:645:			$$ = this_arg;
+diff --git a/server/fixthises.sh b/server/fixthises.sh
+new file mode 100644
+index 0000000..9b47efb
+--- /dev/null
++++ b/server/fixthises.sh
+@@ -0,0 +1,144 @@
++# tasks.h has extern enum outcome run_server_program_task(Objid this, const char *verb,
++perl -pi -e 's/\Qextern enum outcome run_server_program_task(Objid this, const char *verb,\E/extern enum outcome run_server_program_task(Objid self, const char *verb,/' tasks.h
++# execute.c has if (activ_stack[t].vloc != activ_stack[t].this)
++perl -pi -e 's/\Qif (activ_stack[t].vloc != activ_stack[t].this)\E/if (activ_stack[t].vloc != activ_stack[t].self)/' execute.c
++# execute.c has stream_printf(str, " (this == #%d)", activ_stack[t].this);
++perl -pi -e 's/\Qstream_printf(str, " (this == #%d)", activ_stack[t].this);\E/stream_printf(str, " (self == #%d)", activ_stack[t].self);/' execute.c
++# execute.c has v.v.list[1].v.obj = stack[i].this;
++perl -pi -e 's/\Qv.v.list[1].v.obj = stack[i].this;\E/v.v.list[1].v.obj = stack[i].self;/' execute.c
++# execute.c has enum error call_verb2(Objid this, const char *vname, Var args, int do_pass);
++perl -pi -e 's/\Qenum error call_verb2(Objid this, const char *vname, Var args, int do_pass);\E/enum error call_verb2(Objid self, const char *vname, Var args, int do_pass);/' execute.c
++# execute.c has call_verb(Objid this, const char *vname_in, Var args, int do_pass)
++perl -pi -e 's/\Qcall_verb(Objid this, const char *vname_in, Var args, int do_pass)\E/call_verb(Objid self, const char *vname_in, Var args, int do_pass)/' execute.c
++# execute.c has result = call_verb2(this, vname, args, do_pass);
++perl -pi -e 's/\Qresult = call_verb2(this, vname, args, do_pass);\E/result = call_verb2(self, vname, args, do_pass);/' execute.c
++# execute.c has call_verb2(Objid this, const char *vname, Var args, int do_pass)
++perl -pi -e 's/\Qcall_verb2(Objid this, const char *vname, Var args, int do_pass)\E/call_verb2(Objid self, const char *vname, Var args, int do_pass)/' execute.c
++# execute.c has where = this;
++perl -pi -e 's/\Qwhere = this;\E/where = self;/' execute.c
++# execute.c has RUN_ACTIV.this = this;
++perl -pi -e 's/\QRUN_ACTIV.this = this;\E/RUN_ACTIV.self = self;/' execute.c
++# execute.c has set_rt_env_obj(env, SLOT_THIS, this);
++perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_THIS, this);\E/set_rt_env_obj(env, SLOT_THIS, self);/' execute.c
++# execute.c has set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
++perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);\E/set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.self);/' execute.c
++# execute.c has return RUN_ACTIV.this;
++perl -pi -e 's/\Qreturn RUN_ACTIV.this;\E/return RUN_ACTIV.self;/' execute.c
++# execute.c has do_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,
++perl -pi -e 's/\Qdo_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,\E/do_server_verb_task(Objid self, const char *verb, Var args, db_verb_handle h,/' execute.c
++# execute.c has return do_server_program_task(this, verb, args, db_verb_definer(h),
++perl -pi -e 's/\Qreturn do_server_program_task(this, verb, args, db_verb_definer(h),\E/return do_server_program_task(self, verb, args, db_verb_definer(h),/' execute.c
++# execute.c has do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
++perl -pi -e 's/\Qdo_server_program_task(Objid this, const char *verb, Var args, Objid vloc,\E/do_server_program_task(Objid self, const char *verb, Var args, Objid vloc,/' execute.c
++# execute.c has RUN_ACTIV.this = this;
++perl -pi -e 's/\QRUN_ACTIV.this = this;\E/RUN_ACTIV.self = self;/' execute.c
++# execute.c has set_rt_env_obj(env, SLOT_THIS, this);
++perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_THIS, this);\E/set_rt_env_obj(env, SLOT_THIS, self);/' execute.c
++# execute.c has do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
++perl -pi -e 's/\Qdo_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)\E/do_input_task(Objid user, Parsed_Command * pc, Objid self, db_verb_handle vh)/' execute.c
++# execute.c has RUN_ACTIV.this = this;
++perl -pi -e 's/\QRUN_ACTIV.this = this;\E/RUN_ACTIV.self = self;/' execute.c
++# execute.c has set_rt_env_obj(env, SLOT_THIS, this);
++perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_THIS, this);\E/set_rt_env_obj(env, SLOT_THIS, self);/' execute.c
++# execute.c has set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
++perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);\E/set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.self);/' execute.c
++# execute.c has RUN_ACTIV.this = NOTHING;
++perl -pi -e 's/\QRUN_ACTIV.this = NOTHING;\E/RUN_ACTIV.self = NOTHING;/' execute.c
++# execute.c has enum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
++perl -pi -e 's/\Qenum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);\E/enum error e = call_verb2(RUN_ACTIV.self, RUN_ACTIV.verb, arglist, 1);/' execute.c
++# execute.c has a.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
++perl -pi -e 's/\Qa.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);\E/a.self, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);/' execute.c
++# execute.c has &a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,
++perl -pi -e 's/\Q&a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,\E/&a->self, &dummy, &dummy, &a->player, &dummy, &a->progr,/' execute.c
++# server.c has char *this_program = str_dup(argv[0]);
++perl -pi -e 's/\Qchar *this_program = str_dup(argv[0]);\E/char *self_program = str_dup(argv[0]);/' server.c
++# tasks.c has Objid this;
++perl -pi -e 's/\QObjid this;\E/Objid self;/' tasks.c
++# tasks.c has } else if (find_verb_on(this = tq->player, pc, &vh)
++perl -pi -e 's/\Q} else if (find_verb_on(this = tq->player, pc, &vh)\E/} else if (find_verb_on(self = tq->player, pc, &vh)/' tasks.c
++# tasks.c has || find_verb_on(this = location, pc, &vh)
++perl -pi -e 's/\Q|| find_verb_on(this = location, pc, &vh)\E/|| find_verb_on(self = location, pc, &vh)/' tasks.c
++# tasks.c has || find_verb_on(this = pc->dobj, pc, &vh)
++perl -pi -e 's/\Q|| find_verb_on(this = pc->dobj, pc, &vh)\E/|| find_verb_on(self = pc->dobj, pc, &vh)/' tasks.c
++# tasks.c has || find_verb_on(this = pc->iobj, pc, &vh)
++perl -pi -e 's/\Q|| find_verb_on(this = pc->iobj, pc, &vh)\E/|| find_verb_on(self = pc->iobj, pc, &vh)/' tasks.c
++# tasks.c has || (valid(this = location)
++perl -pi -e 's/\Q|| (valid(this = location)\E/|| (valid(self = location)/' tasks.c
++# tasks.c has do_input_task(tq->player, pc, this, vh);
++perl -pi -e 's/\Qdo_input_task(tq->player, pc, this, vh);\E/do_input_task(tq->player, pc, self, vh);/' tasks.c
++# tasks.c has run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
++perl -pi -e 's/\Qrun_server_program_task(Objid this, const char *verb, Var args, Objid vloc,\E/run_server_program_task(Objid self, const char *verb, Var args, Objid vloc,/' tasks.c
++# tasks.c has return do_server_program_task(this, verb, args, vloc, verbname, program,
++perl -pi -e 's/\Qreturn do_server_program_task(this, verb, args, vloc, verbname, program,\E/return do_server_program_task(self, verb, args, vloc, verbname, program,/' tasks.c
++# tasks.c has list.v.list[9].v.obj = ft.a.this;
++perl -pi -e 's/\Qlist.v.list[9].v.obj = ft.a.this;\E/list.v.list[9].v.obj = ft.a.self;/' tasks.c
++# tasks.c has list.v.list[9].v.obj = top_activ(the_vm).this;
++perl -pi -e 's/\Qlist.v.list[9].v.obj = top_activ(the_vm).this;\E/list.v.list[9].v.obj = top_activ(the_vm).self;/' tasks.c
++# timers.c has Timer_Entry *this = free_timers;
++perl -pi -e 's/\QTimer_Entry *this = free_timers;\E/Timer_Entry *self = free_timers;/' timers.c
++# timers.c has free_timers = this->next;
++perl -pi -e 's/\Qfree_timers = this->next;\E/free_timers = self->next;/' timers.c
++# timers.c has return this;
++perl -pi -e 's/\Qreturn this;\E/return self;/' timers.c
++# timers.c has free_timer(Timer_Entry * this)
++perl -pi -e 's/\Qfree_timer(Timer_Entry * this)\E/free_timer(Timer_Entry * self)/' timers.c
++# timers.c has this->next = free_timers;
++perl -pi -e 's/\Qthis->next = free_timers;\E/self->next = free_timers;/' timers.c
++# timers.c has free_timers = this;
++perl -pi -e 's/\Qfree_timers = this;\E/free_timers = self;/' timers.c
++# timers.c has Timer_Entry *this = active_timers;
++perl -pi -e 's/\QTimer_Entry *this = active_timers;\E/Timer_Entry *self = active_timers;/' timers.c
++# timers.c has Timer_Proc proc = this->proc;
++perl -pi -e 's/\QTimer_Proc proc = this->proc;\E/Timer_Proc proc = self->proc;/' timers.c
++# timers.c has Timer_ID id = this->id;
++perl -pi -e 's/\QTimer_ID id = this->id;\E/Timer_ID id = self->id;/' timers.c
++# timers.c has Timer_Data data = this->data;
++perl -pi -e 's/\QTimer_Data data = this->data;\E/Timer_Data data = self->data;/' timers.c
++# timers.c has free_timer(this);
++perl -pi -e 's/\Qfree_timer(this);\E/free_timer(self);/' timers.c
++# timers.c has Timer_Entry *this = virtual_timer;
++perl -pi -e 's/\QTimer_Entry *this = virtual_timer;\E/Timer_Entry *self = virtual_timer;/' timers.c
++# timers.c has Timer_Proc proc = this->proc;
++perl -pi -e 's/\QTimer_Proc proc = this->proc;\E/Timer_Proc proc = self->proc;/' timers.c
++# timers.c has Timer_ID id = this->id;
++perl -pi -e 's/\QTimer_ID id = this->id;\E/Timer_ID id = self->id;/' timers.c
++# timers.c has Timer_Data data = this->data;
++perl -pi -e 's/\QTimer_Data data = this->data;\E/Timer_Data data = self->data;/' timers.c
++# timers.c has free_timer(this);
++perl -pi -e 's/\Qfree_timer(this);\E/free_timer(self);/' timers.c
++# timers.c has Timer_Entry *this = allocate_timer();
++perl -pi -e 's/\QTimer_Entry *this = allocate_timer();\E/Timer_Entry *self = allocate_timer();/' timers.c
++# timers.c has this->id = next_id++;
++perl -pi -e 's/\Qthis->id = next_id++;\E/self->id = next_id++;/' timers.c
++# timers.c has this->when = time(0) + seconds;
++perl -pi -e 's/\Qthis->when = time(0) + seconds;\E/self->when = time(0) + seconds;/' timers.c
++# timers.c has this->proc = proc;
++perl -pi -e 's/\Qthis->proc = proc;\E/self->proc = proc;/' timers.c
++# timers.c has this->data = data;
++perl -pi -e 's/\Qthis->data = data;\E/self->data = data;/' timers.c
++# timers.c has while (*t && this->when >= (*t)->when)
++perl -pi -e 's/\Qwhile (*t && this->when >= (*t)->when)\E/while (*t && self->when >= (*t)->when)/' timers.c
++# timers.c has this->next = *t;
++perl -pi -e 's/\Qthis->next = *t;\E/self->next = *t;/' timers.c
++# timers.c has *t = this;
++perl -pi -e 's/\Q*t = this;\E/*t = self;/' timers.c
++# timers.c has return this->id;
++perl -pi -e 's/\Qreturn this->id;\E/return self->id;/' timers.c
++# parser.y has Cond_Arm *this_arm = alloc_cond_arm($4, $6);
++perl -pi -e 's/\QCond_Arm *this_arm = alloc_cond_arm($4, $6);\E/Cond_Arm *self_arm = alloc_cond_arm($4, $6);/' parser.y
++# parser.y has tmp->next = this_arm;
++perl -pi -e 's/\Qtmp->next = this_arm;\E/tmp->next = self_arm;/' parser.y
++# parser.y has $$ = this_arm;
++perl -pi -e 's/\Q$$ = this_arm;\E/$$ = self_arm;/' parser.y
++# parser.y has Arg_List *this_arg = alloc_arg_list(ARG_NORMAL, $3);
++perl -pi -e 's/\QArg_List *this_arg = alloc_arg_list(ARG_NORMAL, $3);\E/Arg_List *self_arg = alloc_arg_list(ARG_NORMAL, $3);/' parser.y
++# parser.y has tmp->next = this_arg;
++perl -pi -e 's/\Qtmp->next = this_arg;\E/tmp->next = self_arg;/' parser.y
++# parser.y has $$ = this_arg;
++perl -pi -e 's/\Q$$ = this_arg;\E/$$ = self_arg;/' parser.y
++# parser.y has Arg_List *this_arg = alloc_arg_list(ARG_SPLICE, $4);
++perl -pi -e 's/\QArg_List *this_arg = alloc_arg_list(ARG_SPLICE, $4);\E/Arg_List *self_arg = alloc_arg_list(ARG_SPLICE, $4);/' parser.y
++# parser.y has tmp->next = this_arg;
++perl -pi -e 's/\Qtmp->next = this_arg;\E/tmp->next = self_arg;/' parser.y
++# parser.y has $$ = this_arg;
++perl -pi -e 's/\Q$$ = this_arg;\E/$$ = self_arg;/' parser.y
+diff --git a/server/parser.y b/server/parser.y
+index 012c93b..f0dd6f1 100644
+--- a/server/parser.y
++++ b/server/parser.y
+@@ -280,7 +280,7 @@ elseifs:
+ 
+ 			while (tmp->next)
+ 			    tmp = tmp->next;
+-			tmp->next = this_arm;
++			tmp->next = self_arm;
+ 			$$ = $1;
+ 		    } else
+ 			$$ = this_arm;
+@@ -625,7 +625,7 @@ ne_arglist:
+ 
+ 			while (tmp->next)
+ 			    tmp = tmp->next;
+-			tmp->next = this_arg;
++			tmp->next = self_arg;
+ 			$$ = $1;
+ 		    } else
+ 			$$ = this_arg;
+@@ -639,7 +639,7 @@ ne_arglist:
+ 
+ 			while (tmp->next)
+ 			    tmp = tmp->next;
+-			tmp->next = this_arg;
++			tmp->next = self_arg;
+ 			$$ = $1;
+ 		    } else
+ 			$$ = this_arg;
+diff --git a/server/server.c b/server/server.c
+index 310bf7e..487ad37 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -1183,7 +1183,7 @@ read_active_connections(void)
+ int
+ main(int argc, char **argv)
+ {
+-    char *this_program = str_dup(argv[0]);
++    char *self_program = str_dup(argv[0]);
+     const char *log_file = 0;
+     int emergency = 0;
+     Var desc;
+diff --git a/server/tasks.c b/server/tasks.c
+index ef0455d..2c41a5d 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -686,7 +686,7 @@ do_command_task(tqueue * tq, char *command)
+ 	    Objid location = (valid(tq->player)
+ 			      ? db_object_location(tq->player)
+ 			      : NOTHING);
+-	    Objid this;
++	    Objid self;
+ 	    db_verb_handle vh;
+ 	    Var result, args;
+ 
+@@ -701,14 +701,14 @@ do_command_task(tqueue * tq, char *command)
+ 		!= OUTCOME_DONE
+ 		|| is_true(result)) {
+ 		/* Do nothing more; we assume :do_command handled it. */
+-	    } else if (find_verb_on(this = tq->player, pc, &vh)
+-		       || find_verb_on(this = location, pc, &vh)
+-		       || find_verb_on(this = pc->dobj, pc, &vh)
+-		       || find_verb_on(this = pc->iobj, pc, &vh)
+-		       || (valid(this = location)
++	    } else if (find_verb_on(self = tq->player, pc, &vh)
++		       || find_verb_on(self = location, pc, &vh)
++		       || find_verb_on(self = pc->dobj, pc, &vh)
++		       || find_verb_on(self = pc->iobj, pc, &vh)
++		       || (valid(self = location)
+ 			 && (vh = db_find_callable_verb(location, "huh"),
+ 			     vh.ptr))) {
+-		do_input_task(tq->player, pc, this, vh);
++		do_input_task(tq->player, pc, self, vh);
+ 	    } else {
+ 		notify(tq->player, "I couldn't understand that.");
+ 		tq->last_input_task_id = 0;
+@@ -1342,13 +1342,13 @@ run_server_task_setting_id(Objid player, Objid what, const char *verb,
+ }
+ 
+ enum outcome
+-run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
++run_server_program_task(Objid self, const char *verb, Var args, Objid vloc,
+ 		    const char *verbname, Program * program, Objid progr,
+ 			int debug, Objid player, const char *argstr,
+ 			Var * result)
+ {
+     current_task_id = new_task_id();
+-    return do_server_program_task(this, verb, args, vloc, verbname, program,
++    return do_server_program_task(self, verb, args, vloc, verbname, program,
+ 				  progr, debug, player, argstr, result,
+ 				  1/*traceback*/);
+ }
+@@ -1706,7 +1706,7 @@ list_for_forked_task(forked_task ft)
+     list.v.list[8].type = TYPE_INT;
+     list.v.list[8].v.num = find_line_number(ft.program, ft.f_index, 0);
+     list.v.list[9].type = TYPE_OBJ;
+-    list.v.list[9].v.obj = ft.a.this;
++    list.v.list[9].v.obj = ft.a.self;
+     list.v.list[10].type = TYPE_INT;
+     list.v.list[10].v.num = forked_task_bytes(ft);
+ 
+@@ -1748,7 +1748,7 @@ list_for_vm(vm the_vm)
+     list.v.list[8].type = TYPE_INT;
+     list.v.list[8].v.num = suspended_lineno_of_vm(the_vm);
+     list.v.list[9].type = TYPE_OBJ;
+-    list.v.list[9].v.obj = top_activ(the_vm).this;
++    list.v.list[9].v.obj = top_activ(the_vm).self;
+     list.v.list[10].type = TYPE_INT;
+     list.v.list[10].v.num = suspended_task_bytes(the_vm);
+ 
+diff --git a/server/tasks.h b/server/tasks.h
+index ece5d4c..7ccb713 100644
+--- a/server/tasks.h
++++ b/server/tasks.h
+@@ -88,7 +88,7 @@ extern enum outcome run_server_task_setting_id(Objid player, Objid what,
+ 					       const char *verb, Var args,
+ 					       const char *argstr,
+ 					     Var * result, int *task_id);
+-extern enum outcome run_server_program_task(Objid this, const char *verb,
++extern enum outcome run_server_program_task(Objid self, const char *verb,
+ 					    Var args, Objid vloc,
+ 					    const char *verbname,
+ 					  Program * program, Objid progr,
+diff --git a/server/timers.c b/server/timers.c
+index bf64c24..6328ecc 100644
+--- a/server/timers.c
++++ b/server/timers.c
+@@ -47,19 +47,19 @@ static Timer_Entry *
+ allocate_timer(void)
+ {
+     if (free_timers) {
+-	Timer_Entry *this = free_timers;
++	Timer_Entry *self = free_timers;
+ 
+-	free_timers = this->next;
+-	return this;
++	free_timers = self->next;
++	return self;
+     } else
+ 	return (Timer_Entry *) malloc(sizeof(Timer_Entry));
+ }
+ 
+ static void
+-free_timer(Timer_Entry * this)
++free_timer(Timer_Entry * self)
+ {
+-    this->next = free_timers;
+-    free_timers = this;
++    self->next = free_timers;
++    free_timers = self;
+ }
+ 
+ static void restart_timers(void);
+@@ -67,13 +67,13 @@ static void restart_timers(void);
+ static void
+ wakeup_call(int signo)
+ {
+-    Timer_Entry *this = active_timers;
+-    Timer_Proc proc = this->proc;
+-    Timer_ID id = this->id;
+-    Timer_Data data = this->data;
++    Timer_Entry *self = active_timers;
++    Timer_Proc proc = self->proc;
++    Timer_ID id = self->id;
++    Timer_Data data = self->data;
+ 
+     active_timers = active_timers->next;
+-    free_timer(this);
++    free_timer(self);
+     restart_timers();
+     if (proc)
+ 	(*proc) (id, data);
+@@ -84,13 +84,13 @@ wakeup_call(int signo)
+ static void
+ virtual_wakeup_call(int signo)
+ {
+-    Timer_Entry *this = virtual_timer;
+-    Timer_Proc proc = this->proc;
+-    Timer_ID id = this->id;
+-    Timer_Data data = this->data;
++    Timer_Entry *self = virtual_timer;
++    Timer_Proc proc = self->proc;
++    Timer_ID id = self->id;
++    Timer_Data data = self->data;
+ 
+     virtual_timer = 0;
+-    free_timer(this);
++    free_timer(self);
+     if (proc)
+ 	(*proc) (id, data);
+ }
+@@ -157,25 +157,25 @@ restart_timers()
+ Timer_ID
+ set_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
+ {
+-    Timer_Entry *this = allocate_timer();
++    Timer_Entry *self = allocate_timer();
+     Timer_Entry **t;
+ 
+-    this->id = next_id++;
+-    this->when = time(0) + seconds;
+-    this->proc = proc;
+-    this->data = data;
++    self->id = next_id++;
++    self->when = time(0) + seconds;
++    self->proc = proc;
++    self->data = data;
+ 
+     stop_timers();
+ 
+     t = &active_timers;
+-    while (*t && this->when >= (*t)->when)
++    while (*t && self->when >= (*t)->when)
+ 	t = &((*t)->next);
+-    this->next = *t;
+-    *t = this;
++    self->next = *t;
++    *t = self;
+ 
+     restart_timers();
+ 
+-    return this->id;
++    return self->id;
+ }
+ 
+ Timer_ID

@@ -96,7 +96,7 @@ alloc_rt_stack(activation * a, int size)
 	res = rt_stack_quick;
 	rt_stack_quick = rt_stack_quick[0].v.list;
     } else {
-	res = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+	res = (Var *) mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
     }
     a->base_rt_stack = a->top_rt_stack = res;
     a->rt_stack_size = size;
@@ -128,9 +128,9 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 	    stream_printf(str, "... called from ");
 	stream_printf(str, "#%d:%s", activ_stack[t].vloc,
 		      activ_stack[t].verbname);
-	if (equality(new_obj(activ_stack[t].vloc), activ_stack[t].this, 0)) {
-	    stream_add_string(str, " (this == ");
-	    unparse_value(str, activ_stack[t].this);
+	if (equality(new_obj(activ_stack[t].vloc), activ_stack[t].self, 0)) {
+	    stream_add_string(str, " (self == ");
+	    unparse_value(str, activ_stack[t].self);
 	    stream_add_string(str, ")");
 	}
 
@@ -415,7 +415,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 
 	if (include_end || i != end) {
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
-	    v.v.list[1] = var_ref(stack[i].this);
+	    v.v.list[1] = var_ref(stack[i].self);
 	    v.v.list[2].type = TYPE_STR;
 	    v.v.list[2].v.str = str_ref(stack[i].verb);
 	    v.v.list[3].type = TYPE_OBJ;
@@ -553,7 +553,7 @@ free_activation(activation * ap, char data_too)
 	free_var(*i);
     free_rt_stack(ap);
     free_var(ap->temp);
-    free_var(ap->this);
+    free_var(ap->self);
     free_str(ap->verb);
     free_str(ap->verbname);
 
@@ -568,26 +568,26 @@ free_activation(activation * ap, char data_too)
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
 
-enum error call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass);
+enum error call_verb2(Objid recv, const char *vname, Var self, Var args, int do_pass);
 
 /*
  * Historical interface for things which want to call with vname not
  * already in a moo-str.
  */
 enum error
-call_verb(Objid recv, const char *vname_in, Var this, Var args, int do_pass)
+call_verb(Objid recv, const char *vname_in, Var self, Var args, int do_pass)
 {
     const char *vname = str_dup(vname_in);
     enum error result;
 
-    result = call_verb2(recv, vname, this, args, do_pass);
+    result = call_verb2(recv, vname, self, args, do_pass);
     /* call_verb2 got any refs it wanted */
     free_str(vname);
     return result;
 }
 
 enum error
-call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
+call_verb2(Objid recv, const char *vname, Var self, Var args, int do_pass)
 {
     /* if call succeeds, args will be consumed.  If call fails, args
        will NOT be consumed  -- it must therefore be freed by caller */
@@ -654,7 +654,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 
     program = db_verb_program(h);
     RUN_ACTIV.prog = program_ref(program);
-    RUN_ACTIV.this = var_ref(this);
+    RUN_ACTIV.self = var_ref(self);
     RUN_ACTIV.progr = db_verb_owner(h);
     RUN_ACTIV.recv = recv;
     RUN_ACTIV.vloc = db_verb_definer(h);
@@ -672,8 +672,8 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 
     fill_in_rt_consts(env, program->version);
 
-    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV.this));
-    set_rt_env_var(env, SLOT_CALLER, var_ref(CALLER_ACTIV.this));
+    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV.self));
+    set_rt_env_var(env, SLOT_CALLER, var_ref(CALLER_ACTIV.self));
 
 #define ENV_COPY(slot) \
     set_rt_env_var(env, slot, var_ref(CALLER_ACTIV.rt_env[slot]))
@@ -2593,7 +2593,7 @@ run_interpreter(char raise, enum error e,
 Var
 caller()
 {
-    return RUN_ACTIV.this;
+    return RUN_ACTIV.self;
 }
 
 static void
@@ -2603,7 +2603,7 @@ check_activ_stack_size(int max)
 	if (activ_stack)
 	    myfree(activ_stack, M_VM);
 
-	activ_stack = mymalloc(sizeof(activation) * max, M_VM);
+	activ_stack = (activation *) mymalloc(sizeof(activation) * max, M_VM);
 	max_stack_size = max;
     }
 }
@@ -2700,7 +2700,7 @@ do_server_program_task(Objid recv, const char *verb, Var args, Objid vloc,
     top_activ_stack = 0;
 
     RUN_ACTIV.rt_env = env = new_rt_env(program->num_var_names);
-    RUN_ACTIV.this = new_obj(recv);
+    RUN_ACTIV.self = new_obj(recv);
     RUN_ACTIV.player = player;
     RUN_ACTIV.progr = progr;
     RUN_ACTIV.recv = recv;
@@ -2711,7 +2711,7 @@ do_server_program_task(Objid recv, const char *verb, Var args, Objid vloc,
     fill_in_rt_consts(env, program->version);
     set_rt_env_obj(env, SLOT_PLAYER, player);
     set_rt_env_obj(env, SLOT_CALLER, -1);
-    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV.this));
+    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV.self));
     set_rt_env_obj(env, SLOT_DOBJ, NOTHING);
     set_rt_env_obj(env, SLOT_IOBJ, NOTHING);
     set_rt_env_str(env, SLOT_DOBJSTR, str_dup(""));
@@ -2734,7 +2734,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     top_activ_stack = 0;
 
     RUN_ACTIV.rt_env = env = new_rt_env(prog->num_var_names);
-    RUN_ACTIV.this = new_obj(recv);
+    RUN_ACTIV.self = new_obj(recv);
     RUN_ACTIV.player = user;
     RUN_ACTIV.progr = db_verb_owner(vh);
     RUN_ACTIV.recv = recv;
@@ -2745,7 +2745,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     fill_in_rt_consts(env, prog->version);
     set_rt_env_obj(env, SLOT_PLAYER, user);
     set_rt_env_obj(env, SLOT_CALLER, user);
-    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV.this));
+    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV.self));
     set_rt_env_obj(env, SLOT_DOBJ, pc->dobj);
     set_rt_env_obj(env, SLOT_IOBJ, pc->iobj);
     set_rt_env_str(env, SLOT_DOBJSTR, str_ref(pc->dobjstr));
@@ -2784,7 +2784,7 @@ setup_activ_for_eval(Program * prog)
     RUN_ACTIV.rt_env = env = new_rt_env(prog->num_var_names);
     fill_in_rt_consts(env, prog->version);
     set_rt_env_obj(env, SLOT_PLAYER, CALLER_ACTIV.player);
-    set_rt_env_var(env, SLOT_CALLER, var_ref(CALLER_ACTIV.this));
+    set_rt_env_var(env, SLOT_CALLER, var_ref(CALLER_ACTIV.self));
     set_rt_env_obj(env, SLOT_THIS, NOTHING);
     set_rt_env_obj(env, SLOT_DOBJ, NOTHING);
     set_rt_env_obj(env, SLOT_IOBJ, NOTHING);
@@ -2795,7 +2795,7 @@ setup_activ_for_eval(Program * prog)
     set_rt_env_str(env, SLOT_VERB, str_dup(""));
     set_rt_env_var(env, SLOT_ARGS, new_list(0));
 
-    RUN_ACTIV.this = var_ref(nothing);
+    RUN_ACTIV.self = var_ref(nothing);
     RUN_ACTIV.player = CALLER_ACTIV.player;
     RUN_ACTIV.progr = CALLER_ACTIV.progr;
     RUN_ACTIV.recv = NOTHING;
@@ -3021,7 +3021,7 @@ bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    enum error e = call_verb2(RUN_ACTIV.recv, RUN_ACTIV.verb, RUN_ACTIV.this, arglist, 1);
+    enum error e = call_verb2(RUN_ACTIV.recv, RUN_ACTIV.verb, RUN_ACTIV.self, arglist, 1);
 
     if (e == E_NONE)
 	return tail_call_pack();
@@ -3136,7 +3136,7 @@ write_activ_as_pi(activation a)
     dummy.v.num = -111;
     dbio_write_var(dummy);
 
-    dbio_write_var(a.this);
+    dbio_write_var(a.self);
     dbio_printf("%d %d %d %d %d %d %d %d %d\n",
 	    a.recv, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
     dbio_write_string("No");
@@ -3155,9 +3155,9 @@ read_activ_as_pi(activation * a)
 
     free_var(dbio_read_var());
 
-    Var this;
+    Var self;
     if (dbio_input_version >= DBV_This)
-	this = dbio_read_var();
+	self = dbio_read_var();
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
@@ -3170,7 +3170,7 @@ read_activ_as_pi(activation * a)
 		   &a->vloc, &dummy, &a->debug, &c) != 10
 	|| c != '\n') {
 	if (dbio_input_version >= DBV_This)
-	    free_var(this);
+	    free_var(self);
 	errlog("READ_A: Bad numbers.\n");
 	return 0;
     }
@@ -3178,9 +3178,9 @@ read_activ_as_pi(activation * a)
     /* Earlier versions of the database use the receiver for this.
      */
     if (dbio_input_version >= DBV_This)
-	a->this = this;
+	a->self = self;
     else
-	a->this = new_obj(a->recv);
+	a->self = new_obj(a->recv);
 
     dbio_read_string();		/* was argstr */
     dbio_read_string();		/* was dobjstr */

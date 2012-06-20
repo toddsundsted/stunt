@@ -80,7 +80,7 @@ add_common(int fd, Direction dir)
     }
     if (num_ports == max_ports) {	/* Grow ports array */
 	int new_max = max_ports + 10;
-	Port *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);
+	Port *new_ports = (Port *) mymalloc(new_max * sizeof(Port), M_NETWORK);
 	int i;
 
 	for (i = 0; i < max_ports; i++)

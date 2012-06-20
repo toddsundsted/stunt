@@ -133,7 +133,7 @@ stdin_suspender(vm the_vm, void *data)
 static package
 bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
+    stdin_waiter *w = (stdin_waiter *) mymalloc(sizeof(stdin_waiter), M_TASK);
 
     return make_suspend_pack(stdin_suspender, w);
 }

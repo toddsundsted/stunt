@@ -204,7 +204,7 @@ db_add_verb(Objid oid, const char *vnames, Objid owner, unsigned flags,
 
     db_priv_affected_callable_verb_lookup();
 
-    newv = mymalloc(sizeof(Verbdef), M_VERBDEF);
+    newv = (Verbdef *) mymalloc(sizeof(Verbdef), M_VERBDEF);
     newv->name = vnames;
     newv->owner = owner;
     newv->perms = flags | (dobj << DOBJSHIFT) | (iobj << IOBJSHIFT);
@@ -597,7 +597,7 @@ db_find_callable_verb(Objid oid, const char *verb)
 	 * so that repeated failures hit the cache instead of going
 	 * through a lookup.
 	 */
-	new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+	new_vc = (vc_entry *) mymalloc(sizeof(vc_entry), M_VC_ENTRY);
 
 	new_vc->hash = hash;
 	new_vc->oid_key = first_parent_with_verbs;

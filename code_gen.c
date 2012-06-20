@@ -132,14 +132,14 @@ init_state(State * state, GState * gstate)
 
     state->num_fixups = 0;
     state->max_fixups = 10;
-    state->fixups = mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);
+    state->fixups = (Fixup *) mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);
 
     state->num_bytes = 0;
     state->max_bytes = 50;
-    state->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+    state->bytes = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
-    state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
-    state->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+    state->pushmap = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+    state->trymap = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
     state->try_depth = 0;
 #endif				/* BYTECODE_REDUCE_REF */
 
@@ -148,7 +148,7 @@ init_state(State * state, GState * gstate)
 
     state->num_loops = 0;
     state->max_loops = 5;
-    state->loops = mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);
+    state->loops = (Loop *) mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);
 
     state->gstate = gstate;
 }
@@ -170,12 +170,12 @@ emit_byte(Byte b, State * state)
 {
     if (state->num_bytes == state->max_bytes) {
 	unsigned new_max = 2 * state->max_bytes;
-	state->bytes = myrealloc(state->bytes, sizeof(Byte) * new_max,
+	state->bytes = (Byte *) myrealloc(state->bytes, sizeof(Byte) * new_max,
 				 M_BYTECODES);
 #ifdef BYTECODE_REDUCE_REF
-	state->pushmap = myrealloc(state->pushmap, sizeof(Byte) * new_max,
+	state->pushmap = (Byte *) myrealloc(state->pushmap, sizeof(Byte) * new_max,
 				   M_BYTECODES);
-	state->trymap = myrealloc(state->trymap, sizeof(Byte) * new_max,
+	state->trymap = (Byte *) myrealloc(state->trymap, sizeof(Byte) * new_max,
 				  M_BYTECODES);
 #endif				/* BYTECODE_REDUCE_REF */
 	state->max_bytes = new_max;
@@ -201,7 +201,7 @@ add_known_fixup(Fixup f, State * state)
 
     if (state->num_fixups == state->max_fixups) {
 	unsigned new_max = 2 * state->max_fixups;
-	Fixup *new_fixups = mymalloc(sizeof(Fixup) * new_max,
+	Fixup *new_fixups = (Fixup *) mymalloc(sizeof(Fixup) * new_max,
 				     M_CODE_GEN);
 
 	for (i = 0; i < state->num_fixups; i++)
@@ -258,7 +258,7 @@ add_literal(Var v, State * state)
 	if (gstate->num_literals == gstate->max_literals) {
 	    unsigned new_max = gstate->max_literals == 0
 	    ? 5 : 2 * gstate->max_literals;
-	    Var *new_literals = mymalloc(sizeof(Var) * new_max,
+	    Var *new_literals = (Var *) mymalloc(sizeof(Var) * new_max,
 					 M_CODE_GEN);
 
 	    if (gstate->literals) {
@@ -296,7 +296,7 @@ add_fork(Bytecodes b, State * state)
     if (gstate->num_fork_vectors == gstate->max_fork_vectors) {
 	unsigned new_max = gstate->max_fork_vectors == 0
 	? 1 : 2 * gstate->max_fork_vectors;
-	Bytecodes *new_fv = mymalloc(sizeof(Bytecodes) * new_max,
+	Bytecodes *new_fv = (Bytecodes *) mymalloc(sizeof(Bytecodes) * new_max,
 				     M_CODE_GEN);
 
 	if (gstate->fork_vectors) {
@@ -458,7 +458,7 @@ enter_loop(int id, int index, Fixup top_label, unsigned top_stack,
 
     if (state->num_loops == state->max_loops) {
 	unsigned new_max = 2 * state->max_loops;
-	Loop *new_loops = mymalloc(sizeof(Loop) * new_max,
+	Loop *new_loops = (Loop *) mymalloc(sizeof(Loop) * new_max,
 				   M_CODE_GEN);
 
 	for (i = 0; i < state->num_loops; i++)
@@ -1224,7 +1224,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     bc.max_stack = state.max_stack;
     bc.numbytes_stack = ref_size(state.max_stack);
 
-    bc.vector = mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
+    bc.vector = (Byte *) mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
 
 #ifdef BYTECODE_REDUCE_REF
     /*
@@ -1364,7 +1364,7 @@ generate_code(Stmt * stmt, DB_Version version)
     if (gstate.literals) {
 	unsigned i;
 
-	prog->literals = mymalloc(sizeof(Var) * gstate.num_literals,
+	prog->literals = (Var *) mymalloc(sizeof(Var) * gstate.num_literals,
 				  M_LIT_LIST);
 	prog->num_literals = gstate.num_literals;
 	for (i = 0; i < gstate.num_literals; i++)

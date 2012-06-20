@@ -102,7 +102,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 	close(s);
 	return e;
     }
-    l = mymalloc(sizeof(listener), M_NETWORK);
+    l = (listener *) mymalloc(sizeof(listener), M_NETWORK);
     l->next = all_listeners;
     all_listeners = l;
     l->filename = str_dup(connect_file);

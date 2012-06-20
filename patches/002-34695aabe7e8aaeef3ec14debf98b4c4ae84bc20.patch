@@ -1,0 +1,520 @@
+commit 34695aabe7e8aaeef3ec14debf98b4c4ae84bc20
+Author: Steve Wainstead <wainstead@gmail.com>
+Date:   Sun Jun 7 17:38:00 2009 +0000
+
+    Cast all myallocs that use sizeof(), to solve some of the void pointer errors from g++
+
+diff --git a/server/code_gen.c b/server/code_gen.c
+index 22b2fc1..494b4c1 100644
+--- a/server/code_gen.c
++++ b/server/code_gen.c
+@@ -131,14 +131,14 @@ init_state(State * state, GState * gstate)
+ 
+     state->num_fixups = 0;
+     state->max_fixups = 10;
+-    state->fixups = mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);
++    state->fixups = (Fixup *) mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);
+ 
+     state->num_bytes = 0;
+     state->max_bytes = 50;
+-    state->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
++    state->bytes = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+ #ifdef BYTECODE_REDUCE_REF
+-    state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-    state->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
++    state->pushmap = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
++    state->trymap = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+     state->try_depth = 0;
+ #endif				/* BYTECODE_REDUCE_REF */
+ 
+@@ -147,7 +147,7 @@ init_state(State * state, GState * gstate)
+ 
+     state->num_loops = 0;
+     state->max_loops = 5;
+-    state->loops = mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);
++    state->loops = (Loop *) mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);
+ 
+     state->gstate = gstate;
+ }
+@@ -169,12 +169,12 @@ emit_byte(Byte b, State * state)
+ {
+     if (state->num_bytes == state->max_bytes) {
+ 	unsigned new_max = 2 * state->max_bytes;
+-	state->bytes = myrealloc(state->bytes, sizeof(Byte) * new_max,
++	state->bytes = (Byte *) myrealloc(state->bytes, sizeof(Byte) * new_max,
+ 				 M_BYTECODES);
+ #ifdef BYTECODE_REDUCE_REF
+-	state->pushmap = myrealloc(state->pushmap, sizeof(Byte) * new_max,
++	state->pushmap = (Byte *) myrealloc(state->pushmap, sizeof(Byte) * new_max,
+ 				   M_BYTECODES);
+-	state->trymap = myrealloc(state->trymap, sizeof(Byte) * new_max,
++	state->trymap = (Byte *) myrealloc(state->trymap, sizeof(Byte) * new_max,
+ 				  M_BYTECODES);
+ #endif				/* BYTECODE_REDUCE_REF */
+ 	state->max_bytes = new_max;
+@@ -200,7 +200,7 @@ add_known_fixup(Fixup f, State * state)
+ 
+     if (state->num_fixups == state->max_fixups) {
+ 	unsigned new_max = 2 * state->max_fixups;
+-	Fixup *new_fixups = mymalloc(sizeof(Fixup) * new_max,
++	Fixup *new_fixups = (Fixup *) mymalloc(sizeof(Fixup) * new_max,
+ 				     M_CODE_GEN);
+ 
+ 	for (i = 0; i < state->num_fixups; i++)
+@@ -257,7 +257,7 @@ add_literal(Var v, State * state)
+ 	if (gstate->num_literals == gstate->max_literals) {
+ 	    unsigned new_max = gstate->max_literals == 0
+ 	    ? 5 : 2 * gstate->max_literals;
+-	    Var *new_literals = mymalloc(sizeof(Var) * new_max,
++	    Var *new_literals = (Var *) mymalloc(sizeof(Var) * new_max,
+ 					 M_CODE_GEN);
+ 
+ 	    if (gstate->literals) {
+@@ -295,7 +295,7 @@ add_fork(Bytecodes b, State * state)
+     if (gstate->num_fork_vectors == gstate->max_fork_vectors) {
+ 	unsigned new_max = gstate->max_fork_vectors == 0
+ 	? 1 : 2 * gstate->max_fork_vectors;
+-	Bytecodes *new_fv = mymalloc(sizeof(Bytecodes) * new_max,
++	Bytecodes *new_fv = (Bytecodes *) mymalloc(sizeof(Bytecodes) * new_max,
+ 				     M_CODE_GEN);
+ 
+ 	if (gstate->fork_vectors) {
+@@ -453,7 +453,7 @@ enter_loop(int id, Fixup top_label, unsigned top_stack,
+ 
+     if (state->num_loops == state->max_loops) {
+ 	unsigned new_max = 2 * state->max_loops;
+-	Loop *new_loops = mymalloc(sizeof(Loop) * new_max,
++	Loop *new_loops = (Loop *) mymalloc(sizeof(Loop) * new_max,
+ 				   M_CODE_GEN);
+ 
+ 	for (i = 0; i < state->num_loops; i++)
+@@ -1181,7 +1181,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
+     bc.max_stack = state.max_stack;
+     bc.numbytes_stack = ref_size(state.max_stack);
+ 
+-    bc.vector = mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
++    bc.vector = (Byte *) mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
+ 
+ #ifdef BYTECODE_REDUCE_REF
+     /*
+@@ -1321,7 +1321,7 @@ generate_code(Stmt * stmt, DB_Version version)
+     if (gstate.literals) {
+ 	unsigned i;
+ 
+-	prog->literals = mymalloc(sizeof(Var) * gstate.num_literals,
++	prog->literals = (Var *) mymalloc(sizeof(Var) * gstate.num_literals,
+ 				  M_LIT_LIST);
+ 	prog->num_literals = gstate.num_literals;
+ 	for (i = 0; i < gstate.num_literals; i++)
+diff --git a/server/db_file.c b/server/db_file.c
+index 50830b0..c04f1f9 100644
+--- a/server/db_file.c
++++ b/server/db_file.c
+@@ -140,7 +140,7 @@ read_object(void)
+     o->verbdefs = 0;
+     prevv = &(o->verbdefs);
+     for (i = dbio_read_num(); i > 0; i--) {
+-	v = mymalloc(sizeof(Verbdef), M_VERBDEF);
++	v = (Verbdef *) mymalloc(sizeof(Verbdef), M_VERBDEF);
+ 	read_verbdef(v);
+ 	*prevv = v;
+ 	prevv = &(v->next);
+@@ -150,7 +150,7 @@ read_object(void)
+     o->propdefs.max_length = 0;
+     o->propdefs.l = 0;
+     if ((i = dbio_read_num()) != 0) {
+-	o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
++	o->propdefs.l = (Propdef *) mymalloc(i * sizeof(Propdef), M_PROPDEF);
+ 	o->propdefs.cur_length = i;
+ 	o->propdefs.max_length = i;
+ 	for (i = 0; i < o->propdefs.cur_length; i++)
+@@ -158,7 +158,7 @@ read_object(void)
+     }
+     nprops = dbio_read_num();
+     if (nprops)
+-	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
++	o->propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);
+     else
+ 	o->propval = 0;
+ 
+diff --git a/server/db_objects.c b/server/db_objects.c
+index a9e8cd2..e203f4c 100644
+--- a/server/db_objects.c
++++ b/server/db_objects.c
+@@ -90,7 +90,7 @@ dbpriv_new_object(void)
+     Object *o;
+ 
+     ensure_new_object();
+-    o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
++    o = objects[num_objects] = (Object *) mymalloc(sizeof(Object), M_OBJECT);
+     o->id = num_objects;
+     num_objects++;
+ 
+diff --git a/server/db_properties.c b/server/db_properties.c
+index cf88509..5b92ad8 100644
+--- a/server/db_properties.c
++++ b/server/db_properties.c
+@@ -80,7 +80,7 @@ insert_prop(Objid oid, int pos, Pval pval)
+     int i, nprops;
+ 
+     nprops = dbpriv_count_properties(oid);
+-    new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
++    new_propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);
+ 
+     o = dbpriv_find_object(oid);
+ 
+@@ -137,7 +137,7 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
+ 	int new_size = (o->propdefs.max_length == 0
+ 			? 8 : 2 * o->propdefs.max_length);
+ 
+-	o->propdefs.l = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
++	o->propdefs.l = (Propdef *) mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+ 	for (i = 0; i < o->propdefs.max_length; i++)
+ 	    o->propdefs.l[i] = old_props[i];
+ 	o->propdefs.max_length = new_size;
+@@ -200,7 +200,7 @@ remove_prop(Objid oid, int pos)
+     free_var(o->propval[pos].var);	/* free deleted property */
+ 
+     if (nprops) {
+-	new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
++	new_propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);
+ 	for (i = 0; i < pos; i++)
+ 	    new_propval[i] = o->propval[i];
+ 	for (i = pos; i < nprops; i++)
+@@ -249,7 +249,7 @@ db_delete_propdef(Objid oid, const char *pname)
+ 		int new_size = max / 2;
+ 		Propdef *new_props;
+ 
+-		new_props = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
++		new_props = (Propdef *) mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+ 
+ 		for (j = 0; j < i; j++)
+ 		    new_props[j] = props->l[j];
+@@ -603,7 +603,7 @@ fix_props(Objid oid, int parent_local, int old, int new, int common)
+ 	free_var(me->propval[i].var);
+ 
+     if (local + new + common != 0) {
+-	new_propval = mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
++	new_propval = (Pval *) mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
+ 	for (i = 0; i < local; i++)
+ 	    new_propval[i] = me->propval[i];
+ 	for (i = 0; i < new; i++) {
+diff --git a/server/db_verbs.c b/server/db_verbs.c
+index 7301c3d..4ebf9b7 100644
+--- a/server/db_verbs.c
++++ b/server/db_verbs.c
+@@ -204,7 +204,7 @@ db_add_verb(Objid oid, const char *vnames, Objid owner, unsigned flags,
+ 
+     db_priv_affected_callable_verb_lookup();
+ 
+-    newv = mymalloc(sizeof(Verbdef), M_VERBDEF);
++    newv = (Verbdef *) mymalloc(sizeof(Verbdef), M_VERBDEF);
+     newv->name = vnames;
+     newv->owner = owner;
+     newv->perms = flags | (dobj << DOBJSHIFT) | (iobj << IOBJSHIFT);
+@@ -516,7 +516,7 @@ db_find_callable_verb(Objid oid, const char *verb)
+      * we do "negative caching", keeping track of failed lookups so that
+      * repeated failures hit the cache instead of going through a lookup.
+      */
+-    new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
++    new_vc = (vc_entry *) mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+ 
+     new_vc->hash = hash;
+     new_vc->oid_key = first_parent_with_verbs;
+diff --git a/server/eval_env.c b/server/eval_env.c
+index e61b622..eb63922 100644
+--- a/server/eval_env.c
++++ b/server/eval_env.c
+@@ -38,7 +38,7 @@ new_rt_env(unsigned size)
+ 	ret = ready_size_rt_envs;
+ 	ready_size_rt_envs = ret[0].v.list;
+     } else
+-	ret = mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
++	ret = (Var *) mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
+ 
+     for (i = 0; i < size; i++)
+ 	ret[i].type = TYPE_NONE;
+diff --git a/server/eval_vm.c b/server/eval_vm.c
+index a86beb9..f428e8d 100644
+--- a/server/eval_vm.c
++++ b/server/eval_vm.c
+@@ -31,10 +31,10 @@
+ vm
+ new_vm(int task_id, int stack_size)
+ {
+-    vm the_vm = mymalloc(sizeof(vmstruct), M_VM);
++    vm the_vm = (vmstruct *) mymalloc(sizeof(vmstruct), M_VM);
+ 
+     the_vm->task_id = task_id;
+-    the_vm->activ_stack = mymalloc(sizeof(activation) * stack_size, M_VM);
++    the_vm->activ_stack = (activation *) mymalloc(sizeof(activation) * stack_size, M_VM);
+ 
+     return the_vm;
+ }
+diff --git a/server/execute.c b/server/execute.c
+index 4bf2f91..ec8c4aa 100644
+--- a/server/execute.c
++++ b/server/execute.c
+@@ -94,7 +94,7 @@ alloc_rt_stack(activation * a, int size)
+ 	res = rt_stack_quick;
+ 	rt_stack_quick = rt_stack_quick[0].v.list;
+     } else {
+-	res = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
++	res = (Var *) mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+     }
+     a->base_rt_stack = a->top_rt_stack = res;
+     a->rt_stack_size = size;
+@@ -2169,7 +2169,7 @@ check_activ_stack_size(int max)
+ 	if (activ_stack)
+ 	    myfree(activ_stack, M_VM);
+ 
+-	activ_stack = mymalloc(sizeof(activation) * max, M_VM);
++	activ_stack = (activation *) mymalloc(sizeof(activation) * max, M_VM);
+ 	max_stack_size = max;
+     }
+ }
+diff --git a/server/extensions.c b/server/extensions.c
+index 4cdc595..f93a306 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -133,7 +133,7 @@ stdin_suspender(vm the_vm, void *data)
+ static package
+ bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+-    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
++    stdin_waiter *w = (stdin_waiter *) mymalloc(sizeof(stdin_waiter), M_TASK);
+ 
+     return make_suspend_pack(stdin_suspender, w);
+ }
+diff --git a/server/list.c b/server/list.c
+index 9222a11..de48e4a 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -45,7 +45,7 @@ new_list(int size)
+ 
+ 	if (emptylist.v.list == 0) {
+ 	    emptylist.type = TYPE_LIST;
+-	    emptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);
++	    emptylist.v.list = (Var *) mymalloc(1 * sizeof(Var), M_LIST);
+ 	    emptylist.v.list[0].type = TYPE_INT;
+ 	    emptylist.v.list[0].v.num = 0;
+ 	}
+@@ -354,7 +354,7 @@ strrangeset(Var base, int from, int to, Var value)
+     char *s;
+ 
+     ans.type = TYPE_STR;
+-    s = mymalloc(sizeof(char) * (newsize + 1), M_STRING);
++    s = (char *) mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+ 
+     for (index = 0; index < lenleft; index++)
+ 	s[offset++] = base.v.str[index];
+diff --git a/server/net_bsd_lcl.c b/server/net_bsd_lcl.c
+index bfaf3e6..6275056 100644
+--- a/server/net_bsd_lcl.c
++++ b/server/net_bsd_lcl.c
+@@ -102,7 +102,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+ 	close(s);
+ 	return e;
+     }
+-    l = mymalloc(sizeof(listener), M_NETWORK);
++    l = (listener *) mymalloc(sizeof(listener), M_NETWORK);
+     l->next = all_listeners;
+     all_listeners = l;
+     l->filename = str_dup(connect_file);
+diff --git a/server/net_mp_fake.c b/server/net_mp_fake.c
+index f733e11..23e3417 100644
+--- a/server/net_mp_fake.c
++++ b/server/net_mp_fake.c
+@@ -80,7 +80,7 @@ add_common(int fd, Direction dir)
+     }
+     if (num_ports == max_ports) {	/* Grow ports array */
+ 	int new_max = max_ports + 10;
+-	Port *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);
++	Port *new_ports = (Port *) mymalloc(new_max * sizeof(Port), M_NETWORK);
+ 	int i;
+ 
+ 	for (i = 0; i < max_ports; i++)
+diff --git a/server/net_mp_poll.c b/server/net_mp_poll.c
+index 97f553b..455a3d9 100644
+--- a/server/net_mp_poll.c
++++ b/server/net_mp_poll.c
+@@ -47,7 +47,7 @@ add_common(int fd, unsigned dir)
+ {
+     if (fd >= num_ports) {	/* Grow ports array */
+ 	int new_num = (fd + 9) / 10 * 10 + 1;
+-	Port *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);
++	Port *new_ports = (Port *) mymalloc(new_num * sizeof(Port), M_NETWORK);
+ 	int i;
+ 
+ 	for (i = 0; i < num_ports; i++)
+diff --git a/server/net_multi.c b/server/net_multi.c
+index 51b1d4b..095b6bf 100644
+--- a/server/net_multi.c
++++ b/server/net_multi.c
+@@ -114,7 +114,7 @@ network_register_fd(int fd, network_fd_callback readable,
+ 
+     if (!reg_fds) {
+ 	max_reg_fds = 5;
+-	reg_fds = mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
++	reg_fds = (fd_reg *) mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
+ 	for (i = 0; i < max_reg_fds; i++)
+ 	    reg_fds[i].fd = -1;
+     }
+@@ -124,7 +124,7 @@ network_register_fd(int fd, network_fd_callback readable,
+ 	    break;
+     if (i >= max_reg_fds) {	/* No free slots */
+ 	int new_max = 2 * max_reg_fds;
+-	fd_reg *new = mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
++	fd_reg *new = (fd_reg *) mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
+ 
+ 	for (i = 0; i < new_max; i++)
+ 	    if (i < max_reg_fds)
+@@ -304,7 +304,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
+ 	|| (rfd != wfd && !network_set_nonblocking(wfd)))
+ 	log_perror("Setting connection non-blocking");
+ 
+-    h = mymalloc(sizeof(nhandle), M_NETWORK);
++    h = (nhandle *) mymalloc(sizeof(nhandle), M_NETWORK);
+ 
+     if (all_nhandles)
+ 	all_nhandles->prev = &(h->next);
+@@ -512,7 +512,7 @@ network_make_listener(server_listener sl, Var desc,
+     nlistener *l;
+ 
+     if (e == E_NONE) {
+-	nl->ptr = l = mymalloc(sizeof(nlistener), M_NETWORK);
++	nl->ptr = l = (nlistener *) mymalloc(sizeof(nlistener), M_NETWORK);
+ 	l->fd = fd;
+ 	l->slistener = sl;
+ 	l->name = str_dup(*name);
+diff --git a/server/net_sysv_lcl.c b/server/net_sysv_lcl.c
+index c914e74..9895909 100644
+--- a/server/net_sysv_lcl.c
++++ b/server/net_sysv_lcl.c
+@@ -162,7 +162,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+ 	log_perror("Setting listening FIFO non-blocking");
+ 	return E_QUOTA;
+     }
+-    l = mymalloc(sizeof(listener), M_NETWORK);
++    l = (listener *) mymalloc(sizeof(listener), M_NETWORK);
+     l->next = all_listeners;
+     all_listeners = l;
+     l->filename = str_dup(connect_file);
+diff --git a/server/numbers.c b/server/numbers.c
+index d75e23d..1be023c 100644
+--- a/server/numbers.c
++++ b/server/numbers.c
+@@ -157,7 +157,7 @@ new_float(double d)
+     Var v;
+ 
+     v.type = TYPE_FLOAT;
+-    v.v.fnum = mymalloc(sizeof(double), M_FLOAT);
++    v.v.fnum = (double *) mymalloc(sizeof(double), M_FLOAT);
+     *v.v.fnum = d;
+ 
+     return v;
+diff --git a/server/pattern.c b/server/pattern.c
+index d57ae3f..6e71360 100644
+--- a/server/pattern.c
++++ b/server/pattern.c
+@@ -122,7 +122,7 @@ new_pattern(const char *pattern, int case_matters)
+ 
+     if (tpattern
+ 	&& !re_compile_pattern((void *) tpattern, tpatlen, buf)) {
+-	buf->fastmap = mymalloc(256 * sizeof(char), M_PATTERN);
++	buf->fastmap = (char *) mymalloc(256 * sizeof(char), M_PATTERN);
+ 	re_compile_fastmap(buf);
+ 	p.ptr = buf;
+     } else {
+diff --git a/server/ref_count.c b/server/ref_count.c
+index 84ac0f9..8f73662 100644
+--- a/server/ref_count.c
++++ b/server/ref_count.c
+@@ -68,7 +68,7 @@ new_entry()
+ 	ans = free_list;
+ 	free_list = free_list->next;
+     } else
+-	ans = mymalloc(sizeof(reftab_entry), M_REF_ENTRY);
++	ans = (reftab_entry *) mymalloc(sizeof(reftab_entry), M_REF_ENTRY);
+     return ans;
+ }
+ 
+diff --git a/server/server.c b/server/server.c
+index cdb5e26..310bf7e 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -105,7 +105,7 @@ free_shandle(shandle * h)
+ static slistener *
+ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
+ {
+-    slistener *l = mymalloc(sizeof(slistener), M_NETWORK);
++    slistener *l = (slistener *) mymalloc(sizeof(slistener), M_NETWORK);
+     server_listener sl;
+     enum error e;
+     const char *name;
+diff --git a/server/streams.c b/server/streams.c
+index 852efce..ba6644b 100644
+--- a/server/streams.c
++++ b/server/streams.c
+@@ -28,7 +28,7 @@
+ Stream *
+ new_stream(int size)
+ {
+-    Stream *s = mymalloc(sizeof(Stream), M_STREAM);
++    Stream *s = (Stream *) mymalloc(sizeof(Stream), M_STREAM);
+ 
+     s->buffer = mymalloc(size, M_STREAM);
+     s->buflen = size;
+diff --git a/server/sym_table.c b/server/sym_table.c
+index edaf1dd..1c03467 100644
+--- a/server/sym_table.c
++++ b/server/sym_table.c
+@@ -30,7 +30,7 @@
+ static Names *
+ new_names(unsigned max_size)
+ {
+-    Names *names = mymalloc(sizeof(Names), M_NAMES);
++    Names *names = (Names *) mymalloc(sizeof(Names), M_NAMES);
+ 
+     names->names = mymalloc(sizeof(char *) * max_size, M_NAMES);
+     names->max_size = max_size;
+diff --git a/server/tasks.c b/server/tasks.c
+index 7b90a99..ef0455d 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -331,7 +331,7 @@ find_tqueue(Objid player, int create_if_not_found)
+     if (!create_if_not_found)
+ 	return 0;
+ 
+-    tq = mymalloc(sizeof(tqueue), M_TASK);
++    tq = (tqueue *) mymalloc(sizeof(tqueue), M_TASK);
+ 
+     deactivate_tqueue(tq);
+ 
+@@ -1089,7 +1089,7 @@ enqueue_suspended_task(vm the_vm, void *data)
+     task *t;
+ 
+     if (check_user_task_limit(progr_of_cur_verb(the_vm))) {
+-	t = mymalloc(sizeof(task), M_TASK);
++	t = (task *) mymalloc(sizeof(task), M_TASK);
+ 	t->kind = TASK_SUSPENDED;
+ 	t->t.suspended.the_vm = the_vm;
+ 	if (now + after_seconds < now)
+@@ -1109,7 +1109,7 @@ enqueue_suspended_task(vm the_vm, void *data)
+ void
+ resume_task(vm the_vm, Var value)
+ {
+-    task *t = mymalloc(sizeof(task), M_TASK);
++    task *t = (task *) mymalloc(sizeof(task), M_TASK);
+     Objid progr = progr_of_cur_verb(the_vm);
+     tqueue *tq = find_tqueue(progr, 1);
+ 
+@@ -1356,7 +1356,7 @@ run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+ void
+ register_task_queue(task_enumerator enumerator)
+ {
+-    ext_queue *eq = mymalloc(sizeof(ext_queue), M_TASK);
++    ext_queue *eq = (ext_queue *) mymalloc(sizeof(ext_queue), M_TASK);
+ 
+     eq->enumerator = enumerator;
+     eq->next = external_queues;

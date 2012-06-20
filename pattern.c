@@ -122,7 +122,7 @@ new_pattern(const char *pattern, int case_matters)
 
     if (tpattern
 	&& !re_compile_pattern((void *) tpattern, tpatlen, buf)) {
-	buf->fastmap = mymalloc(256 * sizeof(char), M_PATTERN);
+	buf->fastmap = (char *) mymalloc(256 * sizeof(char), M_PATTERN);
 	re_compile_fastmap(buf);
 	p.ptr = buf;
     } else {

@@ -50,7 +50,7 @@ new_list(int size)
 
 	if (emptylist.v.list == 0) {
 	    emptylist.type = TYPE_LIST;
-	    emptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);
+	    emptylist.v.list = (Var *) mymalloc(1 * sizeof(Var), M_LIST);
 	    emptylist.v.list[0].type = TYPE_INT;
 	    emptylist.v.list[0].v.num = 0;
 	}
@@ -371,7 +371,7 @@ strrangeset(Var base, int from, int to, Var value)
     char *s;
 
     ans.type = TYPE_STR;
-    s = mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+    s = (char *) mymalloc(sizeof(char) * (newsize + 1), M_STRING);
 
     for (index = 0; index < lenleft; index++)
 	s[offset++] = base.v.str[index];
