@@ -1017,7 +1017,16 @@ write_db_file(const char *reason)
 
     user_list = db_all_users();
 
-    TRY {
+   // removed the TRY macro here, to get around a void * error. The
+   // macros TRY, CATCH, ENDTRY are only used in this file in this instance,
+   // so it seemed safe to remove them. The macro FINALLY was never used.
+   // I copied the macro bodies into the below block verbatim, though
+   // the resulting structure is kinda... nonobvious.
+   // --sw june 2009
+ 
+   //TRY {						
+   {						
+
 	dbio_printf(header_format_string, current_db_version);
 
 	dbio_printf("%d\n%d\n%d\n%d\n",
@@ -1056,9 +1065,37 @@ write_db_file(const char *reason)
 	oklog("%s: Writing list of formerly active connections ...\n", reason);
 	write_active_connections();
     }
-    EXCEPT(dbpriv_dbio_failed) {
-	success = 0;
-    } ENDTRY;
+         //EXCEPT(dbpriv_dbio_failed)
+         /* TRY body or handler goes here */                                         
+         if (ES_es == ES_EvalBody)                                                   
+           ES_exceptionStack = ES_ctx.link;                                        
+         break;                                                                      
+       }                                                                               
+       if (ES_es == ES_Initialize) {                                                   
+         if (ES_ctx.nx >= ES_MaxExceptionsPerScope)                                  
+           panic("Too many EXCEPT clauses!");                                      
+         ES_ctx.array[ES_ctx.nx++] = &dbpriv_dbio_failed;                            
+       } else if (ES_ctx.id == &dbpriv_dbio_failed  ||  &dbpriv_dbio_failed == &ANY) {	
+         int	exception_value = ES_ctx.value;                                         
+                                                                                                 
+         ES_exceptionStack = ES_ctx.link;                                            
+         exception_value = exception_value;                                          
+         /* avoid warnings */                                                    
+         /* handler goes here */
+ 
+ 	success = 0;
+
+         //ENDTRY;
+         /* FINALLY body or handler goes here */		
+         if (ES_ctx._finally  &&  ES_es == ES_Exception)  	
+           ES_RaiseException((Exception *) ES_ctx.id,	
+                             (int) ES_ctx.value);		
+         break;						
+       }							
+       ES_es = ES_EvalBody;					
+     }								
+   }
+
 
     return success;
 }
