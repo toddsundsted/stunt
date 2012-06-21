@@ -1165,10 +1165,12 @@ ref_size(unsigned max)
 }
 
 #ifdef BYTECODE_REDUCE_REF
+// See http://www.cplusplus.com/reference/clibrary/cstdlib/qsort/ for
+// this usage of standard Cs qsort() function
 static int
-bbd_cmp(int *a, int *b)
+bbd_cmp(const void *a, const void *b)
 {
-    return *a - *b;
+  return ( *(int *)a - *(int *)b );
 }
 #endif				/* BYTECODE_REDUCE_REF */
 
@@ -1238,7 +1240,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
      * the bottom you had to have started at the top", include the
      * *destinations* of the jumps (hence the qsort).
      */
-    bbd = mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
+    bbd = (int *) mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
     n_bbd = 0;
     bbd[n_bbd++] = 0;
     bbd[n_bbd++] = state.num_bytes;
