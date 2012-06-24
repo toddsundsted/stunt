@@ -104,41 +104,14 @@ static void hexToDigit(unsigned int * val, const unsigned char * hex)
     }
 }
 
-static void Utf32toUtf8(unsigned int codepoint, char * utf8Buf) 
-{
-    if (codepoint < 0x80) {
-        utf8Buf[0] = (char) codepoint;
-        utf8Buf[1] = 0;
-    } else if (codepoint < 0x0800) {
-        utf8Buf[0] = (char) ((codepoint >> 6) | 0xC0);
-        utf8Buf[1] = (char) ((codepoint & 0x3F) | 0x80);
-        utf8Buf[2] = 0;
-    } else if (codepoint < 0x10000) {
-        utf8Buf[0] = (char) ((codepoint >> 12) | 0xE0);
-        utf8Buf[1] = (char) (((codepoint >> 6) & 0x3F) | 0x80);
-        utf8Buf[2] = (char) ((codepoint & 0x3F) | 0x80);
-        utf8Buf[3] = 0;
-    } else if (codepoint < 0x200000) {
-        utf8Buf[0] =(char)((codepoint >> 18) | 0xF0);
-        utf8Buf[1] =(char)(((codepoint >> 12) & 0x3F) | 0x80);
-        utf8Buf[2] =(char)(((codepoint >> 6) & 0x3F) | 0x80);
-        utf8Buf[3] =(char)((codepoint & 0x3F) | 0x80);
-        utf8Buf[4] = 0;
-    } else {
-        utf8Buf[0] = '?';
-        utf8Buf[1] = 0;
-    }
-}
-
 void yajl_string_decode(yajl_buf buf, const unsigned char * str,
                         unsigned int len)
 {
     unsigned int beg = 0;
-    unsigned int end = 0;    
+    unsigned int end = 0;
 
     while (end < len) {
         if (str[end] == '\\') {
-            char utf8Buf[5];
             const char * unescaped = "?";
             yajl_buf_append(buf, str + beg, end - beg);
             switch (str[++end]) {
@@ -150,38 +123,6 @@ void yajl_string_decode(yajl_buf buf, const unsigned char * str,
                 case 'f': unescaped = "\f"; break;
                 case 'b': unescaped = "\b"; break;
                 case 't': unescaped = "\t"; break;
-                case 'u': {
-                    unsigned int codepoint = 0;
-                    hexToDigit(&codepoint, str + ++end);
-                    end+=3;
-                    /* check if this is a surrogate */
-                    if ((codepoint & 0xFC00) == 0xD800) {
-                        end++;
-                        if (str[end] == '\\' && str[end + 1] == 'u') {
-                            unsigned int surrogate = 0;
-                            hexToDigit(&surrogate, str + end + 2);
-                            codepoint =
-                                (((codepoint & 0x3F) << 10) | 
-                                 ((((codepoint >> 6) & 0xF) + 1) << 16) | 
-                                 (surrogate & 0x3FF));
-                            end += 5;
-                        } else {
-                            unescaped = "?";
-                            break;
-                        }
-                    }
-                    
-                    Utf32toUtf8(codepoint, utf8Buf);
-                    unescaped = utf8Buf;
-
-                    if (codepoint == 0) {
-                        yajl_buf_append(buf, unescaped, 1);
-                        beg = ++end;
-                        continue;
-                    }
-
-                    break;
-                }
                 default:
                     assert("this should never happen" == NULL);
             }
