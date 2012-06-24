@@ -37,13 +37,6 @@
 #include <string.h>
 #include <stdio.h>
 
-static void CharToHex(unsigned char c, char * hexBuf)
-{
-    const char * hexchar = "0123456789ABCDEF";
-    hexBuf[0] = hexchar[c >> 4];
-    hexBuf[1] = hexchar[c & 0x0F];
-}
-
 void
 yajl_string_encode(yajl_buf buf, const unsigned char * str,
                    unsigned int len)
@@ -58,30 +51,34 @@ yajl_string_encode2(const yajl_print_t print,
                     unsigned int len)
 {
     unsigned int beg = 0;
-    unsigned int end = 0;    
-    char hexBuf[7];
-    hexBuf[0] = '\\'; hexBuf[1] = 'u'; hexBuf[2] = '0'; hexBuf[3] = '0';
-    hexBuf[6] = 0;
+    unsigned int end = 0;
 
     while (end < len) {
-        const char * escaped = NULL;
-        switch (str[end]) {
-            case '\r': escaped = "\\r"; break;
-            case '\n': escaped = "\\n"; break;
-            case '\\': escaped = "\\\\"; break;
-            /* case '/': escaped = "\\/"; break; */
-            case '"': escaped = "\\\""; break;
-            case '\f': escaped = "\\f"; break;
-            case '\b': escaped = "\\b"; break;
-            case '\t': escaped = "\\t"; break;
-            default:
-                if ((unsigned char) str[end] < 32) {
-                    CharToHex(str[end], hexBuf + 4);
-                    escaped = hexBuf;
-                }
-                break;
-        }
-        if (escaped != NULL) {
+        if (end < len - 2 && str[end] == '~' && str[end + 1] == '0') {
+            const char * escaped = NULL;
+            switch (str[end + 2]) {
+                case '8': escaped = "\\b"; break;
+                case 'c': case 'C': escaped = "\\f"; break;
+                case 'a': case 'A': escaped = "\\n"; break;
+                case 'd': case 'D': escaped = "\\r"; break;
+                case '9': escaped = "\\t"; break;
+                default:
+                    break;
+            }
+            if (escaped != NULL) {
+                print(ctx, (const char *) (str + beg), end - beg);
+                print(ctx, escaped, (unsigned int)strlen(escaped));
+                beg = (end += 3);
+            } else {
+                ++end;
+            }
+        } else if (str[end] == '"') {
+            const char * escaped = "\\\"";
+            print(ctx, (const char *) (str + beg), end - beg);
+            print(ctx, escaped, (unsigned int)strlen(escaped));
+            beg = ++end;
+        } else if (str[end] == '\\') {
+            const char * escaped = "\\\\";
             print(ctx, (const char *) (str + beg), end - beg);
             print(ctx, escaped, (unsigned int)strlen(escaped));
             beg = ++end;
@@ -90,18 +87,6 @@ yajl_string_encode2(const yajl_print_t print,
         }
     }
     print(ctx, (const char *) (str + beg), end - beg);
-}
-
-static void hexToDigit(unsigned int * val, const unsigned char * hex)
-{
-    unsigned int i;
-    for (i=0;i<4;i++) {
-        unsigned char c = hex[i];
-        if (c >= 'A') c = (c & ~0x20) - 7;
-        c -= '0';
-        assert(!(c & 0xF0));
-        *val = (*val << 4) | c;
-    }
 }
 
 void yajl_string_decode(yajl_buf buf, const unsigned char * str,
@@ -115,14 +100,14 @@ void yajl_string_decode(yajl_buf buf, const unsigned char * str,
             const char * unescaped = "?";
             yajl_buf_append(buf, str + beg, end - beg);
             switch (str[++end]) {
-                case 'r': unescaped = "\r"; break;
-                case 'n': unescaped = "\n"; break;
+                case '"': unescaped = "\""; break;
                 case '\\': unescaped = "\\"; break;
                 case '/': unescaped = "/"; break;
-                case '"': unescaped = "\""; break;
-                case 'f': unescaped = "\f"; break;
-                case 'b': unescaped = "\b"; break;
-                case 't': unescaped = "\t"; break;
+                case 'b': unescaped = "~08"; break;
+                case 'f': unescaped = "~0C"; break;
+                case 'n': unescaped = "~0A"; break;
+                case 'r': unescaped = "~0D"; break;
+                case 't': unescaped = "~09"; break;
                 default:
                     assert("this should never happen" == NULL);
             }
