@@ -774,13 +774,14 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     int e;
     int rnd;
-    const int range_l =
-	((INTNUM_MAX > RAND_MAX ? RAND_MAX : (RAND_MAX - num)) + 1) % num;
 
     free_var(arglist);
 
     if (num <= 0)
 	return make_error_pack(E_INVARG);
+
+    const int range_l =
+	((INTNUM_MAX > RAND_MAX ? RAND_MAX : (RAND_MAX - num)) + 1) % num;
 
     r.type = TYPE_INT;
 
