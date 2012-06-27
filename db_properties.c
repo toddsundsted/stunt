@@ -219,7 +219,7 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
 }
 
 int
-db_rename_propdef(Objid oid, const char *old, const char *new)
+db_rename_propdef(Objid oid, const char *old, const char *_new)
 {
     Proplist *props = &dbpriv_find_object(oid)->propdefs;
     int hash = str_hash(old);
@@ -232,15 +232,15 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
 
 	p = props->l[i];
 	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
-	    if (mystrcasecmp(old, new) != 0) {	/* Not changing just the case */
-		h = db_find_property(oid, new, 0);
+	    if (mystrcasecmp(old, _new) != 0) {	/* Not changing just the case */
+		h = db_find_property(oid, _new, 0);
 		if (h.ptr
-		|| property_defined_at_or_below(new, str_hash(new), oid))
+		|| property_defined_at_or_below(_new, str_hash(_new), oid))
 		    return 0;
 	    }
 	    free_str(props->l[i].name);
-	    props->l[i].name = str_ref(new);
-	    props->l[i].hash = str_hash(new);
+	    props->l[i].name = str_ref(_new);
+	    props->l[i].hash = str_hash(_new);
 
 	    return 1;
 	}
@@ -893,9 +893,9 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
     int i4, c4, i5, c5, i6, c6;
     FOR_EACH(child, dbpriv_find_object(oid)->children, i4, c4) {
 	Object *oc = dbpriv_find_object(child.v.obj);
-	Var new = new_list(1);
+	Var _new = new_list(1);
 	Var old = new_list(1);
-	new.v.list[1] = var_ref(child);
+	_new.v.list[1] = var_ref(child);
 	old.v.list[1] = var_ref(child);
 	if (TYPE_LIST == oc->parents.type) {
 	    FOR_EACH(parent, oc->parents, i5, c5) {
@@ -905,24 +905,24 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
 		    FOR_EACH(tmp, old_ancestors, i6, c6)
 			old = setadd(old, var_ref(tmp));
 		    FOR_EACH(tmp, new_ancestors, i6, c6)
-			new = setadd(new, var_ref(tmp));
+			_new = setadd(new, var_ref(tmp));
 		}
 		else {
 		    Var tmp, all = db_ancestors(op->id, true);
 		    FOR_EACH(tmp, all, i6, c6) {
 			old = setadd(old, var_ref(tmp));
-			new = setadd(new, var_ref(tmp));
+			_new = setadd(new, var_ref(tmp));
 		    }
 		    free_var(all);
 		}
 	    }
 	}
 	else {
-	    new = listconcat(new, var_ref(new_ancestors));
+	    _new = listconcat(new, var_ref(new_ancestors));
 	    old = listconcat(old, var_ref(old_ancestors));
 	}
-	dbpriv_fix_properties_after_chparent(child.v.obj, old, new);
-	free_var(new);
+	dbpriv_fix_properties_after_chparent(child.v.obj, old, _new);
+	free_var(_new);
 	free_var(old);
     }
 }

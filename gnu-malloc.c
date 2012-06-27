@@ -654,11 +654,11 @@ realloc(mem, n)
 	register char *new;
 	int bcopy();
 
-	if ((new = malloc(n)) == 0)
+	if ((_new = malloc(n)) == 0)
 	    return 0;
-	bcopy(mem, new, tocopy);
+	bcopy(mem, _new, tocopy);
 	free(mem);
-	return new;
+	return _new;
     }
 }
 

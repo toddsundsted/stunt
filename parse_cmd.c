@@ -52,10 +52,10 @@ parse_into_words(char *input, int *nwords)
 	    int i;
 
 	    for (i = 0; i < max_words; i++)
-		new[i] = words[i];
+		_new[i] = words[i];
 
 	    myfree(words, M_STRING_PTRS);
-	    words = new;
+	    words = _new;
 	    max_words = new_max;
 	}
 	words[*nwords] = ptr;

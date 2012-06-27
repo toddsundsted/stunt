@@ -37,13 +37,13 @@ new_intern_entry_hunk(int size)
 {
     struct intern_entry_hunk *new;
     
-    new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
-    new->size = size;
-    new->handout = 0;
+    _new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+    _new->size = size;
+    _new->handout = 0;
     new->contents = mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
-    new->next = NULL;
+    _new->next = NULL;
     
-    return new;
+    return _new;
 }
 
 /* Chosen large enough to trigger the mmap() semantics of linux

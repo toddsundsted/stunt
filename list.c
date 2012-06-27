@@ -43,7 +43,7 @@
 Var
 new_list(int size)
 {
-    Var new;
+    Var _new;
 
     if (size == 0) {
 	static Var emptylist;
@@ -58,11 +58,11 @@ new_list(int size)
 	addref(emptylist.v.list);
 	return emptylist;
     }
-    new.type = TYPE_LIST;
+    _new.type = TYPE_LIST;
     new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
-    new.v.list[0].type = TYPE_INT;
-    new.v.list[0].v.num = size;
-    return new;
+    _new.v.list[0].type = TYPE_INT;
+    _new.v.list[0].v.num = size;
+    return _new;
 }
 
 Var
@@ -98,7 +98,7 @@ listset(Var list, Var value, int pos)
 static Var
 doinsert(Var list, Var value, int pos)
 {
-    Var new;
+    Var _new;
     int i;
     int size = list.v.list[0].v.num + 1;
 
@@ -108,14 +108,14 @@ doinsert(Var list, Var value, int pos)
 	list.v.list[pos] = value;
 	return list;
     }
-    new = new_list(size);
+    _new = new_list(size);
     for (i = 1; i < pos; i++)
-	new.v.list[i] = var_ref(list.v.list[i]);
-    new.v.list[pos] = value;
+	__new.v.list[i] = var_ref(list.v.list[i]);
+    _new.v.list[pos] = value;
     for (i = pos; i <= list.v.list[0].v.num; i++)
-	new.v.list[i + 1] = var_ref(list.v.list[i]);
+	_new.v.list[i + 1] = var_ref(list.v.list[i]);
     free_var(list);
-    return new;
+    return _new;
 }
 
 Var
@@ -137,17 +137,17 @@ listappend(Var list, Var value)
 Var
 listdelete(Var list, int pos)
 {
-    Var new;
+    Var _new;
     int i;
 
-    new = new_list(list.v.list[0].v.num - 1);
+    _new = new_list(list.v.list[0].v.num - 1);
     for (i = 1; i < pos; i++) {
-	new.v.list[i] = var_ref(list.v.list[i]);
+	__new.v.list[i] = var_ref(list.v.list[i]);
     }
     for (i = pos + 1; i <= list.v.list[0].v.num; i++)
-	new.v.list[i - 1] = var_ref(list.v.list[i]);
+	_new.v.list[i - 1] = var_ref(list.v.list[i]);
     free_var(list);		/* free old list */
-    return new;
+    return _new;
 }
 
 Var
@@ -155,18 +155,18 @@ listconcat(Var first, Var second)
 {
     int lsecond = second.v.list[0].v.num;
     int lfirst = first.v.list[0].v.num;
-    Var new;
+    Var _new;
     int i;
 
-    new = new_list(lsecond + lfirst);
+    _new = new_list(lsecond + lfirst);
     for (i = 1; i <= lfirst; i++)
-	new.v.list[i] = var_ref(first.v.list[i]);
+	_new.v.list[i] = var_ref(first.v.list[i]);
     for (i = 1; i <= lsecond; i++)
-	new.v.list[i + lfirst] = var_ref(second.v.list[i]);
+	_new.v.list[i + lfirst] = var_ref(second.v.list[i]);
     free_var(first);
     free_var(second);
 
-    return new;
+    return _new;
 }
 
 Var

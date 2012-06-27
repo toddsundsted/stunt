@@ -90,13 +90,13 @@ ensure_new_object(void)
     }
     if (num_objects >= max_objects) {
 	int i;
-	Object **new;
+	Object **_new;
 
-	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+	_new = (Object *) mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
 	for (i = 0; i < max_objects; i++)
-	    new[i] = objects[i];
+	    _new[i] = objects[i];
 	myfree(objects, M_OBJECT_TABLE);
-	objects = new;
+	objects = _new;
 	max_objects *= 2;
     }
 
@@ -221,17 +221,17 @@ db_destroy_object(Objid oid)
 Objid
 db_renumber_object(Objid old)
 {
-    Objid new;
+    Objid _new;
     Object *o;
 
     db_priv_affected_callable_verb_lookup();
 
-    for (new = 0; new < old; new++) {
-	if (objects[new] == NULL) {
+    for (_new = 0; _new < old; _new++) {
+	if (objects[_new] == NULL) {
 	    /* Change the identity of the object. */
-	    o = objects[new] = objects[old];
+	    o = objects[_new] = objects[old];
 	    objects[old] = 0;
-	    objects[new]->id = new;
+	    objects[_new]->id = _new;
 
 	    /* Fix up the parents/children hierarchy and the
 	     * location/contents hierarchy.
@@ -245,24 +245,24 @@ db_renumber_object(Objid old)
 		    FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)		\
 			if (obj2.v.obj == old)					\
 			    break;						\
-		    objects[obj1.v.obj]->down.v.list[i2].v.obj = new;		\
+		    objects[obj1.v.obj]->down.v.list[i2].v.obj = _new;		\
 		}								\
 	    }									\
 	    else if (TYPE_OBJ == o->up.type && NOTHING != o->up.v.obj) {	\
 		FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)		\
 		if (obj1.v.obj == old)						\
 		    break;							\
-		objects[o->up.v.obj]->down.v.list[i2].v.obj = new;		\
+		objects[o->up.v.obj]->down.v.list[i2].v.obj = _new;		\
 	    }									\
 	    FOR_EACH(obj1, o->down, i1, c1) {					\
 		if (TYPE_LIST == objects[obj1.v.obj]->up.type) {		\
 		    FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)		\
 			if (obj2.v.obj == old)					\
 			    break;						\
-		    objects[obj1.v.obj]->up.v.list[i2].v.obj = new;		\
+		    objects[obj1.v.obj]->up.v.list[i2].v.obj = _new;		\
 		}								\
 		else {								\
-		    objects[obj1.v.obj]->up.v.obj = new;			\
+		    objects[obj1.v.obj]->up.v.obj = _new;			\
 		}								\
 	    }
 
@@ -272,12 +272,12 @@ db_renumber_object(Objid old)
 #undef	    FIX
 
 	    /* Fix up the list of users, if necessary */
-	    if (is_user(new)) {
+	    if (is_user(_new)) {
 		int i;
 
 		for (i = 1; i <= all_users.v.list[0].v.num; i++)
 		    if (all_users.v.list[i].v.obj == old) {
-			all_users.v.list[i].v.obj = new;
+			all_users.v.list[i].v.obj = _new;
 			break;
 		    }
 	    }
@@ -294,28 +294,28 @@ db_renumber_object(Objid old)
 		    if (!o)
 			continue;
 
-		    if (o->owner == new)
+		    if (o->owner == _new)
 			o->owner = NOTHING;
 		    else if (o->owner == old)
-			o->owner = new;
+			o->owner = _new;
 
 		    for (v = o->verbdefs; v; v = v->next)
-			if (v->owner == new)
+			if (v->owner == _new)
 			    v->owner = NOTHING;
 			else if (v->owner == old)
-			    v->owner = new;
+			    v->owner = _new;
 
 		    count = dbpriv_count_properties(oid);
 		    p = o->propval;
 		    for (i = 0; i < count; i++)
-			if (p[i].owner == new)
+			if (p[i].owner == _new)
 			    p[i].owner = NOTHING;
 			else if (p[i].owner == old)
-			    p[i].owner = new;
+			    p[i].owner = _new;
 		}
 	    }
 
-	    return new;
+	    return _new;
 	}
     }
 

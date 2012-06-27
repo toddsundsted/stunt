@@ -128,14 +128,14 @@ network_register_fd(int fd, network_fd_callback readable,
 
 	for (i = 0; i < new_max; i++)
 	    if (i < max_reg_fds)
-		new[i] = reg_fds[i];
+		_new[i] = reg_fds[i];
 	    else
-		new[i].fd = -1;
+		_new[i].fd = -1;
 
 	myfree(reg_fds, M_NETWORK);
 	i = max_reg_fds;	/* first free slot */
 	max_reg_fds = new_max;
-	reg_fds = new;
+	reg_fds = _new;
     }
     reg_fds[i].fd = fd;
     reg_fds[i].readable = readable;

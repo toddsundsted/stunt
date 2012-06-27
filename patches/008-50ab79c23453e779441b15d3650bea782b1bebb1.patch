@@ -1,0 +1,653 @@
+commit 50ab79c23453e779441b15d3650bea782b1bebb1
+Author: Steve Wainstead <wainstead@gmail.com>
+Date:   Sun Jun 7 19:53:15 2009 +0000
+
+    Mass changing of new to _new; some might have been missed since I was grepping out lines with patterns like newbuf, newflags and so on... also committing the Perl script and resulting file. I made several hand edits that they missed.
+
+diff --git a/server/changenew.sh b/server/changenew.sh
+new file mode 100644
+index 0000000..8b19068
+--- /dev/null
++++ b/server/changenew.sh
+@@ -0,0 +1,134 @@
++# my-stdio.h has #  define rename(old, new)	(link(old, new) && unlink(old))
++perl -pi -e 's/\Q#  define rename(old, new)	(link(old, new) && unlink(old))\E/#  define rename(old, _new)	(link(old, _new) && unlink(old))/' my-stdio.h
++# db_objects.c has new[i] = objects[i];
++perl -pi -e 's/\Qnew[i] = objects[i];\E/_new[i] = objects[i];/' db_objects.c
++# db_objects.c has objects = new;
++perl -pi -e 's/\Qobjects = new;\E/objects = _new;/' db_objects.c
++# db_objects.c has Objid new;
++perl -pi -e 's/\QObjid new;\E/Objid _new;/' db_objects.c
++# db_objects.c has for (new = 0; new < old; new++) {
++perl -pi -e 's/\Qfor (new = 0; new < old; new++) {\E/for (_new = 0; _new < old; _new++) {/' db_objects.c
++# db_objects.c has if (objects[new] == 0) {
++perl -pi -e 's/\Qif (objects[new] == 0) {\E/if (objects[_new] == 0) {/' db_objects.c
++# db_objects.c has o = objects[new] = objects[old];
++perl -pi -e 's/\Qo = objects[new] = objects[old];\E/o = objects[_new] = objects[old];/' db_objects.c
++# db_objects.c has objects[new]->id = new;
++perl -pi -e 's/\Qobjects[new]->id = new;\E/objects[_new]->id = _new;/' db_objects.c
++# db_objects.c has objects[oid]->parent = new;
++perl -pi -e 's/\Qobjects[oid]->parent = new;\E/objects[oid]->parent = _new;/' db_objects.c
++# db_objects.c has objects[oid]->location = new;
++perl -pi -e 's/\Qobjects[oid]->location = new;\E/objects[oid]->location = _new;/' db_objects.c
++# db_objects.c has if (is_user(new)) {
++perl -pi -e 's/\Qif (is_user(new)) {\E/if (is_user(_new)) {/' db_objects.c
++# db_objects.c has all_users.v.list[i].v.obj = new;
++perl -pi -e 's/\Qall_users.v.list[i].v.obj = new;\E/all_users.v.list[i].v.obj = _new;/' db_objects.c
++# db_objects.c has if (o->owner == new)
++perl -pi -e 's/\Qif (o->owner == new)\E/if (o->owner == _new)/' db_objects.c
++# db_objects.c has o->owner = new;
++perl -pi -e 's/\Qo->owner = new;\E/o->owner = _new;/' db_objects.c
++# db_objects.c has if (v->owner == new)
++perl -pi -e 's/\Qif (v->owner == new)\E/if (v->owner == _new)/' db_objects.c
++# db_objects.c has v->owner = new;
++perl -pi -e 's/\Qv->owner = new;\E/v->owner = _new;/' db_objects.c
++# db_objects.c has if (p[i].owner == new)
++perl -pi -e 's/\Qif (p[i].owner == new)\E/if (p[i].owner == _new)/' db_objects.c
++# db_objects.c has p[i].owner = new;
++perl -pi -e 's/\Qp[i].owner = new;\E/p[i].owner = _new;/' db_objects.c
++# db_objects.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' db_objects.c
++# db_properties.c has h = db_find_property(oid, new, 0);
++perl -pi -e 's/\Qh = db_find_property(oid, new, 0);\E/h = db_find_property(oid, _new, 0);/' db_properties.c
++# db_properties.c has || property_defined_at_or_below(new, str_hash(new), oid))
++perl -pi -e 's/\Q|| property_defined_at_or_below(new, str_hash(new), oid))\E/|| property_defined_at_or_below(_new, str_hash(_new), oid))/' db_properties.c
++# db_properties.c has props->l[i].name = str_ref(new);
++perl -pi -e 's/\Qprops->l[i].name = str_ref(new);\E/props->l[i].name = str_ref(_new);/' db_properties.c
++# db_properties.c has props->l[i].hash = str_hash(new);
++perl -pi -e 's/\Qprops->l[i].hash = str_hash(new);\E/props->l[i].hash = str_hash(_new);/' db_properties.c
++# db_properties.c has fix_props(Objid oid, int parent_local, int old, int new, int common)
++perl -pi -e 's/\Qfix_props(Objid oid, int parent_local, int old, int new, int common)\E/fix_props(Objid oid, int parent_local, int old, int _new, int common)/' db_properties.c
++# db_properties.c has if (local + new + common != 0) {
++perl -pi -e 's/\Qif (local + new + common != 0) {\E/if (local + _new + common != 0) {/' db_properties.c
++# db_properties.c has for (i = 0; i < new; i++) {
++perl -pi -e 's/\Qfor (i = 0; i < new; i++) {\E/for (i = 0; i < _new; i++) {/' db_properties.c
++# db_properties.c has fix_props(c, local, old, new, common);
++perl -pi -e 's/\Qfix_props(c, local, old, new, common);\E/fix_props(c, local, old, _new, common);/' db_properties.c
++# disassemble.c has new[i] = d->lines[i];
++perl -pi -e 's/\Qnew[i] = d->lines[i];\E/_new[i] = d->lines[i];/' disassemble.c
++# disassemble.c has d->lines = new;
++perl -pi -e 's/\Qd->lines = new;\E/d->lines = _new;/' disassemble.c
++# gnu-malloc.c has if ((new = malloc(n)) == 0)
++perl -pi -e 's/\Qif ((new = malloc(n)) == 0)\E/if ((_new = malloc(n)) == 0)/' gnu-malloc.c
++# gnu-malloc.c has bcopy(mem, new, tocopy);
++perl -pi -e 's/\Qbcopy(mem, new, tocopy);\E/bcopy(mem, _new, tocopy);/' gnu-malloc.c
++# gnu-malloc.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' gnu-malloc.c
++# list.c has Var new;
++perl -pi -e 's/\QVar new;\E/Var _new;/' list.c
++# list.c has new.type = TYPE_LIST;
++perl -pi -e 's/\Qnew.type = TYPE_LIST;\E/_new.type = TYPE_LIST;/' list.c
++# list.c has new.v.list[0].type = TYPE_INT;
++perl -pi -e 's/\Qnew.v.list[0].type = TYPE_INT;\E/_new.v.list[0].type = TYPE_INT;/' list.c
++# list.c has new.v.list[0].v.num = size;
++perl -pi -e 's/\Qnew.v.list[0].v.num = size;\E/_new.v.list[0].v.num = size;/' list.c
++# list.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' list.c
++# list.c has Var new;
++perl -pi -e 's/\QVar new;\E/Var _new;/' list.c
++# list.c has new.v.list[i] = var_ref(list.v.list[i]);
++perl -pi -e 's/\Qnew.v.list[i] = var_ref(list.v.list[i]);\E/_new.v.list[i] = var_ref(list.v.list[i]);/' list.c
++# list.c has new.v.list[pos] = value;
++perl -pi -e 's/\Qnew.v.list[pos] = value;\E/_new.v.list[pos] = value;/' list.c
++# list.c has new.v.list[i + 1] = var_ref(list.v.list[i]);
++perl -pi -e 's/\Qnew.v.list[i + 1] = var_ref(list.v.list[i]);\E/_new.v.list[i + 1] = var_ref(list.v.list[i]);/' list.c
++# list.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' list.c
++# list.c has Var new;
++perl -pi -e 's/\QVar new;\E/Var _new;/' list.c
++# list.c has new.v.list[i] = var_ref(list.v.list[i]);
++perl -pi -e 's/\Qnew.v.list[i] = var_ref(list.v.list[i]);\E/_new.v.list[i] = var_ref(list.v.list[i]);/' list.c
++# list.c has new.v.list[i - 1] = var_ref(list.v.list[i]);
++perl -pi -e 's/\Qnew.v.list[i - 1] = var_ref(list.v.list[i]);\E/_new.v.list[i - 1] = var_ref(list.v.list[i]);/' list.c
++# list.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' list.c
++# list.c has Var new;
++perl -pi -e 's/\QVar new;\E/Var _new;/' list.c
++# list.c has new.v.list[i] = var_ref(first.v.list[i]);
++perl -pi -e 's/\Qnew.v.list[i] = var_ref(first.v.list[i]);\E/_new.v.list[i] = var_ref(first.v.list[i]);/' list.c
++# list.c has new.v.list[i + lfirst] = var_ref(second.v.list[i]);
++perl -pi -e 's/\Qnew.v.list[i + lfirst] = var_ref(second.v.list[i]);\E/_new.v.list[i + lfirst] = var_ref(second.v.list[i]);/' list.c
++# list.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' list.c
++# net_multi.c has new[i] = reg_fds[i];
++perl -pi -e 's/\Qnew[i] = reg_fds[i];\E/_new[i] = reg_fds[i];/' net_multi.c
++# net_multi.c has new[i].fd = -1;
++perl -pi -e 's/\Qnew[i].fd = -1;\E/_new[i].fd = -1;/' net_multi.c
++# net_multi.c has reg_fds = new;
++perl -pi -e 's/\Qreg_fds = new;\E/reg_fds = _new;/' net_multi.c
++# parse_cmd.c has new[i] = words[i];
++perl -pi -e 's/\Qnew[i] = words[i];\E/_new[i] = words[i];/' parse_cmd.c
++# parse_cmd.c has words = new;
++perl -pi -e 's/\Qwords = new;\E/words = _new;/' parse_cmd.c
++# ref_count.c has ll_insert_entry(&new[index], link);
++perl -pi -e 's/\Qll_insert_entry(&new[index], link);\E/ll_insert_entry(&_new[index], link);/' ref_count.c
++# ref_count.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' ref_count.c
++# str_intern.c has new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
++perl -pi -e 's/\Qnew = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);\E/_new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);/' str_intern.c
++# str_intern.c has new->size = size;
++perl -pi -e 's/\Qnew->size = size;\E/_new->size = size;/' str_intern.c
++# str_intern.c has new->handout = 0;
++perl -pi -e 's/\Qnew->handout = 0;\E/_new->handout = 0;/' str_intern.c
++# str_intern.c has new->next = NULL;
++perl -pi -e 's/\Qnew->next = NULL;\E/_new->next = NULL;/' str_intern.c
++# str_intern.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' str_intern.c
++# sym_table.c has new->size = old->size;
++perl -pi -e 's/\Qnew->size = old->size;\E/_new->size = old->size;/' sym_table.c
++# sym_table.c has for (i = 0; i < new->size; i++)
++perl -pi -e 's/\Qfor (i = 0; i < new->size; i++)\E/for (i = 0; i < _new->size; i++)/' sym_table.c
++# sym_table.c has new->names[i] = str_ref(old->names[i]);
++perl -pi -e 's/\Qnew->names[i] = str_ref(old->names[i]);\E/_new->names[i] = str_ref(old->names[i]);/' sym_table.c
++# sym_table.c has return new;
++perl -pi -e 's/\Qreturn new;\E/return _new;/' sym_table.c
++# sym_table.c has new->size = old_max;
++perl -pi -e 's/\Qnew->size = old_max;\E/_new->size = old_max;/' sym_table.c
+diff --git a/server/db_objects.c b/server/db_objects.c
+index e203f4c..77bbc22 100644
+--- a/server/db_objects.c
++++ b/server/db_objects.c
+@@ -77,9 +77,9 @@ ensure_new_object(void)
+ 
+ 	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+ 	for (i = 0; i < max_objects; i++)
+-	    new[i] = objects[i];
++	    _new[i] = objects[i];
+ 	myfree(objects, M_OBJECT_TABLE);
+-	objects = new;
++	objects = _new;
+ 	max_objects *= 2;
+     }
+ }
+@@ -181,17 +181,17 @@ db_destroy_object(Objid oid)
+ Objid
+ db_renumber_object(Objid old)
+ {
+-    Objid new;
++    Objid _new;
+     Object *o;
+ 
+     db_priv_affected_callable_verb_lookup();
+ 
+-    for (new = 0; new < old; new++) {
+-	if (objects[new] == 0) {
++    for (_new = 0; _new < old; _new++) {
++	if (objects[_new] == 0) {
+ 	    /* Change the identity of the object. */
+-	    o = objects[new] = objects[old];
++	    o = objects[_new] = objects[old];
+ 	    objects[old] = 0;
+-	    objects[new]->id = new;
++	    objects[_new]->id = _new;
+ 
+ 	    /* Fix up the parent/children hierarchy */
+ 	    {
+@@ -208,7 +208,7 @@ db_renumber_object(Objid old)
+ 		for (oid = o->child;
+ 		     oid != NOTHING;
+ 		     oid = objects[oid]->sibling)
+-		    objects[oid]->parent = new;
++		    objects[oid]->parent = _new;
+ 	    }
+ 
+ 	    /* Fix up the location/contents hierarchy */
+@@ -226,16 +226,16 @@ db_renumber_object(Objid old)
+ 		for (oid = o->contents;
+ 		     oid != NOTHING;
+ 		     oid = objects[oid]->next)
+-		    objects[oid]->location = new;
++		    objects[oid]->location = _new;
+ 	    }
+ 
+ 	    /* Fix up the list of users, if necessary */
+-	    if (is_user(new)) {
++	    if (is_user(_new)) {
+ 		int i;
+ 
+ 		for (i = 1; i <= all_users.v.list[0].v.num; i++)
+ 		    if (all_users.v.list[i].v.obj == old) {
+-			all_users.v.list[i].v.obj = new;
++			all_users.v.list[i].v.obj = _new;
+ 			break;
+ 		    }
+ 	    }
+@@ -252,28 +252,28 @@ db_renumber_object(Objid old)
+ 		    if (!o)
+ 			continue;
+ 
+-		    if (o->owner == new)
++		    if (o->owner == _new)
+ 			o->owner = NOTHING;
+ 		    else if (o->owner == old)
+-			o->owner = new;
++			o->owner = _new;
+ 
+ 		    for (v = o->verbdefs; v; v = v->next)
+-			if (v->owner == new)
++			if (v->owner == _new)
+ 			    v->owner = NOTHING;
+ 			else if (v->owner == old)
+-			    v->owner = new;
++			    v->owner = _new;
+ 
+ 		    count = dbpriv_count_properties(oid);
+ 		    p = o->propval;
+ 		    for (i = 0; i < count; i++)
+-			if (p[i].owner == new)
++			if (p[i].owner == _new)
+ 			    p[i].owner = NOTHING;
+ 			else if (p[i].owner == old)
+-			    p[i].owner = new;
++			    p[i].owner = _new;
+ 		}
+ 	    }
+ 
+-	    return new;
++	    return _new;
+ 	}
+     }
+ 
+diff --git a/server/db_properties.c b/server/db_properties.c
+index 5b92ad8..505f829 100644
+--- a/server/db_properties.c
++++ b/server/db_properties.c
+@@ -171,14 +171,14 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
+ 	p = props->l[i];
+ 	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
+ 	    if (mystrcasecmp(old, new) != 0) {	/* Not changing just the case */
+-		h = db_find_property(oid, new, 0);
++		h = db_find_property(oid, _new, 0);
+ 		if (h.ptr
+-		|| property_defined_at_or_below(new, str_hash(new), oid))
++		|| property_defined_at_or_below(_new, str_hash(_new), oid))
+ 		    return 0;
+ 	    }
+ 	    free_str(props->l[i].name);
+-	    props->l[i].name = str_ref(new);
+-	    props->l[i].hash = str_hash(new);
++	    props->l[i].name = str_ref(_new);
++	    props->l[i].hash = str_hash(_new);
+ 
+ 	    return 1;
+ 	}
+@@ -588,7 +588,7 @@ db_property_allows(db_prop_handle h, Objid progr, db_prop_flag flag)
+ }
+ 
+ static void
+-fix_props(Objid oid, int parent_local, int old, int new, int common)
++fix_props(Objid oid, int parent_local, int old, int _new, int common)
+ {
+     Object *me = dbpriv_find_object(oid);
+     Object *parent = dbpriv_find_object(me->parent);
+@@ -602,11 +602,11 @@ fix_props(Objid oid, int parent_local, int old, int new, int common)
+     for (i = local; i < local + old; i++)
+ 	free_var(me->propval[i].var);
+ 
+-    if (local + new + common != 0) {
++    if (local + _new + common != 0) {
+ 	new_propval = (Pval *) mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
+ 	for (i = 0; i < local; i++)
+ 	    new_propval[i] = me->propval[i];
+-	for (i = 0; i < new; i++) {
++	for (i = 0; i < _new; i++) {
+ 	    Pval pv;
+ 
+ 	    pv = parent->propval[parent_local + i];
+@@ -625,7 +625,7 @@ fix_props(Objid oid, int parent_local, int old, int new, int common)
+     me->propval = new_propval;
+ 
+     for (c = me->child; c != NOTHING; c = dbpriv_find_object(c)->sibling)
+-	fix_props(c, local, old, new, common);
++	fix_props(c, local, old, _new, common);
+ }
+ 
+ int
+diff --git a/server/disassemble.c b/server/disassemble.c
+index 53ac70a..318c441 100644
+--- a/server/disassemble.c
++++ b/server/disassemble.c
+@@ -420,10 +420,10 @@ add_line(const char *line, void *data)
+ 	int i;
+ 
+ 	for (i = 0; i < d->used; i++)
+-	    new[i] = d->lines[i];
++	    _new[i] = d->lines[i];
+ 	if (d->lines)
+ 	    myfree(d->lines, M_DISASSEMBLE);
+-	d->lines = new;
++	d->lines = _new;
+ 	d->max = new_max;
+     }
+     d->lines[d->used++] = str_dup(line);
+diff --git a/server/fixnews.pl b/server/fixnews.pl
+new file mode 100755
+index 0000000..11c84ad
+--- /dev/null
++++ b/server/fixnews.pl
+@@ -0,0 +1,80 @@
++#!/usr/bin/perl
++
++while ($input = <DATA>) {
++
++    chomp $input;
++    ($file, $lineno, $string) = split /:\s*/, $input;
++    print "# $file has $string\n";
++    $newstring = $string;
++    $newstring =~ s/new/_new/g;
++    print "perl -pi -e 's/\\Q$string\\E/$newstring/' $file\n";
++}
++
++__END__
++my-stdio.h:63:#  define rename(old, new)	(link(old, new) && unlink(old))
++db_objects.c:80:	    new[i] = objects[i];
++db_objects.c:82:	objects = new;
++db_objects.c:184:    Objid new;
++db_objects.c:189:    for (new = 0; new < old; new++) {
++db_objects.c:190:	if (objects[new] == 0) {
++db_objects.c:192:	    o = objects[new] = objects[old];
++db_objects.c:194:	    objects[new]->id = new;
++db_objects.c:211:		    objects[oid]->parent = new;
++db_objects.c:229:		    objects[oid]->location = new;
++db_objects.c:233:	    if (is_user(new)) {
++db_objects.c:238:			all_users.v.list[i].v.obj = new;
++db_objects.c:255:		    if (o->owner == new)
++db_objects.c:258:			o->owner = new;
++db_objects.c:261:			if (v->owner == new)
++db_objects.c:264:			    v->owner = new;
++db_objects.c:269:			if (p[i].owner == new)
++db_objects.c:272:			    p[i].owner = new;
++db_objects.c:276:	    return new;
++db_properties.c:174:		h = db_find_property(oid, new, 0);
++db_properties.c:176:		|| property_defined_at_or_below(new, str_hash(new), oid))
++db_properties.c:180:	    props->l[i].name = str_ref(new);
++db_properties.c:181:	    props->l[i].hash = str_hash(new);
++db_properties.c:591:fix_props(Objid oid, int parent_local, int old, int new, int common)
++db_properties.c:605:    if (local + new + common != 0) {
++db_properties.c:609:	for (i = 0; i < new; i++) {
++db_properties.c:628:	fix_props(c, local, old, new, common);
++disassemble.c:423:	    new[i] = d->lines[i];
++disassemble.c:426:	d->lines = new;
++gnu-malloc.c:657:	if ((new = malloc(n)) == 0)
++gnu-malloc.c:659:	bcopy(mem, new, tocopy);
++gnu-malloc.c:661:	return new;
++list.c:41:    Var new;
++list.c:56:    new.type = TYPE_LIST;
++list.c:58:    new.v.list[0].type = TYPE_INT;
++list.c:59:    new.v.list[0].v.num = size;
++list.c:60:    return new;
++list.c:109:    Var new;
++list.c:121:	new.v.list[i] = var_ref(list.v.list[i]);
++list.c:122:    new.v.list[pos] = value;
++list.c:124:	new.v.list[i + 1] = var_ref(list.v.list[i]);
++list.c:126:    return new;
++list.c:148:    Var new;
++list.c:153:	new.v.list[i] = var_ref(list.v.list[i]);
++list.c:156:	new.v.list[i - 1] = var_ref(list.v.list[i]);
++list.c:158:    return new;
++list.c:166:    Var new;
++list.c:171:	new.v.list[i] = var_ref(first.v.list[i]);
++list.c:173:	new.v.list[i + lfirst] = var_ref(second.v.list[i]);
++list.c:177:    return new;
++net_multi.c:131:		new[i] = reg_fds[i];
++net_multi.c:133:		new[i].fd = -1;
++net_multi.c:138:	reg_fds = new;
++parse_cmd.c:55:		new[i] = words[i];
++parse_cmd.c:58:	    words = new;
++ref_count.c:164:	    ll_insert_entry(&new[index], link);
++ref_count.c:167:    return new;
++str_intern.c:40:    new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
++str_intern.c:41:    new->size = size;
++str_intern.c:42:    new->handout = 0;
++str_intern.c:44:    new->next = NULL;
++str_intern.c:46:    return new;
++sym_table.c:48:    new->size = old->size;
++sym_table.c:49:    for (i = 0; i < new->size; i++)
++sym_table.c:50:	new->names[i] = str_ref(old->names[i]);
++sym_table.c:52:    return new;
++sym_table.c:129:	new->size = old_max;
+diff --git a/server/gnu-malloc.c b/server/gnu-malloc.c
+index f4409f6..2da9b85 100644
+--- a/server/gnu-malloc.c
++++ b/server/gnu-malloc.c
+@@ -654,11 +654,11 @@ realloc(mem, n)
+ 	register char *new;
+ 	int bcopy();
+ 
+-	if ((new = malloc(n)) == 0)
++	if ((_new = malloc(n)) == 0)
+ 	    return 0;
+-	bcopy(mem, new, tocopy);
++	bcopy(mem, _new, tocopy);
+ 	free(mem);
+-	return new;
++	return _new;
+     }
+ }
+ 
+diff --git a/server/list.c b/server/list.c
+index de48e4a..a8322cd 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -38,7 +38,7 @@
+ Var
+ new_list(int size)
+ {
+-    Var new;
++    Var _new;
+ 
+     if (size == 0) {
+ 	static Var emptylist;
+@@ -53,11 +53,11 @@ new_list(int size)
+ 	addref(emptylist.v.list);
+ 	return emptylist;
+     }
+-    new.type = TYPE_LIST;
++    _new.type = TYPE_LIST;
+     new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
+-    new.v.list[0].type = TYPE_INT;
+-    new.v.list[0].v.num = size;
+-    return new;
++    _new.v.list[0].type = TYPE_INT;
++    _new.v.list[0].v.num = size;
++    return _new;
+ }
+ 
+ Var
+@@ -106,7 +106,7 @@ listset(Var list, Var value, int pos)
+ static Var
+ doinsert(Var list, Var value, int pos)
+ {
+-    Var new;
++    Var _new;
+     int i;
+     int size = list.v.list[0].v.num + 1;
+ 
+@@ -116,14 +116,14 @@ doinsert(Var list, Var value, int pos)
+ 	list.v.list[pos] = value;
+ 	return list;
+     }
+-    new = new_list(size);
++    _new = new_list(size);
+     for (i = 1; i < pos; i++)
+-	new.v.list[i] = var_ref(list.v.list[i]);
+-    new.v.list[pos] = value;
++	__new.v.list[i] = var_ref(list.v.list[i]);
++    _new.v.list[pos] = value;
+     for (i = pos; i <= list.v.list[0].v.num; i++)
+-	new.v.list[i + 1] = var_ref(list.v.list[i]);
++	_new.v.list[i + 1] = var_ref(list.v.list[i]);
+     free_var(list);
+-    return new;
++    return _new;
+ }
+ 
+ Var
+@@ -145,17 +145,17 @@ listappend(Var list, Var value)
+ Var
+ listdelete(Var list, int pos)
+ {
+-    Var new;
++    Var _new;
+     int i;
+ 
+-    new = new_list(list.v.list[0].v.num - 1);
++    _new = new_list(list.v.list[0].v.num - 1);
+     for (i = 1; i < pos; i++) {
+-	new.v.list[i] = var_ref(list.v.list[i]);
++	__new.v.list[i] = var_ref(list.v.list[i]);
+     }
+     for (i = pos + 1; i <= list.v.list[0].v.num; i++)
+-	new.v.list[i - 1] = var_ref(list.v.list[i]);
++	_new.v.list[i - 1] = var_ref(list.v.list[i]);
+     free_var(list);		/* free old list */
+-    return new;
++    return _new;
+ }
+ 
+ Var
+@@ -163,18 +163,18 @@ listconcat(Var first, Var second)
+ {
+     int lsecond = second.v.list[0].v.num;
+     int lfirst = first.v.list[0].v.num;
+-    Var new;
++    Var _new;
+     int i;
+ 
+-    new = new_list(lsecond + lfirst);
++    _new = new_list(lsecond + lfirst);
+     for (i = 1; i <= lfirst; i++)
+-	new.v.list[i] = var_ref(first.v.list[i]);
++	_new.v.list[i] = var_ref(first.v.list[i]);
+     for (i = 1; i <= lsecond; i++)
+-	new.v.list[i + lfirst] = var_ref(second.v.list[i]);
++	_new.v.list[i + lfirst] = var_ref(second.v.list[i]);
+     free_var(first);
+     free_var(second);
+ 
+-    return new;
++    return _new;
+ }
+ 
+ Var
+diff --git a/server/my-stdio.h b/server/my-stdio.h
+index dad2dab..5173838 100644
+--- a/server/my-stdio.h
++++ b/server/my-stdio.h
+@@ -60,7 +60,7 @@ extern int vfscanf(FILE *, const char *, va_list);
+ 
+ #if !HAVE_RENAME
+ #  include "my-unistd.h"
+-#  define rename(old, new)	(link(old, new) && unlink(old))
++#  define rename(old, _new)	(link(old, _new) && unlink(old))
+ #endif
+ 
+ #endif				/* !My_Stdio_H */
+diff --git a/server/net_multi.c b/server/net_multi.c
+index 095b6bf..9791101 100644
+--- a/server/net_multi.c
++++ b/server/net_multi.c
+@@ -128,14 +128,14 @@ network_register_fd(int fd, network_fd_callback readable,
+ 
+ 	for (i = 0; i < new_max; i++)
+ 	    if (i < max_reg_fds)
+-		new[i] = reg_fds[i];
++		_new[i] = reg_fds[i];
+ 	    else
+-		new[i].fd = -1;
++		_new[i].fd = -1;
+ 
+ 	myfree(reg_fds, M_NETWORK);
+ 	i = max_reg_fds;	/* first free slot */
+ 	max_reg_fds = new_max;
+-	reg_fds = new;
++	reg_fds = _new;
+     }
+     reg_fds[i].fd = fd;
+     reg_fds[i].readable = readable;
+diff --git a/server/parse_cmd.c b/server/parse_cmd.c
+index 338ab15..f17a4d0 100644
+--- a/server/parse_cmd.c
++++ b/server/parse_cmd.c
+@@ -52,10 +52,10 @@ parse_into_words(char *input, int *nwords)
+ 	    int i;
+ 
+ 	    for (i = 0; i < max_words; i++)
+-		new[i] = words[i];
++		_new[i] = words[i];
+ 
+ 	    myfree(words, M_STRING_PTRS);
+-	    words = new;
++	    words = _new;
+ 	    max_words = new_max;
+ 	}
+ 	words[*nwords] = ptr;
+diff --git a/server/ref_count.c b/server/ref_count.c
+index 8f73662..64cca1d 100644
+--- a/server/ref_count.c
++++ b/server/ref_count.c
+@@ -161,10 +161,10 @@ rehash(reftab_entry ** old, reftab_entry ** new)
+ 	for (link = old[loop]; link; link = next) {
+ 	    int index = key(link->p);
+ 	    next = link->next;
+-	    ll_insert_entry(&new[index], link);
++	    ll_insert_entry(&_new[index], link);
+ 	}
+     myfree(old, M_REF_TABLE);
+-    return new;
++    return _new;
+ }
+ 
+ void
+diff --git a/server/str_intern.c b/server/str_intern.c
+index 78c6413..103c5e6 100644
+--- a/server/str_intern.c
++++ b/server/str_intern.c
+@@ -37,13 +37,13 @@ new_intern_entry_hunk(int size)
+ {
+     struct intern_entry_hunk *new;
+     
+-    new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+-    new->size = size;
+-    new->handout = 0;
++    _new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
++    _new->size = size;
++    _new->handout = 0;
+     new->contents = mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
+-    new->next = NULL;
++    _new->next = NULL;
+     
+-    return new;
++    return _new;
+ }
+ 
+ /* Chosen large enough to trigger the mmap() semantics of linux
+diff --git a/server/sym_table.c b/server/sym_table.c
+index 1c03467..af36b93 100644
+--- a/server/sym_table.c
++++ b/server/sym_table.c
+@@ -45,11 +45,11 @@ copy_names(Names * old)
+     Names *new = new_names(old->size);
+     unsigned i;
+ 
+-    new->size = old->size;
+-    for (i = 0; i < new->size; i++)
+-	new->names[i] = str_ref(old->names[i]);
++    _new->size = old->size;
++    for (i = 0; i < _new->size; i++)
++	_new->names[i] = str_ref(old->names[i]);
+ 
+-    return new;
++    return _new;
+ }
+ 
+ int
+@@ -126,7 +126,7 @@ find_or_add_name(Names ** names, const char *str)
+ 
+ 	for (i = 0; i < old_max; i++)
+ 	    new->names[i] = (*names)->names[i];
+-	new->size = old_max;
++	_new->size = old_max;
+ 	myfree((*names)->names, M_NAMES);
+ 	myfree(*names, M_NAMES);
+ 	*names = new;
