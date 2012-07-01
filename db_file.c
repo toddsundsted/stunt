@@ -1022,78 +1022,94 @@ write_db_file(const char *reason)
    // so it seemed safe to remove them. The macro FINALLY was never used.
    // I copied the macro bodies into the below block verbatim, though
    // the resulting structure is kinda... nonobvious.
-   // --sw june 2009
+   // --sw july 2012
  
    //TRY {						
    {						
+	ES_CtxBlock ES_ctx;
+	volatile ES_Value ES_es = ES_Initialize;
 
-	dbio_printf(header_format_string, current_db_version);
+	ES_ctx.nx = 0;
+	ES_ctx._finally = 0;
+	ES_ctx.link = ES_exceptionStack;
+	ES_exceptionStack = &ES_ctx;
 
-	dbio_printf("%d\n%d\n%d\n%d\n",
-	            max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+	if (setjmp(ES_ctx.jmp) != 0)
+	    ES_es = ES_Exception;
 
-	for (i = 1; i <= user_list.v.list[0].v.num; i++)
-	    dbio_write_objid(user_list.v.list[i].v.obj);
+	while (1) {
+          if (ES_es == ES_EvalBody) {
+            /* TRY body goes here */
 
-	oklog("%s: Writing %d objects ...\n", reason, max_oid + 1);
-	for (oid = 0; oid <= max_oid; oid++) {
-	    ng_write_object(oid);
-	    if ((oid + 1) % 10000 == 0 || oid == max_oid)
-		oklog("%s: Done writing %d objects ...\n", reason, oid + 1);
-	}
+            {
 
-	oklog("%s: Writing %d MOO verb programs ...\n", reason, nprogs);
-	for (i = 0, oid = 0; oid <= max_oid; oid++) {
-	    if (valid(oid)) {
-		int vcount = 0;
-		for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
+              dbio_printf(header_format_string, current_db_version);
+
+              dbio_printf("%d\n%d\n%d\n%d\n",
+                          max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+
+              for (i = 1; i <= user_list.v.list[0].v.num; i++)
+                dbio_write_objid(user_list.v.list[i].v.obj);
+
+              oklog("%s: Writing %d objects ...\n", reason, max_oid + 1);
+              for (oid = 0; oid <= max_oid; oid++) {
+                ng_write_object(oid);
+                if ((oid + 1) % 10000 == 0 || oid == max_oid)
+                  oklog("%s: Done writing %d objects ...\n", reason, oid + 1);
+              }
+
+              oklog("%s: Writing %d MOO verb programs ...\n", reason, nprogs);
+              for (i = 0, oid = 0; oid <= max_oid; oid++) {
+                if (valid(oid)) {
+                  int vcount = 0;
+                  for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next) {
 		    if (v->program) {
-			dbio_printf("#%d:%d\n", oid, vcount);
-			dbio_write_program(v->program);
-			if (++i % 5000 == 0 || i == nprogs)
-			    oklog("%s: Done writing %d verb programs ...\n",
-			          reason, i);
+                      dbio_printf("#%d:%d\n", oid, vcount);
+                      dbio_write_program(v->program);
+                      if (++i % 5000 == 0 || i == nprogs)
+                        oklog("%s: Done writing %d verb programs ...\n",
+                              reason, i);
 		    }
 		    vcount++;
-		}
-	    }
-	}
+                  }
+                }
+              }
 
-	oklog("%s: Writing forked and suspended tasks ...\n", reason);
-	write_task_queue();
+              oklog("%s: Writing forked and suspended tasks ...\n", reason);
+              write_task_queue();
 
-	oklog("%s: Writing list of formerly active connections ...\n", reason);
-	write_active_connections();
-    }
-         //EXCEPT(dbpriv_dbio_failed)
-         /* TRY body or handler goes here */                                         
-         if (ES_es == ES_EvalBody)                                                   
-           ES_exceptionStack = ES_ctx.link;                                        
-         break;                                                                      
-       }                                                                               
-       if (ES_es == ES_Initialize) {                                                   
-         if (ES_ctx.nx >= ES_MaxExceptionsPerScope)                                  
-           panic("Too many EXCEPT clauses!");                                      
-         ES_ctx.array[ES_ctx.nx++] = &dbpriv_dbio_failed;                            
-       } else if (ES_ctx.id == &dbpriv_dbio_failed  ||  &dbpriv_dbio_failed == &ANY) {	
-         int	exception_value = ES_ctx.value;                                         
+              oklog("%s: Writing list of formerly active connections ...\n", reason);
+              write_active_connections();
+            }
+            //EXCEPT(dbpriv_dbio_failed)
+            /* TRY body or handler goes here */                                         
+            if (ES_es == ES_EvalBody)                                                   
+              ES_exceptionStack = ES_ctx.link;                                        
+            break;                                                                      
+          }                                                                               
+          if (ES_es == ES_Initialize) {                                                   
+            if (ES_ctx.nx >= ES_MaxExceptionsPerScope)                                  
+              panic("Too many EXCEPT clauses!");                                      
+            ES_ctx.array[ES_ctx.nx++] = &dbpriv_dbio_failed;                            
+          } else if (ES_ctx.id == &dbpriv_dbio_failed  ||  &dbpriv_dbio_failed == &ANY) {	
+            int	exception_value = ES_ctx.value;                                         
                                                                                                  
-         ES_exceptionStack = ES_ctx.link;                                            
-         exception_value = exception_value;                                          
-         /* avoid warnings */                                                    
-         /* handler goes here */
+            ES_exceptionStack = ES_ctx.link;                                            
+            exception_value = exception_value;                                          
+            /* avoid warnings */                                                    
+            /* handler goes here */
  
- 	success = 0;
+            success = 0;
 
-         //ENDTRY;
-         /* FINALLY body or handler goes here */		
-         if (ES_ctx._finally  &&  ES_es == ES_Exception)  	
-           ES_RaiseException((Exception *) ES_ctx.id,	
-                             (int) ES_ctx.value);		
-         break;						
-       }							
-       ES_es = ES_EvalBody;					
-     }								
+            //ENDTRY;
+            /* FINALLY body or handler goes here */		
+            if (ES_ctx._finally  &&  ES_es == ES_Exception)  	
+              ES_RaiseException((Exception *) ES_ctx.id,	
+                                (int) ES_ctx.value);		
+            break;						
+          }							
+          ES_es = ES_EvalBody;					
+        }								
    }
 
 
