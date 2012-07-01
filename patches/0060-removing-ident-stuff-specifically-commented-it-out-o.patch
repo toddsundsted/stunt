@@ -1,0 +1,41 @@
+From 4fabeff1732824aedb75f26045dd374eddf383d4 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 26 Oct 2009 22:17:58 +0000
+Subject: [PATCH 060/223] removing ident stuff; specifically, commented it out
+ of options.h, and removed the flag I put in
+ Makefile.in to look for the ident library.
+
+---
+ server/Makefile.in |    2 +-
+ server/options.h   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 28c89f5..b27b4db 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -23,7 +23,7 @@
+ EXPAT_OBJS = -lexpat
+ 
+ CC = @CC@ 
+-LIBRARIES = @LIBS@ $(EXPAT_OBJS) -lident
++LIBRARIES = @LIBS@ $(EXPAT_OBJS)
+ YACC = @YACC@
+ 
+ CFLAGS = -O -DEXPAT_XML
+diff --git a/server/options.h b/server/options.h
+index cbb684c..fdf61b5 100644
+--- a/server/options.h
++++ b/server/options.h
+@@ -309,7 +309,7 @@
+ 
+ /* #define USE_GNU_MALLOC */
+ 
+-#define NETWORK_IDENT
++/* #define NETWORK_IDENT */
+ 
+ /*****************************************************************************
+  ********** You shouldn't need to change anything below this point. **********
+-- 
+1.7.9.5
+

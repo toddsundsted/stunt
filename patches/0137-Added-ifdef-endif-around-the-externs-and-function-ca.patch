@@ -1,0 +1,73 @@
+From 2f8895d9255b8976505541fef9e725efd08a2668 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 02:55:47 +0000
+Subject: [PATCH 137/223] Added #ifdef/#endif around the externs and function
+ calls for FUP and expat  to handle conditional
+ compilation.
+
+---
+ server/extensions.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/server/extensions.c b/server/extensions.c
+index 788d770..101fc57 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -32,6 +32,7 @@
+ 
+ #define EXAMPLE 0
+ 
++#include "config.h"
+ #include "bf_register.h"
+ #include "functions.h"
+ #include "db_tune.h"
+@@ -56,7 +57,6 @@
+ #include <math.h>
+ #include <stdlib.h>
+ 
+-extern void register_files(void);
+ 
+ /* utime - andy */
+ #include <sys/time.h>		/* these two for gettimeofday() */
+@@ -344,10 +344,16 @@ bf_utime(Var arglist, Byte next, void *vdata, Objid progr)
+ 
+ // end utime - andy
+ 
+-#if HAVE_EXPAT_H
++#ifdef HAVE_EXPAT_H
+ extern void register_xml(void);
+ #endif
+ 
++
++#ifdef USE_EXT_FUP
++extern void register_files(void);
++#endif
++
++
+ void
+ register_extensions()
+ {
+@@ -361,7 +367,7 @@ register_extensions()
+     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+ #endif
+ 
+-#if HAVE_EXPAT_H
++#ifdef HAVE_EXPAT_H
+     register_xml();
+ #endif
+ 
+@@ -371,7 +377,11 @@ register_extensions()
+ // begin utime - andy
+     register_function("utime", 0, 0, bf_utime);
+ // end utime - andy
++
++#ifdef USE_EXT_FUP
+     register_files();
++#endif
++
+     oklog("          LOADING: extensions ... finished\n");
+ }
+ 
+-- 
+1.7.9.5
+

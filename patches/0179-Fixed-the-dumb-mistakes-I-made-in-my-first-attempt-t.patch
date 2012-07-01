@@ -1,0 +1,234 @@
+From b86e32c23058c2ae379258c1b7da7bb20bfbd05e Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 19 Jul 2011 04:28:34 +0000
+Subject: [PATCH 179/223] Fixed the dumb mistakes I made in my first attempt
+ to port this file to C++. I've tested the results
+ via the small class file objects/openreadwrite.moo.
+
+---
+ server/extension-fileio.c |   97 ++++++++++++++++++++++-----------------------
+ 1 file changed, 48 insertions(+), 49 deletions(-)
+
+diff --git a/server/extension-fileio.c b/server/extension-fileio.c
+index eeb1f88..18a3d47 100644
+--- a/server/extension-fileio.c
++++ b/server/extension-fileio.c
+@@ -1,29 +1,27 @@
+-/*
+- * extension-fileio.c
+- * Copyright 1996, 1997 by Ken Fox.  Copyright 1997 by Andy Bakun.
+- *
+- * All Rights Reserved
+- *
+- * Permission to use, copy, modify, and distribute this software and its
+- * documentation for any purpose and without fee is hereby granted,
+- * provided that the above copyright notice appear in all copies and that
+- * both that copyright notice and this permission notice appear in
+- * supporting documentation.
+- *
+- * KEN FOX AND ANDY BAKUN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+- * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+- * FITNESS, IN NO EVENT SHALL KEN FOX OR ANDY BAKUN BE LIABLE FOR ANY
+- * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+- * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+- * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+- * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+- */
+-
+-
+-/*
+- * file i/o server modification
+- */
+-
++/**
++  * extension-fileio.c
++  * Copyright 1996, 1997 by Ken Fox.  Copyright 1997 by Andy Bakun.
++  * Copyrigth 2011 by Steve Wainstead.
++  *
++  * All Rights Reserved
++  *
++  * Permission to use, copy, modify, and distribute this software and its
++  * documentation for any purpose and without fee is hereby granted,
++  * provided that the above copyright notice appear in all copies and that
++  * both that copyright notice and this permission notice appear in
++  * supporting documentation.
++  *
++  * KEN FOX AND ANDY BAKUN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
++  * SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
++  * FITNESS, IN NO EVENT SHALL KEN FOX OR ANDY BAKUN BE LIABLE FOR ANY
++  * SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
++  * RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
++  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
++  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++  *
++  * file i/o server modification
++  * C++ compatibility added by Steve Wainstead
++  */
+ 
+ #define FILE_IO 1
+ 
+@@ -110,8 +108,8 @@ struct fileio_file_type {
+ 
+ };
+ 
+-fileio_file_type file_type_binary;
+-fileio_file_type file_type_text;
++file_type file_type_binary = NULL;
++file_type file_type_text = NULL;
+ 
+ 
+ 
+@@ -126,7 +124,7 @@ typedef struct file_handle file_handle;
+ struct file_handle {
+   char  valid;               /* Is this a valid entry?   */
+   char *name;                /* pathname of the file     */
+-  fileio_file_type type;            /* text or binary, sir?     */
++  file_type type;            /* text or binary, sir?     */
+   file_mode mode;            /* readin', writin' or both */
+  
+   FILE  *file;               /* the actual file handle   */  
+@@ -181,7 +179,7 @@ const char *file_handle_name(Var fhandle) {
+   return file_table[i].name;
+ }
+ 
+-fileio_file_type file_handle_type(Var fhandle) {
++file_type file_handle_type(Var fhandle) {
+   int32 i = fhandle.v.num;
+   return file_table[i].type;
+ }  
+@@ -225,7 +223,7 @@ int32 file_allocate_next_handle(void) {
+ }
+ 
+ 
+-Var file_handle_new(const char *name, fileio_file_type type, file_mode mode) {
++Var file_handle_new(const char *name, file_type type, file_mode mode) {
+   Var r;
+   int32 handle = file_allocate_next_handle();
+   
+@@ -248,7 +246,7 @@ void file_handle_set_file(Var fhandle, FILE *f) {
+ }
+ 
+ /***************************************************************
+-` * Interface for modestrings
++ * Interface for modestrings
+  ***************************************************************/
+ 
+ /*
+@@ -257,19 +255,19 @@ void file_handle_set_file(Var fhandle, FILE *f) {
+  *  NULL if not.
+  */ 
+ 
+-const char *file_modestr_to_mode(const char *s, fileio_file_type *type, file_mode *mode) {
++const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode) {
+   static char buffer[4] = {0, 0, 0, 0};
+   int p = 0;
+-  fileio_file_type t;
++  file_type t;
+   file_mode m = 0;
+ 
+   if (!file_type_binary) {
+-	 file_type_binary = mymalloc(sizeof(struct fileio_file_type), M_STRING);
+-	 file_type_text= mymalloc(sizeof(struct fileio_file_type), M_STRING);
+-	 file_type_binary->in_filter = raw_bytes_to_binary;
+-	 file_type_binary->out_filter = binary_to_raw_bytes;
+-	 file_type_text->in_filter = raw_bytes_to_clean;
+-	 file_type_text->out_filter = clean_to_raw_bytes;
++    file_type_binary = (fileio_file_type *)mymalloc(sizeof(struct fileio_file_type), M_STRING);
++    file_type_text= (fileio_file_type *)mymalloc(sizeof(struct fileio_file_type), M_STRING);
++    file_type_binary->in_filter = raw_bytes_to_binary;
++    file_type_binary->out_filter = binary_to_raw_bytes;
++    file_type_text->in_filter = raw_bytes_to_clean;
++    file_type_text->out_filter = clean_to_raw_bytes;
+   }
+ 
+   
+@@ -461,7 +459,7 @@ bf_file_open(Var arglist, Byte next, void *vdata, Objid progr)
+   const char *mode = arglist.v.list[2].v.str;
+   const char *fmode;
+   file_mode rmode;
+-  fileio_file_type type;
++  file_type type;
+   FILE *f;
+ 
+   if (!file_verify_caller(progr))
+@@ -540,7 +538,7 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
+   Var fhandle = arglist.v.list[1];
+   char buffer[5] = {0, 0, 0, 0, 0};
+   file_mode mode;
+-  fileio_file_type type;
++  file_type type;
+   Var rv;   
+ 
+   if (!file_verify_caller(progr)) {
+@@ -652,7 +650,7 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
+   Var rv;
+   int len;
+   file_mode mode;
+-  fileio_file_type type;
++  file_type type;
+   const char *line;
+ 
+   if (!file_verify_caller(progr)) {
+@@ -696,7 +694,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
+ }
+     
+ line_buffer *new_line_buffer(char *line) {
+-  line_buffer *p = mymalloc(sizeof(line_buffer), M_STRING);
++  line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRING);
+   p->line = line;
+   p->next = NULL;
+   return p;
+@@ -710,7 +708,7 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
+   int32 begin = arglist.v.list[2].v.num;
+   int32 end   = arglist.v.list[3].v.num;
+   int32 begin_loc = 0, linecount = 0;
+-  fileio_file_type type;
++  file_type type;
+   file_mode mode;
+   Var rv;
+   int current_line = 0, len = 0, i = 0;
+@@ -795,7 +793,7 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
+   const char *buffer = arglist.v.list[2].v.str;
+   int len;
+   file_mode mode;
+-  fileio_file_type type;
++  file_type type;
+   FILE *f;
+ 
+   if (!file_verify_caller(progr)) {
+@@ -875,7 +873,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
+ 
+   Var fhandle = arglist.v.list[1];
+   file_mode mode;
+-  fileio_file_type type;
++  file_type type;
+   int32 record_length = arglist.v.list[2].v.num;
+   int32 read_length;
+ 
+@@ -975,7 +973,7 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
+   const char *buffer = arglist.v.list[2].v.str;
+   const char *rawbuffer;
+   file_mode mode;
+-  fileio_file_type type;
++  file_type type;
+   int len;
+   int written;
+   FILE *f;
+@@ -1142,7 +1140,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
+   return statok;
+ }
+ 
+-const char *fileio_file_type_string(umode_t st_mode) {
++const char *file_type_string(umode_t st_mode) {
+   if (S_ISREG(st_mode))
+ 	 return "reg";
+   else if (S_ISDIR(st_mode))
+@@ -1638,4 +1636,5 @@ register_fileio(void)
+ #endif
+ }
+ 
++
+ #endif // USE_FILEIO
+-- 
+1.7.9.5
+

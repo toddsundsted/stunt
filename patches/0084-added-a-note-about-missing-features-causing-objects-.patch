@@ -1,0 +1,46 @@
+From 320f0a71cb9ad9af6f25942ce72f433f2ec0328f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 16 Dec 2010 21:19:38 +0000
+Subject: [PATCH 084/223] added a note about missing features causing objects
+ to throw errors; for example, the lander tries to
+ call (player) but that function does not exist in
+ stock LambdaCore.
+
+---
+ server/objects/README     |    6 ++++++
+ server/objects/lander.moo |    4 ++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/server/objects/README b/server/objects/README
+index dfdb2b0..6a53222 100644
+--- a/server/objects/README
++++ b/server/objects/README
+@@ -8,4 +8,10 @@ Many (all?) of them contain ANSI color codes in their titles (names)
+ so you'll see gobbledeegook for their names. Until I get around to
+ adding ANSI color support to one or more of the databases.
+ 
++There are other objects missing as well; and a function called $name,
++it seems... but this has long been one of the pitfalls of sharing MOO
++code: a dump of some object may contain object references or code
++references that don't exist in your copy of the MOO database. It's a
++problem that needs solving.
++
+ ~swain dec 2010
+diff --git a/server/objects/lander.moo b/server/objects/lander.moo
+index 8d4bfe5..dbaf71d 100644
+--- a/server/objects/lander.moo
++++ b/server/objects/lander.moo
+@@ -119,6 +119,10 @@ else
+ endif
+ .
+ 
++@verb lander:"title" this none this
++@program lander:title
++return "Mars Polar Lander";
++.
+ 
+ @property lander.help_msg "The Mars Polar Lander has several fun verbs to pick from. The Lander goes into Search Mode when you knock on its hull (if it's in Safe Mode); if you knock on the hull while it's in Search Mode it takes your picture. You can pet the Lander to make it happy. The 'state' verb will tell you its current mode, though in practice this hasn't been needed much. (I guess that makes it a debugging tool). You can give the lander thought bubbles with the 'thought' verb, i.e. th*ought lander with yup, I'm the Mars Polar Lander, ayup."
+ 
+-- 
+1.7.9.5
+

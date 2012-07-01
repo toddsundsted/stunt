@@ -1,0 +1,26 @@
+From 70238c9bd1003f999d10386a1326773b2645ca9e Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Jun 2009 20:42:41 +0000
+Subject: [PATCH 006/223] Minor cast fix. But casting TYPE_STR is getting to
+ be quite common as I go.
+
+---
+ server/eval_env.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/eval_env.c b/server/eval_env.c
+index eb63922..9fee244 100644
+--- a/server/eval_env.c
++++ b/server/eval_env.c
+@@ -110,7 +110,7 @@ void
+ set_rt_env_str(Var * env, int slot, const char *s)
+ {
+     Var v;
+-    v.type = TYPE_STR;
++    v.type = (var_type)TYPE_STR;
+     v.v.str = s;
+     env[slot] = v;
+ }
+-- 
+1.7.9.5
+

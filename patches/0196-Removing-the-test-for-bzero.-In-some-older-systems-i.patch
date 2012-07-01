@@ -1,0 +1,82 @@
+From 5f40a0730c344316f1ee7a9933c7fa0449409cb1 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 11 Aug 2011 00:59:45 +0000
+Subject: [PATCH 196/223] Removing the test for bzero. In some older systems
+ it was declared in stdlib.h, say the comments; in
+ Linux and the BSD derivatives it's in strings.h. I
+ thought I'd get to remove a MOO m4 macro entirely
+ -- MOO_FUNC_DECL_CHECK -- but it's still used by
+ the other macros in that file. But this shortens
+ configure.ac by a few more lines, at least.
+
+---
+ server/config.h.in  |    5 -----
+ server/configure.ac |    5 ++---
+ server/my-string.h  |    8 --------
+ 3 files changed, 2 insertions(+), 16 deletions(-)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index d2f0552..2c09846 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -80,7 +80,6 @@
+ #undef NDECL_STRTOD		/* <stdlib.h>	  */
+ #undef NDECL_STRTOL		/* <stdlib.h>	  */
+ #undef NDECL_STRTOUL		/* <stdlib.h>	  */
+-#undef NDECL_BZERO		/* <string.h>	  */
+ #undef NDECL_MEMCPY		/* <string.h>	  */
+ #undef NDECL_MEMSET		/* <string.h>	  */
+ #undef NDECL_STRERROR		/* <string.h>	  */
+@@ -95,10 +94,6 @@
+ #undef NDECL_FORK		/* <unistd.h>	  */
+ #undef NDECL_WAITPID		/* <sys/wait.h>	  */
+ 
+-/* Some systems declare bzero() in <stdlib.h> instead of in <string.h>. */
+-
+-#undef BZERO_IN_STDLIB_H
+-
+ /* Some header files are only present on certain kinds of UNIXes (e.g., BSD,
+  * System V, or POSIX).  The following symbols are defined only if the named
+  * header file exists on your system.
+diff --git a/server/configure.ac b/server/configure.ac
+index 68f4103..dfe91bd 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -74,13 +74,12 @@ MOO_NDECL_FUNCS(sys/socket.h, accept bind shutdown)
+ MOO_NDECL_FUNCS(sys/stat.h, fstat)
+ MOO_NDECL_FUNCS(stdio.h, fclose perror remove vfprintf)
+ MOO_NDECL_FUNCS(stdlib.h, random srandom strtod strtol strtoul)
+-MOO_NDECL_FUNCS(string.h, bzero memcpy memset strerror, [
++MOO_NDECL_FUNCS(string.h, memcpy memset strerror, [
+ #if NEED_MEMORY_H
+ #include <memory.h>
+ #endif
+ ])
+-echo checking for bzero being declared in stdlib.h
+-MOO_FUNC_DECL_CHECK(stdlib.h, bzero, AC_DEFINE(BZERO_IN_STDLIB_H))
++
+ MOO_NDECL_FUNCS(sys/time.h, getitimer setitimer select, [
+ #if NEED_SELECT_H
+ #include <sys/types.h>
+diff --git a/server/my-string.h b/server/my-string.h
+index 812153b..e7da679 100644
+--- a/server/my-string.h
++++ b/server/my-string.h
+@@ -70,14 +70,6 @@ extern const char *sys_errlist[];
+ #  define strerror(error_code)	sys_errlist[error_code]
+ #endif
+ 
+-#if NDECL_BZERO && !defined(bzero)
+-#  if BZERO_IN_STDLIB_H
+-#    include "my-stdlib.h"
+-#  else
+-extern void bzero(char *, int);
+-#  endif
+-#endif
+-
+ #if NDECL_MEMSET
+ #include "my-types.h"
+ 
+-- 
+1.7.9.5
+

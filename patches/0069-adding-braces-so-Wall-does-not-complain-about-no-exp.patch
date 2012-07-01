@@ -1,0 +1,34 @@
+From d64ece3c71d2548c8ad2ee497e2c20c20b0798f9 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 19 Nov 2010 16:42:08 +0000
+Subject: [PATCH 069/223] adding braces so -Wall does not complain about no
+ explict braces
+
+---
+ server/tools/moobrowser.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/server/tools/moobrowser.c b/server/tools/moobrowser.c
+index 232b520..d7409c7 100644
+--- a/server/tools/moobrowser.c
++++ b/server/tools/moobrowser.c
+@@ -488,11 +488,13 @@ void parse_obj(FILE *fh) {
+   struct property *propstructs;
+ 
+   objnumber = read_obj(fh);
+-  if (mode == OBJECTS)
+-    if (objnumber < 0)
++  if (mode == OBJECTS) {
++    if (objnumber < 0) {
+       printf("#%d recycled\n", -objnumber);
+-    else
++    } else {
+       printf("#%d\n", objnumber);
++    }
++  }
+ 
+   if (objnumber < 0) {
+      if (mode_object == -objnumber)
+-- 
+1.7.9.5
+

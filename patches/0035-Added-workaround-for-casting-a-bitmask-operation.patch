@@ -1,0 +1,25 @@
+From e74558d4854e43963a30f9f9d9bacd189e2c083f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 04:25:29 +0000
+Subject: [PATCH 035/223] Added workaround for casting a bitmask operation
+
+---
+ server/db_io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/db_io.c b/server/db_io.c
+index cc7956c..e5635fc 100644
+--- a/server/db_io.c
++++ b/server/db_io.c
+@@ -222,7 +222,7 @@ dbio_read_var(void)
+ 	break;
+     case _TYPE_STR:
+ 	r.v.str = dbio_read_string_intern();
+-	(int)r.type |= 128;
++	r.type = (var_type) ( r.type | 128 );
+ 	break;
+     case TYPE_OBJ:
+     case TYPE_ERR:
+-- 
+1.7.9.5
+

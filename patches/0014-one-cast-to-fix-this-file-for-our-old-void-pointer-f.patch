@@ -1,0 +1,26 @@
+From 86b1355d64e756b850a7fcbcd3866daf5e119b7c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 8 Jun 2009 04:01:35 +0000
+Subject: [PATCH 014/223] one cast to fix this file, for our old void pointer
+ friend 'data'
+
+---
+ server/match.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/match.c b/server/match.c
+index d189244..6982642 100644
+--- a/server/match.c
++++ b/server/match.c
+@@ -51,7 +51,7 @@ struct match_data {
+ static int
+ match_proc(void *data, Objid oid)
+ {
+-    struct match_data *d = data;
++    struct match_data *d = (match_data *)data;
+     Var *names = aliases(oid);
+     int i;
+     const char *name;
+-- 
+1.7.9.5
+

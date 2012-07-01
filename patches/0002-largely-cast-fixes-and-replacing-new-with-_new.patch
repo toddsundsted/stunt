@@ -1,0 +1,134 @@
+From 10f4ae34702a0012ebebcd6ecb0adaf3e9e90f2b Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Jun 2009 20:03:49 +0000
+Subject: [PATCH 002/223] largely, cast fixes and replacing new with _new
+
+---
+ server/db_properties.c |   27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/server/db_properties.c b/server/db_properties.c
+index 505f829..36e07d3 100644
+--- a/server/db_properties.c
++++ b/server/db_properties.c
+@@ -157,7 +157,7 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
+ }
+ 
+ int
+-db_rename_propdef(Objid oid, const char *old, const char *new)
++db_rename_propdef(Objid oid, const char *old, const char *_new)
+ {
+     Proplist *props = &dbpriv_find_object(oid)->propdefs;
+     int hash = str_hash(old);
+@@ -170,7 +170,7 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
+ 
+ 	p = props->l[i];
+ 	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
+-	    if (mystrcasecmp(old, new) != 0) {	/* Not changing just the case */
++	    if (mystrcasecmp(old, _new) != 0) {	/* Not changing just the case */
+ 		h = db_find_property(oid, _new, 0);
+ 		if (h.ptr
+ 		|| property_defined_at_or_below(_new, str_hash(_new), oid))
+@@ -301,7 +301,7 @@ struct contents_data {
+ static int
+ add_to_list(void *data, Objid c)
+ {
+-    struct contents_data *d = data;
++  struct contents_data *d = (contents_data *)data;
+ 
+     d->i++;
+     d->r.v.list[d->i].type = TYPE_OBJ;
+@@ -317,7 +317,7 @@ get_bi_value(db_prop_handle h, Var * value)
+ 
+     switch (h.built_in) {
+     case BP_NAME:
+-	value->type = TYPE_STR;
++      value->type = (var_type)TYPE_STR;
+ 	value->v.str = str_ref(db_object_name(oid));
+ 	break;
+     case BP_OWNER:
+@@ -439,7 +439,8 @@ db_find_property(Objid oid, const char *name, Var * value)
+ 
+ 		h.definer = o->id;
+ 		o = dbpriv_find_object(oid);
+-		prop = h.ptr = o->propval + n;
++		prop  = (Pval *)o->propval + n;
++                h.ptr = (Pval *)o->propval + n;
+ 
+ 		if (value) {
+ 		    while (prop->var.type == TYPE_CLEAR) {
+@@ -466,7 +467,7 @@ db_property_value(db_prop_handle h)
+     if (h.built_in)
+ 	get_bi_value(h, &value);
+     else {
+-	Pval *prop = h.ptr;
++      Pval *prop = (Pval *)h.ptr;
+ 
+ 	value = prop->var;
+     }
+@@ -478,7 +479,7 @@ void
+ db_set_property_value(db_prop_handle h, Var value)
+ {
+     if (!h.built_in) {
+-	Pval *prop = h.ptr;
++      Pval *prop = (Pval *)h.ptr;
+ 
+ 	free_var(prop->var);
+ 	prop->var = value;
+@@ -536,7 +537,7 @@ db_property_owner(db_prop_handle h)
+ 	panic("Built-in property in DB_PROPERTY_OWNER!");
+ 	return NOTHING;
+     } else {
+-	Pval *prop = h.ptr;
++      Pval *prop = (Pval *)h.ptr;
+ 
+ 	return prop->owner;
+     }
+@@ -548,7 +549,7 @@ db_set_property_owner(db_prop_handle h, Objid oid)
+     if (h.built_in)
+ 	panic("Built-in property in DB_SET_PROPERTY_OWNER!");
+     else {
+-	Pval *prop = h.ptr;
++	Pval *prop = (Pval *)h.ptr;
+ 
+ 	prop->owner = oid;
+     }
+@@ -561,7 +562,7 @@ db_property_flags(db_prop_handle h)
+ 	panic("Built-in property in DB_PROPERTY_FLAGS!");
+ 	return 0;
+     } else {
+-	Pval *prop = h.ptr;
++	Pval *prop = (Pval *)h.ptr;
+ 
+ 	return prop->perms;
+     }
+@@ -573,7 +574,7 @@ db_set_property_flags(db_prop_handle h, unsigned flags)
+     if (h.built_in)
+ 	panic("Built-in property in DB_SET_PROPERTY_FLAGS!");
+     else {
+-	Pval *prop = h.ptr;
++	Pval *prop = (Pval *)h.ptr;
+ 
+ 	prop->perms = flags;
+     }
+@@ -603,7 +604,7 @@ fix_props(Objid oid, int parent_local, int old, int _new, int common)
+ 	free_var(me->propval[i].var);
+ 
+     if (local + _new + common != 0) {
+-	new_propval = (Pval *) mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
++	new_propval = (Pval *) mymalloc((local + _new + common) * sizeof(Pval), M_PVAL);
+ 	for (i = 0; i < local; i++)
+ 	    new_propval[i] = me->propval[i];
+ 	for (i = 0; i < _new; i++) {
+@@ -616,7 +617,7 @@ fix_props(Objid oid, int parent_local, int old, int _new, int common)
+ 		new_propval[local + i].owner = me->owner;
+ 	}
+ 	for (i = 0; i < common; i++)
+-	    new_propval[local + new + i] = me->propval[local + old + i];
++	    new_propval[local + _new + i] = me->propval[local + old + i];
+     } else
+ 	new_propval = 0;
+ 
+-- 
+1.7.9.5
+

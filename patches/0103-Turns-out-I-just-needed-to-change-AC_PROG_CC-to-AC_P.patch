@@ -1,0 +1,72 @@
+From b30641602b21f9cc78a942afcf37e1680ce0090c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 21 Jan 2011 20:56:53 +0000
+Subject: [PATCH 103/223] Turns out I just needed to change AC_PROG_CC to
+ AC_PROG_CXX, and then  gets set to @CXX@ in the
+ generated Makefile.
+
+---
+ server/Makefile.in  |   12 +++++++-----
+ server/configure.in |    2 +-
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 7fa49e5..6c2259c 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -23,6 +23,8 @@
+ EXPAT_OBJS = -lexpat
+ 
+ 
++CC = @CXX@
++
+ LIBRARIES = @LIBS@ $(EXPAT_OBJS)
+ YACC = @YACC@
+ 
+@@ -36,7 +38,7 @@ CFLAGS = -O -DEXPAT_XML
+ # CFLAGS = -O2 -Dinline=
+ 
+ YFLAGS = -d
+-COMPILE.c = $(CXX) $(CFLAGS) $(CPPFLAGS) -c
++COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
+ 
+ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	db_verbs.c decompile.c disassemble.c eval_env.c eval_vm.c \
+@@ -91,17 +93,17 @@ YOBJS = $(YSRCS:.y=.o)
+ OBJS = $(COBJS) $(YOBJS)
+ 
+ moo:	$(OBJS)
+-	$(CXX) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
++	$(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+ 
+ # 'purify' is a memory leak checker, now IBM Rational Purify. --sw
+ pure_moo: moo
+-	purify $(CXX) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
++	purify $(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+ 
+ client_bsd: client_bsd.o
+-	$(CXX) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
++	$(CC) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
+ 
+ client_sysv: client_sysv.o
+-	$(CXX) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
++	$(CC) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
+ 
+ # This rule gets around some "make"s' desire to `derive' it from `restart.sh'.
+ restart:
+diff --git a/server/configure.in b/server/configure.in
+index f881fa4..4415fdb 100644
+--- a/server/configure.in
++++ b/server/configure.in
+@@ -284,7 +284,7 @@ dnl Start of actual configuration tests
+ dnl ***************************************************************************
+ 
+ AC_PROG_YACC
+-AC_PROG_CC
++AC_PROG_CXX
+ AC_GCC_TRADITIONAL
+ AC_PROGRAM_EGREP(yes, [
+ #if __GNUC__==2
+-- 
+1.7.9.5
+

@@ -1,0 +1,28 @@
+From 75d650a9070d6407b6c68e0dff09da04df4c949b Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 19:58:45 +0000
+Subject: [PATCH 095/223] removed the '-t' flag to etags, which it doesn't
+ have... though it seems superflous to me to have
+ your makefile generate your tags file... but what
+ do I know?
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index df95535..7504c8c 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -149,7 +149,7 @@ dist.tar.Z:	$(DISTFILES)
+ 	rm -fr MOO-`cat version_number` version_number
+ 
+ tags:
+-	etags -t $(SRCS)
++	etags $(SRCS)
+ 
+ clean:
+ 	rm -f $(OBJS) $(OPT_NET_OBJS) core parser.c y.tab.c y.tab.h y.output makedep eddep
+-- 
+1.7.9.5
+

@@ -1,0 +1,25 @@
+From 88a8e3acc5bd8b2bd0fc72bb6efb359a5106e253 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Aug 2011 21:08:31 +0000
+Subject: [PATCH 191/223] Missing quote in a comment fixed
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 8bb038a..0b3e356 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -15,7 +15,7 @@ LIBS	= @LIBS@
+ YACC	= @YACC@
+ 
+ # for debugging you might prefer:
+-# CFLAGS='-g -m32 -O0 -Wall
++# CFLAGS='-g -m32 -O0 -Wall'
+ 
+ CFLAGS		= -m32 -O
+ CPPFLAGS	= @CPPFLAGS@
+-- 
+1.7.9.5
+

@@ -1,0 +1,63 @@
+From 69040df84d614e7a928c60ab73e9031c714f8890 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 1 Jul 2012 15:00:58 -0700
+Subject: [PATCH 221/223] Removed references to ref_count.h
+
+---
+ server/list.c    |    1 -
+ server/storage.c |    1 -
+ server/storage.h |    1 -
+ server/utils.c   |    1 -
+ 4 files changed, 4 deletions(-)
+
+diff --git a/server/list.c b/server/list.c
+index 5e18c53..a6e0b92 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -28,7 +28,6 @@
+ #include "options.h"
+ #include "pattern.h"
+ #include "random.h"
+-#include "ref_count.h"
+ #include "streams.h"
+ #include "storage.h"
+ #include "structures.h"
+diff --git a/server/storage.c b/server/storage.c
+index 9ab9403..6a442e5 100644
+--- a/server/storage.c
++++ b/server/storage.c
+@@ -21,7 +21,6 @@
+ #include "exceptions.h"
+ #include "list.h"
+ #include "options.h"
+-#include "ref_count.h"
+ #include "storage.h"
+ #include "structures.h"
+ #include "utils.h"
+diff --git a/server/storage.h b/server/storage.h
+index b79c405..5853fe1 100644
+--- a/server/storage.h
++++ b/server/storage.h
+@@ -21,7 +21,6 @@
+ #include "my-string.h"
+ 
+ #include "structures.h"
+-#include "ref_count.h"
+ 
+ typedef enum Memory_Type {
+     M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,
+diff --git a/server/utils.c b/server/utils.c
+index 7066b17..6f70412 100644
+--- a/server/utils.c
++++ b/server/utils.c
+@@ -27,7 +27,6 @@
+ #include "log.h"
+ #include "match.h"
+ #include "numbers.h"
+-#include "ref_count.h"
+ #include "server.h"
+ #include "storage.h"
+ #include "streams.h"
+-- 
+1.7.9.5
+

@@ -1,0 +1,64 @@
+From a52f11fa6bc1066e59322656af00677871c9a38c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 02:55:08 +0000
+Subject: [PATCH 136/223] Added #ifdef/#endif around the code to handle
+ conditional compilation.
+
+---
+ server/ext-FUP.c |   10 +++++++++-
+ server/ext-xml.c |    6 ++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/server/ext-FUP.c b/server/ext-FUP.c
+index cd2879f..a95d7eb 100644
+--- a/server/ext-FUP.c
++++ b/server/ext-FUP.c
+@@ -15,10 +15,15 @@
+   filemkdir and filermdir in collaboration with Jeremy Cooper <jeremy@crl.com>
+   Thanks to Alex Stewart for valuable suggestions for improvements.
+  *****************************************************************************/
++
++#include "config.h"
++
++#ifdef USE_EXT_FUP
++
++
+ #include <ctype.h>
+ #include "my-time.h"
+ #include "my-string.h"
+-#include "config.h"
+ #include "functions.h"
+ #include "log.h"
+ #include "random.h"
+@@ -1170,3 +1175,6 @@ register_files(void)
+ 			     TYPE_STR, TYPE_LIST, TYPE_INT, TYPE_INT);
+ 
+ }
++
++
++#endif /* USE_EXT_FUP */
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index 07a0c74..1191cc8 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -2,8 +2,9 @@
+  * XML for the MOO Server using the expat library
+  */
+ 
++#include "config.h"
+ 
+-#if HAVE_EXPAT_H
++#ifdef HAVE_EXPAT_H
+ 
+ #include "bf_register.h"
+ #include "functions.h"
+@@ -291,4 +292,5 @@ register_xml()
+ 		      TYPE_STR, TYPE_ANY);
+ }
+ 
+-#endif
++
++#endif /* HAVE_EXPAT_H */
+-- 
+1.7.9.5
+

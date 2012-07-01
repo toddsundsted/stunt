@@ -1,0 +1,122 @@
+From f5be3305e3cdc8baa50eda48a0f8b07abbf09aa9 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 19:00:10 +0000
+Subject: [PATCH 037/223] I commented out the definition of "var_type," an
+ enum, in structures.h and redefined them as const
+ ints.  I preserved the order per the original
+ comments. This was necessary because in
+ functions.c, the use of C's variable arguments
+ feature was causing an upcast from var_type to int
+ and the compiler warned the program would abort if
+ the instructions were were excuted... which it did.
+ As of this commit, LambdaMOO now compiles with:
+
+make CFLAGS='-pg' CC='g++ -g'
+
+successfully; I can run the server with the LambdaCore database and it
+seems to work fine.
+---
+ server/functions.c  |   27 ++++++++++++++++-----------
+ server/structures.h |   30 ++++++++++++++++++++++--------
+ 2 files changed, 38 insertions(+), 19 deletions(-)
+
+diff --git a/server/functions.c b/server/functions.c
+index d1516ab..acc198d 100644
+--- a/server/functions.c
++++ b/server/functions.c
+@@ -86,8 +86,13 @@ static struct bft_entry bf_table[MAX_FUNC];
+ static unsigned top_bf_table = 0;
+ 
+ static unsigned
+-register_common(const char *name, int minargs, int maxargs, bf_type func,
+-		bf_read_type read, bf_write_type write, va_list args)
++register_common(const char *name,
++                int minargs,
++                int maxargs,
++                bf_type func,
++		bf_read_type read,
++                bf_write_type write,
++                va_list args)
+ {
+     int va_index;
+     int num_arg_types = maxargs == -1 ? minargs : maxargs;
+@@ -100,17 +105,17 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
+ 	errlog("too many functions.  %s cannot be registered.\n", name);
+ 	return 0;
+     }
+-    bf_table[top_bf_table].name = str_dup(name);
++    bf_table[top_bf_table].name        = str_dup(name);
+     stream_printf(s, "protect_%s", name);
+     bf_table[top_bf_table].protect_str = str_dup(reset_stream(s));
+     stream_printf(s, "bf_%s", name);
+-    bf_table[top_bf_table].verb_str = str_dup(reset_stream(s));
+-    bf_table[top_bf_table].minargs = minargs;
+-    bf_table[top_bf_table].maxargs = maxargs;
+-    bf_table[top_bf_table].func = func;
+-    bf_table[top_bf_table].read = read;
+-    bf_table[top_bf_table].write = write;
+-    bf_table[top_bf_table]._protected = 0;
++    bf_table[top_bf_table].verb_str    = str_dup(reset_stream(s));
++    bf_table[top_bf_table].minargs     = minargs;
++    bf_table[top_bf_table].maxargs     = maxargs;
++    bf_table[top_bf_table].func        = func;
++    bf_table[top_bf_table].read        = read;
++    bf_table[top_bf_table].write       = write;
++    bf_table[top_bf_table]._protected  = 0;
+     
+     if (num_arg_types > 0)
+ 	bf_table[top_bf_table].prototype =
+@@ -119,7 +124,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
+ 	bf_table[top_bf_table].prototype = 0;
+ 
+     for (va_index = 0; va_index < num_arg_types; va_index++)
+-	bf_table[top_bf_table].prototype[va_index] = va_arg(args, var_type);
++	bf_table[top_bf_table].prototype[va_index] = va_arg(args, int);
+ 
+ 
+     return top_bf_table++;
+diff --git a/server/structures.h b/server/structures.h
+index 5ee7536..1c787ee 100644
+--- a/server/structures.h
++++ b/server/structures.h
+@@ -46,15 +46,29 @@ enum error {
+  * the end, since the order here defines the numeric equivalents of the type
+  * values, and those equivalents are both DB-accessible knowledge and stored in
+  * raw form in the DB.
++ * (note: replacing the enum here with ints, to satisfy g++'s loathing of varargs).
+  */
+-typedef enum {
+-    TYPE_INT, TYPE_OBJ, _TYPE_STR, TYPE_ERR, _TYPE_LIST, /* user-visible */
+-    TYPE_CLEAR,			/* in clear properties' value slot */
+-    TYPE_NONE,			/* in uninitialized MOO variables */
+-    TYPE_CATCH,			/* on-stack marker for an exception handler */
+-    TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
+-    _TYPE_FLOAT			/* floating-point number; user-visible */
+-} var_type;
++//typedef enum {
++//    TYPE_INT, TYPE_OBJ, _TYPE_STR, TYPE_ERR, _TYPE_LIST, /* user-visible */
++//    TYPE_CLEAR,			/* in clear properties' value slot */
++//    TYPE_NONE,			/* in uninitialized MOO variables */
++//    TYPE_CATCH,			/* on-stack marker for an exception handler */
++//    TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
++//    _TYPE_FLOAT			/* floating-point number; user-visible */
++//} var_type;
++
++// the following replace the above typdef enum var_type
++typedef int var_type;
++const var_type TYPE_INT     =  0 ;
++const var_type TYPE_OBJ     =  1 ;
++const var_type _TYPE_STR    =  2 ;
++const var_type TYPE_ERR     =  3 ;
++const var_type _TYPE_LIST   =  4 ;
++const var_type TYPE_CLEAR   =  5 ;
++const var_type TYPE_NONE    =  6 ;
++const var_type TYPE_CATCH   =  7 ;
++const var_type TYPE_FINALLY =  8 ;
++const var_type _TYPE_FLOAT  =  9 ;
+ 
+ /* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
+  * so that free_var/var_ref/var_dup can recognize them easily.  This flag is
+-- 
+1.7.9.5
+

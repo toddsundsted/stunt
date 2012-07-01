@@ -1,0 +1,28 @@
+From cc58eb6119ca3112e9acca17936d3c25583c3a83 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 8 Jul 2011 00:41:42 +0000
+Subject: [PATCH 171/223] Minor formatting update
+
+---
+ server/LICENSE |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/server/LICENSE b/server/LICENSE
+index 731c02b..a242028 100644
+--- a/server/LICENSE
++++ b/server/LICENSE
+@@ -68,9 +68,9 @@ tools/moo2xml.py
+ # License for more details.  http://www.gnu.org/
+ 
+ 
+-============
++==================
+ tools/moobrowser.c
+-============
++==================
+ /***************************************************************************
+  * Moo Database Browser 1.2                                                *
+  * Command-line extraction of verbs/properties/etc from Lambda Moo DBs.    *
+-- 
+1.7.9.5
+

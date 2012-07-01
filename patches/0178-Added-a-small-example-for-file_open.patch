@@ -1,0 +1,26 @@
+From 7cb2d4a97d6e6f6a3218b477f50240261835ac34 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 19 Jul 2011 04:24:42 +0000
+Subject: [PATCH 178/223] Added a small example for file_open().
+
+---
+ server/fileio-1.5p1/fileio-docs.txt |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/server/fileio-1.5p1/fileio-docs.txt b/server/fileio-1.5p1/fileio-docs.txt
+index 1772156..c508865 100644
+--- a/server/fileio-1.5p1/fileio-docs.txt
++++ b/server/fileio-1.5p1/fileio-docs.txt
+@@ -198,6 +198,9 @@
+   The final character is either 'n' or 'f'.  If this character is that
+   writes data to the stream.  If it is 'n' then this won't happen.
+ 
++  Example: ;file_open("myfile.txt", "a+tf")
++           => 0
++
+   This is implemented using fopen().
+ 
+   3.3.2.  file_close
+-- 
+1.7.9.5
+

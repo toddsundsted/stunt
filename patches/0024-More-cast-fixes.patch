@@ -1,0 +1,52 @@
+From ab768e5e6feab5455d5e20f9e6e6141aaa09b4ed Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 28 Jun 2009 23:39:40 +0000
+Subject: [PATCH 024/223] More cast fixes
+
+---
+ server/parse_cmd.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/server/parse_cmd.c b/server/parse_cmd.c
+index f17a4d0..606d25c 100644
+--- a/server/parse_cmd.c
++++ b/server/parse_cmd.c
+@@ -40,7 +40,7 @@ parse_into_words(char *input, int *nwords)
+ 
+     if (!words) {
+ 	max_words = 50;
+-	words = mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
++	words = (char **) mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
+     }
+     while (*input == ' ')
+ 	input++;
+@@ -48,7 +48,7 @@ parse_into_words(char *input, int *nwords)
+     for (*nwords = 0; *input != '\0'; (*nwords)++) {
+ 	if (*nwords == max_words) {
+ 	    int new_max = max_words * 2;
+-	    char **new = mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
++	    char **_new = (char **) mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
+ 	    int i;
+ 
+ 	    for (i = 0; i < max_words; i++)
+@@ -116,7 +116,7 @@ parse_into_wordlist(const char *command)
+     argv = parse_into_words(s, &argc);
+     args = new_list(argc);
+     for (i = 1; i <= argc; i++) {
+-	args.v.list[i].type = TYPE_STR;
++      args.v.list[i].type = (var_type) TYPE_STR;
+ 	args.v.list[i].v.str = str_dup(argv[i - 1]);
+     }
+     free_str(s);
+@@ -187,7 +187,7 @@ parse_command(const char *command, Objid user)
+ 
+     pc.args = new_list(argc - 1);
+     for (i = 1; i < argc; i++) {
+-	pc.args.v.list[i].type = TYPE_STR;
++        pc.args.v.list[i].type = (var_type) TYPE_STR;
+ 	pc.args.v.list[i].v.str = str_dup(argv[i]);
+     }
+ 
+-- 
+1.7.9.5
+

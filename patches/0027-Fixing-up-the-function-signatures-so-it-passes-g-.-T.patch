@@ -1,0 +1,72 @@
+From d4c18f464731c526cfd1540c29b7a7ab92a711c7 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 01:02:20 +0000
+Subject: [PATCH 027/223] Fixing up the function signatures so it passes g++.
+ The compiler was complaining that the function
+ signature in the .c file had changed from the
+ forward declaration in the .h file.
+
+---
+ server/regexpr.c |   13 ++++---------
+ server/regexpr.h |    4 ++--
+ 2 files changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/server/regexpr.c b/server/regexpr.c
+index caeb210..0160a39 100644
+--- a/server/regexpr.c
++++ b/server/regexpr.c
+@@ -224,9 +224,8 @@ re_compile_initialize()
+     regexp_ansi_sequences = (regexp_syntax & RE_ANSI_HEX) != 0;
+ }
+ 
+-int
+-re_set_syntax(syntax)
+-    int syntax;
++int 
++re_set_syntax(int syntax)
+ {
+     int ret;
+ 
+@@ -239,8 +238,7 @@ re_set_syntax(syntax)
+ 
+ static int hex_char_to_decimal PROTO((int));
+ static int
+-hex_char_to_decimal(ch)
+-    int ch;
++hex_char_to_decimal(int ch)
+ {
+     if (ch >= '0' && ch <= '9')
+ 	return ch - '0';
+@@ -252,10 +250,7 @@ hex_char_to_decimal(ch)
+ }
+ 
+ const char *
+-re_compile_pattern(regex, size, bufp)
+-    char *regex;
+-    int size;
+-    regexp_t bufp;
++re_compile_pattern(char regex, int size, regexp_t bufp)
+ {
+     int a, pos, op, current_level, level, opcode;
+     int pattern_offset, alloc;
+diff --git a/server/regexpr.h b/server/regexpr.h
+index b06a3d5..bfd4756 100644
+--- a/server/regexpr.h
++++ b/server/regexpr.h
+@@ -54,11 +54,11 @@ typedef struct re_registers {
+ #define RE_SYNTAX_GREP	(RE_BK_PLUS_QM|RE_NEWLINE_OR)
+ #define RE_SYNTAX_EMACS	0
+ 
+-int re_set_syntax(int syntax);
++int re_set_syntax(int);
+ /* This sets the syntax to use and returns the previous syntax.  The
+    syntax is specified by a bit mask of the above defined bits. */
+ 
+-const char *re_compile_pattern(char *regex, int regex_size, regexp_t compiled);
++const char *re_compile_pattern(char, int, regexp_t);
+ /* This compiles the regexp (given in regex and length in regex_size).
+    This returns NULL if the regexp compiled successfully, and an error
+    message if an error was encountered.  The buffer field must be
+-- 
+1.7.9.5
+

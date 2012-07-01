@@ -1,0 +1,52 @@
+From 71d7f0c75d326f13106a6bfb31d7e86c0bb832f6 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 15 Jun 2011 01:28:06 +0000
+Subject: [PATCH 154/223] Renamed this file to waverous-tester.exp.
+
+---
+ server/tools/test.exp |   33 ---------------------------------
+ 1 file changed, 33 deletions(-)
+ delete mode 100755 server/tools/test.exp
+
+diff --git a/server/tools/test.exp b/server/tools/test.exp
+deleted file mode 100755
+index 320dcd2..0000000
+--- a/server/tools/test.exp
++++ /dev/null
+@@ -1,33 +0,0 @@
+-#!/usr/bin/expect
+-
+-# Start up the server, login, run commands, shutdown
+-
+-puts "MOO test starting"
+-
+-#cd "~swain/Sites/projects/lambdamoo/build"
+-
+-
+-spawn ./restart.sh LambdaCore-12Apr99
+-puts "sleeping for three seconds"
+-sleep 3
+-spawn /usr/local/bin/tf localhost 7777
+-sleep 2
+-expect {
+-    "Connection refused" { 
+-        send "/quit\r"
+-        puts "Server startup failed!"
+-        exit 1
+-    }
+-    "Type 'connect wizard' to log in." {
+-        send "connect wizard\r"        
+-    }
+-}
+-
+-expect "The First Room" { puts "Success." }
+-
+-sleep 2
+-send "@shutdown in 0 \"ending test\"\r"
+-expect "Do you really want to shut down the server"
+-send "yes\r"
+-expect eof
+-puts "Test completed successfully."
+-- 
+1.7.9.5
+

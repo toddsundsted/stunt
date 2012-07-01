@@ -1,0 +1,792 @@
+From 6eafe534ccf23a1ed6a0516408e096e40ed0dcbb Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 17 Dec 2010 02:40:32 +0000
+Subject: [PATCH 085/223] directory to store random artifacts like patch
+ files... I will probably delete this directory in
+ the future.
+
+---
+ server/misc/unicode-moo-4.diff |  771 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 771 insertions(+)
+ create mode 100644 server/misc/unicode-moo-4.diff
+
+diff --git a/server/misc/unicode-moo-4.diff b/server/misc/unicode-moo-4.diff
+new file mode 100644
+index 0000000..f59364c
+--- /dev/null
++++ b/server/misc/unicode-moo-4.diff
+@@ -0,0 +1,771 @@
++diff -uN MOO-1.8.1/Makefile.in MOO-1.8.1u4/Makefile.in
++--- MOO-1.8.1/Makefile.in	Mon Jan 10 18:54:05 2000
+++++ MOO-1.8.1u4/Makefile.in	Tue Jan 29 11:43:50 2002
++@@ -35,7 +35,7 @@
++ 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
++ 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
++ 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
++-	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
+++	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c utf8.c
++ 
++ OPT_NET_SRCS = net_single.c net_multi.c \
++ 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
++@@ -54,7 +54,7 @@
++ 	options.h parse_cmd.h parser.h pattern.h program.h quota.h random.h \
++ 	ref_count.h regexpr.h server.h storage.h streams.h structures.h  str_intern.h \
++ 	sym_table.h tasks.h timers.h tokens.h unparse.h utils.h verbs.h \
++-	version.h
+++	version.h utf8.h
++ 
++ SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
++ 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
++diff -uN MOO-1.8.1/execute.c MOO-1.8.1u4/execute.c
++--- MOO-1.8.1/execute.c	Mon Dec 14 06:17:50 1998
+++++ MOO-1.8.1u4/execute.c	Tue Jan 29 11:43:50 2002
++@@ -41,6 +41,7 @@
++ #include "timers.h"
++ #include "utils.h"
++ #include "version.h"
+++#include "utf8.h"
++ 
++ /* the following globals are the guts of the virtual machine: */
++ static activation *activ_stack = 0;
++@@ -944,12 +945,12 @@
++ 			   || (list.type == TYPE_LIST
++ 		       && index.v.num > list.v.list[0].v.num /* size */ )
++ 			   || (list.type == TYPE_STR
++-			    && index.v.num > (int) strlen(list.v.str))) {
+++			    && index.v.num > (int) utf8_strlen(list.v.str))) {
++ 		    free_var(value);
++ 		    free_var(index);
++ 		    free_var(list);
++ 		    PUSH_ERROR(E_RANGE);
++-		} else if (list.type == TYPE_STR && strlen(value.v.str) != 1) {
+++		} else if (list.type == TYPE_STR && utf8_strlen(value.v.str) != 1) {
++ 		    free_var(value);
++ 		    free_var(index);
++ 		    free_var(list);
++@@ -965,10 +966,18 @@
++ 		    }
++ 		    PUSH(listset(res, value, index.v.num));
++ 		} else {	/* TYPE_STR */
+++		    /*
++ 		    char *tmp_str = str_dup(list.v.str);
++ 		    free_str(list.v.str);
++ 		    tmp_str[index.v.num - 1] = value.v.str[0];
++ 		    list.v.str = tmp_str;
+++		    */
+++		    
+++		    char* tmp_str = str_dup(list.v.str);
+++		    free_str(list.v.str);
+++		    list.v.str = utf8_copyandset(tmp_str, index.v.num, value.v.str);
+++		    free_str(tmp_str);
+++		    
++ 		    free_var(value);
++ 		    PUSH(list);
++ 		}
++diff -uN MOO-1.8.1/list.c MOO-1.8.1u4/list.c
++--- MOO-1.8.1/list.c	Mon Dec 14 06:17:57 1998
+++++ MOO-1.8.1u4/list.c	Wed May  1 17:28:11 2002
++@@ -34,6 +34,7 @@
++ #include "structures.h"
++ #include "unparse.h"
++ #include "utils.h"
+++#include "utf8.h"
++ 
++ Var
++ new_list(int size)
++@@ -341,31 +342,11 @@
++ Var
++ strrangeset(Var base, int from, int to, Var value)
++ {
++-    /* base and value are free'd */
++-    int index, offset = 0;
++-    int val_len = strlen(value.v.str);
++-    int base_len = strlen(base.v.str);
++-    int lenleft = (from > 1) ? from - 1 : 0;
++-    int lenmiddle = val_len;
++-    int lenright = (base_len > to) ? base_len - to : 0;
++-    int newsize = lenleft + lenmiddle + lenright;
++-
++     Var ans;
++-    char *s;
++ 
++     ans.type = TYPE_STR;
++-    s = mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+++    ans.v.str = utf8_strrangeset(base.v.str, from, to, value.v.str);
++ 
++-    for (index = 0; index < lenleft; index++)
++-	s[offset++] = base.v.str[index];
++-    for (index = 0; index < lenmiddle; index++)
++-	s[offset++] = value.v.str[index];
++-    for (index = 0; index < lenright; index++)
++-	s[offset++] = base.v.str[index + to];
++-    s[offset] = '\0';
++-    ans.v.str = s;
++-    free_var(base);
++-    free_var(value);
++     return ans;
++ }
++ 
++@@ -378,13 +359,7 @@
++     if (lower > upper)
++ 	r.v.str = str_dup("");
++     else {
++-	int loop, index = 0;
++-	char *s = mymalloc(upper - lower + 2, M_STRING);
++-
++-	for (loop = lower - 1; loop < upper; loop++)
++-	    s[index++] = str.v.str[loop];
++-	s[index] = '\0';
++-	r.v.str = s;
+++	r.v.str = utf8_substr(str.v.str, lower, upper);
++     }
++     free_var(str);
++     return r;
++@@ -394,12 +369,10 @@
++ strget(Var str, Var i)
++ {
++     Var r;
++-    char *s;
++ 
++     r.type = TYPE_STR;
++-    s = str_dup(" ");
++-    s[0] = str.v.str[i.v.num - 1];
++-    r.v.str = s;
+++    r.v.str = utf8_index(str.v.str, i.v.num);
+++
++     return r;
++ }
++ 
++@@ -416,7 +389,7 @@
++ 	break;
++     case TYPE_STR:
++ 	r.type = TYPE_INT;
++-	r.v.num = strlen(arglist.v.list[1].v.str);
+++	r.v.num = utf8_strlen(arglist.v.list[1].v.str);
++ 	break;
++     default:
++ 	free_var(arglist);
++@@ -609,7 +582,7 @@
++     if (arglist.v.list[0].v.num == 3)
++ 	case_matters = is_true(arglist.v.list[3]);
++     r.type = TYPE_INT;
++-    r.v.num = strindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str,
+++    r.v.num = utf8_strindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str,
++ 		       case_matters);
++ 
++     free_var(arglist);
++@@ -626,7 +599,7 @@
++     if (arglist.v.list[0].v.num == 3)
++ 	case_matters = is_true(arglist.v.list[3]);
++     r.type = TYPE_INT;
++-    r.v.num = strrindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str,
+++    r.v.num = utf8_strrindex(arglist.v.list[1].v.str, arglist.v.list[2].v.str,
++ 			case_matters);
++ 
++     free_var(arglist);
++@@ -747,16 +720,16 @@
++ 	    ans.v.list[1].type = TYPE_INT;
++ 	    ans.v.list[2].type = TYPE_INT;
++ 	    ans.v.list[4].type = TYPE_STR;
++-	    ans.v.list[1].v.num = regs[0].start;
++-	    ans.v.list[2].v.num = regs[0].end;
+++	    ans.v.list[1].v.num = utf8_convert_index(regs[0].start, subject);
+++	    ans.v.list[2].v.num = (regs[0].end == 0 ? 0 : utf8_convert_index(regs[0].end, subject));
++ 	    ans.v.list[3] = new_list(9);
++ 	    ans.v.list[4].v.str = str_ref(subject);
++ 	    for (i = 1; i <= 9; i++) {
++ 		ans.v.list[3].v.list[i] = new_list(2);
++ 		ans.v.list[3].v.list[i].v.list[1].type = TYPE_INT;
++-		ans.v.list[3].v.list[i].v.list[1].v.num = regs[i].start;
+++		ans.v.list[3].v.list[i].v.list[1].v.num = (regs[i].start == 0 ? 0 : utf8_convert_index(regs[i].start, subject));
++ 		ans.v.list[3].v.list[i].v.list[2].type = TYPE_INT;
++-		ans.v.list[3].v.list[i].v.list[2].v.num = regs[i].end;
+++		ans.v.list[3].v.list[i].v.list[2].v.num = (regs[i].end <= 0 ? regs[i].end : utf8_convert_index(regs[i].end, subject));
++ 	    }
++ 	    break;
++ 	case MATCH_FAILED:
++diff -uN MOO-1.8.1/net_multi.c MOO-1.8.1u4/net_multi.c
++--- MOO-1.8.1/net_multi.c	Mon Dec 14 06:18:31 1998
+++++ MOO-1.8.1u4/net_multi.c	Tue Jan 29 11:43:50 2002
++@@ -1,4 +1,4 @@
++-/******************************************************************************
+++/*******************************************************************************
++   Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
++   Portions of this code were written by Stephen White, aka ghond.
++   Use and copying of this software and preparation of derivative works based
++@@ -264,21 +264,23 @@
++     char *ptr, *end;
++ 
++     if ((count = read(h->rfd, buffer, sizeof(buffer))) > 0) {
++-	if (h->binary) {
++-	    stream_add_string(s, raw_bytes_to_binary(buffer, count));
++-	    server_receive_line(h->shandle, reset_stream(s));
++-	    h->last_input_was_CR = 0;
++-	} else {
++-	    for (ptr = buffer, end = buffer + count; ptr < end; ptr++) {
++-		unsigned char c = *ptr;
+++	for (ptr = buffer, end = buffer + count; ptr < end; ptr++) {
+++	    unsigned char c = *ptr;
++ 
++-		if (isgraph(c) || c == ' ' || c == '\t')
++-		    stream_add_char(s, c);
++-		else if (c == '\r' || (c == '\n' && !h->last_input_was_CR))
++-		    server_receive_line(h->shandle, reset_stream(s));
++-
++-		h->last_input_was_CR = (c == '\r');
+++	    if (!h->binary && c == '\n') 
+++	    {
+++		server_receive_line(h->shandle, reset_stream(s));
+++	    }
+++	    else if (c >= ' ') /* We don't want people typing control characters. */
+++	    {
+++		stream_add_char(s, c);
++ 	    }
+++	}
+++
+++	if (h->binary)
+++	{
+++	    server_receive_line(h->shandle, reset_stream(s));
+++	    h->last_input_was_CR = 0;
++ 	}
++ 	return 1;
++     } else
++Common subdirectories: MOO-1.8.1/pgperf and MOO-1.8.1u4/pgperf
++diff -uN MOO-1.8.1/utf8.c MOO-1.8.1u4/utf8.c
++--- MOO-1.8.1/utf8.c	Wed Dec 31 17:00:00 1969
+++++ MOO-1.8.1u4/utf8.c	Thu Jun  6 09:13:29 2002
++@@ -0,0 +1,460 @@
+++/******************************************************************************
+++ * Copyright (c) 2002, Mathieu Fenniak
+++ * All rights reserved.
+++ *
+++ * Redistribution and use in source and binary forms, with or without
+++ * modification, are permitted provided that the following conditions are
+++ * met:
+++ *
+++ * * Redistributions of source code must retain the above copyright notice,
+++ * this list of conditions and the following disclaimer.
+++ * * Redistributions in binary form must reproduce the above copyright notice,
+++ * this list of conditions and the following disclaimer in the documentation
+++ * and/or other materials provided with the distribution.
+++ * * The name of the author may not be used to endorse or promote products
+++ * derived from this software without specific prior written permission.
+++ *
+++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+++ * POSSIBILITY OF SUCH DAMAGE.
+++ *
+++ *****************************************************************************/
+++
+++#include "utf8.h"
+++#include "storage.h"
+++
+++static int utf8_numbytes(char c);
+++
+++size_t utf8_strlen(const char* str)
+++{
+++    char *p = (char*)str;
+++    int n = 0;
+++    int state = 0;
+++    
+++    /* to ensure that this code doesn't miss the boundry of the string,
+++     * we have to iterate more slowly than we could if we just jumped
+++     * ahead when we found the number of bytes in a character.
+++     */
+++    while (*p != '\0')
+++    {
+++	if (state == 0)
+++	{
+++	    state = utf8_numbytes(*p) - 1;
+++	    
+++	    if (state == 0)
+++	    {
+++		n++;
+++	    }
+++	    else if (state == -2) /* -1 error val of utf8_numbytes minus one */
+++	    {
+++		/* just ignore this weird character */
+++		state = 0;
+++	    }
+++	}
+++	else
+++	{
+++	    /* There is no check here for the validity of the UTF-8 bytes
+++	     * because I can't think of an appropriate failsafe behaviour
+++	     * anyways.
+++	     */
+++
+++	    if (0 == --state)
+++	    {
+++		n++;
+++	    }
+++	}
+++
+++	p++;
+++    }
+++
+++    return n;
+++}
+++
+++const char* utf8_index(const char* str, int32 index)
+++{
+++    return utf8_substr(str, index, index);
+++}
+++
+++const char* utf8_substr(const char* str, int32 lower, int32 upper)
+++{
+++    char* p = (char*)str;
+++    char* start = NULL;
+++    char* new = NULL;
+++    int n = 0;
+++    int state = 0;
+++    int numbytes = 0;
+++
+++    /* MOO indexes are one based, C indexes are 0 based.. convert.
+++     */
+++    lower--; upper--;
+++    
+++    /* to ensure that this code doesn't miss the boundry of the string,
+++     * we have to iterate more slowly than we could if we just jumped
+++     * ahead when we found the number of bytes in a character.
+++     */
+++    while (*p != '\0' && n < lower)
+++    {
+++	if (state == 0)
+++	{
+++	    state = utf8_numbytes(*p) - 1;
+++	    
+++	    if (state == 0)
+++	    {
+++		n++;
+++	    }
+++	    else if (state == -2) /* -1 error val of utf8_numbytes minus one */
+++	    {
+++		/* just ignore this weird character */
+++		state = 0;
+++	    }
+++	}
+++	else
+++	{
+++	    /* There is no check here for the validity of the UTF-8 bytes
+++	     * because I can't think of an appropriate failsafe behaviour
+++	     * anyways.
+++	     */
+++
+++	    if (0 == --state)
+++	    {
+++		n++;
+++	    }
+++	}
+++
+++	p++;
+++    }
+++
+++    if (*p == '\0')
+++    {
+++	return str_dup("");
+++    }
+++
+++    start = p;
+++    state = 0;
+++    
+++    while (*p != '\0' && n <= upper)
+++    {
+++	if (state == 0)
+++	{
+++	    state = utf8_numbytes(*p) - 1;
+++	    
+++	    if (state == 0)
+++	    {
+++		n++;
+++	    }
+++	    else if (state == -2) /* -1 error val of utf8_numbytes minus one */
+++	    {
+++		/* just ignore this weird character */
+++		state = 0;
+++	    }
+++	}
+++	else
+++	{
+++	    /* There is no check here for the validity of the UTF-8 bytes
+++	     * because I can't think of an appropriate failsafe behaviour
+++	     * anyways.
+++	     */
+++
+++	    if (0 == --state)
+++	    {
+++		n++;
+++	    }
+++	}
+++
+++	p++;
+++	numbytes++;
+++    }
+++
+++    if (numbytes == -1)
+++    {
+++	return NULL;
+++    }
+++
+++    new = mymalloc(numbytes + 1, M_STRING);
+++    memcpy(new, start, numbytes);
+++    new[numbytes] = '\0';
+++
+++    return new;
+++}
+++
+++const char* utf8_copyandset(const char* lhs, int32 index, const char* rhs)
+++{    
+++    return utf8_strrangeset(lhs, index, index, rhs);
+++}
+++
+++const char* utf8_strrangeset(const char* lhs, int32 from, int32 to, const char* rhs)
+++{
+++    char* p = (char*)lhs;
+++    char* new = NULL;
+++    int n = 0;
+++    int state = 0;
+++    int startbytes = 0;
+++
+++    /* MOO indexes are one based, C indexes are 0 based.. convert.
+++     */
+++    from--; to--;
+++
+++    /* to ensure that this code doesn't miss the boundry of the string,
+++     * we have to iterate more slowly than we could if we just jumped
+++     * ahead when we found the number of bytes in a character.
+++     */
+++    while (*p != '\0' && n <= to)
+++    {
+++	if (state == 0)
+++	{
+++	    state = utf8_numbytes(*p) - 1;
+++	    
+++	    if (state == 0)
+++	    {
+++		n++;
+++	    }
+++	    else if (state == -2) /* -1 error val of utf8_numbytes minus one */
+++	    {
+++		/* just ignore this weird character */
+++		state = 0;
+++	    }
+++	}
+++	else
+++	{
+++	    /* There is no check here for the validity of the UTF-8 bytes
+++	     * because I can't think of an appropriate failsafe behaviour
+++	     * anyways.
+++	     */
+++
+++	    if (0 == --state)
+++	    {
+++		n++;
+++	    }
+++	}
+++
+++	p++;
+++
+++	if (n <= from)
+++	{
+++	    startbytes++;
+++	}
+++    }
+++
+++    new = mymalloc(startbytes + strlen(rhs) + strlen(p) + 1, M_STRING);
+++    memcpy(new, lhs, startbytes);
+++    memcpy(new + startbytes, rhs, strlen(rhs));
+++    if (*p != '\0')
+++	memcpy(new + startbytes + strlen(rhs), p, strlen(p));
+++    new[startbytes + strlen(rhs) + strlen(p)] = '\0';
+++
+++    return new;
+++}
+++
+++int32 utf8_strindex(const char* big, const char* small, int case_matters)
+++{
+++    char *p = (char*)big;
+++    int state = 0;
+++    int n = 0;
+++
+++    while (*p != '\0')
+++    {
+++	if (state == 0)
+++	{
+++	    int match = 1;
+++	    char* p2 = p;
+++	    char* j = (char*)small;
+++
+++	    while (*j != '\0' && *p2 != '\0')
+++	    {
+++		if (*j != *p2)
+++		{
+++		    /* ASCII latin characters will have a check if case doesn't matter. */
+++		    if (!case_matters && tolower(*j) == tolower(*p2))
+++		    {
+++			/* They're the same if you don't account for case. Match continues. */
+++		    }
+++		    else
+++		    {
+++			match = 0;
+++			break;
+++		    }
+++		}
+++
+++		p2++;
+++		j++;
+++	    }
+++	    if (*p2 == '\0' && *j != '\0') /* if one hit '\0' and the other didn't, match would be 1 with no match. */
+++	    {
+++		match = 0;
+++	    }
+++	    if (match)
+++	    {
+++		return n + 1;
+++	    }
+++						
+++	    state = utf8_numbytes(*p) - 1;
+++	    
+++	    if (state == 0)
+++	    {
+++		n++;
+++	    }
+++	    else if (state == -2) /* -1 error val of utf8_numbytes minus one */
+++	    {
+++		/* just ignore this weird character */
+++		state = 0;
+++	    }
+++	}
+++	else
+++	{
+++	    /* There is no check here for the validity of the UTF-8 bytes
+++	     * because I can't think of an appropriate failsafe behaviour
+++	     * anyways.
+++	     */
+++
+++	    if (0 == --state)
+++	    {
+++		n++;
+++	    }
+++	}
+++
+++	p++;
+++    }
+++
+++    return 0;
+++}
+++
+++int32 utf8_strrindex(const char* big, const char* small, int case_matters)
+++{
+++    char *p = (char*)(big + strlen(big) - 1);
+++    int n = 1;
+++
+++    while (p >= big)
+++    {
+++	if ((*p & 0x80) == 0x80)
+++	{
+++	    /* second or more byte of UTF-8 char.
+++	     * Ignore.
+++	     */
+++	}
+++	else
+++	{
+++	    int match = 1;
+++	    char* p2 = p;
+++	    char* j = (char*)small;
+++
+++	    while (*j != '\0' && *p2 != '\0')
+++	    {
+++		if (*j != *p2)
+++		{
+++		    /* ASCII latin characters will have a check if case doesn't matter. */
+++		    if (!case_matters && tolower(*j) == tolower(*p2))
+++		    {
+++			/* They're the same if you don't account for case. Match continues. */
+++		    }
+++		    else
+++		    {
+++			match = 0;
+++			break;
+++		    }
+++		}
+++
+++		p2++;
+++		j++;
+++	    }
+++	    if (*p2 == '\0' && *j != '\0') /* if one hit '\0' and the other didn't, match would be 1 with no match. */
+++	    {
+++		match = 0;
+++	    }
+++	    if (match) 
+++	    {
+++		char* bigcopy = str_dup(big);
+++		bigcopy[p - big] = '\0';
+++		n = utf8_strlen(bigcopy);
+++		bigcopy[p - big] = *p; // not required, but removes the null character so the length is right again.
+++		free_str(bigcopy);
+++		return n + 1; // Convert to 1-based index.
+++	    }
+++	
+++	}
+++	p--;
+++    }
+++
+++    return 0;
+++}
+++
+++static int utf8_numbytes(char c)
+++{
+++    if (0 == (0x80 & c))
+++    {
+++	/* ascii */
+++	return 1;
+++    }
+++    else if (0xC0 == (0xE0 & c))
+++    {
+++	/* 2 byte */
+++	return 2;
+++    }
+++    else if (0xE0 == (0xF0 & c))
+++    {
+++	/* 3 byte */
+++	return 3;
+++    }
+++    else if (0xF0 == (0xF8 & c))
+++    {
+++	/* 4 byte */
+++	return 4;
+++    }
+++    else if (0xF8 == (0xFC & c))
+++    {
+++	/* 5 byte */
+++	return 5;
+++    }
+++    else if (0xFC == (0xFE & c))
+++    {
+++	/* 6 byte */
+++	return 6;
+++    }
+++
+++    return -1;
+++}
+++
+++int utf8_convert_index(int nRealIdx, const char* pStr)
+++{
+++    char* p = (char*)pStr;
+++    int nRealCnt = 1;
+++    int nFakeCnt = 1;
+++
+++    int state = 0;
+++
+++    while (*p != '\0' && nRealCnt < nRealIdx)
+++    {
+++        if (state == 0)
+++        {
+++            state = utf8_numbytes(*p) - 1;
+++            if (state == 0)
+++            {
+++                nFakeCnt++;
+++            }
+++            else if (state == -2)
+++            {
+++                /* ignore weird character */
+++                state = 0;
+++            }
+++        }
+++        else
+++        {
+++            if (0 == --state)
+++            {
+++                nFakeCnt++;
+++            }
+++        }
+++
+++        p++;
+++        nRealCnt++;
+++    }
+++
+++    return nFakeCnt;
+++}
++diff -uN MOO-1.8.1/utf8.h MOO-1.8.1u4/utf8.h
++--- MOO-1.8.1/utf8.h	Wed Dec 31 17:00:00 1969
+++++ MOO-1.8.1u4/utf8.h	Wed May  1 17:00:16 2002
++@@ -0,0 +1,56 @@
+++/******************************************************************************
+++ * Copyright (c) 2002, Mathieu Fenniak
+++ * All rights reserved.
+++ *
+++ * Redistribution and use in source and binary forms, with or without
+++ * modification, are permitted provided that the following conditions are
+++ * met:
+++ *
+++ * * Redistributions of source code must retain the above copyright notice,
+++ * this list of conditions and the following disclaimer.
+++ * * Redistributions in binary form must reproduce the above copyright notice,
+++ * this list of conditions and the following disclaimer in the documentation
+++ * and/or other materials provided with the distribution.
+++ * * The name of the author may not be used to endorse or promote products
+++ * derived from this software without specific prior written permission.
+++ *
+++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+++ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+++ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+++ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+++ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+++ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+++ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+++ * POSSIBILITY OF SUCH DAMAGE.
+++ *
+++ *****************************************************************************/
+++
+++#include "my-types.h"
+++
+++/* Return the length of the string.
+++ */
+++extern size_t utf8_strlen(const char* str);
+++
+++/* Nice and easy ones. Just give the proper index.
+++ */
+++extern int32 utf8_strindex(const char* big, const char* small, int case_matters);
+++extern int32 utf8_strrindex(const char* big, const char* small, int case_matters);
+++
+++/* Return value as a newly allocated null-term string.
+++ */
+++extern const char* utf8_index(const char* str, int32 index);
+++extern const char* utf8_substr(const char* str, int32 lower, int32 upper);
+++
+++/* Return a copy of 'lhs' with the provided values changed to 'rhs'.
+++ * utf8_copyandset just wraps utf8_strrangeset.
+++ */
+++extern const char* utf8_copyandset(const char* lhs, int32 index, const char* rhs);
+++extern const char* utf8_strrangeset(const char* lhs, int32 from, int32 to, const char* rhs);
+++
+++/* Return a UTF-8 based index of the character where nRealIdx lies,
+++ * in the string pStr.
+++ */
+++extern int utf8_convert_index(int nRealIdx, const char* pStr);
++diff -uN MOO-1.8.1/version.c MOO-1.8.1u4/version.c
++--- MOO-1.8.1/version.c	Mon Jan 10 19:15:09 2000
+++++ MOO-1.8.1u4/version.c	Thu Jun  6 09:00:30 2002
++@@ -40,7 +40,7 @@
++ #include "config.h"
++ #include "version.h"
++ 
++-const char *server_version = "1.8.1";
+++const char *server_version = "1.8.1u4";
++ 
++ int
++ check_version(DB_Version version)
+-- 
+1.7.9.5
+

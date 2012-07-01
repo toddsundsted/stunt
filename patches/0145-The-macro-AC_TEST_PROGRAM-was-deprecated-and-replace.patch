@@ -1,0 +1,106 @@
+From 81f1ea855bffdea40a45cb355c7f6aaae7ebfbb7 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 11 Feb 2011 04:57:55 +0000
+Subject: [PATCH 145/223] The macro AC_TEST_PROGRAM was deprecated and
+ replaced with another macro, which itself was
+ deprecated and replaced with AC_RUN_IFELSE. I've
+ substituted the three instances here and added a
+ third argument, the "action-if-false," or what it
+ should do if the test fails.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+For each, this third argument is just an AC_MSG_NOTICE informing
+the user that the test failed... but from the data I'm seeing across
+four different systems -- three flavors of Linux and one Darwin -- one
+test won't compile at all, and another always returns 1.
+
+For SELECT_WORKS_ON_FIFO it has something to do with the expansion of
+one of the macros in the mini-test program; the errors are:
+
+selectworksonfifostest.c: In function ‘main’:
+selectworksonfifostest.c:20:19: error: expected expression before ‘do’
+selectworksonfifostest.c:23:19: error: expected expression before ‘do’
+
+FSTAT_WORKS_ON_FIFO just returns 1. POLL_WORKS_ON_FIFO seems to return
+0 pretty consistently across systems.
+
+I guess what I'm driving at here is using FIFOs is probably something
+that can be safely dropped from the project altogether, along with
+NP_LOCAL as an option in options.h.
+---
+ server/configure.ac |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index a1894c3..bfbc093 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -264,7 +264,7 @@ for opt in "" -Aa -Xa -ansi
+ do
+ SAVECC="$CC"
+ CC="$CC $opt"
+-AC_TEST_PROGRAM([
++AC_RUN_IFELSE([
+ int main(int argc, char *argv) { void *ptr; exit(0); }
+ ],
+ [have_ansi=1
+@@ -388,7 +388,7 @@ AC_TEST_CPP([
+ 
+ dnl ***************************************************************************
+ echo "checking whether or not fstat() can tell how much data is in a FIFO"
+-AC_TEST_PROGRAM([#include <sys/types.h>
++AC_RUN_IFELSE([#include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ main()
+@@ -412,7 +412,7 @@ main()
+ 
+ dnl ***************************************************************************
+ echo "checking whether or not select() can be used on FIFOs"
+-AC_TEST_PROGRAM([#include <sys/types.h>
++AC_RUN_IFELSE([#include <sys/types.h>
+ #include <sys/time.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+@@ -444,11 +444,11 @@ main()
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+-], AC_DEFINE(SELECT_WORKS_ON_FIFOS))
++], AC_DEFINE(SELECT_WORKS_ON_FIFOS), AC_MSG_NOTICE([select() cannot be used on FIFOs]))
+ 
+ dnl ***************************************************************************
+ echo "checking whether or not poll() can be used on FIFOs"
+-AC_TEST_PROGRAM([#include <sys/types.h>
++AC_RUN_IFELSE([#include <sys/types.h>
+ #include <poll.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+@@ -465,11 +465,11 @@ main()
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+-], AC_DEFINE(POLL_WORKS_ON_FIFOS))
++], AC_DEFINE(POLL_WORKS_ON_FIFOS), AC_MSG_NOTICE([poll() cannot be used on FIFOs]))
+ 
+ dnl ***************************************************************************
+ echo checking whether POSIX-style non-blocking I/O works
+-AC_TEST_PROGRAM([#include <sys/types.h>
++AC_RUN_IFELSE([#include <sys/types.h>
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <signal.h>
+@@ -493,7 +493,7 @@ main ()
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+-], AC_DEFINE(POSIX_NONBLOCKING_WORKS))
++], AC_DEFINE(POSIX_NONBLOCKING_WORKS), AC_MSG_NOTICE([POSIX-style non-blocking I/O does not work]))
+ 
+ dnl ***************************************************************************
+ echo checking which MOO networking configurations are likely to work...
+-- 
+1.7.9.5
+

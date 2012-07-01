@@ -1,0 +1,68 @@
+From c7539dfd97ae1a2cc6eddf001df9bbf8ecb6a14d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 21 Apr 2011 02:53:53 +0000
+Subject: [PATCH 148/223] I was running into the problem of: in gdb/linux I
+ could 'print shutdown_message' and see the value,
+ but in Darwin I could not:
+
+   ./configure --enable-fup --enable-expat --enable-openssl
+   make CFLAGS='-g -O0 -m32 -Wall -DEXPAT_XML'
+   gdb --annotate=3 --args ./moo databases/LambdaCore-12Apr99.db databases/my.db
+   break server.c:470
+
+
+   469:    /* Now, we enter the main server loop */
+   470:    while (shutdown_message == 0) {
+
+   linux:
+   (gdb) run
+   Breakpoint 1, main_loop () at server.c:473
+   (gdb) print shutdown_message
+   $1 = 0x0
+
+
+   darwin:
+   (gdb) print shutdown_message
+   No symbol "shutdown_message" in current context.
+
+   But compiling  LambdaMOO 1.8.3 off Sourceforge on Darwin, plain old C, we get:
+
+   (gdb) print shutdown_message
+   $1 = 0x0
+
+The problem lies in C++ on Darwin, somehow. When I removed the
+'static' keyword, Darwin could then print shutdown_message.
+
+Wikipedia states:
+
+   The static keyword is used in C to restrict a function or global
+   variable to file scope (internal linkage). This is also valid in C++,
+   although C++ deprecates this usage in favor of anonymous namespaces
+   (which are not available in C). Also, C++ implicitly treats any const
+   global as file scope unless it is explicitly declared extern, unlike C
+   in which extern is the default.
+
+(http://en.wikipedia.org/wiki/Compatibility_of_C_and_C%2B%2B#Constructs_that_behave_differently_in_C_and_C.2B.2B)
+
+So I'm removing the 'static' part of the declaration of
+shutdown_message, since it's not needed under C++.
+---
+ server/server.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/server.c b/server/server.c
+index ba2d320..040138e 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -55,7 +55,7 @@ pid_t checkpoint_pid = 0;
+ static pid_t parent_pid;
+ int in_child = 0;
+ 
+-static const char *shutdown_message = 0;	/* shut down if non-zero */
++const char *shutdown_message = 0;	/* shut down if non-zero */
+ static int in_emergency_mode = 0;
+ static Var checkpointed_connections;
+ 
+-- 
+1.7.9.5
+

@@ -1,0 +1,47 @@
+From b0cdde5738bf19d39a50d2db203c9bcde8ff2fe1 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 30 Jul 2011 23:12:35 +0000
+Subject: [PATCH 185/223] Removed pgperf from the LICENSE file, as it's no
+ longer part of the project.
+
+---
+ server/LICENSE |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/server/LICENSE b/server/LICENSE
+index 1ea8b22..a9dd92a 100644
+--- a/server/LICENSE
++++ b/server/LICENSE
+@@ -35,14 +35,6 @@ The Lambdamoo server code's license is:
+ 
+ 
+ 
+-======
+-pgperf
+-======
+-The copy of "gperf" included with this distribution is not compiled
+-into the Lambdamoo server; it is a standalone program modified by
+-Pavel Curtis from GNU gperf, and is licensed under the GPL.
+-
+-
+ =======
+ ext-FUP
+ =======
+@@ -167,7 +159,7 @@ bg_name_lookup.c
+   reserved.  Permission to use, copy, modify, and distribute this
+   software and its documentation for any purpose and without fee
+   is hereby granted, provided that the above copyright notice
+-  appear in all copies and that both that copyright notice and
++  appears in all copies and that both that copyright notice and
+   this permission notice appear in supporting documentation.
+ 
+   Andrew Wendt disclaims all warranties with regard to this
+@@ -223,4 +215,4 @@ File I/O
+   CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+   CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ 
+-File I/O is an optional package copiled into the server.
++File I/O is an optional feature compiled into the server.
+-- 
+1.7.9.5
+

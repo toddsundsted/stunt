@@ -1,0 +1,4454 @@
+From 58b81afeeb5df7259f464c2ea3189116d961e95c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 30 Jul 2011 22:18:04 +0000
+Subject: [PATCH 184/223] Dropped 'pgperf', the customized verion of GNU gperf
+ that came with LambdaMOO. GNU gperf has supported
+ case-insensitive lookup tables since 2002, and
+ pgperf didn't compile anymore anyways, due to its
+ reliance on varargs.h which is no longer supported.
+
+---
+ server/Makefile.in        |   20 +-
+ server/keywords.c         |  379 ++++++++-------
+ server/keywords.gperf     |    4 +-
+ server/pgperf/Makefile    |   77 ----
+ server/pgperf/README      |   10 -
+ server/pgperf/boolarray.c |   91 ----
+ server/pgperf/boolarray.h |   47 --
+ server/pgperf/getopt.c    |  391 ----------------
+ server/pgperf/gperf-to-do |   22 -
+ server/pgperf/hashtable.c |  132 ------
+ server/pgperf/hashtable.h |   36 --
+ server/pgperf/iterator.c  |  101 ----
+ server/pgperf/iterator.h  |   47 --
+ server/pgperf/keylist.c   | 1117 ---------------------------------------------
+ server/pgperf/keylist.h   |   53 ---
+ server/pgperf/listnode.c  |  119 -----
+ server/pgperf/listnode.h  |   42 --
+ server/pgperf/main.c      |   98 ----
+ server/pgperf/mon.out     |  Bin 85682 -> 0 bytes
+ server/pgperf/options.c   |  445 ------------------
+ server/pgperf/options.h   |  152 ------
+ server/pgperf/perfect.c   |  347 --------------
+ server/pgperf/perfect.h   |   42 --
+ server/pgperf/prototype.h |   15 -
+ server/pgperf/readline.c  |   79 ----
+ server/pgperf/readline.h  |   30 --
+ server/pgperf/stderr.c    |  104 -----
+ server/pgperf/stderr.h    |   29 --
+ server/pgperf/version.c   |   22 -
+ server/pgperf/xmalloc.c   |   79 ----
+ 30 files changed, 237 insertions(+), 3893 deletions(-)
+ delete mode 100644 server/pgperf/Makefile
+ delete mode 100644 server/pgperf/README
+ delete mode 100644 server/pgperf/boolarray.c
+ delete mode 100644 server/pgperf/boolarray.h
+ delete mode 100644 server/pgperf/getopt.c
+ delete mode 100644 server/pgperf/gperf-to-do
+ delete mode 100644 server/pgperf/hashtable.c
+ delete mode 100644 server/pgperf/hashtable.h
+ delete mode 100644 server/pgperf/iterator.c
+ delete mode 100644 server/pgperf/iterator.h
+ delete mode 100644 server/pgperf/keylist.c
+ delete mode 100644 server/pgperf/keylist.h
+ delete mode 100644 server/pgperf/listnode.c
+ delete mode 100644 server/pgperf/listnode.h
+ delete mode 100644 server/pgperf/main.c
+ delete mode 100644 server/pgperf/mon.out
+ delete mode 100644 server/pgperf/options.c
+ delete mode 100644 server/pgperf/options.h
+ delete mode 100644 server/pgperf/perfect.c
+ delete mode 100644 server/pgperf/perfect.h
+ delete mode 100644 server/pgperf/prototype.h
+ delete mode 100644 server/pgperf/readline.c
+ delete mode 100644 server/pgperf/readline.h
+ delete mode 100644 server/pgperf/stderr.c
+ delete mode 100644 server/pgperf/stderr.h
+ delete mode 100644 server/pgperf/version.c
+ delete mode 100644 server/pgperf/xmalloc.c
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 60671e7..8bb038a 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -105,11 +105,23 @@ config.h: config.h.in config.status
+ y.tab.h: parser.o
+ 	touch y.tab.h
+ 
+-# see the README file in the directory pgperf for an explanation of
+-# the custom version of gperf used by this project. --sw
++# The LambdaMOO server project originally shipped with a lightly
++# hacked version 2.1 of GNU gperf, renamed 'pgperf'; Pavel Curtis
++# added a new command line option, '-l', to make the generated hash
++# table case-insensitive. In 2002, the option '--ignore-case' was
++# added to GNU gperf, and by 2011 the 'pgperf' shipped with LambdaMOO
++# no longer compiled due to obsolesence (it used varargs.h, which is
++# no longer supported). Also, the '-a' command line flag was replaced
++# by '--language' and the flag '-p' was dropped (and no explanation
++# given in gperf's ChangeLog). I've expanded the short options into
++# long options here for readability. For the sake of history, this was
++# the original incantation:
++# pgperf -aCIptT -k1,3,$$ keywords.gperf
++# --sw July 2011
+ keywords.c: keywords.gperf
+-	pgperf -aCIptT -k1,3,$$ keywords.gperf \
+-		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
++	gperf --language=C++ --ignore-case --readonly-tables --struct-type \
++		--omit-struct-type --key-positions=1,3,$$ keywords.gperf   \
++		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/'     \
+ 		> keywords.c
+ 
+ TAGS:
+diff --git a/server/keywords.c b/server/keywords.c
+index 2d442f2..8197af8 100644
+--- a/server/keywords.c
++++ b/server/keywords.c
+@@ -1,9 +1,35 @@
+-/* C code produced by gperf version 2.1p1 (K&R C version, modified by Pavel) */
+-/* Command-line: pgperf -aCIptT -k1,3,$ keywords.gperf  */
++/* C++ code produced by gperf version 3.0.4 */
++/* Command-line: gperf --language=C++ --ignore-case --readonly-tables --struct-type --omit-struct-type --key-positions='1,3,$' keywords.gperf  */
+ 
+-#include "my-ctype.h"
++#if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
++      && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
++      && (')' == 41) && ('*' == 42) && ('+' == 43) && (',' == 44) \
++      && ('-' == 45) && ('.' == 46) && ('/' == 47) && ('0' == 48) \
++      && ('1' == 49) && ('2' == 50) && ('3' == 51) && ('4' == 52) \
++      && ('5' == 53) && ('6' == 54) && ('7' == 55) && ('8' == 56) \
++      && ('9' == 57) && (':' == 58) && (';' == 59) && ('<' == 60) \
++      && ('=' == 61) && ('>' == 62) && ('?' == 63) && ('A' == 65) \
++      && ('B' == 66) && ('C' == 67) && ('D' == 68) && ('E' == 69) \
++      && ('F' == 70) && ('G' == 71) && ('H' == 72) && ('I' == 73) \
++      && ('J' == 74) && ('K' == 75) && ('L' == 76) && ('M' == 77) \
++      && ('N' == 78) && ('O' == 79) && ('P' == 80) && ('Q' == 81) \
++      && ('R' == 82) && ('S' == 83) && ('T' == 84) && ('U' == 85) \
++      && ('V' == 86) && ('W' == 87) && ('X' == 88) && ('Y' == 89) \
++      && ('Z' == 90) && ('[' == 91) && ('\\' == 92) && (']' == 93) \
++      && ('^' == 94) && ('_' == 95) && ('a' == 97) && ('b' == 98) \
++      && ('c' == 99) && ('d' == 100) && ('e' == 101) && ('f' == 102) \
++      && ('g' == 103) && ('h' == 104) && ('i' == 105) && ('j' == 106) \
++      && ('k' == 107) && ('l' == 108) && ('m' == 109) && ('n' == 110) \
++      && ('o' == 111) && ('p' == 112) && ('q' == 113) && ('r' == 114) \
++      && ('s' == 115) && ('t' == 116) && ('u' == 117) && ('v' == 118) \
++      && ('w' == 119) && ('x' == 120) && ('y' == 121) && ('z' == 122) \
++      && ('{' == 123) && ('|' == 124) && ('}' == 125) && ('~' == 126))
++/* The character set is not based on ISO-646.  */
++#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
++#endif
+ 
+-	/* -*- C -*- */
++#line 1 "keywords.gperf"
++	/* -*- C++ -*- */
+ 
+ /******************************************************************************
+   Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
+@@ -30,187 +56,220 @@
+ #include "utils.h"
+ 
+ 
++#define TOTAL_KEYWORDS 35
+ #define MIN_WORD_LENGTH 2
+ #define MAX_WORD_LENGTH 9
+ #define MIN_HASH_VALUE 3
+-#define MAX_HASH_VALUE 106
+-/*
+-   35 keywords
+-   104 is the maximum key range
+- */
++#define MAX_HASH_VALUE 63
++/* maximum key range = 61, duplicates = 0 */
+ 
++#ifndef GPERF_DOWNCASE
++#define GPERF_DOWNCASE 1
++static unsigned char gperf_downcase[256] =
++  {
++      0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,
++     15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
++     30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,
++     45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,
++     60,  61,  62,  63,  64,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106,
++    107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
++    122,  91,  92,  93,  94,  95,  96,  97,  98,  99, 100, 101, 102, 103, 104,
++    105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
++    120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134,
++    135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
++    150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164,
++    165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179,
++    180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194,
++    195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209,
++    210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224,
++    225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
++    240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254,
++    255
++  };
++#endif
++
++#ifndef GPERF_CASE_STRCMP
++#define GPERF_CASE_STRCMP 1
+ static int
+-hash(register const char *str, register int len)
++gperf_case_strcmp (register const char *s1, register const char *s2)
+ {
+-    static const unsigned char hash_table[] = {
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 106, 106, 106,
+-	106, 106, 106, 106, 106, 106, 106, 10, 0, 45,
+-	0, 0, 0, 10, 106, 45, 106, 10, 106, 35,
+-	5, 106, 5, 10, 0, 25, 55, 106, 35, 5,
+-	106, 10, 106, 106, 106, 106, 106, 106,
+-    };
+-    register int hval = len;
+-
+-    switch (hval) {
+-    default:
+-    case 3:
+-	hval += hash_table[tolower((unsigned char) str[2])];
+-    case 2:
+-    case 1:
+-	hval += hash_table[tolower((unsigned char) str[0])];
++  for (;;)
++    {
++      unsigned char c1 = gperf_downcase[(unsigned char)*s1++];
++      unsigned char c2 = gperf_downcase[(unsigned char)*s2++];
++      if (c1 != 0 && c1 == c2)
++        continue;
++      return (int)c1 - (int)c2;
+     }
+-    return hval + hash_table[tolower((unsigned char) str[len - 1])];
+ }
++#endif
+ 
+-static int
+-case_strcmp(register const char *str, register const char *key)
++class Perfect_Hash
+ {
+-    int ans = 0;
++private:
++  static inline unsigned int hash (const char *str, unsigned int len);
++public:
++  static const struct keyword *in_word_set (const char *str, unsigned int len);
++};
+ 
+-    while (!(ans = tolower(*str) - (int) *key) && *str)
+-	str++, key++;
++inline unsigned int
++Perfect_Hash::hash (register const char *str, register unsigned int len)
++{
++  static const unsigned char asso_values[] =
++    {
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 10,  5, 20,  0,  0,
++       0,  5, 64, 20, 64, 20, 64, 35, 10, 64,
++       5, 25,  0, 35,  5, 64, 10,  0, 64, 20,
++      64, 64, 64, 64, 64, 64, 64, 10,  5, 20,
++       0,  0,  0,  5, 64, 20, 64, 20, 64, 35,
++      10, 64,  5, 25,  0, 35,  5, 64, 10,  0,
++      64, 20, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
++      64, 64, 64, 64, 64, 64
++    };
++  register int hval = len;
+ 
+-    return ans;
++  switch (hval)
++    {
++      default:
++        hval += asso_values[(unsigned char)str[2]];
++      /*FALLTHROUGH*/
++      case 2:
++      case 1:
++        hval += asso_values[(unsigned char)str[0]];
++        break;
++    }
++  return hval + asso_values[(unsigned char)str[len - 1]];
+ }
+ 
+ const struct keyword *
+-in_word_set(register const char *str, register int len)
++Perfect_Hash::in_word_set (register const char *str, register unsigned int len)
+ {
+-
+-    static const struct keyword wordlist[] = {
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"for", DBV_Prehistory, tFOR},
+-	{"",},
+-	{"endif", DBV_Prehistory, tENDIF},
+-	{"endfor", DBV_Prehistory, tENDFOR},
+-	{"e_range", DBV_Prehistory, tERROR, E_RANGE},
+-	{"endwhile", DBV_Prehistory, tENDWHILE},
+-	{"e_recmove", DBV_Prehistory, tERROR, E_RECMOVE},
+-	{"",},
+-	{"e_none", DBV_Prehistory, tERROR, E_NONE},
+-	{"",},
+-	{"e_propnf", DBV_Prehistory, tERROR, E_PROPNF},
+-	{"fork", DBV_Prehistory, tFORK},
+-	{"break", DBV_BreakCont, tBREAK},
+-	{"endtry", DBV_Exceptions, tENDTRY},
+-	{"endfork", DBV_Prehistory, tENDFORK},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"finally", DBV_Exceptions, tFINALLY},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"e_quota", DBV_Prehistory, tERROR, E_QUOTA},
+-	{"",},
+-	{"else", DBV_Prehistory, tELSE},
+-	{"",},
+-	{"elseif", DBV_Prehistory, tELSEIF},
+-	{"",},
+-	{"any", DBV_Exceptions, tANY},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"e_div", DBV_Prehistory, tERROR, E_DIV},
+-	{"e_args", DBV_Prehistory, tERROR, E_ARGS},
+-	{"e_varnf", DBV_Prehistory, tERROR, E_VARNF},
+-	{"e_verbnf", DBV_Prehistory, tERROR, E_VERBNF},
+-	{"",},
+-	{"",},
+-	{"e_perm", DBV_Prehistory, tERROR, E_PERM},
+-	{"if", DBV_Prehistory, tIF},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"in", DBV_Prehistory, tIN},
+-	{"e_invind", DBV_Prehistory, tERROR, E_INVIND},
+-	{"",},
+-	{"while", DBV_Prehistory, tWHILE},
+-	{"e_nacc", DBV_Prehistory, tERROR, E_NACC},
+-	{"",},
+-	{"continue", DBV_BreakCont, tCONTINUE},
+-	{"",},
+-	{"",},
+-	{"e_type", DBV_Prehistory, tERROR, E_TYPE},
+-	{"e_float", DBV_Float, tERROR, E_FLOAT},
+-	{"e_invarg", DBV_Prehistory, tERROR, E_INVARG},
+-	{"",},
+-	{"",},
+-	{"return", DBV_Prehistory, tRETURN},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"try", DBV_Exceptions, tTRY},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"e_maxrec", DBV_Prehistory, tERROR, E_MAXREC},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"",},
+-	{"except", DBV_Exceptions, tEXCEPT},
++  static const struct keyword wordlist[] =
++    {
++      {""}, {""}, {""},
++#line 34 "keywords.gperf"
++      {"for",		DBV_Prehistory, tFOR},
++      {""},
++#line 33 "keywords.gperf"
++      {"endif",		DBV_Prehistory, tENDIF},
++#line 36 "keywords.gperf"
++      {"endfor",		DBV_Prehistory, tENDFOR},
++#line 59 "keywords.gperf"
++      {"E_RANGE",	DBV_Prehistory, tERROR,	E_RANGE},
++#line 41 "keywords.gperf"
++      {"endwhile",	DBV_Prehistory, tENDWHILE},
++#line 57 "keywords.gperf"
++      {"E_RECMOVE",	DBV_Prehistory, tERROR,	E_RECMOVE},
++      {""},
++#line 50 "keywords.gperf"
++      {"E_TYPE",		DBV_Prehistory, tERROR,	E_TYPE},
++#line 64 "keywords.gperf"
++      {"E_FLOAT",	DBV_Float,	tERROR,	E_FLOAT},
++#line 53 "keywords.gperf"
++      {"E_PROPNF",	DBV_Prehistory, tERROR,	E_PROPNF},
++      {""},
++#line 51 "keywords.gperf"
++      {"E_DIV",		DBV_Prehistory, tERROR,	E_DIV},
++#line 49 "keywords.gperf"
++      {"E_NONE",		DBV_Prehistory, tERROR,	E_NONE},
++#line 55 "keywords.gperf"
++      {"E_VARNF",	DBV_Prehistory, tERROR,	E_VARNF},
++#line 54 "keywords.gperf"
++      {"E_VERBNF",	DBV_Prehistory, tERROR,	E_VERBNF},
++      {""}, {""},
++#line 39 "keywords.gperf"
++      {"return",		DBV_Prehistory, tRETURN},
++#line 30 "keywords.gperf"
++      {"if",		DBV_Prehistory, tIF},
++      {""},
++#line 37 "keywords.gperf"
++      {"fork",		DBV_Prehistory, tFORK},
++#line 40 "keywords.gperf"
++      {"while",		DBV_Prehistory, tWHILE},
++#line 45 "keywords.gperf"
++      {"endtry",		DBV_Exceptions, tENDTRY},
++#line 38 "keywords.gperf"
++      {"endfork",	DBV_Prehistory, tENDFORK},
++#line 56 "keywords.gperf"
++      {"E_INVIND",	DBV_Prehistory, tERROR,	E_INVIND},
++      {""},
++#line 47 "keywords.gperf"
++      {"break",		DBV_BreakCont, tBREAK},
++#line 43 "keywords.gperf"
++      {"except",		DBV_Exceptions, tEXCEPT},
++#line 35 "keywords.gperf"
++      {"in",		DBV_Prehistory, tIN},
++#line 62 "keywords.gperf"
++      {"E_INVARG",	DBV_Prehistory, tERROR,	E_INVARG},
++      {""}, {""},
++#line 61 "keywords.gperf"
++      {"E_NACC",		DBV_Prehistory, tERROR,	E_NACC},
++#line 44 "keywords.gperf"
++      {"finally",	DBV_Exceptions, tFINALLY},
++#line 48 "keywords.gperf"
++      {"continue",	DBV_BreakCont, tCONTINUE},
++#line 31 "keywords.gperf"
++      {"else",		DBV_Prehistory, tELSE},
++      {""},
++#line 32 "keywords.gperf"
++      {"elseif",		DBV_Prehistory, tELSEIF},
++#line 63 "keywords.gperf"
++      {"E_QUOTA",	DBV_Prehistory, tERROR,	E_QUOTA},
++      {""}, {""}, {""},
++#line 52 "keywords.gperf"
++      {"E_PERM",		DBV_Prehistory, tERROR,	E_PERM},
++      {""},
++#line 42 "keywords.gperf"
++      {"try",		DBV_Exceptions, tTRY},
++      {""}, {""},
++#line 60 "keywords.gperf"
++      {"E_ARGS",		DBV_Prehistory, tERROR,	E_ARGS},
++      {""},
++#line 46 "keywords.gperf"
++      {"ANY",		DBV_Exceptions, tANY},
++      {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""}, {""},
++#line 58 "keywords.gperf"
++      {"E_MAXREC",	DBV_Prehistory, tERROR,	E_MAXREC}
+     };
+ 
+-    if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH) {
+-	register int key = hash(str, len);
++  if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
++    {
++      register int key = hash (str, len);
+ 
+-	if (key <= MAX_HASH_VALUE && key >= MIN_HASH_VALUE) {
+-	    register const char *s = wordlist[key].name;
++      if (key <= MAX_HASH_VALUE && key >= 0)
++        {
++          register const char *s = wordlist[key].name;
+ 
+-	    if (*s == tolower(*str) && !case_strcmp(str + 1, s + 1))
+-		return &wordlist[key];
+-	}
++          if ((((unsigned char)*str ^ (unsigned char)*s) & ~32) == 0 && !gperf_case_strcmp (str, s))
++            return &wordlist[key];
++        }
+     }
+-    return 0;
++  return 0;
+ }
++#line 65 "keywords.gperf"
++
+ 
+ const struct keyword *
+ find_keyword(const char *word)
+ {
+-    return in_word_set(word, strlen(word));
++  return Perfect_Hash::in_word_set(word, strlen(word));
+ }
+ 
+diff --git a/server/keywords.gperf b/server/keywords.gperf
+index 225f519..8846248 100644
+--- a/server/keywords.gperf
++++ b/server/keywords.gperf
+@@ -1,4 +1,4 @@
+-%{	/* -*- C -*- */
++%{	/* -*- C++ -*- */
+ 
+ /******************************************************************************
+   Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
+@@ -67,6 +67,6 @@ E_FLOAT,	DBV_Float,	tERROR,	E_FLOAT
+ const struct keyword *
+ find_keyword(const char *word)
+ {
+-    return in_word_set(word, strlen(word));
++  return Perfect_Hash::in_word_set(word, strlen(word));
+ }
+ 
+diff --git a/server/pgperf/Makefile b/server/pgperf/Makefile
+deleted file mode 100644
+index 05f59a4..0000000
+--- a/server/pgperf/Makefile
++++ /dev/null
+@@ -1,77 +0,0 @@
+-# Copyright (C) 1989 Free Software Foundation, Inc.
+-# written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-# 
+-# This file is part of GNU GPERF.
+-# 
+-# GNU GPERF is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 1, or (at your option)
+-# any later version.
+-# 
+-# GNU GPERF is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-# 
+-# You should have received a copy of the GNU General Public License
+-# along with GNU GPERF; see the file COPYING.  If not, write to
+-# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
+-
+-CC = gcc
+-DFLAGS= -DLO_CAL -DGATHER_STATISTICS #-DRLIMIT_STACK 
+-OFLAGS= -O -p -g -fstrength-reduce -fomit-frame-pointer -fdelayed-branch -finline-functions # gcc options 
+-CFLAGS= $(DFLAGS) $(OFLAGS)
+-OBJS = options.o iterator.o main.o perfect.o keylist.o listnode.o xmalloc.o \
+-       hashtable.o boolarray.o readline.o stderr.o version.o getopt.o
+-SOURCES = options.c iterator.c main.c perfect.c keylist.c listnode.c xmalloc.c \
+-       hashtable.c boolarray.c readline.c stderr.c version.c getopt.c
+-
+-all: gperf
+-
+-gperf: $(OBJS) 
+-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+-
+-clean: 
+-	-rm -f *.o core *~ #*#
+-
+-realclean: clean
+-	-rm -f gperf
+-
+-# dependencies
+-# DO NOT DELETE THIS LINE -- mkdep uses it.
+-# DO NOT PUT ANYTHING AFTER THIS LINE, IT WILL GO AWAY.
+-
+-boolarray.o: boolarray.c /usr/include/stdio.h boolarray.h prototype.h options.h
+-boolarray.o: /usr/include/stdio.h prototype.h
+-getopt.o: getopt.c /usr/include/stdio.h
+-hashtable.o: hashtable.c /usr/include/stdio.h hashtable.h keylist.h
+-hashtable.o: /usr/include/stdio.h listnode.h prototype.h prototype.h options.h
+-hashtable.o: /usr/include/stdio.h prototype.h
+-iterator.o: iterator.c /usr/include/stdio.h /usr/include/ctype.h iterator.h
+-iterator.o: prototype.h
+-keylist.o: keylist.c /usr/include/assert.h /usr/include/stdio.h options.h
+-keylist.o: /usr/include/stdio.h prototype.h readline.h prototype.h keylist.h
+-keylist.o: /usr/include/stdio.h listnode.h prototype.h hashtable.h keylist.h
+-keylist.o: prototype.h stderr.h prototype.h /usr/include/varargs.h
+-listnode.o: listnode.c /usr/include/stdio.h options.h /usr/include/stdio.h
+-listnode.o: prototype.h listnode.h prototype.h stderr.h prototype.h
+-listnode.o: /usr/include/varargs.h
+-main.o: main.c /usr/include/stdio.h stderr.h prototype.h /usr/include/varargs.h
+-main.o: options.h /usr/include/stdio.h prototype.h perfect.h prototype.h
+-main.o: keylist.h /usr/include/stdio.h listnode.h prototype.h boolarray.h
+-main.o: prototype.h
+-options.o: options.c /usr/include/stdio.h /usr/include/assert.h options.h
+-options.o: /usr/include/stdio.h prototype.h iterator.h prototype.h stderr.h
+-options.o: prototype.h /usr/include/varargs.h
+-perfect.o: perfect.c /usr/include/stdio.h /usr/include/assert.h
+-perfect.o: /usr/include/ctype.h options.h /usr/include/stdio.h prototype.h
+-perfect.o: perfect.h prototype.h keylist.h /usr/include/stdio.h listnode.h
+-perfect.o: prototype.h boolarray.h prototype.h stderr.h prototype.h
+-perfect.o: /usr/include/varargs.h
+-readline.o: readline.c /usr/include/stdio.h readline.h prototype.h
+-stderr.o: stderr.c /usr/include/stdio.h stderr.h prototype.h
+-stderr.o: /usr/include/varargs.h
+-version.o: version.c
+-xmalloc.o: xmalloc.c /usr/include/stdio.h
+-
+-# IF YOU PUT ANYTHING HERE IT WILL GO AWAY
+diff --git a/server/pgperf/README b/server/pgperf/README
+deleted file mode 100644
+index dac9ee5..0000000
+--- a/server/pgperf/README
++++ /dev/null
+@@ -1,10 +0,0 @@
+-This is the source code for a slightly hacked version of the GNU `gperf'
+-program, for generating perfect hash tables useful in quickly looking up
+-keywords.  Pavel hacked the source to add a `-I' flag that makes the generated
+-hash table case-insensitive; this was required in order to use it for the MOO
+-programming language.
+-
+-The Makefile here still creates an executable named `gperf', but Pavel uses it
+-under the name `pgperf' in the MOO Makefile.  If you ever try to change the set
+-of keywords in the MOO, you'll need a working version of this program in order
+-to recreate the `keywords.c' file from `keywords.gperf'.
+diff --git a/server/pgperf/boolarray.c b/server/pgperf/boolarray.c
+deleted file mode 100644
+index 141b60a..0000000
+--- a/server/pgperf/boolarray.c
++++ /dev/null
+@@ -1,91 +0,0 @@
+-/* Fast lookup table abstraction implemented as a Guilmette Array
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include "boolarray.h"
+-#include "options.h"
+-
+-/* Locally visible BOOL_ARRAY object. */
+-
+-static BOOL_ARRAY bool_array;
+-
+-/* Prints out debugging diagnostics. */
+-
+-void
+-bool_array_destroy()
+-{
+-    if (OPTION_ENABLED(option, DEBUG))
+-	fprintf(stderr,
+-		"\ndumping boolean array information\niteration number = %d\nend of array dump\n",
+-		bool_array.iteration_number);
+-    free((char *) bool_array.storage_array);
+-}
+-
+-void
+-bool_array_init(size)
+-    int size;
+-{
+-    STORAGE_TYPE *xmalloc();
+-    bool_array.iteration_number = 1;
+-    bool_array.size = size;
+-    bool_array.storage_array =
+-	xmalloc(size * sizeof *bool_array.storage_array);
+-    bzero(bool_array.storage_array,
+-	  size * sizeof *bool_array.storage_array);
+-    if (OPTION_ENABLED(option, DEBUG))
+-	fprintf(stderr, "\nbool array size = %d, total bytes = %d\n",
+-		bool_array.size,
+-		bool_array.size * sizeof *bool_array.storage_array);
+-}
+-
+-bool
+-lookup(index)
+-    int index;
+-{
+-    if (bool_array.storage_array[index] == bool_array.iteration_number)
+-	return 1;
+-    else {
+-	bool_array.storage_array[index] = bool_array.iteration_number;
+-	return 0;
+-    }
+-}
+-
+-/* Simple enough to reset, eh?! */
+-
+-void
+-bool_array_reset()
+-{
+-    /* If we wrap around it's time to zero things out again! */
+-
+-
+-    if (++bool_array.iteration_number == 0) {
+-	if (OPTION_ENABLED(option, DEBUG)) {
+-	    fprintf(stderr, "(re-initializing bool_array)...");
+-	    fflush(stderr);
+-	}
+-	bool_array.iteration_number = 1;
+-	bzero(bool_array.storage_array,
+-	      bool_array.size * sizeof *bool_array.storage_array);
+-	if (OPTION_ENABLED(option, DEBUG)) {
+-	    fprintf(stderr, "done\n");
+-	    fflush(stderr);
+-	}
+-    }
+-}
+diff --git a/server/pgperf/boolarray.h b/server/pgperf/boolarray.h
+deleted file mode 100644
+index 4f5ea9b..0000000
+--- a/server/pgperf/boolarray.h
++++ /dev/null
+@@ -1,47 +0,0 @@
+-/* Simple lookup table abstraction implemented as a Guilmette Array.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-/* Define and implement a simple boolean array abstraction,
+-   uses a Guilmette array implementation to save on initialization time. */
+-
+-#ifndef _boolarray_h
+-#define _boolarray_h
+-#include "prototype.h"
+-
+-#ifdef LO_CAL
+-/* If we are on a memory diet then we'll only make these use a limited
+-   amount of storage space. */
+-typedef unsigned short STORAGE_TYPE;
+-#else
+-typedef int STORAGE_TYPE;
+-#endif
+-typedef struct bool_array {
+-    STORAGE_TYPE *storage_array;	/* Initialization of the index space. */
+-    STORAGE_TYPE iteration_number;	/* Keep track of the current iteration. */
+-    int size;			/* Size of the entire array (dynamically initialized). */
+-} BOOL_ARRAY;
+-
+-extern void bool_array_init P((int size));
+-extern void bool_array_destroy P((void));
+-extern bool lookup P((int hash_value));
+-extern void bool_array_reset P((void));
+-
+-#endif				/* _boolarray_h */
+diff --git a/server/pgperf/getopt.c b/server/pgperf/getopt.c
+deleted file mode 100644
+index f8d9272..0000000
+--- a/server/pgperf/getopt.c
++++ /dev/null
+@@ -1,391 +0,0 @@
+-/* Getopt for GNU.
+-   Copyright (C) 1987, 1989 Free Software Foundation, Inc.
+-
+-   This program is free software; you can redistribute it and/or modify
+-   it under the terms of the GNU General Public License as published by
+-   the Free Software Foundation; either version 1, or (at your option)
+-   any later version.
+-
+-   This program is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-   GNU General Public License for more details.
+-
+-   You should have received a copy of the GNU General Public License
+-   along with this program; if not, write to the Free Software
+-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-
+-
+-/* This version of `getopt' appears to the caller like standard Unix `getopt'
+-   but it behaves differently for the user, since it allows the user
+-   to intersperse the options with the other arguments.
+-
+-   As `getopt' works, it permutes the elements of `argv' so that,
+-   when it is done, all the options precede everything else.  Thus
+-   all application programs are extended to handle flexible argument order.
+-
+-   Setting the environment variable _POSIX_OPTION_ORDER disables permutation.
+-   Then the behavior is completely standard.
+-
+-   GNU application programs can use a third alternative mode in which
+-   they can distinguish the relative order of options and other arguments.  */
+-
+-#include <stdio.h>
+-
+-#ifdef sparc
+-#include <alloca.h>
+-#endif
+-#ifdef USG
+-#define bcopy(s, d, l) memcpy((d), (s), (l))
+-#endif
+-
+-/* For communication from `getopt' to the caller.
+-   When `getopt' finds an option that takes an argument,
+-   the argument value is returned here.
+-   Also, when `ordering' is RETURN_IN_ORDER,
+-   each non-option ARGV-element is returned here.  */
+-
+-char *optarg = 0;
+-
+-/* Index in ARGV of the next element to be scanned.
+-   This is used for communication to and from the caller
+-   and for communication between successive calls to `getopt'.
+-
+-   On entry to `getopt', zero means this is the first call; initialize.
+-
+-   When `getopt' returns EOF, this is the index of the first of the
+-   non-option elements that the caller should itself scan.
+-
+-   Otherwise, `optind' communicates from one call to the next
+-   how much of ARGV has been scanned so far.  */
+-
+-int optind = 0;
+-
+-/* The next char to be scanned in the option-element
+-   in which the last option character we returned was found.
+-   This allows us to pick up the scan where we left off.
+-
+-   If this is zero, or a null string, it means resume the scan
+-   by advancing to the next ARGV-element.  */
+-
+-static char *nextchar;
+-
+-/* Callers store zero here to inhibit the error message
+-   for unrecognized options.  */
+-
+-int opterr = 1;
+-
+-/* Describe how to deal with options that follow non-option ARGV-elements.
+-
+-   UNSPECIFIED means the caller did not specify anything;
+-   the default is then REQUIRE_ORDER if the environment variable
+-   _OPTIONS_FIRST is defined, PERMUTE otherwise.
+-
+-   REQUIRE_ORDER means don't recognize them as options.
+-   Stop option processing when the first non-option is seen.
+-   This is what Unix does.
+-
+-   PERMUTE is the default.  We permute the contents of `argv' as we scan,
+-   so that eventually all the options are at the end.  This allows options
+-   to be given in any order, even with programs that were not written to
+-   expect this.
+-
+-   RETURN_IN_ORDER is an option available to programs that were written
+-   to expect options and other ARGV-elements in any order and that care about
+-   the ordering of the two.  We describe each non-option ARGV-element
+-   as if it were the argument of an option with character code zero.
+-   Using `-' as the first character of the list of option characters
+-   requests this mode of operation.
+-
+-   The special argument `--' forces an end of option-scanning regardless
+-   of the value of `ordering'.  In the case of RETURN_IN_ORDER, only
+-   `--' can cause `getopt' to return EOF with `optind' != ARGC.  */
+-
+-static enum { REQUIRE_ORDER, PERMUTE, RETURN_IN_ORDER } ordering;
+-
+-/* Handle permutation of arguments.  */
+-
+-/* Describe the part of ARGV that contains non-options that have
+-   been skipped.  `first_nonopt' is the index in ARGV of the first of them;
+-   `last_nonopt' is the index after the last of them.  */
+-
+-static int first_nonopt;
+-static int last_nonopt;
+-
+-/* Exchange two adjacent subsequences of ARGV.
+-   One subsequence is elements [first_nonopt,last_nonopt)
+-    which contains all the non-options that have been skipped so far.
+-   The other is elements [last_nonopt,optind), which contains all
+-    the options processed since those non-options were skipped.
+-
+-   `first_nonopt' and `last_nonopt' are relocated so that they describe
+-    the new indices of the non-options in ARGV after they are moved.  */
+-
+-static void
+-exchange(argv)
+-    char **argv;
+-{
+-    int nonopts_size = (last_nonopt - first_nonopt) * sizeof(char *);
+-    char **temp = (char **) alloca(nonopts_size);
+-
+-    /* Interchange the two blocks of data in argv.  */
+-
+-    bcopy(&argv[first_nonopt], temp, nonopts_size);
+-    bcopy(&argv[last_nonopt], &argv[first_nonopt],
+-	  (optind - last_nonopt) * sizeof(char *));
+-    bcopy(temp, &argv[first_nonopt + optind - last_nonopt], nonopts_size);
+-
+-    /* Update records for the slots the non-options now occupy.  */
+-
+-    first_nonopt += (optind - last_nonopt);
+-    last_nonopt = optind;
+-}
+-
+-/* Scan elements of ARGV (whose length is ARGC) for option characters
+-   given in OPTSTRING.
+-
+-   If an element of ARGV starts with '-', and is not exactly "-" or "--",
+-   then it is an option element.  The characters of this element
+-   (aside from the initial '-') are option characters.  If `getopt'
+-   is called repeatedly, it returns successively each of theoption characters
+-   from each of the option elements.
+-
+-   If `getopt' finds another option character, it returns that character,
+-   updating `optind' and `nextchar' so that the next call to `getopt' can
+-   resume the scan with the following option character or ARGV-element.
+-
+-   If there are no more option characters, `getopt' returns `EOF'.
+-   Then `optind' is the index in ARGV of the first ARGV-element
+-   that is not an option.  (The ARGV-elements have been permuted
+-   so that those that are not options now come last.)
+-
+-   OPTSTRING is a string containing the legitimate option characters.
+-   A colon in OPTSTRING means that the previous character is an option
+-   that wants an argument.  The argument is taken from the rest of the
+-   current ARGV-element, or from the following ARGV-element,
+-   and returned in `optarg'.
+-
+-   If an option character is seen that is not listed in OPTSTRING,
+-   return '?' after printing an error message.  If you set `opterr' to
+-   zero, the error message is suppressed but we still return '?'.
+-
+-   If a char in OPTSTRING is followed by a colon, that means it wants an arg,
+-   so the following text in the same ARGV-element, or the text of the following
+-   ARGV-element, is returned in `optarg.  Two colons mean an option that
+-   wants an optional arg; if there is text in the current ARGV-element,
+-   it is returned in `optarg'.
+-
+-   If OPTSTRING starts with `-', it requests a different method of handling the
+-   non-option ARGV-elements.  See the comments about RETURN_IN_ORDER, above.  */
+-
+-int
+-getopt(argc, argv, optstring)
+-    int argc;
+-    char **argv;
+-    char *optstring;
+-{
+-    /* Initialize the internal data when the first call is made.
+-       Start processing options with ARGV-element 1 (since ARGV-element 0
+-       is the program name); the sequence of previously skipped
+-       non-option ARGV-elements is empty.  */
+-
+-    if (optind == 0) {
+-	first_nonopt = last_nonopt = optind = 1;
+-
+-	nextchar = 0;
+-
+-	/* Determine how to handle the ordering of options and nonoptions.  */
+-
+-	if (optstring[0] == '-')
+-	    ordering = RETURN_IN_ORDER;
+-	else if (getenv("_POSIX_OPTION_ORDER") != 0)
+-	    ordering = REQUIRE_ORDER;
+-	else
+-	    ordering = PERMUTE;
+-    }
+-
+-    if (nextchar == 0 || *nextchar == 0) {
+-	if (ordering == PERMUTE) {
+-	    /* If we have just processed some options following some non-options,
+-	       exchange them so that the options come first.  */
+-
+-	    if (first_nonopt != last_nonopt && last_nonopt != optind)
+-		exchange(argv);
+-	    else if (last_nonopt != optind)
+-		first_nonopt = optind;
+-
+-	    /* Now skip any additional non-options
+-	       and extend the range of non-options previously skipped.  */
+-
+-	    while (optind < argc
+-		   && (argv[optind][0] != '-' || argv[optind][1] == 0))
+-		optind++;
+-	    last_nonopt = optind;
+-	}
+-
+-	/* Special ARGV-element `--' means premature end of options.
+-	   Skip it like a null option,
+-	   then exchange with previous non-options as if it were an option,
+-	   then skip everything else like a non-option.  */
+-
+-	if (optind != argc && !strcmp(argv[optind], "--")) {
+-	    optind++;
+-
+-	    if (first_nonopt != last_nonopt && last_nonopt != optind)
+-		exchange(argv);
+-	    else if (first_nonopt == last_nonopt)
+-		first_nonopt = optind;
+-	    last_nonopt = argc;
+-
+-	    optind = argc;
+-	}
+-
+-	/* If we have done all the ARGV-elements, stop the scan
+-	   and back over any non-options that we skipped and permuted.  */
+-
+-	if (optind == argc) {
+-	    /* Set the next-arg-index to point at the non-options
+-	       that we previously skipped, so the caller will digest them.  */
+-	    if (first_nonopt != last_nonopt)
+-		optind = first_nonopt;
+-	    return EOF;
+-	}
+-
+-	/* If we have come to a non-option and did not permute it,
+-	   either stop the scan or describe it to the caller and pass it by.  */
+-
+-	if (argv[optind][0] != '-' || argv[optind][1] == 0) {
+-	    if (ordering == REQUIRE_ORDER)
+-		return EOF;
+-	    optarg = argv[optind++];
+-	    return 0;
+-	}
+-
+-	/* We have found another option-ARGV-element.
+-	   Start decoding its characters.  */
+-
+-	nextchar = argv[optind] + 1;
+-    }
+-
+-    /* Look at and handle the next option-character.  */
+-
+-    {
+-	char c = *nextchar++;
+-	char *temp = (char *) index(optstring, c);
+-
+-	/* Increment `optind' when we start to process its last character.  */
+-	if (*nextchar == 0)
+-	    optind++;
+-
+-	if (temp == 0 || c == ':') {
+-	    if (opterr != 0) {
+-		if (c < 040 || c >= 0177)
+-		    fprintf(stderr,
+-			    "%s: unrecognized option, character code 0%o\n",
+-			    argv[0], c);
+-		else
+-		    fprintf(stderr, "%s: unrecognized option `-%c'\n",
+-			    argv[0], c);
+-	    }
+-	    return '?';
+-	}
+-	if (temp[1] == ':') {
+-	    if (temp[2] == ':') {
+-		/* This is an option that accepts an argument optionally.  */
+-		if (*nextchar != 0) {
+-		    optarg = nextchar;
+-		    optind++;
+-		} else
+-		    optarg = 0;
+-		nextchar = 0;
+-	    } else {
+-		/* This is an option that requires an argument.  */
+-		if (*nextchar != 0) {
+-		    optarg = nextchar;
+-		    /* If we end this ARGV-element by taking the rest as an arg,
+-		       we must advance to the next element now.  */
+-		    optind++;
+-		} else if (optind == argc) {
+-		    if (opterr != 0)
+-			fprintf(stderr,
+-				"%s: no argument for `-%c' option\n",
+-				argv[0], c);
+-		    c = '?';
+-		} else
+-		    /* We already incremented `optind' once;
+-		       increment it again when taking next ARGV-elt as argument.  */
+-		    optarg = argv[optind++];
+-		nextchar = 0;
+-	    }
+-	}
+-	return c;
+-    }
+-}
+-
+-#ifdef TEST
+-
+-/* Compile with -DTEST to make an executable for use in testing
+-   the above definition of `getopt'.  */
+-
+-int
+-main(argc, argv)
+-    int argc;
+-    char **argv;
+-{
+-    char c;
+-    int digit_optind = 0;
+-
+-    while (1) {
+-	int this_option_optind = optind;
+-	if ((c = getopt(argc, argv, "abc:d:0123456789")) == EOF)
+-	    break;
+-
+-	switch (c) {
+-	case '0':
+-	case '1':
+-	case '2':
+-	case '3':
+-	case '4':
+-	case '5':
+-	case '6':
+-	case '7':
+-	case '8':
+-	case '9':
+-	    if (digit_optind != 0 && digit_optind != this_option_optind)
+-		printf("digits occur in two different argv-elements.\n");
+-	    digit_optind = this_option_optind;
+-	    printf("option %c\n", c);
+-	    break;
+-
+-	case 'a':
+-	    printf("option a\n");
+-	    break;
+-
+-	case 'b':
+-	    printf("option b\n");
+-	    break;
+-
+-	case 'c':
+-	    printf("option c with value `%s'\n", optarg);
+-	    break;
+-
+-	case '?':
+-	    break;
+-
+-	default:
+-	    printf("?? getopt returned character code 0%o ??\n", c);
+-	}
+-    }
+-
+-    if (optind < argc) {
+-	printf("non-option ARGV-elements: ");
+-	while (optind < argc)
+-	    printf("%s ", argv[optind++]);
+-	printf("\n");
+-    }
+-
+-    return 0;
+-}
+-
+-#endif				/* TEST */
+diff --git a/server/pgperf/gperf-to-do b/server/pgperf/gperf-to-do
+deleted file mode 100644
+index 05caecc..0000000
+--- a/server/pgperf/gperf-to-do
++++ /dev/null
+@@ -1,22 +0,0 @@
+-1. provide output diagnostics that explain how many input keys total,
+-   how many after dealing with static links, and finally, after the
+-   algorithm is complete, how many dynamic duplicates do we now
+-   have.
+-2. fix up GATHER_STATISTICS for all instrumentation.
+-3. Useful idea:
+-
+-   a. Generate the wordlist as a contiguous block of keywords, as before.
+-      This wordlist *must* be sorted by hash value.
+-
+-   b. generate the lookup_array, which are an array of signed {chars,shorts,ints},
+-      which ever allows full coverage of the wordlist dimensions.  If the
+-      value v, where v = lookup_array[hash(str,len)], is >= 0, then we
+-      simply use this result as a direct access into wordlist to snag
+-      the keyword for comparison.  
+-
+-   c. Otherwise, if v is < 0 this is an indication that we'll need to
+-      search through some number of duplicates hash values.  Using a 
+-      hash linking scheme we'd then index into a duplicate_address
+-      table that would provide the starting index and total length of
+-      the duplicate entries to consider sequentially.
+-
+diff --git a/server/pgperf/hashtable.c b/server/pgperf/hashtable.c
+deleted file mode 100644
+index 71b7b4a..0000000
+--- a/server/pgperf/hashtable.c
++++ /dev/null
+@@ -1,132 +0,0 @@
+-/* Hash table for checking keyword links.  Implemented using double hashing.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include "hashtable.h"
+-#include "options.h"
+-
+-#ifdef GATHER_STATISTICS
+-/* Find out how well our double hashing is working! */
+-static collisions = 0;
+-#endif
+-
+-/* Locally visible hash table. */
+-static HASH_TABLE hash_table;
+-
+-/* Basically the algorithm from the Dragon book. */
+-
+-static unsigned
+-hash_pjw(str)
+-    char *str;
+-{
+-    char *temp;
+-    unsigned g, h = 0;
+-
+-    for (temp = str; *temp; temp++) {
+-	h = (h << 4) + (*temp * 13);
+-	if (g = h & 0xf0000000) {
+-	    h ^= (g >> 24);
+-	    h ^= g;
+-	}
+-    }
+-
+-    return h;
+-}
+-
+-/* The size of the hash table is always the smallest power of 2 >= the size
+-   indicated by the user.  This allows several optimizations, including
+-   the use of double hashing and elimination of the mod instruction.
+-   Note that the size had better be larger than the number of items
+-   in the hash table, else there's trouble!!!  Note that the memory
+-   for the hash table is allocated *outside* the intialization routine.
+-   This compromises information hiding somewhat, but greatly reduces
+-   memory fragmentation, since we can now use alloca! */
+-
+-void
+-hash_table_init(table, s)
+-    LIST_NODE **table;
+-    int s;
+-{
+-    hash_table.size = s;
+-    hash_table.table = table;
+-    bzero((char *) hash_table.table,
+-	  hash_table.size * sizeof *hash_table.table);
+-}
+-
+-/* Frees the dynamically allocated table.  Note that since we don't
+-   really need this space anymore, and since it is potentially quite
+-   big it is best to return it when we are done. */
+-
+-void
+-hash_table_destroy()
+-{
+-    if (OPTION_ENABLED(option, DEBUG)) {
+-	int i;
+-
+-	fprintf(stderr,
+-		"\ndumping the hash table\ntotal elements = %d, bytes = %d\n",
+-		hash_table.size,
+-		hash_table.size * sizeof *hash_table.table);
+-
+-	for (i = hash_table.size - 1; i >= 0; i--)
+-	    if (hash_table.table[i])
+-		fprintf(stderr,
+-			"location[%d] has charset \"%s\" and keyword \"%s\"\n",
+-			i, hash_table.table[i]->char_set,
+-			hash_table.table[i]->key);
+-
+-#ifdef GATHER_STATISTICS
+-	fprintf(stderr, "\ntotal collisions during hashing = %d\n",
+-		collisions);
+-#endif
+-	fprintf(stderr, "end dumping hash table\n\n");
+-    }
+-}
+-
+-/* If the ITEM is already in the hash table return the item found
+-   in the table.  Otherwise inserts the ITEM, and returns FALSE.
+-   Uses double hashing. */
+-
+-LIST_NODE *
+-retrieve(item, ignore_length)
+-    LIST_NODE *item;
+-    int ignore_length;
+-{
+-    unsigned hash_val = hash_pjw(item->char_set);
+-    int probe = hash_val & hash_table.size - 1;
+-    int increment = (hash_val ^ item->length | 1) & hash_table.size - 1;
+-
+-    while (hash_table.table[probe]
+-	   && (strcmp(hash_table.table[probe]->char_set, item->char_set)
+-	       || (!ignore_length
+-		   && hash_table.table[probe]->length != item->length))) {
+-#ifdef GATHER_STATISTICS
+-	collisions++;
+-#endif
+-	probe = probe + increment & hash_table.size - 1;
+-    }
+-
+-    if (hash_table.table[probe])
+-	return hash_table.table[probe];
+-    else {
+-	hash_table.table[probe] = item;
+-	return 0;
+-    }
+-}
+diff --git a/server/pgperf/hashtable.h b/server/pgperf/hashtable.h
+deleted file mode 100644
+index eab54e4..0000000
+--- a/server/pgperf/hashtable.h
++++ /dev/null
+@@ -1,36 +0,0 @@
+-/* Hash table used to check for duplicate keyword entries.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#ifndef _hashtable_h
+-#define _hashtable_h
+-#include "keylist.h"
+-#include "prototype.h"
+-
+-typedef struct hash_table {
+-    LIST_NODE **table;		/* Vector of pointers to linked lists of List_Node's. */
+-    int size;			/* Size of the vector. */
+-} HASH_TABLE;
+-
+-extern void hash_table_init P((LIST_NODE ** table, int size));
+-extern void hash_table_destroy P((void));
+-extern LIST_NODE *retrieve P((LIST_NODE * item, int ignore_length));
+-
+-#endif				/* _hashtable_h */
+diff --git a/server/pgperf/iterator.c b/server/pgperf/iterator.c
+deleted file mode 100644
+index ee71138..0000000
+--- a/server/pgperf/iterator.c
++++ /dev/null
+@@ -1,101 +0,0 @@
+-/* Provides an Iterator for keyword characters.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include <ctype.h>
+-#include "iterator.h"
+-
+-/* Locally visible ITERATOR object. */
+-
+-ITERATOR iterator;
+-
+-/* Constructor for ITERATOR. */
+-
+-void
+-iterator_init(s, lo, hi, word_end, bad_val, key_end)
+-    char *s;
+-    int lo;
+-    int hi;
+-    int word_end;
+-    int bad_val;
+-    int key_end;
+-{
+-    iterator.end = key_end;
+-    iterator.error_value = bad_val;
+-    iterator.end_word = word_end;
+-    iterator.str = s;
+-    iterator.hi_bound = hi;
+-    iterator.lo_bound = lo;
+-}
+-
+-/* Define several useful macros to clarify subsequent code. */
+-#define ISPOSDIGIT(X) ((X)<='9'&&(X)>'0')
+-#define TODIGIT(X) ((X)-'0')
+-
+-/* Provide an Iterator, returning the ``next'' value from 
+-   the list of valid values given in the constructor. */
+-
+-int
+-next()
+-{
+-/* Variables to record the Iterator's status when handling ranges, e.g., 3-12. */
+-
+-    static int size;
+-    static int curr_value;
+-    static int upper_bound;
+-
+-    if (size) {
+-	if (++curr_value >= upper_bound)
+-	    size = 0;
+-	return curr_value;
+-    } else {
+-	while (*iterator.str) {
+-	    if (*iterator.str == ',')
+-		iterator.str++;
+-	    else if (*iterator.str == '$') {
+-		iterator.str++;
+-		return iterator.end_word;
+-	    } else if (ISPOSDIGIT(*iterator.str)) {
+-
+-		for (curr_value = 0; isdigit(*iterator.str);
+-		     iterator.str++)
+-		    curr_value = curr_value * 10 + *iterator.str - '0';
+-
+-		if (*iterator.str == '-') {
+-
+-		    for (size = 1, upper_bound = 0;
+-			 isdigit(*++iterator.str);
+-			 upper_bound =
+-			 upper_bound * 10 + *iterator.str - '0');
+-
+-		    if (upper_bound <= curr_value
+-			|| upper_bound > iterator.hi_bound)
+-			return iterator.error_value;
+-		}
+-		return curr_value >= iterator.lo_bound
+-		    && curr_value <=
+-		    iterator.hi_bound ? curr_value : iterator.error_value;
+-	    } else
+-		return iterator.error_value;
+-	}
+-
+-	return iterator.end;
+-    }
+-}
+diff --git a/server/pgperf/iterator.h b/server/pgperf/iterator.h
+deleted file mode 100644
+index d134d8e..0000000
+--- a/server/pgperf/iterator.h
++++ /dev/null
+@@ -1,47 +0,0 @@
+-/* Provides an Iterator for keyword characters.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-/* Provides an Iterator that expands and decodes a control string containing digits
+-   and ranges, returning an integer every time the generator function is called.
+-   This is used to decode the user's key position requests.  For example:
+-   "-k 1,2,5-10,$"  will return 1, 2, 5, 6, 7, 8, 9, 10, and 0 ( representing
+-   the abstract ``last character of the key'' on successive calls to the
+-   member function operator ().
+-   No errors are handled in these routines, they are passed back to the
+-   calling routines via a user-supplied Error_Value */
+-
+-#ifndef _iterator_h
+-#define _iterator_h
+-#include "prototype.h"
+-
+-typedef struct iterator {
+-    char *str;			/* A pointer to the string provided by the user. */
+-    int end;			/* Value returned after last key is processed. */
+-    int end_word;		/* A value marking the abstract ``end of word'' ( usually '$'). */
+-    int error_value;		/* Error value returned when input is syntactically erroneous. */
+-    int hi_bound;		/* Greatest possible value, inclusive. */
+-    int lo_bound;		/* Smallest possible value, inclusive. */
+-} ITERATOR;
+-
+-extern void iterator_init
+-P((char *s, int lo, int hi, int word_end, int bad_val, int key_end));
+-extern int next P((void));
+-#endif				/* _iterator_h */
+diff --git a/server/pgperf/keylist.c b/server/pgperf/keylist.c
+deleted file mode 100644
+index 5fe02a5..0000000
+--- a/server/pgperf/keylist.c
++++ /dev/null
+@@ -1,1117 +0,0 @@
+-/* Routines for building, ordering, and printing the keyword list.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <assert.h>
+-#include <stdio.h>
+-#include "options.h"
+-#include "readline.h"
+-#include "keylist.h"
+-#include "hashtable.h"
+-#include "stderr.h"
+-#ifdef sparc
+-#include <alloca.h>
+-#endif
+-
+-/* Current release version. */
+-extern char *version_string;
+-
+-/* See comments in perfect.cc. */
+-extern int occurrences[ALPHABET_SIZE];
+-
+-/* Ditto. */
+-extern int asso_values[ALPHABET_SIZE];
+-
+-/* Used in function reorder, below. */
+-static bool determined[ALPHABET_SIZE];
+-
+-/* Default type for generated code. */
+-static char *default_array_type = "char *";
+-
+-/* Generated function ``in_word_set'' default return type. */
+-static char *default_return_type = "char *";
+-
+-/* Largest positive integer value. */
+-#define MAX_INT ((~(unsigned)0)>>1)
+-
+-/* Most negative integer value. */
+-#define NEG_MAX_INT ((~(unsigned)0)^((~(unsigned)0)>>1))
+-
+-/* Maximum value an unsigned char can take. */
+-#define MAX_UNSIGNED_CHAR 256
+-
+-/* Maximum value an unsigned short can take. */
+-#define MAX_UNSIGNED_SHORT 65536
+-
+-/* Make the hash table 5 times larger than the number of keyword entries. */
+-#define TABLE_MULTIPLE 5
+-
+-/* Efficiently returns the least power of two greater than or equal to X! */
+-#define POW(X) ((!X)?1:(X-=1,X|=X>>1,X|=X>>2,X|=X>>4,X|=X>>8,X|=X>>16,(++X)))
+-
+-/* How wide the printed field width must be to contain the maximum hash value. */
+-static int field_width = 2;
+-
+-/* Globally visible KEY_LIST object. */
+-
+-KEY_LIST key_list;
+-
+-/* Gathers the input stream into a buffer until one of two things occur:
+-
+-   1. We read a '%' followed by a '%'
+-   2. We read a '%' followed by a '}'
+-
+-   The first symbolizes the beginning of the keyword list proper,
+-   The second symbolizes the end of the C source code to be generated
+-   verbatim in the output file.
+-
+-   I assume that the keys are separated from the optional preceding struct
+-   declaration by a consecutive % followed by either % or } starting in 
+-   the first column. The code below uses an expandible buffer to scan off 
+-   and return a pointer to all the code (if any) appearing before the delimiter. */
+-
+-static char *
+-get_special_input(delimiter)
+-    char delimiter;
+-{
+-    char *xmalloc();
+-    int size = 80;
+-    char *buf = xmalloc(size);
+-    int c, i;
+-
+-    for (i = 0; (c = getchar()) != EOF; i++) {
+-	if (c == '%') {
+-	    if ((c = getchar()) == delimiter) {
+-
+-		while ((c = getchar()) != '\n');	/* Discard newline. */
+-
+-		if (i == 0)
+-		    return "";
+-		else {
+-		    buf[delimiter == '%'
+-			&& buf[i - 2] == ';' ? i - 2 : i - 1] = '\0';
+-		    return buf;
+-		}
+-	    } else
+-		ungetc(c, stdin);
+-	} else if (i >= size) {	/* Yikes, time to grow the buffer! */
+-	    char *temp = xmalloc(size *= 2);
+-	    int j;
+-
+-	    for (j = 0; j < i; j++)
+-		temp[j] = buf[j];
+-
+-	    free(buf);
+-	    buf = temp;
+-	}
+-	buf[i] = c;
+-    }
+-
+-    return NULL;		/* Problem here. */
+-}
+-
+-/* Stores any C text that must be included verbatim into the 
+-   generated code output. */
+-
+-static char *
+-save_include_src()
+-{
+-    int c;
+-
+-    if ((c = getchar()) != '%') {
+-	ungetc(c, stdin);
+-	return "";
+-    } else if ((c = getchar()) != '{')
+-	report_error("internal error, %c != '{' on line %d in file %s%a",
+-		     c, __LINE__, __FILE__);
+-    /*NOT REACHED */
+-    else
+-	return get_special_input('}');
+-}
+-
+-/* strcspn - find length of initial segment of s consisting entirely
+-   of characters not from reject (borrowed from Henry Spencer's
+-   ANSI string package). */
+-
+-static int
+-strcspn(s, reject)
+-    char *s;
+-    char *reject;
+-{
+-    char *scan;
+-    char *rej_scan;
+-    int count = 0;
+-
+-    for (scan = s; *scan; scan++) {
+-
+-	for (rej_scan = reject; *rej_scan;)
+-	    if (*scan == *rej_scan++)
+-		return count;
+-
+-	count++;
+-    }
+-
+-    return count;
+-}
+-
+-/* Determines from the input file whether the user wants to build a table
+-   from a user-defined struct, or whether the user is content to simply
+-   use the default array of keys. */
+-
+-static char *
+-get_array_type()
+-{
+-    return get_special_input('%');
+-}
+-
+-/* Sets up the Return_Type, the Struct_Tag type and the Array_Type
+-   based upon various user Options. */
+-
+-static void
+-set_output_types()
+-{
+-    char *xmalloc();
+-
+-    if (OPTION_ENABLED(option, TYPE)
+-	&& !(key_list.array_type = get_array_type()))
+-	return;			/* Something's wrong, bug we'll catch it later on.... */
+-    else if (OPTION_ENABLED(option, TYPE)) {	/* Yow, we've got a user-defined type... */
+-	int struct_tag_length = strcspn(key_list.array_type, "{\n\0");
+-
+-	if (OPTION_ENABLED(option, POINTER)) {	/* And it must return a pointer... */
+-	    key_list.return_type = xmalloc(struct_tag_length + 2);
+-	    strncpy(key_list.return_type, key_list.array_type,
+-		    struct_tag_length);
+-	    key_list.return_type[struct_tag_length] = '\0';
+-	    strcat(key_list.return_type, "*");
+-	}
+-
+-	key_list.struct_tag = (char *) xmalloc(struct_tag_length + 1);
+-	strncpy(key_list.struct_tag, key_list.array_type,
+-		struct_tag_length);
+-	key_list.struct_tag[struct_tag_length] = '\0';
+-    } else if (OPTION_ENABLED(option, POINTER))	/* Return a char *. */
+-	key_list.return_type = default_array_type;
+-}
+-
+-/* Reads in all keys from standard input and creates a linked list pointed
+-   to by Head.  This list is then quickly checked for ``links,'' i.e.,
+-   unhashable elements possessing identical key sets and lengths. */
+-
+-void
+-read_keys()
+-{
+-    char *ptr;
+-
+-    key_list.include_src = save_include_src();
+-    set_output_types();
+-
+-    /* Oops, problem with the input file. */
+-    if (!(ptr = read_line()))
+-	report_error("No words in input file, did you forget\
+- to prepend %s or use -t accidentally?\n%a", "%%");
+-
+-    /* Read in all the keywords from the input file. */
+-    else {
+-	LIST_NODE *temp, *trail;
+-	char *delimiter = GET_DELIMITER(option);
+-
+-	for (temp = key_list.head =
+-	     make_list_node(ptr, strcspn(ptr, delimiter));
+-	     (ptr = read_line()) && strcmp(ptr, "%%");
+-	     key_list.total_keys++, temp = temp->next)
+-	    temp->next = make_list_node(ptr, strcspn(ptr, delimiter));
+-
+-	/* See if any additional C code is included at end of this file. */
+-	if (ptr)
+-	    key_list.additional_code = TRUE;
+-	{
+-	    /* If this becomes TRUE we've got a link. */
+-	    bool link = FALSE;
+-
+-	    /* Make large hash table for efficiency. */
+-	    int table_size = (key_list.list_len =
+-			      key_list.total_keys) * TABLE_MULTIPLE;
+-
+-	    /* By allocating the memory here we save on dynamic allocation overhead. 
+-	       Table must be a power of 2 for the hash function scheme to work. */
+-	    LIST_NODE **table =
+-		(LIST_NODE **) alloca(POW(table_size) *
+-				      sizeof(LIST_NODE *));
+-
+-	    hash_table_init(table, table_size);
+-
+-	    /* Test whether there are any links and also set the maximum length of
+-	       an identifier in the keyword list. */
+-
+-	    for (temp = key_list.head, trail = NULL; temp;
+-		 temp = temp->next) {
+-		LIST_NODE *ptr =
+-		    retrieve(temp, OPTION_ENABLED(option, NOLENGTH));
+-
+-		/* Check for links.  We deal with these by building an equivalence class
+-		   of all duplicate values (i.e., links) so that only 1 keyword is
+-		   representative of the entire collection.  This *greatly* simplifies
+-		   processing during later stages of the program. */
+-
+-		if (ptr) {
+-		    key_list.list_len--;
+-		    trail->next = temp->next;
+-		    temp->link = ptr->link;
+-		    ptr->link = temp;
+-		    link = TRUE;
+-
+-		    /* Complain if user hasn't enabled the duplicate option. */
+-		    if (!OPTION_ENABLED(option, DUP))
+-			fprintf(stderr,
+-				"Key link: \"%s\" = \"%s\", with key set \"%s\".\n",
+-				temp->key, ptr->key, temp->char_set);
+-		    else if (OPTION_ENABLED(option, DEBUG))
+-			fprintf(stderr,
+-				"Key link: \"%s\" = \"%s\", with key set \"%s\".\n",
+-				temp->key, ptr->key, temp->char_set);
+-		} else
+-		    trail = temp;
+-
+-		/* Update minimum and maximum keyword length, if needed. */
+-		if (temp->length > key_list.max_key_len)
+-		    key_list.max_key_len = temp->length;
+-		if (temp->length < key_list.min_key_len)
+-		    key_list.min_key_len = temp->length;
+-	    }
+-
+-	    /* Free up the dynamic memory used in the hash table. */
+-	    hash_table_destroy();
+-
+-	    /* Exit program if links exists and option[DUP] not set, since we can't continue safely. */
+-	    if (link)
+-		report_error(OPTION_ENABLED(option, DUP)
+-			     ?
+-			     "Some input keys have identical hash values, examine output carefully...\n"
+-			     :
+-			     "Some input keys have identical hash values,\ntry different key positions or use option -D.\n%a");
+-	}
+-	if (OPTION_ENABLED(option, ALLCHARS))
+-	    SET_CHARSET_SIZE(option, key_list.max_key_len);
+-    }
+-}
+-
+-/* Recursively merges two sorted lists together to form one sorted list. The
+-   ordering criteria is by frequency of occurrence of elements in the key set
+-   or by the hash value.  This is a kludge, but permits nice sharing of
+-   almost identical code without incurring the overhead of a function
+-   call comparison. */
+-
+-static LIST_NODE *
+-merge(list1, list2)
+-    LIST_NODE *list1;
+-    LIST_NODE *list2;
+-{
+-    if (!list1)
+-	return list2;
+-    else if (!list2)
+-	return list1;
+-    else if (key_list.occurrence_sort
+-	     && list1->occurrence < list2->occurrence || key_list.hash_sort
+-	     && list1->hash_value > list2->hash_value) {
+-	list2->next = merge(list2->next, list1);
+-	return list2;
+-    } else {
+-	list1->next = merge(list1->next, list2);
+-	return list1;
+-    }
+-}
+-
+-/* Applies the merge sort algorithm to recursively sort the key list by
+-   frequency of occurrence of elements in the key set. */
+-
+-static LIST_NODE *
+-merge_sort(head)
+-    LIST_NODE *head;
+-{
+-    if (!head || !head->next)
+-	return head;
+-    else {
+-	LIST_NODE *middle = head;
+-	LIST_NODE *temp = head->next->next;
+-
+-	while (temp) {
+-	    temp = temp->next;
+-	    middle = middle->next;
+-	    if (temp)
+-		temp = temp->next;
+-	}
+-
+-	temp = middle->next;
+-	middle->next = NULL;
+-	return merge(merge_sort(head), merge_sort(temp));
+-    }
+-}
+-
+-/* Returns the frequency of occurrence of elements in the key set. */
+-
+-static int
+-get_occurrence(ptr)
+-    LIST_NODE *ptr;
+-{
+-    int value = 0;
+-    char *temp;
+-
+-    for (temp = ptr->char_set; *temp; temp++)
+-	value += occurrences[*temp];
+-
+-    return value;
+-}
+-
+-/* Enables the index location of all key set elements that are now 
+-   determined. */
+-
+-static void
+-set_determined(ptr)
+-    LIST_NODE *ptr;
+-{
+-    char *temp;
+-
+-    for (temp = ptr->char_set; *temp; temp++)
+-	determined[*temp] = TRUE;
+-
+-}
+-
+-/* Returns TRUE if PTR's key set is already completely determined. */
+-
+-static bool
+-already_determined(ptr)
+-    LIST_NODE *ptr;
+-{
+-    bool is_determined = TRUE;
+-    char *temp;
+-
+-    for (temp = ptr->char_set; is_determined && *temp; temp++)
+-	is_determined = determined[*temp];
+-
+-    return is_determined;
+-}
+-
+-/* Reorders the table by first sorting the list so that frequently occuring 
+-   keys appear first, and then the list is reorded so that keys whose values 
+-   are already determined will be placed towards the front of the list.  This
+-   helps prune the search time by handling inevitable collisions early in the
+-   search process.  See Cichelli's paper from Jan 1980 JACM for details.... */
+-
+-void
+-reorder()
+-{
+-    LIST_NODE *ptr;
+-
+-    for (ptr = key_list.head; ptr; ptr = ptr->next)
+-	ptr->occurrence = get_occurrence(ptr);
+-
+-    key_list.hash_sort = FALSE;
+-    key_list.occurrence_sort = TRUE;
+-
+-    for (ptr = key_list.head = merge_sort(key_list.head); ptr->next;
+-	 ptr = ptr->next) {
+-	set_determined(ptr);
+-
+-	if (already_determined(ptr->next))
+-	    continue;
+-	else {
+-	    LIST_NODE *trail_ptr = ptr->next;
+-	    LIST_NODE *run_ptr = trail_ptr->next;
+-
+-	    for (; run_ptr; run_ptr = trail_ptr->next) {
+-
+-		if (already_determined(run_ptr)) {
+-		    trail_ptr->next = run_ptr->next;
+-		    run_ptr->next = ptr->next;
+-		    ptr = ptr->next = run_ptr;
+-		} else
+-		    trail_ptr = run_ptr;
+-	    }
+-	}
+-    }
+-}
+-
+-/* Determines the maximum and minimum hash values.  One notable feature is 
+-   Ira Pohl's optimal algorithm to calculate both the maximum and minimum
+-   items in a list in O(3n/2) time (faster than the O (2n) method). 
+-   Returns the maximum hash value encountered. */
+-
+-static int
+-print_min_max()
+-{
+-    int min_hash_value;
+-    int max_hash_value;
+-    LIST_NODE *temp;
+-
+-    if (ODD(key_list.list_len)) {	/* Pre-process first item, list now has an even length. */
+-	min_hash_value = max_hash_value = key_list.head->hash_value;
+-	temp = key_list.head->next;
+-    } else {			/* List is already even length, no extra work necessary. */
+-
+-	min_hash_value = MAX_INT;
+-	max_hash_value = NEG_MAX_INT;
+-	temp = key_list.head;
+-    }
+-
+-    for (; temp; temp = temp->next) {	/* Find max and min in optimal o(3n/2) time. */
+-	static int i;
+-	int key_2, key_1 = temp->hash_value;
+-	temp = temp->next;
+-	key_2 = temp->hash_value;
+-	i++;
+-
+-	if (key_1 < key_2) {
+-	    if (key_1 < min_hash_value)
+-		min_hash_value = key_1;
+-	    if (key_2 > max_hash_value)
+-		max_hash_value = key_2;
+-	} else {
+-	    if (key_2 < min_hash_value)
+-		min_hash_value = key_2;
+-	    if (key_1 > max_hash_value)
+-		max_hash_value = key_1;
+-	}
+-    }
+-
+-    printf("\n#define MIN_WORD_LENGTH %d\n#define MAX_WORD_LENGTH %d\
+-\n#define MIN_HASH_VALUE %d\n#define MAX_HASH_VALUE %d\
+-\n/*\n%5d keywords\n%5d is the maximum key range\n*/\n\n", key_list.min_key_len == MAX_INT ? key_list.max_key_len : key_list.min_key_len, key_list.max_key_len, min_hash_value, max_hash_value, key_list.total_keys, (max_hash_value - min_hash_value + 1));
+-    return max_hash_value;
+-}
+-
+-/* Generates the output using a C switch.  This trades increased search
+-   time for decreased table space (potentially *much* less space for
+-   sparse tables). It the user has specified their own struct in the
+-   keyword file *and* they enable the POINTER option we have extra work to
+-   do.  The solution here is to maintain a local static array of user
+-   defined struct's, as with the Print_Lookup_Function.  Then we use for
+-   switch statements to perform a strcmp or strncmp, returning 0 if the str 
+-   fails to match, and otherwise returning a pointer to appropriate index
+-   location in the local static array. */
+-
+-static void
+-print_switch()
+-{
+-    char *comp_buffer;
+-    LIST_NODE *curr = key_list.head;
+-    int pointer_and_type_enabled = OPTION_ENABLED(option, POINTER)
+-	&& OPTION_ENABLED(option, TYPE);
+-    int total_switches = GET_TOTAL_SWITCHES(option);
+-    int switch_size = keyword_list_length() / total_switches;
+-    char *xlate_func = OPTION_ENABLED(option, NOCASE) ? "tolower" : "";
+-    char *comp_func_prefix = OPTION_ENABLED(option, NOCASE) ? "case_" : "";
+-
+-    if (pointer_and_type_enabled) {
+-	comp_buffer =
+-	    (char *)
+-	    alloca(strlen
+-		   ("tolower(*str) == *resword->%s && !case_strncmp (str + 1, resword->%s + 1, len - 1)")
+-		   + 2 * strlen(GET_KEY_NAME(option)) + 1);
+-	sprintf(comp_buffer, OPTION_ENABLED(option, COMP)
+-		?
+-		"%s(*str) == *resword->%s && !%sstrncmp (str + 1, resword->%s + 1, len - 1)"
+-		:
+-		"%s(*str) == *resword->%s && !%sstrcmp (str + 1, resword->%s + 1)",
+-		xlate_func, GET_KEY_NAME(option), comp_func_prefix,
+-		GET_KEY_NAME(option));
+-    } else
+-	sprintf(comp_buffer, OPTION_ENABLED(option, COMP)
+-		?
+-		"%s(*str) == *resword && !%sstrncmp (str + 1, resword + 1, len - 1)"
+-		:
+-		"%s(*str) == *resword && !%sstrcmp (str + 1, resword + 1)",
+-		xlate_func, comp_func_prefix);
+-
+-    printf("  if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)\n    {\n\
+-      register int key = %s (str, len);\n\n\
+-      if (key <= MAX_HASH_VALUE && key >= MIN_HASH_VALUE)\n        {\n",
+-	   GET_HASH_NAME(option));
+-
+-    /* Properly deal with user's who request multiple switch statements. */
+-
+-    while (curr) {
+-	LIST_NODE *temp = curr;
+-	int lowest_case_value = curr->hash_value;
+-	int number_of_cases = 0;
+-
+-	/* Figure out a good cut point to end this switch. */
+-
+-	for (; temp && ++number_of_cases < switch_size; temp = temp->next)
+-	    if (temp->next && temp->hash_value == temp->next->hash_value)
+-		while (temp->next
+-		       && temp->hash_value == temp->next->hash_value)
+-		    temp = temp->next;
+-
+-	if (temp)
+-	    printf("          if (key <= %d)\n            {\n",
+-		   temp->hash_value);
+-	else
+-	    printf("            {\n");
+-
+-	/* Output each keyword as part of a switch statement indexed by hash value. */
+-
+-	if (OPTION_ENABLED(option, POINTER) || OPTION_ENABLED(option, DUP)) {
+-	    int i = 0;
+-
+-	    printf("              %s%s *resword; %s\n\n",
+-		   OPTION_ENABLED(option, CONST) ? "const " : "",
+-		   pointer_and_type_enabled ? key_list.struct_tag : "char",
+-		   OPTION_ENABLED(option, LENTABLE)
+-		   && !OPTION_ENABLED(option, DUP) ? "int key_len;" : "");
+-	    printf("              switch (key - %d)\n                {\n",
+-		   lowest_case_value);
+-
+-	    for (temp = curr; temp && ++i <= number_of_cases;
+-		 temp = temp->next) {
+-		printf("                case %*d:", field_width,
+-		       temp->hash_value - lowest_case_value);
+-		if (OPTION_ENABLED(option, DEBUG))
+-		    printf(" /* hash value = %4d, keyword = \"%s\" */",
+-			   temp->hash_value, temp->key);
+-		putchar('\n');
+-
+-		/* Handle `natural links,' i.e., those that occur statically. */
+-
+-		if (temp->link) {
+-		    LIST_NODE *links;
+-
+-		    for (links = temp; links; links = links->link) {
+-			if (pointer_and_type_enabled)
+-			    printf
+-				("                  resword = &wordlist[%d];\n",
+-				 links->index);
+-			else
+-			    printf("                  resword = \"%s\";\n",
+-				   links->key);
+-			printf
+-			    ("                  if (%s) return resword;\n",
+-			     comp_buffer);
+-		    }
+-		}
+-		/* Handle unresolved duplicate hash values.  These are guaranteed
+-		   to be adjacent since we sorted the keyword list by increasing
+-		   hash values. */
+-		if (temp->next
+-		    && temp->hash_value == temp->next->hash_value) {
+-
+-		    for (;
+-			 temp->next
+-			 && temp->hash_value == temp->next->hash_value;
+-			 temp = temp->next) {
+-			if (pointer_and_type_enabled)
+-			    printf
+-				("                  resword = &wordlist[%d];\n",
+-				 temp->index);
+-			else
+-			    printf("                  resword = \"%s\";\n",
+-				   temp->key);
+-			printf
+-			    ("                  if (%s) return resword;\n",
+-			     comp_buffer);
+-		    }
+-		    if (pointer_and_type_enabled)
+-			printf
+-			    ("                  resword = &wordlist[%d];\n",
+-			     temp->index);
+-		    else
+-			printf("                  resword = \"%s\";\n",
+-			       temp->key);
+-		    printf("                  return %s ? resword : 0;\n",
+-			   comp_buffer);
+-		} else if (temp->link)
+-		    printf("                  return 0;\n");
+-		else {
+-		    if (pointer_and_type_enabled)
+-			printf
+-			    ("                  resword = &wordlist[%d];",
+-			     temp->index);
+-		    else
+-			printf("                  resword = \"%s\";",
+-			       temp->key);
+-		    if (OPTION_ENABLED(option, LENTABLE)
+-			&& !OPTION_ENABLED(option, DUP))
+-			printf(" key_len = %d;", temp->length);
+-		    printf(" break;\n");
+-		}
+-	    }
+-	    printf
+-		("                default: return 0;\n                }\n");
+-	    printf(OPTION_ENABLED(option, LENTABLE)
+-		   && !OPTION_ENABLED(option, DUP)
+-		   ?
+-		   "              if (len == key_len && %s)\n                return resword;\n"
+-		   :
+-		   "              if (%s)\n                return resword;\n",
+-		   comp_buffer);
+-	    printf("              return 0;\n            }\n");
+-	    curr = temp;
+-	} else {		/* Nothing special required here. */
+-
+-	    int i = 0;
+-	    printf
+-		("              char *s;\n\n              switch (key - %d)\n                {\n",
+-		 lowest_case_value);
+-
+-	    for (temp = curr; temp && ++i <= number_of_cases;
+-		 temp = temp->next)
+-		if (OPTION_ENABLED(option, LENTABLE))
+-		    printf
+-			("                case %*d: if (len == %d) s = \"%s\"; else return 0; break;\n",
+-			 field_width, temp->hash_value - lowest_case_value,
+-			 temp->length, temp->key);
+-		else
+-		    printf
+-			("                case %*d: s = \"%s\"; break;\n",
+-			 field_width, temp->hash_value - lowest_case_value,
+-			 temp->key);
+-
+-	    printf
+-		("                default: return 0;\n                }\n              ");
+-	    printf("return *s == %s(*str) && !%s%s;\n            }\n",
+-		   xlate_func, comp_func_prefix, OPTION_ENABLED(option,
+-								COMP)
+-		   ? "strncmp (s + 1, str + 1, len - 1)" :
+-		   "strcmp (s + 1, str + 1)");
+-	    curr = temp;
+-	}
+-    }
+-    printf("         }\n    }\n  return 0;\n}\n");
+-}
+-
+-/* Prints out a table of keyword lengths, for use with the 
+-   comparison code in generated function ``in_word_set.'' */
+-
+-static void
+-print_keylength_table()
+-{
+-    int max_column = 15;
+-    int index = 0;
+-    int column = 0;
+-    char *indent = OPTION_ENABLED(option, GLOBAL) ? "" : "  ";
+-    LIST_NODE *temp;
+-
+-    if (!OPTION_ENABLED(option, DUP) && !OPTION_ENABLED(option, SWITCH)) {
+-	printf("\n%sstatic %sunsigned %s lengthtable[] =\n%s%s{\n    ",
+-	       indent, OPTION_ENABLED(option, CONST) ? "const " : "",
+-	       key_list.max_key_len < MAX_UNSIGNED_CHAR ? "char" :
+-	       (key_list.max_key_len <
+-		MAX_UNSIGNED_SHORT ? "short" : "long"), indent, indent);
+-
+-	for (temp = key_list.head; temp; temp = temp->next, index++) {
+-
+-	    if (index < temp->hash_value) {
+-
+-		for (; index < temp->hash_value; index++)
+-		    printf("%3d%s", 0,
+-			   ++column % (max_column - 1) ? "," : ",\n    ");
+-	    }
+-
+-	    printf("%3d%s", temp->length,
+-		   ++column % (max_column - 1) ? "," : ",\n    ");
+-	}
+-
+-	printf("\n%s%s};\n\n", indent, indent);
+-    }
+-}
+-
+-/* Prints out the array containing the key words for the Perfect
+-   hash function. */
+-
+-static void
+-print_keyword_table()
+-{
+-    char *l_brace = *key_list.head->rest ? "{" : "";
+-    char *r_brace = *key_list.head->rest ? "}," : "";
+-    int doing_switch = OPTION_ENABLED(option, SWITCH);
+-    char *indent = OPTION_ENABLED(option, GLOBAL) ? "" : "  ";
+-    int index = 0;
+-    LIST_NODE *temp;
+-
+-    printf("\n%sstatic %s%s wordlist[] =\n%s%s{\n",
+-	   indent, OPTION_ENABLED(option, CONST) ? "const " : "",
+-	   key_list.struct_tag, indent, indent);
+-
+-    /* Generate an array of reserved words at appropriate locations. */
+-
+-    for (temp = key_list.head; temp; temp = temp->next, index++) {
+-	temp->index = index;
+-
+-	if (!doing_switch && index < temp->hash_value) {
+-	    int column;
+-
+-	    printf("      ");
+-
+-	    for (column = 1; index < temp->hash_value; index++, column++)
+-		printf("%s\"\",%s %s", l_brace, r_brace,
+-		       column % 9 ? "" : "\n      ");
+-
+-	    if (column % 10)
+-		printf("\n");
+-	    else {
+-		printf("%s\"%s\", %s%s\n", l_brace, temp->key, temp->rest,
+-		       r_brace);
+-		continue;
+-	    }
+-	}
+-
+-	printf("      %s\"%s\", %s%s\n", l_brace, temp->key, temp->rest,
+-	       r_brace);
+-
+-	/* Deal with links specially. */
+-	if (temp->link) {
+-	    LIST_NODE *links;
+-
+-	    for (links = temp->link; links; links = links->link) {
+-		links->index = ++index;
+-		printf("      %s\"%s\", %s%s\n", l_brace, links->key,
+-		       links->rest, r_brace);
+-	    }
+-	}
+-
+-    }
+-
+-    printf("%s%s};\n\n", indent, indent);
+-}
+-
+-/* Generates C code for the hash function that returns the
+-   proper encoding for each key word. */
+-
+-static void
+-print_hash_function(max_hash_value)
+-    int max_hash_value;
+-{
+-    int max_column = 10;
+-    int count = max_hash_value;
+-    char *xlate_func = OPTION_ENABLED(option, NOCASE) ? "tolower" : "";
+-
+-    /* Calculate maximum number of digits required for MAX_HASH_VALUE. */
+-
+-    while ((count /= 10) > 0)
+-	field_width++;
+-
+-    if (OPTION_ENABLED(option, GNU))
+-	printf("#ifdef __GNUC__\ninline\n#endif\n");
+-
+-    printf(OPTION_ENABLED(option, ANSI)
+-	   ?
+-	   "static int\n%s (register const char *str, register int len)\n{\n  static %sunsigned %s hash_table[] =\n    {"
+-	   :
+-	   "static int\n%s (str, len)\n     register char *str;\n     register unsigned int  len;\n{\n  static %sunsigned %s hash_table[] =\n    {",
+-	   GET_HASH_NAME(option), OPTION_ENABLED(option,
+-						 CONST) ? "const " : "",
+-	   max_hash_value < MAX_UNSIGNED_CHAR ? "char" : (max_hash_value <
+-							  MAX_UNSIGNED_SHORT
+-							  ? "short" :
+-							  "int"));
+-
+-    for (count = 0; count < ALPHABET_SIZE; ++count) {
+-	if (!(count % max_column))
+-	    printf("\n    ");
+-
+-	printf("%*d,", field_width,
+-	       occurrences[count] ? asso_values[count] : max_hash_value);
+-    }
+-
+-    /* Optimize special case of ``-k 1,$'' */
+-    if (OPTION_ENABLED(option, DEFAULTCHARS))
+-	printf
+-	    ("\n    };\n  return %s + hash_table[%s((unsigned char) str[len - 1])] + hash_table[%s((unsigned char) str[0])];\n}\n\n",
+-	     OPTION_ENABLED(option, NOLENGTH) ? "0" : "len", xlate_func,
+-	     xlate_func);
+-    else {
+-	int key_pos;
+-
+-	RESET(option);
+-
+-	/* Get first (also highest) key position. */
+-	key_pos = GET(option);
+-
+-	/* We can perform additional optimizations here. */
+-	if (!OPTION_ENABLED(option, ALLCHARS)
+-	    && key_pos <= key_list.min_key_len) {
+-	    printf("\n  };\n  return %s",
+-		   OPTION_ENABLED(option, NOLENGTH) ? "0" : "len");
+-
+-	    for (; key_pos != EOS && key_pos != WORD_END;
+-		 key_pos = GET(option))
+-		printf(" + hash_table[%s((unsigned char) str[%d])]",
+-		       xlate_func, key_pos - 1);
+-
+-	    if (key_pos == WORD_END)
+-		printf(" + hash_table[%s((unsigned char) str[len - 1])]",
+-		       xlate_func);
+-	    printf(";\n}\n\n");
+-	}
+-
+-	/* We've got to use the correct, but brute force, technique. */
+-	else {
+-	    printf
+-		("\n    };\n  register int hval = %s;\n\n  switch (%s)\n    {\n      default:\n",
+-		 OPTION_ENABLED(option, NOLENGTH)
+-		 ? "0" : "len", OPTION_ENABLED(option,
+-					       NOLENGTH) ? "len" : "hval");
+-
+-	    /* User wants *all* characters considered in hash. */
+-	    if (OPTION_ENABLED(option, ALLCHARS)) {
+-		int i;
+-
+-		for (i = key_list.max_key_len; i > 0; i--)
+-		    printf
+-			("      case %d:\n        hval += hash_table[%s((unsigned char) str[%d])];\n",
+-			 i, xlate_func, i - 1);
+-
+-		printf("    }\n  return hval;\n}\n\n");
+-	    } else {		/* do the hard part... */
+-
+-		count = key_pos + 1;
+-
+-		do {
+-
+-		    while (--count > key_pos)
+-			printf("      case %d:\n", count);
+-
+-		    printf
+-			("      case %d:\n        hval += hash_table[%s((unsigned char) str[%d])];\n",
+-			 key_pos, xlate_func, key_pos - 1);
+-		}
+-		while ((key_pos = GET(option)) != EOS
+-		       && key_pos != WORD_END);
+-
+-		printf("    }\n  return hval");
+-		if (key_pos == WORD_END)
+-		    printf
+-			(" + hash_table[%s((unsigned char) str[len - 1])]",
+-			 xlate_func);
+-		printf(";\n}\n\n");
+-	    }
+-	}
+-    }
+-}
+-
+-/* Generates C code to perform the keyword lookup. */
+-
+-static void
+-print_lookup_function()
+-{
+-    printf("  if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)\n    {\n\
+-      register int key = %s (str, len);\n\n\
+-      if (key <= MAX_HASH_VALUE && key >= MIN_HASH_VALUE)\n        {\n\
+-          register %schar *s = wordlist[key]",
+-	   GET_HASH_NAME(option), OPTION_ENABLED(option, CONST) ? "const " : "");
+-    if (key_list.array_type != default_array_type)
+-	printf(".%s", GET_KEY_NAME(option));
+-
+-    printf
+-	(";\n\n          if (%s*s == %s(*str) && !%s%s)\n            return %s",
+-	 OPTION_ENABLED(option,
+-			LENTABLE) ?
+-	 "len == lengthtable[key]\n              && " : "",
+-	 OPTION_ENABLED(option, NOCASE) ? "tolower" : "",
+-	 OPTION_ENABLED(option, NOCASE) ? "case_" : "",
+-	 OPTION_ENABLED(option,
+-			COMP) ? "strncmp (str + 1, s + 1, len - 1)" :
+-	 "strcmp (str + 1, s + 1)", OPTION_ENABLED(option, TYPE)
+-	 && OPTION_ENABLED(option, POINTER) ? "&wordlist[key]" : "s");
+-    printf(";\n        }\n    }\n  return 0;\n}\n");
+-}
+-
+-/* Generates C function to do case-insensitive string comparisons. */
+-
+-static void
+-print_compare_function()
+-{
+-    if (OPTION_ENABLED(option, COMP)) {
+-	printf("static int\n");
+-	printf(OPTION_ENABLED(option, ANSI)
+-	       ?
+-	       "case_strncmp (register const char *str, register const char *key, int n)\n"
+-	       :
+-	       "case_strncmp (str, key, n)\n     register char *str, *key;\n     int n;\n");
+-	printf("{\n");
+-	printf("  int ans = 0;\n");
+-	printf("\n");
+-	printf
+-	    ("  while (n && !(ans = tolower(*str) - (int) *key) && *str)\n");
+-	printf("    str++, key++, n--;\n");
+-	printf("\n");
+-	printf("  return ans;\n");
+-	printf("}\n\n");
+-    } else {
+-	printf("static int\n");
+-	printf(OPTION_ENABLED(option, ANSI)
+-	       ?
+-	       "case_strcmp (register const char *str, register const char *key)\n"
+-	       :
+-	       "case_strcmp (str, key)\n     register char *str, *key;\n");
+-	printf("{\n");
+-	printf("  int ans = 0;\n");
+-	printf("\n");
+-	printf("  while (!(ans = tolower(*str) - (int) *key) && *str)\n");
+-	printf("    str++, key++;\n");
+-	printf("\n");
+-	printf("  return ans;\n");
+-	printf("}\n\n");
+-    }
+-}
+-
+-/* Generates the hash function and the key word recognizer function
+-   based upon the user's Options. */
+-
+-void
+-print_output()
+-{
+-    int global_table = OPTION_ENABLED(option, GLOBAL);
+-
+-    printf("%s\n", key_list.include_src);
+-
+-    /* Potentially output type declaration now, reference it later on.... */
+-    if (OPTION_ENABLED(option, TYPE) && !OPTION_ENABLED(option, NOTYPE))
+-	printf("%s;\n", key_list.array_type);
+-
+-    print_hash_function(print_min_max());
+-
+-    if (OPTION_ENABLED(option, NOCASE))
+-	print_compare_function();
+-
+-    if (global_table)
+-	if (OPTION_ENABLED(option, SWITCH)) {
+-	    if (OPTION_ENABLED(option, LENTABLE)
+-		&& OPTION_ENABLED(option, DUP))
+-		print_keylength_table();
+-	    if (OPTION_ENABLED(option, POINTER)
+-		&& OPTION_ENABLED(option, TYPE))
+-		print_keyword_table();
+-	} else {
+-	    if (OPTION_ENABLED(option, LENTABLE))
+-		print_keylength_table();
+-	    print_keyword_table();
+-	}
+-    /* Use the inline keyword to remove function overhead. */
+-    if (OPTION_ENABLED(option, GNU))
+-	printf("#ifdef __GNUC__\ninline\n#endif\n");
+-
+-    /* Use ANSI function prototypes. */
+-    printf(OPTION_ENABLED(option, ANSI)
+-	   ? "%s%s\n%s (register const char *str, register int len)\n{\n"
+-	   :
+-	   "%s%s\n%s (str, len)\n     register char *str;\n     register unsigned int len;\n{\n",
+-	   OPTION_ENABLED(option, CONST) ? "const " : "",
+-	   key_list.return_type, GET_FUNCTION_NAME(option));
+-
+-    /* Use the switch in place of lookup table. */
+-    if (OPTION_ENABLED(option, SWITCH)) {
+-	if (!global_table) {
+-	    if (OPTION_ENABLED(option, LENTABLE)
+-		&& OPTION_ENABLED(option, DUP))
+-		print_keylength_table();
+-	    if (OPTION_ENABLED(option, POINTER)
+-		&& OPTION_ENABLED(option, TYPE))
+-		print_keyword_table();
+-	}
+-	print_switch();
+-    } else {			/* Use the lookup table, in place of switch. */
+-
+-	if (!global_table) {
+-	    if (OPTION_ENABLED(option, LENTABLE))
+-		print_keylength_table();
+-	    print_keyword_table();
+-	}
+-	print_lookup_function();
+-    }
+-
+-    if (key_list.additional_code) {
+-	int c;
+-
+-	while ((c = getchar()) != EOF)
+-	    putchar(c);
+-    }
+-    fflush(stdout);
+-}
+-
+-/* Sorts the keys by hash value. */
+-
+-void
+-sort()
+-{
+-    key_list.hash_sort = TRUE;
+-    key_list.occurrence_sort = FALSE;
+-
+-    key_list.head = merge_sort(key_list.head);
+-}
+-
+-/* Dumps the key list to stderr stream. */
+-
+-static void
+-dump()
+-{
+-    LIST_NODE *ptr;
+-
+-    fprintf(stderr,
+-	    "\nList contents are:\n(hash value, key length, index, key set, key):\n");
+-
+-    for (ptr = key_list.head; ptr; ptr = ptr->next)
+-	fprintf(stderr, "%7d,%7d,%6d, %s, %s\n",
+-		ptr->hash_value, ptr->length, ptr->index,
+-		ptr->char_set, ptr->key);
+-}
+-
+-/* Simple-minded constructor action here... */
+-
+-void
+-key_list_init()
+-{
+-    key_list.total_keys = 1;
+-    key_list.max_key_len = NEG_MAX_INT;
+-    key_list.min_key_len = MAX_INT;
+-    key_list.return_type = default_return_type;
+-    key_list.array_type = key_list.struct_tag = default_array_type;
+-    key_list.head = NULL;
+-    key_list.additional_code = FALSE;
+-}
+-
+-/* Returns the length of entire key list. */
+-
+-int
+-keyword_list_length()
+-{
+-    return key_list.list_len;
+-}
+-
+-/* Returns length of longest key read. */
+-
+-int
+-max_key_length()
+-{
+-    return key_list.max_key_len;
+-}
+-
+-/* DESTRUCTOR dumps diagnostics during debugging. */
+-
+-void
+-key_list_destroy()
+-{
+-    if (OPTION_ENABLED(option, DEBUG)) {
+-	fprintf(stderr, "\nDumping key list information:\ntotal unique keywords = %d\
+-\ntotal keywords = %d\nmaximum key length = %d.\n",
+-		key_list.list_len, key_list.total_keys, key_list.max_key_len);
+-	dump();
+-	fprintf(stderr, "End dumping list.\n\n");
+-    }
+-}
+diff --git a/server/pgperf/keylist.h b/server/pgperf/keylist.h
+deleted file mode 100644
+index 7b13522..0000000
+--- a/server/pgperf/keylist.h
++++ /dev/null
+@@ -1,53 +0,0 @@
+-/* Data and function member declarations for the keyword list class.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-/* The key word list is a useful abstraction that keeps track of
+-   various pieces of information that enable that fast generation
+-   of the Perfect.hash function.  A Key_List is a singly-linked
+-   list of List_Nodes. */
+-
+-#ifndef _keylist_h
+-#define _keylist_h
+-#include <stdio.h>
+-#include "listnode.h"
+-
+-typedef struct key_list {
+-    LIST_NODE *head;		/* Points to the head of the linked list. */
+-    char *array_type;		/* Pointer to the type for word list. */
+-    char *return_type;		/* Pointer to return type for lookup function. */
+-    char *struct_tag;		/* Shorthand for user-defined struct tag type. */
+-    char *include_src;		/* C source code to be included verbatim. */
+-    int list_len;		/* Length of head's Key_List, not counting duplicates. */
+-    int total_keys;		/* Total number of keys, counting duplicates. */
+-    int max_key_len;		/* Maximum length of the longest keyword. */
+-    int min_key_len;		/* Minimum length of the shortest keyword. */
+-    bool occurrence_sort;	/* True if sorting by occurrence. */
+-    bool hash_sort;		/* True if sorting by hash value. */
+-    bool additional_code;	/* True if any additional C code is included. */
+-} KEY_LIST;
+-
+-extern void key_list_init P((void));
+-extern void key_list_destroy P((void));
+-extern void print_output P((void));
+-extern int keyword_list_length P((void));
+-extern int max_key_length P((void));
+-extern KEY_LIST key_list;
+-#endif				/* _keylist_h */
+diff --git a/server/pgperf/listnode.c b/server/pgperf/listnode.c
+deleted file mode 100644
+index a79daab..0000000
+--- a/server/pgperf/listnode.c
++++ /dev/null
+@@ -1,119 +0,0 @@
+-/* Creates and initializes a new list node.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <ctype.h>
+-#include <stdio.h>
+-#include "options.h"
+-#include "listnode.h"
+-#include "stderr.h"
+-
+-/* See comments in perfect.cc. */
+-extern int occurrences[ALPHABET_SIZE];
+-
+-/* Sorts the key set alphabetically to speed up subsequent operations.
+-   Uses insertion sort since the set is probably quite small. */
+-
+-static void
+-set_sort(base, len)
+-    char *base;
+-    int len;
+-{
+-    int i, j;
+-
+-    for (i = 0, j = len - 1; i < j; i++) {
+-	char curr, tmp;
+-
+-	for (curr = i + 1, tmp = base[curr];
+-	     curr > 0 && tmp < base[curr - 1]; curr--)
+-	    base[curr] = base[curr - 1];
+-
+-	base[curr] = tmp;
+-
+-    }
+-}
+-
+-/* Initializes a List_Node.  This requires obtaining memory for the KEY_SET
+-   initializing them using the information stored in the
+-   KEY_POSITIONS array in Options, and checking for simple errors.
+-   It's important to note that KEY and REST are both pointers to
+-   the different offsets into the same block of dynamic memory pointed to
+-   by parameter K. The data member REST is used to store any additional fields 
+-   of the input file (it is set to the "" string if Option[TYPE] is not enabled).
+-   This is useful if the user wishes to incorporate a lookup structure,
+-   rather than just an array of keys. */
+-
+-LIST_NODE *
+-make_list_node(k, len)
+-    char *k;
+-    int len;
+-{
+-    LIST_NODE *buffered_malloc();
+-    int char_set_size =
+-	OPTION_ENABLED(option,
+-		       ALLCHARS) ? len : GET_CHARSET_SIZE(option) + 1;
+-    LIST_NODE *temp = buffered_malloc(sizeof(LIST_NODE) + char_set_size);
+-    char *ptr;
+-
+-    k[len] = '\0';		/* Null terminate KEY to separate it from REST. */
+-    if (OPTION_ENABLED(option, NOCASE))	/* Downcase the key */
+-	for (ptr = k; *ptr; ptr++)
+-	    *ptr = tolower(*ptr);
+-    temp->key = k;
+-    temp->next = 0;
+-    temp->index = 0;
+-    temp->length = len;
+-    temp->link = 0;
+-    temp->rest = OPTION_ENABLED(option, TYPE) ? k + len + 1 : "";
+-
+-    ptr = temp->char_set;
+-    if (OPTION_ENABLED(option, ALLCHARS))
+-	/* Use all the character position in the KEY. */
+-	for (; *k; k++, ptr++)
+-	    ++occurrences[*ptr = *k];
+-
+-    else {			/* Only use those character positions specified by the user. */
+-
+-	int i;
+-
+-	/* Iterate thru the list of key_positions, initializing occurrences table
+-	   and temp->char_set (via char * pointer ptr). */
+-
+-	for (RESET(option); (i = GET(option)) != EOS;) {
+-	    if (i == WORD_END)	/* Special notation for last KEY position, i.e. '$'. */
+-		*ptr = temp->key[len - 1];
+-	    else if (i <= len)	/* Within range of KEY length, so we'll keep it. */
+-		*ptr = temp->key[i - 1];
+-	    else		/* Out of range of KEY length, so we'll just skip it. */
+-		continue;
+-	    ++occurrences[*ptr++];
+-	}
+-
+-	if (ptr == temp->char_set)	/* Didn't get any hits, i.e., no usable positions. */
+-	    report_error
+-		("can't hash keyword %s with chosen key positions\n%a",
+-		 temp->key);
+-    }
+-
+-    *ptr = '\0';		/* Terminate this bastard.... */
+-    /* Sort the KEY_SET items alphabetically. */
+-    set_sort(temp->char_set, ptr - temp->char_set);
+-
+-    return temp;
+-}
+diff --git a/server/pgperf/listnode.h b/server/pgperf/listnode.h
+deleted file mode 100644
+index 3cdf302..0000000
+--- a/server/pgperf/listnode.h
++++ /dev/null
+@@ -1,42 +0,0 @@
+-/* Data and function members for defining values and operations of a list node.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#ifndef _listnode_h
+-#define _listnode_h
+-#include "prototype.h"
+-
+-#define ALPHABET_SIZE 128
+-
+-typedef struct list_node {
+-    struct list_node *link;	/* TRUE if key has an identical KEY_SET as another key. */
+-    struct list_node *next;	/* Points to next element on the list. */
+-    int length;			/* Length of the key. */
+-    int hash_value;		/* Hash value for the key. */
+-    int occurrence;		/* A metric for frequency of key set occurrences. */
+-    int index;			/* Position of this node relative to other nodes. */
+-    char *key;			/* Key string. */
+-    char *rest;			/* Additional information for building hash function. */
+-    char char_set[1];		/* Set of characters to hash, specified by user. */
+-} LIST_NODE;
+-
+-extern LIST_NODE *make_list_node P((char *k, int len));
+-
+-#endif	/* _listnode_h */
+diff --git a/server/pgperf/main.c b/server/pgperf/main.c
+deleted file mode 100644
+index 1eb3c9a..0000000
+--- a/server/pgperf/main.c
++++ /dev/null
+@@ -1,98 +0,0 @@
+-/* Driver program for the Perfect hash function generator.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-/* Simple driver program for the Perfect.hash function generator.
+-   Most of the hard work is done in class Perfect and its class methods. */
+-
+-#include <stdio.h>
+-#include <sys/types.h>
+-#include <time.h>
+-#include "stderr.h"
+-#include "options.h"
+-#include "perfect.h"
+-
+-/* Calls the appropriate intialization routines for each
+-   ADT.  Note that certain initialization routines require
+-   initialization *after* certain values are computed.  Therefore,
+-   they cannot be called here. */
+-
+-static void
+-init_all(argc, argv)
+-    int argc;
+-    char *argv[];
+-{
+-#ifdef RLIMIT_STACK
+-    /* Get rid of any avoidable limit on stack size.  */
+-    {
+-	struct rlimit rlim;
+-
+-	/* Set the stack limit huge so that alloca does not fail. */
+-	getrlimit(RLIMIT_STACK, &rlim);
+-	rlim.rlim_cur = rlim.rlim_max;
+-	setrlimit(RLIMIT_STACK, &rlim);
+-    }
+-#endif				/* RLIMIT_STACK */
+-
+-    options_init(argc, argv);
+-    key_list_init();
+-    perfect_init();
+-}
+-
+-/* Calls appropriate destruction routines for each ADT.  These
+-   routines print diagnostics if the debugging option is enabled. */
+-
+-static void
+-destroy_all()
+-{
+-    options_destroy();
+-    key_list_destroy();
+-    perfect_destroy();
+-}
+-
+-/* Driver for perfect hash function generation. */
+-
+-int
+-main(argc, argv)
+-    int argc;
+-    char *argv[];
+-{
+-    struct tm *tm;
+-    time_t clock;
+-    int status;
+-
+-    time(&clock);
+-    tm = localtime(&clock);
+-
+-    fprintf(stderr, "/* starting time is %d:%d:%d */\n", tm->tm_hour,
+-	    tm->tm_min, tm->tm_sec);
+-    /* Sets the options. */
+-    init_all(argc, argv);
+-
+-    /* Generates the perfect hash table.
+-       Also prints generated code neatly to the output. */
+-    status = perfect_generate();
+-    destroy_all();
+-
+-    time(&clock);
+-    tm = localtime(&clock);
+-    fprintf(stderr, "/* ending time is %d:%d:%d */\n", tm->tm_hour,
+-	    tm->tm_min, tm->tm_sec);
+-    return status;
+-}
+diff --git a/server/pgperf/mon.out b/server/pgperf/mon.out
+deleted file mode 100644
+index 1bac56b4d9570bfff0e4ea57290ffc9df259d720..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 85682
+zcmeI(JB!sv7zf~YR^!I7g(Rd68xWL`=*BM)4I(NcD~O^PSg<g~7F(pSNN_<B!K23e
+z1q%zs`xPO9h%9I!sKFu^?Y6L7jAcN`=AAR=BOIIM+2+SPGyivHp8u(qb0UT}L^-iE
+z;^Wg%Vj?02B7W~=ej4%oM#~K^GfR}gvCM%eBjeqSe-5;Kv%2NXOlFCgUDWE??=!bV
+z%+&Qc{&Y0+gNR@5XD*ERt*#%8c=c<We{?aIW&NP_FAH|(_`E0!p0xS9IbZkx`pY)H
+zyk?&F<w)j{%(_1Jc~#Go`L>=r=kLwW{4nBv-S6LsD{s5wWiYc0M_Du3&A8Rc@p-xK
+zS=Jv#+<l!n6mh-w&mK2xzxlcUc&oqtF*El$x47knA2Rb^Q*}I_nXT({-*<P~{QBOy
+z^*gf8ewWAE__bc2%RjfeGud+E=9XjGqwcd~U&~7`GV@-yC%Rc;xaG)=mdoq;a{kW;
+ztzJ?0&HBY?X8Jxmk(uw|@9CCLr!sT=ui7_rdnYs3AFch<;k(}X9=HB+c6E+_9%b3e
+zZpN9RmPhM*T@`WoV&-tZ$~&14BaT&<Jb(S1)w3S2_s_aB-SSXIt*_?(<+F%&7h1h_
+zZOc>REjL$(Pa;O^c;=?5mZwKEzlu0Dov&|2#L1bgv){qjEqB)ZCSqrOZcoI4daj(`
+z)$9M$AKkhvnaG@s*x!48ckkYNJ8k_JLoE-TZ@H~K7yn)9)@7vkTvq-F5FkK+009C7
+z2oNAZfB*pk1PBlyK!5-N0t5&UAV7cs0RjXF5FkK+009C72oNAZfB*pk1PBlyK!5-N
+z0t5&UAV7cs0RjXF5FkK+009C72oNAZfB*pk1PBlyK!5-N0t5&UAV7cs0RjXF5FkK+
+z009C72oNAZfB*pk1PBlyK!5-N0t5&UAV7cs0RjXF5FkK+009C72oNAZfB*pk1PBly
+zK!5-N0t5&UAV7cs0RjXF5FkK+009C7`YTZS+fFwE1PBlyK!5-N0t5&UAV7cs0RjXF
+z5FkK+009C72oNAZfB*pkb4I{-Yv#<WbP)ms2oNAZfB*pkeG(YxQy*;z5FkK+009C7
+z2oNAZfB*pk1PBlyK!5-N0t5&UAV7cs0RjXF5FkK+009C72oNAZfWZ3_@C(`ZC95w1
+z0t5&UAV7cs0RjXF5FpTR0sqJ7x2S#u2oNAZfB*pk1PBlyK!5-N0t5&UAV7cs0RjXF
+e5FkK+009C72oNAZfB*pk1PBlyK!Cs;5cnTu;&^rd
+
+diff --git a/server/pgperf/options.c b/server/pgperf/options.c
+deleted file mode 100644
+index 22f68e3..0000000
+--- a/server/pgperf/options.c
++++ /dev/null
+@@ -1,445 +0,0 @@
+-/* Handles parsing the Options provided to the user.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include <assert.h>
+-#include "options.h"
+-#include "iterator.h"
+-#include "stderr.h"
+-
+-/* Current program version. */
+-extern char *version_string;
+-
+-/* Size to jump on a collision. */
+-#define DEFAULT_JUMP_VALUE 5
+-
+-/* Default name for generated lookup function. */
+-#define DEFAULT_NAME "in_word_set"
+-
+-/* Default name for the key component. */
+-#define DEFAULT_KEY "name"
+-
+-/* Default name for generated hash function. */
+-#define DEFAULT_HASH_NAME "hash"
+-
+-/* Globally visible OPTIONS object. */
+-OPTIONS option;
+-
+-/* Default delimiters that separate keywords from their attributes. */
+-#define DEFAULT_DELIMITERS ",\n"
+-
+-/* Prints program usage to standard error stream. */
+-
+-void
+-usage()
+-{
+-    report_error("usage: %n [-acCdDef[num]gGhH<hashname>i<init>Ijk<keys>\
+-K<keyname>lnN<name>oprs<size>S<switches>tTv].\n(type %n -h for help)\n");
+-}
+-
+-/* Sorts the key positions *IN REVERSE ORDER!!*
+-   This makes further routines more efficient.  Especially when generating code.
+-   Uses a simple Insertion Sort since the set is probably ordered.
+-   Returns 1 if there are no duplicates, 0 otherwise. */
+-
+-static int
+-key_sort(base, len)
+-    char *base;
+-    int len;
+-{
+-    int i, j;
+-
+-    for (i = 0, j = len - 1; i < j; i++) {
+-	int curr, tmp;
+-
+-	for (curr = i + 1, tmp = base[curr];
+-	     curr > 0 && tmp >= base[curr - 1]; curr--)
+-	    if ((base[curr] = base[curr - 1]) == tmp)	/* oh no, a duplicate!!! */
+-		return 0;
+-
+-	base[curr] = tmp;
+-    }
+-
+-    return 1;
+-}
+-
+-/* Dumps option status when debug is set. */
+-
+-void
+-options_destroy()
+-{
+-    if (OPTION_ENABLED(option, DEBUG)) {
+-	char *ptr;
+-
+-	fprintf(stderr,
+-		"\ndumping Options:\nDEBUG is.......: %s\nORDER is.......: %s\
+-\nANSI is........: %s\nTYPE is........: %s\nGNU is.........: %s\nRANDOM is......: %s\
+-\nDEFAULTCHARS is: %s\nSWITCH is......: %s\nPOINTER is.....: %s\nNOLENGTH is....: %s\
+-\nLENTABLE is....: %s\nDUP is.........: %s\nCOMP is........: %s\nFAST is........: %s\
+-\nNOTYPE is......: %s\nGLOBAL is......: %s\nCONST is.......: %s\nNOCASE is......: %s\niterations = %d\
+-\nlookup function name = %s\nhash function name = %s\nkey name = %s\
+-\njump value = %d\nmax associcated value = %d\ninitial associated value = %d\
+-\ndelimiters = %s\nnumber of switch statements = %d\napproximate switch statement size = %d\n",
+-		OPTION_ENABLED(option, DEBUG) ? "enabled" : "disabled", OPTION_ENABLED(option, ORDER) ? "enabled" : "disabled", OPTION_ENABLED(option, ANSI) ? "enabled" : "disabled", OPTION_ENABLED(option, TYPE) ? "enabled" : "disabled", OPTION_ENABLED(option, GNU) ? "enabled" : "disabled", OPTION_ENABLED(option, RANDOM) ? "enabled" : "disabled", OPTION_ENABLED(option, DEFAULTCHARS) ? "enabled" : "disabled", OPTION_ENABLED(option, SWITCH) ? "enabled" : "disabled", OPTION_ENABLED(option, POINTER) ? "enabled" : "disabled", OPTION_ENABLED(option, NOLENGTH) ? "enabled" : "disabled", OPTION_ENABLED(option, LENTABLE) ? "enabled" : "disabled", OPTION_ENABLED(option, DUP) ? "enabled" : "disabled", OPTION_ENABLED(option, COMP) ? "enabled" : "disabled", OPTION_ENABLED(option, FAST) ? "enabled" : "disabled", OPTION_ENABLED(option, NOTYPE) ? "enabled" : "disabled", OPTION_ENABLED(option, GLOBAL) ? "enabled" : "disabled", OPTION_ENABLED(option, CONST) ? "enabled" : "disabled", OPTION_ENABLED(option, NOCASE) ? "enabled" : "disabled", option.iterations, option.function_name, option.hash_name, option.key_name, option.jump, option.size - 1, option.initial_asso_value, option.delimiters, option.total_switches, keyword_list_length() / option.total_switches);
+-
+-	if (OPTION_ENABLED(option, ALLCHARS))
+-	    fprintf(stderr,
+-		    "all characters are used in the hash function\n");
+-	fprintf(stderr, "maximum charset size = %d\nkey positions are: \n",
+-		option.total_charset_size);
+-
+-	for (ptr = option.key_positions; *ptr != EOS; ptr++)
+-	    if (*ptr == WORD_END)
+-		fprintf(stderr, "$\n");
+-	    else
+-		fprintf(stderr, "%d\n", *ptr);
+-
+-	fprintf(stderr, "finished dumping Options\n");
+-    }
+-}
+-
+-/* Parses the command line Options and sets appropriate flags in option.option_word. */
+-
+-void
+-options_init(argc, argv)
+-    int argc;
+-    char *argv[];
+-{
+-    extern int optind;
+-    extern char *optarg;
+-    int option_char;
+-
+-    option.key_positions[0] = WORD_START;
+-    option.key_positions[1] = WORD_END;
+-    option.key_positions[2] = EOS;
+-    option.total_charset_size = 2;
+-    option.jump = DEFAULT_JUMP_VALUE;
+-    option.option_word = (int) DEFAULTCHARS;
+-    option.function_name = DEFAULT_NAME;
+-    option.hash_name = DEFAULT_HASH_NAME;
+-    option.key_name = DEFAULT_KEY;
+-    option.delimiters = DEFAULT_DELIMITERS;
+-    option.initial_asso_value = option.size = option.iterations = 0;
+-    option.total_switches = 1;
+-    option.argument_count = argc;
+-    option.argument_vector = argv;
+-    set_program_name(argv[0]);
+-
+-    while ((option_char =
+-	    getopt(argc, argv,
+-		   "adcCDe:f:gGhH:i:Ij:k:K:lnN:oprs:S:tTv")) != EOF) {
+-	switch (option_char) {
+-	case 'a':		/* Generated coded uses the ANSI prototype format. */
+-	    {
+-		SET_OPTION(option, ANSI);
+-		break;
+-	    }
+-	case 'c':		/* Generate strncmp rather than strcmp. */
+-	    {
+-		SET_OPTION(option, COMP);
+-		break;
+-	    }
+-	case 'C':		/* Make the generated tables readonly (const). */
+-	    {
+-		SET_OPTION(option, CONST);
+-		break;
+-	    }
+-	case 'd':		/* Enable debugging option. */
+-	    {
+-		SET_OPTION(option, DEBUG);
+-		report_error
+-		    ("starting program %n, version %s, with debuggin on.\n",
+-		     version_string);
+-		break;
+-	    }
+-	case 'D':		/* Enable duplicate option. */
+-	    {
+-		SET_OPTION(option, DUP);
+-		break;
+-	    }
+-	case 'e':		/* Allows user to provide keyword/attribute separator */
+-	    {
+-		SET_DELIMITERS(option, optarg);
+-		break;
+-	    }
+-	case 'f':		/* Generate the hash table ``fast.'' */
+-	    {
+-		SET_OPTION(option, FAST);
+-		if ((option.iterations = atoi(optarg)) < 0) {
+-		    report_error
+-			("iterations value must not be negative, assuming 0\n");
+-		    option.iterations = 0;
+-		}
+-		break;
+-	    }
+-	case 'g':		/* Use the ``inline'' keyword for generated sub-routines. */
+-	    {
+-		SET_OPTION(option, GNU);
+-		break;
+-	    }
+-	case 'G':		/* Make the keyword table a global variable. */
+-	    {
+-		SET_OPTION(option, GLOBAL);
+-		break;
+-	    }
+-	case 'h':		/* Displays a list of helpful Options to the user. */
+-	    {
+-		report_error
+-		    ("-a\tGenerate ANSI standard C output code, i.e., function prototypes.\n\
+--c\tGenerate comparison code using strncmp rather than strcmp.\n\
+--C\tMake the contents of generated lookup tables constant, i.e., readonly.\n\
+--d\tEnables the debugging option (produces verbose output to Std_Err).\n\
+--D\tHandle keywords that hash to duplicate values.  This is useful\n\
+-\tfor certain highly redundant keyword sets.  It enables the -S option.\n\
+--e\tAllow user to provide a string containing delimiters used to separate\n\
+-\tkeywords from their attributes.  Default is \",\\n\"\n\
+--f\tGenerate the perfect hash function ``fast.''  This decreases GPERF's\n\
+-\trunning time at the cost of minimizing generated table-size.\n\
+-\tThe numeric argument represents the number of times to iterate when\n\
+-\tresolving a collision.  `0' means ``iterate by the number of keywords''.\n\
+--g\tAssume a GNU compiler, e.g., g++ or gcc.  This makes all generated\n\
+-\troutines use the ``inline'' keyword to remove cost of function calls.\n\
+--G\tGenerate the static table of keywords as a static global variable,\n\
+-\trather than hiding it inside of the lookup function (which is the\n\
+-\tdefault behavior).\n\
+--h\tPrints this mesage.\n");
+-		report_error("-H\tAllow user to specify name of generated hash function. Default is `hash'.\n\
+--i\tProvide an initial value for the associate values array.  Default is 0.\n\
+-\tSetting this value larger helps inflate the size of the final table.\n\
+--I\tMake the keyword lookup case-insensitive.\n\
+--j\tAffects the ``jump value,'' i.e., how far to advance the associated\n\
+-\tcharacter value upon collisions.  Must be an odd number, default is %d.\n\
+--k\tAllows selection of the key positions used in the hash function.\n\
+-\tThe allowable choices range between 1-%d, inclusive.  The positions\n\
+-\tare separated by commas, ranges may be used, and key positions may\n\
+-\toccur in any order.  Also, the meta-character '*' causes the generated\n\
+-\thash function to consider ALL key positions, and $ indicates the\n\
+-\t``final character'' of a key, e.g., $,1,2,4,6-10.\n\
+--K\tAllow user to select name of the keyword component in the keyword structure.\n\
+--l\tCompare key lengths before trying a string comparison.  This helps\n\
+-\tcut down on the number of string comparisons made during the lookup.\n\
+--n\tDo not include the length of the keyword when computing the hash function\n\
+--N\tAllow user to specify name of generated lookup function.  Default\n\
+-\tname is `in_word_set.'\n\
+--o\tReorders input keys by frequency of occurrence of the key sets.\n\
+-\tThis should decrease the search time dramatically.\n\
+--p\tChanges the return value of the generated function ``in_word_set''\n\
+-\tfrom its default boolean value (i.e., 0 or 1), to type ``pointer\n\
+-\tto wordlist array''  This is most useful when the -t option, allowing\n\
+-\tuser-defined structs, is used.\n", DEFAULT_JUMP_VALUE,
+-			     MAX_KEY_POS - 1);
+-		report_error("-r\tUtilizes randomness to initialize the associated values table.\n\
+--s\tAffects the size of the generated hash table.  The numeric argument\n\
+-\tfor this option indicates ``how many times larger'' the table range\n\
+-\tshould be, in relationship to the number of keys, e.g. a value of 3\n\
+-\tmeans ``make the table about 3 times larger than the number of input\n\
+-\tkeys.''  A larger table should decrease the time required for an\n\
+-\tunsuccessful search, at the expense of extra table space.  Default\n\
+-\tvalue is 1.  This actual table size may vary somewhat.\n\
+--S\tCauses the generated C code to use a switch statement scheme, rather\n\
+-\tthan an array lookup table.  This can lead to a reduction in both\n\
+-\ttime and space requirements for some keyfiles.  The argument to\n\
+-\tthis option determines how many switch statements are generated.\n\
+-\tA value of 1 generates 1 switch containing all the elements, a value of 2\n\
+-\tgenerates 2 tables with 1/2 the elements in each table, etc.  This\n\
+-\tis useful since many C compilers cannot correctly generate code for\n\
+-\tlarge switch statements.\n\
+-\tthe expense of longer time for each lookup.  Mostly important for\n\
+-\t*large* input sets, i.e., greater than around 100 items or so.\n\
+--t\tAllows the user to include a structured type declaration for \n\
+-\tgenerated code. Any text before %%%% is consider part of the type\n\
+-\tdeclaration.  Key words and additional fields may follow this, one\n\
+-\tgroup of fields per line.\n\
+--T\tPrevents the transfer of the type declaration to the output file.\n\
+-\tUse this option if the type is already defined elsewhere.\n\
+--v\tPrints out the current version number\n%e%a\n",
+-			     usage);
+-	    }
+-	case 'H':		/* Sets the name for the hash function */
+-	    {
+-		option.hash_name = optarg;
+-		break;
+-	    }
+-	case 'i':		/* Sets the initial value for the associated values array. */
+-	    {
+-		if ((option.initial_asso_value = atoi(optarg)) < 0)
+-		    report_error
+-			("initial value %d must be non-zero, ignoring and continuing\n",
+-			 option.initial_asso_value);
+-		if (OPTION_ENABLED(option, RANDOM))
+-		    report_error
+-			("warning, -r option superceeds -i, ignoring -i option and continuing\n");
+-		break;
+-	    }
+-	case 'I':		/* Make the keyword lookup case-insensitive. */
+-	    {
+-		SET_OPTION(option, NOCASE);
+-		break;
+-	    }
+-	case 'j':		/* Sets the jump value, must be odd for later algorithms. */
+-	    {
+-		if ((option.jump = atoi(optarg)) < 0)
+-		    report_error
+-			("jump value %d must be a positive number\n%e%a",
+-			 option.jump, usage);
+-		else if (option.jump && EVEN(option.jump))
+-		    report_error
+-			("jump value %d should be odd, adding 1 and continuing...\n",
+-			 option.jump++);
+-		break;
+-	    }
+-	case 'k':		/* Sets key positions used for hash function. */
+-	    {
+-		int BAD_VALUE = -1;
+-		int value;
+-
+-		iterator_init(optarg, 1, MAX_KEY_POS - 1, WORD_END,
+-			      BAD_VALUE, EOS);
+-
+-		if (*optarg == '*') {	/* Use all the characters for hashing!!!! */
+-		    UNSET_OPTION(option, DEFAULTCHARS);
+-		    SET_OPTION(option, ALLCHARS);
+-		} else {
+-		    char *key_pos;
+-
+-		    for (key_pos = option.key_positions;
+-			 (value = next()) != EOS; key_pos++)
+-			if (value == BAD_VALUE)
+-			    report_error
+-				("illegal key value or range, use 1,2,3-%d,'$' or '*'.\n%e%a",
+-				 (MAX_KEY_POS - 1), usage);
+-			else
+-			    *key_pos = value;;
+-
+-		    *key_pos = EOS;
+-
+-		    if (!
+-			(option.total_charset_size =
+-			 (key_pos - option.key_positions)))
+-			report_error("no keys selected\n%e%a", usage);
+-		    else if (!key_sort
+-			     (option.key_positions,
+-			      option.total_charset_size))
+-			report_error("duplicate keys selected\n%e%a",
+-				     usage);
+-
+-		    if (option.total_charset_size != 2
+-			|| (option.key_positions[0] != 1
+-			    || option.key_positions[1] != WORD_END))
+-			UNSET_OPTION(option, DEFAULTCHARS);
+-		}
+-		break;
+-	    }
+-	case 'K':		/* Make this the keyname for the keyword component field. */
+-	    {
+-		option.key_name = optarg;
+-		break;
+-	    }
+-	case 'l':		/* Create length table to avoid extra string compares. */
+-	    {
+-		SET_OPTION(option, LENTABLE);
+-		break;
+-	    }
+-	case 'n':		/* Don't include the length when computing hash function. */
+-	    {
+-		SET_OPTION(option, NOLENGTH);
+-		break;
+-	    }
+-	case 'N':		/* Make generated lookup function name be optarg */
+-	    {
+-		option.function_name = optarg;
+-		break;
+-	    }
+-	case 'o':		/* Order input by frequency of key set occurrence. */
+-	    {
+-		SET_OPTION(option, ORDER);
+-		break;
+-	    }
+-	case 'p':		/* Generated lookup function now a pointer instead of int. */
+-	    {
+-		SET_OPTION(option, POINTER);
+-		break;
+-	    }
+-	case 'r':		/* Utilize randomness to initialize the associated values table. */
+-	    {
+-		SET_OPTION(option, RANDOM);
+-		if (option.initial_asso_value != 0)
+-		    report_error
+-			("warning, -r option superceeds -i, disabling -i option and continuing\n");
+-		break;
+-	    }
+-	case 's':		/* Range of associated values, determines size of final table. */
+-	    {
+-		if ((option.size = atoi(optarg)) <= 0)
+-		    report_error("improper range argument %s\n%e%a",
+-				 optarg, usage);
+-		else if (option.size > 50)
+-		    report_error
+-			("%d is excessive, did you really mean this?! (type %n -h for help)\n",
+-			 option.size);
+-		break;
+-	    }
+-	case 'S':		/* Generate switch statement output, rather than lookup table. */
+-	    {
+-		SET_OPTION(option, SWITCH);
+-		if ((option.total_switches = atoi(optarg)) <= 0)
+-		    report_error
+-			("number of switches %s must be a positive number\n%e%a",
+-			 optarg, usage);
+-		break;
+-	    }
+-	case 't':		/* Enable the TYPE mode, allowing arbitrary user structures. */
+-	    {
+-		SET_OPTION(option, TYPE);
+-		break;
+-	    }
+-	case 'T':		/* Don't print structure definition. */
+-	    {
+-		SET_OPTION(option, NOTYPE);
+-		break;
+-	    }
+-	case 'v':		/* Print out the version and quit. */
+-	    report_error("%n: version %s\n%e%a\n", version_string, usage);
+-	default:
+-	    report_error("%e%a", usage);
+-	}
+-    }
+-
+-    if (argv[optind] && !freopen(argv[optind], "r", stdin))
+-	report_error("unable to read key word file %s\n%e%a", argv[optind],
+-		     usage);
+-
+-    if (++optind < argc)
+-	report_error("extra trailing arguments to %n\n%e%a", usage);
+-}
+-
+-/* Output command-line Options. */
+-void
+-print_options()
+-{
+-    int i;
+-
+-    printf("/* Command-line: ");
+-
+-    for (i = 0; i < option.argument_count; i++)
+-	printf("%s ", option.argument_vector[i]);
+-
+-    printf(" */\n\n");
+-}
+diff --git a/server/pgperf/options.h b/server/pgperf/options.h
+deleted file mode 100644
+index 539c7f0..0000000
+--- a/server/pgperf/options.h
++++ /dev/null
+@@ -1,152 +0,0 @@
+-/* Handles parsing the Options provided to the user.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-/* This module provides a uniform interface to the various Options available
+-   to a user of the Perfect.hash function generator.  In addition to the
+-   run-time Options, found in the Option_Type below, there is also the
+-   hash table Size and the Keys to be used in the hashing.
+-   The overall design of this module was an experiment in using C++
+-   classes as a mechanism to enhance centralization of option and
+-   and error handling, which tend to get out of hand in a C program. */
+-
+-#ifndef _options_h
+-#define _options_h
+-
+-#include <stdio.h>
+-#include "prototype.h"
+-
+-/* Enumerate the potential debugging Options. */
+-
+-enum option_type {
+-    DEBUG = 01,			/* Enable debugging (prints diagnostics to Std_Err). */
+-    ORDER = 02,			/* Apply ordering heuristic to speed-up search time. */
+-    ANSI = 04,			/* Generate ANSI prototypes. */
+-    ALLCHARS = 010,		/* Use all characters in hash function. */
+-    GNU = 020,			/* Assume GNU extensions (primarily function inline). */
+-    TYPE = 040,			/* Handle user-defined type structured keyword input. */
+-    RANDOM = 0100,		/* Randomly initialize the associated values table. */
+-    DEFAULTCHARS = 0200,	/* Make default char positions be 1,$ (end of keyword). */
+-    SWITCH = 0400,		/* Generate switch output to save space. */
+-    POINTER = 01000,		/* Have in_word_set function return pointer, not boolean. */
+-    NOLENGTH = 02000,		/* Don't include keyword length in hash computations. */
+-    LENTABLE = 04000,		/* Generate a length table for string comparison. */
+-    DUP = 010000,		/* Handle duplicate hash values for keywords. */
+-    FAST = 020000,		/* Generate the hash function ``fast.'' */
+-    NOTYPE = 040000,		/* Don't include user-defined type definition
+-				   in output -- it's already defined elsewhere. */
+-    COMP = 0100000,		/* Generate strncmp rather than strcmp. */
+-    GLOBAL = 0200000,		/* Make the keyword table a global variable. */
+-    CONST = 0400000,		/* Make the generated tables readonly (const). */
+-    NOCASE = 01000000,		/* Make the keyword lookup case-insensitive. */
+-};
+-
+-/* Define some useful constants. */
+-
+-/* Max size of each word's key set. */
+-#define MAX_KEY_POS (128 - 1)
+-
+-/* Signals the start of a word. */
+-#define WORD_START 1
+-
+-/* Signals the end of a word. */
+-#define WORD_END 0
+-
+-/* Signals end of the key list. */
+-#define EOS MAX_KEY_POS
+-
+-/* Returns TRUE if option O is enabled. */
+-#define OPTION_ENABLED(OW,O) (OW.option_word & (int)O)
+-
+-/* Enables option O in OPTION_WORD. */
+-#define SET_OPTION(OW,O) (OW.option_word |= (int)O)
+-
+-/* Disable option O in OPTION_WORD. */
+-#define UNSET_OPTION(OW,O) (OW.option_word &= ~(int)(O))
+-
+-/* Returns total distinct key positions. */
+-#define GET_CHARSET_SIZE(O) (O.total_charset_size)
+-
+-/* Set the total distinct key positions. */
+-#define SET_CHARSET_SIZE(O,S) (O.total_charset_size = (S))
+-
+-/* Initializes the key Iterator. */
+-#define RESET(O) (O.key_pos = 0)
+-
+-/* Returns current key_position and advances index. */
+-#define GET(O) (O.key_positions[O.key_pos++])
+-
+-/* Sets the size of the table size. */
+-#define SET_ASSO_MAX(O,R) (O.size = (R))
+-
+-/* Returns the size of the table size. */
+-#define GET_ASSO_MAX(O) (O.size)
+-
+-/* Returns the jump value. */
+-#define GET_JUMP(O) (O.jump)
+-
+-/* Returns the iteration value. */
+-#define GET_ITERATIONS(O) (O.iterations)
+-
+-/* Returns the lookup function name. */
+-#define GET_FUNCTION_NAME(O) (O.function_name)
+-
+-/* Returns the keyword key name. */
+-#define GET_KEY_NAME(O) (O.key_name)
+-
+-/* Returns the hash function name. */
+-#define GET_HASH_NAME(O) (O.hash_name)
+-
+-/* Returns the initial associated character value. */
+-#define INITIAL_VALUE(O) (O.initial_asso_value)
+-
+-/* Returns the string used to delimit keywords from other attributes. */
+-#define GET_DELIMITER(O) (O.delimiters)
+-
+-/* Sets the keyword/attribute delimiters with value of D. */
+-#define SET_DELIMITERS(O,D) (O.delimiters = (D))
+-
+-/* Gets the total number of switch statements to generate. */
+-#define GET_TOTAL_SWITCHES(O) (O.total_switches)
+-
+-/* Class manager for gperf program options. */
+-
+-typedef struct options {
+-    int option_word;		/* Holds the user-specified Options. */
+-    int total_charset_size;	/* Total number of distinct key_positions. */
+-    int size;			/* Range of the hash table. */
+-    int key_pos;		/* Tracks current key position for Iterator. */
+-    int jump;			/* Jump length when trying alternative values. */
+-    int initial_asso_value;	/* Initial value for asso_values table. */
+-    int argument_count;		/* Records count of command-line arguments. */
+-    int iterations;		/* Amount to iterate when a collision occurs. */
+-    int total_switches;		/* Number of switch statements to generate. */
+-    char **argument_vector;	/* Stores a pointer to command-line vector. */
+-    char *function_name;	/* Name used for generated lookup function. */
+-    char *key_name;		/* Name used for keyword key. */
+-    char *hash_name;		/* Name used for generated hash function. */
+-    char *delimiters;		/* Separates keywords from other attributes. */
+-    char key_positions[MAX_KEY_POS];	/* Contains user-specified key choices. */
+-} OPTIONS;
+-
+-extern void options_init P((int argc, char *argv[]));
+-extern void options_destroy P((void));
+-extern OPTIONS option;
+-#endif				/* _options_h */
+diff --git a/server/pgperf/perfect.c b/server/pgperf/perfect.c
+deleted file mode 100644
+index 9652f95..0000000
+--- a/server/pgperf/perfect.c
++++ /dev/null
+@@ -1,347 +0,0 @@
+-/* Provides high-level routines to manipulate the keywork list 
+-   structures the code generation output.
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include <assert.h>
+-#include <ctype.h>
+-#include "options.h"
+-#include "perfect.h"
+-#include "stderr.h"
+-
+-/* Current release version. */
+-extern char *version_string;
+-
+-/* Counts occurrences of each key set character. */
+-int occurrences[ALPHABET_SIZE];
+-
+-/* Value associated with each character. */
+-int asso_values[ALPHABET_SIZE];
+-
+-/* Locally visible PERFECT object. */
+-PERFECT perfect;
+-
+-/* Efficiently returns the least power of two greater than or equal to X! */
+-#define POW(X) ((!X)?1:(X-=1,X|=X>>1,X|=X>>2,X|=X>>4,X|=X>>8,X|=X>>16,(++X)))
+-
+-/* Reads input keys, possibly applies the reordering heuristic, sets the
+-   maximum associated value size (rounded up to the nearest power of 2),
+-   may initialize the associated values array, and determines the maximum
+-   hash table size.  Note: using the random numbers is often helpful,
+-   though not as deterministic, of course! */
+-
+-void
+-perfect_init()
+-{
+-    int asso_value_max;
+-    int len;
+-
+-    perfect.num_done = 1;
+-    perfect.fewest_collisions = 0;
+-    read_keys();
+-    if (OPTION_ENABLED(option, ORDER))
+-	reorder();
+-    asso_value_max = GET_ASSO_MAX(option);
+-    len = keyword_list_length();
+-    asso_value_max = (asso_value_max ? asso_value_max * len : len);
+-    SET_ASSO_MAX(option, POW(asso_value_max));
+-
+-    if (OPTION_ENABLED(option, RANDOM)) {
+-	int i;
+-
+-	srandom(time(0));
+-
+-	for (i = 0; i < ALPHABET_SIZE; i++)
+-	    asso_values[i] = (random() & asso_value_max - 1);
+-    } else {
+-	int asso_value = INITIAL_VALUE(option);
+-	if (asso_value) {	/* Initialize array if user requests non-zero default. */
+-	    int i;
+-
+-	    for (i = ALPHABET_SIZE - 1; i >= 0; i--)
+-		asso_values[i] = asso_value & GET_ASSO_MAX(option) - 1;
+-	}
+-    }
+-    perfect.max_hash_value = max_key_length() + GET_ASSO_MAX(option) *
+-	GET_CHARSET_SIZE(option);
+-
+-    printf("/* C code produced by gperf version %s */\n", version_string);
+-    print_options();
+-
+-    if (OPTION_ENABLED(option, NOCASE))
+-	printf("#include <ctype.h>\n\n");
+-
+-    if (OPTION_ENABLED(option, DEBUG)) {
+-	int i;
+-	fprintf(stderr, "\nnumber of keys = %d\nmaximum associated value is %d\
+-\nmaximum possible size of generated hash table is %d\n",
+-		len, asso_value_max, perfect.max_hash_value);
+-    }
+-}
+-
+-/* Merge two hash key multisets to form the ordered disjoint union of the sets.
+-   (In a multiset, an element can occur multiple times). Precondition: both 
+-   set_1 and set_2 must be ordered. Returns the length of the combined set. */
+-
+-static int
+-compute_disjoint_union(set_1, set_2, set_3)
+-    char *set_1;
+-    char *set_2;
+-    char *set_3;
+-{
+-    char *base = set_3;
+-
+-    while (*set_1 && *set_2)
+-	if (*set_1 == *set_2)
+-	    set_1++, set_2++;
+-	else {
+-	    *set_3 = *set_1 < *set_2 ? *set_1++ : *set_2++;
+-	    if (set_3 == base || *set_3 != *(set_3 - 1))
+-		set_3++;
+-	}
+-
+-    while (*set_1) {
+-	*set_3 = *set_1++;
+-	if (set_3 == base || *set_3 != *(set_3 - 1))
+-	    set_3++;
+-    }
+-
+-    while (*set_2) {
+-	*set_3 = *set_2++;
+-	if (set_3 == base || *set_3 != *(set_3 - 1))
+-	    set_3++;
+-    }
+-    *set_3 = '\0';
+-    return set_3 - base;
+-}
+-
+-/* Sort the UNION_SET in increasing frequency of occurrence.
+-   This speeds up later processing since we may assume the resulting
+-   set (Set_3, in this case), is ordered. Uses insertion sort, since
+-   the UNION_SET is typically short. */
+-
+-static void
+-sort_set(union_set, len)
+-    char *union_set;
+-    int len;
+-{
+-    int i, j;
+-
+-    for (i = 0, j = len - 1; i < j; i++) {
+-	char curr, tmp;
+-
+-	for (curr = i + 1, tmp = union_set[curr];
+-	     curr > 0
+-	     && occurrences[tmp] < occurrences[union_set[curr - 1]];
+-	     curr--)
+-	    union_set[curr] = union_set[curr - 1];
+-
+-	union_set[curr] = tmp;
+-    }
+-}
+-
+-/* Generate a key set's hash value. */
+-
+-static int
+-hash(key_node)
+-    LIST_NODE *key_node;
+-{
+-    int sum = OPTION_ENABLED(option, NOLENGTH) ? 0 : key_node->length;
+-    char *ptr;
+-
+-    for (ptr = key_node->char_set; *ptr; ptr++)
+-	sum += asso_values[*ptr];
+-
+-    return key_node->hash_value = sum;
+-}
+-
+-/* Find out how associated value changes affect successfully hashed items.
+-   Returns FALSE if no other hash values are affected, else returns TRUE.
+-   Note that because GET_ASSO_MAX (option) is a power of two we can guarantee
+-   that all legal ASSO_VALUES are visited without repetition since
+-   GET_JUMP (option) was forced to be an odd value! */
+-
+-static bool
+-affects_prev(c, curr)
+-    char c;
+-    LIST_NODE *curr;
+-{
+-    int original_char = asso_values[c];
+-    int i = !OPTION_ENABLED(option, FAST) ? GET_ASSO_MAX(option) :
+-	GET_ITERATIONS(option) ==
+-	0 ? key_list.list_len : GET_ITERATIONS(option);
+-
+-    /* Try all asso_values. */
+-
+-    while (--i >= 0) {
+-	int collisions = 0;
+-	LIST_NODE *ptr;
+-
+-	asso_values[c] =
+-	    asso_values[c] +
+-	    (GET_JUMP(option) ? GET_JUMP(option) : random())
+-	    & GET_ASSO_MAX(option) - 1;
+-	bool_array_reset();
+-
+-	/* See how this asso_value change affects previous keywords.  If
+-	   it does better than before we'll take it! */
+-
+-	for (ptr = key_list.head;
+-	     !lookup(hash(ptr))
+-	     || ++collisions < perfect.fewest_collisions; ptr = ptr->next)
+-	    if (ptr == curr) {
+-		perfect.fewest_collisions = collisions;
+-		return FALSE;
+-	    }
+-    }
+-
+-    asso_values[c] = original_char;	/* Restore original values, no more tries. */
+-    return TRUE;		/* If we're this far it's time to try the next character.... */
+-}
+-
+-/* Change a character value, try least-used characters first. */
+-
+-static void
+-change(prior, curr)
+-    LIST_NODE *prior;
+-    LIST_NODE *curr;
+-{
+-    char *xmalloc();
+-    static char *union_set = 0;
+-    char *temp;
+-    LIST_NODE *ptr;
+-
+-    if (!union_set)
+-	union_set = xmalloc(2 * GET_CHARSET_SIZE(option) + 1);
+-
+-    if (OPTION_ENABLED(option, DEBUG)) {	/* Very useful for debugging. */
+-	fprintf(stderr,
+-		"collision on keyword #%d, prior=\"%s\", curr=\"%s\", hash=%d\n",
+-		perfect.num_done, prior->key, curr->key, curr->hash_value);
+-	fflush(stderr);
+-    }
+-    sort_set(union_set,
+-	     compute_disjoint_union(prior->char_set, curr->char_set,
+-				    union_set));
+-
+-    /* Try changing some values, if change doesn't alter other values continue normal action. */
+-
+-    perfect.fewest_collisions++;
+-
+-    for (temp = union_set; *temp; temp++)
+-	if (!affects_prev(*temp, curr)) {
+-	    if (OPTION_ENABLED(option, DEBUG)) {
+-		fprintf(stderr,
+-			"- resolved by changing asso_value['%c'] (char #%d) to %d\n",
+-			*temp, temp - union_set + 1, asso_values[*temp]);
+-		fflush(stderr);
+-	    }
+-	    return;		/* Good, doesn't affect previous hash values, we'll take it. */
+-	}
+-
+-    for (ptr = key_list.head; ptr != curr; ptr = ptr->next)
+-	hash(ptr);
+-
+-    hash(curr);
+-
+-    if (OPTION_ENABLED(option, DEBUG)) {
+-	fprintf(stderr,
+-		"** collision not resolved, %d duplicates remain, continuing...\n",
+-		perfect.fewest_collisions);
+-	fflush(stderr);
+-    }
+-}
+-
+-/* Does the hard stuff....
+-   Initializes the Iteration Number boolean array, and then trys to find a 
+-   perfect function that will hash all the key words without getting any
+-   duplications.  This is made much easier since we aren't attempting
+-   to generate *minimum* functions, only perfect ones.
+-   If we can't generate a perfect function in one pass *and* the user
+-   hasn't enabled the DUP option, we'll inform the user to try the
+-   randomization option, use -D, or choose alternative key positions.  
+-   The alternatives (e.g., back-tracking) are too time-consuming, i.e,
+-   exponential in the number of keys. */
+-
+-int
+-perfect_generate()
+-{
+-    LIST_NODE *curr;
+-    bool_array_init(perfect.max_hash_value);
+-
+-    for (curr = key_list.head; curr; curr = curr->next) {
+-	LIST_NODE *ptr;
+-	hash(curr);
+-
+-	for (ptr = key_list.head; ptr != curr; ptr = ptr->next)
+-	    if (ptr->hash_value == curr->hash_value) {
+-		change(ptr, curr);
+-		break;
+-	    }
+-	perfect.num_done++;
+-    }
+-
+-
+-    /* Make one final check, just to make sure nothing weird happened.... */
+-    bool_array_reset();
+-
+-    for (curr = key_list.head; curr; curr = curr->next)
+-	if (lookup(hash(curr)))
+-	    if (OPTION_ENABLED(option, DUP))	/* We'll try to deal with this later..... */
+-		break;
+-	    else {		/* Yow, big problems.  we're outta here! */
+-
+-		report_error("\nInternal error, duplicate value %d:\n\
+-try options -D or -r, or use new key positions.\n\n", hash(curr));
+-		return 1;
+-	    }
+-
+-    bool_array_destroy();
+-
+-    /* First sorts the key word list by hash value, and the outputs the
+-       list to the proper ostream. The generated hash table code is only 
+-       output if the early stage of processing turned out O.K. */
+-
+-    sort();
+-    print_output();
+-    return 0;
+-}
+-
+-/* Prints out some diagnostics upon completion. */
+-
+-void
+-perfect_destroy()
+-{
+-    if (OPTION_ENABLED(option, DEBUG)) {
+-	int i;
+-
+-	fprintf(stderr,
+-		"\ndumping occurrence and associated values tables\n");
+-
+-	for (i = 0; i < ALPHABET_SIZE; i++)
+-	    if (occurrences[i])
+-		fprintf(stderr,
+-			"asso_values[%c] = %3d, occurrences[%c] = %3d\n",
+-			i, asso_values[i], i, occurrences[i]);
+-
+-	fprintf(stderr, "end table dumping\n");
+-
+-    }
+-}
+diff --git a/server/pgperf/perfect.h b/server/pgperf/perfect.h
+deleted file mode 100644
+index eb99da2..0000000
+--- a/server/pgperf/perfect.h
++++ /dev/null
+@@ -1,42 +0,0 @@
+-/* Provides high-level routines to manipulate the keyword list
+-   structures the code generation output. 
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#ifndef _perfect_h
+-#define _perfect_h
+-
+-#include "prototype.h"
+-#include "keylist.h"
+-#include "boolarray.h"
+-
+-typedef struct perfect {
+-    KEY_LIST list;		/* List of key words provided by the user. */
+-    BOOL_ARRAY duplicate;	/* Speeds up check for redundant hash values. */
+-    int max_hash_value;		/* Maximum possible hash value. */
+-    int fewest_collisions;	/* Records fewest # of collisions for asso value. */
+-    int num_done;		/* Number of keywords processed without a collision. */
+-} PERFECT;
+-
+-extern void perfect_init P((void));
+-extern void perfect_destroy P((void));
+-extern int perfect_generate P((void));
+-extern void perfect_print P((void));
+-#endif				/* _perfect_h */
+diff --git a/server/pgperf/prototype.h b/server/pgperf/prototype.h
+deleted file mode 100644
+index e8b6f0b..0000000
+--- a/server/pgperf/prototype.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-#ifndef _prototype_h
+-#define _prototype_h
+-#ifdef __STDC__
+-#define P(X) X
+-#else
+-#define P(X) ()
+-#endif
+-
+-typedef char bool;
+-#define FALSE 0
+-#define TRUE 1
+-
+-#define ODD(X) ((X) & 1)
+-#define EVEN(X) (!((X) & 1))
+-#endif				/* _prototype_h */
+diff --git a/server/pgperf/readline.c b/server/pgperf/readline.c
+deleted file mode 100644
+index 9e1978e..0000000
+--- a/server/pgperf/readline.c
++++ /dev/null
+@@ -1,79 +0,0 @@
+-/* Correctly reads an arbitrarily size string.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include "readline.h"
+-
+-/* Size of each chunk. */
+-#define CHUNK_SIZE BUFSIZ
+-
+-/* Recursively fills up the buffer. */
+-
+-static char *
+-readln_aux(chunks)
+-    int chunks;
+-{
+-    char *buffered_malloc();
+-    char buf[CHUNK_SIZE];
+-    register char *bufptr = buf;
+-    register char *ptr;
+-    int c;
+-
+-    while ((c = getchar()) != EOF && c != '\n') {	/* fill the current buffer */
+-	*bufptr++ = c;
+-	if (bufptr - buf >= CHUNK_SIZE) {	/* prepend remainder to ptr buffer */
+-	    if (ptr = readln_aux(chunks + 1))
+-
+-		for (; bufptr != buf; *--ptr = *--bufptr);
+-
+-	    return ptr;
+-	}
+-    }
+-
+-    if (c == EOF && bufptr == buf)
+-	return NULL;
+-
+-    c = (chunks * CHUNK_SIZE + bufptr - buf) + 1;
+-
+-    if (ptr = buffered_malloc(c)) {
+-
+-	for (*(ptr += (c - 1)) = '\0'; bufptr != buf; *--ptr = *--bufptr);
+-
+-	return ptr;
+-    } else
+-	return NULL;
+-}
+-
+-/* Returns the ``next'' line, ignoring comments beginning with '#'. */
+-
+-char *
+-read_line()
+-{
+-    int c;
+-    if ((c = getchar()) == '#') {
+-	while ((c = getchar()) != '\n' && c != EOF);
+-
+-	return c != EOF ? read_line() : NULL;
+-    } else {
+-	ungetc(c, stdin);
+-	return readln_aux(0);
+-    }
+-}
+diff --git a/server/pgperf/readline.h b/server/pgperf/readline.h
+deleted file mode 100644
+index 3b266ed..0000000
+--- a/server/pgperf/readline.h
++++ /dev/null
+@@ -1,30 +0,0 @@
+-/* Reads arbitrarily long string from input file, returning it as a dynamic buffer. 
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-/* Returns a pointer to an arbitrary length string.  Returns NULL on error or EOF
+-   The storage for the string is dynamically allocated by new. */
+-
+-#ifndef _readline_h
+-#define _readline_h
+-#include "prototype.h"
+-
+-extern char *read_line P((void));
+-#endif				/* _readline_h */
+diff --git a/server/pgperf/stderr.c b/server/pgperf/stderr.c
+deleted file mode 100644
+index e5c96ff..0000000
+--- a/server/pgperf/stderr.c
++++ /dev/null
+@@ -1,104 +0,0 @@
+-/* Provides a useful variable-length argument error handling abstraction.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-#include "stderr.h"
+-
+-/* Holds the name of the currently active program. */
+-static char *program_name;
+-
+-/* Sets name of program. */
+-
+-void
+-set_program_name(prog_name)
+-    char *prog_name;
+-{
+-    program_name = prog_name;
+-}
+-
+-/* Valid Options (prefixed by '%', as in printf format strings) include:
+-   'a': exit the program at this point
+-   'c': print a character
+-   'd': print a decimal number
+-   'e': call the function pointed to by the corresponding argument
+-   'f','g': print a double
+-   'n': print the name of the program (NULL if not set in constructor or elsewhere)
+-   'p': print out the appropriate errno value from sys_errlist
+-   's': print out a character string
+-   '%': print out a single percent sign, '%' */
+-
+-void
+-report_error(va_alist)
+-    va_dcl
+-{
+-    extern int errno, sys_nerr;
+-    extern char *sys_errlist[];
+-    typedef void (*PTF) ();
+-    typedef char *CHARP;
+-    va_list argp;
+-    int abort = 0;
+-    char *format;
+-
+-    va_start(argp);
+-
+-    for (format = va_arg(argp, char *); *format; format++) {
+-	if (*format != '%')
+-	    putc(*format, stderr);
+-	else {
+-	    switch (*++format) {
+-	    case '%':
+-		putc('%', stderr);
+-		break;
+-	    case 'a':
+-		abort = 1;
+-		break;
+-	    case 'c':
+-		putc(va_arg(argp, int), stderr);
+-		break;
+-	    case 'd':
+-		fprintf(stderr, "%d", va_arg(argp, int));
+-		break;
+-	    case 'e':
+-		(*va_arg(argp, PTF)) ();
+-		break;
+-	    case 'f':
+-		fprintf(stderr, "%g", va_arg(argp, double));
+-		break;
+-	    case 'n':
+-		fputs(program_name ? program_name : "error", stderr);
+-		break;
+-	    case 'p':
+-		if (errno < sys_nerr)
+-		    fprintf(stderr, "%s: %s", va_arg(argp, CHARP),
+-			    sys_errlist[errno]);
+-		else
+-		    fprintf(stderr, "<unknown error> %d", errno);
+-		break;
+-	    case 's':
+-		fputs(va_arg(argp, CHARP), stderr);
+-		break;
+-	    }
+-	}
+-	if (abort)
+-	    exit(1);
+-    }
+-    va_end(argp);
+-}
+diff --git a/server/pgperf/stderr.h b/server/pgperf/stderr.h
+deleted file mode 100644
+index 10e4b0d..0000000
+--- a/server/pgperf/stderr.h
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/* Provides a useful variable-length argument error handling abstraction.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#ifndef _stderr_h
+-#define _stderr_h
+-#include "prototype.h"
+-#include <varargs.h>
+-
+-extern void set_program_name P((char *prog_name));
+-extern void report_error();
+-#endif				/* _stderr_h */
+diff --git a/server/pgperf/version.c b/server/pgperf/version.c
+deleted file mode 100644
+index fe70134..0000000
+--- a/server/pgperf/version.c
++++ /dev/null
+@@ -1,22 +0,0 @@
+-/* Current program version number.
+-
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-char *version_string = "2.1p1 (K&R C version, modified by Pavel)";
+diff --git a/server/pgperf/xmalloc.c b/server/pgperf/xmalloc.c
+deleted file mode 100644
+index 39ce48d..0000000
+--- a/server/pgperf/xmalloc.c
++++ /dev/null
+@@ -1,79 +0,0 @@
+-/* Provide a useful malloc sanity checker and an efficient buffered memory
+-   allocator that reduces calls to malloc. 
+-   Copyright (C) 1989 Free Software Foundation, Inc.
+-   written by Douglas C. Schmidt (schmidt@ics.uci.edu)
+-
+-This file is part of GNU GPERF.
+-
+-GNU GPERF is free software; you can redistribute it and/or modify
+-it under the terms of the GNU General Public License as published by
+-the Free Software Foundation; either version 1, or (at your option)
+-any later version.
+-
+-GNU GPERF is distributed in the hope that it will be useful,
+-but WITHOUT ANY WARRANTY; without even the implied warranty of
+-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-GNU General Public License for more details.
+-
+-You should have received a copy of the GNU General Public License
+-along with GNU GPERF; see the file COPYING.  If not, write to
+-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+-
+-#include <stdio.h>
+-
+-/* Grabs SIZE bytes of dynamic memory or dies trying! */
+-
+-char *
+-xmalloc(size)
+-    int size;
+-{
+-    char *malloc();
+-    char *temp = malloc(size);
+-
+-    if (temp == 0) {
+-	fprintf(stderr, "out of virtual memory\n");
+-	exit(1);
+-    }
+-    return temp;
+-}
+-
+-/* Determine default alignment.  If your C compiler does not
+-   like this then try something like #define DEFAULT_ALIGNMENT 8. */
+-struct fooalign {
+-    char x;
+-    double d;
+-};
+-#define ALIGNMENT ((char *)&((struct fooalign *) 0)->d - (char *)0)
+-
+-/* Provide an abstraction that cuts down on the number of
+-   calls to MALLOC by buffering the memory pool from which
+-   items are allocated. */
+-
+-char *
+-buffered_malloc(size)
+-    int size;
+-{
+-    char *temp;
+-    static char *buf_start = 0;	/* Large array used to reduce calls to NEW. */
+-    static char *buf_end = 0;	/* Indicates end of BUF_START. */
+-    static int buf_size = 4 * BUFSIZ;	/* Size of buffer pointed to by BUF_START. */
+-
+-    /* Align this on correct boundaries, just to be safe... */
+-    size = ((size + ALIGNMENT - 1) / ALIGNMENT) * ALIGNMENT;
+-
+-    /* If we are about to overflow our buffer we'll just grab another
+-       chunk of memory.  Since we never free the original memory it
+-       doesn't matter that no one points to the beginning of that
+-       chunk.  Furthermore, as a heuristic, we double the
+-       size of the new buffer! */
+-
+-    if (buf_start + size >= buf_end) {
+-	buf_size = buf_size * 2 > size ? buf_size * 2 : size;
+-	buf_start = xmalloc(buf_size);
+-	buf_end = buf_start + buf_size;
+-    }
+-
+-    temp = buf_start;
+-    buf_start += size;
+-    return temp;
+-}
+-- 
+1.7.9.5
+

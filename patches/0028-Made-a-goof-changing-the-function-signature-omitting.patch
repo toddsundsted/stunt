@@ -1,0 +1,26 @@
+From df46af8686999cce3b223949a1ca6ca233772041 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 01:31:17 +0000
+Subject: [PATCH 028/223] Made a goof changing the function signature,
+ omitting the all-important '*'
+
+---
+ server/regexpr.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/regexpr.h b/server/regexpr.h
+index bfd4756..802c9e9 100644
+--- a/server/regexpr.h
++++ b/server/regexpr.h
+@@ -58,7 +58,7 @@ int re_set_syntax(int);
+ /* This sets the syntax to use and returns the previous syntax.  The
+    syntax is specified by a bit mask of the above defined bits. */
+ 
+-const char *re_compile_pattern(char, int, regexp_t);
++const char *re_compile_pattern(char *, int, regexp_t);
+ /* This compiles the regexp (given in regex and length in regex_size).
+    This returns NULL if the regexp compiled successfully, and an error
+    message if an error was encountered.  The buffer field must be
+-- 
+1.7.9.5
+

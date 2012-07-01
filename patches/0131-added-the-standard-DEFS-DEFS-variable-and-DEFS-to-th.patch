@@ -1,0 +1,63 @@
+From f2fb3ec3c963497997493c514c2a54496280dd0b Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 03:52:57 +0000
+Subject: [PATCH 131/223] added the standard DEFS = @DEFS@ variable, and
+ $(DEFS) to the compilation incantations
+
+---
+ server/Makefile.in |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 985e306..83bc18e 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -9,10 +9,10 @@
+ 
+ # @configure_input@
+ 
+-CC = @CXX@
+-
+-LIBRARIES = @LIBS@
+-YACC = @YACC@
++CC	= @CXX@
++DEFS	= @DEFS@
++LIBS	= @LIBS@
++YACC	= @YACC@
+ 
+ # for debugging you might prefer:
+ # CFLAGS='-g -m32 -O0 -Wall
+@@ -23,7 +23,7 @@ INSTALL         = @INSTALL@
+ INSTALL_DATA	= @INSTALL_DATA@
+ 
+ YFLAGS = -d
+-COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
++COMPILE.c = $(CC) $(CFLAGS) $(DEFS)$(CPPFLAGS) -c
+ 
+ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	db_verbs.c decompile.c disassemble.c eval_env.c eval_vm.c \
+@@ -73,17 +73,17 @@ YOBJS = $(YSRCS:.y=.o)
+ OBJS = $(COBJS) $(YOBJS)
+ 
+ moo:	$(OBJS)
+-	$(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
++	$(CC) $(CFLAGS) $(DEFS) $(OBJS) $(LIBS) -o $@
+ 
+ # 'purify' is a memory leak checker, now IBM Rational Purify. --sw
+ pure_moo: moo
+-	purify $(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
++	purify $(CC) $(CFLAGS) $(DEFS) $(OBJS) $(LIBS) -o $@
+ 
+ client_bsd: client_bsd.o
+-	$(CC) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
++	$(CC) $(CFLAGS) $(DEFS) client_bsd.o $(LIBS) -o $@
+ 
+ client_sysv: client_sysv.o
+-	$(CC) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
++	$(CC) $(CFLAGS) $(DEFS) client_sysv.o $(LIBS) -o $@
+ 
+ # This rule gets around some "make"s' desire to `derive' it from `restart.sh'.
+ restart:
+-- 
+1.7.9.5
+

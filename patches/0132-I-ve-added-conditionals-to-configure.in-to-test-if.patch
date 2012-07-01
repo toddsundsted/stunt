@@ -1,0 +1,76 @@
+From 13cd97a6ecde30ea694a37fbdc9913173b593048 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 04:10:42 +0000
+Subject: [PATCH 132/223] I've added conditionals to configure.in to test if:
+
+1) the expat lib is there, and:
+
+2) the header file expat.h is there
+
+I added:
+
+#if HAVE_EXPAT_H
+
+at the top of ext-xml.c, and if the library and the header file are on
+the system the server is compiled with expat, else not...
+---
+ server/configure.in |   17 +++++++++++++++--
+ server/ext-xml.c    |    3 +++
+ 2 files changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/server/configure.in b/server/configure.in
+index 54ec624..40d43c1 100644
+--- a/server/configure.in
++++ b/server/configure.in
+@@ -317,7 +317,8 @@ AC_SIZE_T
+ AC_STRUCT_TM
+ AC_TIMEZONE
+ 
+-AC_SEARCH_LIBS([XML_ParserCreate], [expat])
++have_expat=no
++AC_SEARCH_LIBS([XML_ParserCreate], [expat], [have_expat=yes])
+ 
+ MOO_HAVE_FUNC_LIBS(sqrt, -lm /lib/libm.a "-static -lm")
+ MOO_HAVE_FUNC_LIBS(mkfifo waitpid sigemptyset, -lposix /lib/libposix.a)
+@@ -520,7 +521,19 @@ yes
+ ], test -r /dev/tcp && MOO_ADD_NET_CONFIG(NS_SYSV/NP_TCP))
+ 
+ AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h limits.h malloc.h memory.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h unistd.h])
+-AC_CHECK_HEADERS([expat.h])
++
++if test "x${have_expat}" = xyes; then
++    AC_CHECK_HEADERS([expat.h], [], [have_expat=no])
++fi
++
++if test "x${have_expat}" = xno; then
++    AC_MSG_WARN([
++  ----------------------------------------------------
++  Unable to find the Expat XML library on this system.
++  Building a moo server without XML support.
++  ----------------------------------------------------])
++fi
++
+ AC_C_INLINE
+ AC_FUNC_ALLOCA
+ AC_FUNC_ERROR_AT_LINE
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index 23de37b..07a0c74 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -3,6 +3,7 @@
+  */
+ 
+ 
++#if HAVE_EXPAT_H
+ 
+ #include "bf_register.h"
+ #include "functions.h"
+@@ -289,3 +290,5 @@ register_xml()
+     register_function("xml_parse_document", 1, 2, bf_parse_xml_document,
+ 		      TYPE_STR, TYPE_ANY);
+ }
++
++#endif
+-- 
+1.7.9.5
+

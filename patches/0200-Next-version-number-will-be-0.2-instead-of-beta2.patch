@@ -1,0 +1,38 @@
+From 5e41412b62b73bdc29190d63c30bf56ed6c8083a Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 18 Aug 2011 04:50:49 +0000
+Subject: [PATCH 200/223] Next version number will be 0.2 instead of beta2.
+
+---
+ Makefile            |    2 +-
+ server/configure.ac |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 93219a3..11fdaec 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ 
+ package = waverous
+-version = beta2
++version = 0.2
+ tarname = $(package)
+ distdir = $(tarname)-$(version)
+ 
+diff --git a/server/configure.ac b/server/configure.ac
+index dfe91bd..704fa93 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -16,7 +16,7 @@ dnl   Palo Alto, CA 94304
+ dnl   Pavel@Xerox.Com
+ dnl
+ AC_PREREQ([2.61])
+-AC_INIT([Waverous LambdaMOO], [beta2], [wainstead@gmail.com], [waverous-lambdamoo], [http://code.google.com/p/waverous/])
++AC_INIT([Waverous LambdaMOO], [0.2], [wainstead@gmail.com], [waverous-lambdamoo], [http://code.google.com/p/waverous/])
+ AC_CONFIG_SRCDIR([functions.c])
+ AC_CONFIG_HEADERS([config.h])
+ 
+-- 
+1.7.9.5
+

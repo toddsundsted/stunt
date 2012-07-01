@@ -1,0 +1,40 @@
+From 9ec64d530f9800faf803035e5fd09866e4d89693 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 23 Jan 2011 21:20:58 +0000
+Subject: [PATCH 108/223] Basic top level Makefile, the main use being to
+ build a release.
+
+---
+ Makefile |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Makefile
+
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..931ae11
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,19 @@
++
++package = waverous
++version = beta1
++tarname = $(package)
++distdir = $(tarname)-$(version)
++
++all clean:
++	cd server && $(MAKE) $@
++
++dist: $(distdir).tar.gz
++
++$(distdir).tar.gz: $(distdir)
++	tar chof - $(distdir) | gzip -9 -c > $@
++	rm -rf $(distdir)
++
++$(distdir):
++	svn export https://waverous.googlecode.com/svn/trunk $(distdir)
++
++.PHONY: all clean dist
+\ No newline at end of file
+-- 
+1.7.9.5
+

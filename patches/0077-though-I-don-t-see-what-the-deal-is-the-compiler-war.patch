@@ -1,0 +1,28 @@
+From f6205f91e3b2e1074f3e3d5416bc1307e2a70ea0 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 4 Dec 2010 01:10:45 +0000
+Subject: [PATCH 077/223] though I don't see what the deal is, the compiler
+ warns about an assignment used as a truth statement
+ in the IF, and wants parentheses around the
+ statement. So, have some parentheses!
+
+---
+ server/ext-xml.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index 177acb4..b5e7fee 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -136,7 +136,7 @@ xml_startElement(void *userData, const char *name, const char **atts)
+ 
+   while(*patts != NULL) {
+     Var pair;
+-    if (delim = (char *)strchr(patts[0], NS_DELIMITER))
++    if ( (delim = (char *)strchr(patts[0], NS_DELIMITER)) )
+     {
+       int index       = delim - patts[0];
+       char *nametemp  = str_dup(patts[0]);
+-- 
+1.7.9.5
+

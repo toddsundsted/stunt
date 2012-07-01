@@ -1,0 +1,22 @@
+From fbf02acde5e0d891e3052cccb52e693c5d7c10d5 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 3 Sep 2011 17:17:24 +0000
+Subject: [PATCH 208/223] Updated the authors list
+
+---
+ server/misc/authors-transform.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/misc/authors-transform.txt b/server/misc/authors-transform.txt
+index fcf276d..d2b26d6 100644
+--- a/server/misc/authors-transform.txt
++++ b/server/misc/authors-transform.txt
+@@ -6,4 +6,4 @@ swain = Steve Wainstead <wainstead@gmail.com>
+ wainstead = Steve Wainstead <wainstead@gmail.com>
+ wrog = Roger Crew <crew@cs.stanford.edu>
+ xplat = xplat <xplat>
+-xythian = xythian <xythian>
++xythian = Ken Fox <fox@mars.org>
+-- 
+1.7.9.5
+

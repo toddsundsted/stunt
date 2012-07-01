@@ -1,0 +1,30 @@
+From 50988aca94248412a4fca70e5bf19f5a69bc41bb Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 3 Sep 2011 17:13:48 +0000
+Subject: [PATCH 207/223] First cut at crediting the authors for the
+ conversion to Git; I'm following the recipes here:
+ http://john.albin.net/git/convert-subversion-to-git
+
+---
+ server/misc/authors-transform.txt |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+ create mode 100644 server/misc/authors-transform.txt
+
+diff --git a/server/misc/authors-transform.txt b/server/misc/authors-transform.txt
+new file mode 100644
+index 0000000..fcf276d
+--- /dev/null
++++ b/server/misc/authors-transform.txt
+@@ -0,0 +1,9 @@
++bjj = Ben Jackson <ben@ben.com>
++merlin4269 = Randy Beiter <merlin4269@gmail.com>
++nop = nop <nop>
++pschwan = pschwan <pschwan>
++swain = Steve Wainstead <wainstead@gmail.com>
++wainstead = Steve Wainstead <wainstead@gmail.com>
++wrog = Roger Crew <crew@cs.stanford.edu>
++xplat = xplat <xplat>
++xythian = xythian <xythian>
+-- 
+1.7.9.5
+

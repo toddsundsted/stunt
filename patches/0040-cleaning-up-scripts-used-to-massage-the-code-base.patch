@@ -1,0 +1,353 @@
+From f4317f808ca8b75b604e805cc3fd6d66348dd5cf Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 19:39:00 +0000
+Subject: [PATCH 040/223] cleaning up scripts used to massage the code base
+
+---
+ server/fixmallocs.sh |  182 --------------------------------------------------
+ server/fixthises.sh  |  144 ---------------------------------------
+ 2 files changed, 326 deletions(-)
+ delete mode 100644 server/fixmallocs.sh
+ delete mode 100644 server/fixthises.sh
+
+diff --git a/server/fixmallocs.sh b/server/fixmallocs.sh
+deleted file mode 100644
+index adac8c8..0000000
+--- a/server/fixmallocs.sh
++++ /dev/null
+@@ -1,182 +0,0 @@
+-# line:   state->fixups = mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);
+-# match:  Fixup
+-perl -pi -e 's|\Qstate->fixups = mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);\E|state->fixups = (Fixup *) mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);|' code_gen.c
+-# line:   state->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-# match:  Byte
+-perl -pi -e 's|\Qstate->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);\E|state->bytes = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);|' code_gen.c
+-# line:   state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-# match:  Byte
+-perl -pi -e 's|\Qstate->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);\E|state->pushmap = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);|' code_gen.c
+-# line:   state->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-# match:  Byte
+-perl -pi -e 's|\Qstate->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);\E|state->trymap = (Byte *) mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);|' code_gen.c
+-# line:   state->loops = mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);
+-# match:  Loop
+-perl -pi -e 's|\Qstate->loops = mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);\E|state->loops = (Loop *) mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);|' code_gen.c
+-# line:   Fixup *new_fixups = mymalloc(sizeof(Fixup) * new_max,
+-# match:  Fixup
+-perl -pi -e 's|\QFixup *new_fixups = mymalloc(sizeof(Fixup) * new_max,\E|Fixup *new_fixups = (Fixup *) mymalloc(sizeof(Fixup) * new_max,|' code_gen.c
+-# line:   Var *new_literals = mymalloc(sizeof(Var) * new_max,
+-# match:  Var
+-perl -pi -e 's|\QVar *new_literals = mymalloc(sizeof(Var) * new_max,\E|Var *new_literals = (Var *) mymalloc(sizeof(Var) * new_max,|' code_gen.c
+-# line:   Bytecodes *new_fv = mymalloc(sizeof(Bytecodes) * new_max,
+-# match:  Bytecodes
+-perl -pi -e 's|\QBytecodes *new_fv = mymalloc(sizeof(Bytecodes) * new_max,\E|Bytecodes *new_fv = (Bytecodes *) mymalloc(sizeof(Bytecodes) * new_max,|' code_gen.c
+-# line:   Loop *new_loops = mymalloc(sizeof(Loop) * new_max,
+-# match:  Loop
+-perl -pi -e 's|\QLoop *new_loops = mymalloc(sizeof(Loop) * new_max,\E|Loop *new_loops = (Loop *) mymalloc(sizeof(Loop) * new_max,|' code_gen.c
+-# line:   bc.vector = mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
+-# match:  Byte
+-perl -pi -e 's|\Qbc.vector = mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);\E|bc.vector = (Byte *) mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);|' code_gen.c
+-# line:   bbd = mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
+-# match:  
+-# line:   prog->literals = mymalloc(sizeof(Var) * gstate.num_literals,
+-# match:  Var
+-perl -pi -e 's|\Qprog->literals = mymalloc(sizeof(Var) * gstate.num_literals,\E|prog->literals = (Var *) mymalloc(sizeof(Var) * gstate.num_literals,|' code_gen.c
+-# line:   v = mymalloc(sizeof(Verbdef), M_VERBDEF);
+-# match:  Verbdef
+-perl -pi -e 's|\Qv = mymalloc(sizeof(Verbdef), M_VERBDEF);\E|v = (Verbdef *) mymalloc(sizeof(Verbdef), M_VERBDEF);|' db_file.c
+-# line:   o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
+-# match:  Propdef
+-perl -pi -e 's|\Qo->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);\E|o->propdefs.l = (Propdef *) mymalloc(i * sizeof(Propdef), M_PROPDEF);|' db_file.c
+-# line:   o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+-# match:  Pval
+-perl -pi -e 's|\Qo->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);\E|o->propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);|' db_file.c
+-# line:   objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
+-# match:  
+-# line:   new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+-# match:  
+-# line:   o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
+-# match:  Object
+-perl -pi -e 's|\Qo = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);\E|o = objects[num_objects] = (Object *) mymalloc(sizeof(Object), M_OBJECT);|' db_objects.c
+-# line:   new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+-# match:  Pval
+-perl -pi -e 's|\Qnew_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);\E|new_propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);|' db_properties.c
+-# line:   o->propdefs.l = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+-# match:  Propdef
+-perl -pi -e 's|\Qo->propdefs.l = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);\E|o->propdefs.l = (Propdef *) mymalloc(new_size * sizeof(Propdef), M_PROPDEF);|' db_properties.c
+-# line:   new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+-# match:  Pval
+-perl -pi -e 's|\Qnew_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);\E|new_propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);|' db_properties.c
+-# line:   new_props = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+-# match:  Propdef
+-perl -pi -e 's|\Qnew_props = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);\E|new_props = (Propdef *) mymalloc(new_size * sizeof(Propdef), M_PROPDEF);|' db_properties.c
+-# line:   new_propval = mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
+-# match:  Pval
+-perl -pi -e 's|\Qnew_propval = mymalloc((local + new + common) * sizeof(Pval), M_PVAL);\E|new_propval = (Pval *) mymalloc((local + new + common) * sizeof(Pval), M_PVAL);|' db_properties.c
+-# line:   current_alias = mymalloc(sizeof(struct pt_entry), M_PREP);
+-# match:  
+-# line:   newv = mymalloc(sizeof(Verbdef), M_VERBDEF);
+-# match:  Verbdef
+-perl -pi -e 's|\Qnewv = mymalloc(sizeof(Verbdef), M_VERBDEF);\E|newv = (Verbdef *) mymalloc(sizeof(Verbdef), M_VERBDEF);|' db_verbs.c
+-# line:   vc_table = mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
+-# match:  
+-# line:   new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+-# match:  vc_entry
+-perl -pi -e 's|\Qnew_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);\E|new_vc = (vc_entry *) mymalloc(sizeof(vc_entry), M_VC_ENTRY);|' db_verbs.c
+-# line:   expr_stack = mymalloc(sum * sizeof(Expr *), M_DECOMPILE);
+-# match:  
+-# line:   char **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+-# match:  
+-# line:   ret = mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
+-# match:  Var
+-perl -pi -e 's|\Qret = mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);\E|ret = (Var *) mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);|' eval_env.c
+-# line:   vm the_vm = mymalloc(sizeof(vmstruct), M_VM);
+-# match:  vmstruct
+-perl -pi -e 's|\Qvm the_vm = mymalloc(sizeof(vmstruct), M_VM);\E|vm the_vm = (vmstruct *) mymalloc(sizeof(vmstruct), M_VM);|' eval_vm.c
+-# line:   the_vm->activ_stack = mymalloc(sizeof(activation) * stack_size, M_VM);
+-# match:  activation
+-perl -pi -e 's|\Qthe_vm->activ_stack = mymalloc(sizeof(activation) * stack_size, M_VM);\E|the_vm->activ_stack = (activation *) mymalloc(sizeof(activation) * stack_size, M_VM);|' eval_vm.c
+-# line:   res = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+-# match:  Var
+-perl -pi -e 's|\Qres = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);\E|res = (Var *) mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);|' execute.c
+-# line:   activ_stack = mymalloc(sizeof(activation) * max, M_VM);
+-# match:  activation
+-perl -pi -e 's|\Qactiv_stack = mymalloc(sizeof(activation) * max, M_VM);\E|activ_stack = (activation *) mymalloc(sizeof(activation) * max, M_VM);|' execute.c
+-# line:   stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
+-# match:  stdin_waiter
+-perl -pi -e 's|\Qstdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);\E|stdin_waiter *w = (stdin_waiter *) mymalloc(sizeof(stdin_waiter), M_TASK);|' extensions.c
+-# line:   emptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);
+-# match:  Var
+-perl -pi -e 's|\Qemptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);\E|emptylist.v.list = (Var *) mymalloc(1 * sizeof(Var), M_LIST);|' list.c
+-# line:   s = mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+-# match:  char
+-perl -pi -e 's|\Qs = mymalloc(sizeof(char) * (newsize + 1), M_STRING);\E|s = (char *) mymalloc(sizeof(char) * (newsize + 1), M_STRING);|' list.c
+-# line:   l = mymalloc(sizeof(listener), M_NETWORK);
+-# match:  listener
+-perl -pi -e 's|\Ql = mymalloc(sizeof(listener), M_NETWORK);\E|l = (listener *) mymalloc(sizeof(listener), M_NETWORK);|' net_bsd_lcl.c
+-# line:   Port *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);
+-# match:  Port
+-perl -pi -e 's|\QPort *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);\E|Port *new_ports = (Port *) mymalloc(new_max * sizeof(Port), M_NETWORK);|' net_mp_fake.c
+-# line:   Port *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);
+-# match:  Port
+-perl -pi -e 's|\QPort *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);\E|Port *new_ports = (Port *) mymalloc(new_num * sizeof(Port), M_NETWORK);|' net_mp_poll.c
+-# line:   reg_fds = mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
+-# match:  fd_reg
+-perl -pi -e 's|\Qreg_fds = mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);\E|reg_fds = (fd_reg *) mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);|' net_multi.c
+-# line:   fd_reg *new = mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
+-# match:  fd_reg
+-perl -pi -e 's|\Qfd_reg *new = mymalloc(new_max * sizeof(fd_reg), M_NETWORK);\E|fd_reg *new = (fd_reg *) mymalloc(new_max * sizeof(fd_reg), M_NETWORK);|' net_multi.c
+-# line:   h = mymalloc(sizeof(nhandle), M_NETWORK);
+-# match:  nhandle
+-perl -pi -e 's|\Qh = mymalloc(sizeof(nhandle), M_NETWORK);\E|h = (nhandle *) mymalloc(sizeof(nhandle), M_NETWORK);|' net_multi.c
+-# line:   nl->ptr = l = mymalloc(sizeof(nlistener), M_NETWORK);
+-# match:  nlistener
+-perl -pi -e 's|\Qnl->ptr = l = mymalloc(sizeof(nlistener), M_NETWORK);\E|nl->ptr = l = (nlistener *) mymalloc(sizeof(nlistener), M_NETWORK);|' net_multi.c
+-# line:   l = mymalloc(sizeof(listener), M_NETWORK);
+-# match:  listener
+-perl -pi -e 's|\Ql = mymalloc(sizeof(listener), M_NETWORK);\E|l = (listener *) mymalloc(sizeof(listener), M_NETWORK);|' net_sysv_lcl.c
+-# line:   v.v.fnum = mymalloc(sizeof(double), M_FLOAT);
+-# match:  double
+-perl -pi -e 's|\Qv.v.fnum = mymalloc(sizeof(double), M_FLOAT);\E|v.v.fnum = (double *) mymalloc(sizeof(double), M_FLOAT);|' numbers.c
+-# line:   words = mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
+-# match:  
+-# line:   char **new = mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
+-# match:  
+-# line:   regexp_t buf = mymalloc(sizeof(*buf), M_PATTERN);
+-# match:  
+-# line:   buf->fastmap = mymalloc(256 * sizeof(char), M_PATTERN);
+-# match:  char
+-perl -pi -e 's|\Qbuf->fastmap = mymalloc(256 * sizeof(char), M_PATTERN);\E|buf->fastmap = (char *) mymalloc(256 * sizeof(char), M_PATTERN);|' pattern.c
+-# line:   ref_table = mymalloc(table_size * sizeof(reftab_entry *), M_REF_TABLE);
+-# match:  
+-# line:   ans = mymalloc(sizeof(reftab_entry), M_REF_ENTRY);
+-# match:  reftab_entry
+-perl -pi -e 's|\Qans = mymalloc(sizeof(reftab_entry), M_REF_ENTRY);\E|ans = (reftab_entry *) mymalloc(sizeof(reftab_entry), M_REF_ENTRY);|' ref_count.c
+-# line:   new_table = mymalloc(table_size * sizeof(reftab_entry *), M_REF_TABLE);
+-# match:  
+-# line:   slistener *l = mymalloc(sizeof(slistener), M_NETWORK);
+-# match:  slistener
+-perl -pi -e 's|\Qslistener *l = mymalloc(sizeof(slistener), M_NETWORK);\E|slistener *l = (slistener *) mymalloc(sizeof(slistener), M_NETWORK);|' server.c
+-# line:   new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+-# match:  
+-# line:   new->contents = mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
+-# match:  
+-# line:   table = mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
+-# match:  
+-# line:   /* p = mymalloc(sizeof(struct intern_entry), M_INTERN_ENTRY); */
+-# match:  
+-# line:   Stream *s = mymalloc(sizeof(Stream), M_STREAM);
+-# match:  Stream
+-perl -pi -e 's|\QStream *s = mymalloc(sizeof(Stream), M_STREAM);\E|Stream *s = (Stream *) mymalloc(sizeof(Stream), M_STREAM);|' streams.c
+-# line:   Names *names = mymalloc(sizeof(Names), M_NAMES);
+-# match:  Names
+-perl -pi -e 's|\QNames *names = mymalloc(sizeof(Names), M_NAMES);\E|Names *names = (Names *) mymalloc(sizeof(Names), M_NAMES);|' sym_table.c
+-# line:   names->names = mymalloc(sizeof(char *) * max_size, M_NAMES);
+-# match:  
+-# line:   tq = mymalloc(sizeof(tqueue), M_TASK);
+-# match:  tqueue
+-perl -pi -e 's|\Qtq = mymalloc(sizeof(tqueue), M_TASK);\E|tq = (tqueue *) mymalloc(sizeof(tqueue), M_TASK);|' tasks.c
+-# line:   t = mymalloc(sizeof(task), M_TASK);
+-# match:  task
+-perl -pi -e 's|\Qt = mymalloc(sizeof(task), M_TASK);\E|t = (task *) mymalloc(sizeof(task), M_TASK);|' tasks.c
+-# line:   task *t = mymalloc(sizeof(task), M_TASK);
+-# match:  task
+-perl -pi -e 's|\Qtask *t = mymalloc(sizeof(task), M_TASK);\E|task *t = (task *) mymalloc(sizeof(task), M_TASK);|' tasks.c
+-# line:   ext_queue *eq = mymalloc(sizeof(ext_queue), M_TASK);
+-# match:  ext_queue
+-perl -pi -e 's|\Qext_queue *eq = mymalloc(sizeof(ext_queue), M_TASK);\E|ext_queue *eq = (ext_queue *) mymalloc(sizeof(ext_queue), M_TASK);|' tasks.c
+-# line:   struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+-# match:  
+-# line:   struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+-# match:  
+diff --git a/server/fixthises.sh b/server/fixthises.sh
+deleted file mode 100644
+index 9b47efb..0000000
+--- a/server/fixthises.sh
++++ /dev/null
+@@ -1,144 +0,0 @@
+-# tasks.h has extern enum outcome run_server_program_task(Objid this, const char *verb,
+-perl -pi -e 's/\Qextern enum outcome run_server_program_task(Objid this, const char *verb,\E/extern enum outcome run_server_program_task(Objid self, const char *verb,/' tasks.h
+-# execute.c has if (activ_stack[t].vloc != activ_stack[t].this)
+-perl -pi -e 's/\Qif (activ_stack[t].vloc != activ_stack[t].this)\E/if (activ_stack[t].vloc != activ_stack[t].self)/' execute.c
+-# execute.c has stream_printf(str, " (this == #%d)", activ_stack[t].this);
+-perl -pi -e 's/\Qstream_printf(str, " (this == #%d)", activ_stack[t].this);\E/stream_printf(str, " (self == #%d)", activ_stack[t].self);/' execute.c
+-# execute.c has v.v.list[1].v.obj = stack[i].this;
+-perl -pi -e 's/\Qv.v.list[1].v.obj = stack[i].this;\E/v.v.list[1].v.obj = stack[i].self;/' execute.c
+-# execute.c has enum error call_verb2(Objid this, const char *vname, Var args, int do_pass);
+-perl -pi -e 's/\Qenum error call_verb2(Objid this, const char *vname, Var args, int do_pass);\E/enum error call_verb2(Objid self, const char *vname, Var args, int do_pass);/' execute.c
+-# execute.c has call_verb(Objid this, const char *vname_in, Var args, int do_pass)
+-perl -pi -e 's/\Qcall_verb(Objid this, const char *vname_in, Var args, int do_pass)\E/call_verb(Objid self, const char *vname_in, Var args, int do_pass)/' execute.c
+-# execute.c has result = call_verb2(this, vname, args, do_pass);
+-perl -pi -e 's/\Qresult = call_verb2(this, vname, args, do_pass);\E/result = call_verb2(self, vname, args, do_pass);/' execute.c
+-# execute.c has call_verb2(Objid this, const char *vname, Var args, int do_pass)
+-perl -pi -e 's/\Qcall_verb2(Objid this, const char *vname, Var args, int do_pass)\E/call_verb2(Objid self, const char *vname, Var args, int do_pass)/' execute.c
+-# execute.c has where = this;
+-perl -pi -e 's/\Qwhere = this;\E/where = self;/' execute.c
+-# execute.c has RUN_ACTIV.this = this;
+-perl -pi -e 's/\QRUN_ACTIV.this = this;\E/RUN_ACTIV.self = self;/' execute.c
+-# execute.c has set_rt_env_obj(env, SLOT_THIS, this);
+-perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_THIS, this);\E/set_rt_env_obj(env, SLOT_THIS, self);/' execute.c
+-# execute.c has set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
+-perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);\E/set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.self);/' execute.c
+-# execute.c has return RUN_ACTIV.this;
+-perl -pi -e 's/\Qreturn RUN_ACTIV.this;\E/return RUN_ACTIV.self;/' execute.c
+-# execute.c has do_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,
+-perl -pi -e 's/\Qdo_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,\E/do_server_verb_task(Objid self, const char *verb, Var args, db_verb_handle h,/' execute.c
+-# execute.c has return do_server_program_task(this, verb, args, db_verb_definer(h),
+-perl -pi -e 's/\Qreturn do_server_program_task(this, verb, args, db_verb_definer(h),\E/return do_server_program_task(self, verb, args, db_verb_definer(h),/' execute.c
+-# execute.c has do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+-perl -pi -e 's/\Qdo_server_program_task(Objid this, const char *verb, Var args, Objid vloc,\E/do_server_program_task(Objid self, const char *verb, Var args, Objid vloc,/' execute.c
+-# execute.c has RUN_ACTIV.this = this;
+-perl -pi -e 's/\QRUN_ACTIV.this = this;\E/RUN_ACTIV.self = self;/' execute.c
+-# execute.c has set_rt_env_obj(env, SLOT_THIS, this);
+-perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_THIS, this);\E/set_rt_env_obj(env, SLOT_THIS, self);/' execute.c
+-# execute.c has do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
+-perl -pi -e 's/\Qdo_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)\E/do_input_task(Objid user, Parsed_Command * pc, Objid self, db_verb_handle vh)/' execute.c
+-# execute.c has RUN_ACTIV.this = this;
+-perl -pi -e 's/\QRUN_ACTIV.this = this;\E/RUN_ACTIV.self = self;/' execute.c
+-# execute.c has set_rt_env_obj(env, SLOT_THIS, this);
+-perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_THIS, this);\E/set_rt_env_obj(env, SLOT_THIS, self);/' execute.c
+-# execute.c has set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
+-perl -pi -e 's/\Qset_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);\E/set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.self);/' execute.c
+-# execute.c has RUN_ACTIV.this = NOTHING;
+-perl -pi -e 's/\QRUN_ACTIV.this = NOTHING;\E/RUN_ACTIV.self = NOTHING;/' execute.c
+-# execute.c has enum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
+-perl -pi -e 's/\Qenum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);\E/enum error e = call_verb2(RUN_ACTIV.self, RUN_ACTIV.verb, arglist, 1);/' execute.c
+-# execute.c has a.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
+-perl -pi -e 's/\Qa.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);\E/a.self, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);/' execute.c
+-# execute.c has &a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,
+-perl -pi -e 's/\Q&a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,\E/&a->self, &dummy, &dummy, &a->player, &dummy, &a->progr,/' execute.c
+-# server.c has char *this_program = str_dup(argv[0]);
+-perl -pi -e 's/\Qchar *this_program = str_dup(argv[0]);\E/char *self_program = str_dup(argv[0]);/' server.c
+-# tasks.c has Objid this;
+-perl -pi -e 's/\QObjid this;\E/Objid self;/' tasks.c
+-# tasks.c has } else if (find_verb_on(this = tq->player, pc, &vh)
+-perl -pi -e 's/\Q} else if (find_verb_on(this = tq->player, pc, &vh)\E/} else if (find_verb_on(self = tq->player, pc, &vh)/' tasks.c
+-# tasks.c has || find_verb_on(this = location, pc, &vh)
+-perl -pi -e 's/\Q|| find_verb_on(this = location, pc, &vh)\E/|| find_verb_on(self = location, pc, &vh)/' tasks.c
+-# tasks.c has || find_verb_on(this = pc->dobj, pc, &vh)
+-perl -pi -e 's/\Q|| find_verb_on(this = pc->dobj, pc, &vh)\E/|| find_verb_on(self = pc->dobj, pc, &vh)/' tasks.c
+-# tasks.c has || find_verb_on(this = pc->iobj, pc, &vh)
+-perl -pi -e 's/\Q|| find_verb_on(this = pc->iobj, pc, &vh)\E/|| find_verb_on(self = pc->iobj, pc, &vh)/' tasks.c
+-# tasks.c has || (valid(this = location)
+-perl -pi -e 's/\Q|| (valid(this = location)\E/|| (valid(self = location)/' tasks.c
+-# tasks.c has do_input_task(tq->player, pc, this, vh);
+-perl -pi -e 's/\Qdo_input_task(tq->player, pc, this, vh);\E/do_input_task(tq->player, pc, self, vh);/' tasks.c
+-# tasks.c has run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+-perl -pi -e 's/\Qrun_server_program_task(Objid this, const char *verb, Var args, Objid vloc,\E/run_server_program_task(Objid self, const char *verb, Var args, Objid vloc,/' tasks.c
+-# tasks.c has return do_server_program_task(this, verb, args, vloc, verbname, program,
+-perl -pi -e 's/\Qreturn do_server_program_task(this, verb, args, vloc, verbname, program,\E/return do_server_program_task(self, verb, args, vloc, verbname, program,/' tasks.c
+-# tasks.c has list.v.list[9].v.obj = ft.a.this;
+-perl -pi -e 's/\Qlist.v.list[9].v.obj = ft.a.this;\E/list.v.list[9].v.obj = ft.a.self;/' tasks.c
+-# tasks.c has list.v.list[9].v.obj = top_activ(the_vm).this;
+-perl -pi -e 's/\Qlist.v.list[9].v.obj = top_activ(the_vm).this;\E/list.v.list[9].v.obj = top_activ(the_vm).self;/' tasks.c
+-# timers.c has Timer_Entry *this = free_timers;
+-perl -pi -e 's/\QTimer_Entry *this = free_timers;\E/Timer_Entry *self = free_timers;/' timers.c
+-# timers.c has free_timers = this->next;
+-perl -pi -e 's/\Qfree_timers = this->next;\E/free_timers = self->next;/' timers.c
+-# timers.c has return this;
+-perl -pi -e 's/\Qreturn this;\E/return self;/' timers.c
+-# timers.c has free_timer(Timer_Entry * this)
+-perl -pi -e 's/\Qfree_timer(Timer_Entry * this)\E/free_timer(Timer_Entry * self)/' timers.c
+-# timers.c has this->next = free_timers;
+-perl -pi -e 's/\Qthis->next = free_timers;\E/self->next = free_timers;/' timers.c
+-# timers.c has free_timers = this;
+-perl -pi -e 's/\Qfree_timers = this;\E/free_timers = self;/' timers.c
+-# timers.c has Timer_Entry *this = active_timers;
+-perl -pi -e 's/\QTimer_Entry *this = active_timers;\E/Timer_Entry *self = active_timers;/' timers.c
+-# timers.c has Timer_Proc proc = this->proc;
+-perl -pi -e 's/\QTimer_Proc proc = this->proc;\E/Timer_Proc proc = self->proc;/' timers.c
+-# timers.c has Timer_ID id = this->id;
+-perl -pi -e 's/\QTimer_ID id = this->id;\E/Timer_ID id = self->id;/' timers.c
+-# timers.c has Timer_Data data = this->data;
+-perl -pi -e 's/\QTimer_Data data = this->data;\E/Timer_Data data = self->data;/' timers.c
+-# timers.c has free_timer(this);
+-perl -pi -e 's/\Qfree_timer(this);\E/free_timer(self);/' timers.c
+-# timers.c has Timer_Entry *this = virtual_timer;
+-perl -pi -e 's/\QTimer_Entry *this = virtual_timer;\E/Timer_Entry *self = virtual_timer;/' timers.c
+-# timers.c has Timer_Proc proc = this->proc;
+-perl -pi -e 's/\QTimer_Proc proc = this->proc;\E/Timer_Proc proc = self->proc;/' timers.c
+-# timers.c has Timer_ID id = this->id;
+-perl -pi -e 's/\QTimer_ID id = this->id;\E/Timer_ID id = self->id;/' timers.c
+-# timers.c has Timer_Data data = this->data;
+-perl -pi -e 's/\QTimer_Data data = this->data;\E/Timer_Data data = self->data;/' timers.c
+-# timers.c has free_timer(this);
+-perl -pi -e 's/\Qfree_timer(this);\E/free_timer(self);/' timers.c
+-# timers.c has Timer_Entry *this = allocate_timer();
+-perl -pi -e 's/\QTimer_Entry *this = allocate_timer();\E/Timer_Entry *self = allocate_timer();/' timers.c
+-# timers.c has this->id = next_id++;
+-perl -pi -e 's/\Qthis->id = next_id++;\E/self->id = next_id++;/' timers.c
+-# timers.c has this->when = time(0) + seconds;
+-perl -pi -e 's/\Qthis->when = time(0) + seconds;\E/self->when = time(0) + seconds;/' timers.c
+-# timers.c has this->proc = proc;
+-perl -pi -e 's/\Qthis->proc = proc;\E/self->proc = proc;/' timers.c
+-# timers.c has this->data = data;
+-perl -pi -e 's/\Qthis->data = data;\E/self->data = data;/' timers.c
+-# timers.c has while (*t && this->when >= (*t)->when)
+-perl -pi -e 's/\Qwhile (*t && this->when >= (*t)->when)\E/while (*t && self->when >= (*t)->when)/' timers.c
+-# timers.c has this->next = *t;
+-perl -pi -e 's/\Qthis->next = *t;\E/self->next = *t;/' timers.c
+-# timers.c has *t = this;
+-perl -pi -e 's/\Q*t = this;\E/*t = self;/' timers.c
+-# timers.c has return this->id;
+-perl -pi -e 's/\Qreturn this->id;\E/return self->id;/' timers.c
+-# parser.y has Cond_Arm *this_arm = alloc_cond_arm($4, $6);
+-perl -pi -e 's/\QCond_Arm *this_arm = alloc_cond_arm($4, $6);\E/Cond_Arm *self_arm = alloc_cond_arm($4, $6);/' parser.y
+-# parser.y has tmp->next = this_arm;
+-perl -pi -e 's/\Qtmp->next = this_arm;\E/tmp->next = self_arm;/' parser.y
+-# parser.y has $$ = this_arm;
+-perl -pi -e 's/\Q$$ = this_arm;\E/$$ = self_arm;/' parser.y
+-# parser.y has Arg_List *this_arg = alloc_arg_list(ARG_NORMAL, $3);
+-perl -pi -e 's/\QArg_List *this_arg = alloc_arg_list(ARG_NORMAL, $3);\E/Arg_List *self_arg = alloc_arg_list(ARG_NORMAL, $3);/' parser.y
+-# parser.y has tmp->next = this_arg;
+-perl -pi -e 's/\Qtmp->next = this_arg;\E/tmp->next = self_arg;/' parser.y
+-# parser.y has $$ = this_arg;
+-perl -pi -e 's/\Q$$ = this_arg;\E/$$ = self_arg;/' parser.y
+-# parser.y has Arg_List *this_arg = alloc_arg_list(ARG_SPLICE, $4);
+-perl -pi -e 's/\QArg_List *this_arg = alloc_arg_list(ARG_SPLICE, $4);\E/Arg_List *self_arg = alloc_arg_list(ARG_SPLICE, $4);/' parser.y
+-# parser.y has tmp->next = this_arg;
+-perl -pi -e 's/\Qtmp->next = this_arg;\E/tmp->next = self_arg;/' parser.y
+-# parser.y has $$ = this_arg;
+-perl -pi -e 's/\Q$$ = this_arg;\E/$$ = self_arg;/' parser.y
+-- 
+1.7.9.5
+

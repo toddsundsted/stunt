@@ -1,0 +1,27 @@
+From 3e3a1e17d96fb6a120632b0fc6c75ae221456724 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 19:52:00 +0000
+Subject: [PATCH 093/223] noting that Pavel used a custom build of gperf to
+ generate keywords.c, pointing to the README in
+ ./pgperf
+
+---
+ server/Makefile.in |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 13afa0e..32dc9ab 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -126,6 +126,8 @@ config.h: config.h.in config.status
+ y.tab.h: parser.o
+ 	touch y.tab.h
+ 
++# see the README file in the directory pgperf for an explanation of
++# the custom version of gperf used by this project. --sw
+ keywords.c: keywords.gperf
+ 	pgperf -aCIptT -k1,3,$$ keywords.gperf \
+ 		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
+-- 
+1.7.9.5
+

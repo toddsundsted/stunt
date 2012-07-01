@@ -1,0 +1,35 @@
+From ec212a4cfdf8375d76f6a2e5c8416e6c29a2a75d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 11 Aug 2011 00:09:35 +0000
+Subject: [PATCH 194/223] By specifying C++ as the project language via the
+ autoconf macro AC_LANG all of autoconf's tests are
+ compiled via g++ instead of cc. Also: found a
+ redundant macro call to AC_PROG_CPP.
+
+---
+ server/configure.ac |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index d14b234..68f4103 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -20,6 +20,7 @@ AC_INIT([Waverous LambdaMOO], [beta2], [wainstead@gmail.com], [waverous-lambdamo
+ AC_CONFIG_SRCDIR([functions.c])
+ AC_CONFIG_HEADERS([config.h])
+ 
++AC_LANG([C++])
+ 
+ dnl ***************************************************************************
+ dnl Start of actual configuration tests
+@@ -43,7 +44,6 @@ AC_SCO_INTL
+ AC_PROG_CC_STDC
+ MOO_CONST
+ CPP=""
+-AC_PROG_CPP
+ AC_HEADER_CHECK(sys/bsdtypes.h, AC_DEFINE(NEED_BSDTYPES_H))
+ AC_HEADER_CHECK(sys/select.h, AC_DEFINE(NEED_SELECT_H))
+ AC_HEADER_CHECK(memory.h, AC_DEFINE(NEED_MEMORY_H))
+-- 
+1.7.9.5
+

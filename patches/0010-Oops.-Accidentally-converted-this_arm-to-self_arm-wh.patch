@@ -1,0 +1,44 @@
+From 3aa45596f983e9955993c6047e7f72709b95ebcf Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 8 Jun 2009 03:32:34 +0000
+Subject: [PATCH 010/223] Oops. Accidentally converted this_arm to self_arm,
+ which broke it. Undoing.
+
+---
+ server/parser.y |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/server/parser.y b/server/parser.y
+index 009d666..16e5581 100644
+--- a/server/parser.y
++++ b/server/parser.y
+@@ -280,7 +280,7 @@ elseifs:
+ 
+ 			while (tmp->next)
+ 			    tmp = tmp->next;
+-			tmp->next = self_arm;
++			tmp->next = this_arm;
+ 			$$ = $1;
+ 		    } else
+ 			$$ = this_arm;
+@@ -625,7 +625,7 @@ ne_arglist:
+ 
+ 			while (tmp->next)
+ 			    tmp = tmp->next;
+-			tmp->next = self_arg;
++			tmp->next = this_arg;
+ 			$$ = $1;
+ 		    } else
+ 			$$ = this_arg;
+@@ -639,7 +639,7 @@ ne_arglist:
+ 
+ 			while (tmp->next)
+ 			    tmp = tmp->next;
+-			tmp->next = self_arg;
++			tmp->next = this_arg;
+ 			$$ = $1;
+ 		    } else
+ 			$$ = this_arg;
+-- 
+1.7.9.5
+

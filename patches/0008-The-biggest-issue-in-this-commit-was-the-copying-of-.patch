@@ -1,0 +1,278 @@
+From e867447ccc3af3e7a4d30496286dfe542de310e5 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Jun 2009 21:16:57 +0000
+Subject: [PATCH 008/223] The biggest issue in this commit was the copying of
+ an enum out of a struct. The compiler now gives
+ warnings that we're comparing an enum to an enum
+ inside a struct:
+
++enum {
++  BI_RETURN,		/* Normal function return */
++  BI_RAISE,		/* Raising an error */
++  BI_CALL,		/* Making a nested verb call */
++  BI_SUSPEND,		/* Suspending the current task */
++  BI_KILL			/* Kill the current task */
++};
+
+was pulled out, and lines like:
+
+-    p.kind = BI_RAISE;
++    p.kind = p.BI_RAISE;
+
+give it indigestion. But we roll on.
+
+There were a few cases of _this left over, changed now to 'self'. Assorted casts were added to solve void pointer or other casting problems.
+---
+ server/exceptions.h |   16 ++++++++--------
+ server/execute.c    |   33 +++++++++++++++++----------------
+ server/execute.h    |    8 ++++----
+ server/functions.h  |    9 +++++++++
+ 4 files changed, 38 insertions(+), 28 deletions(-)
+
+diff --git a/server/exceptions.h b/server/exceptions.h
+index 95015ad..edd3685 100644
+--- a/server/exceptions.h
++++ b/server/exceptions.h
+@@ -1,12 +1,12 @@
+ /******************************************************************************
+   Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
+-  Portions of _this code were written by Stephen White, aka ghond.
+-  Use and copying of _this software and preparation of derivative works based
+-  upon _this software are permitted.  Any distribution of _this software or
++  Portions of this code were written by Stephen White, aka ghond.
++  Use and copying of this software and preparation of derivative works based
++  upon this software are permitted.  Any distribution of this software or
+   derivative works must comply with all applicable United States export
+   control laws.  This software is made available AS IS, and Xerox Corporation
+   makes no warranty about the software, its performance or its conformity to
+-  any specification.  Any person obtaining a copy of _this software is requested
++  any specification.  Any person obtaining a copy of this software is requested
+   to send their name and post office or electronic mail address to:
+     Pavel Curtis
+     Xerox PARC
+@@ -29,10 +29,10 @@
+ /* ------------------------------------------------------------------------- */
+ /* The exceptions package provides a general exception handling mechanism    */
+ /* for use with C that is portable across a variety of compilers and         */
+-/* operating systems. The design of _this facility is based on the            */
++/* operating systems. The design of this facility is based on the            */
+ /* exception handling mechanism used in the Modula-2+ language at DEC/SRC    */
+ /* and is described in detail in the paper cited above.                      */
+-/* For more background on the underlying motivation for _this design, see     */
++/* For more background on the underlying motivation for this design, see     */
+ /* SRC Research Report #3.                                                   */
+ /*****************************************************************************/
+ 
+@@ -149,7 +149,7 @@ extern void ES_RaiseException(Exception * exception, int value);
+ 	}
+ 
+ 
+-/* The exceptions package doesn't provide _this function, but it calls it */
++/* The exceptions package doesn't provide this function, but it calls it */
+ /* whenever a fatal error occurs:                                        */
+ /*      1) Too many EXCEPT clauses in a single TRY construct.            */
+ /*      2) An unhandled exception is RAISEd.                             */
+@@ -182,7 +182,7 @@ extern void panic(const char *message);
+  * Converted to use _new automatic configuration system.
+  *
+  * Revision 1.2  1992/09/23  17:10:48  pavel
+- * Added protection against _this file being included more than once.
++ * Added protection against this file being included more than once.
+  *
+  * Revision 1.1  1992/07/20  23:23:12  pavel
+  * Initial RCS-controlled version.
+diff --git a/server/execute.c b/server/execute.c
+index e9d65e8..9408401 100644
+--- a/server/execute.c
++++ b/server/execute.c
+@@ -160,7 +160,7 @@ output_to_list(const char *line)
+ {
+     Var str;
+ 
+-    str.type = TYPE_STR;
++    str.type = (var_type)TYPE_STR;
+     str.v.str = str_dup(line);
+     backtrace_list = listappend(backtrace_list, str);
+ }
+@@ -402,7 +402,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
+ 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
+ 	    v.v.list[1].type = TYPE_OBJ;
+ 	    v.v.list[1].v.obj = stack[i].self;
+-	    v.v.list[2].type = TYPE_STR;
++	    v.v.list[2].type = (var_type)TYPE_STR;
+ 	    v.v.list[2].v.str = str_ref(stack[i].verb);
+ 	    v.v.list[3].type = TYPE_OBJ;
+ 	    v.v.list[3].v.obj = stack[i].progr;
+@@ -422,7 +422,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
+ 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
+ 	    v.v.list[1].type = TYPE_OBJ;
+ 	    v.v.list[1].v.obj = NOTHING;
+-	    v.v.list[2].type = TYPE_STR;
++	    v.v.list[2].type = (var_type)TYPE_STR;
+ 	    v.v.list[2].v.str = str_dup(name_func_by_num(stack[i].bi_func_id));
+ 	    v.v.list[3].type = TYPE_OBJ;
+ 	    v.v.list[3].v.obj = NOTHING;
+@@ -466,7 +466,7 @@ raise_error(package p, enum outcome *outcome)
+ 	handler_activ = 0;	/* get entire stack in list */
+     }
+     value.v.list[1] = p.u.raise.code;
+-    value.v.list[2].type = TYPE_STR;
++    value.v.list[2].type = (var_type)TYPE_STR;
+     value.v.list[2].v.str = p.u.raise.msg;
+     value.v.list[3] = p.u.raise.value;
+     value.v.list[4] = make_stack_list(activ_stack, handler_activ,
+@@ -488,7 +488,7 @@ abort_task(int is_ticks)
+ 		       : "Task ran out of seconds");
+ 
+     value = new_list(3);
+-    value.v.list[1].type = TYPE_STR;
++    value.v.list[1].type = (var_type)TYPE_STR;
+     value.v.list[1].v.str = str_dup(is_ticks ? "ticks" : "seconds");
+     value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
+ 				      root_activ_vector, 1);
+@@ -628,7 +628,7 @@ call_verb2(Objid self, const char *vname, Var args, int do_pass)
+ 
+ #undef ENV_COPY
+ 
+-    v.type = TYPE_STR;
++    v.type = (var_type)TYPE_STR;
+     v.v.str = str_ref(vname);
+     set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
+     set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
+@@ -785,7 +785,7 @@ do {    						    	\
+     for (;;) {
+       next_opcode:
+ 	error_bv = bv;
+-	op = *bv++;
++	op = (Opcode)*bv++;
+ 
+ 	if (COUNT_TICK(op)) {
+ 	    if (--ticks_remaining <= 0) {
+@@ -1186,10 +1186,10 @@ do {    						    	\
+ 		    char *str;
+ 		    int llen = memo_strlen(lhs.v.str);
+ 
+-		    str = mymalloc(llen + memo_strlen(rhs.v.str) + 1, M_STRING);
++		    str = (char *) mymalloc(llen + memo_strlen(rhs.v.str) + 1, M_STRING);
+ 		    strcpy(str, lhs.v.str);
+ 		    strcpy(str + llen, rhs.v.str);
+-		    ans.type = TYPE_STR;
++		    ans.type = (var_type)TYPE_STR;
+ 		    ans.v.str = str;
+ 		} else {
+ 		    ans.type = TYPE_ERR;
+@@ -1664,7 +1664,7 @@ do {    						    	\
+ 
+ 	case OP_EXTENDED:
+ 	    {
+-		register enum Extended_Opcode eop = *bv;
++              register enum Extended_Opcode eop = (Extended_Opcode)*bv;
+ 		bv++;
+ 		if (COUNT_EOP_TICK(eop))
+ 		    ticks_remaining--;
+@@ -1880,7 +1880,8 @@ do {    						    	\
+ 			case FIN_RETURN:
+ 			case FIN_UNCAUGHT:
+ 			    STORE_STATE_VARIABLES();
+-			    if (unwind_stack(why.v.num, v, &outcome))
++                            //unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
++			    if (unwind_stack((Finally_Reason)why.v.num, v, &outcome))
+ 				return outcome;
+ 			    LOAD_STATE_VARIABLES();
+ 			    break;
+@@ -2401,14 +2402,14 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
+ 	    p = call_bi_func(fnum, arglist, next, progr, vdata);
+ 	}
+     } else {			/* return to function */
+-	s = vdata;
++      s = (cf_state *)vdata;
+ 	fnum = s->fnum;
+ 	p = call_bi_func(fnum, arglist, next, progr, s->data);
+ 	free_data(s);
+     }
+ 
+     if (p.kind == BI_CALL) {
+-	s = alloc_data(sizeof(struct cf_state));
++      s = (cf_state *)alloc_data(sizeof(struct cf_state));
+ 	s->fnum = fnum;
+ 	s->data = p.u.call.data;
+ 	p.u.call.data = s;
+@@ -2419,7 +2420,7 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
+ static void
+ bf_call_function_write(void *data)
+ {
+-    struct cf_state *s = data;
++  struct cf_state *s = (cf_state *)data;
+ 
+     dbio_printf("bf_call_function data: fname = %s\n",
+ 		name_func_by_num(s->fnum));
+@@ -2429,7 +2430,7 @@ bf_call_function_write(void *data)
+ static void *
+ bf_call_function_read(void)
+ {
+-    struct cf_state *s = alloc_data(sizeof(struct cf_state));
++  struct cf_state *s = (cf_state *)alloc_data(sizeof(struct cf_state));
+     const char *line = dbio_read_string();
+     const char *hdr = "bf_call_function data: fname = ";
+     int hlen = strlen(hdr);
+@@ -2457,7 +2458,7 @@ bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
+ 
+     value = (nargs >= 3 ? var_ref(arglist.v.list[3]) : zero);
+     free_var(arglist);
+-    p.kind = BI_RAISE;
++    p.kind = p.BI_RAISE;
+     p.u.raise.code = code;
+     p.u.raise.msg = msg;
+     p.u.raise.value = value;
+diff --git a/server/execute.h b/server/execute.h
+index bda4271..50a2f36 100644
+--- a/server/execute.h
++++ b/server/execute.h
+@@ -46,7 +46,7 @@ typedef struct {
+     Var temp;			/* VM's temp register */
+ 
+     /* verb information */
+-    Objid _this;
++    Objid self;
+     Objid player;
+     Objid progr;
+     Objid vloc;
+@@ -94,12 +94,12 @@ enum outcome {
+ extern enum outcome do_forked_task(Program * prog, Var * rt_env,
+ 				   activation a, int f_id);
+ extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
+-				  Objid _this, db_verb_handle vh);
+-extern enum outcome do_server_verb_task(Objid _this, const char *verb,
++				  Objid self, db_verb_handle vh);
++extern enum outcome do_server_verb_task(Objid self, const char *verb,
+ 					Var args, db_verb_handle h,
+ 					Objid player, const char *argstr,
+ 					Var * result, int do_db_tracebacks);
+-extern enum outcome do_server_program_task(Objid _this, const char *verb,
++extern enum outcome do_server_program_task(Objid self, const char *verb,
+ 					   Var args, Objid vloc,
+ 					   const char *verbname,
+ 					   Program * program, Objid progr,
+diff --git a/server/functions.h b/server/functions.h
+index 1fece62..f3ba281 100644
+--- a/server/functions.h
++++ b/server/functions.h
+@@ -25,6 +25,15 @@
+ #include "program.h"
+ #include "structures.h"
+ 
++
++enum {
++  BI_RETURN,		/* Normal function return */
++  BI_RAISE,		/* Raising an error */
++  BI_CALL,		/* Making a nested verb call */
++  BI_SUSPEND,		/* Suspending the current task */
++  BI_KILL			/* Kill the current task */
++};
++
+ typedef struct {
+     enum {
+ 	BI_RETURN,		/* Normal function return */
+-- 
+1.7.9.5
+

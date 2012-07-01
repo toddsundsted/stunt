@@ -1,0 +1,31 @@
+From 684f640d482604b1855738ec422a52ca98e03fd2 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 19 Nov 2010 16:25:43 +0000
+Subject: [PATCH 068/223] minor formatting change
+
+---
+ manual/common.css |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/manual/common.css b/manual/common.css
+index 6b630dc..fa87288 100644
+--- a/manual/common.css
++++ b/manual/common.css
+@@ -1,7 +1,7 @@
+ body { background-color : #FFE; font-family:arial narrow; margin:.5in }
+-pre { margin-left : 3em; }
+-dl { margin-left: 2em; }
++pre  { margin-left : 3em; }
++dl   { margin-left: 2em; }
+ code { font-family:courier new}
+-var { font-family:courier new }
+-pre { font-family:courier new; margin-bottom:0pt; }
+-b { color:blue }
+\ No newline at end of file
++var  { font-family:courier new }
++pre  { font-family:courier new; margin-bottom:0pt; }
++b    { color:blue }
+\ No newline at end of file
+-- 
+1.7.9.5
+

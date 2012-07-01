@@ -1,0 +1,744 @@
+From 0c3236356797eba50427a91def563890f31cd4b5 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 4 Aug 2011 05:29:58 +0000
+Subject: [PATCH 190/223] Moved the custom MOO m4 macros into their own file
+ in the new subdirectory 'm4'; dropped the
+ MOO_ANSI_C custom m4 macro in favor of
+ AC_PROG_CC_STDC.
+
+---
+ server/aclocal.m4   |   14 +++
+ server/configure    |  322 ++++++++++++++++++++++++++++++++++++++++++++-------
+ server/configure.ac |  178 +---------------------------
+ server/m4/moo.m4    |  151 ++++++++++++++++++++++++
+ 4 files changed, 447 insertions(+), 218 deletions(-)
+ create mode 100644 server/aclocal.m4
+ create mode 100644 server/m4/moo.m4
+
+diff --git a/server/aclocal.m4 b/server/aclocal.m4
+new file mode 100644
+index 0000000..c42be14
+--- /dev/null
++++ b/server/aclocal.m4
+@@ -0,0 +1,14 @@
++# generated automatically by aclocal 1.11.1 -*- Autoconf -*-
++
++# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
++# 2005, 2006, 2007, 2008, 2009  Free Software Foundation, Inc.
++# This file is free software; the Free Software Foundation
++# gives unlimited permission to copy and/or distribute it,
++# with or without modifications, as long as this notice is preserved.
++
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
++# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
++# PARTICULAR PURPOSE.
++
++m4_include([m4/moo.m4])
+diff --git a/server/configure b/server/configure
+index 8dc44ed..7cfadc5 100755
+--- a/server/configure
++++ b/server/configure
+@@ -2320,23 +2320,6 @@ ac_config_headers="$ac_config_headers config.h"
+ 
+ 
+ 
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+ for ac_prog in 'bison -y' byacc
+ do
+   # Extract the first word of "$ac_prog", so it can be a program name with args.
+@@ -4315,41 +4298,298 @@ fi
+ fi
+ done
+ 
++   case $ac_cv_prog_cc_stdc in #(
++  no) :
++    ac_cv_prog_cc_c99=no; ac_cv_prog_cc_c89=no ;; #(
++  *) :
++    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CC option to accept ISO C99" >&5
++$as_echo_n "checking for $CC option to accept ISO C99... " >&6; }
++if ${ac_cv_prog_cc_c99+:} false; then :
++  $as_echo_n "(cached) " >&6
++else
++  ac_cv_prog_cc_c99=no
++ac_save_CC=$CC
++cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
++#include <stdarg.h>
++#include <stdbool.h>
++#include <stdlib.h>
++#include <wchar.h>
++#include <stdio.h>
++
++// Check varargs macros.  These examples are taken from C99 6.10.3.5.
++#define debug(...) fprintf (stderr, __VA_ARGS__)
++#define showlist(...) puts (#__VA_ARGS__)
++#define report(test,...) ((test) ? puts (#test) : printf (__VA_ARGS__))
++static void
++test_varargs_macros (void)
++{
++  int x = 1234;
++  int y = 5678;
++  debug ("Flag");
++  debug ("X = %d\n", x);
++  showlist (The first, second, and third items.);
++  report (x>y, "x is %d but y is %d", x, y);
++}
++
++// Check long long types.
++#define BIG64 18446744073709551615ull
++#define BIG32 4294967295ul
++#define BIG_OK (BIG64 / BIG32 == 4294967297ull && BIG64 % BIG32 == 0)
++#if !BIG_OK
++  your preprocessor is broken;
++#endif
++#if BIG_OK
++#else
++  your preprocessor is broken;
++#endif
++static long long int bignum = -9223372036854775807LL;
++static unsigned long long int ubignum = BIG64;
++
++struct incomplete_array
++{
++  int datasize;
++  double data[];
++};
++
++struct named_init {
++  int number;
++  const wchar_t *name;
++  double average;
++};
++
++typedef const char *ccp;
++
++static inline int
++test_restrict (ccp restrict text)
++{
++  // See if C++-style comments work.
++  // Iterate through items via the restricted pointer.
++  // Also check for declarations in for loops.
++  for (unsigned int i = 0; *(text+i) != '\0'; ++i)
++    continue;
++  return 0;
++}
++
++// Check varargs and va_copy.
++static void
++test_varargs (const char *format, ...)
++{
++  va_list args;
++  va_start (args, format);
++  va_list args_copy;
++  va_copy (args_copy, args);
++
++  const char *str;
++  int number;
++  float fnumber;
+ 
+-echo "checking that the C compiler handles important ANSI C constructs"
+-for opt in "" -Aa -Xa -ansi
++  while (*format)
++    {
++      switch (*format++)
++	{
++	case 's': // string
++	  str = va_arg (args_copy, const char *);
++	  break;
++	case 'd': // int
++	  number = va_arg (args_copy, int);
++	  break;
++	case 'f': // float
++	  fnumber = va_arg (args_copy, double);
++	  break;
++	default:
++	  break;
++	}
++    }
++  va_end (args_copy);
++  va_end (args);
++}
++
++int
++main ()
++{
++
++  // Check bool.
++  _Bool success = false;
++
++  // Check restrict.
++  if (test_restrict ("String literal") == 0)
++    success = true;
++  char *restrict newvar = "Another string";
++
++  // Check varargs.
++  test_varargs ("s, d' f .", "string", 65, 34.234);
++  test_varargs_macros ();
++
++  // Check flexible array members.
++  struct incomplete_array *ia =
++    malloc (sizeof (struct incomplete_array) + (sizeof (double) * 10));
++  ia->datasize = 10;
++  for (int i = 0; i < ia->datasize; ++i)
++    ia->data[i] = i * 1.234;
++
++  // Check named initializers.
++  struct named_init ni = {
++    .number = 34,
++    .name = L"Test wide string",
++    .average = 543.34343,
++  };
++
++  ni.number = 58;
++
++  int dynamic_array[ni.number];
++  dynamic_array[ni.number - 1] = 543;
++
++  // work around unused variable warnings
++  return (!success || bignum == 0LL || ubignum == 0uLL || newvar[0] == 'x'
++	  || dynamic_array[ni.number - 1] != 543);
++
++  ;
++  return 0;
++}
++_ACEOF
++for ac_arg in '' -std=gnu99 -std=c99 -c99 -AC99 -xc99=all -qlanglvl=extc99
+ do
+-SAVECC="$CC"
+-CC="$CC $opt"
+-if test "$cross_compiling" = yes; then :
+-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+-as_fn_error $? "cannot run test program while cross compiling
+-See \`config.log' for more details" "$LINENO" 5; }
++  CC="$ac_save_CC $ac_arg"
++  if ac_fn_c_try_compile "$LINENO"; then :
++  ac_cv_prog_cc_c99=$ac_arg
++fi
++rm -f core conftest.err conftest.$ac_objext
++  test "x$ac_cv_prog_cc_c99" != "xno" && break
++done
++rm -f conftest.$ac_ext
++CC=$ac_save_CC
++
++fi
++# AC_CACHE_VAL
++case "x$ac_cv_prog_cc_c99" in
++  x)
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: none needed" >&5
++$as_echo "none needed" >&6; } ;;
++  xno)
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: unsupported" >&5
++$as_echo "unsupported" >&6; } ;;
++  *)
++    CC="$CC $ac_cv_prog_cc_c99"
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_cc_c99" >&5
++$as_echo "$ac_cv_prog_cc_c99" >&6; } ;;
++esac
++if test "x$ac_cv_prog_cc_c99" != xno; then :
++  ac_cv_prog_cc_stdc=$ac_cv_prog_cc_c99
+ else
+-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CC option to accept ISO C89" >&5
++$as_echo_n "checking for $CC option to accept ISO C89... " >&6; }
++if ${ac_cv_prog_cc_c89+:} false; then :
++  $as_echo_n "(cached) " >&6
++else
++  ac_cv_prog_cc_c89=no
++ac_save_CC=$CC
++cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
++#include <stdarg.h>
++#include <stdio.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++/* Most of the following tests are stolen from RCS 5.7's src/conf.sh.  */
++struct buf { int x; };
++FILE * (*rcsopen) (struct buf *, struct stat *, int);
++static char *e (p, i)
++     char **p;
++     int i;
++{
++  return p[i];
++}
++static char *f (char * (*g) (char **, int), char **p, ...)
++{
++  char *s;
++  va_list v;
++  va_start (v,p);
++  s = g (p, va_arg (v,int));
++  va_end (v);
++  return s;
++}
+ 
+-int main(int argc, char *argv) { void *ptr; exit(0); }
++/* OSF 4.0 Compaq cc is some sort of almost-ANSI by default.  It has
++   function prototypes and stuff, but not '\xHH' hex character constants.
++   These don't provoke an error unfortunately, instead are silently treated
++   as 'x'.  The following induces an error, until -std is added to get
++   proper ANSI mode.  Curiously '\x00'!='x' always comes out true, for an
++   array size at least.  It's necessary to write '\x00'==0 to get something
++   that's true only with -std.  */
++int osf4_cc_array ['\x00' == 0 ? 1 : -1];
+ 
++/* IBM C 6 for AIX is almost-ANSI by default, but it replaces macro parameters
++   inside strings and character constants.  */
++#define FOO(x) 'x'
++int xlc6_cc_array[FOO(a) == 'x' ? 1 : -1];
++
++int test (int i, double x);
++struct s1 {int (*f) (int a);};
++struct s2 {int (*f) (double a);};
++int pairnames (int, char **, FILE *(*)(struct buf *, struct stat *, int), int, int);
++int argc;
++char **argv;
++int
++main ()
++{
++return f (e, argv, 0) != argv[0]  ||  f (e, argv, 1) != argv[1];
++  ;
++  return 0;
++}
+ _ACEOF
+-if ac_fn_c_try_run "$LINENO"; then :
+-  have_ansi=1
+-break
+-else
+-  CC="$SAVECC"
++for ac_arg in '' -qlanglvl=extc89 -qlanglvl=ansi -std \
++	-Ae "-Aa -D_HPUX_SOURCE" "-Xc -D__EXTENSIONS__"
++do
++  CC="$ac_save_CC $ac_arg"
++  if ac_fn_c_try_compile "$LINENO"; then :
++  ac_cv_prog_cc_c89=$ac_arg
+ fi
+-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+-  conftest.$ac_objext conftest.beam conftest.$ac_ext
++rm -f core conftest.err conftest.$ac_objext
++  test "x$ac_cv_prog_cc_c89" != "xno" && break
++done
++rm -f conftest.$ac_ext
++CC=$ac_save_CC
++
++fi
++# AC_CACHE_VAL
++case "x$ac_cv_prog_cc_c89" in
++  x)
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: none needed" >&5
++$as_echo "none needed" >&6; } ;;
++  xno)
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: unsupported" >&5
++$as_echo "unsupported" >&6; } ;;
++  *)
++    CC="$CC $ac_cv_prog_cc_c89"
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_cc_c89" >&5
++$as_echo "$ac_cv_prog_cc_c89" >&6; } ;;
++esac
++if test "x$ac_cv_prog_cc_c89" != xno; then :
++  ac_cv_prog_cc_stdc=$ac_cv_prog_cc_c89
++else
++  ac_cv_prog_cc_stdc=no
+ fi
+ 
+-done
+-if test -z "$have_ansi"; then
+-echo ""
+-echo "*** Sorry, but I can't figure out how to find an ANSI C compiler here."
+-echo "*** Compiling this program requires such a compiler."
+-exit 1
+ fi
++ ;;
++esac
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CC option to accept ISO Standard C" >&5
++$as_echo_n "checking for $CC option to accept ISO Standard C... " >&6; }
++  if ${ac_cv_prog_cc_stdc+:} false; then :
++  $as_echo_n "(cached) " >&6
++fi
++
++  case $ac_cv_prog_cc_stdc in #(
++  no) :
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: unsupported" >&5
++$as_echo "unsupported" >&6; } ;; #(
++  '') :
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: none needed" >&5
++$as_echo "none needed" >&6; } ;; #(
++  *) :
++    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_cc_stdc" >&5
++$as_echo "$ac_cv_prog_cc_stdc" >&6; } ;;
++esac
+ 
+ 
+ echo checking for a working const keyword
+diff --git a/server/configure.ac b/server/configure.ac
+index bade5e7..0b4ae17 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -30,182 +30,6 @@ echo checking whether stdlib.h declares malloc and friends
+ MOO_FUNC_DECL_CHECK(stdlib.h, malloc, ,
+ 	[AC_HEADER_CHECK(malloc.h, AC_DEFINE(NEED_MALLOC_H))])])
+ 
+-dnl ***************************************************************************
+-dnl	MOO_FUNC_DECL_CHECK(header, func,
+-dnl			    if-declared [, if-not-declared[, extra-hdr]])
+-dnl Do `if-declared' is `func' is declared in `header', and if-not-declared
+-dnl otherwise.  If `extra-hdr' is provided, it is added after the #include of
+-dnl `header'.
+-define(MOO_FUNC_DECL_CHECK, [
+-changequote(,)dnl
+-pattern="[^_a-zA-Z0-9]$2 *\("
+-changequote([,])dnl
+-AC_PROGRAM_EGREP($pattern, [
+-#include <$1>
+-$5
+-], [$3], [$4])])
+-
+-dnl ***************************************************************************
+-dnl 	MOO_NDECL_FUNCS(header, func1 func2 ...[, extra-hdr])
+-dnl Defines NDECL_func1, NDECL_func2, ... if they are not declared in header.
+-dnl
+-define(MOO_NDECL_FUNCS, [
+-changequote(,)dnl
+-trfrom='[a-z]' trto='[A-Z]'
+-changequote([,])dnl
+-for func in $2
+-do
+-echo "checking whether $func is declared in $1"
+-MOO_FUNC_DECL_CHECK($1, $func, ,
+-	AC_DEFINE(NDECL_`echo $func | tr "$trfrom" "$trto"`), $3)
+-done
+-])
+-
+-dnl ***************************************************************************
+-dnl	MOO_VAR_DECL_CHECK(header, variable,
+-dnl			   if-declared [, if-not-declared[, extra-hdr]])
+-dnl Do `if-declared' is `variable' is declared in `header', and if-not-declared
+-dnl otherwise.  If `extra-hdr' is provided, it is added after the #include of
+-dnl `header'.
+-define(MOO_VAR_DECL_CHECK, [
+-changequote(,)dnl
+-pattern="[^_a-zA-Z0-9]$2"
+-changequote([,])dnl
+-AC_PROGRAM_EGREP($pattern, [
+-#include <$1>
+-$5
+-], $3, $4)])
+-
+-dnl ***************************************************************************
+-dnl 	MOO_NDECL_VARS(header, var1 var2 ...[, extra-hdr])
+-dnl Defines NDECL_var1, NDECL_var2, ... if they are not declared in header.
+-dnl
+-define(MOO_NDECL_VARS, [
+-changequote(,)dnl
+-trfrom='[a-z]' trto='[A-Z]'
+-changequote([,])dnl
+-for var in $2
+-do
+-echo "moo_ndecl: checking whether $var is declared in $1"
+-MOO_VAR_DECL_CHECK($1, $var, ,
+-	AC_DEFINE(NDECL_`echo $var | tr "$trfrom" "$trto"`), $3)
+-done
+-])
+-
+-dnl ***************************************************************************
+-dnl 	MOO_HEADER_STANDS_ALONE(header [, extra-code])
+-dnl Defines header_NEEDS_HELP if can't be compiled all by itself.
+-define(MOO_HEADER_STANDS_ALONE, [
+-changequote(,)dnl
+-trfrom='[a-z]./' trto='[A-Z]__'
+-changequote([,])dnl
+-AC_COMPILE_CHECK(self-sufficiency of $1, [
+-#include <$1>
+-$2
+-], , , AC_DEFINE(`echo $1 | tr "$trfrom" "$trto"`_NEEDS_HELP))
+-])
+-
+-dnl ***************************************************************************
+-dnl	MOO_HAVE_FUNC_LIBS(func1 func2 ..., lib1 "lib2a lib2b" lib3 ...)
+-dnl For each `func' in turn, if `func' is defined using the current LIBS value,
+-dnl leave LIBS alone.  Otherwise, try adding each of the given libs to LIBS in
+-dnl turn, stopping when one of them succeeds in providing `func'.  Define
+-dnl HAVE_func if `func' is eventually found.
+-define(MOO_HAVE_FUNC_LIBS, [
+-for func in $1
+-do
+-  changequote(,)dnl
+-  trfrom='[a-z]' trto='[A-Z]'
+-  var=HAVE_`echo $func | tr "$trfrom" "$trto"`
+-  changequote([,])dnl
+-  AC_FUNC_CHECK($func, AC_DEFINE_UNQUOTED($var), [
+-    SAVELIBS="$LIBS"
+-    for lib in $2
+-    do
+-      LIBS="$LIBS $lib"
+-      AC_FUNC_CHECK($func, [AC_DEFINE_UNQUOTED($var)
+-			 break],
+-		    LIBS="$SAVELIBS")
+-    done
+-    ])
+-done
+-])
+-
+-dnl ***************************************************************************
+-dnl	MOO_HAVE_HEADER_DIRS(header1 header2 ..., dir1 dir2 ...)
+-dnl For each `header' in turn, if `header' is found using the current CC value
+-dnl leave CC alone.  Otherwise, try adding each of the given `dir's to CC in
+-dnl turn, stopping when one of them succeeds in providing `header'.  Define
+-dnl HAVE_header if `header' is eventually found.
+-define(MOO_HAVE_HEADER_DIRS, [
+-for hdr in $1
+-do
+-  changequote(,)dnl
+-  trfrom='[a-z]./' trto='[A-Z]__'
+-  var=HAVE_`echo $hdr | tr "$trfrom" "$trto"`
+-  changequote([,])dnl
+-  AC_HEADER_CHECK($hdr, AC_DEFINE($var), [
+-    SAVECC="$CC"
+-    for dir in $2
+-    do
+-      CC="$CC $dir"
+-      AC_HEADER_CHECK($hdr, [AC_DEFINE($var)
+-			     break],
+-		      CC="$SAVECC")
+-    done
+-    ])
+-done
+-])
+-
+-dnl ***************************************************************************
+-dnl	MOO_CONST
+-dnl Check whether or not the C compiler can cope with simple uses of the ANSI C
+-dnl `const' keyword, defining `const' as the empty string if it can't.
+-define(MOO_CONST, [
+-echo checking for a working const keyword
+-cat << EOF > conftest.c
+-#ifdef __GNUC__
+-#define const __const__
+-#endif
+-int foo(const char *x) { return 17 + (x - x); }
+-int bar() { int x = foo("foo"); return x; }
+-EOF
+-if $CC -c conftest.c > conftest.out 2>&1; then
+-  if test -s conftest.out; then
+-    AC_DEFINE(const,)
+-  fi
+-else
+-  AC_DEFINE(const,)
+-fi
+-rm -f conftest*
+-])
+-
+-dnl ***************************************************************************
+-dnl	MOO_ANSI_C
+-dnl Check whether or not the C compiler handles ANSI C (i.e., allows function
+-dnl prototypes and the `void *' type) and try to make it do so by adding 
+-dnl command-line options like -Aa and -Xa, which some compilers require.  If
+-dnl nothing works, abort configuration.
+-define(MOO_ANSI_C, [
+-echo "checking that the C compiler handles important ANSI C constructs"
+-for opt in "" -Aa -Xa -ansi
+-do
+-SAVECC="$CC"
+-CC="$CC $opt"
+-AC_TEST_PROGRAM([
+-int main(int argc, char *argv) { void *ptr; exit(0); }
+-],
+-[have_ansi=1
+-break],
+-[CC="$SAVECC"])
+-done
+-if test -z "$have_ansi"; then
+-echo ""
+-echo "*** Sorry, but I can't figure out how to find an ANSI C compiler here."
+-echo "*** Compiling this program requires such a compiler."
+-exit 1
+-fi
+-])
+ 
+ dnl ***************************************************************************
+ dnl Start of actual configuration tests
+@@ -226,7 +50,7 @@ AC_AIX
+ AC_ISC_POSIX
+ AC_MINIX
+ AC_SCO_INTL
+-MOO_ANSI_C
++AC_PROG_CC_STDC
+ MOO_CONST
+ CPP=""
+ AC_PROG_CPP
+diff --git a/server/m4/moo.m4 b/server/m4/moo.m4
+new file mode 100644
+index 0000000..0cdb1d2
+--- /dev/null
++++ b/server/m4/moo.m4
+@@ -0,0 +1,151 @@
++dnl Original LambdaMOO m4 macros from configure.in...
++
++dnl ***************************************************************************
++dnl	MOO_FUNC_DECL_CHECK(header, func,
++dnl			    if-declared [, if-not-declared[, extra-hdr]])
++dnl Do `if-declared' is `func' is declared in `header', and if-not-declared
++dnl otherwise.  If `extra-hdr' is provided, it is added after the #include of
++dnl `header'.
++define(MOO_FUNC_DECL_CHECK, [
++changequote(,)dnl
++pattern="[^_a-zA-Z0-9]$2 *\("
++changequote([,])dnl
++AC_PROGRAM_EGREP($pattern, [
++#include <$1>
++$5
++], [$3], [$4])])
++
++dnl ***************************************************************************
++dnl 	MOO_NDECL_FUNCS(header, func1 func2 ...[, extra-hdr])
++dnl Defines NDECL_func1, NDECL_func2, ... if they are not declared in header.
++dnl
++define(MOO_NDECL_FUNCS, [
++changequote(,)dnl
++trfrom='[a-z]' trto='[A-Z]'
++changequote([,])dnl
++for func in $2
++do
++echo "checking whether $func is declared in $1"
++MOO_FUNC_DECL_CHECK($1, $func, ,
++	AC_DEFINE(NDECL_`echo $func | tr "$trfrom" "$trto"`), $3)
++done
++])
++
++dnl ***************************************************************************
++dnl	MOO_VAR_DECL_CHECK(header, variable,
++dnl			   if-declared [, if-not-declared[, extra-hdr]])
++dnl Do `if-declared' is `variable' is declared in `header', and if-not-declared
++dnl otherwise.  If `extra-hdr' is provided, it is added after the #include of
++dnl `header'.
++define(MOO_VAR_DECL_CHECK, [
++changequote(,)dnl
++pattern="[^_a-zA-Z0-9]$2"
++changequote([,])dnl
++AC_PROGRAM_EGREP($pattern, [
++#include <$1>
++$5
++], $3, $4)])
++
++dnl ***************************************************************************
++dnl 	MOO_NDECL_VARS(header, var1 var2 ...[, extra-hdr])
++dnl Defines NDECL_var1, NDECL_var2, ... if they are not declared in header.
++dnl
++define(MOO_NDECL_VARS, [
++changequote(,)dnl
++trfrom='[a-z]' trto='[A-Z]'
++changequote([,])dnl
++for var in $2
++do
++echo "moo_ndecl: checking whether $var is declared in $1"
++MOO_VAR_DECL_CHECK($1, $var, ,
++	AC_DEFINE(NDECL_`echo $var | tr "$trfrom" "$trto"`), $3)
++done
++])
++
++dnl ***************************************************************************
++dnl 	MOO_HEADER_STANDS_ALONE(header [, extra-code])
++dnl Defines header_NEEDS_HELP if can't be compiled all by itself.
++define(MOO_HEADER_STANDS_ALONE, [
++changequote(,)dnl
++trfrom='[a-z]./' trto='[A-Z]__'
++changequote([,])dnl
++AC_COMPILE_CHECK(self-sufficiency of $1, [
++#include <$1>
++$2
++], , , AC_DEFINE(`echo $1 | tr "$trfrom" "$trto"`_NEEDS_HELP))
++])
++
++dnl ***************************************************************************
++dnl	MOO_HAVE_FUNC_LIBS(func1 func2 ..., lib1 "lib2a lib2b" lib3 ...)
++dnl For each `func' in turn, if `func' is defined using the current LIBS value,
++dnl leave LIBS alone.  Otherwise, try adding each of the given libs to LIBS in
++dnl turn, stopping when one of them succeeds in providing `func'.  Define
++dnl HAVE_func if `func' is eventually found.
++define(MOO_HAVE_FUNC_LIBS, [
++for func in $1
++do
++  changequote(,)dnl
++  trfrom='[a-z]' trto='[A-Z]'
++  var=HAVE_`echo $func | tr "$trfrom" "$trto"`
++  changequote([,])dnl
++  AC_FUNC_CHECK($func, AC_DEFINE_UNQUOTED($var), [
++    SAVELIBS="$LIBS"
++    for lib in $2
++    do
++      LIBS="$LIBS $lib"
++      AC_FUNC_CHECK($func, [AC_DEFINE_UNQUOTED($var)
++			 break],
++		    LIBS="$SAVELIBS")
++    done
++    ])
++done
++])
++
++dnl ***************************************************************************
++dnl	MOO_HAVE_HEADER_DIRS(header1 header2 ..., dir1 dir2 ...)
++dnl For each `header' in turn, if `header' is found using the current CC value
++dnl leave CC alone.  Otherwise, try adding each of the given `dir's to CC in
++dnl turn, stopping when one of them succeeds in providing `header'.  Define
++dnl HAVE_header if `header' is eventually found.
++define(MOO_HAVE_HEADER_DIRS, [
++for hdr in $1
++do
++  changequote(,)dnl
++  trfrom='[a-z]./' trto='[A-Z]__'
++  var=HAVE_`echo $hdr | tr "$trfrom" "$trto"`
++  changequote([,])dnl
++  AC_HEADER_CHECK($hdr, AC_DEFINE($var), [
++    SAVECC="$CC"
++    for dir in $2
++    do
++      CC="$CC $dir"
++      AC_HEADER_CHECK($hdr, [AC_DEFINE($var)
++			     break],
++		      CC="$SAVECC")
++    done
++    ])
++done
++])
++
++dnl ***************************************************************************
++dnl	MOO_CONST
++dnl Check whether or not the C compiler can cope with simple uses of the ANSI C
++dnl `const' keyword, defining `const' as the empty string if it can't.
++define(MOO_CONST, [
++echo checking for a working const keyword
++cat << EOF > conftest.c
++#ifdef __GNUC__
++#define const __const__
++#endif
++int foo(const char *x) { return 17 + (x - x); }
++int bar() { int x = foo("foo"); return x; }
++EOF
++if $CC -c conftest.c > conftest.out 2>&1; then
++  if test -s conftest.out; then
++    AC_DEFINE(const,)
++  fi
++else
++  AC_DEFINE(const,)
++fi
++rm -f conftest*
++])
+-- 
+1.7.9.5
+

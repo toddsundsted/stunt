@@ -1,0 +1,38 @@
+From c20a82c748f907d026ee43578957cd99e1956b8d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 28 Jun 2009 23:44:13 +0000
+Subject: [PATCH 026/223] assorted casts, none too scary looking
+
+---
+ server/property.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/server/property.c b/server/property.c
+index b38ff7c..15322f2 100644
+--- a/server/property.c
++++ b/server/property.c
+@@ -29,10 +29,10 @@ struct prop_data {
+ static int
+ add_to_list(void *data, const char *prop_name)
+ {
+-    struct prop_data *d = data;
++    struct prop_data *d = (prop_data *) data;
+ 
+     d->i++;
+-    d->r.v.list[d->i].type = TYPE_STR;
++    d->r.v.list[d->i].type = (var_type) TYPE_STR;
+     d->r.v.list[d->i].v.str = str_ref(prop_name);
+ 
+     return 0;
+@@ -86,7 +86,7 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
+     r = new_list(2);
+     r.v.list[1].type = TYPE_OBJ;
+     r.v.list[1].v.obj = db_property_owner(h);
+-    r.v.list[2].type = TYPE_STR;
++    r.v.list[2].type = (var_type) TYPE_STR;
+     s = perms;
+     flags = db_property_flags(h);
+     if (flags & PF_READ)
+-- 
+1.7.9.5
+

@@ -1,0 +1,61 @@
+From 9edb2da251f723879c81e98fb6522c6ebb8c887b Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 03:44:51 +0000
+Subject: [PATCH 130/223] I've removed the  -DEXPAT_XML flag from the compiler
+ flags, and I've replaced:
+
+#ifdef EXPAT_XML
+
+with:
+
+#if HAVE_EXPAT_H
+---
+ server/Makefile.in  |    4 ++--
+ server/extensions.c |    6 ++++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index eb5b899..985e306 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -15,9 +15,9 @@ LIBRARIES = @LIBS@
+ YACC = @YACC@
+ 
+ # for debugging you might prefer:
+-# CFLAGS='-g -m32 -O0 -Wall -DEXPAT_XML
++# CFLAGS='-g -m32 -O0 -Wall
+ 
+-CFLAGS		= -m32 -O -DEXPAT_XML 
++CFLAGS		= -m32 -O
+ CPPFLAGS	= @CPPFLAGS@
+ INSTALL         = @INSTALL@
+ INSTALL_DATA	= @INSTALL_DATA@
+diff --git a/server/extensions.c b/server/extensions.c
+index c040d15..788d770 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -344,7 +344,7 @@ bf_utime(Var arglist, Byte next, void *vdata, Objid progr)
+ 
+ // end utime - andy
+ 
+-#ifdef EXPAT_XML
++#if HAVE_EXPAT_H
+ extern void register_xml(void);
+ #endif
+ 
+@@ -360,9 +360,11 @@ register_extensions()
+     register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+ #endif
+-#ifdef EXPAT_XML
++
++#if HAVE_EXPAT_H
+     register_xml();
+ #endif
++
+     register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
+     register_function("vrandomseed", 0, 3, bf_vrandomseed, TYPE_LIST);
+     register_function("vrandom", 0, 1, bf_vrandom, TYPE_INT);
+-- 
+1.7.9.5
+

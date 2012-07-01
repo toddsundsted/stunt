@@ -1,0 +1,4070 @@
+From 23342ca86475f034438e0dfe5947150e9fff4c0b Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 28 Jan 2011 03:28:25 +0000
+Subject: [PATCH 113/223] Cleanup: removing all the old rcs string constants
+ and the old CVS log entries.
+
+---
+ server/ast.c           |   67 -----------
+ server/client_bsd.c    |   31 -----
+ server/client_sysv.c   |   55 ---------
+ server/code_gen.c      |   75 -------------
+ server/db_file.c       |   56 ----------
+ server/db_io.c         |   51 ---------
+ server/db_objects.c    |   47 --------
+ server/db_properties.c |   42 -------
+ server/db_verbs.c      |   64 -----------
+ server/decompile.c     |   68 -----------
+ server/disassemble.c   |   50 ---------
+ server/eval_env.c      |   52 ---------
+ server/eval_vm.c       |   56 ----------
+ server/exceptions.c    |   26 -----
+ server/execute.c       |  292 ------------------------------------------------
+ server/extensions.c    |   33 ------
+ server/functions.c     |  112 -------------------
+ server/gnu-malloc.c    |   25 -----
+ server/keywords.c      |   24 ----
+ server/list.c          |  115 -------------------
+ server/log.c           |   60 ----------
+ server/malloc.c        |   37 ------
+ server/match.c         |   47 --------
+ server/md5.c           |   13 ---
+ server/name_lookup.c   |   24 ----
+ server/net_bsd_lcl.c   |   44 --------
+ server/net_bsd_tcp.c   |   92 ---------------
+ server/net_mp_fake.c   |   28 -----
+ server/net_mp_poll.c   |   19 ----
+ server/net_mp_selct.c  |   26 -----
+ server/net_mplex.c     |   17 ---
+ server/net_multi.c     |  118 -------------------
+ server/net_proto.c     |   17 ---
+ server/net_single.c    |   65 -----------
+ server/net_sysv_lcl.c  |   62 ----------
+ server/net_sysv_tcp.c  |   80 -------------
+ server/net_tcp.c       |   14 ---
+ server/network.c       |   30 -----
+ server/numbers.c       |   73 ------------
+ server/objects.c       |   74 ------------
+ server/parse_cmd.c     |   69 ------------
+ server/pattern.c       |   25 -----
+ server/program.c       |   59 ----------
+ server/property.c      |   71 ------------
+ server/quota.c         |   35 ------
+ server/ref_count.c     |   44 --------
+ server/regexpr.c       |   27 -----
+ server/server.c        |  178 -----------------------------
+ server/storage.c       |   96 ----------------
+ server/streams.c       |   49 --------
+ server/sym_table.c     |   56 ----------
+ server/tasks.c         |  197 --------------------------------
+ server/timers.c        |   49 --------
+ server/unparse.c       |   97 ----------------
+ server/utils.c         |  118 -------------------
+ server/verbs.c         |  103 -----------------
+ 56 files changed, 3554 deletions(-)
+
+diff --git a/server/ast.c b/server/ast.c
+index e7436de..3936ba0 100644
+--- a/server/ast.c
++++ b/server/ast.c
+@@ -415,70 +415,3 @@ free_stmt(Stmt * stmt)
+     }
+ }
+ 
+-char rcsid_ast[] = "$Id: ast.c,v 1.3 1998-12-14 13:17:26 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:21  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/02/08  07:11:54  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1 (again).
+- *
+- * Revision 2.3  1996/02/08  05:49:08  pavel
+- * Renamed err/logf() to errlog/oklog().  Added support for floating-point and
+- * the X^Y expression.  Added named WHILE loops and the BREAK and CONTINUE
+- * statements.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1996/01/16  07:11:46  pavel
+- * Added alloc/free for scatters.  Release 1.8.0alpha6.
+- *
+- * Revision 2.1  1995/12/31  03:14:13  pavel
+- * Added EXPR_LENGTH case to free_expr().  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:16:25  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.12  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.11  1992/10/23  19:16:20  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.10  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.9  1992/08/31  22:21:28  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.8  1992/08/28  23:12:13  pjames
+- * Added ASGN_RANGE arm of `free_expr()'.
+- *
+- * Revision 1.7  1992/08/28  16:11:25  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Removed free_ast_var.  Use free_var instead.
+- * Removed ak_dealloc_string.  Use free_str instead.
+- *
+- * Revision 1.6  1992/08/14  00:01:17  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.5  1992/08/10  16:53:07  pjames
+- * Updated #includes.
+- *
+- * Revision 1.4  1992/07/30  21:20:25  pjames
+- * Checks for NULL before freeing M_STRINGS.
+- *
+- * Revision 1.3  1992/07/27  17:57:06  pjames
+- * Changed myfree(*, M_AST) to (*, M_STRING) when * was a (char *)
+- * because that is how they are allocated.
+- *
+- * Revision 1.2  1992/07/20  23:48:48  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS identification
+- * string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/client_bsd.c b/server/client_bsd.c
+index 54796fe..42ef75f 100644
+--- a/server/client_bsd.c
++++ b/server/client_bsd.c
+@@ -84,34 +84,3 @@ main(int argc, char **argv)
+     exit(0);
+ }
+ 
+-char rcsid_client_bsd[] =
+-    "$Id: client_bsd.c,v 1.2 1997-03-03 04:18:23 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/03/10  01:11:49  pavel
+- * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
+- *
+- * Revision 2.1  1996/02/08  06:33:46  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:47:38  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/17  20:17:13  pavel
+- * Fix up connect_file defaulting, to eliminate warnings from naive compilers.
+- *
+- * Revision 1.2  1992/10/06  18:15:34  pavel
+- * Added missing #include of my-stdlib.h, for exit().
+- *
+- * Revision 1.1  1992/09/23  22:35:05  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/client_sysv.c b/server/client_sysv.c
+index e948181..b64ece3 100644
+--- a/server/client_sysv.c
++++ b/server/client_sysv.c
+@@ -175,58 +175,3 @@ main(int argc, char **argv)
+     exit(1);
+ }
+ 
+-char rcsid_client_sysv[] =
+-    "$Id: client_sysv.c,v 1.2 1997-03-03 04:18:23 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/03/10  01:11:56  pavel
+- * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
+- *
+- * Revision 2.2  1996/02/08  06:33:33  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/30  23:58:51  pavel
+- * Fixed a longstanding bug where it never worked to specify a connect-file on
+- * the command line.  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:47:54  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1993/12/09  02:19:59  pavel
+- * Fixed bug whereby short writes would cause us to lose data.
+- *
+- * Revision 1.9  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.8  1992/10/23  19:17:22  pavel
+- * Moved macro definition of mkfifo() to my-stat.h.
+- * Added a `connected' message, printed when the client has finished the
+- * hand-shake with the server.
+- *
+- * Revision 1.7  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.6  1992/10/17  20:18:27  pavel
+- * Replace all uses of O_NDELAY by NONBLOCK_FLAG, to allow for the use of
+- * POSIX non-blocking where available.
+- *
+- * Revision 1.5  1992/10/06  20:33:57  pavel
+- * Added -h switch to make it create the client FIFOs in the user's home
+- * directory.
+- *
+- * Revision 1.4  1992/10/06  18:23:49  pavel
+- * Added missing #include of my-string.h.
+- *
+- * Revision 1.3  1992/10/02  18:41:24  pavel
+- * Now catches SIGINT, SIGTERM, and SIGQUIT in order to restore normal
+- * blocking behavior on stdin.
+- *
+- * Revision 1.2  1992/10/01  17:29:18  pavel
+- * Removed use of the BSD-specific select() call.
+- *
+- * Revision 1.1  1992/09/27  19:23:03  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/code_gen.c b/server/code_gen.c
+index 8b51fa9..171c964 100644
+--- a/server/code_gen.c
++++ b/server/code_gen.c
+@@ -1366,78 +1366,3 @@ generate_code(Stmt * stmt, DB_Version version)
+ 
+     return prog;
+ }
+-
+-char rcsid_code_gen[] =
+-    "$Id: code_gen.c,v 1.11 2002-09-15 23:21:01 xplat Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.10  2002/08/23 13:00:18  bjj
+- * Removed a spurious EXPR_INDEX case left over from before x[$]
+- *
+- * Revision 1.9  1999/08/14 19:44:15  bjj
+- * Code generator will no longer PUSH_CLEAR things like dobj/dobjstr/prepstr
+- * around CALL_VERB operations, since those variables are passed directly
+- * from one environment to the next.
+- *
+- * Revision 1.8  1999/08/12 05:40:09  bjj
+- * Consider OP_FORK a nonlocal goto so that no variables are undefined
+- * when it happens (the saved environment has to be complete for the forked
+- * task).
+- *
+- * Revision 1.7  1999/08/11 07:51:03  bjj
+- * Fix problem with last checkin which prevented compiling without B_R_R, duh.
+- *
+- * Revision 1.6  1999/07/15 01:34:11  bjj
+- * Bug fixes to v1.2.2.2, BYTECODE_REDUCE_REF.  Code analysis now takes
+- * into account what opcodes are running under try/catch protection and
+- * prevents them from becoming PUSH_CLEAR operations which may result
+- * in spurious undefined variable errors.
+- *
+- * Revision 1.5  1998/12/14 13:17:30  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1998/02/19 07:36:16  nop
+- * Initial string interning during db load.
+- *
+- * Revision 1.2.2.2  1997/09/09 07:01:16  bjj
+- * Change bytecode generation so that x=f(x) calls f() without holding a ref
+- * to the value of x in the variable slot.  See the options.h comment for
+- * BYTECODE_REDUCE_REF for more details.
+- *
+- * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+- * new code is not conditional and still works either way).
+- *
+- * Revision 1.3  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.1  1997/05/29 15:50:01  nop
+- * Make sure to clear prev_stacks to avoid referring to uninitialized memory
+- * later.  (Usually multiplied by zero, so only a problem in weird circumstances.)
+- *
+- * Revision 1.2  1997/03/03 04:18:24  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/02/08  07:21:08  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Added support for exponentiation expression,
+- * named WHILE loop and BREAK and CONTINUE statement.  Updated copyright
+- * notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/16  07:17:36  pavel
+- * Add support for scattering assignment.  Release 1.8.0alpha6.
+- *
+- * Revision 2.2  1995/12/31  03:10:47  pavel
+- * Added general support for managing stack references as another kind of
+- * fixup and for a single stack of remembered stack positions.  Used that
+- * stack for remembering the positions of indexed/subranged values and for
+- * implementing the `$' expression.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/11/30  04:18:56  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 2.0  1995/11/30  04:16:54  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/db_file.c b/server/db_file.c
+index 033d777..46281de 100644
+--- a/server/db_file.c
++++ b/server/db_file.c
+@@ -803,59 +803,3 @@ db_shutdown()
+     dump_database(DUMP_SHUTDOWN);
+ }
+ 
+-char rcsid_db_file[] =
+-    "$Id: db_file.c,v 1.6 2007-11-12 11:17:03 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.5  2004/05/22 01:25:43  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.4.8.2  2003/06/03 12:21:17  wrog
+- * new validation algorithms for cycle-detection and hierarchy checking
+- *
+- * Revision 1.4.8.1  2003/06/01 12:27:35  wrog
+- * added braces and fixed indentation on TRY
+- *
+- * Revision 1.4  1998/12/14 13:17:33  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1998/02/19 07:36:16  nop
+- * Initial string interning during db load.
+- *
+- * Revision 1.2  1997/03/03 04:18:27  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/04/08  01:07:21  pavel
+- * Changed a boot-time error message to go directly to stderr, instead of
+- * through the logging package.  Release 1.8.0p3.
+- *
+- * Revision 2.4  1996/02/08  07:20:18  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.3  1995/12/31  03:27:54  pavel
+- * Added missing #include "options.h".  Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:51:39  pavel
+- * Added db_disk_size().  Added support for printing location of
+- * MOO-compilation warnings and errors during loading.  More slight
+- * improvements to load-time progress messages.  Added dump-time progress
+- * messages.  Added init-time call to build preposition table.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:55:01  pavel
+- * Added missing #include of "my-stdlib.h".  Slightly improved clarity of the
+- * progress messages during DB loading.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:19:37  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:19:11  pavel
+- * Initial revision
+- */
+diff --git a/server/db_io.c b/server/db_io.c
+index 18100fd..025ac18 100644
+--- a/server/db_io.c
++++ b/server/db_io.c
+@@ -425,54 +425,3 @@ dbio_write_forked_program(Program * program, int f_index)
+     dbio_printf(".\n");
+ }
+ 
+-char rcsid_db_io[] = "$Id: db_io.c,v 1.5 1998-12-14 13:17:34 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  1998/02/19 07:36:16  nop
+- * Initial string interning during db load.
+- *
+- * Revision 1.3  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.1  1997/03/20 18:07:51  bjj
+- * Add a flag to the in-memory type identifier so that inlines can cheaply
+- * identify Vars that need actual work done to ref/free/dup them.  Add the
+- * appropriate inlines to utils.h and replace old functions in utils.c with
+- * complex_* functions which only handle the types with external storage.
+- *
+- * Revision 1.2  1997/03/03 04:18:27  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/03/19  07:16:12  pavel
+- * Increased precision of floating-point numbers printed in the DB file.
+- * Release 1.8.0p2.
+- *
+- * Revision 2.4  1996/03/10  01:04:16  pavel
+- * Increased the precision of printed floating-point numbers by two digits.
+- * Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/08  07:19:15  pavel
+- * Renamed err/logf() to errlog/oklog() and TYPE_NUM to TYPE_INT.  Added
+- * dbio_read/write_float().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/28  00:44:51  pavel
+- * Added support for receiving MOO-compilation warnings during loading and for
+- * printing useful error and warning messages in the log.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:59:50  pavel
+- * Fixed broken #includes.  Removed another silly use of `unsigned'.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:20:10  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:19:56  pavel
+- * Initial revision
+- */
+diff --git a/server/db_objects.c b/server/db_objects.c
+index 8bd6bdf..d9dbdac 100644
+--- a/server/db_objects.c
++++ b/server/db_objects.c
+@@ -553,50 +553,3 @@ dbpriv_set_all_users(Var v)
+     all_users = v;
+ }
+ 
+-char rcsid_db_objects[] =
+-    "$Id: db_objects.c,v 1.5 2006-09-07 00:55:02 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  1998/12/14 13:17:36  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.2  1997/07/07 01:40:20  nop
+- * Because we use first-parent-with-verbs as a verb cache key, we can skip
+- * a generation bump if the target of a chparent has no kids and no verbs.
+- *
+- * Revision 1.2.2.1  1997/03/20 07:26:01  nop
+- * First pass at the new verb cache.  Some ugly code inside.
+- *
+- * Revision 1.2  1997/03/03 04:18:29  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/04/08  00:42:11  pavel
+- * Adjusted computation in `db_object_bytes()' to account for change in the
+- * definition of `value_bytes()'.  Release 1.8.0p3.
+- *
+- * Revision 2.4  1996/02/08  07:18:13  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/16  07:23:45  pavel
+- * Fixed object-array overrun when a recycled object is right on the boundary.
+- * Release 1.8.0alpha6.
+- *
+- * Revision 2.2  1996/01/11  07:30:53  pavel
+- * Fixed memory-smash bug in db_renumber_object().  Release 1.8.0alpha5.
+- *
+- * Revision 2.1  1995/12/11  08:08:28  pavel
+- * Added `db_object_bytes()'.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:20:51  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:20:41  pavel
+- * Initial revision
+- */
+diff --git a/server/db_properties.c b/server/db_properties.c
+index 759ad29..06ef73b 100644
+--- a/server/db_properties.c
++++ b/server/db_properties.c
+@@ -663,45 +663,3 @@ dbpriv_fix_properties_after_chparent(Objid oid, Objid old_parent)
+     fix_props(oid, 0, old_props, new_props, common_props);
+ }
+ 
+-char rcsid_db_properties[] =
+-    "$Id: db_properties.c,v 1.3 1998-12-14 13:17:38 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:31  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.6  1996/04/08  01:08:32  pavel
+- * Fixed `db_rename_propdef()' to allow case-only changes.  Release 1.8.0p3.
+- *
+- * Revision 2.5  1996/02/11  00:46:48  pavel
+- * Enhanced db_find_property() to report the defining object of the found
+- * property.  Release 1.8.0beta2.
+- *
+- * Revision 2.4  1996/02/08  07:18:02  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.3  1995/12/31  03:27:40  pavel
+- * Removed a few more uses of `unsigned'.  Reordered things in
+- * db_delete_propdef() to fix an occasional memory smash.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:41:34  pavel
+- * Made *all* built-in property references return fresh value references.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:52:27  pavel
+- * Added support for renaming propdefs.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:21:13  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:21:02  pavel
+- * Initial revision
+- */
+diff --git a/server/db_verbs.c b/server/db_verbs.c
+index 0869f75..c0d17af 100644
+--- a/server/db_verbs.c
++++ b/server/db_verbs.c
+@@ -765,67 +765,3 @@ db_verb_allows(db_verb_handle h, Objid progr, db_verb_flag flag)
+ }
+ 
+ 
+-char rcsid_db_verbs[] =
+-    "$Id: db_verbs.c,v 1.6 2001-01-29 08:38:44 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.5  1998/12/14 13:17:39  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1997/09/07 23:58:37  nop
+- * Bump up cache size to 7507, since lambdamoo has been running with that
+- * for months.
+- * 
+- * Revision 1.3  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.5  1997/07/07 01:41:20  nop
+- * set_verb_code() doesn't really need a verb generation bump.
+- *
+- * Revision 1.2.2.4  1997/06/05 08:38:37  bjj
+- * Tweak nop's verbcache by moving an actual handle into vc_entry to avoid the
+- * copy after the lookup.  Also, keep verbs that aren't found in the cache so
+- * repeated calls to nonexistant verbs benefit from caching as well (need to
+- * watch the new field in verb_cache_stats()[2] to see how often this is useful).
+- *
+- * Revision 1.2.2.3  1997/05/29 11:56:21  nop
+- * Added Jason Maltzen's builtin to return a list version of cache stats.
+- *
+- * Revision 1.2.2.2  1997/03/22 22:54:36  bjj
+- * Tiny tweak to db_find_callable_verb to avoid recomputing the first parent
+- * with verbdefs.  Also hit it with indent, which made these diffs bigger than
+- * they should have been...
+- *
+- * Revision 1.2.2.1  1997/03/20 07:26:03  nop
+- * First pass at the new verb cache.  Some ugly code inside.
+- *
+- * Revision 1.2  1997/03/03 04:18:31  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/05/12  21:32:23  pavel
+- * Changed db_add_verb() not to bump the reference count of the given
+- * verb-names string.  Release 1.8.0p5.
+- *
+- * Revision 2.3  1996/02/08  07:17:40  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/28  00:29:03  pavel
+- * Broke out the building of the preposition table into a separate function,
+- * called during initialization, to avoid an storage-overwriting bug.  Changed
+- * db_delete_verb() to unbundle how the verb is found.  Changed
+- * db_find_defined_verb() to allow suppressing old numeric-string behavior.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:11:07  pavel
+- * Made verb programs never be NULL any more.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:21:33  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:21:20  pavel
+- * Initial revision
+- */
+diff --git a/server/decompile.c b/server/decompile.c
+index 45879c6..8771734 100644
+--- a/server/decompile.c
++++ b/server/decompile.c
+@@ -1007,71 +1007,3 @@ find_line_number(Program * prog, int vector, int pc)
+     prog->cached_lineno = lineno;
+     return lineno;
+ }
+-
+-char rcsid_decompile[] =
+-    "$Id: decompile.c,v 1.7 2006-12-06 23:51:31 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.6  2002/09/15 23:21:01  xplat
+- * GNU indent normalization.
+- *
+- * Revision 1.5  1999/08/11 08:23:40  bjj
+- * Lineno computation could be wrong for forked vectors.
+- *
+- * Revision 1.4  1998/12/14 13:17:40  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.2  1997/09/09 07:01:16  bjj
+- * Change bytecode generation so that x=f(x) calls f() without holding a ref
+- * to the value of x in the variable slot.  See the options.h comment for
+- * BYTECODE_REDUCE_REF for more details.
+- *
+- * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+- * new code is not conditional and still works either way).
+- * 
+- * Revision 1.2.2.1  1997/06/05 09:00:00  bjj
+- * Cache one pc/lineno pair with each Program.  Hopefully most programs that
+- * fail multiple times usually do it on the same line!
+- *
+- * Revision 1.2  1997/03/03 04:18:32  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.6  1996/03/10  01:17:48  pavel
+- * Removed a automatic structure initialization.  Release 1.8.0.
+- *
+- * Revision 2.5  1996/02/08  07:17:28  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Fixed bug in handling of OP_EIF
+- * vs. stmt_start.  Added support for exponentiation expression, named WHILE
+- * loop and BREAK and CONTINUE statement.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.4  1996/01/16  07:12:42  pavel
+- * Add EOP_SCATTER handling.  Release 1.8.0alpha6.
+- *
+- * Revision 2.3  1995/12/31  03:11:29  pavel
+- * Added support for the `$' expression.  Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:37:38  pavel
+- * Fixed line number bug in `if' statements.  Fixed memory leak in line-number
+- * finder.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:58:23  pavel
+- * Fixed bug in decompilation of try-except-endtry.  Added distinction between
+- * vector and pc_vector in program_to_tree(), to clear up bugs in
+- * forked-program accounting.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:25:59  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:25:40  pavel
+- * Initial revision
+- */
+diff --git a/server/disassemble.c b/server/disassemble.c
+index cb2b511..0afb3bc 100644
+--- a/server/disassemble.c
++++ b/server/disassemble.c
+@@ -481,53 +481,3 @@ register_disassemble(void)
+ 		      TYPE_ANY);
+ }
+ 
+-char rcsid_disassemble[] = "$Id";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2.2.1  1997/09/09 07:01:16  bjj
+- * Change bytecode generation so that x=f(x) calls f() without holding a ref
+- * to the value of x in the variable slot.  See the options.h comment for
+- * BYTECODE_REDUCE_REF for more details.
+- *
+- * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+- * new code is not conditional and still works either way).
+- *
+- * Revision 1.2  1997/03/03 04:18:34  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.6  1996/04/08  01:09:40  pavel
+- * Added missing mnemonic-table entry for EOP_PUSH_LABEL.  Release 1.8.0p3.
+- *
+- * Revision 2.5  1996/02/08  07:15:40  pavel
+- * Added support for exponentiation expression, named WHILE loop, and BREAK
+- * and CONTINUE statements.  Removed redundant error-value unparsing code.
+- * Added printing of language version number.  Added support for EOPs that
+- * cost ticks.  Renamed TYPE_NUM to TYPE_INT.  Added disassemble_to_file().
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.4  1996/01/16  07:16:38  pavel
+- * Add EOP_SCATTER handling.  Added support for line-wrapping in the display
+- * of the bytes of an instruction.  Release 1.8.0alpha6.
+- *
+- * Revision 2.3  1995/12/31  00:07:49  pavel
+- * Added support for EOP_LENGTH and stack references in general.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:31:29  pavel
+- * Added support for numeric verb descriptors in disassemble() built-in.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:10:32  pavel
+- * Accounted for verb programs never being NULL any more.
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  05:00:54  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:00:43  pavel
+- * Initial revision
+- */
+diff --git a/server/eval_env.c b/server/eval_env.c
+index b770540..5f4dc6b 100644
+--- a/server/eval_env.c
++++ b/server/eval_env.c
+@@ -123,55 +123,3 @@ set_rt_env_var(Var * env, int slot, Var v)
+     env[slot] = v;
+ }
+ 
+-char rcsid_rt_env[] =
+-    "$Id: eval_env.c,v 1.5 1998-12-14 13:17:44 nop Exp $";
+-
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.3.2.1  1997/03/20 18:07:50  bjj
+- * Add a flag to the in-memory type identifier so that inlines can cheaply
+- * identify Vars that need actual work done to ref/free/dup them.  Add the
+- * appropriate inlines to utils.h and replace old functions in utils.c with
+- * complex_* functions which only handle the types with external storage.
+- *
+- * Revision 1.3  1997/03/05 08:41:50  bjj
+- * A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+- * so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+- * Both revert to malloc/free for large requests.
+- *
+- * Revision 1.2  1997/03/03 04:18:35  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  07:13:03  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Made fill_in_rt_consts() version-dependent.
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:21:51  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/10/17  20:24:21  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.3  1992/08/31  22:23:15  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.2  1992/08/28  15:59:54  pjames
+- * Changed vardup to varref.
+- *
+- * Revision 1.1  1992/08/10  16:20:00  pjames
+- * Initial RCS-controlled version
+- */
+diff --git a/server/eval_vm.c b/server/eval_vm.c
+index 8b2799e..6f7755e 100644
+--- a/server/eval_vm.c
++++ b/server/eval_vm.c
+@@ -120,59 +120,3 @@ read_vm(int task_id)
+     return the_vm;
+ }
+ 
+-char rcsid_eval_vm[] =
+-    "$Id: eval_vm.c,v 1.4 2002-08-18 09:47:26 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:17:46  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:36  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  07:12:16  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/31  03:19:43  pavel
+- * Added missing #include "options.h".  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:22:07  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1993/12/21  23:40:11  pavel
+- * Add new `outcome' result from the interpreter.
+- *
+- * Revision 1.9  1993/08/11  06:03:12  pavel
+- * Fixed mistaken %d->%u change.
+- *
+- * Revision 1.8  1993/08/11  02:58:03  pavel
+- * Changed some bogus %d's to %u's in calls to *scanf() and *printf(), guided
+- * by warnings from GCC...
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.5  1992/10/17  20:25:59  pavel
+- * Changed return-type of read_vm() from `char' to `int', for systems that use
+- * unsigned chars.
+- *
+- * Revision 1.4  1992/09/25  21:12:12  pjames
+- * Passed correct pc (error_pc) to get_lineno.
+- *
+- * Revision 1.3  1992/09/02  18:43:11  pavel
+- * Added mechanism for resuming a read()ing task with an error.
+- *
+- * Revision 1.2  1992/08/31  22:22:24  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.1  1992/08/10  16:20:00  pjames
+- * Initial RCS-controlled version
+- */
+diff --git a/server/exceptions.c b/server/exceptions.c
+index 88efac3..72bb84c 100644
+--- a/server/exceptions.c
++++ b/server/exceptions.c
+@@ -63,29 +63,3 @@ ES_RaiseException(Exception * exception, int value)
+     longjmp(cb->jmp, 1);
+ }
+ 
+-char rcsid_exceptions[] =
+-    "$Id: exceptions.c,v 1.3 1998-12-14 13:17:48 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:37  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  07:11:32  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:23:03  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/07/21  00:01:23  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/execute.c b/server/execute.c
+index 8bd9013..2f81ef5 100644
+--- a/server/execute.c
++++ b/server/execute.c
+@@ -2935,295 +2935,3 @@ read_activ(activation * a, int which_vector)
+ }
+ 
+ 
+-char rcsid_execute[] =
+-    "$Id: execute.c,v 1.19 2006-12-06 23:54:53 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.18  2006/09/26 02:03:59  pschwan
+- * b=1552816
+- * r=ben
+- *
+- * execute.c:run_interpreter() sometimes clobbers the real return code with that
+- * of the traceback handler.  If |result| is non-NULL, this can lead to it being
+- * used later on without ever having been initialized, causing "Unknown Var type"
+- * errors.
+- *
+- * In practice -- because |result| is almost always NULL or (in one case)
+- * initialized before calling run_interpreter() -- this situation wasn't
+- * encountered execept in Emergency Mode.
+- *
+- * Revision 1.17  2006/09/07 00:55:02  bjj
+- * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+- * store strlen with strings.  This is basically free, since most string
+- * allocations are rounded up by malloc anyway.  This saves lots of cycles
+- * computing strlen.  (The change is originally from jitmoo, where I wanted
+- * inline range checks for string ops).
+- *
+- * Revision 1.16  2004/05/22 01:25:43  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.15  2004/03/03 23:06:57  bjj
+- * Luke-Jr's patch for read_activ FUNC_NOT_FOUND
+- *
+- * Revision 1.14.2.1  2003/06/04 21:28:58  wrog
+- * removed useless arguments from resume_from_previous_vm(), do_forked_task(); 
+- * replaced current_task_kind with is_fg argument for do_task(); 
+- * made enum task_kind internal to tasks.c
+- *
+- * Revision 1.14  2002/09/15 23:21:01  xplat
+- * GNU indent normalization.
+- *
+- * Revision 1.13  2002/08/18 09:47:26  bjj
+- * Finally made free_activation() take a pointer after noticing how !$%^&
+- * much time it was taking in a particular profiling run.
+- *
+- * Revision 1.12  2001/03/12 05:10:54  bjj
+- * Split out call_verb and call_verb2.  The latter must only be called with
+- * strings that are already MOO strings (str_ref-able).
+- *
+- * Revision 1.11  2001/03/12 03:25:16  bjj
+- * Added new package type BI_KILL which kills the task calling the builtin.
+- * Removed the static int task_killed in execute.c which wa tested on every
+- * loop through the interpreter to see if the task had been killed.
+- *
+- * Revision 1.10  1998/12/14 13:17:50  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.9  1998/02/19 07:36:17  nop
+- * Initial string interning during db load.
+- *
+- * Revision 1.8  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.7  1997/03/21 13:23:23  bjj
+- * Reorganize the top of run() slightly to make it slightly more efficient
+- * (we do execute it billions of times, after all).  Later we'll want to
+- * get rid of if (task_killed) by introducing BI_KILL or by moving it into
+- * the BI_FUNC_CALL case, at least.
+- *
+- * Revision 1.6.2.4  1998/12/06 07:13:21  bjj
+- * Rationalize enqueue_forked_task interface and fix program_ref leak in
+- * the case where fork fails with E_QUOTA.  Make .queued_task_limit=0 really
+- * enforce a limit of zero tasks (for old behavior set it to 1, that's the
+- * effect it used to have).
+- *
+- * Revision 1.6.2.3  1997/09/09 07:01:17  bjj
+- * Change bytecode generation so that x=f(x) calls f() without holding a ref
+- * to the value of x in the variable slot.  See the options.h comment for
+- * BYTECODE_REDUCE_REF for more details.
+- *
+- * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+- * new code is not conditional and still works either way).
+- *
+- * Revision 1.6.2.2  1997/05/24 07:08:37  bjj
+- * Cleanup of Jay's last checkin to avoid some code duplication.
+- *
+- * Revision 1.6.2.1  1997/05/23 07:03:44  nop
+- * Failure during property lookups/stores sometimes fails to free the string
+- * containing the property name.  (PUSH_ERROR() may return immediately.)
+- *
+- * Revision 1.6  1997/03/08 06:25:39  nop
+- * 1.8.0p6 merge by hand.
+- *
+- * Revision 1.5  1997/03/05 08:41:47  bjj
+- * A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+- * so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+- * Both revert to malloc/free for large requests.
+- *
+- * Revision 1.4  1997/03/03 09:03:31  bjj
+- * 3 opcode optimizations:
+- *
+- * 1)  OP_IMM+OP_POP is "peephole optimized" away at runtime.  This makes
+- * verbdocs and other comments cheaper.
+- *
+- * 2)  OP_PUT_n+OP_POP is similarly optimized (PUT doesn't consume the
+- * top value on the stack but it is often used that way in statements like
+- * `var = expr;').  OP_G_PUT could use the same change but is rarely
+- * executed.
+- *
+- * 3)  OP_PUT_n, OP_PUSH_n which used to be in an if/else in the default
+- * case are split out into 32 cases each so the compiler can optimize it
+- * for us.  These ops account for a large percentage of those executed.
+- *
+- * Revision 1.3  1997/03/03 06:14:44  nop
+- * Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
+- * the default.
+- *
+- * Revision 1.2  1997/03/03 04:18:38  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:44:59  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.11  1997/03/04 04:31:48  eostrom
+- * Modified run() and run_interpreter() to take a separate argument
+- * indicating whether to raise an exception, rather than assuming E_NONE
+- * means no and anything else means yes.
+- *
+- * Revision 2.10  1996/04/19  01:24:40  pavel
+- * Added support for built-in functions making tail calls to MOO verbs and
+- * changed pass() to use the new feature.  Added patches to allow generation
+- * of the new warning in read_bi_func_data().  Release 1.8.0p4.
+- *
+- * Revision 2.9  1996/03/19  07:12:21  pavel
+- * Fixed call_verb() to return E_INVIND when appropriate even when pass==0.
+- * Removed is_user() test for setting .programmer and .wizard properties.
+- * Reordered error tests in bf_task_stack() to check for an invalid argument
+- * first.  Release 1.8.0p2.
+- *
+- * Revision 2.8  1996/03/10  01:18:22  pavel
+- * Added new `caller()' entry point, for use by built-in fns.  Release 1.8.0.
+- *
+- * Revision 2.7  1996/02/11  00:44:01  pavel
+- * Fixed handling of `kill_task(task_id())'.  Release 1.8.0beta2.
+- *
+- * Revision 2.6  1996/02/08  07:11:17  pavel
+- * Added support for in-DB traceback handling, named WHILE loop, BREAK and
+- * CONTINUE statement, exponentiation expression, and floating-point
+- * arithmetic.  Fixed logging of wiz-bit setting to happen on any change in
+- * value in either direction.  Added tick-counting for EOPs.  Fixed stack bug
+- * in `$' expression.  Fixed horrible bugs in scattering assignment.  Added
+- * version numbers on each frame of suspended tasks.  Renamed err/logf() to
+- * errlog/oklog() and TYPE_NUM to TYPE_INT.  Updated copyright notice for
+- * 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.5  1996/01/16  07:19:34  pavel
+- * Fixed bug concerning which frame built-in function return data is stored
+- * into.  Fixed tracebacks for wizarding to be accurate and only generated for
+- * setting .wizard to true.  Added support for EOP_SCATTER.
+- * Release 1.8.0alpha6.
+- *
+- * Revision 2.4  1996/01/11  07:28:04  pavel
+- * Fixed bug in value of `progr' when MOO code returns to a built-in.  Added
+- * support for getting the value of a resumed task.  Release 1.8.0alpha5.
+- *
+- * Revision 2.3  1995/12/31  03:12:19  pavel
+- * Implemented the EOP_LENGTH opcode.  Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:23:15  pavel
+- * Fixed bug in unwinding through handlers that don't cover the current error.
+- * Fixed bug in not squelching all errors raised by built-ins called from !d
+- * verbs.  Commented conventions for errors vs. built-ins.  Fixed memory leaks
+- * in built-in property reference, errors raised in !d verbs, and verbnames
+- * read from suspended tasks in DB files.  Added call_function() built-in.
+- * Fixed bug in registration of suspend().  Added support for better error
+- * messages during DB loading of suspended task programs.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:51:30  pavel
+- * Added built-in function entries to stack traceback lists.  Accounted for
+- * verb programs never being NULL any more.  Added support for built-in
+- * properties being wiz-only.  Removed one more silly use of `unsigned'.
+- * Added support for suspending forever.  Fixed registration of `read()' to
+- * once again allow non-blocking mode.  Added `task_stack()' built-in
+- * function.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:23:34  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.27  1992/10/27  06:19:22  pavel
+- * Fixed a memory leak that occurred when a read() call was rejected for
+- * E_INVARG reasons.
+- *
+- * Revision 1.26  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.25  1992/10/23  19:25:00  pavel
+- * Eliminated all uses of the useless macro NULL..
+- *
+- * Revision 1.24  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.23  1992/10/17  20:28:48  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- * Added some (int) casts to placate over-protective compilers.
+- * Changed return-type of read_activ() from char to int, for systems that use
+- * unsigned chars.
+- *
+- * Revision 1.22  1992/09/25  21:11:36  pjames
+- * Made use of the error_pc field in an activation to report correct
+- * error tracebacks from verbs called by builtin verbs.
+- *
+- * Revision 1.21  1992/09/24  16:43:10  pavel
+- * Exported `task_timed_out' for use by long-running built-in functions that
+- * should abort if the timer goes off.
+- *
+- * Revision 1.20  1992/09/14  18:40:02  pjames
+- * Updated #includes.  Moved rcsid to bottom.
+- *
+- * Revision 1.19  1992/09/14  17:45:17  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.18  1992/09/08  22:07:06  pjames
+- * Changed `register_bf_execute()' to `register_execute()'.
+- * Changed range checking for subrange assigments.
+- *
+- * Revision 1.17  1992/09/04  22:42:05  pavel
+- * Fixed some picky ANSI C problems with (const char *)'s.
+- *
+- * Revision 1.16  1992/09/03  16:29:44  pjames
+- * Minor change.
+- *
+- * Revision 1.15  1992/09/02  18:41:17  pavel
+- * Added mechanism for resuming tasks with errors.
+- *
+- * Revision 1.14  1992/09/01  06:24:01  pavel
+- * Fixed minor storage leak just introduced.
+- *
+- * Revision 1.13  1992/09/01  05:30:57  pavel
+- * Added a call to vardup() for first argument to listset().
+- *
+- * Revision 1.12  1992/08/31  22:29:01  pjames
+- * Changed some `char *'s to `const char *' and fixed code accordingly.
+- *
+- * Revision 1.11  1992/08/28  23:23:03  pjames
+- * Added support for EXTENDED instructions.
+- * Added OP_RANGESET interpreting.
+- * Changed OP_LISTSET to OP_INDEXSET, and added code for indexed string
+- * assigments.
+- *
+- * Revision 1.10  1992/08/28  16:30:45  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Changed vardup to varref.
+- * Changed some strref's to strdup.
+- *
+- * Revision 1.9  1992/08/12  02:01:46  pjames
+- * Gave a variable an initial value to get rid on a bogus compiler
+- * warning.
+- *
+- * Revision 1.8  1992/08/12  01:48:03  pjames
+- * Fixed string freeing/copying to/from activation/forked_tasks.
+- *
+- * Revision 1.7  1992/08/11  17:30:44  pjames
+- * Removed last read/write of Parse_Info, fixed a bug in a macro
+- * (commented back in a line), and fixed call_verb (to not run the
+- * program if it doesn't exist).
+- *
+- * Revision 1.6  1992/08/10  17:47:00  pjames
+- * Moved several functions to eval_env.c and eval_vm.c.  Moved built in
+- * functions which modified vm to this module.  Move property functions
+- * to property.c.  Updated #includes.  Modified run() to be cleaner.
+- * Used new built in function registration methods.  Removed uses of
+- * Parse_Info field in activations.
+- *
+- * Revision 1.5  1992/08/01  01:14:52  pavel
+- * Minor fixes...
+- *
+- * Revision 1.4  1992/07/30  21:18:48  pjames
+- * Updated print_error_backtrace to print line numbers for each frame on
+- * the stack.
+- *
+- * Revision 1.3  1992/07/27  18:14:17  pjames
+- * Changed name of ct_env to var_names, const_env to literals, and
+- * f_vectors to fork_vectors.
+- *
+- * Revision 1.2  1992/07/21  00:02:07  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/extensions.c b/server/extensions.c
+index 85afc7e..c040d15 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -373,36 +373,3 @@ register_extensions()
+     oklog("          LOADING: extensions ... finished\n");
+ }
+ 
+-char rcsid_extensions[] =
+-    "$Id: extensions.c,v 1.4 1998-12-14 13:17:52 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.3  1997/05/29 11:56:22  nop
+- * Added Jason Maltzen's builtin to return a list version of cache stats.
+- *
+- * Revision 1.2.2.2  1997/03/20 18:08:29  bjj
+- * add #include "utils.h" to get new inline free_var
+- *
+- * Revision 1.2.2.1  1997/03/20 07:26:04  nop
+- * First pass at the new verb cache.  Some ugly code inside.
+- *
+- * Revision 1.2  1997/03/03 04:18:41  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  07:03:47  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:26:34  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:26:21  pavel
+- * Initial revision
+- */
+diff --git a/server/functions.c b/server/functions.c
+index cdb2776..64e4a42 100644
+--- a/server/functions.c
++++ b/server/functions.c
+@@ -477,115 +477,3 @@ register_functions(void)
+     register_function("load_server_options", 0, 0, bf_load_server_options);
+ }
+ 
+-char rcsid_functions[] =
+-    "$Id: functions.c,v 1.7 2001-03-12 05:10:54 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.6  2001/03/12 03:25:16  bjj
+- * Added new package type BI_KILL which kills the task calling the builtin.
+- * Removed the static int task_killed in execute.c which wa tested on every
+- * loop through the interpreter to see if the task had been killed.
+- *
+- * Revision 1.5  1998/12/14 13:17:53  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.3.2.2  1997/05/12 04:03:21  bjj
+- * This time for sure!
+- *
+- * Revision 1.3.2.1  1997/05/11 04:31:54  bjj
+- * Missed the place in bf_function_info where TYPE_* constants make it into
+- * the database.  Masked off the complex flag in the obvious place.
+- *
+- * Revision 1.3  1997/03/03 05:03:50  nop
+- * steak2: move protectedness into builtin struct, load_server_options()
+- * now required for $server_options updates.
+- *
+- * Revision 1.2  1997/03/03 04:18:42  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.6  1996/04/19  01:20:49  pavel
+- * Fixed bug in how $bf_FOO() verbs are called to override built-in functions.
+- * Added code to screen out the worst of the problems this bug could
+- * potentially cause.  Added a way for built-in functions to tail-call a MOO
+- * verb (i.e., to do so without having to handle the verb's returned value).
+- * Release 1.8.0p4.
+- *
+- * Revision 2.5  1996/04/08  01:03:59  pavel
+- * Moved `protected' verb test to before arg-count and -type checks.
+- * Release 1.8.0p3.
+- *
+- * Revision 2.4  1996/03/19  07:13:04  pavel
+- * Fixed $bf_FOO() calling to work even for wizards.  Release 1.8.0p2.
+- *
+- * Revision 2.3  1996/03/10  01:19:49  pavel
+- * Added support for calling $bf_FOO() when FOO() is wiz-only.  Made
+- * verbs on #0 exempt from the wiz-only check.  Release 1.8.0.
+- *
+- * Revision 2.2  1996/02/08  07:03:21  pavel
+- * Renamed err/logf() to errlog/oklog() and TYPE_NUM to TYPE_INT.  Added
+- * support for TYPE_NUMERIC wildcard.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1996/01/16  07:27:37  pavel
+- * Added `function_info()' built-in function.  Release 1.8.0alpha6.
+- *
+- * Revision 2.0  1995/11/30  04:23:49  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.14  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.13  1992/10/23  19:25:30  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.12  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.11  1992/10/17  20:31:03  pavel
+- * Changed return-type of read_bi_func_data() from char to int, for systems
+- * that use unsigned chars.
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- * Fixed bug in register_common() that sometimes read the wrong number of
+- * argument-types from the argument list.
+- *
+- * Revision 1.10  1992/09/08  22:02:46  pjames
+- * Updated register_* list to call functions by their new names.
+- *
+- * Revision 1.9  1992/08/28  16:01:31  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- *
+- * Revision 1.8  1992/08/14  01:20:25  pavel
+- * Made it entirely clear how to add new MOO built-in functions to the server.
+- *
+- * Revision 1.7  1992/08/14  00:40:31  pavel
+- * Added missing #include "my-stdarg.h"...
+- *
+- * Revision 1.6  1992/08/14  00:01:03  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.5  1992/08/13  21:27:11  pjames
+- * Added register_bi_functions() which calls all procedures which
+- * register built in functions.  To add another such procedure, just add
+- * it to the static list and to functions.h
+- *
+- * Revision 1.4  1992/08/12  01:48:42  pjames
+- * Builtin functions may now have as many arguments as desired.
+- *
+- * Revision 1.3  1992/08/10  17:39:46  pjames
+- * Changed registration method to use var_args.  Changed 'next' field to
+- * be func_pc.
+- *
+- * Revision 1.2  1992/07/21  00:02:29  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/gnu-malloc.c b/server/gnu-malloc.c
+index 5db9ac4..91be445 100644
+--- a/server/gnu-malloc.c
++++ b/server/gnu-malloc.c
+@@ -883,28 +883,3 @@ sys_sbrk(incr)
+ }
+ #endif				/* VMS */
+ 
+-char rcsid_gnu_malloc[] =
+-    "$Id: gnu-malloc.c,v 1.2 1997-03-03 04:18:44 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:38:46  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:45:02  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/07/21  00:03:37  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.2  1992/07/21  00:02:53  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/keywords.c b/server/keywords.c
+index 93419dd..2d442f2 100644
+--- a/server/keywords.c
++++ b/server/keywords.c
+@@ -214,27 +214,3 @@ find_keyword(const char *word)
+     return in_word_set(word, strlen(word));
+ }
+ 
+-char rcsid_keywords[] =
+-    "$Id: keywords.c,v 1.3 1998-12-14 13:17:55 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:45  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:33:21  pavel
+- * Added `break', `continue', and E_FLOAT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  08:15:42  pavel
+- * Added #include "tokens.h" removed from keywords.h.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  05:02:56  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:01:47  pavel
+- * Initial revision
+- */
+diff --git a/server/list.c b/server/list.c
+index 711cb2c..5e18c53 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -1159,118 +1159,3 @@ register_list(void)
+ }
+ 
+ 
+-char rcsid_list[] = "$Id: list.c,v 1.7 2006-09-07 00:55:02 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.6  2001/03/12 00:16:29  bjj
+- * bf_crypt now passes the entire second argument as the salt to
+- * the C crypt() routine.  This works fine for traditional DES crypts
+- * and supports modern modular crypts like FreeBSD's.  This just makes
+- * it possible to pass the entire salt:  the core still has to do it.
+- *
+- * Revision 1.5  1998/12/14 13:17:57  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.3.2.3  1997/07/03 08:04:01  bjj
+- * Pattern cache was not storing case_matters flag, causing many patterns to
+- * be impossible to find in the cache.
+- *
+- * Revision 1.3.2.2  1997/05/20 14:55:52  nop
+- * Include Jason's patch for bf_decode_binary losing on systems where
+- * char is signed.
+- *
+- * Revision 1.3.2.1  1997/03/21 15:22:56  bjj
+- * doinsert reallocs for appending to refcnt 1 lists.  note that this wins
+- * because it avoids all the var_ref/free_var that's done in the general case,
+- * not because it avoids malloc/free.  the general case could also benefit from
+- * using memcpy when the refcnt is 1, rather than looping with var_ref.
+- *
+- * Revision 1.3  1997/03/03 06:20:04  bjj
+- * new_list(0) now returns the same empty list to every caller
+- *
+- * Revision 1.2  1997/03/03 04:18:46  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.7  1996/03/11  23:35:17  pavel
+- * Fixed bad use of possibly-signed characters in decode_binary().
+- * Release 1.8.0p1.
+- *
+- * Revision 2.6  1996/02/18  23:17:24  pavel
+- * Added value_hash(), string_hash(), and binary_hash().  Release 1.8.0beta3.
+- *
+- * Revision 2.5  1996/02/08  07:02:09  pavel
+- * Added support for floating-point numbers.  Fixed registration of
+- * decode_binary().  Renamed err/logf() to errlog/oklog() and TYPE_NUM to
+- * TYPE_INT.  Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.4  1996/01/16  07:26:56  pavel
+- * Fixed `case_matters' arguments to strsub(), index(), rindex(), match(), and
+- * rmatch() to allow values of any type.  Release 1.8.0alpha6.
+- *
+- * Revision 2.3  1996/01/11  07:42:14  pavel
+- * Added support for C's crypt() function being unavailable.  Fixed potential
+- * string overread in case of a too-short salt argument to MOO's crypt()
+- * function.  Added built-ins encode_binary() and decode_binary(), in support
+- * of new binary I/O facilities.  Release 1.8.0alpha5.
+- *
+- * Revision 2.2  1995/12/31  03:25:04  pavel
+- * Added missing #include "options.h".  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/11  07:43:20  pavel
+- * Moved value_bytes built-in function to here.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:24:03  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.12  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.11  1992/10/23  19:27:07  pavel
+- * Removed a place where a local structure variable was initialized in its
+- * declaration, since some compilers can't hack that.
+- * Added the `%%' -> `%' transformation to substitute().
+- *
+- * Revision 1.10  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.9  1992/10/17  20:33:17  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- * Added some (int) casts to placate over-protective compilers.
+- *
+- * Revision 1.8  1992/09/08  22:15:09  pjames
+- * Updated strrangeset() and listrangeset() to use correct algorithm.
+- *
+- * Revision 1.7  1992/09/08  22:03:45  pjames
+- * Added all code from bf_str_list.c, and some code from bf_type.c.
+- *
+- * Revision 1.6  1992/08/31  22:31:47  pjames
+- * Changed some `char *'s to `const char *' and fixed code accordingly.
+- *
+- * Revision 1.5  1992/08/28  23:20:22  pjames
+- * Added `listrangeset()' and `strrangeset()'.
+- *
+- * Revision 1.4  1992/08/28  16:29:10  pjames
+- * Added some varref()'s.
+- * Removed some free_var()'s, due to ref-counting.
+- * Changed some my_free()'s to free_var().
+- * Made `substr()' preserve the string it is passed.
+- *
+- * Revision 1.3  1992/08/10  16:53:46  pjames
+- * Updated #includes.
+- *
+- * Revision 1.2  1992/07/21  00:04:04  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/log.c b/server/log.c
+index d95d842..de06147 100644
+--- a/server/log.c
++++ b/server/log.c
+@@ -160,63 +160,3 @@ register_log(void)
+ 		      TYPE_ANY);
+ }
+ 
+-char rcsid_log[] = "$Id: log.c,v 1.4 2004-05-22 01:25:43 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3.10.1  2003/06/03 12:19:27  wrog
+- * added log_report_progress()
+- *
+- * Revision 1.3  1998/12/14 13:17:59  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:48  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/04/08  01:06:25  pavel
+- * Added `set_log_file()' entry point.  Made logging print undated messages to
+- * stderr if they arrive before a log file has been set.  Release 1.8.0p3.
+- *
+- * Revision 2.1  1996/02/08  07:00:50  pavel
+- * Renamed err/logf() to errlog/oklog().  Cleaned up bf_server_log() code.
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:26:56  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/09/22  22:48:15  pavel
+- * Added missing #include of "config.h".
+- *
+- * Revision 1.7  1992/09/08  22:04:45  pjames
+- * changed `register_bf_log()' to `register_log()'
+- *
+- * Revision 1.6  1992/08/20  17:27:13  pavel
+- * Added the prefix `> ' to all log messages generated by the server_log()
+- * built-in function, so that they can be distinguished from server-generated
+- * messages.
+- *
+- * Revision 1.5  1992/08/14  00:23:37  pavel
+- * Commented text after #endif.
+- *
+- * Revision 1.4  1992/08/11  17:27:58  pjames
+- * Changed server_log to return 0 instead of 1.
+- *
+- * Revision 1.3  1992/08/10  17:14:00  pjames
+- * Updated #includes.  Added bf_server_log to write messages to server
+- * log output.   Added registration procedure.
+- *
+- * Revision 1.2  1992/07/21  00:04:15  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/malloc.c b/server/malloc.c
+index fea75ae..cf4bcfe 100644
+--- a/server/malloc.c
++++ b/server/malloc.c
+@@ -55,40 +55,3 @@ int malloc_dummy;		/* Prevent `empty compilation unit' warning */
+ 
+ #endif
+ 
+-char rcsid_malloc[] = "$Id: malloc.c,v 1.3 1998-12-14 13:18:01 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:49  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:59:50  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:27:16  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.5  1992/09/22  22:46:35  pavel
+- * Added missing #include of "config.h".
+- *
+- * Revision 1.4  1992/08/31  22:32:52  pjames
+- * Changed static variable dummy to extern in malloc_dummy to remove warning.
+- *
+- * Revision 1.3  1992/08/21  00:59:58  pavel
+- * Changed to conditionalize on USE_GNU_MALLOC rather than USE_SYSTEM_MALLOC.
+- *
+- * Revision 1.2  1992/07/21  00:04:29  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/match.c b/server/match.c
+index c9e206f..f738557 100644
+--- a/server/match.c
++++ b/server/match.c
+@@ -135,50 +135,3 @@ match_object(Objid player, const char *name)
+     return match_contents(player, name);
+ }
+ 
+-char rcsid_match[] = "$Id: match.c,v 1.3 1998-12-14 13:18:02 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:50  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:59:41  pavel
+- * Fixed minor portability problem.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:27:39  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/09/14  18:39:47  pjames
+- * Updated #includes.  Moved rcsid to bottom.
+- *
+- * Revision 1.7  1992/09/14  17:43:52  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.6  1992/09/03  16:29:24  pjames
+- * Changed to use hashing to find property definitions.
+- *
+- * Revision 1.5  1992/08/31  22:27:12  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.4  1992/08/21  00:42:43  pavel
+- * Renamed include file "parse_command.h" to "parse_cmd.h".
+- *
+- * Revision 1.3  1992/08/10  16:54:00  pjames
+- * Updated #includes.
+- *
+- * Revision 1.2  1992/07/21  00:04:40  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- * */
+diff --git a/server/md5.c b/server/md5.c
+index 8b9f9bf..f6e7bc1 100644
+--- a/server/md5.c
++++ b/server/md5.c
+@@ -320,16 +320,3 @@ md5_Final(md5ctx_t * context, uint8 digest[16])
+     /* Zeroize sensitive information */
+     memset((char *) context, 0, sizeof(*context));
+ }
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:51  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 1.1  1996/02/18  23:19:18  pavel
+- * Initial revision
+- *
+- */
+diff --git a/server/name_lookup.c b/server/name_lookup.c
+index f092494..8c5177f 100644
+--- a/server/name_lookup.c
++++ b/server/name_lookup.c
+@@ -395,27 +395,3 @@ lookup_addr_from_name(const char *name, unsigned timeout)
+ 
+ #endif				/* NETWORK_PROTOCOL == NP_TCP */
+ 
+-char rcsid_name_lookup[] =
+-    "$Id: name_lookup.c,v 1.3 1998-12-14 13:18:25 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:00  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:59:04  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  08:11:45  pavel
+- * Added missing #include of "my-stdlib.h".  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:28:09  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:27:56  pavel
+- * Initial revision
+- */
+diff --git a/server/net_bsd_lcl.c b/server/net_bsd_lcl.c
+index 6a8d486..77b73dc 100644
+--- a/server/net_bsd_lcl.c
++++ b/server/net_bsd_lcl.c
+@@ -169,47 +169,3 @@ proto_close_listener(int fd)
+     errlog("Can't find fd in PROTO_CLOSE_LISTENER!\n");
+ }
+ 
+-char rcsid_net_bsd_lcl[] =
+-    "$Id: net_bsd_lcl.c,v 1.2 1997-03-03 04:19:02 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/03/10  01:13:22  pavel
+- * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/08  06:35:21  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/31  00:00:45  pavel
+- * Added support for the new multiple-listening-points interface.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:34:57  pavel
+- * Removed old support for protocol-specific input EOL conventions.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:46:53  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/10/06  01:36:23  pavel
+- * Moved non-blocking code to net_multi.c, replacing it with code to set
+- * proto->believe_eof appropriately.
+- *
+- * Revision 1.3  1992/09/26  02:25:02  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.2  1992/09/24  00:39:47  pavel
+- * Removed useless #include's.
+- *
+- * Revision 1.1  1992/09/23  22:33:38  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_bsd_tcp.c b/server/net_bsd_tcp.c
+index 5242684..6a70318 100644
+--- a/server/net_bsd_tcp.c
++++ b/server/net_bsd_tcp.c
+@@ -360,95 +360,3 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
+ }
+ #endif				/* OUTBOUND_NETWORK */
+ 
+-char rcsid_net_bsd_tcp[] =
+-    "$Id: net_bsd_tcp.c,v 1.5 2007-11-12 11:00:18 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  2004/05/22 01:25:43  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.3.10.1  2003/06/01 12:42:30  wrog
+- * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
+- *
+- * Revision 1.3  1998/12/14 13:18:27  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:02  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/03/10  01:13:48  pavel
+- * Moved definition of DEFAULT_PORT to options.h.  Release 1.8.0.
+- *
+- * Revision 2.4  1996/02/08  06:35:55  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.3  1995/12/31  00:02:17  pavel
+- * Fixed variable name clash that led to compilation warnings.  Added support
+- * for the new multiple-listening-points interface.  Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:34:43  pavel
+- * Removed old support for protocol-specific input EOL conventions.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:42:34  pavel
+- * Added support for $server_options.name_lookup_timeout and
+- * $server_options.outbound_connect_timeout.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:46:40  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.13  1993/08/11  03:14:12  pavel
+- * -- Worked around a problem in some systems' declaration of gethostbyname().
+- * -- Changed some bogus %d's to %u's in calls to *scanf() and *printf(),
+- *    guided by warnings from GCC...
+- *
+- * Revision 1.12  1993/08/05  19:00:07  pavel
+- * Made another local variable in proto_open_connection `static' to avoid
+- * volatility warnings.
+- *
+- * Revision 1.11  1993/08/04  02:40:17  pavel
+- * Sigh.  I never will learn not to check anything in until *after* it
+- * compiles...
+- *
+- * Revision 1.10  1993/08/04  02:19:05  pavel
+- * -- Added support for better logging of outbound connections.
+- *
+- * Revision 1.9  1993/08/04  00:25:54  pavel
+- * Use strtoul() instead of strtol() for the port argument.
+- *
+- * Revision 1.8  1993/08/04  00:19:54  pavel
+- * -- Fixed declaration of variables holding TCP ports to be unsigned.
+- * -- Close server_socket if the setsockopt() fails.
+- * -- Support new `network_listen()' protocol.
+- * -- Set a timeout on outbound network connections.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.5  1992/10/17  20:43:13  pavel
+- * Changed to use "my-inet.h" rather than <arpa/inet.h>.
+- *
+- * Revision 1.4  1992/10/06  01:36:45  pavel
+- * Moved non-blocking code to net_multi.c, replacing it with code to set
+- * proto->believe_eof appropriately.
+- *
+- * Revision 1.3  1992/10/04  04:58:03  pavel
+- * Fixed #include's for declaration of inet_addr().  Also replaced INADDR_ANY
+- * by htonl(INADDR_ANY), for portability.
+- *
+- * Revision 1.2  1992/09/26  02:22:53  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.1  1992/09/23  17:14:17  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_mp_fake.c b/server/net_mp_fake.c
+index 0f43123..91a0b56 100644
+--- a/server/net_mp_fake.c
++++ b/server/net_mp_fake.c
+@@ -159,31 +159,3 @@ mplex_is_writable(int fd)
+     return (fd < rw_size) ? writable[fd] : 0;
+ }
+ 
+-char rcsid_net_mp_fake[] =
+-    "$Id: net_mp_fake.c,v 1.2 1997-03-03 04:19:03 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:36:06  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:46:24  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/23  19:38:16  pavel
+- * #includes "my-stat.h" instead of <sys/stat.h>.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/02  18:50:25  pavel
+- * Removed useless #include of log.h.
+- *
+- * Revision 1.1  1992/10/02  17:54:10  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_mp_poll.c b/server/net_mp_poll.c
+index 933fc02..f6318fa 100644
+--- a/server/net_mp_poll.c
++++ b/server/net_mp_poll.c
+@@ -103,22 +103,3 @@ mplex_is_writable(int fd)
+     return fd <= max_fd && (ports[fd].revents & POLLOUT) != 0;
+ }
+ 
+-char rcsid_net_mp_poll[] =
+-    "$Id: net_mp_poll.c,v 1.2 1997-03-03 04:19:04 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:36:15  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:46:12  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/10/03  00:52:26  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_mp_selct.c b/server/net_mp_selct.c
+index d151c03..0c34f17 100644
+--- a/server/net_mp_selct.c
++++ b/server/net_mp_selct.c
+@@ -85,29 +85,3 @@ mplex_is_writable(int fd)
+     return FD_ISSET(fd, &output);
+ }
+ 
+-char rcsid_net_mp_selct[] =
+-    "$Id: net_mp_selct.c,v 1.3 1998-12-14 13:18:28 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:04  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:36:22  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:45:48  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/10/23  19:38:51  pavel
+- * Added missing #include of my-string.h.
+- *
+- * Revision 1.1  1992/09/23  17:14:17  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_mplex.c b/server/net_mplex.c
+index d283a39..5577809 100644
+--- a/server/net_mplex.c
++++ b/server/net_mplex.c
+@@ -29,20 +29,3 @@
+ #    include "net_mp_fake.c"
+ #  endif
+ 
+-char rcsid_net_mplex[] =
+-    "$Id: net_mplex.c,v 1.2 1998-12-14 13:18:29 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:58:20  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:28:28  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:28:19  pavel
+- * Initial revision
+- */
+diff --git a/server/net_multi.c b/server/net_multi.c
+index 3460985..3136165 100644
+--- a/server/net_multi.c
++++ b/server/net_multi.c
+@@ -734,121 +734,3 @@ network_shutdown(void)
+ 	close_nlistener(all_nlisteners);
+ }
+ 
+-char rcsid_net_multi[] =
+-    "$Id: net_multi.c,v 1.6 2006-12-06 23:57:51 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.5  2005/09/29 18:46:17  bjj
+- * Add third argument to open_network_connection() that associates a specific listener object with the new connection.  This simplifies a lot of outbound connection management.
+- *
+- * Revision 1.4  2004/05/22 01:25:43  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.3.10.1  2003/06/07 12:59:04  wrog
+- * introduced connection_option macros
+- *
+- * Revision 1.3  1998/12/14 13:18:31  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:05  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.6  1996/05/12  21:29:09  pavel
+- * Fixed mis-initialization of "client-echo" option.  Release 1.8.0p5.
+- *
+- * Revision 2.5  1996/03/10  01:24:18  pavel
+- * Added support for `connection_option()'.  Fixed `unused variable'
+- * warnings for non-TCP configurations.  Release 1.8.0.
+- *
+- * Revision 2.4  1996/02/08  06:38:05  pavel
+- * Renamed err/logf() to errlog/oklog().  Added memory of client_echo setting
+- * for connection_options().  Added network_set_connection_binary() and
+- * network_connection_options().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/11  07:38:58  pavel
+- * Added support for binary I/O.  Added network_buffered_output_length().
+- * Removed a few more `unsigned' declarations.  Release 1.8.0alpha5.
+- *
+- * Revision 2.2  1995/12/31  03:24:08  pavel
+- * Moved server-full handling to server.c.  Added support for multiple
+- * listening points.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:36:05  pavel
+- * Changed input-side EOL handling to include CR, LR, and CRLF.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:45:36  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.16  1993/08/12  21:10:13  pavel
+- * Fix long-standing denial-of-service attack vulnerability due to a connection
+- * sending an essentially infinite stream of input to the server.
+- *
+- * Revision 1.15  1993/08/11  03:11:17  pavel
+- * -- Fixed a syntax error in the new support for outbound connections.
+- * -- Changed some bogus %d's to %u's in calls to *scanf() and *printf(),
+- *    guided by warnings from GCC...
+- *
+- * Revision 1.14  1993/08/04  02:21:48  pavel
+- * -- Added support for distinguishing between inbound and outbound
+- *    connections.
+- * -- Added support for better logging of outbound connections.
+- * -- Added check to connection-timeout code to exempt outbound connections.
+- *
+- * Revision 1.13  1993/08/04  01:33:04  pavel
+- * -- Added support for the BSD-style ioctl(fd, FIONBIO, ...) non-blocking I/O
+- *    protocol.  The SysV/POSIX-style fcntl(fd, F_GETFL, ...) doesn't work on
+- *    BSD sockets on some hybrid systems, including HP/UX.
+- * -- Vastly improved the clarity of the `output flushed' message users see
+- *    when their output-side network buffer overflows.
+- * -- Now accepts tab as a normal input character mapping to itself, necessary
+- *    for communicating with Gopher from the MOO.
+- * -- Fixed a =/== bug in pull_input().
+- * -- Added a log message printed when the server has to refuse a connection
+- *    because there aren't any file descriptors left.
+- * -- Added support for the new network_listen() protocol.
+- *
+- * Revision 1.12  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.11  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.10  1992/10/17  20:44:14  pavel
+- * Changed to use NONBLOCK_FLAG instead of O_NDELAY to allow of using
+- * POSIX-style non-blocking on systems where it is available.
+- *
+- * Revision 1.9  1992/10/06  18:16:36  pavel
+- * Moved non-blocking code to here from individual protocol implementations.
+- *
+- * Revision 1.8  1992/09/30  06:18:08  pavel
+- * Fixed small bug in the handling of the case where even emptying our pockets
+- * of extra file descriptors doesn't make it possible to accept a connection.
+- *
+- * Revision 1.7  1992/09/26  02:22:07  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.6  1992/09/23  17:17:36  pavel
+- * Stripped out all BSD-specific code, instead relying on the net_proto.h
+- * and net_mplex.h interfaces.
+- *
+- * Revision 1.5  1992/09/11  21:21:54  pavel
+- * Tracked change to network.h.
+- *
+- * Revision 1.4  1992/09/04  22:41:47  pavel
+- * Fixed some picky ANSI C problems with (const char *)'s.
+- *
+- * Revision 1.3  1992/08/10  17:22:45  pjames
+- * Updated #includes.
+- *
+- * Revision 1.2  1992/07/20  23:56:16  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_proto.c b/server/net_proto.c
+index 30f06f1..8e0cf5d 100644
+--- a/server/net_proto.c
++++ b/server/net_proto.c
+@@ -35,20 +35,3 @@
+ #    endif
+ #  endif
+ 
+-char rcsid_net_proto[] =
+-    "$Id: net_proto.c,v 1.2 1998-12-14 13:18:33 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:58:12  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:28:43  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  04:28:36  pavel
+- * Initial revision
+- */
+diff --git a/server/net_single.c b/server/net_single.c
+index e832f0e..f87f35b 100644
+--- a/server/net_single.c
++++ b/server/net_single.c
+@@ -224,68 +224,3 @@ network_process_io(int timeout)
+   done:
+     return got_some;
+ }
+-
+-char rcsid_net_single[] =
+-    "$Id: net_single.c,v 1.4 2006-12-06 23:57:51 wrog Exp $";
+-
+-/*
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  2004/05/22 01:25:44  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.2.12.2  2003/06/07 13:03:55  wrog
+- * deslashed log entries
+- *
+- * Revision 1.2.12.1  2003/06/07 12:59:04  wrog
+- * introduced connection_option macros
+- *
+- * Revision 1.2  1997/03/03 04:19:07  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/03/10  01:23:12  pavel
+- * Added support for `connection_option()'.  Added missing include of
+- * "utils.h".  Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/08  06:38:35  pavel
+- * Added network_set_connection_binary() and network_connection_options().
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1996/01/11  07:44:12  pavel
+- * Added support for binary I/O.  Added network_buffered_output_length().
+- * Removed one more `unsigned' from the server.  Release 1.8.0alpha5.
+- *
+- * Revision 2.1  1995/12/30  23:56:29  pavel
+- * Added support for the new multiple-listening-points interface.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:45:25  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.8  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.7  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.6  1992/10/17  20:45:28  pavel
+- * Changed to use generic support for POSIX-style non-blocking in "my-fcntl.h"
+- * instead of a separate, different version.
+- *
+- * Revision 1.5  1992/10/06  18:20:11  pavel
+- * Moved code to set stdin nonblocking out of the initialization routine and
+- * into the first time that network_process_io() is called.
+- * Also fixed up that routine to obviously return a value, circumventing a
+- * warning from dumb compilers.
+- *
+- * Revision 1.4  1992/09/26  02:21:07  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.3  1992/09/11  21:23:52  pavel
+- * Tracked change to network.h.
+- *
+- * Revision 1.2  1992/09/03  23:52:00  pavel
+- * Added RCS Id and Log strings.
+- */
+diff --git a/server/net_sysv_lcl.c b/server/net_sysv_lcl.c
+index beab696..24ccf97 100644
+--- a/server/net_sysv_lcl.c
++++ b/server/net_sysv_lcl.c
+@@ -354,65 +354,3 @@ proto_close_listener(int fd)
+     errlog("Can't find fd in PROTO_CLOSE_LISTENER!\n");
+ }
+ 
+-char rcsid_net_sysv_lcl[] =
+-    "$Id: net_sysv_lcl.c,v 1.2 1997-03-03 04:19:08 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/03/10  01:13:11  pavel
+- * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/08  06:34:28  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/30  23:59:02  pavel
+- * Added support for the new multiple-listening-points interface.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:34:29  pavel
+- * Removed old support for protocol-specific input EOL conventions.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:47:19  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1993/12/13  18:08:41  pavel
+- * -- Updated to provide new proto_listen() return value.
+- * -- Added the file name to the `creating server FIFO' message.
+- *
+- * Revision 1.9  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.8  1992/10/23  22:01:46  pavel
+- * -- #includes "my-stat.h" instead of <sys/stat.h>.
+- * -- Moved macro definition of mkfifo() to my-stat.h.
+- * -- Changed to conditionalize on POSIX_NONBLOCKING_WORKS instead of
+- *    defined(O_NONBLOCK).
+- * -- Now opens its own `write'-side port on the server FIFO, so that the
+- *    server FIFO won't always be input-ready (a read() would always
+- *    immediately return EOF if no writers existed).
+- * -- No longer assumes that fstat() shows how much data is in the FIFO.
+- *
+- * Revision 1.7  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.6  1992/10/17  20:46:04  pavel
+- * Changed to use NONBLOCK_FLAG instead of O_NDELAY to allow of using
+- * POSIX-style non-blocking on systems where it is available.
+- *
+- * Revision 1.5  1992/10/06  01:35:35  pavel
+- * Moved non-blocking code to net_multi.c, replacing it with code to set
+- * proto->believe_eof appropriately.
+- *
+- * Revision 1.4  1992/10/01  16:46:56  pavel
+- * Fixed state machine in proto_accept_connection so that a PA_FULL condition
+- * leaves things in such a state that the next call will try that same
+- * connection again.  Also added more logging of unsuccessful connection
+- * attempts.
+- *
+- * Revision 1.3  1992/09/27  19:34:14  pavel
+- * Added RCS Id and Log fields.
+- */
+diff --git a/server/net_sysv_tcp.c b/server/net_sysv_tcp.c
+index 8813db1..84a911d 100644
+--- a/server/net_sysv_tcp.c
++++ b/server/net_sysv_tcp.c
+@@ -360,83 +360,3 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
+ }
+ #endif				/* OUTBOUND_NETWORK */
+ 
+-char rcsid_net_sysv_tcp[] =
+-    "$Id: net_sysv_tcp.c,v 1.3 2004-05-22 01:25:44 wrog Exp $";
+-
+-/*
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2.12.2  2003/06/01 13:15:18  wrog
+- * Fixed log / comment braindeath
+- *
+- * Revision 1.2.12.1  2003/06/01 12:42:30  wrog
+- * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
+- *
+- * Revision 1.2  1997/03/03 04:19:09  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/03/10  01:13:36  pavel
+- * Moved definition of DEFAULT_PORT to options.h.  Release 1.8.0.
+- *
+- * Revision 2.4  1996/02/08  06:35:06  pavel
+- * Renamed err/logf() to errlog/oklog() and TYPE_NUM to TYPE_INT.  Updated
+- * copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.3  1995/12/31  00:00:56  pavel
+- * Added support for the new multiple-listening-points interface.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:34:06  pavel
+- * Removed old support for protocol-specific input EOL conventions.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:12:48  pavel
+- * Added support for $server_options.name_lookup_timeout and
+- * $server_options.outbound_connect_timeout.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:47:03  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.11  1993/10/11  19:02:14  pavel
+- * Worked around problem with a mis-declared t_open() on Solaris, where they
+- * neglected to specify `const' on the first argument.
+- *
+- * Revision 1.10  1993/08/11  03:15:44  pavel
+- * -- Worked around a problem in some systems' declaration of gethostbyname().
+- * -- Changed some bogus %d's to %u's in calls to *scanf() and *printf(),
+- *    guided by warnings from GCC...
+- *
+- * Revision 1.9  1993/08/05  19:01:03  pavel
+- * Made another local variable in proto_open_connection `static' to avoid
+- * volatility warnings.
+- *
+- * Revision 1.8  1993/08/04  02:41:03  pavel
+- * Sigh.  I never will learn not to check anything in until *after* it
+- * compiles...
+- *
+- * Revision 1.7  1993/08/04  02:19:58  pavel
+- * -- Added support for better logging of outbound connections.
+- *
+- * Revision 1.6  1993/08/04  00:25:10  pavel
+- * Use strtoul() instead of strtol() for the port argument.
+- *
+- * Revision 1.5  1993/08/04  00:22:12  pavel
+- * -- Fixed declaration of variables holding TCP ports to be unsigned.
+- * -- Support new `network_listen()' protocol.
+- * -- Set a timeout on outbound network connections.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/17  21:02:51  pavel
+- * Changed to use "my-inet.h" rather than <arpa/inet.h>.
+- * Fixed typo in OUTBOUND_NETWORK support.
+- *
+- * Revision 1.1  1992/10/06  01:38:46  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_tcp.c b/server/net_tcp.c
+index 731bb92..116f88b 100644
+--- a/server/net_tcp.c
++++ b/server/net_tcp.c
+@@ -68,17 +68,3 @@ tcp_arguments(int argc, char **argv, int *pport)
+ #endif
+     return 1;
+ }
+-
+-char rcsid_net_tcp[] =
+-    "$Id: net_tcp.c,v 1.2 2004-05-22 01:25:44 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.2.2  2003/06/10 00:14:52  wrog
+- * fixed printf warning
+- *
+- * Revision 1.1.2.1  2003/06/01 12:42:30  wrog
+- * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
+- *
+- *
+- */
+diff --git a/server/network.c b/server/network.c
+index bbbd770..cf05e38 100644
+--- a/server/network.c
++++ b/server/network.c
+@@ -137,33 +137,3 @@ network_set_connection_option(network_handle nh, const char *option, Var value)
+ }
+ */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2.10.1  2003/06/07 12:59:04  wrog
+- * introduced connection_option macros
+- *
+- * Revision 1.2  1998/12/14 13:18:35  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.0  1995/11/30  05:11:37  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/09/26  02:29:24  pavel
+- * Dyked out useless support plans for XNS protocols.
+- *
+- * Revision 1.2  1992/09/23  17:18:44  pavel
+- * Now supports the new networking architecture, switching among protocol and
+- * multiplexing-wait implementations based on settings in config.h.
+- *
+- * Revision 1.1  1992/09/03  21:09:51  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/numbers.c b/server/numbers.c
+index b6e821d..e851485 100644
+--- a/server/numbers.c
++++ b/server/numbers.c
+@@ -721,76 +721,3 @@ register_numbers(void)
+     register_function("trunc", 1, 1, bf_trunc, TYPE_FLOAT);
+ }
+ 
+-char rcsid_numbers[] =
+-    "$Id: numbers.c,v 1.4 1998-12-14 13:18:37 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/03/08 06:25:42  nop
+- * 1.8.0p6 merge by hand.
+- *
+- * Revision 1.2  1997/03/03 04:19:11  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.6  1997/03/04 04:34:06  eostrom
+- * parse_number() now trusts strtol() and strtod() more instead of
+- * parsing for "-" itself, since a bug in that led to inputs like "--5"
+- * and "-+5" being treated as valid.
+- *
+- * Revision 2.5  1996/03/19  07:15:27  pavel
+- * Fixed floatstr() to allow DBL_DIG + 4 digits.  Release 1.8.0p2.
+- *
+- * Revision 2.4  1996/03/10  01:06:49  pavel
+- * Increased the maximum precision acceptable to floatstr() by two digits.
+- * Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/18  23:16:22  pavel
+- * Made toint() accept floating-point strings.  Made floatstr() reject a
+- * negative precision argument.  Release 1.8.0beta3.
+- *
+- * Revision 2.2  1996/02/11  00:43:00  pavel
+- * Added optional implementation of matherr(), to improve floating-point
+- * exception handling on SVID3 systems.  Added `trunc()' built-in function.
+- * Release 1.8.0beta2.
+- *
+- * Revision 2.1  1996/02/08  06:58:01  pavel
+- * Added support for floating-point numbers and arithmetic and for the
+- * standard math functions.  Renamed TYPE_NUM to TYPE_INT, become_number()
+- * to become_integer().  Updated copyright notice for 1996.  Release
+- * 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:28:59  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.9  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.8  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.7  1992/10/17  20:47:26  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.6  1992/09/26  18:02:49  pavel
+- * Fixed bug whereby passing negative numbers to random() failed to evoke
+- * E_INVARG.
+- *
+- * Revision 1.5  1992/09/14  17:31:52  pjames
+- * Updated #includes.
+- *
+- * Revision 1.4  1992/09/08  22:01:42  pjames
+- * Renamed bf_num.c to numbers.c.  Added `become_number()' from bf_type.c
+- *
+- * Revision 1.3  1992/08/10  17:36:26  pjames
+- * Updated #includes.  Used new regisration method.  Add bf_sqrt();
+- *
+- * Revision 1.2  1992/07/20  23:51:47  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/objects.c b/server/objects.c
+index 68d1110..ca1c288 100644
+--- a/server/objects.c
++++ b/server/objects.c
+@@ -617,77 +617,3 @@ register_objects(void)
+ 				      TYPE_OBJ, TYPE_OBJ);
+ }
+ 
+-char rcsid_objects[] =
+-    "$Id: objects.c,v 1.4 1998-12-14 13:18:39 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.1  1997/03/20 18:07:50  bjj
+- * Add a flag to the in-memory type identifier so that inlines can cheaply
+- * identify Vars that need actual work done to ref/free/dup them.  Add the
+- * appropriate inlines to utils.h and replace old functions in utils.c with
+- * complex_* functions which only handle the types with external storage.
+- *
+- * Revision 1.2  1997/03/03 04:19:12  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/04/19  01:17:48  pavel
+- * Rationalized the errors that can be raised from chparent().
+- * Release 1.8.0p4.
+- *
+- * Revision 2.2  1996/02/08  06:55:49  pavel
+- * Renamed TYPE_NUM to TYPE_INT and become_number() to become_integer().
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  08:02:36  pavel
+- * Moved `value_bytes()' to list.c.  Added `object_bytes()'.
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:29:18  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.12  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.11  1992/10/23  22:02:24  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.10  1992/10/17  20:47:39  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.9  1992/09/14  18:40:24  pjames
+- * Updated #includes.  Moved rcsid to bottom.
+- *
+- * Revision 1.8  1992/09/14  17:32:23  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.7  1992/09/08  22:02:11  pjames
+- * Renamed bf_obj.c to objects.c
+- *
+- * Revision 1.6  1992/09/04  01:24:21  pavel
+- * Added support for the `f' (for `fertile') bit on objects.
+- *
+- * Revision 1.5  1992/09/03  16:32:24  pjames
+- * Free's propdefs using new array structure.
+- *
+- * Revision 1.4  1992/08/28  16:04:12  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- *
+- * Revision 1.3  1992/08/10  17:18:58  pjames
+- * Updated #includes.  Move bf_pass to execute.c Updated to use new
+- * registration format.  Built in functions now only receive programmer,
+- * instead of entire Parse_Info.
+- *
+- * Revision 1.2  1992/07/20  23:52:48  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/parse_cmd.c b/server/parse_cmd.c
+index 2ed465c..c07d3a9 100644
+--- a/server/parse_cmd.c
++++ b/server/parse_cmd.c
+@@ -252,72 +252,3 @@ free_parsed_command(Parsed_Command * pc)
+ }
+ 
+ 
+-char rcsid_parse_cmd[] =
+-    "$Id: parse_cmd.c,v 1.4 1998-12-14 13:18:42 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.2  1997/05/30 18:36:17  nop
+- * Oops, make sure to free words as M_STRING_PTRS, not M_STRING.  I crashed
+- * LambdaMOO for the first time with this!
+- *
+- * Revision 1.2.2.1  1997/05/20 03:01:34  nop
+- * parse_into_words was allocating pointers to strings as strings.  Predictably,
+- * the refcount prepend code was not prepared for this, causing unaligned memory
+- * access on the Alpha.  Added new M_STRING_PTRS allocation class that could
+- * be renamed to something better, perhaps.
+- *
+- * Revision 1.2  1997/03/03 04:19:14  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:55:06  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/28  00:40:37  pavel
+- * Fixed memory leak in freeing Parsed_Command structures.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:29:31  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:49:22  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.7  1992/09/14  17:30:26  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.6  1992/08/31  22:32:16  pjames
+- * Changed some `char *'s to `const char *' and fixed code accordingly.
+- *
+- * Revision 1.5  1992/08/28  16:15:47  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Changed some strref's to strdup.
+- *
+- * Revision 1.4  1992/08/20  23:49:12  pavel
+- * Moved #define MAXARGS from config.h to here, renamed to MAXWORDS.  Also
+- * changed the file name from `parse_command.c' to `parse_cmd.c', to make it
+- * easier to use on 14-character-file-name systems.
+- *
+- * Revision 1.3  1992/08/10  17:35:34  pjames
+- * Added find_verb() which doesn't fill in a Parse_Info, just returns
+- * information about the verb.
+- *
+- * Revision 1.2  1992/07/21  00:04:53  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/pattern.c b/server/pattern.c
+index b850f07..784766f 100644
+--- a/server/pattern.c
++++ b/server/pattern.c
+@@ -172,28 +172,3 @@ free_pattern(Pattern p)
+     }
+ }
+ 
+-char rcsid_pattern[] = "$Id";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/03/03 07:04:01  bjj
+- * fastmap is mymalloc'd, so myfree it
+- *
+- * Revision 1.2  1997/03/03 04:19:16  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/05/12  21:33:02  pavel
+- * Fixed memory leak in case of a malformed pattern.  Release 1.8.0p5.
+- *
+- * Revision 2.1  1996/02/08  06:54:40  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:03:32  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:03:24  pavel
+- * Initial revision
+- */
+diff --git a/server/program.c b/server/program.c
+index 6408f20..bf553e6 100644
+--- a/server/program.c
++++ b/server/program.c
+@@ -112,62 +112,3 @@ free_program(Program * p)
+     }
+ }
+ 
+-char rcsid_program[] =
+-    "$Id: program.c,v 1.6 2006-09-07 00:55:02 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.5  1998/12/14 13:18:48  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1997/07/07 03:24:54  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.3.2.1  1997/06/05 09:00:00  bjj
+- * Cache one pc/lineno pair with each Program.  Hopefully most programs that
+- * fail multiple times usually do it on the same line!
+- *
+- * Revision 1.3  1997/03/08 06:25:42  nop
+- * 1.8.0p6 merge by hand.
+- *
+- * Revision 1.2  1997/03/03 04:19:17  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1997/03/04 04:36:18  eostrom
+- * Fixed memory leak in free_program().
+- *
+- * Revision 2.3  1996/04/08  00:41:16  pavel
+- * Corrected an error in the computation of `program_bytes()'.
+- * Release 1.8.0p3.
+- *
+- * Revision 2.2  1996/02/08  06:54:31  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  08:04:20  pavel
+- * Added `null_program()' and `program_bytes()'.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:29:58  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/08/28  16:17:41  pjames
+- * Changed `ak_dealloc_string()' to `free_str()'.
+- *
+- * Revision 1.4  1992/08/10  16:54:22  pjames
+- * Updated #includes.
+- *
+- * Revision 1.3  1992/07/27  18:16:27  pjames
+- * Changed name of ct_env to var_names, const_env to literals, and
+- * f_vectors to fork_vectors.
+- *
+- * Revision 1.2  1992/07/21  00:05:45  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/property.c b/server/property.c
+index 6409cc8..65ae844 100644
+--- a/server/property.c
++++ b/server/property.c
+@@ -332,74 +332,3 @@ register_property(void)
+ 			     TYPE_OBJ, TYPE_STR);
+ }
+ 
+-char rcsid_property[] =
+-    "$Id: property.c,v 1.4 2008-08-20 04:25:23 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:18:50  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:18  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/11  00:44:45  pavel
+- * Fixed potential panic in clear_property() when called on the definer of the
+- * property in question.  Release 1.8.0beta2.
+- *
+- * Revision 2.2  1996/02/08  06:54:18  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  07:53:03  pavel
+- * Added support for renaming properties.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:30:40  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.12  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.11  1992/09/14  18:39:04  pjames
+- * Updated #includes.  Moved rcsid to bottom.
+- *
+- * Revision 1.10  1992/09/14  17:42:25  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.9  1992/09/08  22:05:03  pjames
+- * changed `register_bf_prop()' to `register_property()'
+- *
+- * Revision 1.8  1992/09/04  22:41:36  pavel
+- * Fixed some picky ANSI C problems with (const char *)'s.
+- *
+- * Revision 1.7  1992/09/04  01:16:50  pavel
+- * Added support for the `f' (for `fertile') bit on objects.
+- *
+- * Revision 1.6  1992/09/03  16:28:46  pjames
+- * Added `new_propdef()' and `str_hash()' for hash-lookup of properties.
+- * Changed code to handle new representation of property definitions (arrays).
+- * Added TYPE_CLEAR handling.
+- * Added built-in functions `clear_property()' and `is_clear_property()'.
+- *
+- * Revision 1.5  1992/08/31  22:25:39  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.4  1992/08/28  16:18:45  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Changed some strref's to strdup.
+- * Changed vardup to varref.
+- *
+- * Revision 1.3  1992/08/10  17:41:48  pjames
+- * Moved get_bi_prop, get_prop, set_bi_prop, and put_prop from execute.c.
+- *
+- * Revision 1.2  1992/07/21  00:06:01  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/quota.c b/server/quota.c
+index 96f0b7d..f9f9741 100644
+--- a/server/quota.c
++++ b/server/quota.c
+@@ -66,38 +66,3 @@ incr_quota(Objid player)
+     db_set_property_value(h, v);
+ }
+ 
+-char rcsid_quota[] = "$Id: quota.c,v 1.3 1998-12-14 13:18:51 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:19  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:54:04  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:30:55  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/09/14  17:43:25  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.3  1992/08/10  16:54:57  pjames
+- * Updated #includes.
+- *
+- * Revision 1.2  1992/07/21  00:06:18  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/ref_count.c b/server/ref_count.c
+index 098d7c7..ff8af96 100644
+--- a/server/ref_count.c
++++ b/server/ref_count.c
+@@ -208,47 +208,3 @@ delref(const void *p)
+     return ll_delete_value(&(ref_table[index]), p);
+ }
+ #endif
+-
+-char rcsid_ref_count[] =
+-    "$Id: ref_count.c,v 1.4 1998-12-14 13:18:54 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.1  1997/03/20 18:59:24  bjj
+- * Allocate refcounts with objects that can be addref()'d (strings, lists,
+- * floats).  Use macros to manipulate those counts.  This completely replaces
+- * the external hash table addref and friends.
+- *
+- * Revision 1.2  1997/03/03 04:19:21  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:53:33  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:31:09  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/23  22:21:58  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/09/08  21:54:40  pjames
+- * Fixed #includes.
+- *
+- * Revision 1.2  1992/09/03  16:22:25  pjames
+- * Cleaned up ll_insert code.  Changed when table will re-hash.
+- *
+- * Revision 1.1  1992/08/28  16:31:45  pjames
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/regexpr.c b/server/regexpr.c
+index 6dd0f3c..ae432a2 100644
+--- a/server/regexpr.c
++++ b/server/regexpr.c
+@@ -1726,30 +1726,3 @@ main()
+ 
+ #endif				/* TEST_REGEXP */
+ 
+-/* RCS stuff added for LambdaMOO */
+-
+-char rcsid_regexpr[] = "$Id";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  2001/03/12 03:41:24  bjj
+- * fix ambiguous else with braces
+- *
+- * Revision 1.3  1998/12/14 13:18:56  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:22  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1995/12/28  00:45:35  pavel
+- * Fixed memory leak on failure-stack growth.  Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  05:38:08  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:37:55  pavel
+- * Initial revision
+- */
+diff --git a/server/server.c b/server/server.c
+index c979d6c..ab787e8 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -2011,181 +2011,3 @@ register_server(void)
+ 		      TYPE_OBJ);
+     register_function("chr", 1, 1, bf_chr, TYPE_INT);
+ }
+-
+-char rcsid_server[] =
+-    "$Id: server.c,v 1.12 2007-06-02 21:34:36 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.11  2007/05/29 12:21:47  wrog
+- * fixes server panic (or lost messages) caused by attempting to write to freed network handle during #0:user_reconnected; removes the one case where server and network handles were not being freed together
+- *
+- * Revision 1.10  2006/11/21 18:42:37  pschwan
+- * b=1500775
+- * fixes two use-after-free bugs that could lead very rarely to
+- * calling the wrong functions during player connection
+- *
+- * Revision 1.9  2005/09/29 18:46:18  bjj
+- * Add third argument to open_network_connection() that associates a specific listener object with the new connection.  This simplifies a lot of outbound connection management.
+- *
+- * Revision 1.8  2004/05/25 07:28:55  wrog
+- * indentation fixes
+- *
+- * Revision 1.7  2004/05/22 01:25:44  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.5.10.4  2004/05/21 23:02:56  wrog
+- * NP_SINGLE needs to have stdout stay open
+- *
+- * Revision 1.5.10.3  2004/05/20 19:57:11  wrog
+- * fixed flushing issues w.r.t. emergency mode;
+- * close stdout and stderr when we are not using them
+- *
+- * Revision 1.6  2003/06/12 18:16:56  bjj
+- * Suspend input on connection until :do_login_command() can run.
+- *
+- * Revision 1.5.10.2  2003/06/11 10:40:16  wrog
+- * added binary argument to new_input_task()
+- *
+- * Revision 1.5.10.1  2003/06/07 12:59:04  wrog
+- * introduced connection_option macros
+- *
+- * Revision 1.5  1998/12/29 06:56:32  nop
+- * Fixed leak in onc().
+- *
+- * Revision 1.4  1998/12/14 13:18:57  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/03/03 05:03:52  nop
+- * steak2: move protectedness into builtin struct, load_server_options()
+- * now required for $server_options updates.
+- *
+- * Revision 1.2  1997/03/03 04:19:24  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.11  1996/05/12  21:26:10  pavel
+- * Slightly cleaned up some code in bf_shutdown().  Release 1.8.0p5.
+- *
+- * Revision 2.10  1996/04/08  01:01:19  pavel
+- * Made get_server_option() public.  Added `-l LOGFILE' option.  Slightly
+- * reordered the start-up sequence to more frequently avoid writing into the
+- * log when the server is about to abort anyway.  Release 1.8.0p3.
+- *
+- * Revision 2.9  1996/03/19  07:10:10  pavel
+- * Changed connect timeout handling to use an in-DB server option.  Fixed
+- * task_id() in emergency-mode evals.  Moved built-in function registration to
+- * happen after the start-up messages.  Release 1.8.0p2.
+- *
+- * Revision 2.8  1996/03/10  01:10:50  pavel
+- * Added `connection_option()' built-in function.  Made argument to
+- * shutdown() optional.  Release 1.8.0.
+- *
+- * Revision 2.7  1996/02/11  00:49:03  pavel
+- * Made connection messages come from properties on LISTENER.server_options,
+- * if defined.  Enhanced the robustness of the system-option-fetching code in
+- * the face of invalid objects.  Release 1.8.0beta2.
+- *
+- * Revision 2.6  1996/02/08  06:53:21  pavel
+- * Added `list' and `disassemble' commands to emergency wizard mode.  Now
+- * ignore SIGFPE.  Added support for tasks-module connection options.  Added
+- * connection_options() function.  Renamed err/logf() to errlog/oklog() and
+- * TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.5  1996/01/16  07:25:25  pavel
+- * Fixed uninitialized-variable bug in `program' in emergency wizard mode.
+- * Release 1.8.0alpha6.
+- *
+- * Revision 2.4  1996/01/11  07:36:41  pavel
+- * Added CHKPT_FUNC reason, missing forever.  Added support for binary I/O.
+- * Added calls to $user_disconnected() on timeout and for booted un-logged-in
+- * connections.  Added buffered_output_length() built-in.
+- * Release 1.8.0alpha5.
+- *
+- * Revision 2.3  1995/12/31  00:06:00  pavel
+- * Added support for the new multiple-listening-points interface, including
+- * listen(), unlisten(), and listeners().  Allowed DB-configurable messages to
+- * be given as lists of strings.  Suppressed DB-configurable messages to
+- * outbound connections.  Moved server-full handling to here from net_multi.c,
+- * also making the message DB-configurable.    Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:33:08  pavel
+- * Added db_disk_size() built-in.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:41:12  pavel
+- * Fixed checkpoint timing to test for overflow when adding $dump_interval to
+- * the current time.  Added an optional argument to `connected_players()' to
+- * include even un-logged-in or outbound connections.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:31:19  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.19  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.18  1992/10/23  22:22:24  pavel
+- * Change to #include "my-wait.h" instead of <sys/wait.h>.
+- *
+- * Revision 1.17  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.16  1992/10/17  20:52:15  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.15  1992/10/02  00:01:28  pavel
+- * Fixed a bug in the main loop whereby external shutdown requests (e.g., the
+- * interrupt signal) might not be noticed until some user I/O or a task
+- * execution occurred.
+- *
+- * Revision 1.14  1992/09/26  02:26:20  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.13  1992/09/15  15:53:00  pjames
+- * Renamed FLUSH choices.
+- *
+- * Revision 1.12  1992/09/14  17:46:16  pjames
+- * Moved db_modification code to db modules.
+- * Added set up for disk based data base updating.
+- *
+- * Revision 1.11  1992/09/08  22:08:56  pjames
+- * Added all code from bf_server.c.
+- *
+- * Revision 1.10  1992/09/03  23:52:33  pavel
+- * Added support for multiple complete network implementations.
+- *
+- * Revision 1.9  1992/08/28  16:01:04  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- *
+- * Revision 1.8  1992/08/26  18:30:45  pavel
+- * Dump interval and retry interval are now local integers.
+- * Changed logic in regards to using POSIX.
+- *
+- * Revision 1.7  1992/08/13  21:28:11  pjames
+- * Now only calls one procedure to register built in functions.
+- *
+- * Revision 1.6  1992/08/12  01:50:42  pjames
+- * run_ready_tasks() was moved to before logoff actions, so that logoffs
+- * would happen faster.
+- *
+- * Revision 1.5  1992/08/10  16:55:31  pjames
+- * Updated #includes.  Added register_bf_log().
+- *
+- * Revision 1.4  1992/07/30  23:22:26  pavel
+- * Added a remote checkpoint-request signal (SIGUSR2), analogous to the existing
+- * shutdown-requestion signal (SIGUSR1).
+- *
+- * Revision 1.3  1992/07/30  00:40:59  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.2  1992/07/21  00:06:27  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/storage.c b/server/storage.c
+index 3be6da3..d46c252 100644
+--- a/server/storage.c
++++ b/server/storage.c
+@@ -230,99 +230,3 @@ memory_usage(void)
+     return r;
+ }
+ 
+-char rcsid_storage[] =
+-    "$Id: storage.c,v 1.6 2006-09-07 00:55:02 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.5  1998/12/14 13:18:59  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.3.2.3  1997/05/29 20:47:32  nop
+- * Stupid hack to allow non-gcc compilers to use -Dinline= to make the server
+- * compile.
+- *
+- * Revision 1.3.2.2  1997/03/21 15:19:23  bjj
+- * add myrealloc interface, inline free_str
+- *
+- * Revision 1.3.2.1  1997/03/20 18:59:26  bjj
+- * Allocate refcounts with objects that can be addref()'d (strings, lists,
+- * floats).  Use macros to manipulate those counts.  This completely replaces
+- * the external hash table addref and friends.
+- *
+- * Revision 1.3  1997/03/03 06:32:10  bjj
+- * str_dup("") now returns the same empty string to every caller
+- *
+- * Revision 1.2  1997/03/03 04:19:26  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:51:20  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:31:30  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.16  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.15  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.14  1992/10/17  20:52:37  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.13  1992/09/14  18:38:42  pjames
+- * Updated #includes.  Moved rcsid to bottom.
+- *
+- * Revision 1.12  1992/09/14  17:41:16  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.11  1992/09/03  16:26:29  pjames
+- * Added TYPE_CLEAR handling.
+- * Changed property definition manipulating to work with arrays.
+- *
+- * Revision 1.10  1992/08/31  22:25:27  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.9  1992/08/28  16:21:13  pjames
+- * Changed vardup to varref.
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Added `strref()' and `free_str()'
+- *
+- * Revision 1.8  1992/08/21  00:42:18  pavel
+- * Renamed include file "parse_command.h" to "parse_cmd.h".
+- *
+- * Changed to conditionalize on the option USE_GNU_MALLOC instead of
+- * USE_SYSTEM_MALLOC.
+- *
+- * Removed use of worthless constant DB_INITIAL_SIZE, defined in config.h.
+- *
+- * Revision 1.7  1992/08/14  00:00:45  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.6  1992/08/10  16:52:45  pjames
+- * Updated #includes.
+- *
+- * Revision 1.5  1992/07/30  21:23:10  pjames
+- * Casted malloc to (void *) because of a problem with some system.
+- *
+- * Revision 1.4  1992/07/27  19:05:18  pjames
+- * Removed a debugging statement.
+- *
+- * Revision 1.3  1992/07/27  18:17:41  pjames
+- * Changed name of ct_env to var_names and M_CT_ENV to M_NAMES.
+- *
+- * Revision 1.2  1992/07/21  00:06:38  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/streams.c b/server/streams.c
+index b377dfd..0057108 100644
+--- a/server/streams.c
++++ b/server/streams.c
+@@ -235,52 +235,3 @@ stream_length(Stream * s)
+     return s->current;
+ }
+ 
+-char rcsid_streams[] =
+-    "$Id: streams.c,v 1.4 2006-12-06 23:57:51 wrog Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:19:01  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:28  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/03/19  07:14:02  pavel
+- * Fixed default printing of floating-point numbers.  Release 1.8.0p2.
+- *
+- * Revision 2.4  1996/03/11  23:33:04  pavel
+- * Added support for hexadecimal to stream_printf().  Release 1.8.0p1.
+- *
+- * Revision 2.3  1996/03/10  01:04:38  pavel
+- * Increased the precision of printed floating-point numbers by two digits.
+- * Release 1.8.0.
+- *
+- * Revision 2.2  1996/02/08  06:50:39  pavel
+- * Added support for %g conversion in stream_printf().  Renamed err/logf() to
+- * errlog/oklog().  Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1996/01/11  07:43:01  pavel
+- * Added support for `%o' to stream_printf().  Release 1.8.0alpha5.
+- *
+- * Revision 2.0  1995/11/30  04:31:43  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/08/10  16:52:24  pjames
+- * Updated #includes.
+- *
+- * Revision 1.2  1992/07/21  00:06:51  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/sym_table.c b/server/sym_table.c
+index 4bd5b24..bbbe9bf 100644
+--- a/server/sym_table.c
++++ b/server/sym_table.c
+@@ -148,59 +148,3 @@ free_names(Names * names)
+     myfree(names, M_NAMES);
+ }
+ 
+-char rcsid_sym_table[] =
+-    "$Id: sym_table.c,v 1.3 1998-12-14 13:19:05 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:29  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/03/10  01:16:32  pavel
+- * Removed a bunch of obsolete unused functions.  Release 1.8.0.
+- *
+- * Revision 2.1  1996/02/08  06:49:24  pavel
+- * Made new_builtin_names() and first_user_slot() version-dependent.  Renamed
+- * TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:31:53  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:54:04  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.7  1992/09/08  21:58:33  pjames
+- * Updated #includes.
+- *
+- * Revision 1.6  1992/08/31  22:24:18  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.5  1992/08/28  16:07:24  pjames
+- * Changed vardup to varref.
+- * Changed some strref's to strdup.
+- * Changed myfree(*, M_STRING) to free_str(*).
+- *
+- * Revision 1.4  1992/08/10  16:50:28  pjames
+- * Updated #includes.
+- *
+- * Revision 1.3  1992/07/27  18:23:48  pjames
+- * Changed M_CT_ENV to M_NAMES.  Freed some memory that wasn't being
+- * freed when growing or freeing a list of names.
+- *
+- * Revision 1.2  1992/07/21  00:07:06  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/tasks.c b/server/tasks.c
+index c97209f..7a104e6 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -2528,200 +2528,3 @@ register_tasks(void)
+ 		      TYPE_ANY);
+ }
+ 
+-char rcsid_tasks[] = "$Id: tasks.c,v 1.14 2006-09-07 00:55:02 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.13  2004/05/28 07:53:32  wrog
+- * added "intrinsic-commands" connection option
+- *
+- * Revision 1.12  2004/05/22 01:25:44  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.10.2.5  2004/05/20 19:40:32  wrog
+- * fixed force_input(,,1) bug
+- *
+- * Revision 1.11  2003/06/12 18:16:56  bjj
+- * Suspend input on connection until :do_login_command() can run.
+- *
+- * Revision 1.10.2.4  2003/06/11 10:57:27  wrog
+- * fixed  non-blocking read() to only grab inband lines
+- * fixed "hold-input" to not hold up out-of-band lines
+- * fixed out-of-band line handling to not mess with binary input lines
+- * implemented quoting with OUT_OF_BAND_QUOTE_PREFIX
+- * TASK_INPUT differentiates into TASK_INBAND/OOB/QUOTED/BINARY
+- * input queue is now doubly threaded so that one can dequeue first available (non-)TASK_OOB even if it's not at the front
+- * new connection option "disable-oob"
+- *
+- * Revision 1.10.2.3  2003/06/07 14:34:14  wrog
+- * removed dequeue_any_task()
+- *
+- * Revision 1.10.2.2  2003/06/07 12:59:04  wrog
+- * introduced connection_option macros
+- *
+- * Revision 1.10.2.1  2003/06/04 21:28:59  wrog
+- * removed useless arguments from resume_from_previous_vm(), do_forked_task();
+- * replaced current_task_kind with is_fg argument for do_task();
+- * made enum task_kind internal to tasks.c
+- *
+- * Revision 1.10  2002/09/15 23:21:01  xplat
+- * GNU indent normalization.
+- *
+- * Revision 1.9  2001/07/31 06:33:22  bjj
+- * Fixed some bugs in the reporting of forked task sizes.
+- *
+- * Revision 1.8  2001/07/27 23:06:20  bjj
+- * Run through indent, oops.
+- *
+- * Revision 1.7  2001/07/27 07:29:44  bjj
+- * Add a 10th list element to queued_task() entries with the size in bytes
+- * of the forked or suspended task.
+- *
+- * Revision 1.6  2001/03/12 03:25:17  bjj
+- * Added new package type BI_KILL which kills the task calling the builtin.
+- * Removed the static int task_killed in execute.c which wa tested on every
+- * loop through the interpreter to see if the task had been killed.
+- *
+- * Revision 1.5  1998/12/14 13:19:07  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.3.2.3  1998/12/06 07:13:22  bjj
+- * Rationalize enqueue_forked_task interface and fix program_ref leak in
+- * the case where fork fails with E_QUOTA.  Make .queued_task_limit=0 really
+- * enforce a limit of zero tasks (for old behavior set it to 1, that's the
+- * effect it used to have).
+- * 
+- * Revision 1.3.2.2  1998/11/23 01:10:55  bjj
+- * Fix a server crash when force_input() fills the input queue of an
+- * unconnected object.  No observable behavior has changed.
+- *
+- * Revision 1.3.2.1  1997/05/21 03:41:34  bjj
+- * Fix a memleak when a forked task was killed before it ever started.
+- *
+- * Revision 1.3  1997/03/08 06:25:43  nop
+- * 1.8.0p6 merge by hand.
+- *
+- * Revision 1.2  1997/03/03 04:19:31  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.9  1997/03/04 04:39:48  eostrom
+- * Fixed uninitialized handler slot in find_tqueue.
+- *
+- * Revision 2.8  1996/04/08  01:03:04  pavel
+- * Fixed panic when input was processed for an invalid positive object.
+- * Fixed panic when input would `log in' an unconnected negative object.
+- * Added `flush_input()' built-in.  Release 1.8.0p3.
+- *
+- * Revision 2.7  1996/03/19  07:08:10  pavel
+- * Added run_server_program_task() for use from emergency mode.
+- * Release 1.8.0p2.
+- *
+- * Revision 2.6  1996/03/10  01:14:46  pavel
+- * Added support for `connection_option()'.  Release 1.8.0.
+- *
+- * Revision 2.5  1996/02/08  06:48:21  pavel
+- * Added support for flushing unread input and new force_input() function.
+- * Replaced set_input_task_holding() with support for tasks-module connection
+- * options.  Fixed bug in resuming tasks with a new value.  Renamed err/logf()
+- * to errlog/oklog() and TYPE_NUM to TYPE_INT.  Updated copyright notice for
+- * 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.4  1996/01/11  07:29:57  pavel
+- * Made task_id() the same in $do_command() and subsequent built-in command
+- * parser task.  Removed squelching of commands from disconnected users.
+- * Release 1.8.0alpha5.
+- *
+- * Revision 2.3  1995/12/31  03:21:16  pavel
+- * Added support for multiple listening points.  Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:56:38  pavel
+- * Changed use of INT_MAX to INT32_MAX.  Added null support for
+- * MOO-compilation warnings during `.program'.  Updated verb-lookup in
+- * `.program' to allow for suppression of old numeric-string support.  Fixed
+- * memory leaks in forked-task verb names loaded from disk.  Added location
+- * information for MOO-compilation errors and warnings during DB load of
+- * queued tasks.  Removed extra, interfering handling for reading
+- * suspended-task resumption values from the DB file.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:47:07  pavel
+- * Added OUTPUTPREFIX and OUTPUTSUFFIX as synonyms for the built-in PREFIX and
+- * SUFFIX commands.  Removed another foolish use of `unsigned'.  Added support
+- * for suspending forever.  Accounted for verb programs never being NULL any
+- * more.  Fixed support for saving and restoring the resumption value of a
+- * suspended task.  Added `find_suspended_task()' for use by `task_stack()'.
+- * Added `resume()' built-in function.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:32:10  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.16  1992/10/27  06:23:03  pavel
+- * Fixed bugs whereby kill_task() and queued_tasks() would miss reading tasks
+- * for which no input was currently available (i.e., in members of
+- * empty_tqueues).
+- *
+- * Revision 1.15  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.14  1992/10/23  22:22:38  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.13  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.12  1992/10/17  20:54:19  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.11  1992/09/14  17:40:22  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.10  1992/09/08  21:57:11  pjames
+- * Inserted all procedures from bf_task.c
+- *
+- * Revision 1.9  1992/09/02  18:39:49  pavel
+- * Fixed bug whereby read()ing tasks are never resumed if the connection being
+- * read is dropped while they're waiting for new input.
+- *
+- * Revision 1.8  1992/08/31  22:24:03  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.7  1992/08/28  16:06:01  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Changed some strref's to strdup.
+- *
+- * Revision 1.6  1992/08/21  00:39:11  pavel
+- * Renamed include file "parse_command.h" to "parse_cmd.h".
+- *
+- * Added output to player on each use of `.program' declaring that command to
+- * be obsolete.
+- *
+- * Added check for `out of band' commands, which bypass both normal command
+- * parsing and any read()ing task to become server tasks invoking
+- * #0:do_out_of_band_command(@word-list), for use by fancy clients to
+- * communicate with the server despite the player's current state.
+- *
+- * Revision 1.5  1992/08/12  01:51:16  pjames
+- * Copied verb and verbname when creating a forked_task.
+- *
+- * Revision 1.4  1992/08/10  16:50:03  pjames
+- * Updated #includes.  Changed forked_task data structure to hold an
+- * activation instead of a Parse_Info, and all manipulation of
+- * forked_task.pi now uses correct fields from forked_task.a;
+- *
+- * Revision 1.3  1992/07/27  18:24:33  pjames
+- * Change ct_env_size to num_var_names.
+- *
+- * Revision 1.2  1992/07/21  00:07:17  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/timers.c b/server/timers.c
+index 3208f46..3cd8fb9 100644
+--- a/server/timers.c
++++ b/server/timers.c
+@@ -300,52 +300,3 @@ reenable_timers(void)
+ #endif
+ }
+ 
+-char rcsid_timers[] = "$Id: timers.c,v 1.4 2002-08-16 03:00:44 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:19:09  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:33  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:43:56  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:41:20  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.9  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.8  1992/10/23  22:24:08  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.7  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.6  1992/10/17  21:01:52  pavel
+- * #undef'd ITIMER_VIRTUAL on CMU MACH because it apparently doesn't work on
+- * that system.
+- * Added an #ifdef of ITIMER_VIRTUAL around the virtual_wakeup_call()
+- * signal-handler.
+- *
+- * Revision 1.5  1992/09/22  22:48:59  pavel
+- * Added missing #include of "config.h".
+- *
+- * Revision 1.4  1992/08/21  00:45:29  pavel
+- * Changed to conditionalize on the option AVOID_POSIX rather than USE_POSIX.
+- *
+- * Revision 1.3  1992/07/30  00:42:45  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.2  1992/07/21  00:07:26  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/unparse.c b/server/unparse.c
+index 6fb624f..b9b1cb9 100644
+--- a/server/unparse.c
++++ b/server/unparse.c
+@@ -732,100 +732,3 @@ unparse_to_stderr(Program * p, int fully_parenthesize, int indent_lines,
+     unparse_to_file(stderr, p, fully_parenthesize, indent_lines, f_index);
+ }
+ 
+-char rcsid_unparse[] =
+-    "$Id: unparse.c,v 1.3 1998-12-14 13:19:12 nop Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:34  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/02/18  23:21:00  pavel
+- * Fixed unparsing of expression `X.Y', where X is an integer, to add a space
+- * before the dot to keep it from looking like a floating-point literal.
+- * Release 1.8.0beta3.
+- *
+- * Revision 2.4  1996/02/08  06:43:40  pavel
+- * Added support for E_FLOAT, exponentiation expression, named WHILE loop,
+- * BREAK and CONTINUE statements.  Added unparse_to_file() and
+- * unparse_to_stderr().  Renamed err/logf() to errlog/oklog().  Updated
+- * copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/16  07:13:16  pavel
+- * Add EXPR_SCATTER handling.  Release 1.8.0alpha6.
+- *
+- * Revision 2.2  1995/12/31  03:13:56  pavel
+- * Added EXPR_LENGTH case to unparse_expr().  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/11  07:56:52  pavel
+- * Added support for `$foo(...)' syntax.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:43:14  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.18  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.17  1992/10/23  22:23:09  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.16  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.15  1992/10/17  20:56:00  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.14  1992/09/23  01:15:05  pjames
+- * Now prints out hot PC and fork_vector for non-found linenumbers.
+- *
+- * Revision 1.13  1992/09/23  01:00:45  pjames
+- * When get_lineno doesn't find a linenumber, all program info is put
+- * into the errlog.
+- *
+- * Revision 1.12  1992/09/23  00:22:09  pavel
+- * Fixed up missing RCS change log.
+- *
+- * Revision 1.11  1992/09/04  01:23:50  pavel
+- * Added support for the `f' (for `fertile') bit on objects.
+- *
+- * Revision 1.10  1992/08/31  22:24:49  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.9  1992/08/28  23:17:52  pjames
+- * Added ASGN_RANGE unparsing code.
+- * Changed OP_LISTSET to OP_INDEXSET.
+- *
+- * Revision 1.8  1992/08/28  16:19:59  pjames
+- * Changed vardup to varref.
+- *
+- * Revision 1.7  1992/08/14  00:26:51  pavel
+- * Fixed missing `static' in declarations of stmt2ast and expr2ast.
+- *
+- * Revision 1.6  1992/08/12  01:52:17  pjames
+- * Optimized negative numbers are now translated to negative literals,
+- * instead of negated positive literals.
+- *
+- * Revision 1.5  1992/08/10  16:41:46  pjames
+- * Changed ip to pc.  Updated #includes.
+- *
+- * Revision 1.4  1992/07/30  21:28:42  pjames
+- * Completely redone.  Converts Bytecodes to AST, then using code from
+- * version 1.3 of the server, computes the line number or generates
+- * source code.
+- *
+- * Revision 1.3  1992/07/27  18:15:06  pjames
+- * Changed name of ct_env to var_names, const_env to literals, and
+- * f_vectors to fork_vectors.
+- *
+- * Revision 1.2  1992/07/21  00:07:36  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/utils.c b/server/utils.c
+index 9758324..7066b17 100644
+--- a/server/utils.c
++++ b/server/utils.c
+@@ -442,121 +442,3 @@ binary_to_raw_bytes(const char *binary, int *buflen)
+     return reset_stream(s);
+ }
+ 
+-char rcsid_utils[] = "$Id: utils.c,v 1.8 2006-09-07 00:55:02 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.7  2002/08/18 09:47:26  bjj
+- * Finally made free_activation() take a pointer after noticing how !$%^&
+- * much time it was taking in a particular profiling run.
+- *
+- * Revision 1.5  1999/08/09 02:36:33  nop
+- * Shortcut various equality tests if we have pointer equality.
+- *
+- * Revision 1.4  1998/12/14 13:19:14  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.3  1997/03/21 15:11:22  bjj
+- * add var_refcount interface
+- *
+- * Revision 1.2.2.2  1997/03/21 14:29:03  bjj
+- * Some code bumming in complex_free_var (3rd most expensive function!)
+- *
+- * Revision 1.2.2.1  1997/03/20 18:07:48  bjj
+- * Add a flag to the in-memory type identifier so that inlines can cheaply
+- * identify Vars that need actual work done to ref/free/dup them.  Add the
+- * appropriate inlines to utils.h and replace old functions in utils.c with
+- * complex_* functions which only handle the types with external storage.
+- *
+- * Revision 1.2  1997/03/03 04:19:36  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.8  1996/04/08  00:43:09  pavel
+- * Changed definition of `value_bytes()' to add in `sizeof(Var)'.
+- * Release 1.8.0p3.
+- *
+- * Revision 2.7  1996/03/11  23:34:41  pavel
+- * Changed %X to %x in a stream_printf call, since I don't want to support
+- * both upper- and lower-case.  Release 1.8.0p1.
+- *
+- * Revision 2.6  1996/03/10  01:14:16  pavel
+- * Change the format of binary strings to use hex instead of octal.
+- * Release 1.8.0.
+- *
+- * Revision 2.5  1996/02/08  06:41:04  pavel
+- * Added support for floating-point.  Moved compare_ints() to numbers.c.
+- * Renamed err/logf() to errlog/oklog() and TYPE_NUM to TYPE_INT.  Updated
+- * copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.4  1996/01/16  07:24:48  pavel
+- * Removed special format for `~' in binary strings.  Release 1.8.0alpha6.
+- *
+- * Revision 2.3  1996/01/11  07:40:01  pavel
+- * Added raw_bytes_to_binary() and binary_to_raw_bytes(), in support of binary
+- * I/O facilities.  Release 1.8.0alpha5.
+- *
+- * Revision 2.2  1995/12/28  00:38:54  pavel
+- * Neatened up implementation of case-folding string comparison functions.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:09:31  pavel
+- * Account for newly-clarified reference-counting behavior for built-in
+- * properties.  Add `value_bytes()' from elsewhere.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:43:24  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.13  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.12  1992/10/23  22:23:18  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.11  1992/10/17  20:57:08  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- * Removed useless #ifdef of STRCASE.
+- *
+- * Revision 1.10  1992/09/14  17:39:53  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.9  1992/09/08  21:55:47  pjames
+- * Updated #includes.
+- *
+- * Revision 1.8  1992/09/03  16:23:49  pjames
+- * Make cmap[] visible.  Added TYPE_CLEAR handling.
+- *
+- * Revision 1.7  1992/08/28  16:23:41  pjames
+- * Changed vardup to varref.
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Added `varref()'.
+- * Changed `free_var()' to check `delref()' before freeing.
+- * Removed `copy_pi()'.
+- *
+- * Revision 1.6  1992/08/18  00:54:40  pavel
+- * Fixed typo.
+- *
+- * Revision 1.5  1992/08/18  00:41:14  pavel
+- * Fixed boundary-condition bugs in index() and rindex(), when the search string
+- * is empty.
+- *
+- * Revision 1.4  1992/08/11  17:26:56  pjames
+- * Removed read/write Parse_Info procedures.
+- *
+- * Revision 1.3  1992/08/10  16:40:20  pjames
+- * Added is_true (from execute.c) and *_activ_as_pi routines.  Added a
+- * check for null parse_info in write_pi, because parse_infos are no
+- * longer stored in each activation.
+- *
+- * Revision 1.2  1992/07/21  00:07:48  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/verbs.c b/server/verbs.c
+index 96d296b..7ce34e9 100644
+--- a/server/verbs.c
++++ b/server/verbs.c
+@@ -582,106 +582,3 @@ register_verbs(void)
+     register_function("eval", 1, 1, bf_eval, TYPE_STR);
+ }
+ 
+-char rcsid_verbs[] = "$Id: verbs.c,v 1.5 2008-08-20 04:25:23 bjj Exp $";
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  2001/01/29 08:38:44  bjj
+- * Fix Sourceforge Bug #127620: add_verb() should return verbindex
+- * And now it does.  Old servers always returned 0, new servers will always
+- * return a positive integer.
+- *
+- * Revision 1.3  1998/12/14 13:19:16  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:37  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:01  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.8  1996/05/12  21:29:46  pavel
+- * Fixed memory leak for verb names string in bf_add_verb.  Release 1.8.0p5.
+- *
+- * Revision 2.7  1996/03/19  07:19:13  pavel
+- * Fixed off-by-one bug in type-checking in set_verb_code().  Release 1.8.0p2.
+- *
+- * Revision 2.6  1996/02/08  06:39:44  pavel
+- * Renamed TYPE_NUM to TYPE_INT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.5  1996/01/16  07:29:04  pavel
+- * Fixed `parens' and `indent' arguments to verb_code() to allow values of any
+- * type.  Release 1.8.0alpha6.
+- *
+- * Revision 2.4  1996/01/11  07:51:42  pavel
+- * Fixed bad free() in bf_add_verb().  Release 1.8.0alpha5.
+- *
+- * Revision 2.3  1995/12/31  03:28:27  pavel
+- * Fixed C syntax botch in bf_delete_verb().  Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:25:40  pavel
+- * Added support for using numbers to designate defined verbs in built-in
+- * functions.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:53:59  pavel
+- * Accounted for verb programs never being NULL any more.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:43:36  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.16  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.15  1992/10/23  22:23:43  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.14  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.13  1992/10/17  20:58:25  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- *
+- * Revision 1.12  1992/10/06  18:25:57  pavel
+- * Changed name of global Parser_Client to avoid a name clash.
+- *
+- * Revision 1.11  1992/09/24  16:44:38  pavel
+- * Made the parsing done by eval() and set_verb_code() abort if the task runs
+- * out of seconds.
+- *
+- * Revision 1.10  1992/09/21  17:38:05  pavel
+- * Restored RCS log information.
+- *
+- * Revision 1.9  1992/09/14  18:41:15  pjames
+- * Moved rcsid to bottom.
+- * Changed bf_eval to avoid a compiler warning when compiled un-optimized.
+- *
+- * Revision 1.8  1992/09/14  17:31:23  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.7  1992/09/08  22:00:18  pjames
+- * Renambed bf_verb.c to verbs.c
+- *
+- * Revision 1.6  1992/08/31  22:29:24  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.5  1992/08/28  16:16:14  pjames
+- * Changed myfree(*, M_STRING) to free_str(*).
+- * Changed some strref's to strdup.
+- *
+- * Revision 1.4  1992/08/21  00:42:59  pavel
+- * Renamed include file "parse_command.h" to "parse_cmd.h".
+- *
+- * Revision 1.3  1992/08/10  17:21:32  pjames
+- * Updated #includes.  Updated to use new registration format.  Built in
+- * functions now only receive programmer, instead of entire Parse_Info.
+- *
+- * Revision 1.2  1992/07/20  23:55:24  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+-- 
+1.7.9.5
+

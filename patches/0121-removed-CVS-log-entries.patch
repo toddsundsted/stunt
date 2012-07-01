@@ -1,0 +1,49 @@
+From edccb9d58b1867a5a4390564c0ccd6366a56cc05 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 29 Jan 2011 06:55:34 +0000
+Subject: [PATCH 121/223] removed CVS log entries...
+
+---
+ server/exceptions.h |   29 -----------------------------
+ 1 file changed, 29 deletions(-)
+
+diff --git a/server/exceptions.h b/server/exceptions.h
+index edd3685..3b78253 100644
+--- a/server/exceptions.h
++++ b/server/exceptions.h
+@@ -158,32 +158,3 @@ extern void panic(const char *message);
+ 
+ #endif				/* !Exceptions_H */
+ 
+-/* 
+- *$Log: exceptions.h,v $
+- *Revision 1.3  1998/12/14 13:17:49  nop
+- *Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:37  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:25:56  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:51:06  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use _new automatic configuration system.
+- *
+- * Revision 1.2  1992/09/23  17:10:48  pavel
+- * Added protection against this file being included more than once.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+-- 
+1.7.9.5
+

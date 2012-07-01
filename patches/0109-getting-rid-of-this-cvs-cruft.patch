@@ -1,0 +1,300 @@
+From caa3f515ba4765d18cbcf0d73303987c7253461f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 23 Jan 2011 23:29:55 +0000
+Subject: [PATCH 109/223] getting rid of this cvs cruft
+
+---
+ CVSROOT/checkoutlist |   13 -------------
+ CVSROOT/commitinfo   |   15 ---------------
+ CVSROOT/config       |   11 -----------
+ CVSROOT/cvswrappers  |   23 -----------------------
+ CVSROOT/editinfo     |   21 ---------------------
+ CVSROOT/loginfo      |   26 --------------------------
+ CVSROOT/modules      |   26 --------------------------
+ CVSROOT/notify       |   12 ------------
+ CVSROOT/rcsinfo      |   13 -------------
+ CVSROOT/taginfo      |   20 --------------------
+ CVSROOT/verifymsg    |   21 ---------------------
+ 11 files changed, 201 deletions(-)
+ delete mode 100644 CVSROOT/checkoutlist
+ delete mode 100644 CVSROOT/commitinfo
+ delete mode 100644 CVSROOT/config
+ delete mode 100644 CVSROOT/cvswrappers
+ delete mode 100644 CVSROOT/editinfo
+ delete mode 100644 CVSROOT/loginfo
+ delete mode 100644 CVSROOT/modules
+ delete mode 100644 CVSROOT/notify
+ delete mode 100644 CVSROOT/rcsinfo
+ delete mode 100644 CVSROOT/taginfo
+ delete mode 100644 CVSROOT/verifymsg
+
+diff --git a/CVSROOT/checkoutlist b/CVSROOT/checkoutlist
+deleted file mode 100644
+index b04b350..0000000
+--- a/CVSROOT/checkoutlist
++++ /dev/null
+@@ -1,13 +0,0 @@
+-# The "checkoutlist" file is used to support additional version controlled
+-# administrative files in $CVSROOT/CVSROOT, such as template files.
+-#
+-# The first entry on a line is a filename which will be checked out from
+-# the corresponding RCS file in the $CVSROOT/CVSROOT directory.
+-# The remainder of the line is an error message to use if the file cannot
+-# be checked out.
+-#
+-# File format:
+-#
+-#	[<whitespace>]<filename><whitespace><error message><end-of-line>
+-#
+-# comment lines begin with '#'
+diff --git a/CVSROOT/commitinfo b/CVSROOT/commitinfo
+deleted file mode 100644
+index b19e7b7..0000000
+--- a/CVSROOT/commitinfo
++++ /dev/null
+@@ -1,15 +0,0 @@
+-# The "commitinfo" file is used to control pre-commit checks.
+-# The filter on the right is invoked with the repository and a list 
+-# of files to check.  A non-zero exit of the filter program will 
+-# cause the commit to be aborted.
+-#
+-# The first entry on a line is a regular expression which is tested
+-# against the directory that the change is being committed to, relative
+-# to the $CVSROOT.  For the first match that is found, then the remainder
+-# of the line is the name of the filter to run.
+-#
+-# If the repository name does not match any of the regular expressions in this
+-# file, the "DEFAULT" line is used, if it is specified.
+-#
+-# If the name "ALL" appears as a regular expression it is always used
+-# in addition to the first matching regex or "DEFAULT".
+diff --git a/CVSROOT/config b/CVSROOT/config
+deleted file mode 100644
+index 8069cad..0000000
+--- a/CVSROOT/config
++++ /dev/null
+@@ -1,11 +0,0 @@
+-# Set this to "no" if pserver shouldn't check system users/passwords
+-#SystemAuth=no
+-
+-# Set `PreservePermissions' to `yes' to save file status information
+-# in the repository.
+-#PreservePermissions=no
+-
+-# Set `TopLevelAdmin' to `yes' to create a CVS directory at the top
+-# level of the new working directory when using the `cvs checkout'
+-# command.
+-#TopLevelAdmin=no
+diff --git a/CVSROOT/cvswrappers b/CVSROOT/cvswrappers
+deleted file mode 100644
+index 0accaf1..0000000
+--- a/CVSROOT/cvswrappers
++++ /dev/null
+@@ -1,23 +0,0 @@
+-# This file affects handling of files based on their names.
+-#
+-# The -t/-f options allow one to treat directories of files
+-# as a single file, or to transform a file in other ways on
+-# its way in and out of CVS.
+-#
+-# The -m option specifies whether CVS attempts to merge files.
+-#
+-# The -k option specifies keyword expansion (e.g. -kb for binary).
+-#
+-# Format of wrapper file ($CVSROOT/CVSROOT/cvswrappers or .cvswrappers)
+-#
+-#  wildcard	[option value][option value]...
+-#
+-#  where option is one of
+-#  -f		from cvs filter		value: path to filter
+-#  -t		to cvs filter		value: path to filter
+-#  -m		update methodology	value: MERGE or COPY
+-#  -k		expansion mode		value: b, o, kkv, &c
+-#
+-#  and value is a single-quote delimited value.
+-# For example:
+-#*.gif -k 'b'
+diff --git a/CVSROOT/editinfo b/CVSROOT/editinfo
+deleted file mode 100644
+index d78886c..0000000
+--- a/CVSROOT/editinfo
++++ /dev/null
+@@ -1,21 +0,0 @@
+-# The "editinfo" file is used to allow verification of logging
+-# information.  It works best when a template (as specified in the
+-# rcsinfo file) is provided for the logging procedure.  Given a
+-# template with locations for, a bug-id number, a list of people who
+-# reviewed the code before it can be checked in, and an external
+-# process to catalog the differences that were code reviewed, the
+-# following test can be applied to the code:
+-#
+-#   Making sure that the entered bug-id number is correct.
+-#   Validating that the code that was reviewed is indeed the code being
+-#       checked in (using the bug-id number or a seperate review
+-#       number to identify this particular code set.).
+-#
+-# If any of the above test failed, then the commit would be aborted.
+-#
+-# Actions such as mailing a copy of the report to each reviewer are
+-# better handled by an entry in the loginfo file.
+-#
+-# One thing that should be noted is the the ALL keyword is not
+-# supported.  There can be only one entry that matches a given
+-# repository.
+diff --git a/CVSROOT/loginfo b/CVSROOT/loginfo
+deleted file mode 100644
+index 5a59f0a..0000000
+--- a/CVSROOT/loginfo
++++ /dev/null
+@@ -1,26 +0,0 @@
+-# The "loginfo" file controls where "cvs commit" log information
+-# is sent.  The first entry on a line is a regular expression which must match
+-# the directory that the change is being made to, relative to the
+-# $CVSROOT.  If a match is found, then the remainder of the line is a filter
+-# program that should expect log information on its standard input.
+-#
+-# If the repository name does not match any of the regular expressions in this
+-# file, the "DEFAULT" line is used, if it is specified.
+-#
+-# If the name ALL appears as a regular expression it is always used
+-# in addition to the first matching regex or DEFAULT.
+-#
+-# You may specify a format string as part of the
+-# filter.  The string is composed of a `%' followed
+-# by a single format character, or followed by a set of format
+-# characters surrounded by `{' and `}' as separators.  The format
+-# characters are:
+-#
+-#   s = file name
+-#   V = old version number (pre-checkin)
+-#   v = new version number (post-checkin)
+-#
+-# For example:
+-#DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
+-# or
+-#DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
+diff --git a/CVSROOT/modules b/CVSROOT/modules
+deleted file mode 100644
+index cb9e9ef..0000000
+--- a/CVSROOT/modules
++++ /dev/null
+@@ -1,26 +0,0 @@
+-# Three different line formats are valid:
+-#	key	-a    aliases...
+-#	key [options] directory
+-#	key [options] directory files...
+-#
+-# Where "options" are composed of:
+-#	-i prog		Run "prog" on "cvs commit" from top-level of module.
+-#	-o prog		Run "prog" on "cvs checkout" of module.
+-#	-e prog		Run "prog" on "cvs export" of module.
+-#	-t prog		Run "prog" on "cvs rtag" of module.
+-#	-u prog		Run "prog" on "cvs update" of module.
+-#	-d dir		Place module in directory "dir" instead of module name.
+-#	-l		Top-level directory only -- do not recurse.
+-#
+-# NOTE:  If you change any of the "Run" options above, you'll have to
+-# release and re-checkout any working directories of these modules.
+-#
+-# And "directory" is a path to a directory relative to $CVSROOT.
+-#
+-# The "-a" option specifies an alias.  An alias is interpreted as if
+-# everything on the right of the "-a" had been typed on the command line.
+-#
+-# You can encode a module within a module by using the special '&'
+-# character to interpose another module into the current module.  This
+-# can be useful for creating a module that consists of many directories
+-# spread out over the entire source repository.
+diff --git a/CVSROOT/notify b/CVSROOT/notify
+deleted file mode 100644
+index 34f0bc2..0000000
+--- a/CVSROOT/notify
++++ /dev/null
+@@ -1,12 +0,0 @@
+-# The "notify" file controls where notifications from watches set by
+-# "cvs watch add" or "cvs edit" are sent.  The first entry on a line is
+-# a regular expression which is tested against the directory that the
+-# change is being made to, relative to the $CVSROOT.  If it matches,
+-# then the remainder of the line is a filter program that should contain
+-# one occurrence of %s for the user to notify, and information on its
+-# standard input.
+-#
+-# "ALL" or "DEFAULT" can be used in place of the regular expression.
+-#
+-# For example:
+-#ALL mail %s -s "CVS notification"
+diff --git a/CVSROOT/rcsinfo b/CVSROOT/rcsinfo
+deleted file mode 100644
+index 49e59f4..0000000
+--- a/CVSROOT/rcsinfo
++++ /dev/null
+@@ -1,13 +0,0 @@
+-# The "rcsinfo" file is used to control templates with which the editor
+-# is invoked on commit and import.
+-#
+-# The first entry on a line is a regular expression which is tested
+-# against the directory that the change is being made to, relative to the
+-# $CVSROOT.  For the first match that is found, then the remainder of the
+-# line is the name of the file that contains the template.
+-#
+-# If the repository name does not match any of the regular expressions in this
+-# file, the "DEFAULT" line is used, if it is specified.
+-#
+-# If the name "ALL" appears as a regular expression it is always used
+-# in addition to the first matching regex or "DEFAULT".
+diff --git a/CVSROOT/taginfo b/CVSROOT/taginfo
+deleted file mode 100644
+index 274a46d..0000000
+--- a/CVSROOT/taginfo
++++ /dev/null
+@@ -1,20 +0,0 @@
+-# The "taginfo" file is used to control pre-tag checks.
+-# The filter on the right is invoked with the following arguments:
+-#
+-# $1 -- tagname
+-# $2 -- operation "add" for tag, "mov" for tag -F, and "del" for tag -d
+-# $3 -- repository
+-# $4->  file revision [file revision ...]
+-#
+-# A non-zero exit of the filter program will cause the tag to be aborted.
+-#
+-# The first entry on a line is a regular expression which is tested
+-# against the directory that the change is being committed to, relative
+-# to the $CVSROOT.  For the first match that is found, then the remainder
+-# of the line is the name of the filter to run.
+-#
+-# If the repository name does not match any of the regular expressions in this
+-# file, the "DEFAULT" line is used, if it is specified.
+-#
+-# If the name "ALL" appears as a regular expression it is always used
+-# in addition to the first matching regex or "DEFAULT".
+diff --git a/CVSROOT/verifymsg b/CVSROOT/verifymsg
+deleted file mode 100644
+index 86f747c..0000000
+--- a/CVSROOT/verifymsg
++++ /dev/null
+@@ -1,21 +0,0 @@
+-# The "verifymsg" file is used to allow verification of logging
+-# information.  It works best when a template (as specified in the
+-# rcsinfo file) is provided for the logging procedure.  Given a
+-# template with locations for, a bug-id number, a list of people who
+-# reviewed the code before it can be checked in, and an external
+-# process to catalog the differences that were code reviewed, the
+-# following test can be applied to the code:
+-#
+-#   Making sure that the entered bug-id number is correct.
+-#   Validating that the code that was reviewed is indeed the code being
+-#       checked in (using the bug-id number or a seperate review
+-#       number to identify this particular code set.).
+-#
+-# If any of the above test failed, then the commit would be aborted.
+-#
+-# Actions such as mailing a copy of the report to each reviewer are
+-# better handled by an entry in the loginfo file.
+-#
+-# One thing that should be noted is the the ALL keyword is not
+-# supported.  There can be only one entry that matches a given
+-# repository.
+-- 
+1.7.9.5
+

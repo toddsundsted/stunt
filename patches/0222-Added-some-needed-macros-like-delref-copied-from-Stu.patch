@@ -1,0 +1,28 @@
+From c2006bb052916398d7baa48c52565a89c7e4e24c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 1 Jul 2012 15:11:32 -0700
+Subject: [PATCH 222/223] Added some needed macros like delref(), copied from
+ Stunt
+
+---
+ server/storage.h |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/server/storage.h b/server/storage.h
+index 5853fe1..1919768 100644
+--- a/server/storage.h
++++ b/server/storage.h
+@@ -22,6 +22,10 @@
+ 
+ #include "structures.h"
+ 
++#define addref(X) (++((int *)(X))[-1])
++#define delref(X) (--((int *)(X))[-1])
++#define refcount(X) (((int *)(X))[-1])
++
+ typedef enum Memory_Type {
+     M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,
+     M_LIST, M_PREP, M_PROPDEF, M_OBJECT_TABLE, M_OBJECT, M_FLOAT,
+-- 
+1.7.9.5
+

@@ -1,0 +1,48 @@
+From 9c9d8f3ded9339c8f12ee91ac33522770e4da6cf Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 15 Jun 2011 03:44:23 +0000
+Subject: [PATCH 158/223] Adding the license on behalf of Andy.
+
+---
+ server/bg_name_lookup.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/server/bg_name_lookup.c b/server/bg_name_lookup.c
+index 0a6eeb0..6436803 100644
+--- a/server/bg_name_lookup.c
++++ b/server/bg_name_lookup.c
+@@ -1,3 +1,31 @@
++/*****************************************************************
++  Copyright (c) 1996 Andrew Wendt <andy@wendt.ca>.  All rights
++  reserved.  Permission to use, copy, modify, and distribute this
++  software and its documentation for any purpose and without fee
++  is hereby granted, provided that the above copyright notice
++  appear in all copies and that both that copyright notice and
++  this permission notice appear in supporting documentation.
++
++  Andrew Wendt disclaims all warranties with regard to this
++  software, including all implied warranties of merchantability
++  and fitness, in no event shall Andrew Wendt be liable for any
++  special, indirect or consequential damages or any damages
++  whatsoever resulting from loss of use, data or profits, whether
++  in an action of contract, negligence or other tortious action,
++  arising out of or in connection with the use or performance of
++  this software.
++*****************************************************************/
++
++/**
++This code allows you more control of DNS lookups, and for the DNS
++lookups to use forked processes instead of blocking the entire MOO.
++
++Some people think that the MOO does name lookups in the background by
++default, since it uses two subprocesses for them. But actually it's
++just sandboxing the gethostbyname() call so that it can kill it with a
++timeout without leaving the resolver library in an inconsistent state.
++*/
++
+ #include <errno.h>
+ #include <signal.h>
+ #include <netdb.h>		/* gethostby{name,addr}() */
+-- 
+1.7.9.5
+

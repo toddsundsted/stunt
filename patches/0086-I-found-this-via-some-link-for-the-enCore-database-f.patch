@@ -1,0 +1,35 @@
+From 9d6bc9aa0e1556258dcdfb52317742e08e379222 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 17 Dec 2010 02:42:24 +0000
+Subject: [PATCH 086/223] I found this via some link for the enCore database
+ for LambdaMoo; in fact, here:
+ http://lingo.uib.no/v5/install/LambdaMOO-utf8.html
+
+There are other patches to make LambdaMoo work with utf-8, I
+believe...
+---
+ server/misc/unicode-moo-4.diff |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/server/misc/unicode-moo-4.diff b/server/misc/unicode-moo-4.diff
+index f59364c..46f8824 100644
+--- a/server/misc/unicode-moo-4.diff
++++ b/server/misc/unicode-moo-4.diff
+@@ -760,12 +760,12 @@ diff -uN MOO-1.8.1/utf8.h MOO-1.8.1u4/utf8.h
+ diff -uN MOO-1.8.1/version.c MOO-1.8.1u4/version.c
+ --- MOO-1.8.1/version.c	Mon Jan 10 19:15:09 2000
+ +++ MOO-1.8.1u4/version.c	Thu Jun  6 09:00:30 2002
+-@@ -40,7 +40,7 @@
++@@ -40,4 +40,4 @@
+  #include "config.h"
+  #include "version.h"
+  
+ -const char *server_version = "1.8.1";
+ +const char *server_version = "1.8.1u4";
+- 
++
+  int
+  check_version(DB_Version version)
+-- 
+1.7.9.5
+

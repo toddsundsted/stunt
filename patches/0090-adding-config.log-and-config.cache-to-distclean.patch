@@ -1,0 +1,25 @@
+From 52456fe45b9af0f954cbc70e834312be5a501e6e Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 19:08:04 +0000
+Subject: [PATCH 090/223] adding config.log and config.cache to distclean
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 4250af4..4d3397d 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -152,7 +152,7 @@ clean:
+ 	rm -f $(OBJS) $(OPT_NET_OBJS) core parser.c y.tab.c y.tab.h y.output makedep eddep
+ 
+ distclean:	clean
+-	rm -f config.h Makefile config.status
++	rm -f config.h Makefile config.status config.log config.cache
+ 
+ depend: ${ALL_CSRCS}
+ 	rm -f eddep makedep
+-- 
+1.7.9.5
+

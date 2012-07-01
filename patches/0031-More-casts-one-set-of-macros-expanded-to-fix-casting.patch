@@ -1,0 +1,381 @@
+From 4b27c8421df368160efb43e95b721aadda8c8dab Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 02:47:02 +0000
+Subject: [PATCH 031/223] More casts; one set of macros expanded to fix
+ casting issues; and a pesky 'new' fixed
+
+---
+ server/str_intern.c |    8 ++--
+ server/streams.c    |    4 +-
+ server/sym_table.c  |   13 +++---
+ server/tasks.c      |  116 ++++++++++++++++++++++++++++++++++++++++++---------
+ server/tasks.h      |    2 +
+ 5 files changed, 112 insertions(+), 31 deletions(-)
+
+diff --git a/server/str_intern.c b/server/str_intern.c
+index 103c5e6..99adf8f 100644
+--- a/server/str_intern.c
++++ b/server/str_intern.c
+@@ -35,12 +35,12 @@ static struct intern_entry_hunk *intern_alloc = NULL;
+ static struct intern_entry_hunk *
+ new_intern_entry_hunk(int size) 
+ {
+-    struct intern_entry_hunk *new;
++    struct intern_entry_hunk *_new;
+     
+-    _new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
++    _new = (intern_entry_hunk *) mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+     _new->size = size;
+     _new->handout = 0;
+-    new->contents = mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
++    _new->contents = (intern_entry *) mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
+     _new->next = NULL;
+     
+     return _new;
+@@ -103,7 +103,7 @@ make_intern_table(int size) {
+     struct intern_entry **table;
+     int i;
+ 
+-    table = mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
++    table = (intern_entry **) mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
+     for (i = 0; i < size; i++) {
+         table[i] = NULL;
+     }
+diff --git a/server/streams.c b/server/streams.c
+index ba6644b..131b3fa 100644
+--- a/server/streams.c
++++ b/server/streams.c
+@@ -30,7 +30,7 @@ new_stream(int size)
+ {
+     Stream *s = (Stream *) mymalloc(sizeof(Stream), M_STREAM);
+ 
+-    s->buffer = mymalloc(size, M_STREAM);
++    s->buffer = (char *) mymalloc(size, M_STREAM);
+     s->buflen = size;
+     s->current = 0;
+ 
+@@ -42,7 +42,7 @@ grow(Stream * s, int newlen)
+ {
+     char *newbuf;
+ 
+-    newbuf = mymalloc(newlen, M_STREAM);
++    newbuf = (char *) mymalloc(newlen, M_STREAM);
+     memcpy(newbuf, s->buffer, s->current);
+     myfree(s->buffer, M_STREAM);
+     s->buffer = newbuf;
+diff --git a/server/sym_table.c b/server/sym_table.c
+index af36b93..4a4aa2c 100644
+--- a/server/sym_table.c
++++ b/server/sym_table.c
+@@ -32,7 +32,7 @@ new_names(unsigned max_size)
+ {
+     Names *names = (Names *) mymalloc(sizeof(Names), M_NAMES);
+ 
+-    names->names = mymalloc(sizeof(char *) * max_size, M_NAMES);
++    names->names = (const char **) mymalloc(sizeof(char *) * max_size, M_NAMES);
+     names->max_size = max_size;
+     names->size = 0;
+ 
+@@ -42,7 +42,7 @@ new_names(unsigned max_size)
+ static Names *
+ copy_names(Names * old)
+ {
+-    Names *new = new_names(old->size);
++    Names *_new = new_names(old->size);
+     unsigned i;
+ 
+     _new->size = old->size;
+@@ -121,15 +121,16 @@ find_or_add_name(Names ** names, const char *str)
+ 	}
+     if ((*names)->size == (*names)->max_size) {
+ 	unsigned old_max = (*names)->max_size;
+-	Names *new = new_names(old_max * 2);
++	Names *_new = (Names *) new_names(old_max * 2);
+ 	unsigned i;
+ 
+-	for (i = 0; i < old_max; i++)
+-	    new->names[i] = (*names)->names[i];
++	for (i = 0; i < old_max; i++) {
++	    _new->names[i] = (*names)->names[i];
++        }
+ 	_new->size = old_max;
+ 	myfree((*names)->names, M_NAMES);
+ 	myfree(*names, M_NAMES);
+-	*names = new;
++	*names = _new;
+     }
+     (*names)->names[(*names)->size] = str_dup(str);
+     return (*names)->size++;
+diff --git a/server/tasks.c b/server/tasks.c
+index 2c41a5d..158f690 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -227,7 +227,7 @@ icmd_list(int icmd_flags)
+ {
+     Var s;
+     Var list = new_list(0);
+-    s.type = TYPE_STR;
++    s.type = (var_type) TYPE_STR;
+ #define _ICMD_MKSTR(ICMD_PREFIX,PREFIX,_)	\
+ 	if (icmd_flags & (1<<ICMD_PREFIX)) {	\
+ 	    s.v.str = str_dup(#PREFIX);		\
+@@ -543,7 +543,7 @@ struct state {
+ static void
+ my_error(void *data, const char *msg)
+ {
+-    struct state *s = data;
++  struct state *s = (state *) data;
+ 
+     notify(s->player, msg);
+     s->nerrors++;
+@@ -552,7 +552,7 @@ my_error(void *data, const char *msg)
+ static int
+ my_getc(void *data)
+ {
+-    struct state *s = data;
++  struct state *s = (state *) data;
+ 
+     if (*(s->input) != '\0')
+ 	return *(s->input++);
+@@ -574,7 +574,7 @@ end_programming(tqueue * tq)
+ 	db_verb_handle h;
+ 	Var desc;
+ 
+-	desc.type = TYPE_STR;
++	desc.type = (var_type) TYPE_STR;
+ 	desc.v.str = tq->program_verb;
+ 	h = find_described_verb(tq->program_object, desc);
+ 
+@@ -797,7 +797,7 @@ task_queue
+ new_task_queue(Objid player, Objid handler)
+ {
+     task_queue result;
+-    tqueue *tq = result.ptr = find_tqueue(player, 1);
++    tqueue *tq = (tqueue *) result.ptr = (tqueue *) find_tqueue(player, 1);
+ 
+     tq->connected = 1;
+     tq->handler = handler;
+@@ -858,7 +858,7 @@ free_task_queue(task_queue q)
+ 	       if (!icmd_set_flags(tq, value))				\
+ 		   return 0;						\
+ 	   })								\
+-
++    /*
+ int
+ tasks_set_connection_option(task_queue q, const char *option, Var value)
+ {
+@@ -876,6 +876,83 @@ tasks_connection_options(task_queue q, Var list)
+ {
+     CONNECTION_OPTION_LIST(TASK_CO_TABLE, (tqueue *)q.ptr, list);
+ }
++    */
++
++int
++tasks_set_connection_option(task_queue q, const char *option, Var value)
++{
++  do { if (!mystrcasecmp((option), "flush-command")) { { if (((tqueue *)q.ptr)->flush_cmd) free_str(((tqueue *)q.ptr)->flush_cmd);
++        if ((value).type == (_TYPE_STR | 0x80) && (value).v.str[0] != '\0') ((tqueue *)q.ptr)->flush_cmd = str_ref((value).v.str);
++        else ((tqueue *)q.ptr)->flush_cmd = 0;
++      };
++      return 1;
++    } if (!mystrcasecmp((option), "hold-input")) { { ((tqueue *)q.ptr)->hold_input = is_true((value));
++        if (!((tqueue *)q.ptr)->hold_input && ((tqueue *)q.ptr)->first_input) ensure_usage(((tqueue *)q.ptr));
++      };
++      return 1;
++    } if (!mystrcasecmp((option), "disable-oob")) { { ((tqueue *)q.ptr)->disable_oob = is_true((value));
++        if (!((tqueue *)q.ptr)->disable_oob && ((tqueue *)q.ptr)->first_input && (((tqueue *)q.ptr)->first_itail->next || ((tqueue *)q.ptr)->first_input->kind == TASK_OOB)) ensure_usage(((tqueue *)q.ptr));
++      };
++      return 1;
++    } if (!mystrcasecmp((option), "intrinsic-commands")) { { if (!icmd_set_flags(((tqueue *)q.ptr), (value))) return 0;
++      };
++      return 1;
++    } return 0;
++  } while (0);
++
++}
++
++int
++tasks_connection_option(task_queue q, const char *option, Var * value)
++{
++  do { if (!mystrcasecmp((option), "flush-command")) { (value)->type = (var_type) ((_TYPE_STR | 0x80));
++      (value)->v.str = (((tqueue *)q.ptr)->flush_cmd ? str_ref(((tqueue *)q.ptr)->flush_cmd) : str_dup(""));
++      return 1;
++    } if (!mystrcasecmp((option), "hold-input")) { (value)->type = (TYPE_INT);
++      (value)->v.num = (((tqueue *)q.ptr)->hold_input);
++      return 1;
++    } if (!mystrcasecmp((option), "disable-oob")) { (value)->type = (TYPE_INT);
++      (value)->v.num = (((tqueue *)q.ptr)->disable_oob);
++      return 1;
++    } if (!mystrcasecmp((option), "intrinsic-commands")) { (value)->type = (var_type) ((_TYPE_LIST | 0x80));
++      (value)->v.list = (icmd_list(((tqueue *)q.ptr)->icmds).v.list);
++      return 1;
++    } return 0;
++  } while (0);
++
++}
++
++Var
++tasks_connection_options(task_queue q, Var list)
++{
++  do { { Var pair = new_list(2);
++      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
++      pair.v.list[1].v.str = str_dup("flush-command");
++      pair.v.list[2].type = (var_type) ((_TYPE_STR | 0x80));
++      pair.v.list[2].v.str = (((tqueue *)q.ptr)->flush_cmd ? str_ref(((tqueue *)q.ptr)->flush_cmd) : str_dup(""));
++      (list) = listappend((list), pair);
++    } { Var pair = new_list(2);
++      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
++      pair.v.list[1].v.str = str_dup("hold-input");
++      pair.v.list[2].type = (TYPE_INT);
++      pair.v.list[2].v.num = (((tqueue *)q.ptr)->hold_input);
++      (list) = listappend((list), pair);
++    } { Var pair = new_list(2);
++      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
++      pair.v.list[1].v.str = str_dup("disable-oob");
++      pair.v.list[2].type = (TYPE_INT);
++      pair.v.list[2].v.num = (((tqueue *)q.ptr)->disable_oob);
++      (list) = listappend((list), pair);
++    } { Var pair = new_list(2);
++      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
++      pair.v.list[1].v.str = str_dup("intrinsic-commands");
++      pair.v.list[2].type = (var_type) ((_TYPE_LIST | 0x80));
++      pair.v.list[2].v.list = (icmd_list(((tqueue *)q.ptr)->icmds).v.list);
++      (list) = listappend((list), pair);
++    } return (list);
++  } while (0);
++
++}
+ 
+ #undef TASK_CO_TABLE
+ 
+@@ -938,7 +1015,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
+ void
+ task_suspend_input(task_queue q)
+ {
+-    tqueue *tq = q.ptr;
++  tqueue *tq = (tqueue *) q.ptr;
+ 
+     if (!tq->input_suspended && tq->connected) {
+ 	server_suspend_input(tq->player);
+@@ -972,7 +1049,7 @@ flush_input(tqueue * tq, int show_messages)
+ void
+ new_input_task(task_queue q, const char *input, int binary)
+ {
+-    tqueue *tq = q.ptr;
++  tqueue *tq = (tqueue *) q.ptr;
+ 
+     if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd) == 0) {
+ 	flush_input(tq, 1);
+@@ -1136,7 +1213,7 @@ read_input_now(Objid connection)
+ 	r.type = TYPE_INT;
+ 	r.v.num = 0;
+     } else {
+-	r.type = TYPE_STR;
++	r.type = (var_type) TYPE_STR;
+ 	r.v.str = t->t.input.string;
+ 	myfree(t, M_TASK);
+     }
+@@ -1248,7 +1325,7 @@ run_ready_tasks(void)
+ 
+ 			tq->reading = 0;
+ 			current_task_id = tq->reading_vm->task_id;
+-			v.type = TYPE_STR;
++			v.type = (var_type) TYPE_STR;
+ 			v.v.str = t->t.input.string;
+ 			resume_from_previous_vm(tq->reading_vm, v);
+ 			did_one = 1;
+@@ -1577,7 +1654,7 @@ find_verb_for_programming(Objid player, const char *verbref,
+ 	free_str(copy);
+ 	return h;
+     }
+-    desc.type = TYPE_STR;
++    desc.type = (var_type) TYPE_STR;
+     desc.v.str = *vname;
+     h = find_described_verb(oid, desc);
+     free_str(copy);
+@@ -1701,7 +1778,7 @@ list_for_forked_task(forked_task ft)
+     list.v.list[5].v.obj = ft.a.progr;
+     list.v.list[6].type = TYPE_OBJ;
+     list.v.list[6].v.obj = ft.a.vloc;
+-    list.v.list[7].type = TYPE_STR;
++    list.v.list[7].type = (var_type) TYPE_STR;
+     list.v.list[7].v.str = str_ref(ft.a.verbname);
+     list.v.list[8].type = TYPE_INT;
+     list.v.list[8].v.num = find_line_number(ft.program, ft.f_index, 0);
+@@ -1743,7 +1820,7 @@ list_for_vm(vm the_vm)
+     list.v.list[5].v.obj = progr_of_cur_verb(the_vm);
+     list.v.list[6].type = TYPE_OBJ;
+     list.v.list[6].v.obj = top_activ(the_vm).vloc;
+-    list.v.list[7].type = TYPE_STR;
++    list.v.list[7].type = (var_type) TYPE_STR;
+     list.v.list[7].v.str = str_ref(top_activ(the_vm).verbname);
+     list.v.list[8].type = TYPE_INT;
+     list.v.list[8].v.num = suspended_lineno_of_vm(the_vm);
+@@ -1791,7 +1868,7 @@ struct qcl_data {
+ static task_enum_action
+ counting_closure(vm the_vm, const char *status, void *data)
+ {
+-    struct qcl_data *qdata = data;
++  struct qcl_data *qdata = (qcl_data *) data;
+ 
+     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm))
+ 	qdata->i++;
+@@ -1802,12 +1879,12 @@ counting_closure(vm the_vm, const char *status, void *data)
+ static task_enum_action
+ listing_closure(vm the_vm, const char *status, void *data)
+ {
+-    struct qcl_data *qdata = data;
++  struct qcl_data *qdata = (qcl_data *) data;
+     Var list;
+ 
+     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
+ 	list = list_for_vm(the_vm);
+-	list.v.list[2].type = TYPE_STR;
++	list.v.list[2].type = (var_type) TYPE_STR;
+ 	list.v.list[2].v.str = str_dup(status);
+ 	qdata->tasks.v.list[qdata->i++] = list;
+     }
+@@ -1907,7 +1984,7 @@ struct fcl_data {
+ static task_enum_action
+ finding_closure(vm the_vm, const char *status, void *data)
+ {
+-    struct fcl_data *fdata = data;
++  struct fcl_data *fdata = (fcl_data *) data;
+ 
+     if (the_vm->task_id == fdata->id) {
+ 	fdata->the_vm = the_vm;
+@@ -1966,7 +2043,7 @@ struct kcl_data {
+ static task_enum_action
+ killing_closure(vm the_vm, const char *status, void *data)
+ {
+-    struct kcl_data *kdata = data;
++  struct kcl_data *kdata = (kcl_data *) data;
+ 
+     if (the_vm->task_id == kdata->id) {
+ 	if (is_wizard(kdata->owner)
+@@ -2174,7 +2251,8 @@ bf_output_delimiters(Var arglist, Byte next, void *vdata, Objid progr)
+ 	    suffix = "";
+ 
+ 	r = new_list(2);
+-	r.v.list[1].type = r.v.list[2].type = TYPE_STR;
++	r.v.list[1].type = (var_type) TYPE_STR;
++        r.v.list[2].type = (var_type) TYPE_STR;
+ 	r.v.list[1].v.str = str_dup(prefix);
+ 	r.v.list[2].v.str = str_dup(suffix);
+     }
+diff --git a/server/tasks.h b/server/tasks.h
+index 7ccb713..16344ea 100644
+--- a/server/tasks.h
++++ b/server/tasks.h
+@@ -22,6 +22,8 @@
+ #include "execute.h"
+ #include "structures.h"
+ 
++// FIXME: have to find a solution for this void pointer
++// possibly the pointer will only ever point to a tqueue, but would have to trace it
+ typedef struct {
+     void *ptr;
+ } task_queue;
+-- 
+1.7.9.5
+

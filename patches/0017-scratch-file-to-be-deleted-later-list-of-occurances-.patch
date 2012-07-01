@@ -1,0 +1,42 @@
+From 24008570252836c966f66811af0e65c6e3f8ee88 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 13 Jun 2009 19:39:53 +0000
+Subject: [PATCH 017/223] scratch file to be deleted later: list of occurances
+ of varargs in the code base
+
+---
+ server/varargs.patterns |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 server/varargs.patterns
+
+diff --git a/server/varargs.patterns b/server/varargs.patterns
+new file mode 100644
+index 0000000..61bb841
+--- /dev/null
++++ b/server/varargs.patterns
+@@ -0,0 +1,22 @@
++db_io.h:     37:extern int dbio_scanf(const char *format,...);
++db_io.h:     83:extern void dbio_printf(const char *format,...);
++functions.h: 88:extern unsigned register_function(const char *, int, int, bf_type,...);
++functions.h: 91:						  bf_write_type,...);
++log.h:       25:extern void oklog(const char *,...);
++log.h:       26:extern void errlog(const char *,...);
++my-fcntl.h:  23:extern int fcntl(int, int,...);
++my-fcntl.h:  24:extern int open(const char *, int,...);
++my-ioctl.h:  23:extern int ioctl(int, int,...);
++my-stdio.h:  33:extern int fprintf(FILE *, const char *,...);
++my-stdio.h:  34:extern int fscanf(FILE *, const char *,...);
++my-stdio.h:  35:extern int sscanf(const char *, const char *,...);
++my-stdio.h:  36:extern int printf(const char *,...);
++streams.h:   33:extern void stream_printf(Stream *, const char *,...);
++db_io.c:     60:dbio_scanf(const char *format,...)
++db_io.c:     327:dbio_printf(const char *format,...)
++functions.c: 130:		  bf_type func,...)
++functions.c: 144:				  bf_write_type write,...)
++log.c:       71:oklog(const char *fmt,...)
++log.c:       81:errlog(const char *fmt,...)
++server.c:    396:send_message(Objid listener, network_handle nh, const char *msg_name,...)
++streams.c:   135:stream_printf(Stream * s, const char *fmt,...)
+-- 
+1.7.9.5
+

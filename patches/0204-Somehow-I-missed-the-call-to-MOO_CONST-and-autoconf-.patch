@@ -1,0 +1,25 @@
+From 9b03dc7abe50d1a5f1255c4340a1a6f97b15ee71 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 20 Aug 2011 23:10:29 +0000
+Subject: [PATCH 204/223] Somehow I missed the call to MOO_CONST, and autoconf
+ never complained. Weird.
+
+---
+ server/configure.ac |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index 73a9768..d4dfc8c 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -42,7 +42,6 @@ AC_ISC_POSIX
+ AC_MINIX
+ AC_SCO_INTL
+ AC_PROG_CC_STDC
+-MOO_CONST
+ CPP=""
+ AC_HEADER_CHECK(sys/bsdtypes.h, AC_DEFINE(NEED_BSDTYPES_H))
+ AC_HEADER_CHECK(sys/select.h, AC_DEFINE(NEED_SELECT_H))
+-- 
+1.7.9.5
+

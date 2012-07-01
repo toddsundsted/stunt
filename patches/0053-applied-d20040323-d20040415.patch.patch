@@ -1,0 +1,26 @@
+From d7d6bd33eca201e8d08ea7cfdc3b1571dabf3422 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 05:49:38 +0000
+Subject: [PATCH 053/223] applied d20040323-d20040415.patch
+
+---
+ server/extensions.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/extensions.c b/server/extensions.c
+index 555d513..1d1f014 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -284,8 +284,8 @@ bf_vrandom(Var arglist, Byte next, void *vdata, Objid progr)
+         }
+ 
+         while (result < 1 || result > num) {
+-            result = 1;
+             int x = 0;
++            result = 1;
+             for (x=0; x<bits; x++) {
+                 int rbit, powwow;
+                 powwow = (int) pow(2, x);
+-- 
+1.7.9.5
+

@@ -1,0 +1,91 @@
+From 5bfdeb11d699b8adbdab4daa123dea06baa2a16c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 20:33:48 +0000
+Subject: [PATCH 096/223] This copy of configure.in comes from wp-lambdamoo
+ off github. Here's the relevant commit log entries:
+
+[swain@klingklang wp-lambdamoo]$ git log configure.in
+commit 472ffa9da510684d62ec19a9d465e853e6682e30
+Author: Rob Leslie <rob@mars.org>
+Date:   Wed Nov 19 20:12:36 2008 -0800
+
+    Fix autoconf usage bug
+
+    Use AC_DEFINE_UNQUOTED instead of AC_DEFINE when the argument is a shell
+    variable that needs to be expanded.
+
+commit 4e06f5686ac86d63636f9936ef85a1624d8eacff
+Author: Rob Leslie <rob@mars.org>
+Date:   Wed Nov 19 19:25:25 2008 -0800
+
+    Fix m4 quoting bug
+
+    An obscure interaction between m4 macros and shell case statement
+    parenthesis caused a syntax error in configure.
+---
+ server/configure.in |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/server/configure.in b/server/configure.in
+index c1fcfdf..ef91e1b 100644
+--- a/server/configure.in
++++ b/server/configure.in
+@@ -95,7 +95,7 @@ dnl <malloc.h> exists.
+ define(MOO_MALLOC_H, [
+ echo checking whether stdlib.h declares malloc and friends
+ MOO_FUNC_DECL_CHECK(stdlib.h, malloc, ,
+-	AC_HEADER_CHECK(malloc.h, AC_DEFINE(NEED_MALLOC_H)))])
++	[AC_HEADER_CHECK(malloc.h, AC_DEFINE(NEED_MALLOC_H))])])
+ 
+ dnl ***************************************************************************
+ dnl	MOO_FUNC_DECL_CHECK(header, func,
+@@ -110,7 +110,7 @@ changequote([,])dnl
+ AC_PROGRAM_EGREP($pattern, [
+ #include <$1>
+ $5
+-], $3, $4)])
++], [$3], [$4])])
+ 
+ dnl ***************************************************************************
+ dnl 	MOO_NDECL_FUNCS(header, func1 func2 ...[, extra-hdr])
+@@ -185,12 +185,12 @@ do
+   trfrom='[a-z]' trto='[A-Z]'
+   var=HAVE_`echo $func | tr "$trfrom" "$trto"`
+   changequote([,])dnl
+-  AC_FUNC_CHECK($func, AC_DEFINE($var), [
++  AC_FUNC_CHECK($func, AC_DEFINE_UNQUOTED($var), [
+     SAVELIBS="$LIBS"
+     for lib in $2
+     do
+       LIBS="$LIBS $lib"
+-      AC_FUNC_CHECK($func, [AC_DEFINE($var)
++      AC_FUNC_CHECK($func, [AC_DEFINE_UNQUOTED($var)
+ 			 break],
+ 		    LIBS="$SAVELIBS")
+     done
+@@ -315,7 +315,6 @@ MOO_HAVE_FUNC_LIBS(mkfifo waitpid sigemptyset, -lposix /lib/libposix.a)
+ MOO_HAVE_FUNC_LIBS(accept, "-lsocket -lnsl" -lsocket -linet)
+ MOO_HAVE_FUNC_LIBS(t_open, -lnsl -lnsl_s)
+ MOO_HAVE_FUNC_LIBS(crypt, -lcrypt -lcrypt_d)
+-MOO_HAVE_FUNC_LIBS(ident_id, -lident)
+ AC_HAVE_HEADERS(unistd.h sys/cdefs.h stdlib.h tiuser.h machine/endian.h)
+ AC_HAVE_FUNCS(remove rename poll select strerror strftime strtoul matherr)
+ AC_HAVE_FUNCS(random lrand48 wait3 wait2 sigsetmask sigprocmask sigrelse)
+@@ -521,7 +520,13 @@ echo "----------------------------------------------------------------------"
+ 
+ AC_OUTPUT(Makefile)
+ 
+-# $Log: not supported by cvs2svn $
++# $Log$
++# Revision 1.1.1.1.4.1  2005/09/29 06:56:18  bjj
++# Merge HEAD onto WAIF, bringing it approximately to 1.8.2
++#
++# Revision 1.2  2004/05/22 01:25:43  wrog
++# merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
++#
+ # Revision 1.1.1.1.12.1  2003/06/01 12:39:27  wrog
+ # ensure definitions for in_addr_t, INADDR_NONE
+ #
+-- 
+1.7.9.5
+

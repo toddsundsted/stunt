@@ -1,0 +1,24 @@
+From bee5858547c1f4870cff9add6cf25cae66ba035c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 30 Jul 2011 16:39:27 +0000
+Subject: [PATCH 183/223] Changed the default text editor mode from 'c' to
+ 'autoconf'
+
+---
+ server/configure.ac |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index 84ad7ee..b0d9caf 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -662,5 +662,5 @@ AC_OUTPUT(Makefile)
+ 
+ 
+ # Local Variables:
+-# mode: c
++# mode: autoconf
+ # End:
+-- 
+1.7.9.5
+

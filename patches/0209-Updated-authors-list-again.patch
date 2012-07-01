@@ -1,0 +1,21 @@
+From 9c6b1d961f0b650ce8255fc5668f81716de189f0 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 3 Sep 2011 17:19:56 +0000
+Subject: [PATCH 209/223] Updated authors list again
+
+---
+ server/misc/authors-transform.txt |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/server/misc/authors-transform.txt b/server/misc/authors-transform.txt
+index d2b26d6..05c693c 100644
+--- a/server/misc/authors-transform.txt
++++ b/server/misc/authors-transform.txt
+@@ -7,3 +7,4 @@ wainstead = Steve Wainstead <wainstead@gmail.com>
+ wrog = Roger Crew <crew@cs.stanford.edu>
+ xplat = xplat <xplat>
+ xythian = Ken Fox <fox@mars.org>
++verement = Rob Leslie <rob@mars.org>
+-- 
+1.7.9.5
+

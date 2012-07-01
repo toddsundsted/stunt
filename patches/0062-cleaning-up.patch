@@ -1,0 +1,4476 @@
+From b76eaa6e78f3183b1faa21daac08b25ba84c20b1 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 27 Oct 2009 20:03:18 +0000
+Subject: [PATCH 062/223] cleaning up
+
+---
+ server/avalon-patches/CHANGES-Avalon.txt        |   23 -
+ server/avalon-patches/README.txt                |   23 -
+ server/avalon-patches/apply_order.sh            |   10 -
+ server/avalon-patches/d20040322-d20040323.patch |   22 -
+ server/avalon-patches/d20040323-d20040415.patch |   13 -
+ server/avalon-patches/d20040415-d20040416.patch |   53 -
+ server/avalon-patches/d20040416-d20041022.patch |   30 -
+ server/avalon-patches/d20041022-d20050324.patch |  406 ----
+ server/avalon-patches/d20050324-d20050327.patch | 2241 -----------------------
+ server/avalon-patches/d20050327-d20051106.patch |  256 ---
+ server/avalon-patches/d20051106-d20051107.patch |  626 -------
+ server/avalon-patches/tORIGINAL-d20040322.patch |  666 -------
+ 12 files changed, 4369 deletions(-)
+ delete mode 100644 server/avalon-patches/CHANGES-Avalon.txt
+ delete mode 100644 server/avalon-patches/README.txt
+ delete mode 100755 server/avalon-patches/apply_order.sh
+ delete mode 100644 server/avalon-patches/d20040322-d20040323.patch
+ delete mode 100644 server/avalon-patches/d20040323-d20040415.patch
+ delete mode 100644 server/avalon-patches/d20040415-d20040416.patch
+ delete mode 100644 server/avalon-patches/d20040416-d20041022.patch
+ delete mode 100644 server/avalon-patches/d20041022-d20050324.patch
+ delete mode 100644 server/avalon-patches/d20050324-d20050327.patch
+ delete mode 100644 server/avalon-patches/d20050327-d20051106.patch
+ delete mode 100644 server/avalon-patches/d20051106-d20051107.patch
+ delete mode 100644 server/avalon-patches/tORIGINAL-d20040322.patch
+
+diff --git a/server/avalon-patches/CHANGES-Avalon.txt b/server/avalon-patches/CHANGES-Avalon.txt
+deleted file mode 100644
+index b2654c8..0000000
+--- a/server/avalon-patches/CHANGES-Avalon.txt
++++ /dev/null
+@@ -1,23 +0,0 @@
+-d20051107		- added support for ususpend
+-d20051106		- updated xml document parsing to handle name spaces
+-			  better
+-			- added ability to pass in a connection host to allow
+-			  hostname to be available when using SSL tunnel
+-			- call :do_prompt on user after every command to
+-			  improve updatability of prompts
+-d20050327		- added background name resolution
+-d20050324		- added xml document parsing
+-d20041022		- fixed random function to be type safe
+-d20040416		- added utime() from andy
+-d20040415		- modified vrandom to be ansi C compat
+-d20040323		- Added in support for user_unidled and idle_time
+-d20040322		- added FUP
+-			- added ident support
+-			- added vrandom functions
+-			- added isa() function
+-			- added listening on a specific address
+-			- added user-client connection-option for tracking
+-			  session level settings like ansi, status line, etc
+-			- added chr() function
+-tORIGINAL 		- original LambdaMOO 1.8.1
+-
+diff --git a/server/avalon-patches/README.txt b/server/avalon-patches/README.txt
+deleted file mode 100644
+index 5fa34ac..0000000
+--- a/server/avalon-patches/README.txt
++++ /dev/null
+@@ -1,23 +0,0 @@
+-These patches assume a stock LambdaMOO 1.8.1 source tree with 
+-only the FUP package added (but NOT applied to extensions.c).  The
+-files it expects are:
+-
+-ext-FUP.c        
+-ext-FUP_options.h
+-
+-They must be applied in order, starting with tORIGINAL-d20040322.patch -
+-a shell script has been provided to ease in this and expects to be
+-run in the same directory as configure, and the rest of the source code.
+-
+-It would not be a bad idea to apply them one by one following the
+-sequence in the apply_order.sh script to watch for rejections.
+-
+-The vrandom stuff was never fully tested out or used in Avalon softcode
+-so I can't really speak for its viability.
+-
+-The SSL connection host stuff is a hack that should go away once SSL 
+-support comes about.  It requires a modified stunnel implementation
+-to pass along the user's connection host via a magic parameter at 
+-the beginning of the connection conversation.
+-
+-Everything else is more or less used on a daily basis on on Avalon.
+diff --git a/server/avalon-patches/apply_order.sh b/server/avalon-patches/apply_order.sh
+deleted file mode 100755
+index e569e6e..0000000
+--- a/server/avalon-patches/apply_order.sh
++++ /dev/null
+@@ -1,10 +0,0 @@
+-patch -p4 < tORIGINAL-d20040322.patch
+-patch -p4 < d20040322-d20040323.patch
+-patch -p4 < d20040323-d20040415.patch
+-patch -p4 < d20040415-d20040416.patch
+-patch -p4 < d20040416-d20041022.patch
+-patch -p4 < d20041022-d20050324.patch
+-patch -p4 < d20050324-d20050327.patch
+-patch -p4 < d20050327-d20051106.patch
+-patch -p4 < d20051106-d20051107.patch
+-
+diff --git a/server/avalon-patches/d20040322-d20040323.patch b/server/avalon-patches/d20040322-d20040323.patch
+deleted file mode 100644
+index 7b88919..0000000
+--- a/server/avalon-patches/d20040322-d20040323.patch
++++ /dev/null
+@@ -1,22 +0,0 @@
+-diff -Nur d20040322/projects/moo/src/server.c d20040323/projects/moo/src/server.c
+---- d20040322/projects/moo/src/server.c	2004-03-22 13:26:05.000000000 -0500
+-+++ d20040323/projects/moo/src/server.c	2004-03-23 09:11:40.000000000 -0500
+-@@ -993,8 +993,18 @@
+- void
+- server_receive_line(server_handle sh, const char *line)
+- {
+-+    int v = server_int_option("idle_time", 1800);
+-+    Var args;
+-     shandle *h = (shandle *) sh.ptr;
+- 
+-+    if ((time(0) - h->last_activity_time) > v) {
+-+        args = new_list(2);
+-+        args.v.list[1].type = TYPE_OBJ;
+-+        args.v.list[1].v.obj = h->player;
+-+        args.v.list[2].type = TYPE_INT;
+-+        args.v.list[2].v.num = (time(0) - h->last_activity_time);
+-+        run_server_task(h->player, h->listener, "user_unidled", args, "", 0);
+-+    }
+-     h->last_activity_time = time(0);
+-     new_input_task(h->tasks, line);
+- }
+diff --git a/server/avalon-patches/d20040323-d20040415.patch b/server/avalon-patches/d20040323-d20040415.patch
+deleted file mode 100644
+index f84073a..0000000
+--- a/server/avalon-patches/d20040323-d20040415.patch
++++ /dev/null
+@@ -1,13 +0,0 @@
+-diff -Nur d20040323/projects/moo/src/extensions.c d20040415/projects/moo/src/extensions.c
+---- d20040323/projects/moo/src/extensions.c	2004-03-22 11:30:08.000000000 -0500
+-+++ d20040415/projects/moo/src/extensions.c	2004-04-15 14:28:14.000000000 -0400
+-@@ -279,8 +279,8 @@
+-         }
+- 
+-         while (result < 1 || result > num) {
+--            result = 1;
+-             int x = 0;
+-+            result = 1;
+-             for (x=0; x<bits; x++) {
+-                 int rbit, powwow;
+-                 powwow = (int) pow(2, x);
+diff --git a/server/avalon-patches/d20040415-d20040416.patch b/server/avalon-patches/d20040415-d20040416.patch
+deleted file mode 100644
+index 5493c53..0000000
+--- a/server/avalon-patches/d20040415-d20040416.patch
++++ /dev/null
+@@ -1,53 +0,0 @@
+-diff -Nur d20040415/projects/moo/src/extensions.c d20040416/projects/moo/src/extensions.c
+---- d20040415/projects/moo/src/extensions.c	2004-04-15 14:28:14.000000000 -0400
+-+++ d20040416/projects/moo/src/extensions.c	2004-04-16 16:17:24.000000000 -0400
+-@@ -53,6 +53,13 @@
+- #include "list.h"
+- /* vrandom extension */
+- 
+-+/* utime - andy */
+-+#include <sys/time.h>    /* these two for gettimeofday() */
+-+#include <unistd.h>
+-+#include "numbers.h"     /* for new_float() */
+-+#include "exceptions.h"  /* for panic() */
+-+/* utime - andy */
+-+
+- #if EXAMPLE
+- 
+- typedef struct stdin_waiter {
+-@@ -297,6 +304,24 @@
+- 
+- // end VERYRANDOM code
+- 
+-+// begin utime - andy
+-+static package
+-+bf_utime(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+    double t;
+-+    struct timeval tv;
+-+
+-+    free_var(arglist);
+-+
+-+    if (gettimeofday(&tv, NULL))
+-+      panic("BF_UTIME: gettimeofday() failed");
+-+
+-+    t = tv.tv_sec + (tv.tv_usec / (double)1000000.0);
+-+
+-+    return make_var_pack(new_float(t));
+-+}
+-+// end utime - andy
+-+
+- void
+- register_extensions()
+- {
+-@@ -312,7 +337,10 @@
+-     register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
+-     register_function("vrandomseed", 0, 3, bf_vrandomseed, TYPE_LIST);
+-     register_function("vrandom", 0, 1, bf_vrandom, TYPE_INT);
+-+// begin utime - andy
+-+    register_function("utime", 0, 0, bf_utime);
+-+// end utime - andy
+-   register_files();
+-   oklog("          LOADING: extensions ... finished\n");
+- }
+- 
+diff --git a/server/avalon-patches/d20040416-d20041022.patch b/server/avalon-patches/d20040416-d20041022.patch
+deleted file mode 100644
+index e340625..0000000
+--- a/server/avalon-patches/d20040416-d20041022.patch
++++ /dev/null
+@@ -1,30 +0,0 @@
+-diff -Nur d20040416/projects/moo/src/extensions.c d20041022/projects/moo/src/extensions.c
+---- d20040416/projects/moo/src/extensions.c	2004-04-16 16:17:24.000000000 -0400
+-+++ d20041022/projects/moo/src/extensions.c	2004-10-21 22:54:18.000000000 -0400
+-@@ -237,13 +237,19 @@
+-     free_var(arglist);
+- 
+-     if (nargs != 0) {
+--        unsigned long newRegA = (unsigned long) *arglist.v.list[1].v.list[1].v.fnum;
+--        unsigned long newRegB = (unsigned long) *arglist.v.list[1].v.list[2].v.fnum;
+--        unsigned long newRegC = (unsigned long) *arglist.v.list[1].v.list[3].v.fnum;
+--
+--        regA = newRegA;
+--        regB = newRegB;
+--        regC = newRegC;
+-+	if (nargs != 1 || arglist.v.list[1].v.list[0].v.num != 3) {
+-+            return make_error_pack(E_INVARG);
+-+	} else if (arglist.v.list[1].v.list[1].type != TYPE_FLOAT || arglist.v.list[1].v.list[2].type != TYPE_FLOAT || arglist.v.list[1].v.list[3].type != TYPE_FLOAT) {
+-+            return make_error_pack(E_INVARG);
+-+        } else {
+-+            unsigned long newRegA = (unsigned long) *arglist.v.list[1].v.list[1].v.fnum;
+-+            unsigned long newRegB = (unsigned long) *arglist.v.list[1].v.list[2].v.fnum;
+-+            unsigned long newRegC = (unsigned long) *arglist.v.list[1].v.list[3].v.fnum;
+-+
+-+            regA = newRegA;
+-+            regB = newRegB;
+-+            regC = newRegC;
+-+        }
+-     }
+- 
+-     r = new_list(3);
+diff --git a/server/avalon-patches/d20041022-d20050324.patch b/server/avalon-patches/d20041022-d20050324.patch
+deleted file mode 100644
+index ad733f3..0000000
+--- a/server/avalon-patches/d20041022-d20050324.patch
++++ /dev/null
+@@ -1,406 +0,0 @@
+-diff -Nur d20041022/projects/moo/src/extensions.c d20050324/projects/moo/src/extensions.c
+---- d20041022/projects/moo/src/extensions.c	2004-10-21 22:54:18.000000000 -0400
+-+++ d20050324/projects/moo/src/extensions.c	2005-03-23 22:58:31.000000000 -0500
+-@@ -328,6 +328,10 @@
+- }
+- // end utime - andy
+- 
+-+#ifdef EXPAT_XML
+-+extern void register_xml(void);
+-+#endif
+-+
+- void
+- register_extensions()
+- {
+-@@ -340,6 +344,9 @@
+-     register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+-     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+- #endif
+-+#ifdef EXPAT_XML
+-+    register_xml();
+-+#endif
+-     register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
+-     register_function("vrandomseed", 0, 3, bf_vrandomseed, TYPE_LIST);
+-     register_function("vrandom", 0, 1, bf_vrandom, TYPE_INT);
+-diff -Nur d20041022/projects/moo/src/ext-xml.c d20050324/projects/moo/src/ext-xml.c
+---- d20041022/projects/moo/src/ext-xml.c	1969-12-31 19:00:00.000000000 -0500
+-+++ d20050324/projects/moo/src/ext-xml.c	2005-03-23 22:58:57.000000000 -0500
+-@@ -0,0 +1,233 @@
+-+/*
+-+ * XML for the MOO Server using the expat library
+-+ */
+-+
+-+
+-+
+-+#include "bf_register.h"
+-+#include "functions.h"
+-+#include "db_tune.h"
+-+#include "storage.h"
+-+#include "list.h"
+-+#include "streams.h"
+-+#include "utils.h"
+-+
+-+#include "exceptions.h"
+-+#include "tasks.h"
+-+
+-+#include "xmlparse.h"
+-+
+-+
+-+/*
+-+ * quick'n'dirty
+-+ * <foo a="1">
+-+ *   <bar>11</bar>
+-+ * </foo> 
+-+ * =
+-+ * {"foo", {{"a", "1"}}, {{"bar", {}, {"11"}}}}
+-+ */
+-+
+-+typedef struct XMLdata XMLdata;
+-+
+-+struct XMLdata {
+-+  XMLdata *parent;
+-+  Stream *body;
+-+  Var element;
+-+};
+-+
+-+
+-+static XMLdata *
+-+new_node(XMLdata *parent, const char *name) 
+-+{
+-+  /* TODO: may want a suballocator here; gonna be needing a lot of
+-+   * these 2-ptr + 1 var nodes
+-+   */
+-+  XMLdata *node;
+-+  Var element;
+-+  node = (XMLdata *)mymalloc(1*sizeof(XMLdata), M_XML_DATA);
+-+  element = new_list(4);
+-+  /* {name, attribs, body, children} */ 
+-+  element.v.list[1].type = TYPE_STR;
+-+  element.v.list[1].v.str = str_dup(name);
+-+  element.v.list[2] = new_list(0);
+-+  element.v.list[3].type = TYPE_INT;
+-+  element.v.list[3].v.num = 0;
+-+  element.v.list[4] = new_list(0);
+-+  node->body = NULL;
+-+  node->element = element;
+-+  node->parent = parent;
+-+  return node;
+-+}			
+-+
+-+static void 
+-+finish_node(XMLdata *data)
+-+{
+-+  XMLdata *parent = data->parent;
+-+  Var element = data->element;
+-+  Var body;
+-+  Stream *s = data->body;
+-+  body.type = TYPE_STR;
+-+  if(s == NULL) {
+-+    body.v.str = str_dup("");
+-+  } else {
+-+    body.v.str = str_dup(reset_stream(s));
+-+  }
+-+  element.v.list[3] = body;
+-+  if(parent != NULL) {
+-+    Var pelement = parent->element;
+-+    pelement.v.list[4] = listappend(pelement.v.list[4], var_ref(element));
+-+  }
+-+}
+-+  
+-+static void
+-+free_node(XMLdata *data) 
+-+{
+-+  free_var(data->element);
+-+  if(data->body != NULL)
+-+    free_stream(data->body);
+-+  myfree(data, M_XML_DATA);
+-+}
+-+
+-+static void
+-+flush_nodes(XMLdata *bottom) 
+-+{
+-+  XMLdata *parent = bottom->parent;
+-+  free_node(bottom);
+-+  if(parent != NULL) {
+-+    flush_nodes(parent);
+-+  }
+-+}
+-+
+-+static void
+-+xml_startElement(void *userData, const char *name, const char **atts)
+-+{
+-+  XMLdata **data = (XMLdata**)userData;
+-+  XMLdata *parent = *data;
+-+
+-+  XMLdata *node = new_node(parent, name);
+-+  const char **patts = atts;
+-+
+-+  while(*patts != NULL) {
+-+    Var pair = new_list(2);
+-+    pair.v.list[1].type = TYPE_STR;
+-+    pair.v.list[1].v.str = str_dup(patts[0]);
+-+    pair.v.list[2].type = TYPE_STR;
+-+    pair.v.list[2].v.str = str_dup(patts[1]); 
+-+    patts += 2;
+-+    node->element.v.list[2] = listappend(node->element.v.list[2], pair);
+-+  }
+-+  *data = node;
+-+}
+-+
+-+static void 
+-+xml_characterDataHandler(void *userData, const XML_Char *s, int len)
+-+{
+-+  XMLdata **data = (XMLdata**)userData;
+-+  XMLdata *node = *data;
+-+  Stream *sp = node->body;
+-+
+-+  if(sp == NULL) {
+-+    node->body = new_stream(len);
+-+    sp = node->body; 
+-+  }
+-+
+-+  stream_add_string(sp, raw_bytes_to_binary(s, len));
+-+}
+-+
+-+static void 
+-+xml_streamCharacterDataHandler(void *userData, const XML_Char *s, int len)
+-+{
+-+  XMLdata **data = (XMLdata**)userData;
+-+  XMLdata *node = *data;
+-+  Var element = node->element;
+-+  Var v;
+-+  v.type = TYPE_STR;
+-+  v.v.str = str_dup(raw_bytes_to_binary(s, len));
+-+  element.v.list[4] = listappend(element.v.list[4], v);
+-+}
+-+
+-+
+-+static void
+-+xml_endElement(void *userData, const char *name)
+-+{
+-+  XMLdata **data = (XMLdata**)userData;
+-+  XMLdata *node = *data;
+-+  XMLdata *parent = node->parent;
+-+  finish_node(node);
+-+  free_node(node);
+-+  *data = parent;
+-+}
+-+
+-+/**
+-+ * Parse an XML string into a nested list.
+-+ * The second parameter indicates if body text (text within XML tags)
+-+ * should show up among the children of the tag or in its own
+-+ * section.
+-+ *
+-+ * See documentation (ext-xml.README) for examples.
+-+ */
+-+static package 
+-+parse_xml(const char *data, int bool_stream)
+-+  {
+-+  /*
+-+   * FIXME: Feed expat smaller chunks of the string and 
+-+   * check for task timeout between chunks
+-+   *
+-+   */
+-+  int decoded_length;
+-+  const char *decoded;
+-+  package result; 
+-+  XML_Parser parser = XML_ParserCreate(NULL);
+-+  XMLdata *root = new_node(NULL, "");
+-+  XMLdata *child = root;
+-+  
+-+  decoded_length = strlen(data);
+-+  decoded = data;
+-+  XML_SetUserData(parser, &child);
+-+  XML_SetElementHandler(parser, xml_startElement, xml_endElement);
+-+  if(bool_stream) {
+-+    XML_SetCharacterDataHandler(parser, xml_streamCharacterDataHandler);
+-+  } else {
+-+    XML_SetCharacterDataHandler(parser, xml_characterDataHandler);
+-+  }
+-+  if (!XML_Parse(parser, decoded, decoded_length, 1)) {
+-+    Var r;
+-+    r.type = TYPE_INT;
+-+    r.v.num = XML_GetCurrentByteIndex(parser);
+-+    flush_nodes(child);
+-+    result = make_raise_pack(E_INVARG, 
+-+			     XML_ErrorString(XML_GetErrorCode(parser)),
+-+			     r);
+-+  } else {
+-+    finish_node(root);
+-+    result = make_var_pack(var_ref(root->element.v.list[4].v.list[1]));
+-+    free_node(root);
+-+  }
+-+  XML_ParserFree(parser);
+-+  return result; 
+-+}
+-+
+-+
+-+static package
+-+bf_parse_xml_document(Var arglist, Byte next, void *vdata, Objid progr) 
+-+{
+-+  package result = parse_xml(arglist.v.list[1].v.str, 1);
+-+  free_var(arglist);
+-+  return result;
+-+}
+-+
+-+static package
+-+bf_parse_xml_tree(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+  package result = parse_xml(arglist.v.list[1].v.str, 0);
+-+  free_var(arglist);
+-+  return result;
+-+}
+-+
+-+void
+-+register_xml()
+-+{
+-+    register_function("xml_parse_tree", 1, 1, bf_parse_xml_tree, TYPE_STR);
+-+    register_function("xml_parse_document", 1, 1, bf_parse_xml_document, TYPE_STR);
+-+}
+-+
+-diff -Nur d20041022/projects/moo/src/ext-xml.patch d20050324/projects/moo/src/ext-xml.patch
+---- d20041022/projects/moo/src/ext-xml.patch	1969-12-31 19:00:00.000000000 -0500
+-+++ d20050324/projects/moo/src/ext-xml.patch	2005-03-23 22:59:00.000000000 -0500
+-@@ -0,0 +1,94 @@
+-+diff -c MOO-1.8.1/Makefile.in ../MOO-1.8.1/Makefile.in
+-+*** MOO-1.8.1/Makefile.in	Mon Jan 10 17:54:05 2000
+-+--- ../MOO-1.8.1/Makefile.in	Sat May 20 00:53:37 2000
+-+***************
+-+*** 13,23 ****
+-+  #   Palo Alto, CA 94304
+-+  #   Pavel@Xerox.Com
+-+  
+-+! CC = @CC@
+-+! LIBRARIES = @LIBS@
+-+  YACC = @YACC@
+-+  
+-+! CFLAGS = -O
+-+  # If you're using GCC, you may prefer:
+-+  # CFLAGS = -O2 -finline-functions
+-+  #
+-+--- 13,31 ----
+-+  #   Palo Alto, CA 94304
+-+  #   Pavel@Xerox.Com
+-+  
+-+! # 
+-+! # with autoconf2 I'll go edit it to support --with-expat=
+-+! # Until then, set this to where you unpacked and compiled expat
+-+! #
+-+! EXPAT = /home/fox/src/dist/expat
+-+! 
+-+! EXPAT_OBJS = $(EXPAT)/xmltok/*.o $(EXPAT)/xmlparse/*.o 
+-+! 
+-+! CC = @CC@ -I$(EXPAT)/xmlparse
+-+! LIBRARIES = @LIBS@ $(EXPAT_OBJS)
+-+  YACC = @YACC@
+-+  
+-+! CFLAGS = -O -DEXPAT_XML
+-+  # If you're using GCC, you may prefer:
+-+  # CFLAGS = -O2 -finline-functions
+-+  #
+-+***************
+-+*** 35,41 ****
+-+  	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+-+  	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+-+  	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+-+! 	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
+-+  
+-+  OPT_NET_SRCS = net_single.c net_multi.c \
+-+  	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+-+--- 43,49 ----
+-+  	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+-+  	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+-+  	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+-+! 	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c ext-xml.c
+-+  
+-+  OPT_NET_SRCS = net_single.c net_multi.c \
+-+  	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+-+diff -c MOO-1.8.1/extensions.c ../MOO-1.8.1/extensions.c
+-+*** MOO-1.8.1/extensions.c	Mon Dec 14 05:17:52 1998
+-+--- ../MOO-1.8.1/extensions.c	Sat May 20 00:54:47 2000
+-+***************
+-+*** 172,177 ****
+-+--- 172,180 ----
+-+  }
+-+  #endif
+-+  
+-++ #ifdef EXPAT_XML
+-++ extern void register_xml(void);
+-++ #endif
+-+  
+-+  void
+-+  register_extensions()
+-+***************
+-+*** 183,188 ****
+-+--- 186,194 ----
+-+  #ifdef STUPID_VERB_CACHE
+-+      register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+-+      register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+-++ #endif
+-++ #ifdef EXPAT_XML
+-++     register_xml();
+-+  #endif
+-+  }
+-+  
+-+Common subdirectories: MOO-1.8.1/pgperf and ../MOO-1.8.1/pgperf
+-+diff -c MOO-1.8.1/storage.h ../MOO-1.8.1/storage.h
+-+*** MOO-1.8.1/storage.h	Mon Dec 14 05:19:00 1998
+-+--- ../MOO-1.8.1/storage.h	Sat May 20 00:54:59 2000
+-+***************
+-+*** 34,39 ****
+-+--- 34,40 ----
+-+  
+-+      M_REF_ENTRY, M_REF_TABLE, M_VC_ENTRY, M_VC_TABLE, M_STRING_PTRS,
+-+      M_INTERN_POINTER, M_INTERN_ENTRY, M_INTERN_HUNK,
+-++     M_XML_DATA,
+-+  
+-+      Sizeof_Memory_Type
+-+  
+-diff -Nur d20041022/projects/moo/src/Makefile.in d20050324/projects/moo/src/Makefile.in
+---- d20041022/projects/moo/src/Makefile.in	2004-03-22 11:28:31.000000000 -0500
+-+++ d20050324/projects/moo/src/Makefile.in	2005-03-23 22:59:29.000000000 -0500
+-@@ -13,11 +13,20 @@
+- #   Palo Alto, CA 94304
+- #   Pavel@Xerox.Com
+- 
+--CC = @CC@
+--LIBRARIES = @LIBS@
+-+# 
+-+# with autoconf2 I'll go edit it to support --with-expat=
+-+# Until then, set this to where you unpacked and compiled expat
+-+#
+-+EXPAT = /usr/local/src/standard/expat
+-+
+-+
+-+EXPAT_OBJS = $(EXPAT)/xmltok/*.o $(EXPAT)/xmlparse/*.o 
+-+
+-+CC = @CC@ -I$(EXPAT)/xmlparse
+-+LIBRARIES = @LIBS@ $(EXPAT_OBJS)
+- YACC = @YACC@
+- 
+--CFLAGS = -O
+-+CFLAGS = -O -DEXPAT_XML
+- # If you're using GCC, you may prefer:
+- # CFLAGS = -O2 -finline-functions
+- #
+-@@ -35,7 +44,7 @@
+- 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+- 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+- 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+--	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
+-+	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c ext-xml.c
+- 
+- OPT_NET_SRCS = net_single.c net_multi.c \
+- 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+-diff -Nur d20041022/projects/moo/src/storage.h d20050324/projects/moo/src/storage.h
+---- d20041022/projects/moo/src/storage.h	2004-03-22 11:14:54.000000000 -0500
+-+++ d20050324/projects/moo/src/storage.h	2005-03-23 22:58:20.000000000 -0500
+-@@ -34,6 +34,7 @@
+- 
+-     M_REF_ENTRY, M_REF_TABLE, M_VC_ENTRY, M_VC_TABLE, M_STRING_PTRS,
+-     M_INTERN_POINTER, M_INTERN_ENTRY, M_INTERN_HUNK,
+-+    M_XML_DATA,
+- 
+-     Sizeof_Memory_Type
+- 
+diff --git a/server/avalon-patches/d20050324-d20050327.patch b/server/avalon-patches/d20050324-d20050327.patch
+deleted file mode 100644
+index cc24a9b..0000000
+--- a/server/avalon-patches/d20050324-d20050327.patch
++++ /dev/null
+@@ -1,2241 +0,0 @@
+-diff -Nur d20050324/projects/moo/src/bf_register.h d20050327/projects/moo/src/bf_register.h
+---- d20050324/projects/moo/src/bf_register.h	2004-03-22 11:14:53.000000000 -0500
+-+++ d20050327/projects/moo/src/bf_register.h	2005-03-27 23:56:21.000000000 -0500
+-@@ -27,4 +27,7 @@
+- extern void register_server(void);
+- extern void register_tasks(void);
+- extern void register_verbs(void);
+-+/* bg_name_lookup */
+-+extern void register_name_lookup(void);
+-+/* !bg_name_lookup */
+- 
+-diff -Nur d20050324/projects/moo/src/bg_name_lookup.c d20050327/projects/moo/src/bg_name_lookup.c
+---- d20050324/projects/moo/src/bg_name_lookup.c	1969-12-31 19:00:00.000000000 -0500
+-+++ d20050327/projects/moo/src/bg_name_lookup.c	2005-03-27 23:56:21.000000000 -0500
+-@@ -0,0 +1,823 @@
+-+#include <errno.h>
+-+#include <signal.h>
+-+#include <netdb.h>      /* gethostby{name,addr}() */
+-+#include <unistd.h>     /* write(), read(), sleep(), alarm() */
+-+#include <stdlib.h>     /* malloc(), free() */
+-+#include <netinet/in.h> /* inet_ntoa() */
+-+#include <arpa/inet.h>  /* ditto */
+-+
+-+#include "tasks.h"
+-+#include "structures.h"
+-+#include "functions.h"
+-+#include "utils.h"
+-+#include "list.h"
+-+#include "my-in.h"
+-+
+-+#include "log.h"        /* errlog() */
+-+#include "exceptions.h" /* panic() */
+-+#include "net_multi.h"  /* network_{,un}register_fd() */
+-+#include "storage.h"    /* str_dup() */
+-+#include "server.h"     /* set_server_cmdline() */
+-+
+-+struct async_name_lookup_info
+-+{
+-+  enum { ASYNC_FROM_ADDR, ASYNC_FROM_NAME } kind;
+-+ 
+-+  unsigned timeout;
+-+  unsigned started;
+-+ 
+-+  union
+-+  {
+-+    char *name;
+-+    struct in_addr address;
+-+  } u;
+-+ 
+-+  pid_t pid;
+-+  int pipe_fd;
+-+ 
+-+  vm the_vm;
+-+ 
+-+  struct async_name_lookup_info *next;
+-+};
+-+
+-+struct async_request /* Same as name_lookup.c's struct request */
+-+{
+-+  enum { REQ_FROM_ADDR, REQ_FROM_NAME } kind;
+-+
+-+  unsigned timeout;
+-+
+-+  union
+-+  {
+-+    unsigned length;
+-+    /* struct sockaddr_in address; Why? */
+-+    struct in_addr address;
+-+  } u;
+-+};
+-+
+-+struct async_reply
+-+{
+-+  enum { AR_SUCCESS, AR_FAILURE } success;
+-+ 
+-+  enum error error;
+-+ 
+-+  int num_aliases;
+-+  int num_addresses;
+-+};
+-+ 
+-+typedef struct async_reply async_reply;
+-+typedef struct async_request async_request;
+-+
+-+struct async_name_lookup_info *async_name_lookup_info = 0;
+-+int                            async_name_lookup_len  = 0;
+-+
+-+static task_enum_action lookup_task_queue_enumerator(task_closure closure, void *data);
+-+static void async_name_lookup_readable(int fd, struct async_name_lookup_info *info_ptr);
+-+static struct async_name_lookup_info *dequeue_lookup_task(struct async_name_lookup_info *info_ptr);
+-+
+-+static struct async_name_lookup_info *async_lookup_from_name(const char *name, unsigned timeout);
+-+static struct async_name_lookup_info *async_lookup_from_addr(struct in_addr addr, unsigned timeout);
+-+
+-+static void async_lookup_from_addr_child(int to_parent, int from_parent);
+-+static void async_lookup_from_name_child(int to_parent, int from_parent);
+-+
+-+static void async_child_catch_alarm(int sig);
+-+
+-+/*** Utils ***/
+-+
+-+static int  /* Shamelessly stolen from name_lookup.c */
+-+robust_read(int fd, void *buffer, int len)
+-+{
+-+    int count;
+-+ 
+-+    do {
+-+        count = read(fd, buffer, len);
+-+    } while (count == -1 && errno == EINTR);
+-+ 
+-+    return count;
+-+} 
+-+
+-+static inline int
+-+robust_write(int fd, void *buffer, int len)
+-+{
+-+  int ret;
+-+
+-+  while (((ret = write(fd, buffer, len)) == -1) && (errno == EINTR))
+-+    ;
+-+
+-+  return ret;
+-+}
+-+
+-+/* Writes the string length followed by the string to an fd.
+-+ */
+-+static inline int
+-+string_write(int fd, char *str)
+-+{
+-+  int    ret;
+-+  size_t size;
+-+
+-+  size = strlen(str);
+-+  
+-+  ret = robust_write(fd, &size, sizeof(size));
+-+  if (ret != sizeof(size)) return ret;
+-+
+-+  ret = robust_write(fd, str, size);
+-+  return ret;
+-+}
+-+
+-+/* Reads a string length followed by a string.
+-+ * Returns NULL on error. Otherwise caller should free().
+-+ */
+-+static inline char *
+-+string_read(int fd)
+-+{
+-+  int ret;
+-+  size_t size;
+-+  char *str;
+-+
+-+  ret = robust_read(fd, &size, sizeof(size));
+-+  if (ret != sizeof(size)) return NULL;
+-+
+-+  str = malloc(size+1);
+-+  if (str == NULL) panic("STRING_READ: Out of memory.\n");
+-+
+-+  ret = robust_read(fd, str, size);
+-+  if (ret != size)
+-+  {
+-+    free(str);
+-+    return NULL;
+-+  }
+-+
+-+  str[size] = '\0';
+-+  return str;
+-+}
+-+
+-+
+-+/* Task queue stuff */
+-+
+-+
+-+/* Enumerator for custom task queue. Target of register_task_queue().
+-+ */
+-+static task_enum_action
+-+lookup_task_queue_enumerator(task_closure closure, void *data)
+-+{
+-+  int x;
+-+  struct async_name_lookup_info *info_ptr;
+-+  task_enum_action tea;
+-+  static const char status[] = "name_lookup()";
+-+ 
+-+  info_ptr = async_name_lookup_info;
+-+
+-+  for (x=1; x<=async_name_lookup_len; x++)
+-+  {
+-+    if (!info_ptr)
+-+      panic("LOOKUP_TASK_QUEUE_ENUMERATOR: Ran off end of linked list!");
+-+ 
+-+    tea = (*closure)(info_ptr->the_vm, status, data);
+-+ 
+-+    if (tea == TEA_KILL)
+-+    {
+-+      errlog("LOOKUP_TASK_QUEUE_ENUMERATOR: TEA_KILL\n");
+-+      dequeue_lookup_task(info_ptr);
+-+    }
+-+ 
+-+    if (tea != TEA_CONTINUE)
+-+      return tea;
+-+ 
+-+    info_ptr=info_ptr->next;
+-+  }
+-+ 
+-+  return TEA_CONTINUE;
+-+} 
+-+
+-+
+-+static enum error
+-+enqueue_lookup_task(vm the_vm, struct async_name_lookup_info *info_ptr)
+-+{
+-+  struct async_name_lookup_info **info_walk;
+-+
+-+  network_register_fd(info_ptr->pipe_fd, async_name_lookup_readable, NULL, info_ptr);
+-+  info_ptr->the_vm = the_vm;
+-+
+-+  /* Easier to throw them on the beginning, but oh well */
+-+  info_walk = &async_name_lookup_info;
+-+  while (*info_walk)
+-+  {
+-+    info_walk=&((*info_walk)->next);
+-+  }
+-+ 
+-+  *info_walk = info_ptr;
+-+
+-+  async_name_lookup_len++;
+-+ 
+-+  return E_NONE;
+-+}
+-+
+-+
+-+/* Scans the name lookup queue for the pointer we are given, and deletes it
+-+ * from the list. Returns a pointer to the next item in the list.
+-+ */
+-+static struct async_name_lookup_info *
+-+dequeue_lookup_task(struct async_name_lookup_info *info_ptr)
+-+{
+-+  struct async_name_lookup_info **info_walk;
+-+  int x=0;
+-+  int cleaned=0;
+-+ 
+-+  network_unregister_fd(info_ptr->pipe_fd);
+-+  close(info_ptr->pipe_fd);
+-+ 
+-+  for (info_walk=&async_name_lookup_info; *info_walk; info_walk=&((*info_walk)->next))
+-+  {
+-+    if (*info_walk == info_ptr)
+-+    {
+-+      struct async_name_lookup_info *next;
+-+
+-+      next = (*info_walk)->next; 
+-+      free(*info_walk);
+-+      *info_walk = next;
+-+      cleaned = 1;
+-+      break;
+-+    }
+-+ 
+-+    if (++x > async_name_lookup_len)
+-+      panic("DEQUEUE_LOOKUP_TASK: Queue is longer than it should be. :-(");
+-+  }
+-+ 
+-+  if (!cleaned)
+-+    panic("DEQUEUE_LOOKUP_TASK: Failed to clean up.");
+-+ 
+-+  async_name_lookup_len--;
+-+ 
+-+  return *info_walk;
+-+}
+-+
+-+
+-+/* Callback set in place with network_register_fd().
+-+ */
+-+static void
+-+async_name_lookup_readable(int fd, struct async_name_lookup_info *info_ptr)
+-+{
+-+  async_reply rep;
+-+  Var r;
+-+ 
+-+  char *name;
+-+ 
+-+  if ((robust_read(info_ptr->pipe_fd, &rep, sizeof(rep)) != sizeof(rep)))
+-+  {
+-+    /* fd was probably closed as child died */
+-+    r.type  = TYPE_ERR;
+-+    r.v.err = E_VARNF;
+-+  }
+-+  else if (rep.success == AR_FAILURE)
+-+  {
+-+    /* Child reported an error, just return that */
+-+    r.type  = TYPE_ERR;
+-+    r.v.err = rep.error;
+-+  }
+-+  else if ((name = string_read(fd)) == NULL)
+-+  {
+-+    /* fd was probably closed as child died */
+-+    r.type  = TYPE_ERR;
+-+    r.v.err = E_VARNF;
+-+  }
+-+  else
+-+  {
+-+    int x;
+-+    char          **alias_list;
+-+    struct in_addr *addr_list;
+-+
+-+    if ((alias_list = calloc(rep.num_aliases, sizeof(alias_list[0]))) == NULL)
+-+    {
+-+      panic("ASYNC_NAME_LOOKUP_READABLE: Out of memory\n");
+-+    }
+-+
+-+    if ((addr_list = calloc(rep.num_addresses, sizeof(struct in_addr))) == NULL)
+-+    {
+-+      panic("ASYNC_NAME_LOOKUP_READABLE: Out of memory\n");
+-+    }
+-+
+-+    /* Read the alias ptrs into our array */
+-+    for (x=0; x<rep.num_aliases; x++)
+-+    {
+-+      alias_list[x] = string_read(info_ptr->pipe_fd);
+-+      /* oklog("Alias %d: %s\n", x, alias_list[x]); */
+-+      /* Should do something smarter on error */
+-+      if (alias_list[x] == NULL)
+-+        panic("ASYNC_NAME_LOOKUP_READABLE: Couldn't read alias.\n");
+-+    }
+-+
+-+    /* Read the addrs */
+-+    for (x=0; x<rep.num_addresses; x++)
+-+    {
+-+      /* Should do something smarter on error */
+-+      if (robust_read(info_ptr->pipe_fd, &(addr_list[x].s_addr), sizeof(addr_list[0].s_addr)) != sizeof(addr_list[0].s_addr))
+-+        panic("ASYNC_NAME_LOOKUP_READABLE: Couldn't read address.\n");
+-+      /* oklog("Address %d: %s\n", x, inet_ntoa(addr_list[x])); */
+-+    }
+-+
+-+    /* Yay, return successful result */
+-+    r = new_list(3);
+-+
+-+    r.v.list[1].type  = TYPE_STR;
+-+    r.v.list[1].v.str = str_dup(name);
+-+
+-+    r.v.list[2] = new_list(rep.num_aliases);
+-+    for (x=0; x<rep.num_aliases; x++)
+-+    {
+-+      r.v.list[2].v.list[x+1].type  = TYPE_STR;
+-+      r.v.list[2].v.list[x+1].v.str = str_dup(alias_list[x]);
+-+    }
+-+
+-+    r.v.list[3] = new_list(rep.num_addresses);
+-+    for (x=0; x<rep.num_addresses; x++)
+-+    {
+-+      unsigned char *y=(unsigned char *) &(addr_list[x].s_addr);
+-+
+-+      r.v.list[3].v.list[x+1] = new_list(4);
+-+      r.v.list[3].v.list[x+1].v.list[1].type  = TYPE_INT;
+-+      r.v.list[3].v.list[x+1].v.list[1].v.num = (int) *y++;
+-+      r.v.list[3].v.list[x+1].v.list[2].type  = TYPE_INT;
+-+      r.v.list[3].v.list[x+1].v.list[2].v.num = (int) *y++;
+-+      r.v.list[3].v.list[x+1].v.list[3].type  = TYPE_INT;
+-+      r.v.list[3].v.list[x+1].v.list[3].v.num = (int) *y++;
+-+      r.v.list[3].v.list[x+1].v.list[4].type  = TYPE_INT;
+-+      r.v.list[3].v.list[x+1].v.list[4].v.num = (int) *y++;
+-+    }
+-+
+-+    /* Free all our stuff */
+-+    free(name);
+-+    free(alias_list);
+-+    free(addr_list);
+-+  }
+-+ 
+-+  resume_task(info_ptr->the_vm, r);
+-+ 
+-+  /* Clean up */
+-+  dequeue_lookup_task(info_ptr);
+-+ 
+-+  return;
+-+}
+-+
+-+
+-+/*** Builtin function stuff ***/
+-+ 
+-+
+-+/* bf_name_lookup(str/list addr, int timeout) => {str name, list aliases, list addresses}
+-+ * E_PERM    - Not a wizard.
+-+ * E_RECMOVE - Problem starting name lookup.
+-+ * E_VARNF   - Name lookup died. (Timeout)
+-+ * Results from gethostbyname():
+-+ * E_PROPNF  - Host was not found.
+-+ * E_MAXREC  - Temporary error, try again.
+-+ * E_INVIND  - Host exists but has no address information.
+-+ * E_VERBNF  - Unrecoverable error.
+-+ */
+-+static package
+-+bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+  Var r;  /* probably unneeded */
+-+  struct async_name_lookup_info *info_ptr;
+-+ 
+-+  int timeout = arglist.v.list[2].v.num;
+-+ 
+-+  if (!is_wizard(progr))
+-+  {
+-+    free_var(arglist);
+-+    return make_error_pack(E_PERM);
+-+  }
+-+ 
+-+  switch (arglist.v.list[1].type)
+-+  {
+-+  case TYPE_STR:
+-+    if ((info_ptr = async_lookup_from_name(arglist.v.list[1].v.str, timeout)) == NULL)
+-+    {
+-+      free_var(arglist);
+-+      return make_error_pack(E_RECMOVE);  /* Problem starting or talking to child */
+-+    }
+-+    else
+-+    {
+-+      free_var(arglist);
+-+      return make_suspend_pack(enqueue_lookup_task, info_ptr);
+-+    }
+-+ 
+-+    break;
+-+  case TYPE_LIST:
+-+    if (arglist.v.list[1].v.list[0].v.num != 4)
+-+    {
+-+      free_var(arglist);
+-+      return make_error_pack(E_INVARG);
+-+    }
+-+    else
+-+    {
+-+      int x;
+-+      struct in_addr tmp_addr;
+-+      unsigned char *y = (unsigned char *) &(tmp_addr.s_addr);
+-+
+-+      /* We have a list of length 4. Turn it into an IP. */
+-+      for (x=1; x<=4; x++)
+-+      {
+-+        if ((arglist.v.list[1].v.list[x].type != TYPE_INT) ||
+-+            (arglist.v.list[1].v.list[x].v.num < 0)        ||
+-+            (arglist.v.list[1].v.list[x].v.num > 255))
+-+        {
+-+          free_var(arglist);
+-+          return make_error_pack(E_INVARG);
+-+        }
+-+        else
+-+          *y++ = (unsigned char) arglist.v.list[1].v.list[x].v.num;
+-+      }
+-+
+-+      free_var(arglist); /* We're done with them at this point */
+-+
+-+      /* Try to look it up. */
+-+      if ((info_ptr = async_lookup_from_addr(tmp_addr, timeout)) == NULL)
+-+        return make_error_pack(E_RECMOVE);  /* Problem starting or talking to child */
+-+      else
+-+        return make_suspend_pack(enqueue_lookup_task, info_ptr);
+-+    }
+-+
+-+    break;
+-+  default:
+-+    free_var(arglist);
+-+    return make_error_pack(E_TYPE);
+-+    break;
+-+  }
+-+ 
+-+  /* Hmm... */
+-+  errlog("BF_NAME_LOOKUP: How did we get here?\n");
+-+
+-+  r.type = TYPE_INT;
+-+  r.v.num = 0;
+-+
+-+  free_var(arglist);
+-+  return make_var_pack(r);
+-+}
+-+
+-+
+-+
+-+/* bf_name_lookups() => {{str/list addr, int timeout, int started, int task_id}, ...}
+-+ */
+-+static package
+-+bf_name_lookups(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+  Var r;
+-+  int x;
+-+  struct async_name_lookup_info *info_ptr;
+-+ 
+-+  if (!is_wizard(progr))
+-+  {
+-+    free_var(arglist);
+-+    return make_error_pack(E_PERM);
+-+  }
+-+ 
+-+  info_ptr = async_name_lookup_info;
+-+  r = new_list(async_name_lookup_len);
+-+ 
+-+  for (x=1; x<=async_name_lookup_len; x++)
+-+  {
+-+    r.v.list[x] = new_list(4);
+-+ 
+-+    if (!info_ptr)
+-+      panic("BF_NAME_LOOKUPS: Ran off end of linked list!");
+-+ 
+-+    r.v.list[x].v.list[1].type = TYPE_STR;
+-+    r.v.list[x].v.list[1].v.str = str_dup(info_ptr->u.name);
+-+ 
+-+    r.v.list[x].v.list[2].type = TYPE_INT;
+-+    r.v.list[x].v.list[2].v.num = info_ptr->timeout;
+-+ 
+-+    r.v.list[x].v.list[3].type = TYPE_INT;
+-+    r.v.list[x].v.list[3].v.num = info_ptr->started;
+-+ 
+-+    r.v.list[x].v.list[4].type = TYPE_INT;
+-+    r.v.list[x].v.list[4].v.num = info_ptr->the_vm->task_id;
+-+ 
+-+    info_ptr = info_ptr->next;
+-+  }
+-+ 
+-+  free_var(arglist);
+-+  return make_var_pack(r);
+-+} 
+-+
+-+
+-+void
+-+register_name_lookup()
+-+{ 
+-+  register_task_queue(lookup_task_queue_enumerator);
+-+  (void) register_function("name_lookup", 2, 2, bf_name_lookup, TYPE_ANY, TYPE_INT);
+-+  (void) register_function("name_lookups", 0, 0, bf_name_lookups);
+-+}
+-+
+-+
+-+/*** Interface with child stuff ***/
+-+
+-+
+-+/* Hmm.
+-+ * We probably inherit signal handlers?
+-+ * And we should probably close() the network fd's?
+-+ */
+-+static pid_t spawn_async_lookup(void (*child_proc) (int to_parent, int from_parent),
+-+                                 int *to_child, int *from_child)
+-+{
+-+  int pipe_to_child[2], pipe_from_child[2];
+-+  pid_t pid;
+-+ 
+-+  if (pipe(pipe_to_child) < 0) {
+-+    log_perror("SPAWN_ASYNC_LOOKUP: Couldn't create first pipe");
+-+  } else if (pipe(pipe_from_child) < 0) {
+-+    log_perror("SPAWN_ASYNC_LOOKUP: Couldn't create second pipe");
+-+    close(pipe_to_child[0]);
+-+    close(pipe_to_child[1]);
+-+  } else if ((pid = fork()) < 0) {
+-+    log_perror("SPAWN_ASYNC_LOOKUP: Couldn't fork name lookup process");
+-+    close(pipe_to_child[0]);
+-+    close(pipe_to_child[1]);
+-+    close(pipe_from_child[0]);
+-+    close(pipe_from_child[1]);
+-+  } else if (pid != 0) {      /* parent */
+-+ 
+-+    close(pipe_to_child[0]);
+-+    close(pipe_from_child[1]);
+-+    *to_child = pipe_to_child[1];
+-+    *from_child = pipe_from_child[0];
+-+ 
+-+    return pid;
+-+  } else {                   /* child */
+-+    close(pipe_to_child[1]);
+-+    close(pipe_from_child[0]);
+-+ 
+-+    signal(SIGALRM, async_child_catch_alarm);
+-+ 
+-+    (*child_proc) (pipe_from_child[1], pipe_to_child[0]);
+-+    exit(0);
+-+  }
+-+ 
+-+  return 0;
+-+} 
+-+
+-+
+-+static struct async_name_lookup_info *
+-+async_lookup_from_name(const char *name, unsigned timeout)
+-+{
+-+  struct async_name_lookup_info *info_new;
+-+ 
+-+  async_request req;
+-+
+-+  int pid;
+-+  int to_child, from_child;
+-+ 
+-+ 
+-+  if ((info_new=malloc(sizeof(struct async_name_lookup_info))) == NULL)
+-+  {
+-+    errlog("ASYNC_LOOKUP_FROM_NAME: Malloc failed.\n");
+-+    return NULL;
+-+  }
+-+ 
+-+  pid = spawn_async_lookup(async_lookup_from_name_child, &to_child, &from_child);
+-+  if (!pid)
+-+  {
+-+    errlog("ASYNC_LOOKUP_FROM_NAME: Could not spawn child!\n");
+-+    free(info_new);
+-+    return NULL;
+-+  }
+-+ 
+-+  req.kind     = REQ_FROM_NAME;
+-+  req.timeout  = timeout;
+-+  req.u.length = strlen(name);
+-+ 
+-+  if (robust_write(to_child, &req, sizeof(req)) == -1)
+-+  {
+-+    log_perror("ASYNC_LOOKUP_FROM_NAME: Couldn't write request to child");
+-+    free(info_new);
+-+    return NULL;
+-+  }
+-+ 
+-+  if (robust_write(to_child, name, req.u.length) == -1)
+-+  {
+-+    log_perror("ASYNC_LOOKUP_FROM_NAME: Couldn't write name to child");
+-+    free(info_new);
+-+    return NULL;
+-+  }
+-+ 
+-+  close(to_child);
+-+ 
+-+  info_new->timeout = timeout;
+-+  info_new->started = time(NULL);
+-+  info_new->u.name  = str_dup(name);
+-+  info_new->pid     = pid;
+-+  info_new->pipe_fd = from_child;
+-+  info_new->next    = 0;
+-+ 
+-+  return info_new;
+-+} 
+-+
+-+
+-+static struct async_name_lookup_info *
+-+async_lookup_from_addr(struct in_addr addr, unsigned timeout)
+-+{
+-+  struct async_name_lookup_info *info_new;
+-+ 
+-+  async_request req;
+-+
+-+  int pid;
+-+  int to_child, from_child;
+-+
+-+ 
+-+  if ((info_new=malloc(sizeof(struct async_name_lookup_info))) == NULL)
+-+  {
+-+    errlog("ASYNC_LOOKUP_FROM_ADDR: Malloc failed.\n");
+-+    return NULL;
+-+  }
+-+ 
+-+  pid = spawn_async_lookup(async_lookup_from_addr_child, &to_child, &from_child);
+-+  if (!pid)
+-+  {
+-+    errlog("ASYNC_LOOKUP_FROM_ADDR: Could not spawn child!\n");
+-+    free(info_new);
+-+    return NULL;
+-+  }
+-+ 
+-+  req.kind             = REQ_FROM_ADDR;
+-+  req.timeout          = timeout;
+-+  req.u.address.s_addr = addr.s_addr;
+-+ 
+-+  if (robust_write(to_child, &req, sizeof(req)) == -1)
+-+  {
+-+    log_perror("ASYNC_LOOKUP_FROM_ADDR: Couldn't write request to child");
+-+    free(info_new);
+-+    return NULL;
+-+  }
+-+
+-+  close(to_child);
+-+ 
+-+  info_new->timeout          = timeout;
+-+  info_new->started          = time(NULL);
+-+  info_new->u.address.s_addr = addr.s_addr;
+-+  info_new->pid              = pid;
+-+  info_new->pipe_fd          = from_child;
+-+  info_new->next             = 0;
+-+
+-+  return info_new;
+-+} 
+-+
+-+
+-+/*** Runs in child ***/
+-+
+-+/* Name lookup process timed out. Give up.
+-+ */
+-+static void
+-+async_child_catch_alarm(int sig)
+-+{
+-+  _exit(1);
+-+}
+-+
+-+
+-+/* Called from async_lookup_from_{name,addr}_child.
+-+ * Figures out what our name lookup answer was, and tells the parent about it.
+-+ */
+-+static void process_lookup_answer(int to_parent, struct hostent *answer)
+-+{
+-+  async_reply   rep;
+-+
+-+  if (answer == NULL)
+-+  {
+-+    /* Report failure */
+-+    rep.success = AR_FAILURE;
+-+ 
+-+    switch (h_errno)
+-+    {
+-+    case HOST_NOT_FOUND:
+-+      rep.error   = E_PROPNF;
+-+      break;
+-+    case TRY_AGAIN:
+-+      rep.error   = E_MAXREC;
+-+      break;
+-+    case NO_DATA:
+-+      rep.error   = E_INVIND;
+-+      break;
+-+    default:
+-+      rep.error   = E_VERBNF;
+-+      break;
+-+    }
+-+ 
+-+    write(to_parent, &rep, sizeof(rep));
+-+ 
+-+    _exit(1);
+-+  }
+-+  else
+-+  {
+-+    int x;
+-+
+-+    char ** addr_list = answer->h_addr_list;
+-+    char **alias_list = answer->h_aliases;
+-+
+-+ 
+-+    /* Report success */
+-+    rep.success = AR_SUCCESS;
+-+    rep.error   = E_NONE;
+-+ 
+-+    /* Count the number of aliases */
+-+    for (x=0; alias_list[x]; x++)
+-+      ;
+-+    rep.num_aliases = x;
+-+ 
+-+    /* Count the number of addresses */
+-+    for (x=0; addr_list[x]; x++)
+-+      ;
+-+    rep.num_addresses = x;
+-+    
+-+    /* sleep(10); */
+-+    robust_write(to_parent, &rep, sizeof(rep));
+-+
+-+    /* Write the CNAME */
+-+    string_write(to_parent, answer->h_name);
+-+
+-+    /* Write the list of aliases */
+-+    for (x=0; x < rep.num_aliases; x++)
+-+      string_write(to_parent, alias_list[x]);
+-+
+-+    /* Write the list of addresses */
+-+    for (x=0; x < rep.num_addresses; x++)
+-+      robust_write(to_parent, addr_list[x], answer->h_length);
+-+  }
+-+
+-+}
+-+
+-+
+-+static void async_lookup_from_name_child(int to_parent, int from_parent)
+-+{
+-+  async_request req;
+-+  char *name, *cmdline;
+-+  struct hostent *answer;
+-+ 
+-+  if (robust_read(from_parent, &req, sizeof(req)) != sizeof(req)) {
+-+    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Read of request failed.\n");
+-+    _exit(1);
+-+  }
+-+  else if (req.kind != REQ_FROM_NAME) {
+-+    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Unexpected request kind.\n");
+-+    _exit(1);
+-+  }
+-+  else if ((name = malloc(req.u.length + 1)) == NULL) {
+-+    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Out of memory\n");
+-+    _exit(1);
+-+  }
+-+  else if (robust_read(from_parent, name, req.u.length) != req.u.length) {
+-+    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Read of name failed.\n");
+-+    _exit(1);
+-+  }
+-+ 
+-+  name[req.u.length]='\0';
+-+
+-+  /* Set the command line while we're doing our lookup */
+-+  cmdline=malloc(50+req.u.length);
+-+  if (cmdline != NULL)
+-+  {
+-+    sprintf(cmdline, "(MOO async name lookup: %s)", name);
+-+    set_server_cmdline(cmdline);
+-+    free(cmdline);
+-+  }
+-+ 
+-+  alarm(req.timeout);
+-+ 
+-+  answer = gethostbyname(name);
+-+
+-+  alarm(0);
+-+
+-+  process_lookup_answer(to_parent, answer);
+-+
+-+  return;
+-+}   
+-+
+-+
+-+static void async_lookup_from_addr_child(int to_parent, int from_parent)
+-+{
+-+  async_request req;
+-+  char cmdline[50];
+-+  struct hostent *answer;
+-+ 
+-+  if (robust_read(from_parent, &req, sizeof(req)) != sizeof(req)) {
+-+    errlog("ASYNC_LOOKUP_FROM_ADDR_CHILD: Read of request failed.\n");
+-+    _exit(1);
+-+  }
+-+  else if (req.kind != REQ_FROM_ADDR) {
+-+    errlog("ASYNC_LOOKUP_FROM_ADDR_CHILD: Unexpected request kind.\n");
+-+    _exit(1);
+-+  }
+-+
+-+  /* Set the command line while we're doing our lookup */
+-+  sprintf(cmdline, "(MOO async name lookup: %s)", inet_ntoa(req.u.address));
+-+  set_server_cmdline(cmdline);
+-+ 
+-+  alarm(req.timeout);
+-+ 
+-+  answer = gethostbyaddr((void *) &(req.u.address.s_addr), sizeof(req.u.address.s_addr), AF_INET);
+-+
+-+  alarm(0);
+-+
+-+  process_lookup_answer(to_parent, answer);
+-+
+-+  return;
+-+}   
+-+
+-+
+-diff -Nur d20050324/projects/moo/src/bg_name_lookup.patch d20050327/projects/moo/src/bg_name_lookup.patch
+---- d20050324/projects/moo/src/bg_name_lookup.patch	1969-12-31 19:00:00.000000000 -0500
+-+++ d20050327/projects/moo/src/bg_name_lookup.patch	2005-03-27 23:56:21.000000000 -0500
+-@@ -0,0 +1,1111 @@
+-+diff -Nur MOO-1.8.1-old/BG_NAME_LOOKUP.txt MOO-1.8.1-bg/BG_NAME_LOOKUP.txt
+-+--- MOO-1.8.1-old/BG_NAME_LOOKUP.txt	Wed Dec 31 19:00:00 1969
+-++++ MOO-1.8.1-bg/BG_NAME_LOOKUP.txt	Sat Dec  9 22:03:11 2000
+-+@@ -0,0 +1,90 @@
+-++The MOO programmer's manual has this to say about name lookups:
+-++--- snip ---
+-++Accepting and Initiating Network Connections
+-++--------------------------------------------
+-++ 
+-++   When the server first accepts a new, incoming network connection, it is
+-++given the low-level network address of computer on the other end.  It
+-++immediately attempts to convert this address into the human-readable host name
+-++that will be entered in the server log and returned by the `connection_name()'
+-++function.  This conversion can, for the TCP/IP networking configurations,
+-++involve a certain amount of communication with remote name servers, which can
+-++take quite a long time and/or fail entirely.  While the server is doing this
+-++conversion, it is not doing anything else at all; in particular, it it not
+-++responding to user commands or executing MOO tasks.
+-++ 
+-++   By default, the server will wait no more than 5 seconds for such a name
+-++lookup to succeed; after that, it behaves as if the conversion had failed,
+-++using instead a printable representation of the low-level address.  If the
+-++property `name_lookup_timeout' exists on `$server_options' and has an integer
+-++as its value, that integer is used instead as the timeout interval.
+-++--- snip ---
+-++
+-++I think a much better solution would be to handle these name server lookups in
+-++the background instead of "not doing anything else at all". That's what this
+-++patch is supposed to do.
+-++
+-++The idea is to no longer have the MOO attempt to do name lookups automatically
+-++when someone connects. Instead, a couple new builtin functions allow
+-++in-database code to explicitly request a name lookup. This also gives you the
+-++choice of not attempting to look up the name at all, for example if your MOO
+-++also serves web requests.
+-++
+-++This changes connection_name() to always return the IP address instead of the
+-++name, as if the automatic lookup had timed out.
+-++
+-++Added are name_lookup() which performs a name lookup, and name_lookups(), which
+-++returns a list of the name lookups that are in progress.
+-++
+-++The $server_options.name_lookup_timeout property is still useful. The
+-++open_network_connection() function still uses the old name lookup system, and
+-++needs a timeout.
+-++
+-++The queued_tasks() function now returns "name_lookup()" in place of the usual
+-++value that tells us at what time the verb will be done suspending.
+-++
+-++---
+-++
+-++Two new builtin functions:
+-++
+-++name_lookups() => {list info, ...}
+-++
+-++This function returns a list of background name lookups that are in progress.
+-++One `info' list is returned for each lookup. It has this format:
+-++
+-++{str/list address, int timeout, int started, int task_id}
+-++
+-++Address and timeout are the original values passed to the name_lookup() call.
+-++
+-++Started is the value of time() when the call took place.
+-++
+-++Task_id is the task id of the waiting program.
+-++
+-++name_lookup(str/list address, int timeout) =>
+-++ {str canonical-name, list aliases, list addresses}
+-++
+-++This function starts a new name lookup. The current verb suspends until the
+-++lookup is done, but the MOO server continues to process other commands.
+-++
+-++The address argument can be either a string such as "www.altavista.com", or a
+-++list describing an IP address. In one of these lists, the address
+-++192.168.0.14 becomes {192, 168, 0, 14}.
+-++
+-++The timeout arg is the number of seconds before this name lookup should be
+-++abandoned.
+-++
+-++For the return value, canonical-name is the proper name that was found.
+-++
+-++Aliases is a list of strings, each one giving an alternate name.
+-++
+-++Addresses is a list of lists, each one giving an IP address as described above.
+-++
+-++Both of these functions will raise E_PERM if you are not a wizard. 
+-++
+-++The name_lookup() function can also raise:
+-++E_RECMOVE - Problem starting name lookup.
+-++E_VARNF   - Timeout
+-++E_PROPNF  - Host was not found.
+-++E_MAXREC  - Temporary nameserver error, try again later.
+-++E_INVIND  - Host exists but has no address information.
+-++E_VERBNF  - Unrecoverable nameserver error.
+-+diff -Nur MOO-1.8.1-old/Makefile.in MOO-1.8.1-bg/Makefile.in
+-+--- MOO-1.8.1-old/Makefile.in	Mon Jan 10 20:54:05 2000
+-++++ MOO-1.8.1-bg/Makefile.in	Sat Dec  9 22:00:55 2000
+-+@@ -35,7 +35,8 @@
+-+ 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+-+ 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+-+ 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+-+-	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
+-++	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c \
+-++        bg_name_lookup.c
+-+ 
+-+ OPT_NET_SRCS = net_single.c net_multi.c \
+-+ 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+-+@@ -498,3 +499,6 @@
+-+ client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h \
+-+  my-stdio.h my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h \
+-+  options.h
+-++bg_name_lookup.o : bg_name_lookup.c tasks.h structures.h functions.h \
+-++ utils.h list.h my-in.h log.h exceptions.h net_multi.h storage.h \
+-++ server.h
+-+diff -Nur MOO-1.8.1-old/bf_register.h MOO-1.8.1-bg/bf_register.h
+-+--- MOO-1.8.1-old/bf_register.h	Mon Dec 14 08:17:29 1998
+-++++ MOO-1.8.1-bg/bf_register.h	Sat Dec  9 21:54:38 2000
+-+@@ -27,6 +27,9 @@
+-+ extern void register_server(void);
+-+ extern void register_tasks(void);
+-+ extern void register_verbs(void);
+-++/* bg_name_lookup */
+-++extern void register_name_lookup(void);
+-++/* !bg_name_lookup */
+-+ 
+-+diff -Nur MOO-1.8.1-old/bg_name_lookup.c MOO-1.8.1-bg/bg_name_lookup.c
+-+--- MOO-1.8.1-old/bg_name_lookup.c	Wed Dec 31 19:00:00 1969
+-++++ MOO-1.8.1-bg/bg_name_lookup.c	Sat Dec  9 23:41:17 2000
+-+@@ -0,0 +1,823 @@
+-++#include <errno.h>
+-++#include <signal.h>
+-++#include <netdb.h>      /* gethostby{name,addr}() */
+-++#include <unistd.h>     /* write(), read(), sleep(), alarm() */
+-++#include <stdlib.h>     /* malloc(), free() */
+-++#include <netinet/in.h> /* inet_ntoa() */
+-++#include <arpa/inet.h>  /* ditto */
+-++
+-++#include "tasks.h"
+-++#include "structures.h"
+-++#include "functions.h"
+-++#include "utils.h"
+-++#include "list.h"
+-++#include "my-in.h"
+-++
+-++#include "log.h"        /* errlog() */
+-++#include "exceptions.h" /* panic() */
+-++#include "net_multi.h"  /* network_{,un}register_fd() */
+-++#include "storage.h"    /* str_dup() */
+-++#include "server.h"     /* set_server_cmdline() */
+-++
+-++struct async_name_lookup_info
+-++{
+-++  enum { ASYNC_FROM_ADDR, ASYNC_FROM_NAME } kind;
+-++ 
+-++  unsigned timeout;
+-++  unsigned started;
+-++ 
+-++  union
+-++  {
+-++    char *name;
+-++    struct in_addr address;
+-++  } u;
+-++ 
+-++  pid_t pid;
+-++  int pipe_fd;
+-++ 
+-++  vm the_vm;
+-++ 
+-++  struct async_name_lookup_info *next;
+-++};
+-++
+-++struct async_request /* Same as name_lookup.c's struct request */
+-++{
+-++  enum { REQ_FROM_ADDR, REQ_FROM_NAME } kind;
+-++
+-++  unsigned timeout;
+-++
+-++  union
+-++  {
+-++    unsigned length;
+-++    /* struct sockaddr_in address; Why? */
+-++    struct in_addr address;
+-++  } u;
+-++};
+-++
+-++struct async_reply
+-++{
+-++  enum { AR_SUCCESS, AR_FAILURE } success;
+-++ 
+-++  enum error error;
+-++ 
+-++  int num_aliases;
+-++  int num_addresses;
+-++};
+-++ 
+-++typedef struct async_reply async_reply;
+-++typedef struct async_request async_request;
+-++
+-++struct async_name_lookup_info *async_name_lookup_info = 0;
+-++int                            async_name_lookup_len  = 0;
+-++
+-++static task_enum_action lookup_task_queue_enumerator(task_closure closure, void *data);
+-++static void async_name_lookup_readable(int fd, struct async_name_lookup_info *info_ptr);
+-++static struct async_name_lookup_info *dequeue_lookup_task(struct async_name_lookup_info *info_ptr);
+-++
+-++static struct async_name_lookup_info *async_lookup_from_name(const char *name, unsigned timeout);
+-++static struct async_name_lookup_info *async_lookup_from_addr(struct in_addr addr, unsigned timeout);
+-++
+-++static void async_lookup_from_addr_child(int to_parent, int from_parent);
+-++static void async_lookup_from_name_child(int to_parent, int from_parent);
+-++
+-++static void async_child_catch_alarm(int sig);
+-++
+-++/*** Utils ***/
+-++
+-++static int  /* Shamelessly stolen from name_lookup.c */
+-++robust_read(int fd, void *buffer, int len)
+-++{
+-++    int count;
+-++ 
+-++    do {
+-++        count = read(fd, buffer, len);
+-++    } while (count == -1 && errno == EINTR);
+-++ 
+-++    return count;
+-++} 
+-++
+-++static inline int
+-++robust_write(int fd, void *buffer, int len)
+-++{
+-++  int ret;
+-++
+-++  while (((ret = write(fd, buffer, len)) == -1) && (errno == EINTR))
+-++    ;
+-++
+-++  return ret;
+-++}
+-++
+-++/* Writes the string length followed by the string to an fd.
+-++ */
+-++static inline int
+-++string_write(int fd, char *str)
+-++{
+-++  int    ret;
+-++  size_t size;
+-++
+-++  size = strlen(str);
+-++  
+-++  ret = robust_write(fd, &size, sizeof(size));
+-++  if (ret != sizeof(size)) return ret;
+-++
+-++  ret = robust_write(fd, str, size);
+-++  return ret;
+-++}
+-++
+-++/* Reads a string length followed by a string.
+-++ * Returns NULL on error. Otherwise caller should free().
+-++ */
+-++static inline char *
+-++string_read(int fd)
+-++{
+-++  int ret;
+-++  size_t size;
+-++  char *str;
+-++
+-++  ret = robust_read(fd, &size, sizeof(size));
+-++  if (ret != sizeof(size)) return NULL;
+-++
+-++  str = malloc(size+1);
+-++  if (str == NULL) panic("STRING_READ: Out of memory.\n");
+-++
+-++  ret = robust_read(fd, str, size);
+-++  if (ret != size)
+-++  {
+-++    free(str);
+-++    return NULL;
+-++  }
+-++
+-++  str[size] = '\0';
+-++  return str;
+-++}
+-++
+-++
+-++/* Task queue stuff */
+-++
+-++
+-++/* Enumerator for custom task queue. Target of register_task_queue().
+-++ */
+-++static task_enum_action
+-++lookup_task_queue_enumerator(task_closure closure, void *data)
+-++{
+-++  int x;
+-++  struct async_name_lookup_info *info_ptr;
+-++  task_enum_action tea;
+-++  static const char status[] = "name_lookup()";
+-++ 
+-++  info_ptr = async_name_lookup_info;
+-++
+-++  for (x=1; x<=async_name_lookup_len; x++)
+-++  {
+-++    if (!info_ptr)
+-++      panic("LOOKUP_TASK_QUEUE_ENUMERATOR: Ran off end of linked list!");
+-++ 
+-++    tea = (*closure)(info_ptr->the_vm, status, data);
+-++ 
+-++    if (tea == TEA_KILL)
+-++    {
+-++      errlog("LOOKUP_TASK_QUEUE_ENUMERATOR: TEA_KILL\n");
+-++      dequeue_lookup_task(info_ptr);
+-++    }
+-++ 
+-++    if (tea != TEA_CONTINUE)
+-++      return tea;
+-++ 
+-++    info_ptr=info_ptr->next;
+-++  }
+-++ 
+-++  return TEA_CONTINUE;
+-++} 
+-++
+-++
+-++static enum error
+-++enqueue_lookup_task(vm the_vm, struct async_name_lookup_info *info_ptr)
+-++{
+-++  struct async_name_lookup_info **info_walk;
+-++
+-++  network_register_fd(info_ptr->pipe_fd, async_name_lookup_readable, NULL, info_ptr);
+-++  info_ptr->the_vm = the_vm;
+-++
+-++  /* Easier to throw them on the beginning, but oh well */
+-++  info_walk = &async_name_lookup_info;
+-++  while (*info_walk)
+-++  {
+-++    info_walk=&((*info_walk)->next);
+-++  }
+-++ 
+-++  *info_walk = info_ptr;
+-++
+-++  async_name_lookup_len++;
+-++ 
+-++  return E_NONE;
+-++}
+-++
+-++
+-++/* Scans the name lookup queue for the pointer we are given, and deletes it
+-++ * from the list. Returns a pointer to the next item in the list.
+-++ */
+-++static struct async_name_lookup_info *
+-++dequeue_lookup_task(struct async_name_lookup_info *info_ptr)
+-++{
+-++  struct async_name_lookup_info **info_walk;
+-++  int x=0;
+-++  int cleaned=0;
+-++ 
+-++  network_unregister_fd(info_ptr->pipe_fd);
+-++  close(info_ptr->pipe_fd);
+-++ 
+-++  for (info_walk=&async_name_lookup_info; *info_walk; info_walk=&((*info_walk)->next))
+-++  {
+-++    if (*info_walk == info_ptr)
+-++    {
+-++      struct async_name_lookup_info *next;
+-++
+-++      next = (*info_walk)->next; 
+-++      free(*info_walk);
+-++      *info_walk = next;
+-++      cleaned = 1;
+-++      break;
+-++    }
+-++ 
+-++    if (++x > async_name_lookup_len)
+-++      panic("DEQUEUE_LOOKUP_TASK: Queue is longer than it should be. :-(");
+-++  }
+-++ 
+-++  if (!cleaned)
+-++    panic("DEQUEUE_LOOKUP_TASK: Failed to clean up.");
+-++ 
+-++  async_name_lookup_len--;
+-++ 
+-++  return *info_walk;
+-++}
+-++
+-++
+-++/* Callback set in place with network_register_fd().
+-++ */
+-++static void
+-++async_name_lookup_readable(int fd, struct async_name_lookup_info *info_ptr)
+-++{
+-++  async_reply rep;
+-++  Var r;
+-++ 
+-++  char *name;
+-++ 
+-++  if ((robust_read(info_ptr->pipe_fd, &rep, sizeof(rep)) != sizeof(rep)))
+-++  {
+-++    /* fd was probably closed as child died */
+-++    r.type  = TYPE_ERR;
+-++    r.v.err = E_VARNF;
+-++  }
+-++  else if (rep.success == AR_FAILURE)
+-++  {
+-++    /* Child reported an error, just return that */
+-++    r.type  = TYPE_ERR;
+-++    r.v.err = rep.error;
+-++  }
+-++  else if ((name = string_read(fd)) == NULL)
+-++  {
+-++    /* fd was probably closed as child died */
+-++    r.type  = TYPE_ERR;
+-++    r.v.err = E_VARNF;
+-++  }
+-++  else
+-++  {
+-++    int x;
+-++    char          **alias_list;
+-++    struct in_addr *addr_list;
+-++
+-++    if ((alias_list = calloc(rep.num_aliases, sizeof(alias_list[0]))) == NULL)
+-++    {
+-++      panic("ASYNC_NAME_LOOKUP_READABLE: Out of memory\n");
+-++    }
+-++
+-++    if ((addr_list = calloc(rep.num_addresses, sizeof(struct in_addr))) == NULL)
+-++    {
+-++      panic("ASYNC_NAME_LOOKUP_READABLE: Out of memory\n");
+-++    }
+-++
+-++    /* Read the alias ptrs into our array */
+-++    for (x=0; x<rep.num_aliases; x++)
+-++    {
+-++      alias_list[x] = string_read(info_ptr->pipe_fd);
+-++      /* oklog("Alias %d: %s\n", x, alias_list[x]); */
+-++      /* Should do something smarter on error */
+-++      if (alias_list[x] == NULL)
+-++        panic("ASYNC_NAME_LOOKUP_READABLE: Couldn't read alias.\n");
+-++    }
+-++
+-++    /* Read the addrs */
+-++    for (x=0; x<rep.num_addresses; x++)
+-++    {
+-++      /* Should do something smarter on error */
+-++      if (robust_read(info_ptr->pipe_fd, &(addr_list[x].s_addr), sizeof(addr_list[0].s_addr)) != sizeof(addr_list[0].s_addr))
+-++        panic("ASYNC_NAME_LOOKUP_READABLE: Couldn't read address.\n");
+-++      /* oklog("Address %d: %s\n", x, inet_ntoa(addr_list[x])); */
+-++    }
+-++
+-++    /* Yay, return successful result */
+-++    r = new_list(3);
+-++
+-++    r.v.list[1].type  = TYPE_STR;
+-++    r.v.list[1].v.str = str_dup(name);
+-++
+-++    r.v.list[2] = new_list(rep.num_aliases);
+-++    for (x=0; x<rep.num_aliases; x++)
+-++    {
+-++      r.v.list[2].v.list[x+1].type  = TYPE_STR;
+-++      r.v.list[2].v.list[x+1].v.str = str_dup(alias_list[x]);
+-++    }
+-++
+-++    r.v.list[3] = new_list(rep.num_addresses);
+-++    for (x=0; x<rep.num_addresses; x++)
+-++    {
+-++      unsigned char *y=(unsigned char *) &(addr_list[x].s_addr);
+-++
+-++      r.v.list[3].v.list[x+1] = new_list(4);
+-++      r.v.list[3].v.list[x+1].v.list[1].type  = TYPE_INT;
+-++      r.v.list[3].v.list[x+1].v.list[1].v.num = (int) *y++;
+-++      r.v.list[3].v.list[x+1].v.list[2].type  = TYPE_INT;
+-++      r.v.list[3].v.list[x+1].v.list[2].v.num = (int) *y++;
+-++      r.v.list[3].v.list[x+1].v.list[3].type  = TYPE_INT;
+-++      r.v.list[3].v.list[x+1].v.list[3].v.num = (int) *y++;
+-++      r.v.list[3].v.list[x+1].v.list[4].type  = TYPE_INT;
+-++      r.v.list[3].v.list[x+1].v.list[4].v.num = (int) *y++;
+-++    }
+-++
+-++    /* Free all our stuff */
+-++    free(name);
+-++    free(alias_list);
+-++    free(addr_list);
+-++  }
+-++ 
+-++  resume_task(info_ptr->the_vm, r);
+-++ 
+-++  /* Clean up */
+-++  dequeue_lookup_task(info_ptr);
+-++ 
+-++  return;
+-++}
+-++
+-++
+-++/*** Builtin function stuff ***/
+-++ 
+-++
+-++/* bf_name_lookup(str/list addr, int timeout) => {str name, list aliases, list addresses}
+-++ * E_PERM    - Not a wizard.
+-++ * E_RECMOVE - Problem starting name lookup.
+-++ * E_VARNF   - Name lookup died. (Timeout)
+-++ * Results from gethostbyname():
+-++ * E_PROPNF  - Host was not found.
+-++ * E_MAXREC  - Temporary error, try again.
+-++ * E_INVIND  - Host exists but has no address information.
+-++ * E_VERBNF  - Unrecoverable error.
+-++ */
+-++static package
+-++bf_name_lookup(Var arglist, Byte next, void *vdata, Objid progr)
+-++{
+-++  Var r;  /* probably unneeded */
+-++  struct async_name_lookup_info *info_ptr;
+-++ 
+-++  int timeout = arglist.v.list[2].v.num;
+-++ 
+-++  if (!is_wizard(progr))
+-++  {
+-++    free_var(arglist);
+-++    return make_error_pack(E_PERM);
+-++  }
+-++ 
+-++  switch (arglist.v.list[1].type)
+-++  {
+-++  case TYPE_STR:
+-++    if ((info_ptr = async_lookup_from_name(arglist.v.list[1].v.str, timeout)) == NULL)
+-++    {
+-++      free_var(arglist);
+-++      return make_error_pack(E_RECMOVE);  /* Problem starting or talking to child */
+-++    }
+-++    else
+-++    {
+-++      free_var(arglist);
+-++      return make_suspend_pack(enqueue_lookup_task, info_ptr);
+-++    }
+-++ 
+-++    break;
+-++  case TYPE_LIST:
+-++    if (arglist.v.list[1].v.list[0].v.num != 4)
+-++    {
+-++      free_var(arglist);
+-++      return make_error_pack(E_INVARG);
+-++    }
+-++    else
+-++    {
+-++      int x;
+-++      struct in_addr tmp_addr;
+-++      unsigned char *y = (unsigned char *) &(tmp_addr.s_addr);
+-++
+-++      /* We have a list of length 4. Turn it into an IP. */
+-++      for (x=1; x<=4; x++)
+-++      {
+-++        if ((arglist.v.list[1].v.list[x].type != TYPE_INT) ||
+-++            (arglist.v.list[1].v.list[x].v.num < 0)        ||
+-++            (arglist.v.list[1].v.list[x].v.num > 255))
+-++        {
+-++          free_var(arglist);
+-++          return make_error_pack(E_INVARG);
+-++        }
+-++        else
+-++          *y++ = (unsigned char) arglist.v.list[1].v.list[x].v.num;
+-++      }
+-++
+-++      free_var(arglist); /* We're done with them at this point */
+-++
+-++      /* Try to look it up. */
+-++      if ((info_ptr = async_lookup_from_addr(tmp_addr, timeout)) == NULL)
+-++        return make_error_pack(E_RECMOVE);  /* Problem starting or talking to child */
+-++      else
+-++        return make_suspend_pack(enqueue_lookup_task, info_ptr);
+-++    }
+-++
+-++    break;
+-++  default:
+-++    free_var(arglist);
+-++    return make_error_pack(E_TYPE);
+-++    break;
+-++  }
+-++ 
+-++  /* Hmm... */
+-++  errlog("BF_NAME_LOOKUP: How did we get here?\n");
+-++
+-++  r.type = TYPE_INT;
+-++  r.v.num = 0;
+-++
+-++  free_var(arglist);
+-++  return make_var_pack(r);
+-++}
+-++
+-++
+-++
+-++/* bf_name_lookups() => {{str/list addr, int timeout, int started, int task_id}, ...}
+-++ */
+-++static package
+-++bf_name_lookups(Var arglist, Byte next, void *vdata, Objid progr)
+-++{
+-++  Var r;
+-++  int x;
+-++  struct async_name_lookup_info *info_ptr;
+-++ 
+-++  if (!is_wizard(progr))
+-++  {
+-++    free_var(arglist);
+-++    return make_error_pack(E_PERM);
+-++  }
+-++ 
+-++  info_ptr = async_name_lookup_info;
+-++  r = new_list(async_name_lookup_len);
+-++ 
+-++  for (x=1; x<=async_name_lookup_len; x++)
+-++  {
+-++    r.v.list[x] = new_list(4);
+-++ 
+-++    if (!info_ptr)
+-++      panic("BF_NAME_LOOKUPS: Ran off end of linked list!");
+-++ 
+-++    r.v.list[x].v.list[1].type = TYPE_STR;
+-++    r.v.list[x].v.list[1].v.str = str_dup(info_ptr->u.name);
+-++ 
+-++    r.v.list[x].v.list[2].type = TYPE_INT;
+-++    r.v.list[x].v.list[2].v.num = info_ptr->timeout;
+-++ 
+-++    r.v.list[x].v.list[3].type = TYPE_INT;
+-++    r.v.list[x].v.list[3].v.num = info_ptr->started;
+-++ 
+-++    r.v.list[x].v.list[4].type = TYPE_INT;
+-++    r.v.list[x].v.list[4].v.num = info_ptr->the_vm->task_id;
+-++ 
+-++    info_ptr = info_ptr->next;
+-++  }
+-++ 
+-++  free_var(arglist);
+-++  return make_var_pack(r);
+-++} 
+-++
+-++
+-++void
+-++register_name_lookup()
+-++{ 
+-++  register_task_queue(lookup_task_queue_enumerator);
+-++  (void) register_function("name_lookup", 2, 2, bf_name_lookup, TYPE_ANY, TYPE_INT);
+-++  (void) register_function("name_lookups", 0, 0, bf_name_lookups);
+-++}
+-++
+-++
+-++/*** Interface with child stuff ***/
+-++
+-++
+-++/* Hmm.
+-++ * We probably inherit signal handlers?
+-++ * And we should probably close() the network fd's?
+-++ */
+-++static pid_t spawn_async_lookup(void (*child_proc) (int to_parent, int from_parent),
+-++                                 int *to_child, int *from_child)
+-++{
+-++  int pipe_to_child[2], pipe_from_child[2];
+-++  pid_t pid;
+-++ 
+-++  if (pipe(pipe_to_child) < 0) {
+-++    log_perror("SPAWN_ASYNC_LOOKUP: Couldn't create first pipe");
+-++  } else if (pipe(pipe_from_child) < 0) {
+-++    log_perror("SPAWN_ASYNC_LOOKUP: Couldn't create second pipe");
+-++    close(pipe_to_child[0]);
+-++    close(pipe_to_child[1]);
+-++  } else if ((pid = fork()) < 0) {
+-++    log_perror("SPAWN_ASYNC_LOOKUP: Couldn't fork name lookup process");
+-++    close(pipe_to_child[0]);
+-++    close(pipe_to_child[1]);
+-++    close(pipe_from_child[0]);
+-++    close(pipe_from_child[1]);
+-++  } else if (pid != 0) {      /* parent */
+-++ 
+-++    close(pipe_to_child[0]);
+-++    close(pipe_from_child[1]);
+-++    *to_child = pipe_to_child[1];
+-++    *from_child = pipe_from_child[0];
+-++ 
+-++    return pid;
+-++  } else {                   /* child */
+-++    close(pipe_to_child[1]);
+-++    close(pipe_from_child[0]);
+-++ 
+-++    signal(SIGALRM, async_child_catch_alarm);
+-++ 
+-++    (*child_proc) (pipe_from_child[1], pipe_to_child[0]);
+-++    exit(0);
+-++  }
+-++ 
+-++  return 0;
+-++} 
+-++
+-++
+-++static struct async_name_lookup_info *
+-++async_lookup_from_name(const char *name, unsigned timeout)
+-++{
+-++  struct async_name_lookup_info *info_new;
+-++ 
+-++  async_request req;
+-++
+-++  int pid;
+-++  int to_child, from_child;
+-++ 
+-++ 
+-++  if ((info_new=malloc(sizeof(struct async_name_lookup_info))) == NULL)
+-++  {
+-++    errlog("ASYNC_LOOKUP_FROM_NAME: Malloc failed.\n");
+-++    return NULL;
+-++  }
+-++ 
+-++  pid = spawn_async_lookup(async_lookup_from_name_child, &to_child, &from_child);
+-++  if (!pid)
+-++  {
+-++    errlog("ASYNC_LOOKUP_FROM_NAME: Could not spawn child!\n");
+-++    free(info_new);
+-++    return NULL;
+-++  }
+-++ 
+-++  req.kind     = REQ_FROM_NAME;
+-++  req.timeout  = timeout;
+-++  req.u.length = strlen(name);
+-++ 
+-++  if (robust_write(to_child, &req, sizeof(req)) == -1)
+-++  {
+-++    log_perror("ASYNC_LOOKUP_FROM_NAME: Couldn't write request to child");
+-++    free(info_new);
+-++    return NULL;
+-++  }
+-++ 
+-++  if (robust_write(to_child, name, req.u.length) == -1)
+-++  {
+-++    log_perror("ASYNC_LOOKUP_FROM_NAME: Couldn't write name to child");
+-++    free(info_new);
+-++    return NULL;
+-++  }
+-++ 
+-++  close(to_child);
+-++ 
+-++  info_new->timeout = timeout;
+-++  info_new->started = time(NULL);
+-++  info_new->u.name  = str_dup(name);
+-++  info_new->pid     = pid;
+-++  info_new->pipe_fd = from_child;
+-++  info_new->next    = 0;
+-++ 
+-++  return info_new;
+-++} 
+-++
+-++
+-++static struct async_name_lookup_info *
+-++async_lookup_from_addr(struct in_addr addr, unsigned timeout)
+-++{
+-++  struct async_name_lookup_info *info_new;
+-++ 
+-++  async_request req;
+-++
+-++  int pid;
+-++  int to_child, from_child;
+-++
+-++ 
+-++  if ((info_new=malloc(sizeof(struct async_name_lookup_info))) == NULL)
+-++  {
+-++    errlog("ASYNC_LOOKUP_FROM_ADDR: Malloc failed.\n");
+-++    return NULL;
+-++  }
+-++ 
+-++  pid = spawn_async_lookup(async_lookup_from_addr_child, &to_child, &from_child);
+-++  if (!pid)
+-++  {
+-++    errlog("ASYNC_LOOKUP_FROM_ADDR: Could not spawn child!\n");
+-++    free(info_new);
+-++    return NULL;
+-++  }
+-++ 
+-++  req.kind             = REQ_FROM_ADDR;
+-++  req.timeout          = timeout;
+-++  req.u.address.s_addr = addr.s_addr;
+-++ 
+-++  if (robust_write(to_child, &req, sizeof(req)) == -1)
+-++  {
+-++    log_perror("ASYNC_LOOKUP_FROM_ADDR: Couldn't write request to child");
+-++    free(info_new);
+-++    return NULL;
+-++  }
+-++
+-++  close(to_child);
+-++ 
+-++  info_new->timeout          = timeout;
+-++  info_new->started          = time(NULL);
+-++  info_new->u.address.s_addr = addr.s_addr;
+-++  info_new->pid              = pid;
+-++  info_new->pipe_fd          = from_child;
+-++  info_new->next             = 0;
+-++
+-++  return info_new;
+-++} 
+-++
+-++
+-++/*** Runs in child ***/
+-++
+-++/* Name lookup process timed out. Give up.
+-++ */
+-++static void
+-++async_child_catch_alarm(int sig)
+-++{
+-++  _exit(1);
+-++}
+-++
+-++
+-++/* Called from async_lookup_from_{name,addr}_child.
+-++ * Figures out what our name lookup answer was, and tells the parent about it.
+-++ */
+-++static void process_lookup_answer(int to_parent, struct hostent *answer)
+-++{
+-++  async_reply   rep;
+-++
+-++  if (answer == NULL)
+-++  {
+-++    /* Report failure */
+-++    rep.success = AR_FAILURE;
+-++ 
+-++    switch (h_errno)
+-++    {
+-++    case HOST_NOT_FOUND:
+-++      rep.error   = E_PROPNF;
+-++      break;
+-++    case TRY_AGAIN:
+-++      rep.error   = E_MAXREC;
+-++      break;
+-++    case NO_DATA:
+-++      rep.error   = E_INVIND;
+-++      break;
+-++    default:
+-++      rep.error   = E_VERBNF;
+-++      break;
+-++    }
+-++ 
+-++    write(to_parent, &rep, sizeof(rep));
+-++ 
+-++    _exit(1);
+-++  }
+-++  else
+-++  {
+-++    int x;
+-++
+-++    char ** addr_list = answer->h_addr_list;
+-++    char **alias_list = answer->h_aliases;
+-++
+-++ 
+-++    /* Report success */
+-++    rep.success = AR_SUCCESS;
+-++    rep.error   = E_NONE;
+-++ 
+-++    /* Count the number of aliases */
+-++    for (x=0; alias_list[x]; x++)
+-++      ;
+-++    rep.num_aliases = x;
+-++ 
+-++    /* Count the number of addresses */
+-++    for (x=0; addr_list[x]; x++)
+-++      ;
+-++    rep.num_addresses = x;
+-++    
+-++    /* sleep(10); */
+-++    robust_write(to_parent, &rep, sizeof(rep));
+-++
+-++    /* Write the CNAME */
+-++    string_write(to_parent, answer->h_name);
+-++
+-++    /* Write the list of aliases */
+-++    for (x=0; x < rep.num_aliases; x++)
+-++      string_write(to_parent, alias_list[x]);
+-++
+-++    /* Write the list of addresses */
+-++    for (x=0; x < rep.num_addresses; x++)
+-++      robust_write(to_parent, addr_list[x], answer->h_length);
+-++  }
+-++
+-++}
+-++
+-++
+-++static void async_lookup_from_name_child(int to_parent, int from_parent)
+-++{
+-++  async_request req;
+-++  char *name, *cmdline;
+-++  struct hostent *answer;
+-++ 
+-++  if (robust_read(from_parent, &req, sizeof(req)) != sizeof(req)) {
+-++    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Read of request failed.\n");
+-++    _exit(1);
+-++  }
+-++  else if (req.kind != REQ_FROM_NAME) {
+-++    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Unexpected request kind.\n");
+-++    _exit(1);
+-++  }
+-++  else if ((name = malloc(req.u.length + 1)) == NULL) {
+-++    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Out of memory\n");
+-++    _exit(1);
+-++  }
+-++  else if (robust_read(from_parent, name, req.u.length) != req.u.length) {
+-++    errlog("ASYNC_LOOKUP_FROM_NAME_CHILD: Read of name failed.\n");
+-++    _exit(1);
+-++  }
+-++ 
+-++  name[req.u.length]='\0';
+-++
+-++  /* Set the command line while we're doing our lookup */
+-++  cmdline=malloc(50+req.u.length);
+-++  if (cmdline != NULL)
+-++  {
+-++    sprintf(cmdline, "(MOO async name lookup: %s)", name);
+-++    set_server_cmdline(cmdline);
+-++    free(cmdline);
+-++  }
+-++ 
+-++  alarm(req.timeout);
+-++ 
+-++  answer = gethostbyname(name);
+-++
+-++  alarm(0);
+-++
+-++  process_lookup_answer(to_parent, answer);
+-++
+-++  return;
+-++}   
+-++
+-++
+-++static void async_lookup_from_addr_child(int to_parent, int from_parent)
+-++{
+-++  async_request req;
+-++  char cmdline[50];
+-++  struct hostent *answer;
+-++ 
+-++  if (robust_read(from_parent, &req, sizeof(req)) != sizeof(req)) {
+-++    errlog("ASYNC_LOOKUP_FROM_ADDR_CHILD: Read of request failed.\n");
+-++    _exit(1);
+-++  }
+-++  else if (req.kind != REQ_FROM_ADDR) {
+-++    errlog("ASYNC_LOOKUP_FROM_ADDR_CHILD: Unexpected request kind.\n");
+-++    _exit(1);
+-++  }
+-++
+-++  /* Set the command line while we're doing our lookup */
+-++  sprintf(cmdline, "(MOO async name lookup: %s)", inet_ntoa(req.u.address));
+-++  set_server_cmdline(cmdline);
+-++ 
+-++  alarm(req.timeout);
+-++ 
+-++  answer = gethostbyaddr((void *) &(req.u.address.s_addr), sizeof(req.u.address.s_addr), AF_INET);
+-++
+-++  alarm(0);
+-++
+-++  process_lookup_answer(to_parent, answer);
+-++
+-++  return;
+-++}   
+-++
+-++
+-+diff -Nur MOO-1.8.1-old/db_file.c MOO-1.8.1-bg/db_file.c
+-+--- MOO-1.8.1-old/db_file.c	Mon Dec 14 08:17:33 1998
+-++++ MOO-1.8.1-bg/db_file.c	Sat Dec  9 21:49:53 2000
+-+@@ -561,7 +561,9 @@
+-+     reset_command_history();
+-+ #else
+-+     if (reason == DUMP_CHECKPOINT) {
+-+-	switch (fork_server("checkpointer")) {
+-++/* bg_name_lookup */
+-++        switch (fork_server("checkpointer", &checkpoint_pid)) {
+-++/* !bg_name_lookup */
+-+ 	case FORK_PARENT:
+-+ 	    reset_command_history();
+-+ 	    free_stream(s);
+-+diff -Nur MOO-1.8.1-old/functions.c MOO-1.8.1-bg/functions.c
+-+--- MOO-1.8.1-old/functions.c	Mon Dec 14 08:17:53 1998
+-++++ MOO-1.8.1-bg/functions.c	Sat Dec  9 21:50:34 2000
+-+@@ -55,6 +55,9 @@
+-+     register_server,
+-+     register_tasks,
+-+     register_verbs
+-++/* bg_name_lookup */
+-++    ,register_name_lookup
+-++/* !bg_name_lookup */
+-+ };
+-+ 
+-+ void
+-+Binary files MOO-1.8.1-old/moo and MOO-1.8.1-bg/moo differ
+-+diff -Nur MOO-1.8.1-old/net_bsd_tcp.c MOO-1.8.1-bg/net_bsd_tcp.c
+-+--- MOO-1.8.1-old/net_bsd_tcp.c	Mon Dec 14 08:18:27 1998
+-++++ MOO-1.8.1-bg/net_bsd_tcp.c	Sat Dec  9 23:20:46 2000
+-+@@ -165,7 +165,9 @@
+-+     }
+-+     *read_fd = *write_fd = fd;
+-+     stream_printf(s, "%s, port %d",
+-+-		  lookup_name_from_addr(&address, timeout),
+-++/* bg_name_lookup */
+-++                  inet_ntoa(address. sin_addr),
+-++/* !bg_name_lookup */
+-+ 		  (int) ntohs(address.sin_port));
+-+     *name = reset_stream(s);
+-+     return PA_OKAY;
+-+diff -Nur MOO-1.8.1-old/server.c MOO-1.8.1-bg/server.c
+-+--- MOO-1.8.1-old/server.c	Tue Dec 29 01:56:32 1998
+-++++ MOO-1.8.1-bg/server.c	Sat Dec  9 21:46:14 2000
+-+@@ -48,6 +48,10 @@
+-+ 
+-+ #include "execute.h"
+-+ 
+-++/* bg_name_lookup */
+-++pid_t checkpoint_pid = 0;
+-++/* !bg_name_lookup */
+-++
+-+ static pid_t parent_pid;
+-+ int in_child = 0;
+-+ 
+-+@@ -224,7 +228,9 @@
+-+ }
+-+ 
+-+ enum Fork_Result
+-+-fork_server(const char *subtask_name)
+-++/* bg_name_lookup - Throw pid in *child_pid if child_pid not NULL */
+-++fork_server(const char *subtask_name, pid_t *child_pid)
+-++/* !bg_name_lookup */
+-+ {
+-+     pid_t pid;
+-+     Stream *s = new_stream(100);
+-+@@ -241,7 +247,13 @@
+-+ 	in_child = 1;
+-+ 	return FORK_CHILD;
+-+     } else
+-+-	return FORK_PARENT;
+-++/* bg_name_lookup */
+-++    {
+-++        if (child_pid != NULL)
+-++          *child_pid=pid;
+-++        return FORK_PARENT;
+-++    }
+-++/* !bg_name_lookup */
+-+ }
+-+ 
+-+ static void
+-+@@ -286,23 +298,42 @@
+-+     /* (Void *) casts to avoid warnings on systems that mis-declare the
+-+      * argument type.
+-+      */
+-++/* bg_name_lookup */
+-++    pid_t pid;
+-++ 
+-++#   define CHECKPID                                   \
+-++    if (pid && pid == checkpoint_pid)                 \
+-++    {                                                 \
+-++      /* 1 = failure, 2 = success */                  \
+-++      checkpoint_finished = (status == 0) + 1;        \
+-++    }                                                 \
+-++ 
+-+ #if HAVE_WAITPID
+-+-    while (waitpid(-1, (void *) &status, WNOHANG) > 0);
+-++    do {
+-++      pid = waitpid(-1, (void *) &status, WNOHANG);
+-++      CHECKPID;
+-++    } while (pid > 0);
+-+ #else
+-+ #if HAVE_WAIT3
+-+-    while (wait3((void *) &status, WNOHANG, 0) >= 0);
+-++    do {
+-++      pid = wait3((void *) &status, WNOHANG, 0);
+-++      CHECKPID;
+-++    } while (pid > 0)
+-+ #else
+-+ #if HAVE_WAIT2
+-+-    while (wait2((void *) &status, WNOHANG) >= 0);
+-++    do {
+-++      pid = wait2((void *) &status, WNOHANG);
+-++      CHECKPID;
+-++    } while (pid > 0)
+-+ #else
+-+-    wait((void *) &status);
+-++    pid = wait((void *) &status);
+-++    CHECKPID;
+-+ #endif
+-+ #endif
+-+ #endif
+-+-
+-++ 
+-+     signal(sig, child_completed_signal);
+-+-
+-+-    checkpoint_finished = (status == 0) + 1;	/* 1 = failure, 2 = success */
+-++/* !bg_name_lookup */
+-+ }
+-+ 
+-+ static void
+-+diff -Nur MOO-1.8.1-old/server.h MOO-1.8.1-bg/server.h
+-+--- MOO-1.8.1-old/server.h	Mon Dec 14 08:18:58 1998
+-++++ MOO-1.8.1-bg/server.h	Sat Dec  9 21:40:52 2000
+-+@@ -26,6 +26,10 @@
+-+ #ifndef Server_H
+-+ #define Server_H 1
+-+ 
+-++/* bg_name_lookup */
+-++#include <sys/types.h> /* pid_t */
+-++/* !bg_name_lookup */
+-++
+-+ #include "my-stdio.h"
+-+ 
+-+ #include "config.h"
+-+@@ -148,7 +152,11 @@
+-+ enum Fork_Result {
+-+     FORK_PARENT, FORK_CHILD, FORK_ERROR
+-+ };
+-+-extern enum Fork_Result fork_server(const char *subtask_name);
+-++
+-++/* bg_name_lookup */
+-++extern pid_t checkpoint_pid;
+-++extern enum Fork_Result fork_server(const char *subtask_name, pid_t *child_pid);
+-++/* !bg_name_lookup */
+-+ 
+-+ extern void player_connected(Objid old_id, Objid new_id,
+-+ 			     int is_newly_created);
+-diff -Nur d20050324/projects/moo/src/BG_NAME_LOOKUP.txt d20050327/projects/moo/src/BG_NAME_LOOKUP.txt
+---- d20050324/projects/moo/src/BG_NAME_LOOKUP.txt	1969-12-31 19:00:00.000000000 -0500
+-+++ d20050327/projects/moo/src/BG_NAME_LOOKUP.txt	2005-03-27 23:56:21.000000000 -0500
+-@@ -0,0 +1,106 @@
+-+The MOO programmer's manual has this to say about name lookups:
+-+--- snip ---
+-+Accepting and Initiating Network Connections
+-+--------------------------------------------
+-+ 
+-+   When the server first accepts a new, incoming network connection, it is
+-+given the low-level network address of computer on the other end.  It
+-+immediately attempts to convert this address into the human-readable host name
+-+that will be entered in the server log and returned by the `connection_name()'
+-+function.  This conversion can, for the TCP/IP networking configurations,
+-+involve a certain amount of communication with remote name servers, which can
+-+take quite a long time and/or fail entirely.  While the server is doing this
+-+conversion, it is not doing anything else at all; in particular, it it not
+-+responding to user commands or executing MOO tasks.
+-+ 
+-+   By default, the server will wait no more than 5 seconds for such a name
+-+lookup to succeed; after that, it behaves as if the conversion had failed,
+-+using instead a printable representation of the low-level address.  If the
+-+property `name_lookup_timeout' exists on `$server_options' and has an integer
+-+as its value, that integer is used instead as the timeout interval.
+-+--- snip ---
+-+
+-+I think a much better solution would be to handle these name server lookups in
+-+the background instead of "not doing anything else at all". That's what this
+-+patch is supposed to do.
+-+
+-+The idea is to no longer have the MOO attempt to do name lookups automatically
+-+when someone connects. Instead, a couple new builtin functions allow
+-+in-database code to explicitly request a name lookup. This also gives you the
+-+choice of not attempting to look up the name at all, for example if your MOO
+-+also serves web requests.
+-+
+-+This changes connection_name() to always return the IP address instead of the
+-+name, as if the automatic lookup had timed out.
+-+
+-+Added are name_lookup() which performs a name lookup, and name_lookups(), which
+-+returns a list of the name lookups that are in progress.
+-+
+-+The $server_options.name_lookup_timeout property is still useful. The
+-+open_network_connection() function still uses the old name lookup system, and
+-+needs a timeout.
+-+
+-+The queued_tasks() function now returns "name_lookup()" in place of the usual
+-+value that tells us at what time the verb will be done suspending.
+-+
+-+---
+-+
+-+Two new builtin functions:
+-+
+-+name_lookups() => {list info, ...}
+-+
+-+This function returns a list of background name lookups that are in progress.
+-+One `info' list is returned for each lookup. It has this format:
+-+
+-+{str/list address, int timeout, int started, int task_id}
+-+
+-+Address and timeout are the original values passed to the name_lookup() call.
+-+
+-+Started is the value of time() when the call took place.
+-+
+-+Task_id is the task id of the waiting program.
+-+
+-+name_lookup(str/list address, int timeout) =>
+-+ {str canonical-name, list aliases, list addresses}
+-+
+-+This function starts a new name lookup. The current verb suspends until the
+-+lookup is done, but the MOO server continues to process other commands.
+-+
+-+The address argument can be either a string such as "www.altavista.com", or a
+-+list describing an IP address. In one of these lists, the address
+-+192.168.0.14 becomes {192, 168, 0, 14}.
+-+
+-+The timeout arg is the number of seconds before this name lookup should be
+-+abandoned.
+-+
+-+For the return value, canonical-name is the proper name that was found.
+-+
+-+Aliases is a list of strings, each one giving an alternate name.
+-+
+-+Addresses is a list of lists, each one giving an IP address as described above.
+-+
+-+Both of these functions will raise E_PERM if you are not a wizard. 
+-+
+-+The name_lookup() function can also raise:
+-+E_RECMOVE - Problem starting name lookup.
+-+E_VARNF   - Timeout
+-+E_PROPNF  - Host was not found.
+-+E_MAXREC  - Temporary nameserver error, try again later.
+-+E_INVIND  - Host exists but has no address information.
+-+E_VERBNF  - Unrecoverable nameserver error.
+-+
+-+
+-+---
+-+
+-+#0:"bf_connection_name"   this none this
+-+"#0:z_connection_name last edited by Avalon on Thu Mar 24 00:59:24 2005 EST";
+-+try
+-+  p = args[1];
+-+  ip = $string_utils:connection_hostname(cn = connection_name(p));
+-+  name = name_lookup($list_utils:map_builtin($string_utils:explode(ip, "."),
+-+"tonum"), 5)[1];
+-+  ret = $string_utils:substitute(connection_name(p), {{ip, name}});
+-+  return ret;
+-+except v (ANY)
+-+  return connection_name(@args);
+-+endtry
+-diff -Nur d20050324/projects/moo/src/db_file.c d20050327/projects/moo/src/db_file.c
+---- d20050324/projects/moo/src/db_file.c	2004-03-22 11:14:53.000000000 -0500
+-+++ d20050327/projects/moo/src/db_file.c	2005-03-27 23:56:21.000000000 -0500
+-@@ -561,7 +561,9 @@
+-     reset_command_history();
+- #else
+-     if (reason == DUMP_CHECKPOINT) {
+--	switch (fork_server("checkpointer")) {
+-+/* bg_name_lookup */
+-+        switch (fork_server("checkpointer", &checkpoint_pid)) {
+-+/* !bg_name_lookup */
+- 	case FORK_PARENT:
+- 	    reset_command_history();
+- 	    free_stream(s);
+-diff -Nur d20050324/projects/moo/src/functions.c d20050327/projects/moo/src/functions.c
+---- d20050324/projects/moo/src/functions.c	2004-03-22 11:14:54.000000000 -0500
+-+++ d20050327/projects/moo/src/functions.c	2005-03-27 23:56:21.000000000 -0500
+-@@ -55,6 +55,9 @@
+-     register_server,
+-     register_tasks,
+-     register_verbs
+-+/* bg_name_lookup */
+-+    ,register_name_lookup
+-+/* !bg_name_lookup */
+- };
+- 
+- void
+-diff -Nur d20050324/projects/moo/src/Makefile.in d20050327/projects/moo/src/Makefile.in
+---- d20050324/projects/moo/src/Makefile.in	2005-03-23 22:59:29.000000000 -0500
+-+++ d20050327/projects/moo/src/Makefile.in	2005-03-27 23:56:21.000000000 -0500
+-@@ -44,7 +44,8 @@
+- 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+- 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+- 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+--	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c ext-xml.c
+-+	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c \
+-+	ext-xml.c bg_name_lookup.c
+- 
+- OPT_NET_SRCS = net_single.c net_multi.c \
+- 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+-@@ -516,3 +520,6 @@
+- client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h \
+-  my-stdio.h my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h \
+-  options.h
+-+bg_name_lookup.o : bg_name_lookup.c tasks.h structures.h functions.h \
+-+ utils.h list.h my-in.h log.h exceptions.h net_multi.h storage.h \
+-+ server.h
+-diff -Nur d20050324/projects/moo/src/net_bsd_tcp.c d20050327/projects/moo/src/net_bsd_tcp.c
+---- d20050324/projects/moo/src/net_bsd_tcp.c	2004-03-22 11:31:06.000000000 -0500
+-+++ d20050327/projects/moo/src/net_bsd_tcp.c	2005-03-27 23:56:21.000000000 -0500
+-@@ -189,7 +189,9 @@
+-     }
+-     *read_fd = *write_fd = fd;
+-     stream_printf(s, "%s, port %d",
+--		  lookup_name_from_addr(&address, timeout),
+-+/* bg_name_lookup */
+-+                  inet_ntoa(address. sin_addr),
+-+/* !bg_name_lookup */
+- 		  (int) ntohs(address.sin_port));
+-     *name = reset_stream(s);
+-     return PA_OKAY;
+-diff -Nur d20050324/projects/moo/src/server.c d20050327/projects/moo/src/server.c
+---- d20050324/projects/moo/src/server.c	2005-03-23 22:54:22.000000000 -0500
+-+++ d20050327/projects/moo/src/server.c	2005-03-27 23:56:21.000000000 -0500
+-@@ -48,6 +48,10 @@
+- 
+- #include "execute.h"
+- 
+-+/* bg_name_lookup */
+-+pid_t checkpoint_pid = 0;
+-+/* !bg_name_lookup */
+-+
+- static pid_t parent_pid;
+- int in_child = 0;
+- 
+-@@ -224,7 +228,9 @@
+- }
+- 
+- enum Fork_Result
+--fork_server(const char *subtask_name)
+-+/* bg_name_lookup - Throw pid in *child_pid if child_pid not NULL */
+-+fork_server(const char *subtask_name, pid_t *child_pid)
+-+/* !bg_name_lookup */
+- {
+-     pid_t pid;
+-     Stream *s = new_stream(100);
+-@@ -241,7 +247,13 @@
+- 	in_child = 1;
+- 	return FORK_CHILD;
+-     } else
+--	return FORK_PARENT;
+-+/* bg_name_lookup */
+-+    {
+-+        if (child_pid != NULL)
+-+          *child_pid=pid;
+-+        return FORK_PARENT;
+-+    }
+-+/* !bg_name_lookup */
+- }
+- 
+- static void
+-@@ -293,23 +305,42 @@
+-     /* (Void *) casts to avoid warnings on systems that mis-declare the
+-      * argument type.
+-      */
+-+/* bg_name_lookup */
+-+    pid_t pid;
+-+ 
+-+#   define CHECKPID                                   \
+-+    if (pid && pid == checkpoint_pid)                 \
+-+    {                                                 \
+-+      /* 1 = failure, 2 = success */                  \
+-+      checkpoint_finished = (status == 0) + 1;        \
+-+    }                                                 \
+-+ 
+- #if HAVE_WAITPID
+--    while (waitpid(-1, (void *) &status, WNOHANG) > 0);
+-+    do {
+-+      pid = waitpid(-1, (void *) &status, WNOHANG);
+-+      CHECKPID;
+-+    } while (pid > 0);
+- #else
+- #if HAVE_WAIT3
+--    while (wait3((void *) &status, WNOHANG, 0) >= 0);
+-+    do {
+-+      pid = wait3((void *) &status, WNOHANG, 0);
+-+      CHECKPID;
+-+    } while (pid > 0)
+- #else
+- #if HAVE_WAIT2
+--    while (wait2((void *) &status, WNOHANG) >= 0);
+-+    do {
+-+      pid = wait2((void *) &status, WNOHANG);
+-+      CHECKPID;
+-+    } while (pid > 0)
+- #else
+--    wait((void *) &status);
+-+    pid = wait((void *) &status);
+-+    CHECKPID;
+- #endif
+- #endif
+- #endif
+--
+-+ 
+-     signal(sig, child_completed_signal);
+--
+--    checkpoint_finished = (status == 0) + 1;	/* 1 = failure, 2 = success */
+-+/* !bg_name_lookup */
+- }
+- 
+- static void
+-diff -Nur d20050324/projects/moo/src/server.h d20050327/projects/moo/src/server.h
+---- d20050324/projects/moo/src/server.h	2004-03-22 11:14:54.000000000 -0500
+-+++ d20050327/projects/moo/src/server.h	2005-03-27 23:56:21.000000000 -0500
+-@@ -26,6 +26,10 @@
+- #ifndef Server_H
+- #define Server_H 1
+- 
+-+/* bg_name_lookup */
+-+#include <sys/types.h> /* pid_t */
+-+/* !bg_name_lookup */
+-+
+- #include "my-stdio.h"
+- 
+- #include "config.h"
+-@@ -148,7 +152,11 @@
+- enum Fork_Result {
+-     FORK_PARENT, FORK_CHILD, FORK_ERROR
+- };
+--extern enum Fork_Result fork_server(const char *subtask_name);
+-+
+-+/* bg_name_lookup */
+-+extern pid_t checkpoint_pid;
+-+extern enum Fork_Result fork_server(const char *subtask_name, pid_t *child_pid);
+-+/* !bg_name_lookup */
+- 
+- extern void player_connected(Objid old_id, Objid new_id,
+- 			     int is_newly_created);
+diff --git a/server/avalon-patches/d20050327-d20051106.patch b/server/avalon-patches/d20050327-d20051106.patch
+deleted file mode 100644
+index 8673045..0000000
+--- a/server/avalon-patches/d20050327-d20051106.patch
++++ /dev/null
+@@ -1,256 +0,0 @@
+-diff -Nur d20050327/projects/moo/src/ext-xml.c d20051106/projects/moo/src/ext-xml.c
+---- d20050327/projects/moo/src/ext-xml.c	2005-03-23 22:58:57.000000000 -0500
+-+++ d20051106/projects/moo/src/ext-xml.c	2005-03-28 16:06:32.000000000 -0500
+-@@ -27,6 +27,8 @@
+-  * {"foo", {{"a", "1"}}, {{"bar", {}, {"11"}}}}
+-  */
+- 
+-+#define NS_DELIMITER '\t'
+-+
+- typedef struct XMLdata XMLdata;
+- 
+- struct XMLdata {
+-@@ -35,7 +37,6 @@
+-   Var element;
+- };
+- 
+--
+- static XMLdata *
+- new_node(XMLdata *parent, const char *name) 
+- {
+-@@ -44,18 +45,42 @@
+-    */
+-   XMLdata *node;
+-   Var element;
+-+
+-+  char *nametemp=NULL;
+-+  const char *nodename=NULL;
+-+  char *nsname=NULL;
+-+  char *delim=NULL;
+-+
+-+  if ((delim=strchr(name, NS_DELIMITER)) != NULL) {
+-+    int index = delim - name;
+-+    nametemp=str_dup(name);
+-+    nametemp[index]='\0';
+-+    nodename = nametemp + index + 1;
+-+    nsname = nametemp;
+-+  } else {
+-+    nodename = name;
+-+  }
+-+
+-   node = (XMLdata *)mymalloc(1*sizeof(XMLdata), M_XML_DATA);
+--  element = new_list(4);
+-+  element = new_list(nsname ? 5 : 4);
+-+
+-   /* {name, attribs, body, children} */ 
+-   element.v.list[1].type = TYPE_STR;
+--  element.v.list[1].v.str = str_dup(name);
+-+  element.v.list[1].v.str = str_dup(nodename);
+-   element.v.list[2] = new_list(0);
+-   element.v.list[3].type = TYPE_INT;
+-   element.v.list[3].v.num = 0;
+-   element.v.list[4] = new_list(0);
+-+  if (nsname) {
+-+    element.v.list[5].type = TYPE_STR;
+-+    element.v.list[5].v.str = str_dup(nsname);
+-+  }
+-   node->body = NULL;
+-   node->element = element;
+-   node->parent = parent;
+-+
+-+  if (nametemp) free_str(nametemp);
+-+
+-   return node;
+- }			
+- 
+-@@ -107,15 +132,35 @@
+-   XMLdata *node = new_node(parent, name);
+-   const char **patts = atts;
+- 
+-+  char *delim;
+-+
+-   while(*patts != NULL) {
+--    Var pair = new_list(2);
+--    pair.v.list[1].type = TYPE_STR;
+--    pair.v.list[1].v.str = str_dup(patts[0]);
+-+    Var pair;
+-+    if (delim = strchr(patts[0], NS_DELIMITER))
+-+    {
+-+      int index = delim - patts[0];
+-+      char *nametemp = str_dup(patts[0]);
+-+      nametemp[index] = '\0';
+-+
+-+      pair = new_list(3);
+-+      pair.v.list[3].type = TYPE_STR;
+-+      pair.v.list[3].v.str = str_dup(nametemp);
+-+      pair.v.list[1].type = TYPE_STR;
+-+      pair.v.list[1].v.str = str_dup(nametemp + index + 1);
+-+      if (nametemp) free_str(nametemp);
+-+    }
+-+    else
+-+    {
+-+      pair = new_list(2);
+-+      pair.v.list[1].type = TYPE_STR;
+-+      pair.v.list[1].v.str = str_dup(patts[0]);
+-+    }
+-     pair.v.list[2].type = TYPE_STR;
+--    pair.v.list[2].v.str = str_dup(patts[1]); 
+-+    pair.v.list[2].v.str = str_dup(patts[1]);
+-     patts += 2;
+-     node->element.v.list[2] = listappend(node->element.v.list[2], pair);
+-   }
+-+
+-   *data = node;
+- }
+- 
+-@@ -167,7 +212,7 @@
+-  * See documentation (ext-xml.README) for examples.
+-  */
+- static package 
+--parse_xml(const char *data, int bool_stream)
+-+parse_xml(const char *data, int bool_stream, int bool_parsens)
+-   {
+-   /*
+-    * FIXME: Feed expat smaller chunks of the string and 
+-@@ -177,9 +222,15 @@
+-   int decoded_length;
+-   const char *decoded;
+-   package result; 
+--  XML_Parser parser = XML_ParserCreate(NULL);
+-+  XML_Parser parser;
+-   XMLdata *root = new_node(NULL, "");
+-   XMLdata *child = root;
+-+
+-+  if (bool_parsens) {
+-+    parser = XML_ParserCreateNS(NULL, NS_DELIMITER);
+-+  } else {
+-+    parser = XML_ParserCreate(NULL);
+-+  }
+-   
+-   decoded_length = strlen(data);
+-   decoded = data;
+-@@ -211,7 +262,8 @@
+- static package
+- bf_parse_xml_document(Var arglist, Byte next, void *vdata, Objid progr) 
+- {
+--  package result = parse_xml(arglist.v.list[1].v.str, 1);
+-+  int bool_parsens = (arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]));
+-+  package result = parse_xml(arglist.v.list[1].v.str, 1, bool_parsens);
+-   free_var(arglist);
+-   return result;
+- }
+-@@ -219,7 +271,8 @@
+- static package
+- bf_parse_xml_tree(Var arglist, Byte next, void *vdata, Objid progr)
+- {
+--  package result = parse_xml(arglist.v.list[1].v.str, 0);
+-+  int bool_parsens = (arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]));
+-+  package result = parse_xml(arglist.v.list[1].v.str, 0, bool_parsens);
+-   free_var(arglist);
+-   return result;
+- }
+-@@ -227,7 +280,7 @@
+- void
+- register_xml()
+- {
+--    register_function("xml_parse_tree", 1, 1, bf_parse_xml_tree, TYPE_STR);
+--    register_function("xml_parse_document", 1, 1, bf_parse_xml_document, TYPE_STR);
+-+    register_function("xml_parse_tree", 1, 2, bf_parse_xml_tree, TYPE_STR, TYPE_ANY);
+-+    register_function("xml_parse_document", 1, 2, bf_parse_xml_document, TYPE_STR, TYPE_ANY);
+- }
+- 
+-diff -Nur d20050327/projects/moo/src/net_multi.c d20051106/projects/moo/src/net_multi.c
+---- d20050327/projects/moo/src/net_multi.c	2004-03-22 11:31:52.000000000 -0500
+-+++ d20051106/projects/moo/src/net_multi.c	2005-05-19 12:31:06.000000000 -0400
+-@@ -88,6 +88,7 @@
+- #endif
+-     char *user_name;
+-     int user_client;
+-+    char *connect_host;
+- } nhandle;
+- 
+- static nhandle *all_nhandles = 0;
+-@@ -329,6 +330,7 @@
+-     h->client_echo = 1;
+- #endif
+-     h->user_name = NULL;
+-+    h->connect_host = NULL;
+- 
+- #ifdef NETWORK_IDENT
+-     if (server_int_option("ident_lookup", 1)) {
+-@@ -666,6 +668,13 @@
+-     pair.v.list[2].v.num = h->user_client;
+-     list = listappend(list, pair);
+-  
+-+    pair = new_list(2);
+-+    pair.v.list[1].type = TYPE_STR;
+-+    pair.v.list[1].v.str = str_dup("connect_host");
+-+    pair.v.list[2].type = TYPE_STR;
+-+    pair.v.list[2].v.str = (h->connect_host ? str_ref(h->connect_host) : str_dup(""));
+-+    list = listappend(list, pair);
+-+ 
+-     return list;
+- }
+- 
+-@@ -688,6 +697,12 @@
+-         return 1;
+-     }
+- 
+-+    if (!mystrcasecmp(option, "connect_host")) {
+-+        value->type = TYPE_STR;
+-+        value->v.str = (h->connect_host ? str_ref(h->connect_host) : str_dup(""));
+-+        return 1;
+-+    }
+-+
+-     return 0;
+- }
+- 
+-@@ -724,6 +739,17 @@
+-         return 1;
+-     }
+- 
+-+    if (!mystrcasecmp(option, "connect_host")) {
+-+        if (h->connect_host)
+-+            free_str(h->connect_host);
+-+        if (value.type == TYPE_STR && value.v.str[0] != '\0')
+-+            h->connect_host = str_dup(value.v.str);
+-+        else
+-+            h->connect_host = 0;
+-+
+-+        return 1;
+-+    }
+-+
+-     return 0;
+- }
+- 
+-diff -Nur d20050327/projects/moo/src/tasks.c d20051106/projects/moo/src/tasks.c
+---- d20050327/projects/moo/src/tasks.c	2004-03-22 11:28:07.000000000 -0500
+-+++ d20051106/projects/moo/src/tasks.c	2005-07-29 12:10:14.000000000 -0400
+-@@ -477,6 +477,13 @@
+-     } else {
+- 	Parsed_Command *pc = parse_command(command, tq->player);
+- 
+-+        {
+-+            char *s = str_dup("");
+-+            run_server_task(tq->player, SYSTEM_OBJECT, "do_prompt",
+-+                            parse_into_wordlist(s), s, 0);
+-+            free_str(s);
+-+        }
+-+
+- 	if (!pc)
+- 	    return 0;
+- 
+-@@ -527,6 +534,13 @@
+- 		notify(tq->player, tq->output_suffix);
+- 
+- 	    free_var(result);
+-+
+-+            {
+-+                char *s = str_dup("");
+-+                run_server_task(tq->player, SYSTEM_OBJECT, "do_prompt",
+-+                                parse_into_wordlist(s), s, 0);
+-+                free_str(s);
+-+            }
+- 	}
+- 
+- 	free_parsed_command(pc);
+diff --git a/server/avalon-patches/d20051106-d20051107.patch b/server/avalon-patches/d20051106-d20051107.patch
+deleted file mode 100644
+index 19841db..0000000
+--- a/server/avalon-patches/d20051106-d20051107.patch
++++ /dev/null
+@@ -1,626 +0,0 @@
+-diff -Nur d20051106/projects/moo/src/db_io.c d20051107/projects/moo/src/db_io.c
+---- d20051106/projects/moo/src/db_io.c	2004-03-22 11:14:53.000000000 -0500
+-+++ d20051107/projects/moo/src/db_io.c	2005-11-07 13:41:18.000000000 -0500
+-@@ -77,6 +77,7 @@
+-     count = 0;
+-     for (ptr = format; *ptr; ptr++) {
+- 	int c, n, *ip;
+-+	double *dp;
+- 	unsigned *up;
+- 	char *cp;
+- 
+-@@ -106,6 +107,14 @@
+- 		up = va_arg(args, unsigned *);
+- 		n = fscanf(input, "%u", up);
+- 		goto finish;
+-+	    case 'l':
+-+		if ((*(ptr+1)) && (*(ptr+1) == 'f')) {
+-+			ptr++;
+-+			dp = va_arg(args, double *);
+-+			n = fscanf(input, "%lf", dp);
+-+			goto finish;
+-+		}
+-+		panic("DBIO_SCANF: Unsupported directive!");
+- 	    case 'c':
+- 		cp = va_arg(args, char *);
+- 		n = fscanf(input, "%c", cp);
+-diff -Nur d20051106/projects/moo/src/execute.c d20051107/projects/moo/src/execute.c
+---- d20051106/projects/moo/src/execute.c	2004-03-22 11:14:53.000000000 -0500
+-+++ d20051107/projects/moo/src/execute.c	2005-11-07 13:41:18.000000000 -0500
+-@@ -2448,13 +2448,18 @@
+- static package
+- bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
+- {
+--    static int seconds;
+-+    static double seconds;
+-     int nargs = arglist.v.list[0].v.num;
+- 
+-     if (nargs >= 1)
+--	seconds = arglist.v.list[1].v.num;
+-+    {
+-+        if (arglist.v.list[1].type == TYPE_INT)
+-+	    seconds = (double) arglist.v.list[1].v.num;
+-+	else
+-+	    seconds = *arglist.v.list[1].v.fnum;
+-+    }
+-     else
+--	seconds = -1;
+-+	seconds = -1.0;
+-     free_var(arglist);
+- 
+-     if (nargs >= 1 && seconds < 0)
+-@@ -2603,7 +2608,7 @@
+- 				      bf_call_function_write,
+- 				      TYPE_STR);
+-     register_function("raise", 1, 3, bf_raise, TYPE_ANY, TYPE_STR, TYPE_ANY);
+--    register_function("suspend", 0, 1, bf_suspend, TYPE_INT);
+-+    register_function("suspend", 0, 1, bf_suspend, TYPE_NUMERIC);
+-     register_function("read", 0, 2, bf_read, TYPE_OBJ, TYPE_ANY);
+- 
+-     register_function("seconds_left", 0, 0, bf_seconds_left);
+-diff -Nur d20051106/projects/moo/src/net_mplex.h d20051107/projects/moo/src/net_mplex.h
+---- d20051106/projects/moo/src/net_mplex.h	2004-03-22 11:14:54.000000000 -0500
+-+++ d20051107/projects/moo/src/net_mplex.h	2005-11-07 13:41:19.000000000 -0500
+-@@ -48,7 +48,7 @@
+- 				 * set, marked for writing.
+- 				 */
+- 
+--extern int mplex_wait(unsigned timeout);
+-+extern int mplex_wait(struct timeval *timeout);
+- 				/* Wait until it is possible either to do the
+- 				 * appropriate kind of I/O on some descriptor
+- 				 * in the wait set or until `timeout' seconds
+-diff -Nur d20051106/projects/moo/src/net_mp_selct.c d20051107/projects/moo/src/net_mp_selct.c
+---- d20051106/projects/moo/src/net_mp_selct.c	2004-03-22 11:14:54.000000000 -0500
+-+++ d20051107/projects/moo/src/net_mp_selct.c	2005-11-07 13:41:19.000000000 -0500
+-@@ -53,13 +53,14 @@
+- }
+- 
+- int
+--mplex_wait(unsigned timeout)
+-+mplex_wait(struct timeval *timeout)
+- {
+--    struct timeval tv;
+-+    struct timeval tv;  /* Make a copy since select() might write to it */
+-     int n;
+- 
+--    tv.tv_sec = timeout;
+--    tv.tv_usec = 0;
+-+    if (timeout) {
+-+	tv = *timeout;
+-+    }
+- 
+-     n = select(max_descriptor + 1, (void *) &input, (void *) &output, 0, &tv);
+- 
+-diff -Nur d20051106/projects/moo/src/net_multi.c d20051107/projects/moo/src/net_multi.c
+---- d20051106/projects/moo/src/net_multi.c	2005-05-19 12:31:06.000000000 -0400
+-+++ d20051107/projects/moo/src/net_multi.c	2005-11-07 13:41:19.000000000 -0500
+-@@ -587,7 +587,7 @@
+- }
+- 
+- int
+--network_process_io(int timeout)
+-+network_process_io(struct timeval *timeout)
+- {
+-     nhandle *h, *hnext;
+-     nlistener *l;
+-diff -Nur d20051106/projects/moo/src/network.h d20051107/projects/moo/src/network.h
+---- d20051106/projects/moo/src/network.h	2004-03-22 11:32:06.000000000 -0500
+-+++ d20051107/projects/moo/src/network.h	2005-11-07 13:41:19.000000000 -0500
+-@@ -24,6 +24,8 @@
+- #ifndef Network_H
+- #define Network_H 1
+- 
+-+#include <sys/time.h>
+-+
+- #include "config.h"
+- #include "options.h"
+- #include "structures.h"
+-@@ -147,7 +149,7 @@
+- 				 * `binary input mode'.
+- 				 */
+- 
+--extern int network_process_io(int timeout);
+-+extern int network_process_io(struct timeval *timeout);
+- 				/* This is called at intervals to allow the
+- 				 * network to flush pending output, receive
+- 				 * pending input, and handle requests for new
+-diff -Nur d20051106/projects/moo/src/server.c d20051107/projects/moo/src/server.c
+---- d20051106/projects/moo/src/server.c	2005-03-27 23:56:21.000000000 -0500
+-+++ d20051107/projects/moo/src/server.c	2005-11-07 13:41:19.000000000 -0500
+-@@ -477,12 +477,18 @@
+- 
+-     /* Now, we enter the main server loop */
+-     while (shutdown_message == 0) {
+--	/* Check how long we have until the next task will be ready to run.
+--	 * We only care about three cases (== 0, == 1, and > 1), so we can
+--	 * map a `never' result from the task subsystem into 2.
+--	 */
+--	int task_seconds = next_task_start();
+--	int seconds_left = task_seconds < 0 ? 2 : task_seconds;
+-+        struct timeval task_seconds;
+-+        int            any_tasks;
+-+
+-+        any_tasks = next_task_start(&task_seconds);
+-+
+-+        /* Set maximum timeout of 1 second if no tasks or if the next task is farther than 1 second away */
+-+        if ((!any_tasks) || (task_seconds.tv_sec > 0))
+-+        {
+-+          task_seconds.tv_sec  = 1;
+-+          task_seconds.tv_usec = 0;
+-+        }
+-+
+- 	shandle *h, *nexth;
+- 
+- 	if (checkpoint_requested != CHKPT_OFF) {
+-@@ -507,7 +513,7 @@
+- 	}
+- #endif
+- 
+--	if (!network_process_io(seconds_left ? 1 : 0) && seconds_left > 1)
+-+	if (!network_process_io(&task_seconds) && any_tasks)
+- 	    db_flush(FLUSH_ONE_SECOND);
+- 	else
+- 	    db_flush(FLUSH_IF_FULL);
+-diff -Nur d20051106/projects/moo/src/tasks.c d20051107/projects/moo/src/tasks.c
+---- d20051106/projects/moo/src/tasks.c	2005-07-29 12:10:14.000000000 -0400
+-+++ d20051107/projects/moo/src/tasks.c	2005-11-07 13:41:19.000000000 -0500
+-@@ -15,6 +15,9 @@
+-     Pavel@Xerox.Com
+-  *****************************************************************************/
+- 
+-+#include <sys/time.h>
+-+#include <math.h>
+-+
+- #include "my-string.h"
+- #include "my-time.h"
+- 
+-@@ -30,6 +33,7 @@
+- #include "list.h"
+- #include "log.h"
+- #include "match.h"
+-+#include "numbers.h"
+- #include "options.h"
+- #include "parse_cmd.h"
+- #include "parser.h"
+-@@ -49,12 +53,12 @@
+-     activation a;
+-     Var *rt_env;
+-     int f_index;
+--    time_t start_time;
+-+    struct timeval start_time;
+- } forked_task;
+- 
+- typedef struct suspended_task {
+-     vm the_vm;
+--    time_t start_time;
+-+    struct timeval start_time;
+-     Var value;
+- } suspended_task;
+- 
+-@@ -139,6 +143,121 @@
+-      ? ttt->t.forked.start_time \
+-      : ttt->t.suspended.start_time)
+- 
+-+static void
+-+double_to_timeval(double d, struct timeval *tv)
+-+{
+-+  double secs, usecs, frac;
+-+
+-+  frac = modf(d, &secs);
+-+  usecs = ((double) 1000000) * frac;
+-+
+-+  tv->tv_sec  = (long) secs;
+-+  tv->tv_usec = (long) usecs;
+-+
+-+  return;
+-+}
+-+
+-+static double
+-+timeval_to_double(struct timeval *tv)
+-+{
+-+  double r;
+-+
+-+  r  = tv->tv_sec;
+-+  r += tv->tv_usec / ((double) 1000000);
+-+
+-+  return r;
+-+}
+-+
+-+static int
+-+timeval_lt(struct timeval *tv1, struct timeval *tv2)
+-+/* Returns true if tv1 is less than tv2. If either arg is NULL, time 0 is assumed. */
+-+{
+-+  long secs1, usecs1;
+-+  long secs2, usecs2;
+-+
+-+  if (tv1 == NULL)
+-+  {
+-+    secs1  = 0;
+-+    usecs1 = 0;
+-+  }
+-+  else
+-+  {
+-+    secs1  = tv1->tv_sec;
+-+    usecs1 = tv1->tv_usec;
+-+  }
+-+
+-+  if (tv2 == NULL)
+-+  {
+-+    secs2  = 0;
+-+    usecs2 = 0;
+-+  }
+-+  else
+-+  {
+-+    secs2  = tv2->tv_sec;
+-+    usecs2 = tv2->tv_usec;
+-+  }
+-+
+-+  if (secs1 < secs2)
+-+    return 1;
+-+
+-+  if ((secs1 == secs2) && (usecs1 < usecs2))
+-+    return 1;
+-+
+-+  return 0;
+-+}
+-+
+-+static void
+-+timeval_add(struct timeval *result, struct timeval *tv1, struct timeval *tv2)
+-+/* Adds *tv1 and *tv2 and writes the result to *result. */
+-+/* Neither *tv1 nor *tv2 should have negative fields. */
+-+/* It's safe to have (result == tv1) || (result == tv2) */
+-+{
+-+  struct timeval sum;
+-+
+-+  sum.tv_sec  = tv1->tv_sec;
+-+  sum.tv_sec += tv2->tv_sec;
+-+
+-+  sum.tv_usec  = tv1->tv_usec;
+-+  sum.tv_usec += tv2->tv_usec;
+-+
+-+  if (sum.tv_usec >= 1000000)
+-+  {
+-+    /* Microsecond carry */
+-+    sum.tv_sec += sum.tv_usec / 1000000;
+-+    sum.tv_usec %= 1000000;
+-+  }
+-+
+-+  if ((sum.tv_sec < tv1->tv_sec) || (sum.tv_sec < tv2->tv_sec))
+-+  {
+-+    /* Seconds overflow */
+-+    sum.tv_sec = INT_MAX;
+-+  }
+-+
+-+  *result = sum;
+-+}
+-+
+-+static void
+-+timeval_sub(struct timeval *result, struct timeval *tv1, struct timeval *tv2)
+-+/* Subtracts *tv2 from *tv1 and stores the result in *result. */
+-+/* It's safe to have (result == tv1) || (result == tv2) */
+-+{
+-+  struct timeval diff;
+-+
+-+  diff.tv_sec  = tv1->tv_sec;
+-+  diff.tv_usec = tv1->tv_usec;
+-+
+-+  diff.tv_sec  -= tv2->tv_sec;
+-+  diff.tv_usec -= tv2->tv_usec;
+-+
+-+  if (diff.tv_usec < 0)
+-+  {
+-+    /* Microsecond borrow */
+-+    diff.tv_sec -= ((-diff.tv_usec) / 1000000) + 1;
+-+    diff.tv_usec = 1000000 - ((-diff.tv_usec) % 1000000);
+-+  }
+-+
+-+  *result = diff;
+-+}
+- 
+- static void
+- deactivate_tqueue(tqueue * tq)
+-@@ -777,21 +896,21 @@
+- enqueue_waiting(task * t)
+- {				/* either FORKED or SUSPENDED */
+- 
+--    time_t start_time = GET_START_TIME(t);
+-+    struct timeval start_time = GET_START_TIME(t);
+-     Objid progr = (t->kind == TASK_FORKED
+- 		   ? t->t.forked.a.progr
+- 		   : progr_of_cur_verb(t->t.suspended.the_vm));
+-     tqueue *tq = find_tqueue(progr, 1);
+- 
+-     tq->num_bg_tasks++;
+--    if (!waiting_tasks || start_time < GET_START_TIME(waiting_tasks)) {
+-+    if (!waiting_tasks || timeval_lt(&start_time, &GET_START_TIME(waiting_tasks))) {
+- 	t->next = waiting_tasks;
+- 	waiting_tasks = t;
+-     } else {
+- 	task *tt;
+- 
+- 	for (tt = waiting_tasks; tt->next; tt = tt->next)
+--	    if (start_time < GET_START_TIME(tt->next))
+-+	    if (timeval_lt(&start_time, &GET_START_TIME(tt->next)))
+- 		break;
+- 	t->next = tt->next;
+- 	tt->next = t;
+-@@ -800,7 +919,7 @@
+- 
+- static void
+- enqueue_ft(Program * program, activation a, Var * rt_env,
+--	   int f_index, time_t start_time, int id)
+-+	   int f_index, struct timeval start_time, int id)
+- {
+-     task *t = (task *) mymalloc(sizeof(task), M_TASK);
+- 
+-@@ -843,10 +962,13 @@
+- {
+-     int id;
+-     Var *rt_env;
+-+    struct timeval start_time;
+- 
+-     if (!check_user_task_limit(a.progr))
+- 	return E_QUOTA;
+- 
+-+    double_to_timeval((double) time(0) + after_seconds, &start_time);
+-+
+-     id = new_task_id();
+-     a.verb = str_ref(a.verb);
+-     a.verbname = str_ref(a.verbname);
+-@@ -857,7 +979,7 @@
+- 	a.rt_env[vid].v.num = id;
+-     }
+-     rt_env = copy_rt_env(a.rt_env, a.prog->num_var_names);
+--    enqueue_ft(a.prog, a, rt_env, f_index, time(0) + after_seconds, id);
+-+    enqueue_ft(a.prog, a, rt_env, f_index, start_time, id);
+- 
+-     return E_NONE;
+- }
+-@@ -865,21 +987,19 @@
+- enum error
+- enqueue_suspended_task(vm the_vm, void *data)
+- {
+--    int after_seconds = *((int *) data);
+--    int now = time(0);
+--    int when;
+-+    double after_seconds = *((double *) data);
+-+    struct timeval now;
+-+    struct timeval wait;
+-     task *t;
+- 
+-+    gettimeofday(&now, NULL);
+-+    double_to_timeval(after_seconds, &wait);
+-+
+-     if (check_user_task_limit(progr_of_cur_verb(the_vm))) {
+- 	t = mymalloc(sizeof(task), M_TASK);
+- 	t->kind = TASK_SUSPENDED;
+- 	t->t.suspended.the_vm = the_vm;
+--	if (now + after_seconds < now)
+--	    /* overflow or suspend `forever' code */
+--	    when = INT32_MAX;
+--	else
+--	    when = now + after_seconds;
+--	t->t.suspended.start_time = when;
+-+        timeval_add(&t->t.suspended.start_time, &now, &wait);
+- 	t->t.suspended.value = zero;
+- 
+- 	enqueue_waiting(t);
+-@@ -897,7 +1017,7 @@
+- 
+-     t->kind = TASK_SUSPENDED;
+-     t->t.suspended.the_vm = the_vm;
+--    t->t.suspended.start_time = 0;	/* ready now */
+-+    double_to_timeval(0.0, &t->t.suspended.start_time);  /* ready now */
+-     t->t.suspended.value = value;
+- 
+-     enqueue_bg_task(tq, t);
+-@@ -952,31 +1072,48 @@
+- }
+- 
+- int
+--next_task_start(void)
+-+next_task_start(struct timeval *tv)
+- {
+-     tqueue *tq;
+- 
+-     for (tq = active_tqueues; tq; tq = tq->next)
+- 	if (tq->first_input != 0 || tq->first_bg != 0)
+--	    return 0;
+-+        {
+-+            tv->tv_sec  = 0;
+-+            tv->tv_usec = 0;
+-+	    return 1;
+-+        }
+- 
+-     if (waiting_tasks != 0) {
+--	int wait = (waiting_tasks->kind == TASK_FORKED
+--		    ? waiting_tasks->t.forked.start_time
+--		    : waiting_tasks->t.suspended.start_time) - time(0);
+--	return (wait >= 0) ? wait : 0;
+-+        struct timeval wait;
+-+        struct timeval now;
+-+        struct timeval zero;
+-+
+-+        zero.tv_sec = 0;
+-+        zero.tv_usec = 0;
+-+
+-+        gettimeofday(&now, NULL);
+-+
+-+	timeval_sub(&wait, &(waiting_tasks->kind == TASK_FORKED
+-+		           ? waiting_tasks->t.forked.start_time
+-+	                   : waiting_tasks->t.suspended.start_time), &now);
+-+	*tv = timeval_lt(&wait, &zero) ? zero : wait;
+-+        return 1;
+-     }
+--    return -1;
+-+
+-+    return 0;
+- }
+- 
+- void
+- run_ready_tasks(void)
+- {
+-     task *t, *next_t;
+--    time_t now = time(0);
+-+    struct timeval now;
+-     tqueue *tq, *next_tq;
+- 
+--    for (t = waiting_tasks; t && GET_START_TIME(t) <= now; t = next_t) {
+-+    gettimeofday(&now, NULL);
+-+
+-+    for (t = waiting_tasks; t && timeval_lt(&GET_START_TIME(t), &now); t = next_t) {
+- 	Objid progr = (t->kind == TASK_FORKED
+- 		       ? t->t.forked.a.progr
+- 		       : progr_of_cur_verb(t->t.suspended.the_vm));
+-@@ -1151,7 +1288,7 @@
+- {
+-     int lineno = find_line_number(ft.program, ft.f_index, 0);
+- 
+--    dbio_printf("0 %d %d %d\n", lineno, ft.start_time, ft.id);
+-+    dbio_printf("0 %d %lf %d\n", lineno, timeval_to_double(&ft.start_time), ft.id);
+-     write_activ_as_pi(ft.a);
+-     write_rt_env(ft.program->var_names, ft.rt_env, ft.program->num_var_names);
+-     dbio_write_forked_program(ft.program, ft.f_index);
+-@@ -1160,7 +1297,7 @@
+- static void
+- write_suspended_task(suspended_task st)
+- {
+--    dbio_printf("%d %d ", st.start_time, st.the_vm->task_id);
+-+    dbio_printf("%lf %d ", timeval_to_double(&st.start_time), st.the_vm->task_id);
+-     dbio_write_var(st.value);
+-     write_vm(st.the_vm);
+- }
+-@@ -1238,21 +1375,23 @@
+- 	return 0;
+-     }
+-     for (; count > 0; count--) {
+--	int first_lineno, id, old_size, st;
+-+	int first_lineno, id, old_size;
+-+        double st;
+- 	char c;
+--	time_t start_time;
+-+	struct timeval start_time;
+- 	Program *program;
+- 	Var *rt_env, *old_rt_env;
+- 	const char **old_names;
+- 	activation a;
+- 
+--	if (dbio_scanf("%d %d %d %d%c",
+-+	if (dbio_scanf("%d %d %lf %d%c",
+- 		       &dummy, &first_lineno, &st, &id, &c) != 5
+- 	    || c != '\n') {
+- 	    errlog("READ_TASK_QUEUE: Bad numbers, count = %d.\n", count);
+- 	    return 0;
+- 	}
+--	start_time = st;
+-+        double_to_timeval(st, &start_time);
+-+
+- 	if (!read_activ_as_pi(&a)) {
+- 	    errlog("READ_TASK_QUEUE: Bad activation, count = %d.\n", count);
+- 	    return 0;
+-@@ -1283,16 +1422,17 @@
+-     }
+-     for (; suspended_count > 0; suspended_count--) {
+- 	task *t = (task *) mymalloc(sizeof(task), M_TASK);
+--	int task_id, start_time;
+-+	int task_id;
+-+        double st;
+- 	char c;
+- 
+- 	t->kind = TASK_SUSPENDED;
+--	if (dbio_scanf("%d %d%c", &start_time, &task_id, &c) != 3) {
+-+	if (dbio_scanf("%lf %d%c", &st, &task_id, &c) != 3) {
+- 	    errlog("READ_TASK_QUEUE: Bad suspended task header, count = %d\n",
+- 		   suspended_count);
+- 	    return 0;
+- 	}
+--	t->t.suspended.start_time = start_time;
+-+        double_to_timeval(st, &t->t.suspended.start_time);
+- 	if (c == ' ')
+- 	    t->t.suspended.value = dbio_read_var();
+- 	else if (c == '\n')
+-@@ -1438,9 +1578,8 @@
+-     list.v.list[1].type = TYPE_INT;
+-     list.v.list[1].v.num = ft.id;
+-     list.v.list[2].type = TYPE_INT;
+--    list.v.list[2].v.num = ft.start_time;
+--    list.v.list[3].type = TYPE_INT;
+--    list.v.list[3].v.num = 0;	/* OBSOLETE: was clock ID */
+-+    list.v.list[2].v.num = ft.start_time.tv_sec;
+-+    list.v.list[3] = new_float(timeval_to_double(&ft.start_time));	/* was clock ID, now float start time */
+-     list.v.list[4].type = TYPE_INT;
+-     list.v.list[4].v.num = DEFAULT_BG_TICKS;	/* OBSOLETE: was clock ticks */
+-     list.v.list[5].type = TYPE_OBJ;
+-@@ -1468,7 +1607,7 @@
+-     list.v.list[1].v.num = the_vm->task_id;
+- 
+-     list.v.list[3].type = TYPE_INT;
+--    list.v.list[3].v.num = 0;	/* OBSOLETE: was clock ID */
+-+    list.v.list[3].v.num = 0;	/* was clock ID, now float start time (but not set here) */
+-     list.v.list[4].type = TYPE_INT;
+-     list.v.list[4].v.num = DEFAULT_BG_TICKS;	/* OBSOLETE: was clock ticks */
+-     list.v.list[5].type = TYPE_OBJ;
+-@@ -1492,7 +1631,8 @@
+- 
+-     list = list_for_vm(st.the_vm);
+-     list.v.list[2].type = TYPE_INT;
+--    list.v.list[2].v.num = st.start_time;
+-+    list.v.list[2].v.num = st.start_time.tv_sec;
+-+    list.v.list[3] = new_float(timeval_to_double(&st.start_time));
+- 
+-     return list;
+- }
+-@@ -1505,6 +1645,7 @@
+-     list = list_for_vm(the_vm);
+-     list.v.list[2].type = TYPE_INT;
+-     list.v.list[2].v.num = -1;	/* conventional value */
+-+    list.v.list[3] = new_float(0.0);
+- 
+-     list.v.list[5].v.obj = player;
+- 
+-@@ -1699,12 +1840,14 @@
+-     struct kcl_data *kdata = data;
+- 
+-     if (the_vm->task_id == kdata->id)
+-+    {
+- 	if (is_wizard(kdata->owner)
+- 	    || progr_of_cur_verb(the_vm) == kdata->owner) {
+- 	    free_vm(the_vm, 1);
+- 	    return TEA_KILL;
+- 	} else
+- 	    return TEA_STOP;
+-+    }
+- 
+-     return TEA_CONTINUE;
+- }
+-@@ -1828,7 +1971,7 @@
+- 
+- 	if (!is_wizard(progr) && progr != owner)
+- 	    return E_PERM;
+--	t->t.suspended.start_time = time(0);	/* runnable now */
+-+	double_to_timeval(0.0, &t->t.suspended.start_time);	/* runnable now */
+- 	free_var(t->t.suspended.value);
+- 	t->t.suspended.value = value;
+- 	tq = find_tqueue(owner, 1);
+-diff -Nur d20051106/projects/moo/src/tasks.h d20051107/projects/moo/src/tasks.h
+---- d20051106/projects/moo/src/tasks.h	2004-03-22 11:14:54.000000000 -0500
+-+++ d20051107/projects/moo/src/tasks.h	2005-11-07 13:41:19.000000000 -0500
+-@@ -18,6 +18,8 @@
+- #ifndef Tasks_H
+- #define Tasks_H 1
+- 
+-+#include <sys/time.h>
+-+
+- #include "config.h"
+- #include "execute.h"
+- #include "structures.h"
+-@@ -78,7 +80,7 @@
+- 
+- extern Var read_input_now(Objid connection);
+- 
+--extern int next_task_start(void);
+-+extern int next_task_start(struct timeval *tv);
+- extern void run_ready_tasks(void);
+- extern enum outcome run_server_task(Objid player, Objid what,
+- 				    const char *verb, Var args,
+diff --git a/server/avalon-patches/tORIGINAL-d20040322.patch b/server/avalon-patches/tORIGINAL-d20040322.patch
+deleted file mode 100644
+index e1b0edb..0000000
+--- a/server/avalon-patches/tORIGINAL-d20040322.patch
++++ /dev/null
+@@ -1,666 +0,0 @@
+-diff -Nur tORIGINAL/projects/moo/src/configure d20040322/projects/moo/src/configure
+---- tORIGINAL/projects/moo/src/configure	2004-03-22 11:14:53.000000000 -0500
+-+++ d20040322/projects/moo/src/configure	2004-03-22 11:29:04.000000000 -0500
+-@@ -1403,6 +1403,93 @@
+- 
+- done
+- 
+-+for func in ident_id
+-+do
+-+    trfrom='[a-z]' trto='[A-Z]'
+-+  var=HAVE_`echo $func | tr "$trfrom" "$trto"`
+-+    echo checking for $func
+-+cat > conftest.c <<EOF
+-+#include "confdefs.h"
+-+#include <assert.h>
+-+int main() { exit(0); }
+-+int t() { 
+-+/* The GNU C library defines this for functions which it implements
+-+    to always fail with ENOSYS.  Some functions are actually named
+-+    something starting with __ and the normal name is an alias.  */
+-+#if defined (__stub_$func) || defined (__stub___$func)
+-+choke me
+-+#else
+-+/* Override any gcc2 internal prototype to avoid an error.  */
+-+extern char $func(); $func();
+-+#endif
+-+ }
+-+EOF
+-+if eval $compile; then
+-+  rm -rf conftest*
+-+  {
+-+test -n "$verbose" && \
+-+echo "	defining $var"
+-+echo "#define" $var 1 >> confdefs.h
+-+DEFS="$DEFS -D$var=1"
+-+SEDDEFS="${SEDDEFS}\${SEDdA}$var\${SEDdB}$var\${SEDdC}1\${SEDdD}
+-+\${SEDuA}$var\${SEDuB}$var\${SEDuC}1\${SEDuD}
+-+\${SEDeA}$var\${SEDeB}$var\${SEDeC}1\${SEDeD}
+-+"
+-+}
+-+
+-+
+-+else
+-+  rm -rf conftest*
+-+  SAVELIBS="$LIBS"
+-+    for lib in -lident
+-+    do
+-+      LIBS="$LIBS $lib"
+-+      echo checking for $func
+-+cat > conftest.c <<EOF
+-+#include "confdefs.h"
+-+#include <assert.h>
+-+int main() { exit(0); }
+-+int t() { 
+-+/* The GNU C library defines this for functions which it implements
+-+    to always fail with ENOSYS.  Some functions are actually named
+-+    something starting with __ and the normal name is an alias.  */
+-+#if defined (__stub_$func) || defined (__stub___$func)
+-+choke me
+-+#else
+-+/* Override any gcc2 internal prototype to avoid an error.  */
+-+extern char $func(); $func();
+-+#endif
+-+ }
+-+EOF
+-+if eval $compile; then
+-+  rm -rf conftest*
+-+  
+-+{
+-+test -n "$verbose" && \
+-+echo "	defining $var"
+-+echo "#define" $var 1 >> confdefs.h
+-+DEFS="$DEFS -D$var=1"
+-+SEDDEFS="${SEDDEFS}\${SEDdA}$var\${SEDdB}$var\${SEDdC}1\${SEDdD}
+-+\${SEDuA}$var\${SEDuB}$var\${SEDuC}1\${SEDuD}
+-+\${SEDeA}$var\${SEDeB}$var\${SEDeC}1\${SEDeD}
+-+"
+-+}
+-+
+-+			 break
+-+
+-+else
+-+  rm -rf conftest*
+-+  LIBS="$SAVELIBS"
+-+fi
+-+rm -f conftest*
+-+
+-+    done
+-+    
+-+fi
+-+rm -f conftest*
+-+
+-+done
+-+
+- for hdr in unistd.h sys/cdefs.h stdlib.h tiuser.h machine/endian.h
+- do
+- trhdr=HAVE_`echo $hdr | tr '[a-z]./' '[A-Z]__'`
+-diff -Nur tORIGINAL/projects/moo/src/configure.in d20040322/projects/moo/src/configure.in
+---- tORIGINAL/projects/moo/src/configure.in	2004-03-22 11:14:53.000000000 -0500
+-+++ d20040322/projects/moo/src/configure.in	2004-03-22 11:29:13.000000000 -0500
+-@@ -315,6 +315,7 @@
+- MOO_HAVE_FUNC_LIBS(accept, "-lsocket -lnsl" -lsocket -linet)
+- MOO_HAVE_FUNC_LIBS(t_open, -lnsl -lnsl_s)
+- MOO_HAVE_FUNC_LIBS(crypt, -lcrypt -lcrypt_d)
+-+MOO_HAVE_FUNC_LIBS(ident_id, -lident)
+- AC_HAVE_HEADERS(unistd.h sys/cdefs.h stdlib.h tiuser.h machine/endian.h)
+- AC_HAVE_FUNCS(remove rename poll select strerror strftime strtoul matherr)
+- AC_HAVE_FUNCS(random lrand48 wait3 wait2 sigsetmask sigprocmask sigrelse)
+-diff -Nur tORIGINAL/projects/moo/src/extensions.c d20040322/projects/moo/src/extensions.c
+---- tORIGINAL/projects/moo/src/extensions.c	2004-03-22 11:14:54.000000000 -0500
+-+++ d20040322/projects/moo/src/extensions.c	2004-03-22 11:30:08.000000000 -0500
+-@@ -36,8 +36,6 @@
+- #include "functions.h"
+- #include "db_tune.h"
+- 
+--#if EXAMPLE
+--
+- #include "my-unistd.h"
+- 
+- #include "exceptions.h"
+-@@ -46,6 +44,17 @@
+- #include "storage.h"
+- #include "tasks.h"
+- 
+-+/* FUP extension */
+-+#include "structures.h"
+-+#include "utils.h"
+-+/* FUP extension */
+-+
+-+/* vrandom extension */
+-+#include "list.h"
+-+/* vrandom extension */
+-+
+-+#if EXAMPLE
+-+
+- typedef struct stdin_waiter {
+-     struct stdin_waiter *next;
+-     vm the_vm;
+-@@ -172,10 +181,126 @@
+- }
+- #endif
+- 
+-+static package
+-+bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+  Objid what = arglist.v.list[1].v.obj;
+-+  Objid targ = arglist.v.list[2].v.obj;
+-+  Var   r;
+-+
+-+  free_var(arglist);
+-+
+-+  r.type = TYPE_INT;
+-+
+-+  while (valid(what))
+-+  {
+-+    if (what == targ)
+-+    {
+-+      r.v.num = 1;
+-+      return make_var_pack(r);
+-+    }
+-+
+-+    what = db_object_parent(what);
+-+  }
+-+
+-+  r.v.num = 0;
+-+  return make_var_pack(r);
+-+}
+-+
+-+// Begin VERYRANDOM code from tiresias
+-+
+-+static unsigned long regA, regB, regC;
+-+
+-+//int VERYRANDOM(unsigned long &regA, unsigned long &regB, unsigned long &regC) {
+-+int VERYRANDOM() {
+-+  regA=((((regA>>31)^(regA>>6)^(regA>>4)^(regA>>2)^(regA<<1)^regA) & 0x00000001)<<31) | (regA>>1);
+-+  regB=((((regB>>30)^(regB>>2)) & 0x00000001)<<30) | (regB>>1);
+-+  regC=((((regC>>28)^(regC>>1)) & 0x00000001)<<28) | (regC>>1);
+-+
+-+  return ((regA ^ regB ^ regC) & 0x00000001);
+-+//  return ((regA & regB) | (!regA & regC)) & 0x00000001;
+-+}
+-+
+-+static package
+-+bf_vrandomseed(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+    int nargs = arglist.v.list[0].v.num;
+-+    Var r;
+-+
+-+    free_var(arglist);
+-+
+-+    if (nargs != 0) {
+-+        unsigned long newRegA = (unsigned long) *arglist.v.list[1].v.list[1].v.fnum;
+-+        unsigned long newRegB = (unsigned long) *arglist.v.list[1].v.list[2].v.fnum;
+-+        unsigned long newRegC = (unsigned long) *arglist.v.list[1].v.list[3].v.fnum;
+-+
+-+        regA = newRegA;
+-+        regB = newRegB;
+-+        regC = newRegC;
+-+    }
+-+
+-+    r = new_list(3);
+-+    r.v.list[1].type = TYPE_FLOAT;
+-+    r.v.list[1].v.fnum = mymalloc(sizeof(double), M_FLOAT);
+-+    *r.v.list[1].v.fnum = (float) regA;
+-+
+-+    r.v.list[2].type = TYPE_FLOAT;
+-+    r.v.list[2].v.fnum = mymalloc(sizeof(double), M_FLOAT);
+-+    *r.v.list[2].v.fnum = (float) regB;
+-+
+-+    r.v.list[3].type = TYPE_FLOAT;
+-+    r.v.list[3].v.fnum = mymalloc(sizeof(double), M_FLOAT);
+-+    *r.v.list[3].v.fnum = (float) regC;
+-+
+-+    return make_var_pack(r);
+-+}
+-+
+-+static package
+-+bf_vrandom(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+    int nargs = arglist.v.list[0].v.num;
+-+    int num = (nargs >= 1 ? arglist.v.list[1].v.num : 1);
+-+
+-+    free_var(arglist);
+-+
+-+    if (num <= 0)
+-+        return make_error_pack(E_INVARG);
+-+    else {
+-+        Var r;
+-+        int bits = 0;
+-+        int result = -1;
+-+
+-+        r.type = TYPE_INT;
+-+        if (nargs == 0)
+-+            bits = 31;
+-+        else {
+-+            double x = pow(num, .5);
+-+            bits=((double)abs(x)==x?x:abs(x+1));
+-+        }
+-+
+-+        while (result < 1 || result > num) {
+-+            result = 1;
+-+            int x = 0;
+-+            for (x=0; x<bits; x++) {
+-+                int rbit, powwow;
+-+                powwow = (int) pow(2, x);
+-+//              rbit = VERYRANDOM(regA, regB, regC);
+-+                rbit = VERYRANDOM();
+-+                result = result + (rbit*powwow);
+-+            }
+-+        }
+-+
+-+        r.v.num = result;
+-+        return make_var_pack(r);
+-+    }
+-+}
+-+
+-+// end VERYRANDOM code
+- 
+- void
+- register_extensions()
+- {
+-+  oklog("          LOADING: extensions ...\n");
+- #if EXAMPLE
+-     register_task_queue(stdin_enumerator);
+-     register_function("read_stdin", 0, 0, bf_read_stdin);
+-@@ -184,5 +309,10 @@
+-     register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+-     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+- #endif
+-+    register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
+-+    register_function("vrandomseed", 0, 3, bf_vrandomseed, TYPE_LIST);
+-+    register_function("vrandom", 0, 1, bf_vrandom, TYPE_INT);
+-+  register_files();
+-+  oklog("          LOADING: extensions ... finished\n");
+- }
+- 
+-diff -Nur tORIGINAL/projects/moo/src/ext-FUP_options.h d20040322/projects/moo/src/ext-FUP_options.h
+---- tORIGINAL/projects/moo/src/ext-FUP_options.h	2004-03-22 11:25:05.000000000 -0500
+-+++ d20040322/projects/moo/src/ext-FUP_options.h	2004-03-22 11:29:37.000000000 -0500
+-@@ -26,10 +26,14 @@
+- You can also make this base directory either read-only or read-and-write.
+- It is read-only by default. To make it writable from the MOO, comment the line:
+- */
+--     #define EXTERN_FILES_DIR_READ_ONLY
+-+//     #define EXTERN_FILES_DIR_READ_ONLY
+- 
+- 
+- /**********************************************************
+- The default mode for new directories can be configured too:
+- */
+-      #define CREATE_NEW_DIR_MODE		0755
+-+
+-+#define INCLUDE_FILECHMOD
+-+#define INCLUDE_FILERUN
+-+
+-diff -Nur tORIGINAL/projects/moo/src/Makefile.in d20040322/projects/moo/src/Makefile.in
+---- tORIGINAL/projects/moo/src/Makefile.in	2004-03-22 11:14:53.000000000 -0500
+-+++ d20040322/projects/moo/src/Makefile.in	2004-03-22 11:28:31.000000000 -0500
+-@@ -31,7 +31,7 @@
+- 
+- CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+- 	db_verbs.c decompile.c disassemble.c eval_env.c eval_vm.c \
+--	exceptions.c execute.c extensions.c functions.c keywords.c list.c \
+-+	exceptions.c execute.c extensions.c ext-FUP.c functions.c keywords.c list.c \
+- 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+- 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+- 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+-diff -Nur tORIGINAL/projects/moo/src/net_bsd_tcp.c d20040322/projects/moo/src/net_bsd_tcp.c
+---- tORIGINAL/projects/moo/src/net_bsd_tcp.c	2004-03-22 11:14:54.000000000 -0500
+-+++ d20040322/projects/moo/src/net_bsd_tcp.c	2004-03-22 11:31:06.000000000 -0500
+-@@ -41,6 +41,8 @@
+- #include "timers.h"
+- #include "utils.h"
+- 
+-+#include <netdb.h>
+-+
+- const char *
+- proto_name(void)
+- {
+-@@ -87,8 +89,8 @@
+-     if (!st)
+- 	st = new_stream(20);
+- 
+--    if (desc.type != TYPE_INT)
+--	return E_TYPE;
+-+    if (desc.type != TYPE_INT && desc.type != TYPE_LIST)
+-+        return E_TYPE;
+- 
+-     port = desc.v.num;
+-     s = socket(AF_INET, SOCK_STREAM, 0);
+-@@ -102,8 +104,26 @@
+- 	close(s);
+- 	return E_QUOTA;
+-     }
+-+    memset((char *) &address, 0, sizeof(address));
+-     address.sin_family = AF_INET;
+--    address.sin_addr.s_addr = htonl(INADDR_ANY);
+-+    if (desc.type == TYPE_INT) {
+-+      port = desc.v.num;
+-+      address.sin_addr.s_addr = htonl(INADDR_ANY);
+-+    } else {
+-+      unsigned long inaddr;
+-+      inaddr = inet_addr(desc.v.list[1].v.str);
+-+      if (inaddr != INADDR_NONE) {
+-+        memcpy(&address.sin_addr, &inaddr, sizeof(inaddr));
+-+      } else {
+-+        struct hostent *hp;
+-+        hp=gethostbyname(desc.v.list[1].v.str);
+-+        if (hp == NULL)
+-+          return E_INVARG;
+-+
+-+        memcpy(&address.sin_addr,hp->h_addr,hp->h_length);
+-+      }
+-+      port = desc.v.list[2].v.num;
+-+    }
+-     address.sin_port = htons(port);
+-     if (bind(s, (struct sockaddr *) &address, sizeof(address)) < 0) {
+- 	enum error e = E_QUOTA;
+-@@ -127,7 +147,11 @@
+-     } else
+- 	*canon = var_ref(desc);
+- 
+--    stream_printf(st, "port %d", canon->v.num);
+-+    if (desc.type == TYPE_INT) {
+-+      stream_printf(st, "port %d", canon->v.num);
+-+    } else {
+-+      stream_printf(st, "%s port %d", canon->v.list[1].v.str, canon->v.list[2].v.num);
+-+    }
+-     *name = reset_stream(st);
+- 
+-     *fd = s;
+-@@ -209,7 +233,7 @@
+-     static int port;
+-     static Timer_ID id;
+-     int s, result, length;
+--    int timeout = server_int_option("name_lookup_timeout", 5);
+-+    int timeout = server_int_option("outbound_name_lookup_timeout", 5);
+-     static struct sockaddr_in addr;
+-     static Stream *st1 = 0, *st2 = 0;
+- 
+-diff -Nur tORIGINAL/projects/moo/src/net_multi.c d20040322/projects/moo/src/net_multi.c
+---- tORIGINAL/projects/moo/src/net_multi.c	2004-03-22 11:14:54.000000000 -0500
+-+++ d20040322/projects/moo/src/net_multi.c	2004-03-22 11:31:52.000000000 -0500
+-@@ -41,6 +41,10 @@
+- #include "timers.h"
+- #include "utils.h"
+- 
+-+#ifdef NETWORK_IDENT
+-+#include <ident.h>
+-+#endif
+-+
+- static struct proto proto;
+- static int eol_length;		/* == strlen(proto.eol_out_string) */
+- 
+-@@ -82,6 +86,8 @@
+- #if NETWORK_PROTOCOL == NP_TCP
+-     int client_echo;
+- #endif
+-+    char *user_name;
+-+    int user_client;
+- } nhandle;
+- 
+- static nhandle *all_nhandles = 0;
+-@@ -322,6 +328,18 @@
+- #if NETWORK_PROTOCOL == NP_TCP
+-     h->client_echo = 1;
+- #endif
+-+    h->user_name = NULL;
+-+
+-+#ifdef NETWORK_IDENT
+-+    if (server_int_option("ident_lookup", 1)) {
+-+      h->user_name = ident_id(rfd, server_int_option("ident_lookup_timeout", 5));
+-+    }
+-+#endif
+-+
+-+    h->user_client = 0;
+-+    if (!h->user_name || h->user_name[0] == '[') {
+-+      h->user_name = str_dup("unknown");
+-+    }
+- 
+-     stream_printf(s, "%s %s %s",
+- 		  local_name, outbound ? "to" : "from", remote_name);
+-@@ -610,6 +628,14 @@
+-     return h->name;
+- }
+- 
+-+const char *
+-+network_connection_user(network_handle nh)
+-+{
+-+    nhandle *h = (nhandle *) nh.ptr;
+-+
+-+    return h->user_name;
+-+}
+-+
+- void
+- network_set_connection_binary(network_handle nh, int do_binary)
+- {
+-@@ -633,6 +659,13 @@
+-     list = listappend(list, pair);
+- #endif
+- 
+-+    pair = new_list(2);
+-+    pair.v.list[1].type = TYPE_STR;
+-+    pair.v.list[1].v.str = str_dup("user-client");
+-+    pair.v.list[2].type = TYPE_INT;
+-+    pair.v.list[2].v.num = h->user_client;
+-+    list = listappend(list, pair);
+-+ 
+-     return list;
+- }
+- 
+-@@ -649,6 +682,12 @@
+-     }
+- #endif
+- 
+-+    if (!mystrcasecmp(option, "user-client")) {
+-+        value->type = TYPE_INT;
+-+        value->v.num = h->user_client;
+-+        return 1;
+-+    }
+-+
+-     return 0;
+- }
+- 
+-@@ -680,6 +719,11 @@
+-     }
+- #endif
+- 
+-+    if (!mystrcasecmp(option, "user-client")) {
+-+        h->user_client = value.v.num;
+-+        return 1;
+-+    }
+-+
+-     return 0;
+- }
+- 
+-diff -Nur tORIGINAL/projects/moo/src/network.h d20040322/projects/moo/src/network.h
+---- tORIGINAL/projects/moo/src/network.h	2004-03-22 11:14:54.000000000 -0500
+-+++ d20040322/projects/moo/src/network.h	2004-03-22 11:32:06.000000000 -0500
+-@@ -188,6 +188,8 @@
+- 				 * the given setting if valid.
+- 				 */
+- 
+-+extern const char *network_connection_user(network_handle nh);
+-+
+- #ifdef OUTBOUND_NETWORK
+- #include "structures.h"
+- 
+-diff -Nur tORIGINAL/projects/moo/src/options.h d20040322/projects/moo/src/options.h
+---- tORIGINAL/projects/moo/src/options.h	2004-03-22 11:14:54.000000000 -0500
+-+++ d20040322/projects/moo/src/options.h	2004-03-22 15:39:55.000000000 -0500
+-@@ -155,7 +155,7 @@
+-  *	 NP_SINGLE or NP_LOCAL.
+-  */
+- 
+--/* #define OUTBOUND_NETWORK */
+-+#define OUTBOUND_NETWORK
+- 
+- /******************************************************************************
+-  * The following constants define certain aspects of the server's network
+-@@ -256,6 +256,8 @@
+- 
+- /* #define USE_GNU_MALLOC */
+- 
+-+#define NETWORK_IDENT
+-+
+- /*****************************************************************************
+-  ********** You shouldn't need to change anything below this point. **********
+-  *****************************************************************************/
+-diff -Nur tORIGINAL/projects/moo/src/server.c d20040322/projects/moo/src/server.c
+---- tORIGINAL/projects/moo/src/server.c	2004-03-22 11:14:54.000000000 -0500
+-+++ d20040322/projects/moo/src/server.c	2004-03-22 13:26:05.000000000 -0500
+-@@ -1489,6 +1489,67 @@
+- }
+- 
+- static package
+-+bf_connection_user(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+    Objid       who = arglist.v.list[1].v.obj;
+-+    shandle    *h = find_shandle(who);
+-+    const char *user_name;
+-+    Var         r;
+-+
+-+/*    free_var(arglist);
+-+    r.type = TYPE_STR;
+-+    r.v.str = str_dup("unknown");
+-+    return make_var_pack(r);*/
+-+
+-+    if (h)
+-+        user_name = network_connection_user(h->nhandle);
+-+    else
+-+        user_name = 0;
+-+
+-+    free_var(arglist);
+-+    if (!is_wizard(progr)  &&  progr != who)
+-+        return make_error_pack(E_PERM);
+-+    else if (!user_name)
+-+        return make_error_pack(E_INVARG);
+-+    else {
+-+        r.type = TYPE_STR;
+-+        r.v.str = str_dup(user_name);
+-+        return make_var_pack(r);
+-+    }
+-+}
+-+
+-+Objid
+-+connection_listener(Objid player)
+-+{
+-+    shandle    *h = find_shandle(player);
+-+
+-+    if (h)
+-+        return h->listener;
+-+    else
+-+        return -1;
+-+}
+-+
+-+static package
+-+bf_connection_listener(Var arglist, Byte next, void *vdata, Objid progr)
+-+{
+-+    Objid       who = arglist.v.list[1].v.obj;
+-+    shandle    *h = find_shandle(who);
+-+    Var         r;
+-+
+-+    free_var(arglist);
+-+    if (!is_wizard(progr)  &&  progr != who)
+-+        return make_error_pack(E_PERM);
+-+
+-+    if (h) {
+-+        r.type = TYPE_OBJ;
+-+        r.v.obj = h->listener;
+-+        return make_var_pack(r);
+-+    } else {
+-+        return make_error_pack(E_INVARG);
+-+    }
+-+}
+-+
+-+static package
+- bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
+- {				/* (player, string [, no_flush]) */
+-     Objid conn = arglist.v.list[1].v.obj;
+-@@ -1613,19 +1674,36 @@
+- bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
+- {				/* (oid, desc) */
+-     Objid oid = arglist.v.list[1].v.obj;
+--    Var desc = arglist.v.list[2];
+-+    Var desc;
+-     int nargs = arglist.v.list[0].v.num;
+-     int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
+--    enum error e;
+-+    enum error e = E_NONE;
+-     slistener *l = 0;
+- 
+--    if (!is_wizard(progr))
+--	e = E_PERM;
+--    else if (!valid(oid) || find_slistener(desc))
+--	e = E_INVARG;
+--    else if (!(l = new_slistener(oid, desc, print_messages, &e)));	/* Do nothing; e is already set */
+--    else if (!start_listener(l))
+--	e = E_QUOTA;
+-+    if (arglist.v.list[2].type == TYPE_LIST) {
+-+        if (arglist.v.list[2].v.list[0].v.num == 2 && arglist.v.list[2].v.list[1].type == TYPE_STR && arglist.v.list[2].v.list[2].type == TYPE_INT) {
+-+            desc = new_list(2);
+-+            desc.v.list[1].type = TYPE_STR;
+-+            desc.v.list[1].v.str = str_dup(arglist.v.list[2].v.list[1].v.str);
+-+            desc.v.list[2] = arglist.v.list[2].v.list[2];
+-+        } else {
+-+            e = E_INVARG;
+-+        }
+-+    } else if (arglist.v.list[2].type == TYPE_INT) {
+-+        desc = arglist.v.list[2];
+-+    } else {
+-+      e = E_INVARG;
+-+    }
+-+
+-+    if (e == E_NONE) {
+-+        if (!is_wizard(progr))
+-+	    e = E_PERM;
+-+        else if (!valid(oid) || find_slistener(desc))
+-+	    e = E_INVARG;
+-+        else if (!(l = new_slistener(oid, desc, print_messages, &e)));	/* Do nothing; e is already set */
+-+        else if (!start_listener(l))
+-+	    e = E_QUOTA;
+-+    }
+- 
+-     free_var(arglist);
+-     if (e == E_NONE)
+-@@ -1702,6 +1780,30 @@
+-     return make_var_pack(r);
+- }
+- 
+-+static package
+-+bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
+-+{ /* (number) */
+-+    Var r;
+-+    char c[2];
+-+
+-+    if (!is_wizard(progr)) {
+-+      free_var(arglist);
+-+      return make_error_pack(E_PERM);
+-+    }
+-+
+-+    c[0] = arglist.v.list[1].v.num;
+-+    c[1] = 0;
+-+
+-+    if (arglist.v.list[1].v.num == 10)
+-+      return make_error_pack(E_INVARG);
+-+
+-+    free_var(arglist);
+-+
+-+    r.type = TYPE_STR;
+-+    r.v.str = str_dup(c);
+-+    return make_var_pack(r);
+-+}
+-+
+- void
+- register_server(void)
+- {
+-@@ -1733,5 +1835,8 @@
+-     register_function("listeners", 0, 0, bf_listeners);
+-     register_function("buffered_output_length", 0, 1,
+- 		      bf_buffered_output_length, TYPE_OBJ);
+-+    register_function("connection_listener", 1, 1, bf_connection_listener, TYPE_OBJ);
+-+    register_function("connection_user", 1, 1, bf_connection_user, TYPE_OBJ);
+-+    register_function("chr", 1, 1, bf_chr, TYPE_INT);
+- }
+- 
+-- 
+1.7.9.5
+

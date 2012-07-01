@@ -1,0 +1,25 @@
+From 2a4383d7ba0708640d99c929afca29d49adae859 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 21 Jan 2011 02:57:40 +0000
+Subject: [PATCH 098/223] added @configure_input@
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index a1b52bd..9f2e7ee 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -18,7 +18,7 @@
+ # Until then, set this to where you unpacked and compiled expat
+ #
+ 
+-
++# @configure_input@
+ 
+ EXPAT_OBJS = -lexpat
+ 
+-- 
+1.7.9.5
+

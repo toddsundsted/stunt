@@ -1,0 +1,27 @@
+From ed3dd2ea3c2a8f6b3889a0012f6031e68da17f14 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 04:33:24 +0000
+Subject: [PATCH 036/223] Another casting fix, to get rid of the compiler's
+ complaint about casting the lvalue
+
+---
+ server/tasks.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/server/tasks.c b/server/tasks.c
+index 158f690..992b0f6 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -797,7 +797,8 @@ task_queue
+ new_task_queue(Objid player, Objid handler)
+ {
+     task_queue result;
+-    tqueue *tq = (tqueue *) result.ptr = (tqueue *) find_tqueue(player, 1);
++    result.ptr = (tqueue *) find_tqueue(player, 1);
++    tqueue *tq = (tqueue *) result.ptr;
+ 
+     tq->connected = 1;
+     tq->handler = handler;
+-- 
+1.7.9.5
+

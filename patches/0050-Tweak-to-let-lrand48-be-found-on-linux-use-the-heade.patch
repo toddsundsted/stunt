@@ -1,0 +1,32 @@
+From 59557bf78826138f58c36dbacf30abdebab87b31 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 04:21:44 +0000
+Subject: [PATCH 050/223] Tweak to let lrand48() be found on linux - use the
+ header file instead of making our own extern
+ delaration
+
+---
+ server/random.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/server/random.h b/server/random.h
+index 0516dc7..c42bb45 100644
+--- a/server/random.h
++++ b/server/random.h
+@@ -17,9 +17,11 @@
+ 
+ #include "config.h"
+ 
++#include <stdlib.h>
++
+ #if HAVE_LRAND48
+-extern long lrand48(void);
+-extern void srand48(long);
++//extern long lrand48(void);
++//extern void srand48(long);
+ #    define RANDOM	lrand48
+ #    define SRANDOM	srand48
+ #else
+-- 
+1.7.9.5
+

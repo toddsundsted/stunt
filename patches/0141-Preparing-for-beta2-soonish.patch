@@ -1,0 +1,24 @@
+From 8370eda34d8111225c1a30010b6d74aa2a77b21d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 03:06:52 +0000
+Subject: [PATCH 141/223] Preparing for beta2 soonish.
+
+---
+ Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 931ae11..93219a3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ 
+ package = waverous
+-version = beta1
++version = beta2
+ tarname = $(package)
+ distdir = $(tarname)-$(version)
+ 
+-- 
+1.7.9.5
+

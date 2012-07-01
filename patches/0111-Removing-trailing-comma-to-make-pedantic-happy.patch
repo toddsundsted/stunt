@@ -1,0 +1,25 @@
+From 88797b1b229f36bfa38b9e817eeed7885a6dbe79 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 25 Jan 2011 22:56:12 +0000
+Subject: [PATCH 111/223] Removing trailing comma to make -pedantic happy
+
+---
+ server/tasks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/tasks.c b/server/tasks.c
+index f998326..01c24bf 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -55,7 +55,7 @@ typedef enum {
+     TASK_BINARY,	/* in-band; binary mode string */
+     /* Background Tasks */
+     TASK_FORKED,
+-    TASK_SUSPENDED,
++    TASK_SUSPENDED
+ } task_kind;
+ 
+ typedef struct forked_task {
+-- 
+1.7.9.5
+

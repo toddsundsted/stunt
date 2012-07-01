@@ -1,0 +1,56 @@
+From 763e7648518c54cf011f4df6011cc796b6838175 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Jun 2009 19:57:15 +0000
+Subject: [PATCH 001/223] Another questionable change that could cause
+ headaches in the future:
+
+-	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
++	_new = (Object **) mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+
+That is, the (Object **) cast. The compiler likes it but I can't vouch for it.
+---
+ server/db_objects.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/server/db_objects.c b/server/db_objects.c
+index 77bbc22..090c354 100644
+--- a/server/db_objects.c
++++ b/server/db_objects.c
+@@ -69,13 +69,13 @@ ensure_new_object(void)
+ {
+     if (max_objects == 0) {
+ 	max_objects = 100;
+-	objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
++	objects = (Object **) mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
+     }
+     if (num_objects >= max_objects) {
+ 	int i;
+-	Object **new;
++	Object **_new;
+ 
+-	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
++	_new = (Object **) mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+ 	for (i = 0; i < max_objects; i++)
+ 	    _new[i] = objects[i];
+ 	myfree(objects, M_OBJECT_TABLE);
+@@ -203,7 +203,7 @@ db_renumber_object(Objid old)
+ 			oidp = &objects[*oidp]->sibling;
+ 		    if (*oidp == NOTHING)
+ 			panic("Object not in parent's children list");
+-		    *oidp = new;
++		    *oidp = _new;
+ 		}
+ 		for (oid = o->child;
+ 		     oid != NOTHING;
+@@ -221,7 +221,7 @@ db_renumber_object(Objid old)
+ 			oidp = &objects[*oidp]->next;
+ 		    if (*oidp == NOTHING)
+ 			panic("Object not in location's contents list");
+-		    *oidp = new;
++		    *oidp = _new;
+ 		}
+ 		for (oid = o->contents;
+ 		     oid != NOTHING;
+-- 
+1.7.9.5
+

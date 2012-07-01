@@ -1,0 +1,35 @@
+From eccbb21b1901ab20e4b0f1a95bf5c10a94c3dcdf Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 05:49:00 +0000
+Subject: [PATCH 052/223] applied d20040322-d20040323.patch
+
+---
+ server/server.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/server/server.c b/server/server.c
+index 2805ef0..d0efcf1 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -1042,8 +1042,18 @@ server_refuse_connection(server_listener sl, network_handle nh)
+ void
+ server_receive_line(server_handle sh, const char *line)
+ {
++    int v = server_int_option("idle_time", 1800);
++    Var args;
+     shandle *h = (shandle *) sh.ptr;
+ 
++    if ((time(0) - h->last_activity_time) > v) {
++        args = new_list(2);
++        args.v.list[1].type = TYPE_OBJ;
++        args.v.list[1].v.obj = h->player;
++        args.v.list[2].type = TYPE_INT;
++        args.v.list[2].v.num = (time(0) - h->last_activity_time);
++        run_server_task(h->player, h->listener, "user_unidled", args, "", 0);
++    }
+     h->last_activity_time = time(0);
+     new_input_task(h->tasks, line, h->binary);
+ }
+-- 
+1.7.9.5
+

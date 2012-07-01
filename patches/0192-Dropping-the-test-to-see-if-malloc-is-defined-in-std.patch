@@ -1,0 +1,44 @@
+From 010f537742336fb8e7156307d5b2cdc3195aa1fd Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 8 Aug 2011 22:14:21 +0000
+Subject: [PATCH 192/223] Dropping the test to see if malloc() is defined in
+ stdlib.h; changing the deprecated AC_PROGRAM_EGREP
+ macro to the newer AC_EGREP_CPP.
+
+---
+ server/configure.ac |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index 0b4ae17..b159036 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -22,16 +22,6 @@ AC_CONFIG_HEADERS([config.h])
+ 
+ 
+ dnl ***************************************************************************
+-dnl 	MOO_MALLOC_H
+-dnl Define NEED_MALLOC_H if `malloc()' is not declared in <stdlib.h> and
+-dnl <malloc.h> exists.
+-define(MOO_MALLOC_H, [
+-echo checking whether stdlib.h declares malloc and friends
+-MOO_FUNC_DECL_CHECK(stdlib.h, malloc, ,
+-	[AC_HEADER_CHECK(malloc.h, AC_DEFINE(NEED_MALLOC_H))])])
+-
+-
+-dnl ***************************************************************************
+ dnl Start of actual configuration tests
+ dnl ***************************************************************************
+ 
+@@ -39,7 +29,7 @@ AC_PROG_YACC
+ AC_PROG_CXX
+ AC_PROG_INSTALL
+ AC_GCC_TRADITIONAL
+-AC_PROGRAM_EGREP(yes, [
++AC_EGREP_CPP(yes, [
+ #if __GNUC__==2
+   yes
+ #endif
+-- 
+1.7.9.5
+

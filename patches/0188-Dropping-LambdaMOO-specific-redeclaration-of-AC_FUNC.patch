@@ -1,0 +1,57 @@
+From afff02bc88665d58d9e85680b0ebdc03213f94dd Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 4 Aug 2011 00:04:38 +0000
+Subject: [PATCH 188/223] Dropping LambdaMOO-specific redeclaration of
+ AC_FUNC_CHECK which was to support OSF/1, a
+ long-deceased version of Unix from 1988
+ (http://en.wikipedia.org/wiki/Tru64_UNIX#OSF.2F1).
+ Add to that aclocal generates a file of the same
+ name -- the modern thing is to have a subdirectory
+ called m4/ for local macros.
+
+---
+ server/aclocal.m4 |   32 --------------------------------
+ 1 file changed, 32 deletions(-)
+ delete mode 100644 server/aclocal.m4
+
+diff --git a/server/aclocal.m4 b/server/aclocal.m4
+deleted file mode 100644
+index b95574d..0000000
+--- a/server/aclocal.m4
++++ /dev/null
+@@ -1,32 +0,0 @@
+-dnl LambdaMOO-specific version of AC_FUNC_CHECK, uses <assert.h> instead of
+-dnl <ctype.h>, since OSF/1's <ctype.h> includes <sys/types.h> which includes
+-dnl <sys/select.h> which declares select() correctly in conflict with the
+-dnl bogus `extern char foo();' declaration below.  This change is adapted
+-dnl from autoconf-2.4, which we ought to start using at some point.
+-dnl
+-undefine([AC_FUNC_CHECK])dnl
+-define(AC_FUNC_CHECK,
+-[ifelse([$3], , [AC_COMPILE_CHECK($1, [#include <assert.h>], [
+-/* The GNU C library defines this for functions which it implements
+-    to always fail with ENOSYS.  Some functions are actually named
+-    something starting with __ and the normal name is an alias.  */
+-#if defined (__stub_$1) || defined (__stub___$1)
+-choke me
+-#else
+-/* Override any gcc2 internal prototype to avoid an error.  */
+-extern char $1(); $1();
+-#endif
+-],
+-$2)], [AC_COMPILE_CHECK($1, [#include <assert.h>], [
+-/* The GNU C library defines this for functions which it implements
+-    to always fail with ENOSYS.  Some functions are actually named
+-    something starting with __ and the normal name is an alias.  */
+-#if defined (__stub_$1) || defined (__stub___$1)
+-choke me
+-#else
+-/* Override any gcc2 internal prototype to avoid an error.  */
+-extern char $1(); $1();
+-#endif
+-],
+-$2, $3)])dnl
+-])dnl
+-- 
+1.7.9.5
+

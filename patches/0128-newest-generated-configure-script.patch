@@ -1,0 +1,314 @@
+From 3901c10a7e19d7751036ea2568dccbd8ce3fc72d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 03:23:41 +0000
+Subject: [PATCH 128/223] newest generated configure script.
+
+---
+ server/configure |  249 +++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 189 insertions(+), 60 deletions(-)
+
+diff --git a/server/configure b/server/configure
+index e86e20f..e3f06b6 100755
+--- a/server/configure
++++ b/server/configure
+@@ -606,6 +606,9 @@ CPP
+ ac_ct_CC
+ CFLAGS
+ CC
++INSTALL_DATA
++INSTALL_SCRIPT
++INSTALL_PROGRAM
+ OBJEXT
+ EXEEXT
+ ac_ct_CXX
+@@ -2862,6 +2865,128 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ 
++ac_aux_dir=
++for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
++  if test -f "$ac_dir/install-sh"; then
++    ac_aux_dir=$ac_dir
++    ac_install_sh="$ac_aux_dir/install-sh -c"
++    break
++  elif test -f "$ac_dir/install.sh"; then
++    ac_aux_dir=$ac_dir
++    ac_install_sh="$ac_aux_dir/install.sh -c"
++    break
++  elif test -f "$ac_dir/shtool"; then
++    ac_aux_dir=$ac_dir
++    ac_install_sh="$ac_aux_dir/shtool install -c"
++    break
++  fi
++done
++if test -z "$ac_aux_dir"; then
++  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
++fi
++
++# These three variables are undocumented and unsupported,
++# and are intended to be withdrawn in a future Autoconf release.
++# They can cause serious problems if a builder's source tree is in a directory
++# whose full name contains unusual characters.
++ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
++ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
++ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
++
++
++# Find a good install program.  We prefer a C program (faster),
++# so one script is as good as another.  But avoid the broken or
++# incompatible versions:
++# SysV /etc/install, /usr/sbin/install
++# SunOS /usr/etc/install
++# IRIX /sbin/install
++# AIX /bin/install
++# AmigaOS /C/install, which installs bootblocks on floppy discs
++# AIX 4 /usr/bin/installbsd, which doesn't work without a -g flag
++# AFS /usr/afsws/bin/install, which mishandles nonexistent args
++# SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
++# OS/2's system install, which has a completely different semantic
++# ./install, which can be erroneously created by make from ./install.sh.
++# Reject install programs that cannot install multiple files.
++{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for a BSD-compatible install" >&5
++$as_echo_n "checking for a BSD-compatible install... " >&6; }
++if test -z "$INSTALL"; then
++if test "${ac_cv_path_install+set}" = set; then :
++  $as_echo_n "(cached) " >&6
++else
++  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
++for as_dir in $PATH
++do
++  IFS=$as_save_IFS
++  test -z "$as_dir" && as_dir=.
++    # Account for people who put trailing slashes in PATH elements.
++case $as_dir/ in #((
++  ./ | .// | /[cC]/* | \
++  /etc/* | /usr/sbin/* | /usr/etc/* | /sbin/* | /usr/afsws/bin/* | \
++  ?:[\\/]os2[\\/]install[\\/]* | ?:[\\/]OS2[\\/]INSTALL[\\/]* | \
++  /usr/ucb/* ) ;;
++  *)
++    # OSF1 and SCO ODT 3.0 have their own names for install.
++    # Don't use installbsd from OSF since it installs stuff as root
++    # by default.
++    for ac_prog in ginstall scoinst install; do
++      for ac_exec_ext in '' $ac_executable_extensions; do
++	if { test -f "$as_dir/$ac_prog$ac_exec_ext" && $as_test_x "$as_dir/$ac_prog$ac_exec_ext"; }; then
++	  if test $ac_prog = install &&
++	    grep dspmsg "$as_dir/$ac_prog$ac_exec_ext" >/dev/null 2>&1; then
++	    # AIX install.  It has an incompatible calling convention.
++	    :
++	  elif test $ac_prog = install &&
++	    grep pwplus "$as_dir/$ac_prog$ac_exec_ext" >/dev/null 2>&1; then
++	    # program-specific install script used by HP pwplus--don't use.
++	    :
++	  else
++	    rm -rf conftest.one conftest.two conftest.dir
++	    echo one > conftest.one
++	    echo two > conftest.two
++	    mkdir conftest.dir
++	    if "$as_dir/$ac_prog$ac_exec_ext" -c conftest.one conftest.two "`pwd`/conftest.dir" &&
++	      test -s conftest.one && test -s conftest.two &&
++	      test -s conftest.dir/conftest.one &&
++	      test -s conftest.dir/conftest.two
++	    then
++	      ac_cv_path_install="$as_dir/$ac_prog$ac_exec_ext -c"
++	      break 3
++	    fi
++	  fi
++	fi
++      done
++    done
++    ;;
++esac
++
++  done
++IFS=$as_save_IFS
++
++rm -rf conftest.one conftest.two conftest.dir
++
++fi
++  if test "${ac_cv_path_install+set}" = set; then
++    INSTALL=$ac_cv_path_install
++  else
++    # As a last resort, use the slow shell script.  Don't cache a
++    # value for INSTALL within a source directory, because that will
++    # break other packages using the cache if that directory is
++    # removed, or if the value is a relative name.
++    INSTALL=$ac_install_sh
++  fi
++fi
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $INSTALL" >&5
++$as_echo "$INSTALL" >&6; }
++
++# Use test -z because SunOS4 sh mishandles braces in ${var-val}.
++# It thinks the first close brace ends the variable substitution.
++test -z "$INSTALL_PROGRAM" && INSTALL_PROGRAM='${INSTALL}'
++
++test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
++
++test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
++
+ ac_ext=c
+ ac_cpp='$CPP $CPPFLAGS'
+ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+@@ -4643,6 +4768,64 @@ $as_echo "#define HAVE_TZNAME 1" >>confdefs.h
+ fi
+ 
+ 
++{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing XML_ParserCreate" >&5
++$as_echo_n "checking for library containing XML_ParserCreate... " >&6; }
++if test "${ac_cv_search_XML_ParserCreate+set}" = set; then :
++  $as_echo_n "(cached) " >&6
++else
++  ac_func_search_save_LIBS=$LIBS
++cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
++
++/* Override any GCC internal prototype to avoid an error.
++   Use char because int might match the return type of a GCC
++   builtin and then its argument prototype would still apply.  */
++#ifdef __cplusplus
++extern "C"
++#endif
++char XML_ParserCreate ();
++int
++main ()
++{
++return XML_ParserCreate ();
++  ;
++  return 0;
++}
++_ACEOF
++for ac_lib in '' expat; do
++  if test -z "$ac_lib"; then
++    ac_res="none required"
++  else
++    ac_res=-l$ac_lib
++    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
++  fi
++  if ac_fn_c_try_link "$LINENO"; then :
++  ac_cv_search_XML_ParserCreate=$ac_res
++fi
++rm -f core conftest.err conftest.$ac_objext \
++    conftest$ac_exeext
++  if test "${ac_cv_search_XML_ParserCreate+set}" = set; then :
++  break
++fi
++done
++if test "${ac_cv_search_XML_ParserCreate+set}" = set; then :
++
++else
++  ac_cv_search_XML_ParserCreate=no
++fi
++rm conftest.$ac_ext
++LIBS=$ac_func_search_save_LIBS
++fi
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_XML_ParserCreate" >&5
++$as_echo "$ac_cv_search_XML_ParserCreate" >&6; }
++ac_res=$ac_cv_search_XML_ParserCreate
++if test "$ac_res" != no; then :
++  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
++
++fi
++
++
++
+ for func in sqrt
+ do
+     trfrom='[a-z]' trto='[A-Z]'
+@@ -7576,6 +7759,7 @@ gives unlimited permission to copy, distribute and modify it."
+ 
+ ac_pwd='$ac_pwd'
+ srcdir='$srcdir'
++INSTALL='$INSTALL'
+ test -n "\$AWK" || AWK=awk
+ _ACEOF
+ 
+@@ -8124,6 +8308,10 @@ ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
+   # CONFIG_FILE
+   #
+ 
++  case $INSTALL in
++  [\\/$]* | ?:[\\/]* ) ac_INSTALL=$INSTALL ;;
++  *) ac_INSTALL=$ac_top_build_prefix$INSTALL ;;
++  esac
+ _ACEOF
+ 
+ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
+@@ -8177,6 +8365,7 @@ s&@abs_top_srcdir@&$ac_abs_top_srcdir&;t t
+ s&@builddir@&$ac_builddir&;t t
+ s&@abs_builddir@&$ac_abs_builddir&;t t
+ s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
++s&@INSTALL@&$ac_INSTALL&;t t
+ $ac_datarootdir_hack
+ "
+ eval sed \"\$ac_sed_extra\" "$ac_file_inputs" | $AWK -f "$tmp/subs.awk" >$tmp/out \
+@@ -8262,66 +8451,6 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
+ fi
+ 
+ 
+-# $Log$
+-# Revision 1.1.1.1.4.1  2005/09/29 06:56:18  bjj
+-# Merge HEAD onto WAIF, bringing it approximately to 1.8.2
+-#
+-# Revision 1.2  2004/05/22 01:25:43  wrog
+-# merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+-#
+-# Revision 1.1.1.1.12.1  2003/06/01 12:39:27  wrog
+-# ensure definitions for in_addr_t, INADDR_NONE
+-#
+-# Revision 1.1.1.1  1997/03/03 03:45:05  nop
+-# LambdaMOO 1.8.0p5
+-#
+-# Revision 2.8  1996/03/19  07:16:46  pavel
+-# Added one more option for trying to enable ANSI C compilation.
+-# Release 1.8.0p2.
+-#
+-# Revision 2.7  1996/03/10  01:21:41  pavel
+-# Increased DEC Alpha -Olimit to 2500 from 1000.  Release 1.8.0.
+-#
+-# Revision 2.6  1996/02/11  00:43:22  pavel
+-# Added check for matherr().  Release 1.8.0beta2.
+-#
+-# Revision 2.5  1996/02/08  07:22:30  pavel
+-# Added checks for SGI machines and for strtod() being undeclared.  Updated
+-# copyright notice for 1996.  Release 1.8.0beta1.
+-#
+-# Revision 2.4  1996/01/11  07:47:54  pavel
+-# Added a handy form-feed between the macro definitions and the main script,
+-# to make it easier to navigate with Emacs.  Release 1.8.0alpha5.
+-#
+-# Revision 2.3  1995/12/31  03:17:07  pavel
+-# Added test for <sys/stat.h> needing help.  Release 1.8.0alpha4.
+-#
+-# Revision 2.2  1995/12/28  00:49:41  pavel
+-# On NeXT, we now define _POSIX_SOURCE too.  Release 1.8.0alpha3.
+-#
+-# Revision 2.1  1995/12/11  08:05:45  pavel
+-# Added support for finding `crypt()' in `-lcrypt'.  Release 1.8.0alpha2.
+-#
+-# Revision 2.0  1995/11/30  05:09:41  pavel
+-# New baseline version, corresponding to release 1.8.0alpha1.
+-#
+-# Revision 1.5  1992/10/28  01:56:41  pavel
+-# Fixed NDECL test to look for `vfprintf' instead of the unused `vprintf'...
+-#
+-# Revision 1.4  1992/10/23  23:13:18  pavel
+-# Added copyright notice.
+-#
+-# Revision 1.3  1992/10/23  19:23:52  pavel
+-# Added MOO_AUX, MOO_MALLOC_H, MOO_FUNC_DECL_CHECK.
+-# Generalized MOO_HAVE_FUNC_LIBS to take multiple function names.
+-# Refined MOO_CONST to check for warnings about `reserved' keywords.
+-# Added MOO_NDECL_FUNCS checks for sigemptyset, perror, remove, vprintf,
+-# bzero, memset, fork, fstat, and waitpid.
+-# Simplified test for conflicting built-in function declarations.
+-# Added SELECT_WORKS_ON_FIFOS and POSIX_NONBLOCKING_WORKS tests.
+-#
+-# Revision 1.2  1992/10/21  03:09:41  pavel
+-# Added this log.
+ 
+ # Local Variables:
+ # mode: c
+-- 
+1.7.9.5
+

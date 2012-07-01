@@ -1,0 +1,85 @@
+From edd5e6932038d140e510162a2615bd6ff4084b7c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Jun 2009 20:20:58 +0000
+Subject: [PATCH 003/223] Another one to watch out for, as I did this:
+
++    short foo;
+
+     if (h) {
+-	*dobj = (h->verbdef->perms >> DOBJSHIFT) & OBJMASK;
+-	*prep = h->verbdef->prep;
+-	*iobj = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
++      *dobj = (db_arg_spec) ((h->verbdef->perms >> DOBJSHIFT) & OBJMASK);
++      *prep = (db_prep_spec) h->verbdef->prep;
++      foo = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
++      *iobj = (db_arg_spec)foo;
+
+By introducing a temporary short int, I got around the compiler complaints about converting an int into a db_arg_spec.
+---
+ server/db_verbs.c |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/server/db_verbs.c b/server/db_verbs.c
+index 4ebf9b7..68ef585 100644
+--- a/server/db_verbs.c
++++ b/server/db_verbs.c
+@@ -102,7 +102,7 @@ dbpriv_build_prep_table(void)
+ 	     */
+ 	    words = parse_into_words(cprep, &nwords);
+ 
+-	    current_alias = mymalloc(sizeof(struct pt_entry), M_PREP);
++	    current_alias = (pt_entry *)mymalloc(sizeof(struct pt_entry), M_PREP);
+ 	    current_alias->nwords = nwords;
+ 	    current_alias->next = 0;
+ 	    for (j = 0; j < nwords; j++)
+@@ -158,7 +158,7 @@ db_match_prep(const char *prepname)
+     first = s[0];
+     if (first == '#')
+ 	first = (++s)[0];
+-    prep = strtol(s, &ptr, 10);
++    prep = (db_prep_spec)strtol(s, &ptr, 10);
+     if (*ptr == '\0') {
+ 	free_str(s);
+ 	if (!isdigit(first) || prep >= NPREPS)
+@@ -305,8 +305,10 @@ db_find_command_verb(Objid oid, const char *verb,
+ 
+     for (o = dbpriv_find_object(oid); o; o = dbpriv_find_object(o->parent))
+ 	for (v = o->verbdefs; v; v = v->next) {
+-	    db_arg_spec vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
+-	    db_arg_spec viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
++          //db_arg_spec vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
++          //db_arg_spec viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
++          int vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
++          int viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
+ 
+ 	    if (verbcasecmp(v->name, verb)
+ 		&& (vdobj == ASPEC_ANY || vdobj == dobj)
+@@ -380,7 +382,7 @@ make_vc_table(int size)
+     int i;
+ 
+     vc_size = size;
+-    vc_table = mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
++    vc_table = (vc_entry **)mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
+     for (i = 0; i < size; i++) {
+ 	vc_table[i] = NULL;
+     }
+@@ -725,11 +727,13 @@ db_verb_arg_specs(db_verb_handle vh,
+ 	     db_arg_spec * dobj, db_prep_spec * prep, db_arg_spec * iobj)
+ {
+     handle *h = (handle *) vh.ptr;
++    short foo;
+ 
+     if (h) {
+-	*dobj = (h->verbdef->perms >> DOBJSHIFT) & OBJMASK;
+-	*prep = h->verbdef->prep;
+-	*iobj = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
++      *dobj = (db_arg_spec) ((h->verbdef->perms >> DOBJSHIFT) & OBJMASK);
++      *prep = (db_prep_spec) h->verbdef->prep;
++      foo = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
++      *iobj = (db_arg_spec)foo;
+     } else
+ 	panic("DB_VERB_ARG_SPECS: Null handle!");
+ }
+-- 
+1.7.9.5
+

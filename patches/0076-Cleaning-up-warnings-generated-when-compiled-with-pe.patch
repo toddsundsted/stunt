@@ -1,0 +1,45 @@
+From f929deb1f4452574500920165efd8000eea214fe Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 4 Dec 2010 01:01:47 +0000
+Subject: [PATCH 076/223] Cleaning up warnings generated when compiled with
+ -pendantic: comparing signed and unsigned ints. The
+ signed ints were just temporary variables used as
+ loop counters.
+
+I added one more int to db_find_property to achieve consistency in int
+comparisons... previously 'i' was being reused, which was compared to
+signed and unsigned in the original code.
+---
+ server/db_properties.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/server/db_properties.c b/server/db_properties.c
+index 36e07d3..5fe7ecc 100644
+--- a/server/db_properties.c
++++ b/server/db_properties.c
+@@ -401,7 +401,8 @@ db_find_property(Objid oid, const char *name, Var * value)
+ 	}
+     };
+     static int ptable_init = 0;
+-    int i, n;
++    unsigned int i;
++    int n, p;
+     db_prop_handle h;
+     int hash = str_hash(name);
+     Object *o;
+@@ -432,9 +433,9 @@ db_find_property(Objid oid, const char *name, Var * value)
+ 	Propdef *defs = props->l;
+ 	int length = props->cur_length;
+ 
+-	for (i = 0; i < length; i++, n++) {
+-	    if (defs[i].hash == hash
+-		&& !mystrcasecmp(defs[i].name, name)) {
++	for (p = 0; p < length; p++, n++) {
++	    if (defs[p].hash == hash
++		&& !mystrcasecmp(defs[p].name, name)) {
+ 		Pval *prop;
+ 
+ 		h.definer = o->id;
+-- 
+1.7.9.5
+

@@ -1,0 +1,25 @@
+From f6687fbd577f16078d8f8aae7f6595679abd2942 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Thu, 29 Oct 2009 14:16:45 +0000
+Subject: [PATCH 064/223] handle nil value gracefully
+
+---
+ server/network.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/network.c b/server/network.c
+index 1e0ebb2..d0e2719 100644
+--- a/server/network.c
++++ b/server/network.c
+@@ -66,7 +66,7 @@ network_connection_option(network_handle nh, const char *option, Var * value)
+     }
+     if (!mystrcasecmp(option, "connect_host")) {
+         (value)->type = TYPE_STR;
+-        (value)->v.str = str_ref(((nhandle *)(nh).ptr)->connect_host);
++        (value)->v.str = (((nhandle *)(nh).ptr)->connect_host) ? str_ref((((nhandle *)(nh).ptr)->connect_host)) : str_dup("");
+         return 1;
+     }
+     return 0;
+-- 
+1.7.9.5
+

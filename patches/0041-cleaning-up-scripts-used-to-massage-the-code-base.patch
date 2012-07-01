@@ -1,0 +1,41 @@
+From 51f78f1cb1f8e29255809f6e34e206bb077911af Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 19:40:01 +0000
+Subject: [PATCH 041/223] cleaning up scripts used to massage the code base
+
+---
+ server/varargs.patterns |   22 ----------------------
+ 1 file changed, 22 deletions(-)
+ delete mode 100644 server/varargs.patterns
+
+diff --git a/server/varargs.patterns b/server/varargs.patterns
+deleted file mode 100644
+index 61bb841..0000000
+--- a/server/varargs.patterns
++++ /dev/null
+@@ -1,22 +0,0 @@
+-db_io.h:     37:extern int dbio_scanf(const char *format,...);
+-db_io.h:     83:extern void dbio_printf(const char *format,...);
+-functions.h: 88:extern unsigned register_function(const char *, int, int, bf_type,...);
+-functions.h: 91:						  bf_write_type,...);
+-log.h:       25:extern void oklog(const char *,...);
+-log.h:       26:extern void errlog(const char *,...);
+-my-fcntl.h:  23:extern int fcntl(int, int,...);
+-my-fcntl.h:  24:extern int open(const char *, int,...);
+-my-ioctl.h:  23:extern int ioctl(int, int,...);
+-my-stdio.h:  33:extern int fprintf(FILE *, const char *,...);
+-my-stdio.h:  34:extern int fscanf(FILE *, const char *,...);
+-my-stdio.h:  35:extern int sscanf(const char *, const char *,...);
+-my-stdio.h:  36:extern int printf(const char *,...);
+-streams.h:   33:extern void stream_printf(Stream *, const char *,...);
+-db_io.c:     60:dbio_scanf(const char *format,...)
+-db_io.c:     327:dbio_printf(const char *format,...)
+-functions.c: 130:		  bf_type func,...)
+-functions.c: 144:				  bf_write_type write,...)
+-log.c:       71:oklog(const char *fmt,...)
+-log.c:       81:errlog(const char *fmt,...)
+-server.c:    396:send_message(Objid listener, network_handle nh, const char *msg_name,...)
+-streams.c:   135:stream_printf(Stream * s, const char *fmt,...)
+-- 
+1.7.9.5
+

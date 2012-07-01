@@ -1,0 +1,35 @@
+From 33353538202c75495aada11f79e6f57432ade54f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 02:58:11 +0000
+Subject: [PATCH 032/223] fixed a missed 'catch' keyword (changed to
+ '_catch'), and a cast of a FILE pointer.
+
+---
+ server/unparse.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/server/unparse.c b/server/unparse.c
+index 91903e7..f8ecea7 100644
+--- a/server/unparse.c
++++ b/server/unparse.c
+@@ -422,7 +422,7 @@ unparse_stmt(Stmt * stmt, int indent)
+ 	    output(str);
+ 	    break;
+ 	case STMT_TRY_EXCEPT:
+-	    unparse_stmt_catch(str, stmt->s.catch, indent);
++	    unparse_stmt_catch(str, stmt->s._catch, indent);
+ 	    break;
+ 	case STMT_TRY_FINALLY:
+ 	    stream_add_string(str, "try");
+@@ -712,7 +712,7 @@ unparse_program(Program * p, Unparser_Receiver r, void *data,
+ static void
+ print_line(void *data, const char *line)
+ {
+-    FILE *fp = data;
++  FILE *fp = (FILE *) data;
+ 
+     fprintf(fp, "%s\n", line);
+ }
+-- 
+1.7.9.5
+

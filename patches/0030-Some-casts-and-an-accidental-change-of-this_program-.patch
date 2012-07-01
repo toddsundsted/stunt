@@ -1,0 +1,146 @@
+From 9519f914c95dae8fd7563ce296f6ca0e7105f833 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 02:29:01 +0000
+Subject: [PATCH 030/223] Some casts, and an accidental change of this_program
+ to self_program fixed.
+
+---
+ server/server.c |   59 +++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 51 insertions(+), 8 deletions(-)
+
+diff --git a/server/server.c b/server/server.c
+index 487ad37..eb369a2 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -286,7 +286,7 @@ child_completed_signal(int sig)
+      * argument type.
+      */
+ #if HAVE_WAITPID
+-    while (waitpid(-1, (void *) &status, WNOHANG) > 0);
++    while (waitpid(-1, (int *) &status, WNOHANG) > 0);
+ #else
+ #if HAVE_WAIT3
+     while (wait3((void *) &status, WNOHANG, 0) >= 0);
+@@ -566,6 +566,8 @@ init_cmdline(int argc, char *argv[])
+ 	       network_set_connection_binary(H->nhandle, H->binary);	\
+ 	   })								\
+ 
++
++/*
+ static int
+ server_set_connection_option(shandle * h, const char *option, Var value)
+ {
+@@ -583,6 +585,47 @@ server_connection_options(shandle * h, Var list)
+ {
+     CONNECTION_OPTION_LIST(SERVER_CO_TABLE, h, list);
+ }
++*/
++
++static int
++server_set_connection_option(shandle * h, const char *option, Var value)
++{
++  do {
++    if (!mystrcasecmp((option), "binary")) {
++      { (h)->binary = is_true((value));
++        network_set_connection_binary((h)->nhandle, (h)->binary);
++      };
++      return 1; }
++    return 0; }
++  while (0);
++}
++
++static int
++server_connection_option(shandle * h, const char *option, Var * value)
++{
++  do {
++    if (!mystrcasecmp((option), "binary")) {
++      (value)->type = (TYPE_INT);
++      (value)->v.num = ((h)->binary);
++      return 1; } 
++    return 0; } 
++  while (0);
++}
++
++static Var
++server_connection_options(shandle * h, Var list)
++{
++  do {
++    { Var pair = new_list(2);
++      pair.v.list[1].type = (var_type)(_TYPE_STR | 0x80);
++      pair.v.list[1].v.str = str_dup("binary");
++      pair.v.list[2].type = (TYPE_INT);
++      pair.v.list[2].v.num = ((h)->binary);
++      (list) = listappend((list), pair);
++    }
++    return (list);
++  } while (0);
++}
+ 
+ #undef SERVER_CO_TABLE
+ 
+@@ -677,7 +720,7 @@ emergency_mode()
+ 	    Program *program;
+ 	    Var str;
+ 
+-	    str.type = TYPE_STR;
++	    str.type = (var_type)TYPE_STR;
+ 	    code = new_list(0);
+ 
+ 	    if (*++line == ';')
+@@ -763,7 +806,7 @@ emergency_mode()
+ 		    Program *program;
+ 
+ 		    code = new_list(0);
+-		    str.type = TYPE_STR;
++		    str.type = (var_type)TYPE_STR;
+ 
+ 		    while (strcmp(line = read_stdin_line(), ".")) {
+ 			str.v.str = str_dup(line);
+@@ -941,7 +984,7 @@ static Objid next_unconnected_player = NOTHING - 1;
+ server_handle
+ server_new_connection(server_listener sl, network_handle nh, int outbound)
+ {
+-    slistener *l = sl.ptr;
++  slistener *l = (slistener *) sl.ptr;
+     shandle *h = (shandle *) mymalloc(sizeof(shandle), M_NETWORK);
+     server_handle result;
+ 
+@@ -984,7 +1027,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
+ void
+ server_refuse_connection(server_listener sl, network_handle nh)
+ {
+-    slistener *l = sl.ptr;
++  slistener *l = (slistener *) sl.ptr;
+ 
+     if (l->print_messages)
+ 	send_message(l->oid, nh, "server_full_msg",
+@@ -1183,7 +1226,7 @@ read_active_connections(void)
+ int
+ main(int argc, char **argv)
+ {
+-    char *self_program = str_dup(argv[0]);
++    char *this_program = str_dup(argv[0]);
+     const char *log_file = 0;
+     int emergency = 0;
+     Var desc;
+@@ -1284,7 +1327,7 @@ static package
+ bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+     Var r;
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = str_dup(server_version);
+     free_var(arglist);
+     return make_var_pack(r);
+@@ -1541,7 +1584,7 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
+     else if (!conn_name)
+ 	return make_error_pack(E_INVARG);
+     else {
+-	r.type = TYPE_STR;
++      r.type = (var_type)TYPE_STR;
+ 	r.v.str = str_dup(conn_name);
+ 	return make_var_pack(r);
+     }
+-- 
+1.7.9.5
+

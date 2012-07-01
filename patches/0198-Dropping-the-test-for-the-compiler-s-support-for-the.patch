@@ -1,0 +1,70 @@
+From 99f3e51f9897e3544333f0a757e4b1684f492d6c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 13 Aug 2011 21:47:43 +0000
+Subject: [PATCH 198/223] Dropping the test for the compiler's support for the
+ 'const' keyword. If one's compiler has issues with
+ 'const' in the 21st century, well, I would like to
+ know what compiler that is. (Perhaps you're doing
+ embedded programming? In which case I'd like to
+ know why you're compiling a Moo!)
+
+---
+ server/config.h.in |   10 ----------
+ server/m4/moo.m4   |   23 -----------------------
+ 2 files changed, 33 deletions(-)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index 2c09846..4633f32 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -129,16 +129,6 @@
+ #undef HAVE_TM_ZONE
+ #undef HAVE_TZNAME
+ 
+-/* Some compilers `almost' conform to the ANSI C standard, in that they provide
+- * the vast majority of the features and constructs used by the server code,
+- * but one common failing with which the code can cope is the lack of support
+- * for the `const' keyword.  If your compiler doesn't support `const', then
+- * this symbol will be defined as a macro that expands into nothing, thus
+- * eliding all uses of the keyword in the code.
+- */
+-
+-#undef const
+-
+ /* Some sites have installed GCC improperly or incompletely, thereby requiring
+  * the server to be compiled with the `-traditional' switch.  That disables the
+  * `const', `volatile' or `signed' keywords, which we need.  Thus, for GCC, we
+diff --git a/server/m4/moo.m4 b/server/m4/moo.m4
+index 0cdb1d2..6596824 100644
+--- a/server/m4/moo.m4
++++ b/server/m4/moo.m4
+@@ -126,26 +126,3 @@ do
+     ])
+ done
+ ])
+-
+-dnl ***************************************************************************
+-dnl	MOO_CONST
+-dnl Check whether or not the C compiler can cope with simple uses of the ANSI C
+-dnl `const' keyword, defining `const' as the empty string if it can't.
+-define(MOO_CONST, [
+-echo checking for a working const keyword
+-cat << EOF > conftest.c
+-#ifdef __GNUC__
+-#define const __const__
+-#endif
+-int foo(const char *x) { return 17 + (x - x); }
+-int bar() { int x = foo("foo"); return x; }
+-EOF
+-if $CC -c conftest.c > conftest.out 2>&1; then
+-  if test -s conftest.out; then
+-    AC_DEFINE(const,)
+-  fi
+-else
+-  AC_DEFINE(const,)
+-fi
+-rm -f conftest*
+-])
+-- 
+1.7.9.5
+

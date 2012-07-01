@@ -1,0 +1,69 @@
+From 8f5febff45602c2864c13a11f1baef1673e1c6e9 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 23 Jan 2011 20:57:19 +0000
+Subject: [PATCH 106/223] I added the following:
+
+all: moo
+
+.PHONY: all clean distclean tags depend pure_moo
+
+And some of the comments have been updated...
+---
+ server/Makefile.in |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index a2e09a9..4ce14ae 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -13,13 +13,13 @@
+ #   Palo Alto, CA 94304
+ #   Pavel@Xerox.Com
+ 
+-# 
+-# with autoconf2 I'll go edit it to support --with-expat=
+-# Until then, set this to where you unpacked and compiled expat
+-#
+ 
+ # @configure_input@
+ 
++
++# with autoconf2 I'll go edit it to support --with-expat=
++# Until then, set this to where you unpacked and compiled expat
++
+ EXPAT_OBJS = -lexpat
+ 
+ 
+@@ -28,14 +28,11 @@ CC = @CXX@
+ LIBRARIES = @LIBS@ $(EXPAT_OBJS)
+ YACC = @YACC@
+ 
++# for debugging you might prefer:
++# CFLAGS='-g -m32 -O0 -Wall -DEXPAT_XML
++
+ CFLAGS = -m32 -O -DEXPAT_XML 
+-# If you're using GCC, you may prefer:
+-# CFLAGS = -O2 -finline-functions
+-#
+-# If you're not using GCC, and your compiler doesn't understand the
+-# inline keyword, use the following.  (This will be fixed in autoconf2
+-# upgrade).
+-# CFLAGS = -O2 -Dinline=
++
+ 
+ YFLAGS = -d
+ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
+@@ -169,6 +166,10 @@ depend: ${ALL_CSRCS}
+ 	ex - Makefile.in < eddep
+ 	rm -f eddep makedep
+ 
++all: moo
++
++.PHONY: all clean distclean tags depend pure_moo
++
+ ###############################################################################
+ # $Log: not supported by cvs2svn $
+ # Revision 1.9  2004/05/22 01:25:43  wrog
+-- 
+1.7.9.5
+

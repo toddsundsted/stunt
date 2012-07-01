@@ -1,0 +1,26 @@
+From 02dc2c64fc83a858e8a8fdb96e1b1d2ed6dae85e Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 19:36:42 +0000
+Subject: [PATCH 091/223] commenting the rule "pure_moo" : 'purify' is a
+ memory access tester which today is IBM Rational
+ Purify.
+
+---
+ server/Makefile.in |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 4d3397d..13afa0e 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -93,6 +93,7 @@ OBJS = $(COBJS) $(YOBJS)
+ moo:	$(OBJS)
+ 	$(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+ 
++# 'purify' is a memory leak checker, now IBM Rational Purify. --sw
+ pure_moo: moo
+ 	purify $(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+ 
+-- 
+1.7.9.5
+

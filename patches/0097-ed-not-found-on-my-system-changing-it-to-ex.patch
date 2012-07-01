@@ -1,0 +1,25 @@
+From be7a2bb1db1669afa1a6836968a3a621d8a1863f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 21:54:54 +0000
+Subject: [PATCH 097/223] 'ed' not found on my system, changing it to 'ex'
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 7504c8c..a1b52bd 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -164,7 +164,7 @@ depend: ${ALL_CSRCS}
+ 	echo '$$r makedep' >>eddep
+ 	echo 'w' >>eddep
+ 	cp Makefile.in Makefile.in.bak
+-	ed - Makefile.in < eddep
++	ex - Makefile.in < eddep
+ 	rm -f eddep makedep
+ 
+ ###############################################################################
+-- 
+1.7.9.5
+

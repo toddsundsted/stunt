@@ -1,0 +1,122 @@
+From 36f05d888a9f83b03857e3ef47dd8d8cf193aae1 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 7 Jul 2011 23:42:06 +0000
+Subject: [PATCH 168/223] Moved the option to log user commands in the event
+ of a server panic out of options.h and into
+ configure.ac/config.h.in/configure.
+
+---
+ server/config.h.in  |    8 ++++++++
+ server/configure    |   25 +++++++++++++++++++++++++
+ server/configure.ac |   14 ++++++++++++++
+ server/options.h    |    8 --------
+ 4 files changed, 47 insertions(+), 8 deletions(-)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index 5bfcebf..fae29eb 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -282,5 +282,13 @@
+ /* OpenSSL */
+ #undef USE_OPENSSL
+ 
++/******************************************************************************
++ * The server is prepared to keep a log of every command entered by players
++ * since the last checkpoint.  The log is flushed whenever a checkpoint is
++ * successfully begun and is dumped into the server log when and if the server
++ * panics.  Define LOG_COMMANDS to enable this logging.
++ */
++#undef LOG_COMMANDS
++
+ #endif /* !Config_H */
+ 
+diff --git a/server/configure b/server/configure
+index cdb67e1..03259bd 100755
+--- a/server/configure
++++ b/server/configure
+@@ -1265,6 +1265,8 @@ Optional Packages:
+                           yes]
+   --with-fup              Include the ext-FUP extension for manipulating
+                           external files [default: no]
++  --with-command-logging  Log user commands since the last database checkpoint
++                          [default: no]
+   --with-openssl          include openssl (Secure Socket Layers)
+                           (experimental) [default: no]
+ 
+@@ -8997,6 +8999,29 @@ fi
+ 
+ 
+ 
++# Check whether --with-command-logging was given.
++if test "${with_command_logging+set}" = set; then
++  withval=$with_command_logging; log_commands=${withval}
++else
++  log_commands=no
++fi
++
++
++if test "x${log_commands}" = xyes; then
++   { echo "$as_me:$LINENO: All user commands will be logged" >&5
++echo "$as_me: All user commands will be logged" >&6;}
++
++cat >>confdefs.h <<\_ACEOF
++#define LOG_COMMANDS 1
++_ACEOF
++
++else
++   { echo "$as_me:$LINENO: No user commands will be logged" >&5
++echo "$as_me: No user commands will be logged" >&6;}
++fi
++
++
++
+ 
+ # Check whether --with-openssl was given.
+ if test "${with_openssl+set}" = set; then
+diff --git a/server/configure.ac b/server/configure.ac
+index c032432..9f46ede 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -565,6 +565,20 @@ else
+ fi
+ 
+ 
++dnl Enable/disable user command logging
++AC_ARG_WITH([command-logging],
++        [AS_HELP_STRING([--with-command-logging],	[Log user commands since the last database checkpoint @<:@default: no@:>@])],
++        [log_commands=${withval}],
++        [log_commands=no])
++
++if test "x${log_commands}" = xyes; then
++   AC_MSG_NOTICE([All user commands will be logged])
++   AC_DEFINE([LOG_COMMANDS], 1, [All user commands will be logged since the last database checkpoint])
++else
++   AC_MSG_NOTICE([No user commands will be logged])
++fi
++
++
+ 
+ dnl # let the user choose to enable ssl or not
+ AC_ARG_WITH([openssl],
+diff --git a/server/options.h b/server/options.h
+index 414b4c6..0a951b2 100644
+--- a/server/options.h
++++ b/server/options.h
+@@ -18,14 +18,6 @@
+ #ifndef Options_h
+ #define Options_h 1
+ 
+-/******************************************************************************
+- * The server is prepared to keep a log of every command entered by players
+- * since the last checkpoint.  The log is flushed whenever a checkpoint is
+- * successfully begun and is dumped into the server log when and if the server
+- * panics.  Define LOG_COMMANDS to enable this logging.
+- */
+-
+-/* #define LOG_COMMANDS */
+ 
+ /******************************************************************************
+  * The server normally forks a separate process to make database checkpoints;
+-- 
+1.7.9.5
+

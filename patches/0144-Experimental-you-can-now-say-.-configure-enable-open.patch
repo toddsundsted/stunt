@@ -1,0 +1,224 @@
+From 62e9fea9aa012b68516dc8996e4694496ceb8a7b Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 19:49:48 +0000
+Subject: [PATCH 144/223] Experimental: you can now say ./configure
+ --enable-openssl but SSL is not yet compiled into
+ the app... first things first: getting autoconf to
+ let the user specify it. Next up, patching the
+ network stuff.
+
+---
+ server/config.h.in  |    2 +
+ server/configure    |  106 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ server/configure.ac |   48 ++++++++++++-----------
+ 3 files changed, 133 insertions(+), 23 deletions(-)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index 8c61de2..5bfcebf 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -279,6 +279,8 @@
+ /* Expat is the XML parsing library by James Clark. */
+ #undef HAVE_EXPAT_H
+ 
++/* OpenSSL */
++#undef USE_OPENSSL
+ 
+ #endif /* !Config_H */
+ 
+diff --git a/server/configure b/server/configure
+index ff173d4..f3cb041 100755
+--- a/server/configure
++++ b/server/configure
+@@ -661,6 +661,7 @@ ac_user_opts='
+ enable_option_checking
+ enable_expat
+ enable_fup
++enable_openssl
+ '
+       ac_precious_vars='build_alias
+ host_alias
+@@ -1291,6 +1292,7 @@ Optional Features:
+                           yes]
+   --enable-fup            Include the ext-FUP extension for manipulating
+                           external files
++  --enable-openssl        enable openssl (Secure Socket Layers) (experimental)
+ 
+ Some influential environment variables:
+   YACC        The `Yet Another C Compiler' implementation to use. Defaults to
+@@ -6269,8 +6271,112 @@ $as_echo "$as_me: The ext-FUP file manipulation extension will not be included i
+ fi
+ 
+ 
++# Check whether --enable-openssl was given.
++if test "${enable_openssl+set}" = set; then :
++  enableval=$enable_openssl; openssl=${enableval}
++else
++  openssl=no
++fi
++
++
++
++if test "x${openssl}" = xyes; then
++   have_openssl=no
++   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_CTX_ctrl" >&5
++$as_echo_n "checking for library containing SSL_CTX_ctrl... " >&6; }
++if test "${ac_cv_search_SSL_CTX_ctrl+set}" = set; then :
++  $as_echo_n "(cached) " >&6
++else
++  ac_func_search_save_LIBS=$LIBS
++cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
+ 
++/* Override any GCC internal prototype to avoid an error.
++   Use char because int might match the return type of a GCC
++   builtin and then its argument prototype would still apply.  */
++#ifdef __cplusplus
++extern "C"
++#endif
++char SSL_CTX_ctrl ();
++int
++main ()
++{
++return SSL_CTX_ctrl ();
++  ;
++  return 0;
++}
++_ACEOF
++for ac_lib in '' ssl; do
++  if test -z "$ac_lib"; then
++    ac_res="none required"
++  else
++    ac_res=-l$ac_lib
++    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
++  fi
++  if ac_fn_c_try_link "$LINENO"; then :
++  ac_cv_search_SSL_CTX_ctrl=$ac_res
++fi
++rm -f core conftest.err conftest.$ac_objext \
++    conftest$ac_exeext
++  if test "${ac_cv_search_SSL_CTX_ctrl+set}" = set; then :
++  break
++fi
++done
++if test "${ac_cv_search_SSL_CTX_ctrl+set}" = set; then :
+ 
++else
++  ac_cv_search_SSL_CTX_ctrl=no
++fi
++rm conftest.$ac_ext
++LIBS=$ac_func_search_save_LIBS
++fi
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SSL_CTX_ctrl" >&5
++$as_echo "$ac_cv_search_SSL_CTX_ctrl" >&6; }
++ac_res=$ac_cv_search_SSL_CTX_ctrl
++if test "$ac_res" != no; then :
++  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
++  have_openssl=yes
++fi
++
++
++   if test "x${have_openssl}" = xyes; then
++      for ac_header in openssl/ssl.h
++do :
++  ac_fn_c_check_header_mongrel "$LINENO" "openssl/ssl.h" "ac_cv_header_openssl_ssl_h" "$ac_includes_default"
++if test "x$ac_cv_header_openssl_ssl_h" = x""yes; then :
++  cat >>confdefs.h <<_ACEOF
++#define HAVE_OPENSSL_SSL_H 1
++_ACEOF
++
++fi
++
++done
++
++      for ac_header in openssl/err.h
++do :
++  ac_fn_c_check_header_mongrel "$LINENO" "openssl/err.h" "ac_cv_header_openssl_err_h" "$ac_includes_default"
++if test "x$ac_cv_header_openssl_err_h" = x""yes; then :
++  cat >>confdefs.h <<_ACEOF
++#define HAVE_OPENSSL_ERR_H 1
++_ACEOF
++
++fi
++
++done
++
++   fi
++
++   if test "x${have_openssl}" = xno; then
++   as_fn_error $? "
++  ----------------------------------------------------
++  Unable to find the openssl library on this system.
++  ----------------------------------------------------" "$LINENO" 5
++   else
++
++$as_echo "#define USE_OPENSSL 1" >>confdefs.h
++
++   fi
++fi
+ 
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inline" >&5
+diff --git a/server/configure.ac b/server/configure.ac
+index c94aeb1..a1894c3 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -562,30 +562,32 @@ else
+    AC_MSG_NOTICE([The ext-FUP file manipulation extension will not be included in this build])
+ fi
+ 
+-dnl currently this block is no bueno. --sw
++
+ dnl # let the user choose to enable ssl or not
+-dnl AC_ARG_ENABLE([ssl],
+-dnl         [  --enable-ssl	enable ssl (Secure Socket Layers) (experimental)],
+-dnl         [ssl=${enableval}],
+-dnl         [ssl=no])
+-
+-
+-dnl if test "x${ssl}" = xyes; then
+-dnl    have_openssl=no
+-dnl    AC_CHECK_LIB([openssl], [have_openssl=yes])
+-
+-dnl    if test "x${have_openssl}" = xyes; then
+-dnl       AC_CHECK_HEADERS([openssl/ssl.h])
+-dnl       AC_CHECK_HEADERS([openssl/err.h])
+-dnl    fi
+-dnl       if test "x${have_openssl}" = xno; then
+-dnl       AC_MSG_WARN([
+-dnl   ----------------------------------------------------
+-dnl   Unable to find the openssl library on this system.
+-dnl   Building a moo server without SSL support.
+-dnl   ----------------------------------------------------])
+-dnl       fi
+-dnl fi
++AC_ARG_ENABLE([openssl],
++        [AS_HELP_STRING([--enable-openssl], [enable openssl (Secure Socket Layers) (experimental)])],
++        [openssl=${enableval}],
++        [openssl=no])
++
++
++if test "x${openssl}" = xyes; then
++   have_openssl=no
++   AC_SEARCH_LIBS([SSL_CTX_ctrl], [ssl], [have_openssl=yes])
++
++   if test "x${have_openssl}" = xyes; then
++      AC_CHECK_HEADERS([openssl/ssl.h])
++      AC_CHECK_HEADERS([openssl/err.h])
++   fi
++
++   if test "x${have_openssl}" = xno; then
++   AC_MSG_ERROR([
++  ----------------------------------------------------
++  Unable to find the openssl library on this system.
++  ----------------------------------------------------])
++   else
++   AC_DEFINE([USE_OPENSSL], 1, [use openssl for Secure Sockets Layer])
++   fi
++fi
+ 
+ 
+ AC_C_INLINE
+-- 
+1.7.9.5
+

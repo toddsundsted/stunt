@@ -1,0 +1,2130 @@
+From 6ad69f6e0bff990b9dcf23b92380b8a6035fd271 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 2 Jul 2009 02:42:34 +0000
+Subject: [PATCH 043/223] adding FUP to the project; not yet compiled in, just
+ adding the contents of the tarball, prior to
+ applying the Avalon patches.
+
+---
+ server/ext-FUP-1.8/ext-FUP.INSTALL          |   23 +
+ server/ext-FUP-1.8/ext-FUP.README           |  293 +++++++
+ server/ext-FUP-1.8/ext-FUP.c                | 1156 +++++++++++++++++++++++++++
+ server/ext-FUP-1.8/ext-FUP.changelog        |   53 ++
+ server/ext-FUP-1.8/ext-FUP.copyright        |   97 +++
+ server/ext-FUP-1.8/ext-FUP_file_handler.moo |  129 +++
+ server/ext-FUP-1.8/ext-FUP_options.h        |   35 +
+ server/ext-FUP-1.8/extensions.c             |  225 ++++++
+ server/ext-FUP-1.8/extensions.c.sample      |   34 +
+ 9 files changed, 2045 insertions(+)
+ create mode 100644 server/ext-FUP-1.8/ext-FUP.INSTALL
+ create mode 100644 server/ext-FUP-1.8/ext-FUP.README
+ create mode 100644 server/ext-FUP-1.8/ext-FUP.c
+ create mode 100644 server/ext-FUP-1.8/ext-FUP.changelog
+ create mode 100644 server/ext-FUP-1.8/ext-FUP.copyright
+ create mode 100644 server/ext-FUP-1.8/ext-FUP_file_handler.moo
+ create mode 100644 server/ext-FUP-1.8/ext-FUP_options.h
+ create mode 100644 server/ext-FUP-1.8/extensions.c
+ create mode 100644 server/ext-FUP-1.8/extensions.c.sample
+
+diff --git a/server/ext-FUP-1.8/ext-FUP.INSTALL b/server/ext-FUP-1.8/ext-FUP.INSTALL
+new file mode 100644
+index 0000000..a4b6f9b
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP.INSTALL
+@@ -0,0 +1,23 @@
++CUSTOMIZATION:
++
++There are various parametters you can configure before compiling FUP,
++you just need to edit ext-FUP_options.h and follow the instructions
++given there.
++
++
++INSTALLATION:
++
++1) Copy the files ext-FUP.c and ext-FUP_options.h to the source directory.
++
++2) Add the contents of the extensions.c.sample provided with the FUP 
++   distribution to the extensions.c file of the source directory.
++
++3) Cutomize FUP by editing ext-FUP_options.h
++
++4) Configure and make.
++
++5) Create a subdirectory of the directory where the executable will
++   reside, named 'files'. If you are using filerun(), create another one called
++   'bin' (see CUSTOMIZATION above).
++
++
+diff --git a/server/ext-FUP-1.8/ext-FUP.README b/server/ext-FUP-1.8/ext-FUP.README
+new file mode 100644
+index 0000000..9046985
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP.README
+@@ -0,0 +1,293 @@
++ *****************************************************************************
++  Copyright (c)1994,1995,1996, The Weizmann Institute of Science.
++  See the enclosed copyright notice.
++  This file documents the File Utilities Package developed and written by
++  Jaime Prilusky and Gustavo Glusman, Weizmann Institute of Science, Israel.
++  For questions, suggestions and comments, please  send email to
++  lsprilus@weizmann.weizmann.ac.il (Jaime Prilusky)
++  Gustavo@bioinformatics.weizmann.ac.il (Gustavo Glusman)
++ *****************************************************************************
++
++
++File Utilities Package 1.8 - February '96
++
++
++INTRODUCTION:
++
++The "File Utilities Package" is a set of routines for direct file
++management and access from inside the MOO,  developed and written by
++Jaime Prilusky and Gustavo Glusman, Weizmann Institute of Science,
++Israel.
++
++This software is intended to work with the MOO server written by Pavel
++Curtis, Xerox PARC (Pavel@Xerox.Com), depending on routines and code
++from the MOO server itself. It has been tested with MOO version 1.8.0b2.
++
++
++SECURITY:
++
++All the built-in functions provided in the File Utilities Package used to 
++require wizardly permissions, but since version 1.4 this is left to the 
++database. Take a look to the file_handler file for an example of the 
++implementation of permissions at the database level.
++
++A simple $file_handler wrapper is provided. A more complex version,
++including a disk-quota system, is available too.
++Additionally, file read/write operations are allowed only over the directory
++subtree rooted at the 'base directory', called 'files' by default, and
++execute operations are allowed only from the directory called 'bin' by default.
++To achieve this, all paths are stripped of spaces, and then rejected if:
++  a) the first character is a '/' or a '.'  OR
++  b) the path includes the substring '/.'.
++
++
++DESCRIPTION:
++
++1) List of primitives provided:
++  Modify files:       filewrite, fileappend, filedelete, filerename,
++                      *filechmod, filemkdir, filermdir
++  Gather information: fileversion, fileread, fileexists, filelength,
++                      filesize, filelist, filegrep, fileextract, fileinfo,
++                      fileerror
++  Execute commands:   *filerun
++
++ * denotes that the function is optional at compile time
++
++2) Standard return errors:
++  a) Any primitive called with incorrect number of arguments returns E_ARGS.
++  b) Any primitive called with arguments of the wrong type returns E_INVARG.
++  c) Any primitive called by a programmer that isn't a wizard returns E_PERM.
++  d) Any attempt to access a file outside the hierarchy returns E_PERM.
++  e) Any attempt to access a file that doesn't exist returns E_INVARG.
++     (Except for fileexists, see below.)
++  f) Any attempt to remove a directory that doesn't exist returns E_INVIND.
++
++3) Description of the primitives:
++
++To make the description easier, we'll assume we have the following files:
++
++ files/notes
++            /foo.text   <-- this is a text file
++            /foox.test  <-- this is a text file
++            /bar        <-- this is an empty subdirectory
++ files/misc
++
++We'll also assume that foo.text reads:
+++--
++|  Copyright (c) 1994 Weizmann Institute. All rights reserved.
++|  This file documents the File Utilities Package developed and written by
++|  Jaime Prilusky and Gustavo Glusman, Weizmann Institute of Science, Israel.
++|  For questions, suggestions and comments, please  send email to
++|  lsprilus@weizmann.weizmann.ac.il (Jaime Prilusky)
++|  Gustavo@bioinformatics.weizmann.ac.il (Gustavo Glusman)
+++--
++and foox.test reads:
+++--
++| line 1
++| line 2
++| end
+++--
++
++
++str fileversion()
++Returns a string representing the version of the currently installed FUP.
++The format is x.y, where x is the major release number and y is the minor
++release number.
++Example:
++  fileversion()  => "1.8"
++
++
++num fileexists(str PATH, str NAME)
++Returns 1 iff files/PATH/NAME exists, 0 otherwise.
++Examples:
++  fileexists("notes","foo.text")  => 1
++  fileexists("misc","foox.test")  => 0
++
++
++str fileerror()
++Returns a string describing the UNIX error message, which reports the last
++error encountered during a call to a system or library function.
++Examples:
++  fileerror()  => "Error 0"   (No error)
++  fileerror()  => "Interrupted system call"
++  fileerror()  => "No such file or directory"
++
++
++list fileinfo(str PATH, str NAME)
++Returns a list with assorted system information about the relevant file/directory.
++Examples:
++  fileinfo("notes","") 
++   => {512, "dir", "755", "lsprilus", "staff", 788541296, 788346820, 788346820}
++  fileinfo("notes","foo.text") 
++   => {376, "reg", "644", "lsprilus", "staff", 788541674, 788541674, 788541674}
++The information provided is: size, type, mode, owner, group, file last access time,
++file last modify time, and file last change time. Check 'man stat' for more info.
++
++
++str filechmod(str PATH, str NAME, str MODE)
++Sets the mode of the relevant file/directory.
++Examples:
++  filechmod("notes","foo.text","bleh") 
++   => "644"  (This just returns the existing value.)
++  filechmod("notes","foo.text","640") 
++   => "640"  (It returns the new value.)
++
++
++list filelist(str PATH [, str NAME])
++Returns the list of files and subdirectories in files/PATH, not recursively.
++If NAME is provided, only files matching NAME as regexp will be returned.
++All existing subdirectories will be returned in any case.
++Examples:
++  filelist("")                => {{},{"notes","misc"}}
++  filelist("notes")           => {{"foo.text","foox.test"},{"bar"}}
++  filelist("notes/bar")       => {{},{}}
++  filelist("notes","oo.%.")   => {{"foox.test"},{"bar"}}
++  filelist("misc")            => {{},{}}
++
++
++num filelength(str PATH, str NAME)
++Returns the number of lines of files/PATH/NAME.
++Example:
++  filelength("notes","foo.text")  => 6
++
++
++num filesize(str PATH, str NAME)
++Returns the number of characters of files/PATH/NAME.
++Example:
++  filesize("notes","foo.text")  => 388
++
++
++num filedelete(str PATH, str NAME)
++Irretrievably deletes files/PATH/NAME.
++Example:
++  filedelete("notes","foo.text")  => 1 if successful.
++
++
++num filemkdir(str PATH, str NAME)
++Creates a new directory: files/PATH/NAME.
++Example:
++  filemkdir("notes","mydir")  => 1 if successful.
++
++
++num filermdir(str PATH, str NAME)
++Removes the directory: files/PATH/NAME, if it's empty.
++Example:
++  filermdir("notes","mydir")  => 1 if successful.
++  filermdir("notes","mydir")  => E_PERM if unsuccessful.
++    Hint: use fileerror() to find the reason for failure.
++
++num filerename(str PATH, str OLDNAME, str NEWNAME)
++Renames files/PATH/OLDNAME to NEWNAME.
++Example:
++  filerename("notes","foo.text","blah.blah")  => 1 if successful.
++
++
++list fileread(str PATH, str NAME [, num START [, num END]])
++Returns a list of strings which represent lines read from files/PATH/NAME,
++from START to END, which default to the beginning and the end of the file
++respectively.
++Examples:
++  fileread("notes","foox.test")      => {"line 1","line 2","end"}
++  fileread("notes","foox.test",2)    => {"line 2","end"}
++  fileread("notes","foox.test",2,2)  => {"line 2"}
++  fileread("notes","foox.test",3,2)  => {}
++  fileread("notes","foox.test",5,6)  => {}
++
++
++num fileappend(str PATH, str NAME, list TEXT)
++Appends TEXT to files/PATH/NAME.
++Creates the file if it didn't exist previously.
++Examples:
++  fileappend("notes","foox.test",{"hehe","hoho"})  => 1 if successful.
++
++
++num filewrite(str PATH, str NAME, list TEXT [, num START [, num END]])
++Writes TEXT on files/PATH/NAME.
++Creates the file if it didn't exist previously.
++Assuming LENGTH is the number of lines in TEXT:
++-If neither START nor END are provided, the file is overwritten with TEXT.
++-If START is provided, but END isn't, LENGTH lines of the file starting from
++ START are overwritten with TEXT. This may extend the file length.
++-If both START and END are provided, the lines from START to END are replaced
++ with TEXT. This may extend the file length or reduce it.
++If the operation succeeds, it returns 1.
++Examples:
++(the operations are not sequential.
++ The file starts as: {"line 1","line 2","end"})
++  Operation                                          File contents after
++  filewrite("notes","foox.test",{"test"})           {"test"}
++  filewrite("notes","foox.test",{"te","st"},2)      {"line 1","te","st"}
++  filewrite("notes","foox.test",{"te","st"},2,2)    {"line 1","te","st","end"}
++  filewrite("notes","foox.test",{"test"},2,3)       {"line 1","test"}
++  filewrite("notes","foox.test",{},2,2)             {"line 1","end"}
++
++
++list filegrep(str PATH, str NAME, str REGEXP [, str SWITCHES])
++Returns a list of strings and line numbers, which represent lines read from
++files/PATH/NAME, and that match REGEXP.
++SWITCHES defaults to "s".
++-If SWITCHES includes "s", the matching lines will be returned.
++-If SWITCHES includes "n", the numbers of the matching lines will be returned.
++-If SWITCHES includes "v", the condition is reversed, and lines not matching
++ will be returned.
++Examples:
++  filegrep("notes","foo.text","Weizmann") 
++	=> {{"  Copyright (c) 1994 Weizmann Institute. All rights reserved.",
++         "  Jaime Prilusky and Gustavo Glusman, Weizmann Institute of
++          Science, Israel.", "  lsprilus@weizmann.weizmann.ac.il (Jaime
++          Prilusky)", "  Gustavo@bioinformatics.weizmann.ac.il (Gustavo
++          Glusman)"}, {}}
++  filegrep("notes","foo.text","Weizmann","n") 
++    => {{}, {1, 3, 5, 6}}  
++  filegrep("notes","foo.text","Weizmann","ns") 
++	=> {{"  Copyright (c) 1994 Weizmann Institute. All rights reserved.",
++         "  Jaime Prilusky and Gustavo Glusman, Weizmann Institute of
++          Science, Israel.", "  lsprilus@weizmann.weizmann.ac.il (Jaime
++          Prilusky)", "  Gustavo@bioinformatics.weizmann.ac.il (Gustavo
++          Glusman)"}, {1, 3, 5, 6}}
++  filegrep("notes","foo.text","Weizmann","vn") 
++    => {{}, {2, 4, 7, 8}} 
++  
++
++list fileextract(str PATH, str NAME, str REGEXP1, str REGEXP2 [, str REGEXP3])
++Returns a list of starts and ends of sections of files/PATH/NAME, that fulfill
++the following requirements:
++-the first line of the section matches REGEXP1,
++-the last line of the section matches REGEXP2, and
++-at least one line of the section matches REGEXP3, if provided.
++If a line matches REGEXP1 and REGEXP2 (and REGEXP3 if provided), it can
++constitute a section by itself.
++Examples:
++  fileextract("notes","foo.text","a","x")          => {{}, {}}
++    (there isn't a line with an "x")
++  fileextract("notes","foo.text","Copy","email")   => {{1}, {4}}
++    (the section from line 1 to line 4 fits)
++  fileextract("notes","foo.text","a","b")          => {{1, 3}, {2, 6}}
++    (the sections from line 1 to line 2 and from line 3 to line 6 fit)
++  fileextract("notes","foo.text","a","b","est")    => {{3}, {6}}
++    (of these, only the section from 3 to 6 has a line that matches "est")
++
++
++num filerun(str EXECUTABLE [, list {str PATH1, str INFILE}
++                           [, list {str PATH2, str OUTFILE}
++                           [, str/list PARAMETER]*]])
++Checks a whole set of security issues, including the requirement that
++'EXECUTABLE' be found in the 'bin' directory. If all is ok, it issues a
++system call equivalent to the Unix command:
++  cat PATH1/INFILE | EXECUTABLE PARAMETER(s) > PATH2/OUTFILE
++Examples:
++  filerun("cal")
++  filerun("grep",{},{"temp","output"},"wizard",{"notes","*"})
++  filerun("lpr",{"notes","info"},{},"-Plaser")
++
++*** WARNING: filerun() ISN'T fully secure at this stage, and it is provided
++*** as an option only for managers of trusted systems.
++
++
++ *****************************************************************************
++   DISCLAIMER: You can use this software, but you do it at your own risk.
++   We provide no guarantee that this will compile successfully, or work
++   as expected, in any system/environment, and take no responsibility for
++   any loss of information or any other damage caused by using this software,
++   or by stopping to use it.
++ *****************************************************************************
+diff --git a/server/ext-FUP-1.8/ext-FUP.c b/server/ext-FUP-1.8/ext-FUP.c
+new file mode 100644
+index 0000000..52cfbd4
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP.c
+@@ -0,0 +1,1156 @@
++/******************************************************************************
++  Copyright (c) 1994,1995,1996 Weizmann Institute. All rights reserved.
++  This is version 1.8 of the File Utilities Package (FUP), suitable for use
++  with all versions of MOO1.8.0, up to beta2 inclusive.
++  This file includes routines for file management and direct file access
++  developed and written by Jaime Prilusky and Gustavo Glusman, Weizmann
++  Institute of Science, Israel.
++  This software is intended to work with the MOO server written by
++  Pavel Curtis, Xerox PARC (Pavel@Xerox.Com), depending on routines
++  and code from the MOO server itself.
++  For questions, suggestions  and comments, please  send email to
++  lsprilus@weizmann.weizmann.ac.il (Jaime Prilusky)
++  Gustavo@bioinformatics.weizmann.ac.il (Gustavo Glusman)
++
++  filemkdir and filermdir in collaboration with Jeremy Cooper <jeremy@crl.com>
++  Thanks to Alex Stewart for valuable suggestions for improvements.
++ *****************************************************************************/
++#include <ctype.h>
++#include "my-time.h"
++#include "my-string.h"
++#include "config.h"
++#include "functions.h"
++#include "log.h"
++#include "random.h"
++#include "storage.h"
++#include "utils.h"
++#include "dirent.h"
++#include "unparse.h"
++#include "list.h"
++#include "regexpr.h"
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <time.h>
++#include <pwd.h>
++#include <grp.h>
++#include <unistd.h>
++#include <errno.h>
++#include "version.h"
++
++#include "ext-FUP_options.h"
++
++#define OneK 1024
++#define BUF_LEN OneK * 2
++#define MAX_INT 32760
++#define TRUE    1
++#define FALSE   0
++
++extern int fputs();
++extern struct passwd *getpwuid();
++extern struct group  *getgrgid();
++extern int system();
++extern int access();
++extern int atoi();
++
++extern Var do_match(Var arglist, int reverse);
++
++const char     *FUP_version = "1.8";
++
++int
++matches(char *subject, const char *pattern)
++{
++    Var ans, req;
++    int  result;
++    
++    req = new_list(2);
++    req.v.list[1].type = TYPE_STR;
++    req.v.list[2].type = TYPE_STR;
++    req.v.list[1].v.str  = str_dup(subject);
++    req.v.list[2].v.str  = str_dup(pattern);
++    ans = do_match(req, 0);
++    result = is_true(ans);
++    free_var(ans);
++    free_var(req);
++    return result;
++}
++
++void
++remove_LAST_character(theStr)
++char    *theStr;
++{
++ theStr[strlen(theStr)-1] = '\0';
++}
++
++void
++remove_special_characters(theStr)
++char	*theStr;
++{
++    register char *cp,*cp2;
++    char buf[BUF_LEN];
++    int currlen = 0;
++
++    cp = theStr;
++    cp2 = buf;
++    while (( *cp ) && (currlen < BUF_LEN)) {
++        switch (*cp) {
++        case '&':
++        case '|':
++        case ';':
++        case '<':
++        case '>':
++        case '(':
++        case ')':
++        case '\'':
++        case '\\':
++        case '"':
++        case '`':
++        case ':':
++        case '$':
++        case '!':
++        case ' ':
++            cp++;
++            break;
++        default: {
++            *cp2++ = *cp++;
++            currlen++;
++            }
++        }
++    }
++    *cp2 = '\0';
++    strcpy( theStr, buf);
++}
++
++int
++build_dir_name(thePathStr, theDirName, spec)
++char *thePathStr;
++char *theDirName;
++char spec;
++{
++    char external_files  [BUF_LEN];
++    char localthePathStr [BUF_LEN];
++    struct stat st;
++
++    if (strlen(thePathStr) > BUF_LEN)  return E_INVARG;
++
++    strcpy(localthePathStr, thePathStr);
++    remove_special_characters(localthePathStr);
++    if (( strstr(localthePathStr,"/.")) ||
++       (!strncmp(localthePathStr,".",1))) {
++     return E_PERM;
++    }
++    strcpy(external_files,EXTERN_FILES_DIR);
++    sprintf(theDirName,"%s%s", external_files, localthePathStr);
++    
++    if (stat(theDirName, &st) != 0) return E_INVARG;
++
++    errno = 0;
++    switch (spec)
++	    {
++	    case 'd':
++	      if (!(st.st_mode & S_IFDIR)) return E_INVIND; 	      
++	      break;
++	    case 'r':
++	      if ((access (theDirName, R_OK)) !=0) return E_PERM;
++	      break;
++	    case 'w':
++	      if ((access (theDirName, W_OK)) !=0) return E_PERM;
++	      break;
++	    case 'x':
++	      if ((access (theDirName, X_OK)) !=0) return E_PERM;
++	      break;
++	    default:
++	        return E_ARGS;
++	    }
++     return E_NONE;
++}
++
++int
++build_file_name(thePathStr, theNameStr, theFileName, spec)
++char *thePathStr;
++char *theNameStr;
++char *theFileName;
++char spec;
++{
++    char external_files  [BUF_LEN];
++    char localthePathStr [BUF_LEN];
++    char localtheNameStr [BUF_LEN];
++    struct stat st;
++
++#ifdef EXTERN_FILES_DIR_READ_ONLY
++    if (strlen(thePathStr) == 0) {
++       switch (spec)
++       {
++        case 'w':
++        case 'd':
++           return E_PERM;
++           break;
++       }
++    }
++#endif
++
++    if ((strlen(thePathStr) > BUF_LEN) || 
++        (strlen(theNameStr) > BUF_LEN))  return E_INVARG;
++
++    strcpy(localthePathStr, thePathStr);
++    strcpy(localtheNameStr, theNameStr);
++    remove_special_characters(localthePathStr);
++    remove_special_characters(localtheNameStr);
++    
++    if (( strstr(localthePathStr,"/.")) ||
++       (!strncmp(localthePathStr,".",1)) ||
++       (strstr(localtheNameStr,"/"))) {
++     return E_PERM;
++    }
++    strcpy(external_files,EXTERN_FILES_DIR);
++    sprintf(theFileName,"%s%s/%s", external_files, localthePathStr, 
++                                   localtheNameStr);
++    
++    if (stat(theFileName, &st) != 0) return E_INVARG;
++
++    errno = 0;
++    switch (spec)
++	    {
++	    case 'd':
++	      if (!(st.st_mode & S_IFDIR)) return E_INVIND; 	      
++	      break;
++	    case 'r':
++	      if ((access (theFileName, R_OK)) !=0) return E_PERM;
++	      break;
++	    case 'w':
++	      if ((access (theFileName, W_OK)) !=0) return E_PERM;
++	      break;
++	    case 'x':
++	      if ((access (theFileName, X_OK)) !=0) return E_PERM;
++	      break;
++	    default:
++	        return E_ARGS;
++	    }
++     return E_NONE;
++}
++
++static package
++bf_fileexists(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename) */
++        char infileName[BUF_LEN];
++        Var ret;
++        
++        ret.type = TYPE_INT;
++        ret.v.num = 1;
++        if (build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,'r') != E_NONE) {
++			ret.v.num = 0;        
++		}
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_filelength(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename) */
++        FILE *f ;
++        char infileName[BUF_LEN];
++        int num_lines = -1;
++        char buffer[BUF_LEN];
++        Var ret;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'r');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++		f = fopen(infileName, "r");
++        for (num_lines = 0; fgets(buffer, BUF_LEN, f); num_lines++);
++        fclose(f);
++        free_var(arglist);
++        ret.type = TYPE_INT;
++        ret.v.num = num_lines;
++        return make_var_pack(ret);
++}
++
++static package
++bf_filesize(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename) */
++        char infileName[BUF_LEN];
++        struct stat st;
++        Var ret;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'r');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++	    if (stat(infileName, &st) != 0) {
++	        free_var(arglist);
++	        return make_error_pack(E_INVARG);
++	    }
++        ret.type = TYPE_INT;
++        ret.v.num = (long)st.st_size;
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_filewrite(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename, list, [start, end]) */
++
++        FILE *inFile = NULL;
++        FILE *outFile = NULL;
++        char infileName[BUF_LEN];
++        char outfileName[BUF_LEN];
++        int i, thelength;
++        int index;
++        int start_line = 1;
++        int end_line   = MAX_INT;
++        char buffer[BUF_LEN];
++        Var ret, theline;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'w');
++        if (result == E_PERM) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        ret.type = TYPE_INT;
++        ret.v.num = 1;
++        theline.type = TYPE_STR;
++
++        sprintf(outfileName,"%s.%li", infileName,time(0));
++
++        if (arglist.v.list[0].v.num > 3) 
++           start_line = arglist.v.list[4].v.num;
++
++       thelength = arglist.v.list[3].v.list[0].v.num;
++
++        if (arglist.v.list[0].v.num > 4) {
++              end_line = arglist.v.list[5].v.num;
++           } else {
++              end_line = arglist.v.list[4].v.num + thelength - 1;
++           }
++
++        if ((outFile = fopen(outfileName, "w")) == 0) {
++           free_var(arglist);
++           return make_error_pack(E_INVARG);
++         }
++
++        inFile = fopen(infileName, "r");
++        index = 1;
++        if (inFile) {
++            while ((index < start_line) && (!feof(inFile))) {
++               fgets(buffer, BUF_LEN, inFile);
++               fputs(buffer,outFile);
++               index++;
++                }
++            while ((index <= end_line) && (!feof(inFile))) {
++               fgets(buffer, BUF_LEN, inFile);
++               index++;
++                }
++         }
++
++    for (i = 1; i <= thelength; i++) {
++        switch (arglist.v.list[3].v.list[i].type) {
++          case TYPE_INT:
++            fprintf (outFile, "%d\n",  arglist.v.list[3].v.list[i].v.num);
++            break;
++          case TYPE_FLOAT:
++            fprintf (outFile, "%g\n",  *(arglist.v.list[3].v.list[i].v.fnum));
++            break;
++          case TYPE_OBJ:
++            fprintf (outFile, "#%d\n",  arglist.v.list[3].v.list[i].v.obj);
++            break;
++          case TYPE_STR:
++            fprintf (outFile, "%s\n",  arglist.v.list[3].v.list[i].v.str);
++            break;
++          case TYPE_ERR:
++              fprintf (outFile, "%s\n", unparse_error( arglist.v.list[3].v.list[i].v.err));
++            break;
++          case TYPE_LIST:
++            fprintf (outFile,  "%s\n", "{list}");
++            break;
++          default:
++            fprintf (outFile,  "%s\n", "*** unrecognized VAR TYPE (this should never happen) ***");
++        }
++      }
++
++        if (inFile) {
++            while (!feof(inFile)) {
++               fgets(buffer, BUF_LEN, inFile);
++               if (!feof(inFile)) {fputs(buffer,outFile);}
++                }
++        }
++
++        if (outFile) {fclose(outFile);}
++        if (inFile)  {fclose(inFile);} 
++        rename(outfileName,infileName);
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_fileread(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename [start, end]) */
++
++        FILE *f;
++        char infileName[BUF_LEN];
++        char buffer[BUF_LEN];
++        Var ret, theline;
++        int index;
++        int start_line = 1;
++        int end_line   = MAX_INT;
++         int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'r');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        if (arglist.v.list[0].v.num > 2)
++                start_line = arglist.v.list[3].v.num;
++
++        if (arglist.v.list[0].v.num > 3)
++                end_line = arglist.v.list[4].v.num;
++     
++        if ((f = fopen(infileName, "r")) == 0) {
++           free_var(arglist);
++           return make_error_pack(E_INVARG);
++        }
++
++        ret.type = TYPE_LIST;
++        ret = new_list(0);
++        theline.type = TYPE_STR;
++
++        index = 1;
++        while ((index < start_line) && (!feof(f))) {
++                fgets(buffer, BUF_LEN, f);
++                index++;
++                }
++
++        while ((index <= end_line) && (!feof(f))) {
++                fgets(buffer, BUF_LEN, f);
++                if (!feof(f)) {
++                   buffer[strlen(buffer)-1] = '\0';
++                   theline.v.str = str_dup(buffer);
++                   ret = listappend(ret, theline);
++                   }
++                index++;
++                }
++
++        fclose(f);
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_fileappend(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename, list) */
++
++        FILE *outFile = NULL;
++        char outfileName[BUF_LEN];
++        int i, thelength;
++        Var ret, theline;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            outfileName,
++                            'w');
++        if (result == E_PERM) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        ret.type = TYPE_INT;
++        ret.v.num = 1;
++        theline.type = TYPE_STR;
++
++        if ((outFile = fopen(outfileName, "a")) == 0) {
++            free_var(arglist);
++            return make_error_pack(E_INVARG);
++        }
++
++      thelength = arglist.v.list[3].v.list[0].v.num;
++
++    for (i = 1; i <= thelength; i++) {
++        switch (arglist.v.list[3].v.list[i].type) {
++          case TYPE_INT:
++            fprintf (outFile, "%d\n",  arglist.v.list[3].v.list[i].v.num);
++            break;
++          case TYPE_FLOAT:
++            fprintf (outFile, "%g\n",  *(arglist.v.list[3].v.list[i].v.fnum));
++            break;
++          case TYPE_OBJ:
++            fprintf (outFile, "#%d\n",  arglist.v.list[3].v.list[i].v.obj);
++            break;
++          case TYPE_STR:
++            fprintf (outFile, "%s\n",  arglist.v.list[3].v.list[i].v.str);
++            break;
++          case TYPE_ERR:
++              fprintf (outFile, "%s\n", unparse_error( arglist.v.list[3].v.list[i].v.err));
++            break;
++          case TYPE_LIST:
++            fprintf (outFile,  "%s\n", "{list}");
++            break;
++          default:
++            fprintf (outFile,  "%s\n", "*** unrecognized VAR TYPE (this should never happen) ***");
++        }
++      }
++
++        if (outFile) {fclose(outFile);}
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_filedelete(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename) */
++        char infileName[BUF_LEN];
++        Var ret;
++         int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'w');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++    if ((remove(infileName)) != 0) {
++        free_var(arglist);
++        return make_error_pack(E_INVARG);
++    }
++
++        free_var(arglist);
++        ret.type = TYPE_INT;
++        ret.v.num = 1;
++        return make_var_pack(ret);
++}
++
++
++static package
++bf_filelist(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory) */
++
++        typedef struct dirent MYDIRENT ;
++        DIR *dirp;
++        DIR *subdir;
++        MYDIRENT *dp;
++        char rootDir [BUF_LEN];
++        char dirName [BUF_LEN];
++        Var ret, listOfDirs, listOfFiles, theline;
++        int srchlen = 0;
++        int result;
++        result = build_dir_name(arglist.v.list[1].v.str,
++                            rootDir,
++                            'd');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        if (!(dirp = opendir (rootDir))) {
++           free_var(arglist);
++           return make_error_pack(E_INVARG);
++        }
++
++       if (arglist.v.list[0].v.num > 1) {
++           srchlen = strlen(arglist.v.list[2].v.str);
++        }
++        ret.type = TYPE_LIST;
++        ret = new_list(0);
++        listOfDirs.type = TYPE_LIST;
++        listOfDirs = new_list(0);
++        listOfFiles.type = TYPE_LIST;
++        listOfFiles = new_list(0);
++        theline.type = TYPE_STR;
++
++        while ((dp = readdir (dirp)) != 0) {
++           if (strncmp(dp->d_name,".",1)) {
++               sprintf(dirName,"%s/%s", rootDir,dp->d_name);
++               if ((subdir = opendir(dirName))) {
++                    closedir(subdir);
++                    theline.v.str = str_dup(dp->d_name);
++                    listOfDirs = listappend(listOfDirs, theline);
++                }
++                else {
++                  if ((srchlen == 0) || 
++                      (matches(dp->d_name,arglist.v.list[2].v.str))) {
++                      theline.v.str = str_dup(dp->d_name);
++                      listOfFiles = listappend(listOfFiles, theline);
++                  } 
++                }
++            }
++        }
++        closedir (dirp);
++        ret = listappend(ret, listOfFiles);
++        ret = listappend(ret, listOfDirs);
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_filegrep(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename, pattern, [option]) */
++
++        FILE *f;
++        char infileName[BUF_LEN];
++        char buffer[BUF_LEN];
++        int line_num = 0;
++        Var ret, theline, anum, slist, nlist;
++        int strings = TRUE;
++        int numbers = FALSE;
++        int showfound = TRUE;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'r');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++        
++        if(arglist.v.list[0].v.num == 4) {
++          if(strstr(arglist.v.list[4].v.str,"n")) {
++             numbers = TRUE;
++             if(!(strstr(arglist.v.list[4].v.str,"s"))) {strings = FALSE;}
++          }
++          if(strstr(arglist.v.list[4].v.str,"v")) {showfound = FALSE;}
++        }
++
++        if ((f = fopen(infileName, "r")) == 0) {
++           free_var(arglist);
++           return make_error_pack(E_INVARG);
++        }
++
++        slist.type = TYPE_LIST;
++        slist = new_list(0);
++        nlist.type = TYPE_LIST;
++        nlist = new_list(0);
++        ret.type = TYPE_LIST;
++        ret = new_list(0);
++
++        theline.type = TYPE_STR;
++        anum.type = TYPE_INT;
++        while (!feof(f)) {
++            fgets(buffer, BUF_LEN, f);
++            line_num++;
++            
++            if (matches(buffer,arglist.v.list[3].v.str) == showfound) {
++                    if ((strings == TRUE) && (!feof(f))) {
++                      buffer[strlen(buffer)-1] = '\0';
++                      theline.v.str = str_dup(buffer);
++                      slist = listappend(slist, theline);
++                    }
++                    if ((numbers == TRUE) && (!feof(f))) {
++                      anum.v.num = line_num;
++                      nlist = listappend(nlist, anum);
++                    }
++                 }
++              }
++
++        fclose(f);
++        free_var(arglist);
++        ret = listappend(ret, slist);
++        ret = listappend(ret, nlist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_fileextract(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename, start_pattern, end_pattern [,extra_pattern]) */
++
++        FILE *f;
++        char infileName[BUF_LEN];
++        char buffer[BUF_LEN];
++        Var ret, theline;
++        Var startList, endList;
++        Var startLine, endLine;
++        int numOfLine = 0;
++        int status = 1;
++        int requiredPattern = (arglist.v.list[0].v.num > 4);
++        int result;
++        
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            infileName,
++                            'r');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        if ((strlen(arglist.v.list[2].v.str) == 0) ||
++            (strlen(arglist.v.list[3].v.str) == 0) ||
++            (strlen(arglist.v.list[4].v.str) == 0) ||
++            (strlen(arglist.v.list[arglist.v.list[0].v.num].v.str) == 0)) {
++          free_var(arglist);
++          return make_error_pack(E_INVARG); 
++        }
++
++         if ((f = fopen(infileName, "r")) == 0) {
++           free_var(arglist);
++           return make_error_pack(E_INVARG);
++        }
++
++       ret.type = TYPE_LIST;
++        ret = new_list(0);
++        theline.type = TYPE_STR;
++
++        startList = new_list(0);
++        startList.type = TYPE_LIST;
++
++        endList = new_list(0);
++        endList.type = TYPE_LIST;
++        
++        startLine.type = TYPE_INT;
++        endLine.type = TYPE_INT;
++ 
++        while (!feof(f)) {
++            fgets(buffer, BUF_LEN, f);
++            numOfLine++;
++            
++            if (status == 1) {
++               if (matches(buffer,arglist.v.list[3].v.str)) {
++	                startLine.v.num = numOfLine;
++                        if (requiredPattern == TRUE) {
++	            	    status = 2;}
++                        else {
++                            status = 3;}
++	            }
++            }
++            
++            if (status == 2) {
++               if (matches(buffer,arglist.v.list[arglist.v.list[0].v.num].v.str)) {
++	            	status = 3;
++	            }
++            }
++            
++            if ((status == 2) || (status == 3)) {
++              if (matches(buffer,arglist.v.list[4].v.str)) {
++                        if (status == 3) {
++                          startList = listappend(startList, startLine);
++                          endLine.v.num = numOfLine;
++                          endList = listappend(endList, endLine);
++                        }
++                        status = 1;
++                     }
++            }
++        }
++
++        ret = listappend(ret,startList);
++        ret = listappend(ret,endList);        
++        fclose(f);
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++static package
++bf_fileversion(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    Var ret;
++    ret.type = TYPE_STR;
++    ret.v.str = str_dup(FUP_version);
++    free_var(arglist);
++    return make_var_pack(ret);
++}
++
++static package
++bf_filerename(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, oldFilename, newFilename) */
++        char oldFilename[BUF_LEN];
++        char newFilename[BUF_LEN];
++        Var ret;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            oldFilename,
++                            'w');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[3].v.str,
++                            newFilename,
++                            'w');
++        if ((result != E_NONE) && (result != E_INVARG)){
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++    if ((rename(oldFilename,newFilename)) != 0) {
++        return make_error_pack(E_INVARG);
++        }
++        ret.type = TYPE_INT;
++        ret.v.num = 1;
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++#ifdef INCLUDE_FILECHMOD
++
++static package
++bf_filechmod(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename, filemode) */
++        char theRequestedAction[BUF_LEN];
++        char filename[BUF_LEN];
++        char external_files  [BUF_LEN];
++        Var ret;
++        struct stat st;
++        mode_t  mode;
++        char filemode[BUF_LEN];
++        int r1, r2; 
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            filename,
++                            'w');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        remove_special_characters(arglist.v.list[3].v.str);
++        if (strlen(arglist.v.list[3].v.str) == 0) {
++                   free_var(arglist);
++                   return make_error_pack(E_INVARG); }
++
++        strcpy(external_files,EXTERN_FILES_DIR);
++        sprintf(theRequestedAction,"chmod %s %s%s/%s\n",
++                                   arglist.v.list[3].v.str,
++                                   external_files,
++                                   arglist.v.list[1].v.str,
++                                   arglist.v.list[2].v.str);
++
++    if ((system(theRequestedAction)) == 0) {
++          return make_error_pack(E_INVARG);
++        }
++
++	stat(filename, &st);
++        ret.type = TYPE_STR;
++        mode = st.st_mode;
++        if (S_ISREG(st.st_mode))  mode = st.st_mode - 32768;
++        if (S_ISDIR(st.st_mode))  mode = st.st_mode - 16384;
++        if (S_ISCHR(st.st_mode))  mode = st.st_mode -  8192;
++        if (S_ISBLK(st.st_mode))  mode = st.st_mode - 24576;
++        if (S_ISSOCK(st.st_mode)) mode = st.st_mode - 49152;
++        if (mode != st.st_mode) {
++           r1 = mode / 8;
++           r1 = r1 - ((r1 / 8) * 8);
++           r2 = mode - ((mode/8) * 8);
++           sprintf(filemode,"%ld%d%d",(long)mode/64,r1,r2);
++           ret.v.str = str_dup(filemode);
++           }
++        else ret.v.str = str_dup("????");
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++#endif
++
++static package
++bf_fileinfo(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (directory, filename) */
++        char filename[BUF_LEN];
++        Var ret, atime, mtime, ctime, fsize, ftype, fmode, fuid, fgid;
++        struct stat st;
++        struct passwd *pw;
++        struct group *grp;
++        mode_t  mode;
++        int r0, r1, r2; 
++        char filemode[BUF_LEN];
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            filename,
++                            'r');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++        if (stat(filename, &st) != 0) {
++           free_var(arglist);
++           return make_error_pack(E_INVARG);
++        }
++
++        fsize.type = TYPE_INT;
++        fsize.v.num = (long)st.st_size;
++
++        ftype.type = TYPE_STR;
++        ftype.v.str = str_dup("???");
++        mode = st.st_mode;
++        if (S_ISREG(st.st_mode)) {
++           ftype.v.str = str_dup("reg");
++           mode = st.st_mode - 32768;
++           }
++        if (S_ISDIR(st.st_mode)) {
++           ftype.v.str = str_dup("dir");
++           mode = st.st_mode - 16384;
++           }
++
++        if (S_ISFIFO(st.st_mode)) { oklog("FIFO %ld\n",(long)st.st_mode);
++           }
++
++        if (S_ISCHR(st.st_mode)) {
++           ftype.v.str = str_dup("chr");
++           mode = st.st_mode - 8192;
++           }
++
++        if (S_ISBLK(st.st_mode)) {
++           ftype.v.str = str_dup("blk");
++           mode = st.st_mode - 24576;
++           }
++
++        if (S_ISLNK(st.st_mode)) { oklog("LNK  %ld\n",(long)st.st_mode);
++           }
++
++        if (S_ISSOCK(st.st_mode)) {
++           ftype.v.str = str_dup("sck");
++           mode = st.st_mode - 49152;
++           }
++
++        fmode.type = TYPE_STR;
++        fmode.v.str = str_dup("????");
++        if (mode != st.st_mode) {
++           r0 = mode / 512;
++           r1 = mode / 8;
++           r1 = r1 - ((r1 / 8) * 8);
++           r2 = mode - ((mode/8) * 8);
++           sprintf(filemode,"%ld%d%d",(long)mode/64,r1,r2);
++           fmode.v.str = str_dup(filemode);
++           }
++
++        pw = getpwuid((short)st.st_uid);
++        fuid.type = TYPE_STR;
++        fuid.v.str = str_dup(pw->pw_name);
++
++        grp = getgrgid((short)st.st_gid);
++        fgid.type = TYPE_STR;
++        fgid.v.str = str_dup(grp->gr_name);
++
++        atime.type = TYPE_INT;
++        atime.v.num = st.st_atime;
++
++        mtime.type = TYPE_INT;
++        mtime.v.num = st.st_mtime;
++
++        ctime.type = TYPE_INT;
++        ctime.v.num = st.st_ctime;
++        
++        ret.type = TYPE_LIST;
++        ret = new_list(0);
++        ret = listappend(ret, fsize); /* total size of file, bytes */
++        ret = listappend(ret, ftype); /* file type */
++        ret = listappend(ret, fmode); /* file mode */
++        ret = listappend(ret, fuid);  /* user ID of owner */
++        ret = listappend(ret, fgid);  /* group ID of owner */
++        ret = listappend(ret, atime); /* file last access time */
++        ret = listappend(ret, mtime); /* file last modify time */
++        ret = listappend(ret, ctime); /* file last change time */
++
++        free_var(arglist);
++        return make_var_pack(ret);
++}
++
++#ifdef INCLUDE_FILERUN
++
++static package
++bf_filerun(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (filename, arguments) */
++        char theRequestedAction[BUF_LEN];
++        Var ret, theArgs, theline;
++        int i, numOfArgs, result;
++        char fileName[BUF_LEN];
++        char external_bin [BUF_LEN];
++
++        theline.type = TYPE_STR;
++        theArgs.type = TYPE_LIST;
++        theArgs = new_list(0);
++        numOfArgs = arglist.v.list[0].v.num;
++        for (i = 1; i <= numOfArgs; i++) {
++	        switch (arglist.v.list[i].type) {
++	          case TYPE_STR:
++                theline.v.str = str_dup(arglist.v.list[i].v.str);
++                remove_special_characters( theline.v.str); 
++
++                if (( strstr(theline.v.str,"/.")) ||
++                   (!strncmp(theline.v.str,".",1)) ||
++                   (!strncmp(theline.v.str,"/",1))) {
++                    free_var(arglist);
++                    free_var(theline);
++                    return make_error_pack(E_PERM);
++                    }
++
++                theArgs = listappend(theArgs,theline);
++	        break;
++	          case TYPE_LIST:
++                    if (arglist.v.list[i].v.list[0].v.num < 2) {
++                        theline.v.str = str_dup("");
++                        theArgs = listappend(theArgs,theline);
++                    } else {
++                    if ((arglist.v.list[i].v.list[1].type != TYPE_STR) ||
++                       (arglist.v.list[i].v.list[2].type != TYPE_STR)) {
++			            free_var(arglist);
++                                    free_var(theline);
++			            return make_error_pack(E_TYPE); 
++                       }
++                    result = build_file_name(arglist.v.list[i].v.list[1].v.str,
++                                             arglist.v.list[i].v.list[2].v.str,
++                                             fileName,
++                                             'r');
++                        theline.v.str = str_dup(fileName);
++                        theArgs = listappend(theArgs,theline);
++					}
++	            break;
++	          default:
++                free_var(arglist);
++                free_var(theline);
++                return make_error_pack(E_INVARG);
++	        }        
++        }
++       
++       numOfArgs = theArgs.v.list[0].v.num;
++       strcpy(external_bin,EXTERN_BIN_DIR);
++       sprintf(theRequestedAction,"%s%s ",external_bin,theArgs.v.list[1].v.str);
++
++        if ((numOfArgs > 1) && (strlen(theArgs.v.list[2].v.str)!=0)) {
++                 sprintf(theRequestedAction,"cat %s | %s%s",
++                                   theArgs.v.list[2].v.str,
++                                   external_bin,
++                                   theArgs.v.list[1].v.str);
++        } else {
++                 sprintf(theRequestedAction,"%s%s ",
++                                   external_bin,
++                                   theArgs.v.list[1].v.str);
++        }
++
++        for (i = 4; i <= numOfArgs; i++) {
++        sprintf(theRequestedAction,"%s %s",
++                                   theRequestedAction,
++                                   theArgs.v.list[i].v.str);
++        }
++
++        if ((numOfArgs > 2) && (strlen(theArgs.v.list[3].v.str))){
++            sprintf(theRequestedAction,"%s > %s",
++                                   theRequestedAction,
++                                   theArgs.v.list[3].v.str);
++        }
++
++        sprintf(theRequestedAction,"%s 2>&1", theRequestedAction);
++        system(theRequestedAction);
++
++        ret.type = TYPE_INT;
++        ret.v.num = 1; /* always !! */
++        free_var(arglist);
++        free_var(theline);
++        return make_var_pack(ret);
++}
++#endif
++
++static package
++bf_filemkdir(Var arglist, Byte next, void *vdata, Objid progr)
++{  /* filemkdir(base-directory-name, new-directory-name) */
++      char newdirName[BUF_LEN];
++      mode_t create_mode = CREATE_NEW_DIR_MODE;
++      Var ret;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            newdirName,
++                            'd');
++        if ((result != E_NONE) && (result != E_INVARG)){
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++    if ((mkdir(newdirName, create_mode)) != 0) {
++            free_var(arglist);
++            return make_error_pack(E_PERM); }
++
++    ret.type = TYPE_INT;
++    ret.v.num = 1;
++    free_var(arglist);
++    return make_var_pack(ret);
++}
++
++static package
++bf_filermdir(Var arglist, Byte next, void *vdata, Objid prog)
++{  /* filermdir(base-directory-name, directory-name) */
++        char rmDirName[BUF_LEN];
++        Var  ret;
++        int result;
++        result = build_file_name(arglist.v.list[1].v.str,
++                            arglist.v.list[2].v.str,
++                            rmDirName,
++                            'd');
++        if (result != E_NONE) {
++                free_var(arglist);
++                return make_error_pack(result);
++        }
++
++    if ((rmdir(rmDirName)) != 0) {
++        free_var(arglist);
++        return make_error_pack(E_PERM); 
++    }
++    free_var(arglist);
++    ret.type = TYPE_INT;
++    ret.v.num = 1;
++    return make_var_pack(ret);
++}
++
++static package
++bf_fileerror(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    Var ret;
++    ret.type = TYPE_STR;
++    ret.v.str = str_dup(strerror(errno));
++    free_var(arglist);
++    return make_var_pack(ret);
++}
++
++void
++register_files(void)
++{ 
++    oklog("          (Using File Utilities Package version %s)\n", FUP_version);
++
++    (void) register_function("fileappend",  3,  3, bf_fileappend,  TYPE_STR, TYPE_STR, TYPE_LIST);
++
++#ifdef INCLUDE_FILECHMOD
++    (void) register_function("filechmod",   3,  3, bf_filechmod,   TYPE_STR, TYPE_STR, TYPE_STR);
++#endif
++
++    (void) register_function("filedelete",  2,  2, bf_filedelete,  TYPE_STR, TYPE_STR);
++    (void) register_function("fileerror",   0,  0, bf_fileerror);
++    (void) register_function("fileexists",  2,  2, bf_fileexists,  TYPE_STR, TYPE_STR);
++    (void) register_function("fileextract", 4,  5, bf_fileextract, TYPE_STR, TYPE_STR, TYPE_STR, TYPE_STR, TYPE_STR);
++    (void) register_function("filegrep",    3,  4, bf_filegrep,    TYPE_STR, TYPE_STR, TYPE_STR, TYPE_STR);
++    (void) register_function("fileinfo",    2,  2, bf_fileinfo,    TYPE_STR, TYPE_STR);
++    (void) register_function("filelength",  2,  2, bf_filelength,  TYPE_STR, TYPE_STR);
++    (void) register_function("filelist",    1,  2, bf_filelist,    TYPE_STR, TYPE_STR);
++    (void) register_function("filemkdir",   2,  2, bf_filemkdir,   TYPE_STR, TYPE_STR);
++    (void) register_function("fileread",    2,  4, bf_fileread,    TYPE_STR, TYPE_STR, TYPE_INT, TYPE_INT);
++    (void) register_function("filerename",  3,  3, bf_filerename,  TYPE_STR, TYPE_STR, TYPE_STR);
++    (void) register_function("filermdir",   2,  2, bf_filermdir,   TYPE_STR, TYPE_STR);
++
++#ifdef INCLUDE_FILERUN
++    (void) register_function("filerun",     1, -1, bf_filerun,     TYPE_STR, TYPE_LIST, TYPE_LIST); 
++#endif
++
++    (void) register_function("filesize",    2,  2, bf_filesize,    TYPE_STR, TYPE_STR);
++    (void) register_function("fileversion", 0,  0, bf_fileversion);
++    (void) register_function("filewrite",   3,  5, bf_filewrite,   TYPE_STR, TYPE_STR, TYPE_LIST, TYPE_INT, TYPE_INT);
++
++}
+diff --git a/server/ext-FUP-1.8/ext-FUP.changelog b/server/ext-FUP-1.8/ext-FUP.changelog
+new file mode 100644
+index 0000000..05668bf
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP.changelog
+@@ -0,0 +1,53 @@
++Version 1.1: (Aug 1994)
++- First released version.
++
++Version 1.2: (Sep 4th, 1994)
++- Added fileversion()
++- Changed filedelete(), filewrite() and fileappend() to return 1 if successful
++- Added the EXTERN_FILES_DIR_READ_ONLY compiling variable
++- Fixed a bug in filegrep() that caused a match in the last line to return
++  a 'zombie' additional line.
++
++Version 1.3: (Sep 8th, 1994)
++- Added filerename()
++- Fixed some serious memory leaks
++(Sep 13th, 1994) - Fixed a bug whereby fileexists always returned 1
++
++Version 1.4 (Jan 5th, 1995)
++- Added the following built-in functions:
++	filechmod()
++	fileerror()
++	fileinfo()
++	filemkdir()
++	filermdir()
++- Added the following compiling variable:
++	CREATE_NEW_DIR_MODE
++- Improved efficiency and file access security management
++- Removed the hard-coded requirement for wizard permissions
++
++Version 1.5 (Jan 9th, 1995)
++- Modified an internal data handling method that was incompatible with Pavel's
++  code, and was potentially database-corrupting
++- Added the following compiling variable:
++        EXTERN_BIN_DIR
++- Added the following built-in function:
++        filerun()
++
++Version 1.6 (Feb 21th, 1995)
++- Fixed some serious bugs in string length handling
++- Added some missing code to filerun() and filechmod()
++- Added the following compiling variable:
++        INCLUDE_FILERUN
++
++Version 1.7 (Sep 30th, 1995)
++- Reorganised the internal name handling methods.
++- Adapted for working with LambdaMOO 1.7.9alpha1. [Note - this version works with LambdaMOO 1.7.8p4]
++- Fixed some portability problems.
++- Fixed an error that made the 'files' directory unprotected for writing.
++- Added the following compiling variable:
++        INCLUDE_FILECHMOD
++
++Version 1.8 (Feb 15th, 1996)
++- Fixed some portability problems.
++- Adapted for MOO versions 1.7.8p4, 1.7.9p2 and 1.8.0b2.
++
+diff --git a/server/ext-FUP-1.8/ext-FUP.copyright b/server/ext-FUP-1.8/ext-FUP.copyright
+new file mode 100644
+index 0000000..6c72edd
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP.copyright
+@@ -0,0 +1,97 @@
++   Copyright (C) 1994,1995,1996, The Weizmann Institute of Science.
++
++		       NO WARRANTY
++
++  BECAUSE THIS PROGRAM IS LICENSED FREE OF CHARGE, WE PROVIDE ABSOLUTELY
++NO WARRANTY, TO THE EXTENT PERMITTED BY APPLICABLE STATE LAW.  EXCEPT
++WHEN OTHERWISE STATED IN WRITING, THE WEIZMANN INSTITUTE OF SCIENCE,
++JAIME PRILUSKY, GUSTAVO GLUSMAN AND/OR OTHER PARTIES PROVIDE THIS PROGRAM "AS
++IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING,
++BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
++FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY
++AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE
++DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR
++CORRECTION.
++
++ IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW WILL JAIME PRILUSKY, GUSTAVO
++GLUSMAN, THE WEIZMANN INSTITUTE OF SCIENCE, AND/OR ANY OTHER PARTY
++WHO MAY MODIFY AND REDISTRIBUTE THIS PROGRAM AS PERMITTED BELOW, BE
++LIABLE TO YOU FOR DAMAGES, INCLUDING ANY LOST PROFITS, LOST MONIES, OR
++OTHER SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
++USE OR INABILITY TO USE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR
++DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY THIRD PARTIES OR
++A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS) THIS
++PROGRAM, EVEN IF YOU HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH
++DAMAGES, OR FOR ANY CLAIM BY ANY OTHER PARTY.
++
++		GENERAL PUBLIC LICENSE TO COPY
++
++  1. You may copy and distribute verbatim copies of this source file
++as you receive it, in any medium, provided that you conspicuously and
++appropriately publish on each copy a valid copyright notice "Copyright
++(C) 1994 The Weizmann Institute of Science"; and include following the
++copyright notice a verbatim copy of the above disclaimer of warranty
++and of this License.  You may charge a distribution fee for the
++physical act of transferring a copy.
++
++  2. You may modify your copy or copies of this source file or
++any portion of it, and copy and distribute such modifications under
++the terms of Paragraph 1 above, provided that you also do the following:
++
++    a) cause the modified files to carry prominent notices stating
++    that you changed the files and the date of any change; and
++
++    b) cause the whole of any work that you distribute or publish,
++    that in whole or in part contains or is a derivative of this
++    program or any part thereof, to be licensed at no charge to all
++    third parties on terms identical to those contained in this
++    License Agreement (except that you may choose to grant more extensive
++    warranty protection to some or all third parties, at your option).
++
++    c) You may charge a distribution fee for the physical act of
++    transferring a copy, and you may at your option offer warranty
++    protection in exchange for a fee.
++
++Mere aggregation of another unrelated program with this program (or its
++derivative) on a volume of a storage or distribution medium does not bring
++the other program under the scope of these terms.
++
++  3. You may copy and distribute this program (or a portion or derivative
++of it, under Paragraph 2) in object code or executable form under the terms
++of Paragraphs 1 and 2 above provided that you also do one of the following:
++
++    a) accompany it with the complete corresponding machine-readable
++    source code, which must be distributed under the terms of
++    Paragraphs 1 and 2 above; or,
++
++    b) accompany it with a written offer, valid for at least three
++    years, to give any third party free (except for a nominal
++    shipping charge) a complete machine-readable copy of the
++    corresponding source code, to be distributed under the terms of
++    Paragraphs 1 and 2 above; or,
++
++    c) accompany it with the information you received as to where the
++    corresponding source code may be obtained.  (This alternative is
++    allowed only for noncommercial distribution and only if you
++    received the program in object code or executable form alone.)
++
++For an executable file, complete source code means all the source code for
++all modules it contains; but, as a special exception, it need not include
++source code for modules which are standard libraries that accompany the
++operating system on which the executable file runs.
++
++  4. You may not copy, sublicense, distribute or transfer this program
++except as expressly provided under this License Agreement.  Any attempt
++otherwise to copy, sublicense, distribute or transfer this program is void and
++your rights to use the program under this License agreement shall be
++automatically terminated.  However, parties who have received computer
++software programs from you with this License Agreement will not have
++their licenses terminated so long as such parties remain in full compliance.
++
++  5. If you wish to incorporate parts of this program into other free
++programs whose distribution conditions are different, write to Jaime Prilusky,
++the Weizmann Institute of Science, Rehovot 76100, Israel.
++
++In other words, you are welcome to use, share and improve this program.
++You are forbidden to forbid anyone else to use, share and improve
++what you give them.   Help stamp out software-hoarding!
+diff --git a/server/ext-FUP-1.8/ext-FUP_file_handler.moo b/server/ext-FUP-1.8/ext-FUP_file_handler.moo
+new file mode 100644
+index 0000000..93d53cb
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP_file_handler.moo
+@@ -0,0 +1,129 @@
++" *****************************************************************************
++"  Copyright (c) 1994 Weizmann Institute. See the enclosed copyright notice.
++"  This file includes the code for a simple wrapper for the File Utilities
++"  Package version 1.3, developed and written by Jaime Prilusky and Gustavo
++"  Glusman, Weizmann Institute of Science, Israel.
++"  For questions, suggestions and comments, please  send email to
++"  lsprilus@weizmann.weizmann.ac.il (Jaime Prilusky)
++"  Gustavo@bioinformatics.weizmann.ac.il (Gustavo Glusman)
++" *****************************************************************************
++"This simple file handler doesn't control disk quota.
++"For a child of the $file_handler to work, you need to create a directory under 'files', named tostr(child).
++"E.g.: if you create a child #12345, cd files and mkdir #12345.
++
++@create $thing named generic external file handler:generic external file handler,gefh
++@prop #0.file_handler <the result of the @create>
++@chmod $file_handler rf
++;$file_handler.("description") = "A file handler. Type 'help file_handler' for more information."
++
++@verb $file_handler:"allows" this none this rx
++@program $file_handler:allows
++return $perm_utils:controls(args[1], this);
++"Last modified Wed Aug  3 14:22:16 1994 IDT by Gustavo (#2).";
++.
++
++@verb $file_handler:"write append rename chmod mkdir rmdir" this none this rx
++@program $file_handler:write
++"WIZARDLY";
++l = length(args);
++if (l < 2)
++  return E_ARGS;
++elseif (!this:allows(caller_perms(), verb, @args))
++  return E_PERM;
++endif
++args[1] = tostr(this)+(args[1] ? "/"+args[1] | "");
++if (verb == "write")
++  result = filewrite(@args);
++elseif (verb == "append")
++  result = fileappend(@args);
++elseif (verb == "rename")
++  result = filerename(@args);
++elseif (verb == "chmod")
++  result = filechmod(@args);
++elseif (verb == "mkdir")
++  result = filemkdir(args[2]);
++elseif (verb == "rmdir")
++  result = filermdir(args[2]);
++else
++  result = E_VERBNF;
++endif
++return result;
++.
++
++@verb $file_handler:"read length size exists list grep extract" this none this rx
++@program $file_handler:read
++"WIZARDLY";
++if (!this:allows(caller_perms(), verb, @args))
++  return E_PERM;
++endif
++args[1] = tostr(this)+(args[1] ? "/"+args[1] | "");
++if (verb == "read")
++  return fileread(@args);
++elseif (verb == "length")
++  return filelength(@args);
++elseif (verb == "size")
++  return filesize(@args);
++elseif (verb == "exists")
++  return fileexists(@args);
++elseif (verb == "list")
++  return filelist(@args);
++elseif (verb == "grep")
++  return filegrep(@args);
++elseif (verb == "extract")
++  return fileextract(@args);
++else
++  return E_VERBNF;
++endif
++.
++
++@verb $file_handler:"delete" this none this rx
++@program $file_handler:delete
++"WIZARDLY";
++l = length(args);
++if (!l)
++  return E_ARGS;
++elseif (!this:allows(caller_perms(), verb, @args))
++  return E_PERM;
++endif
++args[1] = tostr(this)+(args[1] ? "/"+args[1] | "");
++return filedelete(@args);
++.
++
++@verb $file_handler:"version error" this none this rx
++@program $file_handler:delete
++"WIZARDLY";
++if (verb == "version")
++  return fileversion();
++elseif (verb == "error")
++  return fileerror();
++endif
++.
++
++"***finished***
++
++
++To protect all the FUP primitives in the database, do the following:
++1) If you don't have a $server_options object in your MOO:
++   a) @create $generic_utils named Server Options
++      [If you don't have a $generic_utils, substitute with $root_class]
++   b) @prop #0.server_options <the object number of the newly created object>
++2) Paste the following lines:
++
++@prop $server_options."protect_fileappend" 1 rc
++@prop $server_options."protect_filechmod" 1 rc
++@prop $server_options."protect_filedelete" 1 rc
++@prop $server_options."protect_fileerror" 1 rc
++@prop $server_options."protect_fileexists" 1 rc
++@prop $server_options."protect_fileextract" 1 rc
++@prop $server_options."protect_filegrep" 1 rc
++@prop $server_options."protect_fileinfo" 1 rc
++@prop $server_options."protect_filelength" 1 rc
++@prop $server_options."protect_filelist" 1 rc
++@prop $server_options."protect_filemkdir" 1 rc
++@prop $server_options."protect_fileread" 1 rc
++@prop $server_options."protect_filerename" 1 rc
++@prop $server_options."protect_filermdir" 1 rc
++@prop $server_options."protect_filesize" 1 rc
++@prop $server_options."protect_filewrite" 1 rc
++
++If you see any need to protect fileversion(), go ahead... :)
+diff --git a/server/ext-FUP-1.8/ext-FUP_options.h b/server/ext-FUP-1.8/ext-FUP_options.h
+new file mode 100644
+index 0000000..0011ad8
+--- /dev/null
++++ b/server/ext-FUP-1.8/ext-FUP_options.h
+@@ -0,0 +1,35 @@
++
++
++/*************************************************************************
++By default, the filechmod() and filerun() builtins are disabled. To enable 
++any of them, uncomment the lines:
++*/
++     /* #define INCLUDE_FILERUN */
++     /* #define INCLUDE_FILECHMOD */
++
++
++/*******************************************************************
++You can change the name of the base directory for the external file
++hierarchy, which is 'hard-coded' into the server upon compilation.
++To change it from its default ('files'), edit the line:
++*/
++     #define EXTERN_FILES_DIR   "files/"
++
++
++/***************************************************************************
++The default name for the directory that holds the executables is defined in:
++*/
++     #define EXTERN_BIN_DIR     "bin/"
++
++
++/******************************************************************************
++You can also make this base directory either read-only or read-and-write.
++It is read-only by default. To make it writable from the MOO, comment the line:
++*/
++     #define EXTERN_FILES_DIR_READ_ONLY
++
++
++/**********************************************************
++The default mode for new directories can be configured too:
++*/
++     #define CREATE_NEW_DIR_MODE		0755
+diff --git a/server/ext-FUP-1.8/extensions.c b/server/ext-FUP-1.8/extensions.c
+new file mode 100644
+index 0000000..e6a802f
+--- /dev/null
++++ b/server/ext-FUP-1.8/extensions.c
+@@ -0,0 +1,225 @@
++
++/******************************************************************************
++  Copyright (c) 1995, 1996 Xerox Corporation.  All rights reserved.
++  Portions of this code were written by Stephen White, aka ghond.
++  Use and copying of this software and preparation of derivative works based
++  upon this software are permitted.  Any distribution of this software or
++  derivative works must comply with all applicable United States export
++  control laws.  This software is made available AS IS, and Xerox Corporation
++  makes no warranty about the software, its performance or its conformity to
++  any specification.  Any person obtaining a copy of this software is requested
++  to send their name and post office or electronic mail address to:
++    Pavel Curtis
++    Xerox PARC
++    3333 Coyote Hill Rd.
++    Palo Alto, CA 94304
++    Pavel@Xerox.Com
++ *****************************************************************************/
++
++/* Extensions to the MOO server
++
++ * This module contains some examples of how to extend the MOO server using
++ * some of the interfaces exported by various other modules.  The examples are
++ * all commented out, since they're really not all that useful in general; they
++ * were written primarily to test out the interfaces they use.
++ *
++ * The uncommented parts of this module provide a skeleton for any module that
++ * implements new MOO built-in functions.  Feel free to replace the
++ * commented-out bits with your own extensions; in future releases, you can
++ * just replace the distributed version of this file (which will never contain
++ * any actually useful code) with your own edited version as a simple way to
++ * link in your extensions.
++ */
++
++#define EXAMPLE 0
++
++#include "bf_register.h"
++#include "functions.h"
++#include "db_tune.h"
++
++#include "ext-FUP.c"
++#if EXAMPLE
++
++#include "my-unistd.h"
++
++#include "exceptions.h"
++#include "log.h"
++#include "net_multi.h"
++#include "storage.h"
++#include "tasks.h"
++
++typedef struct stdin_waiter {
++    struct stdin_waiter *next;
++    vm the_vm;
++} stdin_waiter;
++
++static stdin_waiter *waiters = 0;
++
++static task_enum_action
++stdin_enumerator(task_closure closure, void *data)
++{
++    stdin_waiter **ww;
++
++    for (ww = &waiters; *ww; ww = &((*ww)->next)) {
++        stdin_waiter *w = *ww;
++        const char *status = (w->the_vm->task_id & 1
++                              ? "stdin-waiting"
++                              : "stdin-weighting");
++        task_enum_action tea = (*closure) (w->the_vm, status, data);
++
++        if (tea == TEA_KILL) {
++            *ww = w->next;
++            myfree(w, M_TASK);
++            if (!waiters)
++                network_unregister_fd(0);
++        }
++        if (tea != TEA_CONTINUE)
++            return tea;
++    }
++
++    return TEA_CONTINUE;
++}
++
++static void
++stdin_readable(int fd, void *data)
++{
++    char buffer[1000];
++    int n;
++    Var v;
++    stdin_waiter *w;
++
++    if (data != &waiters)
++        panic("STDIN_READABLE: Bad data!");
++
++    if (!waiters) {
++        errlog("STDIN_READABLE: Nobody cares!\n");
++        return;
++    }
++    n = read(0, buffer, sizeof(buffer));
++    buffer[n] = '\0';
++    while (n)
++        if (buffer[--n] == '\n')
++            buffer[n] = 'X';
++
++    if (buffer[0] == 'a') {
++        v.type = TYPE_ERR;
++        v.v.err = E_NACC;
++    } else {
++        v.type = TYPE_STR;
++        v.v.str = str_dup(buffer);
++    }
++
++    resume_task(waiters->the_vm, v);
++    w = waiters->next;
++    myfree(waiters, M_TASK);
++    waiters = w;
++    if (!waiters)
++        network_unregister_fd(0);
++}
++
++static enum error
++stdin_suspender(vm the_vm, void *data)
++{
++    stdin_waiter *w = data;
++
++    if (!waiters)
++        network_register_fd(0, stdin_readable, 0, &waiters);
++
++    w->the_vm = the_vm;
++    w->next = waiters;
++    waiters = w;
++
++    return E_NONE;
++}
++
++static package
++bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
++
++    return make_suspend_pack(stdin_suspender, w);
++}
++#endif                          /* EXAMPLE */
++
++#define STUPID_VERB_CACHE 1
++#ifdef STUPID_VERB_CACHE
++#include "utils.h"
++
++static package
++bf_verb_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    Var r;
++
++    free_var(arglist);
++
++    if (!is_wizard(progr)) {
++        return make_error_pack(E_PERM);
++    }
++    r = db_verb_cache_stats();
++
++    return make_var_pack(r);
++}
++
++static package
++bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    free_var(arglist);
++
++    if (!is_wizard(progr)) {
++        return make_error_pack(E_PERM);
++    }
++    db_log_cache_stats();
++
++    return no_var_pack();
++}
++#endif
++
++
++void
++register_extensions()
++{
++#if EXAMPLE
++    register_task_queue(stdin_enumerator);
++    register_function("read_stdin", 0, 0, bf_read_stdin);
++#endif
++oklog("          LOADING: extension FUP ...\n");
++  register_files();
++#ifdef STUPID_VERB_CACHE
++    register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
++    register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
++#endif
++}
++
++char rcsid_extensions[] = "$Id: extensions.c,v 1.3 1997/07/07 03:24:54 nop Exp
++$";
++
++/* $Log: extensions.c,v $
++ * Revision 1.3  1997/07/07 03:24:54  nop
++ * Merge UNSAFE_OPTS (r5) after extensive testing.
++ *
++ * Revision 1.2.2.3  1997/05/29 11:56:22  nop
++ * Added Jason Maltzen's builtin to return a list version of cache stats.
++ *
++ * Revision 1.2.2.2  1997/03/20 18:08:29  bjj
++ * add #include "utils.h" to get new inline free_var
++ *
++ * Revision 1.2.2.1  1997/03/20 07:26:04  nop
++ * First pass at the new verb cache.  Some ugly code inside.
++ *
++ * Revision 1.2  1997/03/03 04:18:41  nop
++ * GNU Indent normalization
++ *
++ * Revision 1.1.1.1  1997/03/03 03:45:00  nop
++ * LambdaMOO 1.8.0p5
++ *
++ * Revision 2.1  1996/02/08  07:03:47  pavel
++ * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
++ * Release 1.8.0beta1.
++ *
++ * Revision 2.0  1995/11/30  04:26:34  pavel
++ * New baseline version, corresponding to release 1.8.0alpha1.
++ *
++ * Revision 1.1  1995/11/30  04:26:21  pavel
++ * Initial revision
++ */
++
+diff --git a/server/ext-FUP-1.8/extensions.c.sample b/server/ext-FUP-1.8/extensions.c.sample
+new file mode 100644
+index 0000000..5216200
+--- /dev/null
++++ b/server/ext-FUP-1.8/extensions.c.sample
+@@ -0,0 +1,34 @@
++/*
++
++Here is a minimal extensions.c file that will load FUP
++
++*/
++
++#include "bf_register.h"
++#include "functions.h"
++#include "log.h"
++#include "storage.h"
++#include "structures.h"
++#include "utils.h"
++
++
++#include "ext-FUP.c"
++/* FUP extension */
++
++/* add other extensions here */
++
++void
++register_extensions()
++{
++  oklog("          LOADING: extensions ...\n");
++
++  register_files();
++  /* load FUP */
++
++  /* register other extensions here */
++
++  oklog("          LOADING: extensions ... finished\n");
++
++}
++
++/* all done */
+-- 
+1.7.9.5
+

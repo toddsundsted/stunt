@@ -1,0 +1,234 @@
+From 5b7810a34b7f54fd87f08b21cd0acead351ea7ba Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 8 Jun 2009 03:59:46 +0000
+Subject: [PATCH 013/223] There were a few cases of __new and new, which
+ should be _new. Also template became _template, and
+ some casts, mostly for var_type but also one for
+ (error).
+
+---
+ server/list.c |   54 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
+
+diff --git a/server/list.c b/server/list.c
+index a8322cd..d322e37 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -44,7 +44,7 @@ new_list(int size)
+ 	static Var emptylist;
+ 
+ 	if (emptylist.v.list == 0) {
+-	    emptylist.type = TYPE_LIST;
++	    emptylist.type = (var_type)TYPE_LIST;
+ 	    emptylist.v.list = (Var *) mymalloc(1 * sizeof(Var), M_LIST);
+ 	    emptylist.v.list[0].type = TYPE_INT;
+ 	    emptylist.v.list[0].v.num = 0;
+@@ -53,8 +53,8 @@ new_list(int size)
+ 	addref(emptylist.v.list);
+ 	return emptylist;
+     }
+-    _new.type = TYPE_LIST;
+-    new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
++    _new.type = (var_type)TYPE_LIST;
++    _new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
+     _new.v.list[0].type = TYPE_INT;
+     _new.v.list[0].v.num = size;
+     return _new;
+@@ -118,7 +118,7 @@ doinsert(Var list, Var value, int pos)
+     }
+     _new = new_list(size);
+     for (i = 1; i < pos; i++)
+-	__new.v.list[i] = var_ref(list.v.list[i]);
++	_new.v.list[i] = var_ref(list.v.list[i]);
+     _new.v.list[pos] = value;
+     for (i = pos; i <= list.v.list[0].v.num; i++)
+ 	_new.v.list[i + 1] = var_ref(list.v.list[i]);
+@@ -150,7 +150,7 @@ listdelete(Var list, int pos)
+ 
+     _new = new_list(list.v.list[0].v.num - 1);
+     for (i = 1; i < pos; i++) {
+-	__new.v.list[i] = var_ref(list.v.list[i]);
++	_new.v.list[i] = var_ref(list.v.list[i]);
+     }
+     for (i = pos + 1; i <= list.v.list[0].v.num; i++)
+ 	_new.v.list[i - 1] = var_ref(list.v.list[i]);
+@@ -281,7 +281,7 @@ print_to_stream(Var v, Stream * s)
+ 	stream_printf(s, "#%d", v.v.obj);
+ 	break;
+     case TYPE_ERR:
+-	stream_add_string(s, error_name(v.v.num));
++      stream_add_string(s, error_name((error)v.v.num));
+ 	break;
+     case TYPE_FLOAT:
+ 	stream_printf(s, "%g", *v.v.fnum);
+@@ -353,7 +353,7 @@ strrangeset(Var base, int from, int to, Var value)
+     Var ans;
+     char *s;
+ 
+-    ans.type = TYPE_STR;
++    ans.type = (var_type)TYPE_STR;
+     s = (char *) mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+ 
+     for (index = 0; index < lenleft; index++)
+@@ -374,12 +374,12 @@ substr(Var str, int lower, int upper)
+ {
+     Var r;
+ 
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     if (lower > upper)
+ 	r.v.str = str_dup("");
+     else {
+ 	int loop, index = 0;
+-	char *s = mymalloc(upper - lower + 2, M_STRING);
++	char *s = (char *) mymalloc(upper - lower + 2, M_STRING);
+ 
+ 	for (loop = lower - 1; loop < upper; loop++)
+ 	    s[index++] = str.v.str[loop];
+@@ -396,7 +396,7 @@ strget(Var str, Var i)
+     Var r;
+     char *s;
+ 
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     s = str_dup(" ");
+     s[0] = str.v.str[i.v.num - 1];
+     r.v.str = s;
+@@ -543,7 +543,7 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
+ 	free_var(arglist);
+ 	return make_error_pack(E_INVARG);
+     } else {
+-	r.type = TYPE_STR;
++	r.type = (var_type)TYPE_STR;
+ 	r.v.str = str_dup(strsub(arglist.v.list[1].v.str,
+ 				 arglist.v.list[2].v.str,
+ 				 arglist.v.list[3].v.str, case_matters));
+@@ -576,7 +576,7 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
+ 	 * for all crypt versions */
+ 	saltp = arglist.v.list[2].v.str;
+     }
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = str_dup(crypt(arglist.v.list[1].v.str, saltp));
+ #else				/* !HAVE_CRYPT */
+     r.type = TYPE_STR;
+@@ -641,7 +641,7 @@ static package
+ bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+     Var r;
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = str_dup(list2str(arglist.v.list));
+     free_var(arglist);
+     return make_var_pack(r);
+@@ -652,7 +652,7 @@ bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+     Var r;
+ 
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = str_dup(value_to_literal(arglist.v.list[1]));
+     free_var(arglist);
+     return make_var_pack(r);
+@@ -750,7 +750,7 @@ do_match(Var arglist, int reverse)
+ 	    ans = new_list(4);
+ 	    ans.v.list[1].type = TYPE_INT;
+ 	    ans.v.list[2].type = TYPE_INT;
+-	    ans.v.list[4].type = TYPE_STR;
++	    ans.v.list[4].type = (var_type)TYPE_STR;
+ 	    ans.v.list[1].v.num = regs[0].start;
+ 	    ans.v.list[2].v.num = regs[0].end;
+ 	    ans.v.list[3] = new_list(9);
+@@ -848,14 +848,14 @@ static package
+ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+     int template_length, subject_length;
+-    const char *template, *subject;
++    const char *_template, *subject;
+     Var subs, ans;
+     int invarg = 0;
+     Stream *s;
+     char c = '\0';
+ 
+-    template = arglist.v.list[1].v.str;
+-    template_length = memo_strlen(template);
++    _template = arglist.v.list[1].v.str;
++    template_length = memo_strlen(_template);
+     subs = arglist.v.list[2];
+ 
+     if (check_subs_list(subs)) {
+@@ -866,14 +866,14 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
+     subject_length = memo_strlen(subject);
+ 
+     s = new_stream(template_length);
+-    ans.type = TYPE_STR;
+-    while ((c = *(template++)) != '\0') {
++    ans.type = (var_type)TYPE_STR;
++    while ((c = *(_template++)) != '\0') {
+ 	switch (c) {
+ 	case '%':
+ 	    {
+ 		Var pair;
+ 		int start = 0, end = 0;
+-		c = *(template++);
++		c = *(_template++);
+ 		if (c == '%')
+ 		    stream_add_char(s, '%');
+ 		else {
+@@ -952,7 +952,7 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
+     free_var(arglist);
+     if (!bytes)
+ 	return make_error_pack(E_INVARG);
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = hash_bytes(bytes, length);
+     return make_var_pack(r);
+ }
+@@ -963,7 +963,7 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
+     Var r;
+     const char *str = arglist.v.list[1].v.str;
+ 
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = hash_bytes(str, memo_strlen(str));
+     free_var(arglist);
+     return make_var_pack(r);
+@@ -975,7 +975,7 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
+     Var r;
+     const char *lit = value_to_literal(arglist.v.list[1]);
+ 
+-    r.type = TYPE_STR;
++    r.type = (var_type)TYPE_STR;
+     r.v.str = hash_bytes(lit, memo_strlen(lit));
+     free_var(arglist);
+     return make_var_pack(r);
+@@ -1030,7 +1030,7 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
+ 		in_string = 1;
+ 	    } else {
+ 		if (in_string) {
+-		    r.v.list[count].type = TYPE_STR;
++		    r.v.list[count].type = (var_type)TYPE_STR;
+ 		    r.v.list[count].v.str = str_dup(reset_stream(s));
+ 		    count++;
+ 		}
+@@ -1042,7 +1042,7 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
+ 	}
+ 
+ 	if (in_string) {
+-	    r.v.list[count].type = TYPE_STR;
++	    r.v.list[count].type = (var_type)TYPE_STR;
+ 	    r.v.list[count].v.str = str_dup(reset_stream(s));
+ 	}
+     }
+@@ -1092,7 +1092,7 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
+     length = stream_length(s);
+     bytes = reset_stream(s);
+     if (ok) {
+-	r.type = TYPE_STR;
++	r.type = (var_type)TYPE_STR;
+ 	r.v.str = str_dup(raw_bytes_to_binary(bytes, length));
+ 	return make_var_pack(r);
+     } else
+-- 
+1.7.9.5
+

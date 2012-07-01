@@ -1,0 +1,776 @@
+From d46c2a6a4e1762a586ca2ec4d978df2ce80e3b83 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 16 Dec 2010 21:07:48 +0000
+Subject: [PATCH 083/223] Adding a set of moo objects I've written over the
+ years, mostly toys, which I want to use for
+ testing.
+
+---
+ server/objects/README           |   11 +++
+ server/objects/algoredoll.moo   |   20 +++++
+ server/objects/clippy.moo       |  116 ++++++++++++++++++++++++++++
+ server/objects/engrish.moo      |   29 +++++++
+ server/objects/governor.moo     |   26 +++++++
+ server/objects/gwbushdoll.moo   |   47 ++++++++++++
+ server/objects/knights.moo      |   19 +++++
+ server/objects/lander.moo       |  126 +++++++++++++++++++++++++++++++
+ server/objects/michaelscott.moo |   19 +++++
+ server/objects/parrot.moo       |   33 ++++++++
+ server/objects/puppet.moo       |  159 +++++++++++++++++++++++++++++++++++++++
+ server/objects/timer.moo        |   61 +++++++++++++++
+ 12 files changed, 666 insertions(+)
+ create mode 100644 server/objects/README
+ create mode 100644 server/objects/algoredoll.moo
+ create mode 100644 server/objects/clippy.moo
+ create mode 100644 server/objects/engrish.moo
+ create mode 100644 server/objects/governor.moo
+ create mode 100644 server/objects/gwbushdoll.moo
+ create mode 100644 server/objects/knights.moo
+ create mode 100644 server/objects/lander.moo
+ create mode 100644 server/objects/michaelscott.moo
+ create mode 100644 server/objects/parrot.moo
+ create mode 100644 server/objects/puppet.moo
+ create mode 100644 server/objects/timer.moo
+
+diff --git a/server/objects/README b/server/objects/README
+new file mode 100644
+index 0000000..dfdb2b0
+--- /dev/null
++++ b/server/objects/README
+@@ -0,0 +1,11 @@
++These are a handful of objects I've created over the years; toys, mostly.
++
++To load them via tf, do:
++
++/quote 'objects/filename.moo
++
++Many (all?) of them contain ANSI color codes in their titles (names)
++so you'll see gobbledeegook for their names. Until I get around to
++adding ANSI color support to one or more of the databases.
++
++~swain dec 2010
+diff --git a/server/objects/algoredoll.moo b/server/objects/algoredoll.moo
+new file mode 100644
+index 0000000..17e29ec
+--- /dev/null
++++ b/server/objects/algoredoll.moo
+@@ -0,0 +1,20 @@
++@recycle alg
++
++@create $thing named Al Gore action figure, algore, alg, gore
++
++@describe alg as "A foot tall action figure of Al Gore with a dour look on its face and a pull string hanging out its back."
++
++@verb alg:"p*ull" this
++
++@program alg:pull
++player:tell("You ", verb, " the string on the back of the ", this:title());
++player:tell(this:title(), " haltingly says, \"You... are... hearing... me... talk.\"");
++player.location:announce(player:title(), " ", verb, "s the string on the back of the ", this:title());
++player.location:announce(this:title(), " haltingly says, \"You... are... hearing... me... talk.\"");
++.
++
++
++drop alg
++
++
++;gore.ansi_color="cyan"
+diff --git a/server/objects/clippy.moo b/server/objects/clippy.moo
+new file mode 100644
+index 0000000..ee03787
+--- /dev/null
++++ b/server/objects/clippy.moo
+@@ -0,0 +1,116 @@
++@recycle clippy
++
++@create $thing named Clippy
++
++@describe Clippy as "A stupid fucking paperclip."
++
++@property clippy.title "Clippy"
++@property clippy.color "YELLOW""
++
++@verb clippy:"title" this none this
++
++@program clippy:title
++return "^@" + this.color + "^@" + this.title + "^@reset^@";
++.
++
++@verb clippy:"sez" this with any
++@program clippy:sez
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (!valid(who = $string_utils:match_player(name)))
++   player:tell(name, "? Who's that?");
++   player:tell("Usage: sez clippy with <username> <message>");
++else
++   player:tell(this:title(), " [to ", who:title(), "]: ", message);
++   player.location:announce(this:title(), " [to ", who:title(), "]: ", message);
++endif
++.  
++
++
++@verb clippy:"doto" this with any
++@program clippy:doto
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (!valid(who = $string_utils:match_player(name)))
++   player:tell(name, "? Who's that?");
++   player:tell("Usage: doto clippy with <username> <message>");
++endif
++
++if (newmessage = strsub(message, "%n", who:title()))
++   player:tell(this:title(), " ", newmessage);
++   player.location:announce(this:title(), " ", newmessage);
++else
++   player:tell("You need a %n in the message for me to interpolate");
++   player:tell("the player's title and name.");
++endif
++.  
++
++@verb clippy:"dowith" this with any
++@program clippy:dowith
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (!valid(who = $string_utils:match_player(name)))
++   player:tell(name, "? Who's that?");
++   player:tell("Usage: dowith clippy with <username> <message>");
++   player:tell("where <message> contains a %n to place the clippy's name");
++endif
++
++if (newmessage = strsub(message, "%n", this:title()))
++   player:tell(who:title(), " ", newmessage);
++   player.location:announce(who:title(), " ", newmessage);
++else
++   player:tell("You need a %n in the message for me to interpolate");
++   player:tell("the clippy's title and name.");
++endif
++.  
++
++
++
++@verb clippy:"do" this with any
++@program clippy:do
++player:tell(this:title(), " ", iobjstr);
++player.location:announce(this:title(), " ", iobjstr);
++.
++
++@verb clippy:"speak" this with any
++@program clippy:speak
++player:tell(this:title(), " says, \"", iobjstr, "\"");
++player.location:announce(this:title(), " says, \"", iobjstr, "\"");
++.
++
++@verb clippy:"th*ought" this with any
++@program clippy:thought
++player:tell(this:title(), " . o O ( ", iobjstr, " )");
++player.location:announce(this:title(), " . o O ( ", iobjstr, " )");
++.
++
++
++@property clippy.help_msg "To see the available commands do: summary clippy"
++
++@verb clippy:"summary" any
++@program clippy:summary
++player:tell("to make a thought bubble, do: th*ought clippy with <message>");
++player:tell("to make the clippy talk to another player do:");
++player:tell("    sez clippy with <username> <message>");
++player:tell("to make the clippy talk out loud, do:");
++player:tell("    speak clippy with <message>");
++player:tell("to make the clippy perform an action do:");
++player:tell("    do clippy with <message>");
++player:tell("to perform an action and insert the player's title:");
++player:tell("    doto clippy with <username> <message>");
++player:tell("    (but you have to insert a %n somewhere in the message)");
++player:tell("    for example, 'doto clippy with w annoys %n'");
++player:tell("    will yield:");
++player:tell("    'clippy annoys Wainstead' (compare to 'dowith'");
++player:tell("to perform an action on the clippy:");
++player:tell("    dowith clippy with <username> <message>");
++player:tell("    for example, 'dowith clippy with w annoys %n'");
++player:tell("    will yield:");
++player:tell("    'Wainstead annoys clippy' (compare to 'doto'");
++
++.
++
++drop clippy
+diff --git a/server/objects/engrish.moo b/server/objects/engrish.moo
+new file mode 100644
+index 0000000..21060b3
+--- /dev/null
++++ b/server/objects/engrish.moo
+@@ -0,0 +1,29 @@
++
++@create $thing named engrish
++
++@describe Engrish as "Engrish. How you do?"
++
++@property engrish.title "Engrish mangulator"
++@property engrish.color "magenta""
++
++@verb engrish:"title" this none this
++
++@program engrish:title
++return "^@" + this.color + "^@" + this.title + "^@reset^@";
++.
++
++@verb engrish:"do" this with any
++@program engrish:do
++player:tell(this:title(), " ", iobjstr);
++.
++
++
++@verb engrish:"speak" this with any
++
++@program engrish:speak
++"The original purpose of this was to feed English to a translation site, like Google Translate, get back another language, and then send that language back and get it translated back into English. That way you wound up with a completely mangled sentence (i.e. 'engrish.').";
++japanese = #736:translate("en|ja", iobjstr);
++english = #736:translate("ja|en", japanese);
++player:tell(this:title(), " says, \"", japanese, " (", english, ")", "\"");
++.
++
+diff --git a/server/objects/governor.moo b/server/objects/governor.moo
+new file mode 100644
+index 0000000..c8c552b
+--- /dev/null
++++ b/server/objects/governor.moo
+@@ -0,0 +1,26 @@
++@recycle gov
++
++@create $thing named Governor Schwarzenegger Doll, gov, arnold, ahnold,schw
++
++@describe gov as "Ahnold."
++
++@verb gov:"p*ull" this
++
++@program gov:pull
++player:tell("You ", verb, " the string on the back of the ", this:title());
++player:tell(this:title(), " stiffly says, \"Vote for me if you want to live.\"");
++player.location:announce(player:title(), " ", verb, "s the string on the back of the ", this:title());
++player.location:announce(this:title(), " stiffly says, \"Vote for me if you want to live.\"");
++.
++
++@verb gov:"speak" this with any
++@program gov:speak
++player:tell(this:title(), " says, \"", iobjstr, "\"");
++player.location:announce(this:title(), " says, \"", iobjstr, "\"");
++.
++
++
++drop gov
++
++;player:my_match_object("gov").ansi_color="hiwhite"
++
+diff --git a/server/objects/gwbushdoll.moo b/server/objects/gwbushdoll.moo
+new file mode 100644
+index 0000000..da53a00
+--- /dev/null
++++ b/server/objects/gwbushdoll.moo
+@@ -0,0 +1,47 @@
++@recycle gwb
++
++@create $thing named George W. Bush action figure, gwb, georgew, bush, dubya 
++
++@describe gwb as "A foot tall action figure of George W. Bush with a smirk on its face and a pull string hanging out its back."
++
++@prop bush.phrases {"Make the pie higher! Make the pie higher!", "Is our children learning?", "I think we all agree, the past is over.", "Will the highways of the Internet become more few?", "I am the pitbull on the pantleg of opportunity.", "I know that the human being and the fish can coexist.", "Put food on your family!", "We cannot let terriers and rogue nations hold this nation hostile or hold our allies hostile.", "Natural gas is hemispheric. I like to call it hemispheric in nature because it is a product that we can find in our neighborhoods.", "The great thing about America is everybody should vote.", "Dick Cheney and I do not want this nation to be in a recession. We want anybody who can find work to be able to find work.", "The legislature's job is to write law. It's the executive branch's job to interpret the law.", "They misunderestimated me.", "They want the federal government controlling Social Security like it's some kind of federal program.", "States should have the right to enact reasonable laws and restrictions particularly to end the inhumane practice of ending a life that otherwise could live.", "The fundamental question is, 'Will I be a successful president when it comes to foreign policy?' I will be, but until I'm the president, it's going to be hard for me to verify that I think I'll be more effective.", "The only things that I can tell you is that every case I have reviewed I have been comfortable with the innocence or guilt of the person that I've looked at. I do not believe we've put a guilty... I mean innocent person to death in the state of Texas.", "I'm gonna talk about the ideal world, Chris. I've read- I understand reality. If you're asking me as the president, would I understand reality, I do.", "Actually, I...this may sound a little West Texan to you, but I like it. When I'm talking about...when I'm talking about myself, and when he's talking about myself, all of us are talking about me.", "It's clearly a budget. It's got a lot of numbers in it.", "I was raised in the West. The west of Texas. It's pretty close to California. In more ways than Washington, D.C., is close to California.", "I understand small business growth. I was one.", "The most important job is not to be governor, or first lady in my case.", "This is Preservation Month. I appreciate preservation. It's what you do when you run for president. You gotta preserve.", "When I was coming up, it was a dangerous world, and you knew exactly who they were. It was us vs. them, and it was clear who them was. Today, we are not so sure who the they are, but we know they're there.", "The administration I'll bring is a group of men and women who are focused on what's best for America, honest men and women, decent men and women, women who will see service to our country as a great privilege and who will not stain the house. ", "This is still a dangerous world. It's a world of madmen and uncertainty and potential mental losses.", "If a person doesn't have the capacity that we all want that person to have, I suspect hope is in the far distant future, if at all. ", "But I also made it clear to (Vladimir Putin) that it's important to think beyond the old days of when we had the concept that if we blew each other up, the world would be safe. ", "First, we would not accept a treaty that would not have been ratified, nor a treaty that I thought made sense for the country. ", "I suspect that had my dad not been president, he'd be asking the same questions: How'd your meeting go with so-and-so? How did you feel when you stood up in front of the people for the State of the Union Address-state of the budget address, whatever you call it.", "We're concerned about AIDS inside our White House - make no mistake about it. ", "There's no such thing as legacies. At least, there is a legacy, but I'll never see it. ", "I appreciate that question because I, in the state of Texas, had heard a lot of discussion about a faith-based initiative eroding the important bridge between church and state. ", "Redefining the role of the United States from enablers to keep the peace to enablers to keep the peace from peacekeepers is going to be an assignment. ", "I know there is a lot of ambition in Washington, obviously. But I hope the ambitious realize that they are more likely to succeed with success as opposed to failure. ", "The California crunch really is the result of not enough power-generating plants and then not enough power to power the power of generating plants.", "If this were a dictatorship, it would be a heck of a lot easier - so long as I'm the dictator. ", "If you don't stand for anything, you don't stand for anything! ", "One of the great things about books is sometimes there are some fantastic pictures.", "It is clear our nation is reliant upon big foreign oil. More and more of our imports come from overseas.", "Well, I think if you say you're going to do something and don't do it, that's trustworthiness.", "We cannot let terrorists and rogue nations hold this nation hostile or hold our allies hostile.", "We hold dear what our Declaration of Independence says, that all have got uninalienable rights, endowed by a Creator.", "It would be a mistake for the United States Senate to allow any kind of human cloning to come out of that chamber.", "This foreign policy stuff is a little frustrating.", "And so, in my State of the - my State of the Union - or state - my speech to the nation, whatever you want to call it, speech to the nation - I asked Americans to give 4,000 years - 4,000 hours over the next - the rest of your life - of service to America. That's what I asked - 4,000 hours.", "Sometimes when I sleep at night I think of (Dr. Seuss's) 'Hop on Pop.'", "I understand that the unrest in the Middle East creates unrest throughout the region.", "I couldn't imagine somebody like Osama bin Laden understanding the joy of Hanukkah.", "I am here to make an announcement that this Thursday, ticket counters and airplanes will fly out of Ronald Reagan Airport.", "We are fully committed to working with both sides to bring the level of terror down to an acceptable level for both.", "One of the interesting initiatives we've taken in Washington, D.C., is we've got these vampire-busting devices. A vampire is a - a cell deal you can plug in the wall to charge your cell phone.", "I want to thank the astronauts who are with us, the courageous spacial entrepreneurs who set such a wonderful example for the young of our country."}
++
++@verb gwb:"p*ull" this
++
++@program gwb:pull
++phrase = this.phrases[random($)];
++player:tell("You ", verb, " the string on the back of the ", this:title());
++player:tell(this:title(), " proclaims, \"", phrase, "\"");
++player.location:announce(player:title(), " ", verb, "s the string on the back of the ", this:title());
++player.location:announce(this:title(), " proclaims, \"", phrase, "\"");
++.
++
++@verb bush:title tnt
++@program bush:title
++return "^@RED^@George ^@WHITE^@W.^@BLUE^@ Bush^@reset^@ doll";
++.
++
++
++@verb bush:"r*andom" this with any
++
++@program gwb:random
++for phrase in (this.phrases)
++    if ( index(phrase, iobjstr, 1) )
++        player.location:announce_all(player:title(), " pulls the string on the back of the ", this:title());
++        player.location:announce_all(this:title(), " proclaims, \"", phrase, "\"");
++        break;
++    endif
++endfor
++.
++
++@verb bush:"listall" this
++
++@program gwb:listall
++for phrase in (this.phrases)
++    player:tell(phrase);
++endfor
++.
++
++
++drop gwb
++
+diff --git a/server/objects/knights.moo b/server/objects/knights.moo
+new file mode 100644
+index 0000000..c815b96
+--- /dev/null
++++ b/server/objects/knights.moo
+@@ -0,0 +1,19 @@
++@recycle knights
++
++@create $thing named Huge Army Of Knights, knights
++
++@describe knights as "Off in the distance, a huge army of knights in armor, some on horses, most standing in a horizontal line, holding spears and shields and banners."
++
++@verb knights:"sh*out" this
++@program knights:shout
++message = "From afar, " + this:title() + " shout: ^@RED^@^@BACKWHITE^@GET ON WITH IT!^@reset^@";
++player:tell(message);
++player.location:announce(message);
++.
++
++@verb knights:title tnt
++@program knights:title
++return "^@HIWHITE^@a Huge Army of Knights^@reset^@";
++.
++
++drop knights
+\ No newline at end of file
+diff --git a/server/objects/lander.moo b/server/objects/lander.moo
+new file mode 100644
+index 0000000..8d4bfe5
+--- /dev/null
++++ b/server/objects/lander.moo
+@@ -0,0 +1,126 @@
++@recycle lander
++
++@create $thing named Mars Polar Lander, lander
++
++@describe lander as "You see a three-legged landing probe built by NASA, which set down here on December 3rd, 1999. It has two solar panels and a robotic arm for scooping up soil samples. A small dish antenna points at the sky." 
++
++@verb lander:"pe*t pa*t" this
++
++@program lander:pet
++player:tell("You ", verb, " the ", this:title());
++player:tell("The ", this:title(), " hums contently");
++player.location:announce($name(player), " ", verb, "s ", this:title());
++player.location:announce(this:title(), " hums contently");
++.
++
++@verb lander:"kn*ock ki*ck" this
++
++@program lander:knock
++if (this.state == "Safe Mode")
++   this.state = "Search Mode";
++   player:tell("You ", verb, " on the hull of NASA's ", this:title(), ".");
++   player:tell(this:title(), " ", this.searchmode_msg);
++   player:tell(this:title(), "'s antenna searches the sky for Earth.");
++   player.location:announce($name(player), " knocks on the hull of NASA's ", this:title(), ".");
++   player.location:announce(this:title(), " searches the sky for Earth.");
++   fork (this.searchtimer)
++      player:tell(this:title(), " cannot contact Earth.");
++      player:tell(this:title(), " ", this.safemode_msg);
++      player.location:announce(this:title(), " cannot contact Earth.");
++      player.location:announce(this:title(), " ", this.safemode_msg);
++      this.state = "Safe Mode";
++   endfork
++else
++   player:tell("You ", verb, " the hull of NASA's ", this:title(), ".");
++   player:tell(this:title(), " swivels its camera in your direction.");
++   player:tell(this:title(), " takes your picture.");
++   player.location:announce($name(player), " knocks on the hull of NASA's ", this:title(), ".");
++   player.location:announce(this:title(), " swivles its camera in ", $name(player), "'s direction.");
++   player.location:announce(this:title(), " takes a picture.");
++   this.photo_cache[$list_utils:assoc(player)] = this.photo_cache[$list_utils:assoc(player)] + 1;
++endif
++.
++
++@verb lander:state this
++@program lander:state
++player:tell("The ", this:title(), " is in ", this.state, ".");
++.
++
++@property lander.state "Safe Mode"
++@property lander.searchtimer 60
++@property lander.searchmode_msg ""
++@property lander.safemode_msg ""
++@property lander.photo_cache {}
++
++@searchmode lander is "enters Search Mode."
++@safemode lander is "enters Safe Mode and idles."
++
++@verb lander:"g*et t*ake" this
++@program lander:get
++player:tell(this:title(), " weighs about 615 kg. You cannot lift it.");
++.
++
++@verb lander:"th*ought" this with any
++@program lander:thought
++player:tell(this:title(), " . o O ( ", iobjstr, " )");
++player.location:announce(this:title(), " . o O ( ", iobjstr, " )");
++.
++
++@verb lander:"do" this with any
++@program lander:do
++player:tell(this:title(), " ", iobjstr);
++player.location:announce(this:title(), " ", iobjstr);
++.
++
++
++@verb lander:sayto this with any
++@program lander:sayto
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (!valid(who = $string_utils:match_player(name)))
++   player:tell(name, "? Who's that?");
++else
++   player:tell(this:title(), " [to ", who:title(), "]: ", message);
++   player.location:announce(this:title(), " [to ", who:title(), "]: ", message);
++endif
++.  
++
++
++@verb lander:ani*mate any any any
++@program lander:animate
++if (index(iobjstr, "%n"))
++   player:tell(strsub(iobjstr, "%n", this:title()));
++   player.location:announce_all_but({player}, strsub(iobjstr, "%n", this:title()));
++else
++   player:tell("You need a %n in the string for this to work.");
++endif
++.
++
++@verb lander:ping this none none
++@program lander:ping
++player:tell("You ping the ", this:title());
++player:tell(this:title(), " [to ", player:title(), "]: pong!");
++player.location:announce(player:title(), " [to ", this:title(), "]: ping");
++player.location:announce(this:title(), " [to ", player:title(), "]: pong!");
++.
++
++@verb lander:"sez" this with any
++@program lander:sez
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (valid(who = $string_utils:match_object(name, this.location)))
++   player:tell(this:title(), " [to ", who:title(), "]: ", message);
++   player.location:announce(this:title(), " [to ", who:title(), "]: ", message);
++else
++   player:tell(name, "? Who or what is that?");
++   player:tell("Usage: sez lander with <username or thing> <message>");
++endif
++.
++
++
++@property lander.help_msg "The Mars Polar Lander has several fun verbs to pick from. The Lander goes into Search Mode when you knock on its hull (if it's in Safe Mode); if you knock on the hull while it's in Search Mode it takes your picture. You can pet the Lander to make it happy. The 'state' verb will tell you its current mode, though in practice this hasn't been needed much. (I guess that makes it a debugging tool). You can give the lander thought bubbles with the 'thought' verb, i.e. th*ought lander with yup, I'm the Mars Polar Lander, ayup."
++
++drop lander
++
+diff --git a/server/objects/michaelscott.moo b/server/objects/michaelscott.moo
+new file mode 100644
+index 0000000..712d091
+--- /dev/null
++++ b/server/objects/michaelscott.moo
+@@ -0,0 +1,19 @@
++@recycle michael
++
++@create $thing named Michael Scott action figure, michael, mike
++
++@describe michael as "A foot tall action figure of Michael Scott wearing a woman's business suit and a pull string hanging out its back."
++
++@verb michael:"p*ull" this
++
++@program michael:pull
++"remove messages and use a msg variable."
++player:tell("You ", verb, " the string on the back of the ", this:title());
++player:tell(this:title(), " says, \"That's what she said!\"");
++player.location:announce(player:title(), " ", verb, "s the string on the back of the ", this:title());
++player.location:announce(this:title(), " says, \"That's what she said!\"");
++.
++
++
++drop michael
++
+diff --git a/server/objects/parrot.moo b/server/objects/parrot.moo
+new file mode 100644
+index 0000000..19e431d
+--- /dev/null
++++ b/server/objects/parrot.moo
+@@ -0,0 +1,33 @@
++@recycle parrot
++
++@create $thing named parrot
++@describe parrot as "His Manginess, the Parrot."
++
++@property parrot.title "Parrot"
++@property parrot.color "higreen""
++
++@verb parrot:"title" this none this
++
++@program parrot:title
++return "^@" + this.color + "^@" + this.title + "^@reset^@";
++.
++
++@verb parrot:"tell" this none this
++@program parrot:tell
++"The idea of the parrot was to watch for a particular player in the room to speak, then feed their sentences through a series of translations and post that to a channel. Note that stock LambdaCore doesn't have the channels feature, as LambdaMoo (the community itself) does.";
++try 
++        c = callers();
++        if((c[$][2] == "say") && (c[$][5] == #295)) 
++                fork (0)
++                        foreign = #736:translate("en_nl", argstr);
++                        english = #736:translate("nl_en", foreign);
++                        $com:send_to_chan("parrot", "\"" + english + "\"");
++
++                endfork
++        endif
++except e (ANY) return;
++endtry 
++.
++
++@chmod parrot:tell +x
++drop parrot
+diff --git a/server/objects/puppet.moo b/server/objects/puppet.moo
+new file mode 100644
+index 0000000..c5473b3
+--- /dev/null
++++ b/server/objects/puppet.moo
+@@ -0,0 +1,159 @@
++@recycle puppet
++
++@create $thing named Puppet
++
++@describe Puppet as "A generic thingie you can rename and animate. Try 'test puppet' to see what it's currently set to; try 'summary puppet' to see all options."
++
++@property puppet.title "puppet"
++@property puppet.color "RED"
++@property puppet.log {}
++
++@verb puppet:"title" this none this
++
++@program puppet:title
++return "^@" + this.color + "^@" + this.title + "^@reset^@";
++.
++
++@verb puppet:"retitle" this to any
++@program puppet:retitle
++this.title = iobjstr;
++this.aliases = {"puppet", @$string_utils:explode(iobjstr)};
++player:tell("now using: ",  this:title());
++.
++
++@verb puppet:"test" this
++@program puppet:test
++player:tell("Title is now set to: '", this:title(), "'");
++player:tell("Color is now set to: '", this.color, "'");
++.
++
++@verb puppet:"sez" this with any
++@program puppet:sez
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (valid(who = $string_utils:match_object(name, this.location)))
++   player:tell(this:title(), " [to ", who:title(), "]: ", message);
++   player.location:announce(this:title(), " [to ", who:title(), "]: ", message);
++else
++   player:tell(name, "? Who or what is that?");
++   player:tell("Usage: sez puppet with <username or thing> <message>");
++endif
++.
++
++
++@verb puppet:"doto" this with any
++@program puppet:doto
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (!valid(who = $string_utils:match_player(name)))
++   player:tell(name, "? Who's that?");
++   player:tell("Usage: doto puppet with <username> <message>");
++endif
++
++if (newmessage = strsub(message, "%n", who:title()))
++   player:tell(this:title(), " ", newmessage);
++   player.location:announce(this:title(), " ", newmessage);
++else
++   player:tell("You need a %n in the message for me to interpolate");
++   player:tell("the player's title and name.");
++endif
++.  
++
++@verb puppet:"dowith" this with any
++@program puppet:dowith
++firstspace = index(iobjstr, " ");
++name = iobjstr[1..(firstspace - 1)];
++message = iobjstr[(firstspace + 1)..$];
++if (!valid(who = $string_utils:match_player(name)))
++   player:tell(name, "? Who's that?");
++   player:tell("Usage: dowith puppet with <username> <message>");
++   player:tell("where <message> contains a %n to place the puppet's name");
++endif
++
++if (newmessage = strsub(message, "%n", this:title()))
++   player:tell(who:title(), " ", newmessage);
++   player.location:announce(who:title(), " ", newmessage);
++else
++   player:tell("You need a %n in the message for me to interpolate");
++   player:tell("the puppet's title and name.");
++endif
++.  
++
++
++
++@verb puppet:"do" this with any
++@program puppet:do
++player:tell(this:title(), " ", iobjstr);
++player.location:announce(this:title(), " ", iobjstr);
++.
++
++@verb puppet:"speak" this with any
++@program puppet:speak
++player:tell(this:title(), " says, \"", iobjstr, "\"");
++player.location:announce(this:title(), " says, \"", iobjstr, "\"");
++.
++
++@verb puppet:"th*ought" this with any
++@program puppet:thought
++player:tell(this:title(), " . o O ( ", iobjstr, " )");
++player.location:announce(this:title(), " . o O ( ", iobjstr, " )");
++.
++
++
++@verb puppet:"recolor" this with any
++@program puppet:recolor
++this.color = iobjstr;
++player:tell("Color is now: ", this.color);
++player:tell("result will be: '", this:title(), "'");
++.
++
++@verb puppet:"writelog" this any any
++@program puppet:writelog
++this.log = listappend(this.log, player.name + " " + argstr);
++.
++
++@verb puppet:"log" any
++@program puppet:log
++for entry in (this.log)
++    player:tell(entry);
++endfor
++.
++
++@verb puppet:"alii" any
++@program puppet:alii
++for alias in (this.aliases)
++     player:tell(alias);
++endfor
++.
++
++@property puppet.help_msg "To see the available commands do: summary puppet"
++
++@verb puppet:"summary" any
++@program puppet:summary
++player:tell("to rename the puppet do: retitle puppet to <whatever>");
++player:tell("to recolor the puppet do: recolor puppet with <ansi color>");
++player:tell("to test the puppet do: test puppet");
++player:tell("to make a thought bubble, do: th*ought puppet with <message>");
++player:tell("to make the puppet talk to another player do:");
++player:tell("    sez puppet with <username> <message>");
++player:tell("to make the puppet talk out loud, do:");
++player:tell("    speak puppet with <message>");
++player:tell("to make the puppet perform an action do:");
++player:tell("    do puppet with <message>");
++player:tell("to perform an action and insert the player's title:");
++player:tell("    doto puppet with <username> <message>");
++player:tell("    (but you have to insert a %n somewhere in the message)");
++player:tell("    for example, 'doto puppet with w kisses %n'");
++player:tell("    will yield:");
++player:tell("    'puppet kisses Wainstead' (compare to 'dowith'");
++player:tell("to perform an action on the puppet:");
++player:tell("    dowith puppet with <username> <message>");
++player:tell("    for example, 'dowith puppet with w kisses %n'");
++player:tell("    will yield:");
++player:tell("    'Wainstead kisses puppet' (compare to 'doto'");
++
++.
++
++drop puppet
+diff --git a/server/objects/timer.moo b/server/objects/timer.moo
+new file mode 100644
+index 0000000..cd543f5
+--- /dev/null
++++ b/server/objects/timer.moo
+@@ -0,0 +1,61 @@
++@create $thing named timer:timer
++@prop #9999."help_msg" {} rc
++;;#9999.("help_msg") = {"This is a simple timer. To use it, type 'set timer
++for <duration>'. Here are a few examples:", "", "set timer for 3 minutes", "",
++"set timer for 45 seconds", "", "set timer for an hour", "", "The timer will
++prompt you for an optional reminder message.", "", "You can time more than one
++thing at once. That is, you don't have to wait until the first time is up
++before setting the timer for another thing. Reminder messages are especially
++helpful when you are timing several things simultaneously.", ""}
++@prop #9999."obvious_verbs" {} rc
++;;#9999.("obvious_verbs") = {"", "set %<what> for <duration>", "", "give/hand
++%<what> to <anyone>", "", "get/take %<what>", "", "drop/throw %<what>", "",
++"help %<what>", ""}
++;;#9999.("key") = #430
++;;#9999.("aliases") = {"timer"}
++;;#9999.("description") = "A simple timer, like one you would find in the
++kitchen."
++;;#9999.("object_size") = {0, 0}
++;;#9999.("created_on") = 1002052438
++;;#9999.("ansi_color") = "HIWHITE"
++
++@verb #9999:"set" this for any rxd
++@program #9999:set
++"Usage: set <this> for <duration>";
++"Example: set timer for 1 hour";
++duration = $time_utils:parse_english_time_interval(iobjstr);
++if (typeof(duration) == NUM)
++  "We got a good value for duration.";
++  message = $command_utils:read("an optional reminder message");
++  if (!message)
++    be = (iobjstr[$] == "s") ? "are" | "is";
++    message = $string_utils:capitalize(((iobjstr + " ") + be) + " up.");
++  endif
++  message = " Ding! " + message;
++  fork (duration)
++    player:tell_lines({"", message, ""});
++  endfork
++  player:tell("The timer starts ticking.");
++else
++  "Didn't get a good value for duration.";
++  player:tell($string_utils:pronoun_sub("Try something like 'set %t for 3
++minutes'."));
++endif
++.
++
++
++@verb #9999:"examine_verbs" this none this
++@program #9999:examine_verbs
++what = dobjstr;
++vrbs = {};
++for vrby in (this.obvious_verbs)
++  vrbs = {@vrbs, $string_utils:substitute(vrby, {{"%<what>", what}})};
++endfor
++return {"Obvious verbs:", @vrbs};
++.
++
++@verb #9999:"title" this none this
++@program #9999:title
++return "^@HIWHITE^@timer^@reset^@";
++.
++
+-- 
+1.7.9.5
+

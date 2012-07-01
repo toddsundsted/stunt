@@ -1,0 +1,25 @@
+From c313326ecd57023ec195bfc4af3902e19a203cb4 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 03:16:32 +0000
+Subject: [PATCH 143/223] updating the rule for configure.in to confiture.ac..
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 86d1227..2364e57 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -90,7 +90,7 @@ client_sysv: client_sysv.o
+ restart:
+ 	touch restart
+ 
+-configure: configure.in
++configure: configure.ac
+ 	# autoconf
+ 	@echo "Not running autoconf; you must do this by hand."
+ 	touch configure
+-- 
+1.7.9.5
+

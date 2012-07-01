@@ -1,0 +1,78 @@
+From c1e4bd199a227837e2ca1064119c4d4dbd1bf71a Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 03:22:05 +0000
+Subject: [PATCH 127/223] 1) I don't think anyone needs to mail Pavil anymore;
+ removed the address from the opening comment block.
+
+2) I've added AC_SEARCH_LIBS([XML_ParserCreate], [expat]) to
+configure.in, so @LIBS@ now gets -lexpat during the linking
+process... however, -lexpat shows up twice and I'm not sure why yet in
+the linking stage. It's harmless but it bugs me.
+
+3) GNU Coding Standards specifies a make target called TAGS, so I
+uppercased the existing target 'tags'.
+---
+ server/Makefile.in  |   20 +++-----------------
+ server/configure.in |    3 +++
+ 2 files changed, 6 insertions(+), 17 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index de08fea..eb5b899 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -5,27 +5,13 @@
+ # derivative works must comply with all applicable United States export
+ # control laws.  This software is made available AS IS, and Xerox Corporation
+ # makes no warranty about the software, its performance or its conformity to
+-# any specification.  Any person obtaining a copy of this software is requested
+-# to send their name and post office or electronic mail address to:
+-#   Pavel Curtis
+-#   Xerox PARC
+-#   3333 Coyote Hill Rd.
+-#   Palo Alto, CA 94304
+-#   Pavel@Xerox.Com
+-
++# any specification.
+ 
+ # @configure_input@
+ 
+-
+-# with autoconf2 I'll go edit it to support --with-expat=
+-# Until then, set this to where you unpacked and compiled expat
+-
+-EXPAT_OBJS = -lexpat
+-
+-
+ CC = @CXX@
+ 
+-LIBRARIES = @LIBS@ $(EXPAT_OBJS)
++LIBRARIES = @LIBS@
+ YACC = @YACC@
+ 
+ # for debugging you might prefer:
+@@ -129,7 +115,7 @@ keywords.c: keywords.gperf
+ 		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
+ 		> keywords.c
+ 
+-tags:
++TAGS:
+ 	etags $(SRCS)
+ 
+ clean:
+diff --git a/server/configure.in b/server/configure.in
+index 63f51f1..a8aa8cf 100644
+--- a/server/configure.in
++++ b/server/configure.in
+@@ -316,6 +316,9 @@ AC_MODE_T
+ AC_SIZE_T
+ AC_STRUCT_TM
+ AC_TIMEZONE
++
++AC_SEARCH_LIBS([XML_ParserCreate], [expat])
++
+ MOO_HAVE_FUNC_LIBS(sqrt, -lm /lib/libm.a "-static -lm")
+ MOO_HAVE_FUNC_LIBS(mkfifo waitpid sigemptyset, -lposix /lib/libposix.a)
+ MOO_HAVE_FUNC_LIBS(accept, "-lsocket -lnsl" -lsocket -linet)
+-- 
+1.7.9.5
+

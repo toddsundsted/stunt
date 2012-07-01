@@ -1,0 +1,35 @@
+From 839a5ac280fc31ff8c00b436412d7ff206e1e1cf Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 1 Aug 2011 23:13:51 +0000
+Subject: [PATCH 186/223] Check for GNU gperf; issue a warning if not found.
+ gperf is only needed if the end user plans on
+ hacking features of the MOO language.
+
+---
+ server/configure.ac |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index b0d9caf..ae16d20 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -634,6 +634,16 @@ else
+    AC_MSG_NOTICE([openssl will not be included in this build])
+ fi
+ 
++dnl Check for GNU gperf, issue a warning if not found. gperf is not a
++dnl must-have for the end user unless they want to tinker with the Moo
++dnl language.
++AC_CHECK_PROG(HAVE_GPERF, gperf, true, false)
++
++if test "x$HAVE_GPERF" = "xfalse"; then
++   AC_MSG_WARN([GNU gperf not found. This probably won't matter unless you intend to hack on the MOO language itself.])
++else
++   AC_MSG_NOTICE([GNU gperf found])
++fi
+ 
+ AC_C_INLINE
+ AC_FUNC_ALLOCA
+-- 
+1.7.9.5
+

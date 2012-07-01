@@ -1,0 +1,167 @@
+From 86a0c3e56447eb07210f022e22177d9d2c558444 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 8 Jul 2011 00:11:31 +0000
+Subject: [PATCH 170/223] Moved UNFORKED_CHECKPOINTS into ./configure and
+ friends.
+
+---
+ server/config.h.in  |   13 +++++++++++++
+ server/configure    |   33 +++++++++++++++++++++++++++++----
+ server/configure.ac |   21 +++++++++++++++++----
+ server/options.h    |   16 ++--------------
+ 4 files changed, 61 insertions(+), 22 deletions(-)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index fae29eb..89720eb 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -290,5 +290,18 @@
+  */
+ #undef LOG_COMMANDS
+ 
++/******************************************************************************
++ * The server normally forks a separate process to make database checkpoints;
++ * the original process continues to service user commands as usual while the
++ * new process writes out the contents of its copy of memory to a disk file.
++ * This checkpointing process can take quite a while, depending on how big your
++ * database is, so it's usually quite convenient that the server can continue
++ * to be responsive while this is taking place.  On some systems, however,
++ * there may not be enough memory to support two simultaneously running server
++ * processes.  Define UNFORKED_CHECKPOINTS to disable server forking for
++ * checkpoints.
++ */
++#undef UNFORKED_CHECKPOINTS
++
+ #endif /* !Config_H */
+ 
+diff --git a/server/configure b/server/configure
+index 03259bd..50d8dda 100755
+--- a/server/configure
++++ b/server/configure
+@@ -1266,6 +1266,9 @@ Optional Packages:
+   --with-fup              Include the ext-FUP extension for manipulating
+                           external files [default: no]
+   --with-command-logging  Log user commands since the last database checkpoint
++                          if the server panics [default: no]
++  --with-unforked-checkpoints
++                          Do not fork() when doing a database checkpoint
+                           [default: no]
+   --with-openssl          include openssl (Secure Socket Layers)
+                           (experimental) [default: no]
+@@ -9008,20 +9011,42 @@ fi
+ 
+ 
+ if test "x${log_commands}" = xyes; then
+-   { echo "$as_me:$LINENO: All user commands will be logged" >&5
+-echo "$as_me: All user commands will be logged" >&6;}
++   { echo "$as_me:$LINENO: All user commands will be logged since the last database checkpoint if the server panics" >&5
++echo "$as_me: All user commands will be logged since the last database checkpoint if the server panics" >&6;}
+ 
+ cat >>confdefs.h <<\_ACEOF
+ #define LOG_COMMANDS 1
+ _ACEOF
+ 
+ else
+-   { echo "$as_me:$LINENO: No user commands will be logged" >&5
+-echo "$as_me: No user commands will be logged" >&6;}
++   { echo "$as_me:$LINENO: No user commands will be logged in the event of a server panic" >&5
++echo "$as_me: No user commands will be logged in the event of a server panic" >&6;}
+ fi
+ 
+ 
+ 
++# Check whether --with-unforked-checkpoints was given.
++if test "${with_unforked_checkpoints+set}" = set; then
++  withval=$with_unforked_checkpoints; unforked_checkpoints=${withval}
++else
++  unforked_checkpoints=no
++fi
++
++
++if test "x${unforked_checkpoints}" = xyes; then
++   { echo "$as_me:$LINENO: The server will not fork() when doing a database checkpoint" >&5
++echo "$as_me: The server will not fork() when doing a database checkpoint" >&6;}
++
++cat >>confdefs.h <<\_ACEOF
++#define UNFORKED_CHECKPOINTS 1
++_ACEOF
++
++else
++   { echo "$as_me:$LINENO: The server will fork() when doing a database checkpoint" >&5
++echo "$as_me: The server will fork() when doing a database checkpoint" >&6;}
++fi
++
++
+ 
+ # Check whether --with-openssl was given.
+ if test "${with_openssl+set}" = set; then
+diff --git a/server/configure.ac b/server/configure.ac
+index 9f46ede..0224971 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -567,18 +567,31 @@ fi
+ 
+ dnl Enable/disable user command logging
+ AC_ARG_WITH([command-logging],
+-        [AS_HELP_STRING([--with-command-logging],	[Log user commands since the last database checkpoint @<:@default: no@:>@])],
++        [AS_HELP_STRING([--with-command-logging],	[Log user commands since the last database checkpoint if the server panics @<:@default: no@:>@])],
+         [log_commands=${withval}],
+         [log_commands=no])
+ 
+ if test "x${log_commands}" = xyes; then
+-   AC_MSG_NOTICE([All user commands will be logged])
+-   AC_DEFINE([LOG_COMMANDS], 1, [All user commands will be logged since the last database checkpoint])
++   AC_MSG_NOTICE([All user commands will be logged since the last database checkpoint if the server panics])
++   AC_DEFINE([LOG_COMMANDS], 1, [All user commands will be logged since the last database checkpoint if the server panics])
+ else
+-   AC_MSG_NOTICE([No user commands will be logged])
++   AC_MSG_NOTICE([No user commands will be logged in the event of a server panic])
+ fi
+ 
+ 
++dnl Enable/disable unforked checkpoints
++AC_ARG_WITH([unforked-checkpoints],
++        [AS_HELP_STRING([--with-unforked-checkpoints],	[Do not fork() when doing a database checkpoint @<:@default: no@:>@])],
++        [unforked_checkpoints=${withval}],
++        [unforked_checkpoints=no])
++
++if test "x${unforked_checkpoints}" = xyes; then
++   AC_MSG_NOTICE([The server will not fork() when doing a database checkpoint])
++   AC_DEFINE([UNFORKED_CHECKPOINTS], 1, [The server will not fork() when doing a database checkpoint])
++else
++   AC_MSG_NOTICE([The server will fork() when doing a database checkpoint])
++fi
++
+ 
+ dnl # let the user choose to enable ssl or not
+ AC_ARG_WITH([openssl],
+diff --git a/server/options.h b/server/options.h
+index 0a951b2..f8b4337 100644
+--- a/server/options.h
++++ b/server/options.h
+@@ -18,20 +18,8 @@
+ #ifndef Options_h
+ #define Options_h 1
+ 
+-
+-/******************************************************************************
+- * The server normally forks a separate process to make database checkpoints;
+- * the original process continues to service user commands as usual while the
+- * new process writes out the contents of its copy of memory to a disk file.
+- * This checkpointing process can take quite a while, depending on how big your
+- * database is, so it's usually quite convenient that the server can continue
+- * to be responsive while this is taking place.  On some systems, however,
+- * there may not be enough memory to support two simultaneously running server
+- * processes.  Define UNFORKED_CHECKPOINTS to disable server forking for
+- * checkpoints.
+- */
+-
+-/* #define UNFORKED_CHECKPOINTS */
++// LOG_COMMANDS and UNFORKED_CHECKPOINTS have been moved into
++// config.h.in; they are ./configure options now. See ./configure --help.
+ 
+ /******************************************************************************
+  * If OUT_OF_BAND_PREFIX is defined as a non-empty string, then any lines of
+-- 
+1.7.9.5
+

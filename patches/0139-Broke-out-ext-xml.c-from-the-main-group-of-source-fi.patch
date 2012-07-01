@@ -1,0 +1,51 @@
+From 72412cd480b929b62a33ea97d8801742e5b43b91 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 03:03:02 +0000
+Subject: [PATCH 139/223] Broke out ext-xml.c from the main group of source
+ files.
+
+---
+ server/Makefile.in |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 4310856..86d1227 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -32,8 +32,9 @@ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+ 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+ 	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c \
+-	ext-xml.c bg_name_lookup.c
++	bg_name_lookup.c
+ 
++OPT_EXT_XML_SRC = ext-xml.c
+ OPT_EXT_FUP_SRC = ext-FUP.c
+ 
+ OPT_NET_SRCS = net_single.c net_multi.c \
+@@ -62,11 +63,11 @@ SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
+ 
+ CLIENT_SRCS = client_bsd.c client_sysv.c
+ 
+-ALL_CSRCS = $(CSRCS) $(OPT_EXT_FUP_SRC) $(CLIENT_SRCS)
++ALL_CSRCS = $(CSRCS) $(OPT_EXT_FUP_SRC) $(OPT_EXT_XML_SRC) $(CLIENT_SRCS)
+ 
+ SRCS = $(ALL_CSRCS) keywords.gperf $(YSRCS) $(HDRS) $(SYSHDRS)
+ 
+-COBJS = $(CSRCS:.c=.o) $(OPT_EXT_FUP_SRC:.c=.o)
++COBJS = $(CSRCS:.c=.o) $(OPT_EXT_FUP_SRC:.c=.o)  $(OPT_EXT_XML_SRC:.c=.o)
+ 
+ YOBJS = $(YSRCS:.y=.o)
+ 
+@@ -136,7 +137,7 @@ depend: ${ALL_CSRCS}
+ 
+ all: moo
+ 
+-.PHONY: all clean distclean tags depend pure_moo
++.PHONY: all clean distclean TAGS depend pure_moo
+ 
+ 
+ # Have to do this one manually, since make depend cannot hack yacc files.
+-- 
+1.7.9.5
+

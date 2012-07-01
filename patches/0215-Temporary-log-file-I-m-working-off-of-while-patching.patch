@@ -1,0 +1,2852 @@
+From 3b8a62d6ecc929af1e0ce3bcf126255e9d7435c6 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 19 Jun 2012 22:48:32 -0700
+Subject: [PATCH 215/223] Temporary log file I'm working off of while patching
+ Stunt LambdaMOO
+
+---
+ server/log | 2832 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 2832 insertions(+)
+ create mode 100644 server/log
+
+diff --git a/server/log b/server/log
+new file mode 100644
+index 0000000..08ea8d6
+--- /dev/null
++++ b/server/log
+@@ -0,0 +1,2832 @@
++commit 05862e74f15c08510be5bcebdf8ca44ea030bdc5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jun 14 22:13:25 2012 -0700
++
++    New version of autoconf, thus new version of ./configure.
++
++ server/configure |  363 +++++++++++++++++++++++++++++-------------------------
++ 1 file changed, 198 insertions(+), 165 deletions(-)
++
++commit d2aa833ca295aa247fd9d97d172828004c8cc8f5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Oct 8 18:33:15 2011 -0700
++
++    Removed CVS log entries
++
++ manual/Makefile |   24 ------------------------
++ 1 file changed, 24 deletions(-)
++
++commit 68aebc353c21555810b32458839af625949c2c21
++Merge: 7ec9edf e4ea0c3
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Oct 8 18:31:21 2011 -0700
++
++    Merge branch 'master' of https://code.google.com/p/waverous
++
++commit e4ea0c310e773537165ba03086076d468aee2d44
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Oct 4 20:07:36 2011 -0700
++
++    Example 'make distcheck' per the Autotools book
++
++ Makefile |   10 +++++++++-
++ 1 file changed, 9 insertions(+), 1 deletion(-)
++
++commit 7ec9edff6e95d18243d10b8ee683d50d1aad8a67
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Sep 24 11:44:47 2011 -0700
++
++    Xythian's .gitignore from lambdamoo on github
++
++ .gitignore |   12 ++++++++++++
++ 1 file changed, 12 insertions(+)
++
++commit a044fc2e8df0adc43d313f169b5a6a973b9de861
++Author: Steve Wainstead <swain@socialserve.com>
++Date:   Wed Sep 7 16:51:28 2011 -0700
++
++    Adding the other two canonical programmer/user references.
++
++ manual/LambdaCoreProgMan.texinfo | 5838 ++++++++++++++++++++++++++++++++++++++
++ manual/LambdaCoreUserMan.texinfo | 2848 +++++++++++++++++++
++ 2 files changed, 8686 insertions(+)
++
++commit 9c6b1d961f0b650ce8255fc5668f81716de189f0
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Sep 3 17:19:56 2011 +0000
++
++    Updated authors list again
++
++ server/misc/authors-transform.txt |    1 +
++ 1 file changed, 1 insertion(+)
++
++commit fbf02acde5e0d891e3052cccb52e693c5d7c10d5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Sep 3 17:17:24 2011 +0000
++
++    Updated the authors list
++
++ server/misc/authors-transform.txt |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 50988aca94248412a4fca70e5bf19f5a69bc41bb
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Sep 3 17:13:48 2011 +0000
++
++    First cut at crediting the authors for the conversion to Git; I'm
++    following the recipes here:
++    http://john.albin.net/git/convert-subversion-to-git
++
++ server/misc/authors-transform.txt |    9 +++++++++
++ 1 file changed, 9 insertions(+)
++
++commit 636b5b556e2ef7673103ca1e9b26d90db5624042
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Aug 23 00:48:44 2011 +0000
++
++    Make OUTBOUND_NETWORK a configure option
++    
++    One way this project strayed from original LambdaMOO is the
++    OUTBOUND_NETWORK setting in options.h was defaulting to "enabled."
++    This meant that the default was to allow outbound network connectinos
++    from MOO code, which the comments frown upon. Even though every
++    installation of LambdaMOO today probably has this enabled I'm
++    reverting to the default of having OUTBOUND_NETWORK undefined, meaning
++    no outbound connections can be made.
++    
++    This change is one step closer to resolving issue #16, where NP_LOCAL
++    and NP_SINGLE currently won't compile, and to moving all compile-time
++    options out into the configure script.
++
++ server/config.h.in  |   25 +++++++++++++++++++++++++
++ server/configure.ac |   19 +++++++++++++++++++
++ server/options.h    |   26 +++-----------------------
++ 3 files changed, 47 insertions(+), 23 deletions(-)
++
++commit 3a4e3736d1f22b5fb28ce45637b51c1c4a55ff05
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Aug 20 23:19:28 2011 +0000
++
++    Updated ./configure script with no more MOO_CONST.
++
++ server/configure |    1 -
++ 1 file changed, 1 deletion(-)
++
++commit 9b03dc7abe50d1a5f1255c4340a1a6f97b15ee71
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Aug 20 23:10:29 2011 +0000
++
++    Somehow I missed the call to MOO_CONST, and autoconf never
++    complained. Weird.
++
++ server/configure.ac |    1 -
++ 1 file changed, 1 deletion(-)
++
++commit 05b8980b76809a61cacbff1fe4fe2c65869d84ae
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Aug 20 22:22:16 2011 +0000
++
++    Latest ./configure file, created by autoconf.
++
++ server/configure |   18 +++++++++---------
++ 1 file changed, 9 insertions(+), 9 deletions(-)
++
++commit 3e71e145c90bcafd7224a542cf3db85d934ea3d0
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Aug 20 22:20:22 2011 +0000
++
++    I dunno if I have the wrong version of aclocal or what, but running:
++    
++    aclocal -I m4
++    
++    does not work; no aclocal.m4 file is generated that loads
++    m4/moo.m4. But if I move ./m4/moo.m4 to ./acinclude.m4 and just run
++    'aclocal' with no arguments it generates a correct aclocal.m4 file.
++    
++    Well, whatever the problem is, it's irrelevant to the many tasks at
++    hand; I wanted to use a subdirectory called 'm4' because that's the
++    New Recommended Thing To Do. acinclude.m4 is the Previously
++    Recommended New Thing To Do and it will suffice for the time being.
++
++ server/acinclude.m4 |  128 +++++++++++++++++++++++++++++++++++++++++++++++++++
++ server/aclocal.m4   |    2 +-
++ server/m4/moo.m4    |  128 ---------------------------------------------------
++ 3 files changed, 129 insertions(+), 129 deletions(-)
++
++commit 0c8c0f2ef96f6bb5f53788a8f15a3a28a5e17c9d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Aug 19 04:42:09 2011 +0000
++
++    Removing errant use of AC_PREREQ, which autoconf 2.61 from MacPorts
++    never once complained about but autoconf 2.59 on my ISP's NetBSD box
++    did... it pays to test on other machines.
++
++ server/configure.ac |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 5e41412b62b73bdc29190d63c30bf56ed6c8083a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 18 04:50:49 2011 +0000
++
++    Next version number will be 0.2 instead of beta2.
++
++ Makefile            |    2 +-
++ server/configure.ac |    2 +-
++ 2 files changed, 2 insertions(+), 2 deletions(-)
++
++commit b3ef5308fe67ed1875258fe32a80a69a677b3e24
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Aug 13 21:49:09 2011 +0000
++
++    Latest configure file.
++
++ server/configure |   21 +--------------------
++ 1 file changed, 1 insertion(+), 20 deletions(-)
++
++commit 99f3e51f9897e3544333f0a757e4b1684f492d6c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Aug 13 21:47:43 2011 +0000
++
++    Dropping the test for the compiler's support for the 'const'
++    keyword. If one's compiler has issues with 'const' in the 21st
++    century, well, I would like to know what compiler that is. (Perhaps
++    you're doing embedded programming? In which case I'd like to know why
++    you're compiling a Moo!)
++
++ server/config.h.in |   10 ----------
++ server/m4/moo.m4   |   23 -----------------------
++ 2 files changed, 33 deletions(-)
++
++commit beba7cb29b74ffc26deec138ab82c3151a79a7f5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 11 01:00:22 2011 +0000
++
++    Latest configure
++
++ server/configure |  523 +++++++++++++++++++++---------------------------------
++ 1 file changed, 206 insertions(+), 317 deletions(-)
++
++commit 5f40a0730c344316f1ee7a9933c7fa0449409cb1
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 11 00:59:45 2011 +0000
++
++    Removing the test for bzero. In some older systems it
++    was declared in stdlib.h, say the comments; in Linux and
++    the BSD derivatives it's in strings.h. I thought I'd get to
++    remove a MOO m4 macro entirely -- MOO_FUNC_DECL_CHECK -- but
++    it's still used by the other macros in that file. But this
++    shortens configure.ac by a few more lines, at least.
++
++ server/config.h.in  |    5 -----
++ server/configure.ac |    5 ++---
++ server/my-string.h  |    8 --------
++ 3 files changed, 2 insertions(+), 16 deletions(-)
++
++commit 511c438a70f23cfb67361194953f9fb57b7e1dc3
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 11 00:17:49 2011 +0000
++
++    At some point in the past I modified the JHCore db by accident; this is \the latest off Sourceforge.
++
++ server/databases/JHCore-DEV-2.db.gz |  Bin 637555 -> 636556 bytes
++ 1 file changed, 0 insertions(+), 0 deletions(-)
++
++commit ec212a4cfdf8375d76f6a2e5c8416e6c29a2a75d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 11 00:09:35 2011 +0000
++
++    By specifying C++ as the project language via the autoconf macro
++    AC_LANG all of autoconf's tests are compiled via g++ instead of
++    cc. Also: found a redundant macro call to AC_PROG_CPP.
++
++ server/configure.ac |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit ece594b608b0abe7be332210f80376215cb59659
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Aug 8 23:01:34 2011 +0000
++
++    Further removing MOO_MALLOC_H from configure
++
++ server/configure    |   28 ----------------------------
++ server/configure.ac |    1 -
++ 2 files changed, 29 deletions(-)
++
++commit 010f537742336fb8e7156307d5b2cdc3195aa1fd
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Aug 8 22:14:21 2011 +0000
++
++    Dropping the test to see if malloc() is defined in stdlib.h;
++    changing the deprecated AC_PROGRAM_EGREP macro to the newer
++    AC_EGREP_CPP.
++
++ server/configure.ac |   12 +-----------
++ 1 file changed, 1 insertion(+), 11 deletions(-)
++
++commit 88a8e3acc5bd8b2bd0fc72bb6efb359a5106e253
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Aug 7 21:08:31 2011 +0000
++
++    Missing quote in a comment fixed
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 0c3236356797eba50427a91def563890f31cd4b5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 4 05:29:58 2011 +0000
++
++    Moved the custom MOO m4 macros into their own file in the new
++    subdirectory 'm4'; dropped the MOO_ANSI_C custom m4 macro in favor of
++    AC_PROG_CC_STDC.
++
++ server/aclocal.m4   |   14 +++
++ server/configure    |  322 ++++++++++++++++++++++++++++++++++++++++++++-------
++ server/configure.ac |  178 +---------------------------
++ server/m4/moo.m4    |  151 ++++++++++++++++++++++++
++ 4 files changed, 447 insertions(+), 218 deletions(-)
++
++commit a1f5baaac1d0bc1e52517b3a22ada4c9606feb8a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 4 02:09:39 2011 +0000
++
++    Removed checks for AUX, ALPHA, NeXT, SGI, HPUX
++
++ server/configure    |  426 ++++++---------------------------------------------
++ server/configure.ac |   77 ----------
++ 2 files changed, 50 insertions(+), 453 deletions(-)
++
++commit afff02bc88665d58d9e85680b0ebdc03213f94dd
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Aug 4 00:04:38 2011 +0000
++
++    Dropping LambdaMOO-specific redeclaration of AC_FUNC_CHECK which was to support OSF/1, a long-deceased version of Unix from 1988 (http://en.wikipedia.org/wiki/Tru64_UNIX#OSF.2F1). Add to that aclocal generates a file of the same name -- the modern thing is to have a subdirectory called m4/ for local macros.
++
++ server/aclocal.m4 |   32 --------------------------------
++ 1 file changed, 32 deletions(-)
++
++commit 6f1401305ddc4a0f753b460c606b7c35cfa3ae10
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Aug 1 23:36:02 2011 +0000
++
++    Latest ./configure script.
++
++ server/configure |   49 ++++++++++++++++++++++++++++++++++++++++++++++++-
++ 1 file changed, 48 insertions(+), 1 deletion(-)
++
++commit 839a5ac280fc31ff8c00b436412d7ff206e1e1cf
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Aug 1 23:13:51 2011 +0000
++
++    Check for GNU gperf; issue a warning if not found. gperf is only
++    needed if the end user plans on hacking features of the MOO language.
++
++ server/configure.ac |   10 ++++++++++
++ 1 file changed, 10 insertions(+)
++
++commit b0cdde5738bf19d39a50d2db203c9bcde8ff2fe1
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jul 30 23:12:35 2011 +0000
++
++    Removed pgperf from the LICENSE file, as it's no longer part of the
++    project.
++
++ server/LICENSE |   12 ++----------
++ 1 file changed, 2 insertions(+), 10 deletions(-)
++
++commit 58b81afeeb5df7259f464c2ea3189116d961e95c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jul 30 22:18:04 2011 +0000
++
++    Dropped 'pgperf', the customized verion of GNU gperf that came with LambdaMOO.
++    GNU gperf has supported case-insensitive lookup tables since 2002, and
++    pgperf didn't compile anymore anyways, due to its reliance on varargs.h
++    which is no longer supported.
++
++ server/Makefile.in        |   20 +-
++ server/keywords.c         |  379 ++++++++-------
++ server/keywords.gperf     |    4 +-
++ server/pgperf/Makefile    |   77 ----
++ server/pgperf/README      |   10 -
++ server/pgperf/boolarray.c |   91 ----
++ server/pgperf/boolarray.h |   47 --
++ server/pgperf/getopt.c    |  391 ----------------
++ server/pgperf/gperf-to-do |   22 -
++ server/pgperf/hashtable.c |  132 ------
++ server/pgperf/hashtable.h |   36 --
++ server/pgperf/iterator.c  |  101 ----
++ server/pgperf/iterator.h  |   47 --
++ server/pgperf/keylist.c   | 1117 ---------------------------------------------
++ server/pgperf/keylist.h   |   53 ---
++ server/pgperf/listnode.c  |  119 -----
++ server/pgperf/listnode.h  |   42 --
++ server/pgperf/main.c      |   98 ----
++ server/pgperf/mon.out     |  Bin 85682 -> 0 bytes
++ server/pgperf/options.c   |  445 ------------------
++ server/pgperf/options.h   |  152 ------
++ server/pgperf/perfect.c   |  347 --------------
++ server/pgperf/perfect.h   |   42 --
++ server/pgperf/prototype.h |   15 -
++ server/pgperf/readline.c  |   79 ----
++ server/pgperf/readline.h  |   30 --
++ server/pgperf/stderr.c    |  104 -----
++ server/pgperf/stderr.h    |   29 --
++ server/pgperf/version.c   |   22 -
++ server/pgperf/xmalloc.c   |   79 ----
++ 30 files changed, 237 insertions(+), 3893 deletions(-)
++
++commit bee5858547c1f4870cff9add6cf25cae66ba035c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jul 30 16:39:27 2011 +0000
++
++    Changed the default text editor mode from 'c' to 'autoconf'
++
++ server/configure.ac |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 2b72a6008554753053db5fbfee75d7f1053d9c4a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jul 30 02:23:43 2011 +0000
++
++    Note added about 'make install' in the future.
++
++ server/misc/args.cc |    6 +++++-
++ 1 file changed, 5 insertions(+), 1 deletion(-)
++
++commit 0e394f44e39ab7ffc481fe39c7090b3882c8c2eb
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jul 26 05:58:45 2011 +0000
++
++    Updated configure file
++
++ server/configure |   24 ++++++++++++------------
++ 1 file changed, 12 insertions(+), 12 deletions(-)
++
++commit d7ebc96446b2fd5f835ab853b9a95ac581480e67
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jul 26 05:55:10 2011 +0000
++
++    Bumped up the version number of Waverous; tweaked the output of one of
++    the custom macros; removed an errant comment sign
++
++ server/configure.ac |    6 +++---
++ 1 file changed, 3 insertions(+), 3 deletions(-)
++
++commit b86e32c23058c2ae379258c1b7da7bb20bfbd05e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jul 19 04:28:34 2011 +0000
++
++    Fixed the dumb mistakes I made in my first attempt to port this file
++    to C++. I've tested the results via the small class file
++    objects/openreadwrite.moo.
++
++ server/extension-fileio.c |   97 ++++++++++++++++++++++-----------------------
++ 1 file changed, 48 insertions(+), 49 deletions(-)
++
++commit 7cb2d4a97d6e6f6a3218b477f50240261835ac34
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jul 19 04:24:42 2011 +0000
++
++    Added a small example for file_open().
++
++ server/fileio-1.5p1/fileio-docs.txt |    3 +++
++ 1 file changed, 3 insertions(+)
++
++commit 13232c3483e562bbc9321eae11349a4a193a708a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jul 19 04:04:09 2011 +0000
++
++    Small object to test File I/O.
++
++ server/objects/openreadwrite.moo |   17 +++++++++++++++++
++ 1 file changed, 17 insertions(+)
++
++commit 2614bb1e953c3bf737254068cb8dfcf9c16aa29a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jul 17 05:30:49 2011 +0000
++
++    Two file-wide changes, and one small one:
++    
++    1) Renamed the struct file_type to fileio_file_type, to get around a
++    compiler complaint about the struct and the typedef having the same
++    name.
++    
++    2) Mass changed "if(" to "if (", "while(" to "while ("
++    
++    3) Qualifed BI_RAISE to p.BI_RAISE to fix a compile error
++
++ server/extension-fileio.c |  256 ++++++++++++++++++++++-----------------------
++ 1 file changed, 128 insertions(+), 128 deletions(-)
++
++commit 4890ca2d11dd8224bae4476174582f0c3a908b90
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 15 05:11:18 2011 +0000
++
++    Largish commit to add (finally) the package File I/O as an optional
++    extension to the server. Unfortunately the extension does not compile
++    with this commit, but the groundwork is all done as far as: adding the
++    file extension-fileio.c to Makefile.in, adding the flag to configure.ac,
++    and making sure everything is found/can be linked and whatnot. Next step
++    is to fix the many compilation errors, probably stemming from the switch
++    from gcc to g++, which the File I/O code has probably never been through.
++
++ server/Makefile.in                     |   11 +-
++ server/bf_register.h                   |    4 +
++ server/config.h.in                     |    3 +
++ server/configure                       |   27 +-
++ server/configure.ac                    |   17 +-
++ server/extension-fileio.c              | 1641 ++++++++++++++++++++++++++++++++
++ server/extension-fileio.h              |   31 +
++ server/fileio-1.5p1/extension-fileio.c | 1617 -------------------------------
++ server/fileio-1.5p1/extension-fileio.h |   15 -
++ server/functions.c                     |    7 +-
++ 10 files changed, 1729 insertions(+), 1644 deletions(-)
++
++commit 9f6258d661e0d68cc33ee67bf53ccd12d8f3e838
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 15 04:22:41 2011 +0000
++
++    Notes on what to add in this prototype of command line processing.
++
++ server/misc/args.cc |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 50 insertions(+)
++
++commit dcb711f261c426d35c31d538a1d31ec98609f4a1
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 15 02:40:44 2011 +0000
++
++    Including licensing info for the external package File I/O
++
++ server/LICENSE |   24 ++++++++++++++++++++++++
++ 1 file changed, 24 insertions(+)
++
++commit 057aae4f473ba6871afa90dab32222c0723c48ee
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 15 01:18:16 2011 +0000
++
++    Redid the no-forking configure option: is now --with-forked-checkpoints, defaulting to 'yes'
++
++ server/configure    |11996 +++++++++++++++++----------------------------------
++ server/configure.ac |   10 +-
++ 2 files changed, 3964 insertions(+), 8042 deletions(-)
++
++commit cc58eb6119ca3112e9acca17936d3c25583c3a83
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 8 00:41:42 2011 +0000
++
++    Minor formatting update
++
++ server/LICENSE |    4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++commit 86a0c3e56447eb07210f022e22177d9d2c558444
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 8 00:11:31 2011 +0000
++
++    Moved UNFORKED_CHECKPOINTS into ./configure and friends.
++
++ server/config.h.in  |   13 +++++++++++++
++ server/configure    |   33 +++++++++++++++++++++++++++++----
++ server/configure.ac |   21 +++++++++++++++++----
++ server/options.h    |   16 ++--------------
++ 4 files changed, 61 insertions(+), 22 deletions(-)
++
++commit bcf4fe0f51cd9f141841983790120f3b70e41c4e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jul 7 23:44:07 2011 +0000
++
++    Adding the MCP 2.1 implementation, updating the README for moo objects included in this distro.
++
++ server/objects/MCP/README              |  489 ++++++++++++++++++++++++++++++++
++ server/objects/MCP/cdispatch.moo       |  169 +++++++++++
++ server/objects/MCP/cord.moo            |   96 +++++++
++ server/objects/MCP/create.moo          |    8 +
++ server/objects/MCP/dispatch.moo        |   76 +++++
++ server/objects/MCP/encore.system.moo   |   94 ++++++
++ server/objects/MCP/index.html          |  223 +++++++++++++++
++ server/objects/MCP/jhcore.system.moo   |   80 ++++++
++ server/objects/MCP/listutils.extra.moo |   48 ++++
++ server/objects/MCP/lmcore.system.moo   |   92 ++++++
++ server/objects/MCP/mcp.moo             |  176 ++++++++++++
++ server/objects/MCP/negotiate.moo       |   38 +++
++ server/objects/MCP/package.moo         |  105 +++++++
++ server/objects/MCP/parser.moo          |  163 +++++++++++
++ server/objects/MCP/registry.moo        |  113 ++++++++
++ server/objects/MCP/session.moo         |  307 ++++++++++++++++++++
++ server/objects/MCP/wizme.moo           |   23 ++
++ server/objects/README                  |   14 +-
++ 18 files changed, 2313 insertions(+), 1 deletion(-)
++
++commit 36f05d888a9f83b03857e3ef47dd8d8cf193aae1
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jul 7 23:42:06 2011 +0000
++
++    Moved the option to log user commands in the event of a server panic out of options.h and into configure.ac/config.h.in/configure.
++
++ server/config.h.in  |    8 ++++++++
++ server/configure    |   25 +++++++++++++++++++++++++
++ server/configure.ac |   14 ++++++++++++++
++ server/options.h    |    8 --------
++ 4 files changed, 47 insertions(+), 8 deletions(-)
++
++commit 1b3d06129748d3a00320ebccb357a43cdbb95e0d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jun 24 04:29:14 2011 +0000
++
++    Explanatory comments for the case of zero...
++
++ server/misc/args.cc |    5 ++++-
++ 1 file changed, 4 insertions(+), 1 deletion(-)
++
++commit 34a19ac0e207a473e3b96f7d4dfce446d4d4e1bc
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jun 24 04:22:26 2011 +0000
++
++    Got rid of optreset, which GNU didn't like and I wasn't using anyhow.
++
++ server/misc/args.cc |    3 +--
++ 1 file changed, 1 insertion(+), 2 deletions(-)
++
++commit 9d786f89da4d7deadec8b64a844b29060e5761b0
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jun 24 04:17:04 2011 +0000
++
++    testbed for playing with the features of getopt_long().
++
++ server/misc/args.cc |  103 +++++++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 103 insertions(+)
++
++commit de0dbfffb2bf50d1b9c3d1ac0a5f7446d5e39af6
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jun 23 02:09:01 2011 +0000
++
++    Use '$0' instead of the script name; use gzip instead of
++    /usr/bin/compress.
++
++ server/mooctl |    6 +++---
++ 1 file changed, 3 insertions(+), 3 deletions(-)
++
++commit ce2e724984ba8d024550bce612dc72fb7dc97657
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 22 23:59:37 2011 +0000
++
++    Updating the instructions by s/restart/mooctl/g. Noted at the top that
++    these are the original instructions since the 1990s.
++
++ server/README |   19 +++++++++++--------
++ 1 file changed, 11 insertions(+), 8 deletions(-)
++
++commit 28cdaa741af422a2f7e6d762eff69ed94093a836
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 22 23:52:43 2011 +0000
++
++    Renaming restart.sh to mooctl, in line with scripts in other projects
++    like apachectl. Eventually 'make' will install this shell script in
++    /usr/local/sbin, in line with filesystem standards.
++    
++    Deleting the sibling csh script, since most modern Unix and GNU/Linux
++    systems support /bin/sh.
++
++ server/mooctl     |   42 ++++++++++++++++++++++++++++++++++++++++++
++ server/restart    |   43 -------------------------------------------
++ server/restart.sh |   42 ------------------------------------------
++ 3 files changed, 42 insertions(+), 85 deletions(-)
++
++commit 41439446ea38e2be6f0a413dc37ec5e1b5eda215
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jun 16 04:18:53 2011 +0000
++
++    Expounding some more on the licensing of the sources, and I think I'm
++    pretty much done with the licensing issues for now. Waverous uses
++    BSD-style licensing.
++
++ server/LICENSE |   30 ++++++++++++++++++++----------
++ 1 file changed, 20 insertions(+), 10 deletions(-)
++
++commit d7466c107dad863c7bafd670f190100d81d224ac
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 03:45:07 2011 +0000
++
++    Commenting on the licensing of this file.
++
++ server/net_tcp.c |   13 +++++++++++++
++ 1 file changed, 13 insertions(+)
++
++commit 5e91696aba144687d2d3f304d0407b53b0171c04
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 03:44:40 2011 +0000
++
++    Adding the licensing that goes with this file.
++
++ server/ext-xml.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 45 insertions(+)
++
++commit 9c9d8f3ded9339c8f12ee91ac33522770e4da6cf
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 03:44:23 2011 +0000
++
++    Adding the license on behalf of Andy.
++
++ server/bg_name_lookup.c |   28 ++++++++++++++++++++++++++++
++ 1 file changed, 28 insertions(+)
++
++commit 9517accac55f13e82bdc85eb1950e714c1a62bfc
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 03:43:55 2011 +0000
++
++    Inserting the license for this file that exists in all the other files found in the same package.
++
++ server/ext-FUP_options.h |   17 +++++++++++++++++
++ 1 file changed, 17 insertions(+)
++
++commit d65f9f843c23cb3dc4ea00207278177adeb8658a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 03:41:57 2011 +0000
++
++    Adding a LICENSE file to clarify all the licenses for original server code and parts contributed later.
++
++ server/LICENSE |  192 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 192 insertions(+)
++
++commit b64e0c2288d6ac89e1e3de0a78918bb100c9eefe
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 01:43:52 2011 +0000
++
++    Adding the files for fileio.
++
++ server/fileio-1.5p1/CHANGELOG          |   15 +
++ server/fileio-1.5p1/README             |   18 +
++ server/fileio-1.5p1/extension-fileio.c | 1617 ++++++++++++++++++++++++++++++
++ server/fileio-1.5p1/extension-fileio.h |   15 +
++ server/fileio-1.5p1/fileio-docs.txt    |  429 ++++++++
++ server/fileio-1.5p1/fileio.patch       | 1704 ++++++++++++++++++++++++++++++++
++ 6 files changed, 3798 insertions(+)
++
++commit 71d7f0c75d326f13106a6bfb31d7e86c0bb832f6
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 01:28:06 2011 +0000
++
++    Renamed this file to waverous-tester.exp.
++
++ server/tools/test.exp |   33 ---------------------------------
++ 1 file changed, 33 deletions(-)
++
++commit 5d16402dc48c8ec599c2d3ee1a25a73e8bece3ba
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jun 15 01:27:38 2011 +0000
++
++    Renaming this to waverous-tester.exp, and giving it the GPL licensing.
++
++ server/tools/waverous-tester.exp |   47 ++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 47 insertions(+)
++
++commit 6e7755e4630fb723692b2d9254589ca596cf1223
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jun 14 04:03:39 2011 +0000
++
++    removing extraneous lines from chroot.sh
++
++ server/tools/chroot.sh |    2 --
++ 1 file changed, 2 deletions(-)
++
++commit 86d42057b9796efb3733720548dfd8c6f5597f38
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jun 14 04:02:29 2011 +0000
++
++    README file added to explain this directory and the tools it contains.
++
++ server/tools/README    |   15 +++++++++++++++
++ server/tools/chroot.sh |   35 +++++++++++++++++++----------------
++ 2 files changed, 34 insertions(+), 16 deletions(-)
++
++commit b15962d51fa9c250732ef452f7c609759f20d917
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jun 14 03:48:10 2011 +0000
++
++    I've changed the configure options from --enable-wooblam to
++    --with-wooblam as I think they read more logically. I bumped down the
++    version number of autoconf required so I can do work on Darwin.
++
++ server/configure    |11661 ++++++++++++++++++++++++++++++++++-----------------
++ server/configure.ac |   31 +-
++ 2 files changed, 7893 insertions(+), 3799 deletions(-)
++
++commit a68a586c8b099edb1cbac19621df35fcf178b6ae
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 12 23:53:33 2011 +0000
++
++    Documented the 'depend' target, which requires files generated by flex first.
++
++ server/Makefile.in |  266 +++++++++++++++++++++++++++-------------------------
++ 1 file changed, 138 insertions(+), 128 deletions(-)
++
++commit c7539dfd97ae1a2cc6eddf001df9bbf8ecb6a14d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Apr 21 02:53:53 2011 +0000
++
++    I was running into the problem of: in gdb/linux I could 'print
++    shutdown_message' and see the value, but in Darwin I could not:
++    
++       ./configure --enable-fup --enable-expat --enable-openssl
++       make CFLAGS='-g -O0 -m32 -Wall -DEXPAT_XML'
++       gdb --annotate=3 --args ./moo databases/LambdaCore-12Apr99.db databases/my.db
++       break server.c:470
++    
++    
++       469:    /* Now, we enter the main server loop */
++       470:    while (shutdown_message == 0) {
++    
++       linux:
++       (gdb) run
++       Breakpoint 1, main_loop () at server.c:473
++       (gdb) print shutdown_message
++       $1 = 0x0
++    
++    
++       darwin:
++       (gdb) print shutdown_message
++       No symbol "shutdown_message" in current context.
++    
++       But compiling  LambdaMOO 1.8.3 off Sourceforge on Darwin, plain old C, we get:
++    
++       (gdb) print shutdown_message
++       $1 = 0x0
++    
++    The problem lies in C++ on Darwin, somehow. When I removed the
++    'static' keyword, Darwin could then print shutdown_message.
++    
++    Wikipedia states:
++    
++       The static keyword is used in C to restrict a function or global
++       variable to file scope (internal linkage). This is also valid in C++,
++       although C++ deprecates this usage in favor of anonymous namespaces
++       (which are not available in C). Also, C++ implicitly treats any const
++       global as file scope unless it is explicitly declared extern, unlike C
++       in which extern is the default.
++    
++    (http://en.wikipedia.org/wiki/Compatibility_of_C_and_C%2B%2B#Constructs_that_behave_differently_in_C_and_C.2B.2B)
++    
++    So I'm removing the 'static' part of the declaration of
++    shutdown_message, since it's not needed under C++.
++
++ server/server.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit a7dbea8ccd92eb33d065ca2eb47c2461cca97266
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Feb 11 05:18:53 2011 +0000
++
++    Rolling back my changes for now; not sure why all the tests fail when updating the macro...
++
++ server/configure.ac |   16 ++++++++--------
++ 1 file changed, 8 insertions(+), 8 deletions(-)
++
++commit 4798ed179f9e718605afa0f31d25ee0a6c27ec57
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Feb 11 05:00:21 2011 +0000
++
++    yet another newest version of configure
++
++ server/configure |   17 +++++++++++++----
++ 1 file changed, 13 insertions(+), 4 deletions(-)
++
++commit 81f1ea855bffdea40a45cb355c7f6aaae7ebfbb7
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Feb 11 04:57:55 2011 +0000
++
++    The macro AC_TEST_PROGRAM was deprecated and replaced with another
++    macro, which itself was deprecated and replaced with
++    AC_RUN_IFELSE. I've substituted the three instances here and added a
++    third argument, the "action-if-false," or what it should do if the
++    test fails.
++    
++    For each, this third argument is just an AC_MSG_NOTICE informing
++    the user that the test failed... but from the data I'm seeing across
++    four different systems -- three flavors of Linux and one Darwin -- one
++    test won't compile at all, and another always returns 1.
++    
++    For SELECT_WORKS_ON_FIFO it has something to do with the expansion of
++    one of the macros in the mini-test program; the errors are:
++    
++    selectworksonfifostest.c: In function ‘main’:
++    selectworksonfifostest.c:20:19: error: expected expression before ‘do’
++    selectworksonfifostest.c:23:19: error: expected expression before ‘do’
++    
++    FSTAT_WORKS_ON_FIFO just returns 1. POLL_WORKS_ON_FIFO seems to return
++    0 pretty consistently across systems.
++    
++    I guess what I'm driving at here is using FIFOs is probably something
++    that can be safely dropped from the project altogether, along with
++    NP_LOCAL as an option in options.h.
++
++ server/configure.ac |   16 ++++++++--------
++ 1 file changed, 8 insertions(+), 8 deletions(-)
++
++commit 62e9fea9aa012b68516dc8996e4694496ceb8a7b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 19:49:48 2011 +0000
++
++    Experimental: you can now say ./configure --enable-openssl but SSL is not yet compiled into the app... first things first: getting autoconf to let the user specify it. Next up, patching the network stuff.
++
++ server/config.h.in  |    2 +
++ server/configure    |  106 +++++++++++++++++++++++++++++++++++++++++++++++++++
++ server/configure.ac |   48 ++++++++++++-----------
++ 3 files changed, 133 insertions(+), 23 deletions(-)
++
++commit c313326ecd57023ec195bfc4af3902e19a203cb4
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 03:16:32 2011 +0000
++
++    updating the rule for configure.in to confiture.ac..
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 592cc1ad3e2f0f0edc970573f34023e547cd7e5b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 03:08:59 2011 +0000
++
++    Updating the name from configure.in to configure.ac, as is the modern style.
++
++ server/configure.ac |  619 +++++++++++++++++++++++++++++++++++++++++++++++++++
++ server/configure.in |  619 ---------------------------------------------------
++ 2 files changed, 619 insertions(+), 619 deletions(-)
++
++commit 8370eda34d8111225c1a30010b6d74aa2a77b21d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 03:06:52 2011 +0000
++
++    Preparing for beta2 soonish.
++
++ Makefile |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 9fc2cb7257f65dba03dd40bc395176fdd700d4f6
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 03:05:37 2011 +0000
++
++    Let the user choose whether to include expat or FUP from ./configure, as in: ./configure --enable-expat=no --enable-fup=yes.
++
++ server/configure    |  234 ++++++++++++++++++++++++++++++---------------------
++ server/configure.in |   56 ++++++++++--
++ 2 files changed, 185 insertions(+), 105 deletions(-)
++
++commit 72412cd480b929b62a33ea97d8801742e5b43b91
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 03:03:02 2011 +0000
++
++    Broke out ext-xml.c from the main group of source files.
++
++ server/Makefile.in |    9 +++++----
++ 1 file changed, 5 insertions(+), 4 deletions(-)
++
++commit f34d25defc8614b46597185cf570c1870f97374f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 02:56:47 2011 +0000
++
++    Added USE_EXT_FUP and HAVE_EXPAT_H for conditional compilation.
++
++ server/config.h.in |    9 +++++++++
++ 1 file changed, 9 insertions(+)
++
++commit 2f8895d9255b8976505541fef9e725efd08a2668
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 02:55:47 2011 +0000
++
++    Added #ifdef/#endif around the externs and function calls for FUP and expat  to handle conditional compilation.
++
++ server/extensions.c |   16 +++++++++++++---
++ 1 file changed, 13 insertions(+), 3 deletions(-)
++
++commit a52f11fa6bc1066e59322656af00677871c9a38c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Feb 10 02:55:08 2011 +0000
++
++    Added #ifdef/#endif around the code to handle conditional compilation.
++
++ server/ext-FUP.c |   10 +++++++++-
++ server/ext-xml.c |    6 ++++--
++ 2 files changed, 13 insertions(+), 3 deletions(-)
++
++commit fbdc257a6ca616a92bc0c86653a5c34e437e8bf2
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 05:00:01 2011 +0000
++
++    Now the user can specify --enable-expat=[yes|no] to ./configure, or
++    leave it out entirely. Default is to compile with Expat.
++    
++    If the expat library is not found, or the expat.h header file is not
++    found, it still compiles without XML. It should probably fail during
++    ./configure if the user specified --enable-expat.
++    
++    I may change to a different macro and use --with-xml instead of
++    --enable-expat.
++
++ server/configure.in |   31 +++++++++++++++++++++++--------
++ 1 file changed, 23 insertions(+), 8 deletions(-)
++
++commit 6a220eac36954f939149215715cdda89edd73809
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 04:57:13 2011 +0000
++
++    I've removed the patches for configure, aclocal.m4 and such... that
++    stuff I wrote using the standard way of doing things per the No Starch
++    Press book on autotools.
++
++ server/misc/LambdaMOO-1.8.1-ssl.patch | 5184 ---------------------------------
++ 1 file changed, 5184 deletions(-)
++
++commit a440f6b1fde619975fd2f1412909276e9038812e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 04:18:57 2011 +0000
++
++    typo fix: missing space
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 13cd97a6ecde30ea694a37fbdc9913173b593048
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 04:10:42 2011 +0000
++
++    I've added conditionals to configure.in to test if:
++    
++    1) the expat lib is there, and:
++    
++    2) the header file expat.h is there
++    
++    I added:
++    
++    #if HAVE_EXPAT_H
++    
++    at the top of ext-xml.c, and if the library and the header file are on
++    the system the server is compiled with expat, else not...
++
++ server/configure.in |   17 +++++++++++++++--
++ server/ext-xml.c    |    3 +++
++ 2 files changed, 18 insertions(+), 2 deletions(-)
++
++commit f2fb3ec3c963497997493c514c2a54496280dd0b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 03:52:57 2011 +0000
++
++    added the standard DEFS = @DEFS@ variable, and $(DEFS) to the compilation incantations
++
++ server/Makefile.in |   18 +++++++++---------
++ 1 file changed, 9 insertions(+), 9 deletions(-)
++
++commit 9edb2da251f723879c81e98fb6522c6ebb8c887b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 03:44:51 2011 +0000
++
++    I've removed the  -DEXPAT_XML flag from the compiler flags, and I've replaced:
++    
++    #ifdef EXPAT_XML
++    
++    with:
++    
++    #if HAVE_EXPAT_H
++
++ server/Makefile.in  |    4 ++--
++ server/extensions.c |    6 ++++--
++ 2 files changed, 6 insertions(+), 4 deletions(-)
++
++commit 40ff483073575756aea2967ff1d0b47f445ea097
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 03:37:34 2011 +0000
++
++    Check for expat.h, and don't check for the expat library twice...
++
++ server/configure.in |    3 +--
++ 1 file changed, 1 insertion(+), 2 deletions(-)
++
++commit 3901c10a7e19d7751036ea2568dccbd8ce3fc72d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 03:23:41 2011 +0000
++
++    newest generated configure script.
++
++ server/configure |  249 +++++++++++++++++++++++++++++++++++++++++-------------
++ 1 file changed, 189 insertions(+), 60 deletions(-)
++
++commit c1e4bd199a227837e2ca1064119c4d4dbd1bf71a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 03:22:05 2011 +0000
++
++    1) I don't think anyone needs to mail Pavil anymore; removed the address from the opening comment block.
++    
++    2) I've added AC_SEARCH_LIBS([XML_ParserCreate], [expat]) to
++    configure.in, so @LIBS@ now gets -lexpat during the linking
++    process... however, -lexpat shows up twice and I'm not sure why yet in
++    the linking stage. It's harmless but it bugs me.
++    
++    3) GNU Coding Standards specifies a make target called TAGS, so I
++    uppercased the existing target 'tags'.
++
++ server/Makefile.in  |   20 +++-----------------
++ server/configure.in |    3 +++
++ 2 files changed, 6 insertions(+), 17 deletions(-)
++
++commit 61e028ec2fb26337276254edf66ab4d6f6cc09d8
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 02:48:57 2011 +0000
++
++    stripped out old CVS log entries
++
++ server/configure.in |   60 ---------------------------------------------------
++ 1 file changed, 60 deletions(-)
++
++commit c2b2eb9bdb66965a3e9b0ed6375b5b2139d81704
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 02:39:37 2011 +0000
++
++    Adding install-sh per the GNU Coding Standards, the m4 macro AC_PROG_INSTALL to configure.in, and two variables to the Makefile.in.
++
++ server/Makefile.in  |    6 +-
++ server/configure.in |    1 +
++ server/install-sh   |  294 +++++++++++++++++++++++++++++++++++++++++++++++++++
++ 3 files changed, 299 insertions(+), 2 deletions(-)
++
++commit b25ff02f4d932631edc3274afe793093070108ff
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Feb 9 02:16:51 2011 +0000
++
++    1) CPPFLAGS was used but never defined; I've added the line
++    
++    CPPFLAGS = @CPPFLAGS@
++    
++    to pick up whatever system defaults an end user might have.
++    
++    2) I've broken out ext-FUP.c into its own make variable, in
++    anticipation of making this conditional during compilation.
++    
++    3) I ran 'make depend' to update the list of depedencies.
++
++ server/Makefile.in |  221 ++++++++++++++++++++++++----------------------------
++ 1 file changed, 101 insertions(+), 120 deletions(-)
++
++commit 06935aa2e7e544211803ed2d92da6a570b229c8c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Feb 8 21:51:59 2011 +0000
++
++    Experimental patch that converts the Task struct to a class with all public members, and changes all mymalloc() calls for it to 'new' and 'delete'. Seemed to work OK.
++
++ server/misc/tasks-to-classes.patch |  359 ++++++++++++++++++++++++++++++++++++
++ 1 file changed, 359 insertions(+)
++
++commit 3bf9619f93d9bbf7c619888f38610190d668f2c4
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jan 30 00:34:06 2011 +0000
++
++    commenting what a static inline function is, in C terminology
++
++ server/storage.c |    9 +++++++++
++ 1 file changed, 9 insertions(+)
++
++commit edccb9d58b1867a5a4390564c0ccd6366a56cc05
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jan 29 06:55:34 2011 +0000
++
++    removed CVS log entries...
++
++ server/exceptions.h |   29 -----------------------------
++ 1 file changed, 29 deletions(-)
++
++commit b91e35786867cf601cbd89168fcb4ad123133ab3
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jan 29 06:27:12 2011 +0000
++
++    In options.h, it was noted that using a copy of GNU's malloc() from emacs was deprecated and should be removed from future releases... which it never was. I've removed all preprocessor blocks from storage.c, updated Makefile.in to remove malloc.c, deleted malloc.c and gnu-malloc.c, and removed the option from options.h.
++
++ server/Makefile.in  |    8 +-
++ server/gnu-malloc.c |  885 ---------------------------------------------------
++ server/malloc.c     |   57 ----
++ server/options.h    |   19 --
++ server/storage.c    |   76 -----
++ 5 files changed, 2 insertions(+), 1043 deletions(-)
++
++commit 49d3401d4da7e2bdd6ba10957d833fcd8f62065f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jan 29 04:39:32 2011 +0000
++
++    Reformatted struct names that are internal to this module, following
++    Google's C++ style guide
++
++ server/tasks.c |   36 ++++++++++++++++++------------------
++ 1 file changed, 18 insertions(+), 18 deletions(-)
++
++commit 87ac8cf88bf8fb9cfa1c1d49e46cea4da15a8a52
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jan 29 04:22:34 2011 +0000
++
++    Removing more (hopefull, all) of the CVS log entries and RCS string constants.
++
++ server/Makefile.in    |  148 -------------------------------------------------
++ server/ast.h          |   47 ----------------
++ server/bf_register.h  |   26 ---------
++ server/code_gen.h     |   18 ------
++ server/config.h.in    |   54 ------------------
++ server/db.h           |   44 ---------------
++ server/db_io.h        |   30 ----------
++ server/db_private.h   |   26 ---------
++ server/decompile.h    |   17 ------
++ server/disassemble.h  |   19 -------
++ server/eval_env.h     |   27 ---------
++ server/eval_vm.h      |   33 -----------
++ server/execute.h      |   89 -----------------------------
++ server/functions.h    |   52 -----------------
++ server/getpagesize.h  |   17 ------
++ server/keywords.gperf |   16 ------
++ server/keywords.h     |   22 --------
++ server/list.h         |   23 --------
++ server/log.h          |   33 -----------
++ server/match.h        |   29 ----------
++ server/md5.h          |   12 ----
++ server/my-ctype.h     |   17 ------
++ server/my-fcntl.h     |   32 -----------
++ server/my-in.h        |   43 --------------
++ server/my-inet.h      |   20 -------
++ server/my-ioctl.h     |   30 ----------
++ server/my-math.h      |   17 ------
++ server/my-poll.h      |   20 -------
++ server/my-signal.h    |   35 ------------
++ server/my-socket.h    |   42 --------------
++ server/my-stat.h      |   26 ---------
++ server/my-stdarg.h    |   26 ---------
++ server/my-stdio.h     |   41 --------------
++ server/my-stdlib.h    |   47 ----------------
++ server/my-string.h    |   47 ----------------
++ server/my-stropts.h   |   16 ------
++ server/my-sys-time.h  |   33 -----------
++ server/my-time.h      |   31 -----------
++ server/my-tiuser.h    |   26 ---------
++ server/my-types.h     |   50 -----------------
++ server/my-unistd.h    |   51 -----------------
++ server/my-wait.h      |   20 -------
++ server/name_lookup.h  |   14 -----
++ server/net_mplex.h    |   20 -------
++ server/net_multi.h    |   17 ------
++ server/net_proto.h    |   42 --------------
++ server/network.h      |   48 ----------------
++ server/numbers.h      |   12 ----
++ server/opcode.h       |   48 ----------------
++ server/options.h      |  116 --------------------------------------
++ server/parse_cmd.h    |   33 -----------
++ server/parser.h       |   33 -----------
++ server/parser.y       |  107 -----------------------------------
++ server/pattern.h      |   17 ------
++ server/program.h      |   38 -------------
++ server/quota.h        |   20 -------
++ server/random.h       |   38 -------------
++ server/ref_count.h    |   23 --------
++ server/regexpr.h      |   10 ----
++ server/restart        |   20 -------
++ server/restart.sh     |   14 -----
++ server/server.h       |   39 -------------
++ server/storage.h      |   70 -----------------------
++ server/streams.h      |   26 ---------
++ server/structures.h   |   68 -----------------------
++ server/sym_table.h    |   31 -----------
++ server/timers.h       |   23 --------
++ server/tokens.h       |   11 ----
++ server/unparse.h      |   36 ------------
++ server/utils.h        |   76 -------------------------
++ server/verbs.h        |   17 ------
++ server/version.h      |   32 -----------
++ 72 files changed, 2551 deletions(-)
++
++commit c9db7759d9d267216ad8103b756d50541d3b5f3b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jan 29 03:58:17 2011 +0000
++
++    Renamed task_queue to TaskQueue, as a start to making struct naming consistent... and removed the old CVS log entries from task.h.
++
++ server/server.c |    2 +-
++ server/tasks.c  |   16 ++++++------
++ server/tasks.h  |   78 ++++++-------------------------------------------------
++ 3 files changed, 17 insertions(+), 79 deletions(-)
++
++commit ee890c181ef7503001322c9d8db28aebb2539214
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 28 03:53:13 2011 +0000
++
++    removed outdated bits, updated others...
++
++ server/README |   30 ++++++++++++++----------------
++ 1 file changed, 14 insertions(+), 16 deletions(-)
++
++commit 5f0a0b4764ace99bab7ccecc2572906184499f65
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 28 03:42:10 2011 +0000
++
++    removed old CVS log entries
++
++ server/MOOCodeSequences.txt |   16 ----------------
++ 1 file changed, 16 deletions(-)
++
++commit 36ffc7e6a6f2ef116a5f266ef5f81ddb80a57705
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 28 03:30:55 2011 +0000
++
++    Currently this generates HTML only (i.e. no Latex or XML), and uses /usr/bin/dot to generate many diagrams... the output is 431M, so be warned if you run it. It will place the docs outside the project in ../waverous-doxygen.
++
++ Doxyfile | 1635 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 1635 insertions(+)
++
++commit 23342ca86475f034438e0dfe5947150e9fff4c0b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 28 03:28:25 2011 +0000
++
++    Cleanup: removing all the old rcs string constants and the old CVS log entries.
++
++ server/ast.c           |   67 -----------
++ server/client_bsd.c    |   31 -----
++ server/client_sysv.c   |   55 ---------
++ server/code_gen.c      |   75 -------------
++ server/db_file.c       |   56 ----------
++ server/db_io.c         |   51 ---------
++ server/db_objects.c    |   47 --------
++ server/db_properties.c |   42 -------
++ server/db_verbs.c      |   64 -----------
++ server/decompile.c     |   68 -----------
++ server/disassemble.c   |   50 ---------
++ server/eval_env.c      |   52 ---------
++ server/eval_vm.c       |   56 ----------
++ server/exceptions.c    |   26 -----
++ server/execute.c       |  292 ------------------------------------------------
++ server/extensions.c    |   33 ------
++ server/functions.c     |  112 -------------------
++ server/gnu-malloc.c    |   25 -----
++ server/keywords.c      |   24 ----
++ server/list.c          |  115 -------------------
++ server/log.c           |   60 ----------
++ server/malloc.c        |   37 ------
++ server/match.c         |   47 --------
++ server/md5.c           |   13 ---
++ server/name_lookup.c   |   24 ----
++ server/net_bsd_lcl.c   |   44 --------
++ server/net_bsd_tcp.c   |   92 ---------------
++ server/net_mp_fake.c   |   28 -----
++ server/net_mp_poll.c   |   19 ----
++ server/net_mp_selct.c  |   26 -----
++ server/net_mplex.c     |   17 ---
++ server/net_multi.c     |  118 -------------------
++ server/net_proto.c     |   17 ---
++ server/net_single.c    |   65 -----------
++ server/net_sysv_lcl.c  |   62 ----------
++ server/net_sysv_tcp.c  |   80 -------------
++ server/net_tcp.c       |   14 ---
++ server/network.c       |   30 -----
++ server/numbers.c       |   73 ------------
++ server/objects.c       |   74 ------------
++ server/parse_cmd.c     |   69 ------------
++ server/pattern.c       |   25 -----
++ server/program.c       |   59 ----------
++ server/property.c      |   71 ------------
++ server/quota.c         |   35 ------
++ server/ref_count.c     |   44 --------
++ server/regexpr.c       |   27 -----
++ server/server.c        |  178 -----------------------------
++ server/storage.c       |   96 ----------------
++ server/streams.c       |   49 --------
++ server/sym_table.c     |   56 ----------
++ server/tasks.c         |  197 --------------------------------
++ server/timers.c        |   49 --------
++ server/unparse.c       |   97 ----------------
++ server/utils.c         |  118 -------------------
++ server/verbs.c         |  103 -----------------
++ 56 files changed, 3554 deletions(-)
++
++commit cf33acdfc8bce2f6485184f55142204d3fada68d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Jan 26 20:30:05 2011 +0000
++
++    Ran GNU indent on all .h and .c files to standardize the formatting. This project came with a .indent_pro file, which gives the args -kr -ip4 -psl -nfca -lps to GNU indent; and this dates from 1997, so I'm sticking with it for now.
++
++ server/ast.c                         |   24 +-
++ server/ast.h                         |    3 +-
++ server/bg_name_lookup.c              | 1249 ++++++++++++-----------
++ server/client_bsd.c                  |    3 +-
++ server/client_sysv.c                 |    3 +-
++ server/code_gen.c                    |   81 +-
++ server/db.h                          |   55 +-
++ server/db_file.c                     |  254 ++---
++ server/db_io.c                       |   30 +-
++ server/db_io.h                       |    4 +-
++ server/db_objects.c                  |   20 +-
++ server/db_private.h                  |    8 +-
++ server/db_properties.c               |   93 +-
++ server/db_verbs.c                    |   44 +-
++ server/decompile.c                   |  160 +--
++ server/disassemble.c                 |   51 +-
++ server/eval_env.c                    |    9 +-
++ server/eval_vm.c                     |    9 +-
++ server/exceptions.c                  |    3 +-
++ server/execute.c                     |  294 +++---
++ server/execute.h                     |    9 +-
++ server/ext-FUP-1.8/ext-FUP.c         | 1834 +++++++++++++++++-----------------
++ server/ext-FUP-1.8/ext-FUP_options.h |    8 +-
++ server/ext-FUP-1.8/extensions.c      |   63 +-
++ server/ext-FUP.c                     | 1827 ++++++++++++++++-----------------
++ server/ext-FUP_options.h             |    7 +-
++ server/ext-xml.c                     |  389 +++----
++ server/extensions.c                  |  154 +--
++ server/functions.c                   |   64 +-
++ server/functions.h                   |    4 +-
++ server/gnu-malloc.c                  |    4 +-
++ server/keywords.c                    |    9 +-
++ server/list.c                        |  105 +-
++ server/log.c                         |   13 +-
++ server/log.h                         |    4 +-
++ server/match.c                       |    2 +-
++ server/md5.c                         |    3 +-
++ server/my-fcntl.h                    |    4 +-
++ server/my-ioctl.h                    |    2 +-
++ server/my-stdio.h                    |    8 +-
++ server/name_lookup.c                 |   42 +-
++ server/net_bsd_lcl.c                 |    7 +-
++ server/net_bsd_tcp.c                 |  160 +--
++ server/net_mp_fake.c                 |    8 +-
++ server/net_mp_poll.c                 |    6 +-
++ server/net_mp_selct.c                |    8 +-
++ server/net_mplex.c                   |    3 +-
++ server/net_multi.c                   |   58 +-
++ server/net_proto.c                   |    3 +-
++ server/net_proto.h                   |    6 +-
++ server/net_single.c                  |    9 +-
++ server/net_sysv_lcl.c                |    9 +-
++ server/net_sysv_tcp.c                |    8 +-
++ server/net_tcp.c                     |   64 +-
++ server/network.c                     |  126 +--
++ server/network.h                     |   12 +-
++ server/numbers.c                     |   57 +-
++ server/objects.c                     |   20 +-
++ server/options.h                     |    8 +-
++ server/parse_cmd.c                   |   14 +-
++ server/pattern.c                     |    6 +-
++ server/pattern.h                     |    2 +-
++ server/pgperf/boolarray.c            |   87 +-
++ server/pgperf/boolarray.h            |   21 +-
++ server/pgperf/getopt.c               |  346 +++----
++ server/pgperf/hashtable.c            |  112 +--
++ server/pgperf/hashtable.h            |   15 +-
++ server/pgperf/iterator.c             |  117 ++-
++ server/pgperf/iterator.h             |   22 +-
++ server/pgperf/keylist.c              | 1666 +++++++++++++++---------------
++ server/pgperf/keylist.h              |   41 +-
++ server/pgperf/listnode.c             |  127 +--
++ server/pgperf/listnode.h             |   25 +-
++ server/pgperf/main.c                 |   94 +-
++ server/pgperf/options.c              |  592 ++++++-----
++ server/pgperf/options.h              |   90 +-
++ server/pgperf/perfect.c              |  480 +++++----
++ server/pgperf/perfect.h              |   25 +-
++ server/pgperf/prototype.h            |    2 +-
++ server/pgperf/readline.c             |   78 +-
++ server/pgperf/readline.h             |    5 +-
++ server/pgperf/stderr.c               |  100 +-
++ server/pgperf/stderr.h               |    6 +-
++ server/pgperf/xmalloc.c              |   67 +-
++ server/program.c                     |    3 +-
++ server/program.h                     |    4 +-
++ server/property.c                    |    9 +-
++ server/ref_count.c                   |    6 +-
++ server/regexpr.c                     |  203 ++--
++ server/server.c                      |  341 ++++---
++ server/server.h                      |   10 +-
++ server/storage.c                     |   10 +-
++ server/storage.h                     |    3 +-
++ server/str_intern.c                  |  195 ++--
++ server/streams.c                     |   12 +-
++ server/streams.h                     |    2 +-
++ server/structures.h                  |   33 +-
++ server/sym_table.c                   |    8 +-
++ server/tasks.c                       |  607 ++++++-----
++ server/tasks.h                       |   12 +-
++ server/timers.c                      |    2 +-
++ server/tools/moobrowser.c            | 1451 ++++++++++++++-------------
++ server/unparse.c                     |   21 +-
++ server/utils.c                       |   41 +-
++ server/verbs.c                       |   28 +-
++ server/version.c                     |    3 +-
++ 106 files changed, 7580 insertions(+), 7088 deletions(-)
++
++commit 88797b1b229f36bfa38b9e817eeed7885a6dbe79
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jan 25 22:56:12 2011 +0000
++
++    Removing trailing comma to make -pedantic happy
++
++ server/tasks.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 0fe582b4d3cae4f9ce785d10e5d4f790a76d62aa
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jan 25 17:25:21 2011 +0000
++
++    Creating a chrooted environment to run waverous in...
++
++ server/tools/chroot.sh |   41 +++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 41 insertions(+)
++
++commit caa3f515ba4765d18cbcf0d73303987c7253461f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jan 23 23:29:55 2011 +0000
++
++    getting rid of this cvs cruft
++
++ CVSROOT/checkoutlist |   13 -------------
++ CVSROOT/commitinfo   |   15 ---------------
++ CVSROOT/config       |   11 -----------
++ CVSROOT/cvswrappers  |   23 -----------------------
++ CVSROOT/editinfo     |   21 ---------------------
++ CVSROOT/loginfo      |   26 --------------------------
++ CVSROOT/modules      |   26 --------------------------
++ CVSROOT/notify       |   12 ------------
++ CVSROOT/rcsinfo      |   13 -------------
++ CVSROOT/taginfo      |   20 --------------------
++ CVSROOT/verifymsg    |   21 ---------------------
++ 11 files changed, 201 deletions(-)
++
++commit 9ec64d530f9800faf803035e5fd09866e4d89693
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jan 23 21:20:58 2011 +0000
++
++    Basic top level Makefile, the main use being to build a release.
++
++ Makefile |   19 +++++++++++++++++++
++ 1 file changed, 19 insertions(+)
++
++commit 92792295da0585c6e3fe7017b18da8bbe5624cea
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jan 23 21:20:24 2011 +0000
++
++    Removing the distribution-making rule and its variable DISTFILES. I've
++    created a top level Makefile that uses 'svn export' to build a distro
++    for release.
++
++ server/Makefile.in |   20 --------------------
++ 1 file changed, 20 deletions(-)
++
++commit 8f5febff45602c2864c13a11f1baef1673e1c6e9
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jan 23 20:57:19 2011 +0000
++
++    I added the following:
++    
++    all: moo
++    
++    .PHONY: all clean distclean tags depend pure_moo
++    
++    And some of the comments have been updated...
++
++ server/Makefile.in |   23 ++++++++++++-----------
++ 1 file changed, 12 insertions(+), 11 deletions(-)
++
++commit 9e8ff2a3898df3050f835de11d53a32686a619db
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 21:06:09 2011 +0000
++
++    default to -m32 for compiles, since the server is not 64 bit safe yet.
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit bfbdeb0c41c321fcbc305acc8e6ef68acdc5ade7
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 20:57:42 2011 +0000
++
++    New generated 'configure' file.
++
++ server/configure |  899 ++++++++++++++++++++++++++++++++++++------------------
++ 1 file changed, 601 insertions(+), 298 deletions(-)
++
++commit b30641602b21f9cc78a942afcf37e1680ce0090c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 20:56:53 2011 +0000
++
++    Turns out I just needed to change AC_PROG_CC to AC_PROG_CXX, and then  gets set to @CXX@ in the generated Makefile.
++
++ server/Makefile.in  |   12 +++++++-----
++ server/configure.in |    2 +-
++ 2 files changed, 8 insertions(+), 6 deletions(-)
++
++commit 647d88070f065b5aac90ee4b98f7dc0e4819c4f8
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 20:18:16 2011 +0000
++
++    I'm removing the hardcoded definition of the compiler:
++    
++    CC = @CC@
++    
++    and substituting $(CC) for $(CXX) throughout. What this does is cause
++    'make' to use the system default C++ compiler. I tried to use @CXX@
++    instead of removing the line above but it didn't work.
++
++ server/Makefile.in |   12 ++++++------
++ 1 file changed, 6 insertions(+), 6 deletions(-)
++
++commit 246cfa5b049bb87f01e822b2fe98c9a58c98a579
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 19:50:31 2011 +0000
++
++    quoting the argument to AC_CONFIG_HEADERS
++
++ server/configure.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 5595e4d7bf3dc987058aa311150f8eb1fb388796
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 19:48:22 2011 +0000
++
++    changing AC_CONFIG_HEADER to AC_CONFIG_HEADERS per the No Starch Press book on autotools; claims the newer macro is more functional, though the 'configure' script it output is no different.
++
++ server/configure.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 4d8f8d961f148ebb195012eff60bb4d02baf5b04
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 04:45:09 2011 +0000
++
++    Updated versions of configure.in and the generated configure file, based on info from the No Starch Press book on Autotools.
++
++ server/configure    | 9832 ++++++++++++++++++++++++++++++++++++++-------------
++ server/configure.in |   24 +-
++ 2 files changed, 7442 insertions(+), 2414 deletions(-)
++
++commit 2a4383d7ba0708640d99c929afca29d49adae859
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jan 21 02:57:40 2011 +0000
++
++    added @configure_input@
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit be7a2bb1db1669afa1a6836968a3a621d8a1863f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 21:54:54 2011 +0000
++
++    'ed' not found on my system, changing it to 'ex'
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 5bfdeb11d699b8adbdab4daa123dea06baa2a16c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 20:33:48 2011 +0000
++
++    This copy of configure.in comes from wp-lambdamoo off github. Here's
++    the relevant commit log entries:
++    
++    
++    [swain@klingklang wp-lambdamoo]$ git log configure.in
++    commit 472ffa9da510684d62ec19a9d465e853e6682e30
++    Author: Rob Leslie <rob@mars.org>
++    Date:   Wed Nov 19 20:12:36 2008 -0800
++    
++        Fix autoconf usage bug
++    
++        Use AC_DEFINE_UNQUOTED instead of AC_DEFINE when the argument is a shell
++        variable that needs to be expanded.
++    
++    commit 4e06f5686ac86d63636f9936ef85a1624d8eacff
++    Author: Rob Leslie <rob@mars.org>
++    Date:   Wed Nov 19 19:25:25 2008 -0800
++    
++        Fix m4 quoting bug
++    
++        An obscure interaction between m4 macros and shell case statement
++        parenthesis caused a syntax error in configure.
++
++ server/configure.in |   17 +++++++++++------
++ 1 file changed, 11 insertions(+), 6 deletions(-)
++
++commit 75d650a9070d6407b6c68e0dff09da04df4c949b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 19:58:45 2011 +0000
++
++    removed the '-t' flag to etags, which it doesn't have... though it
++    seems superflous to me to have your makefile generate your tags
++    file... but what do I know?
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 4ff053db371cf523a5a974365a1cb1005ed2a5f5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 19:55:14 2011 +0000
++
++    fixing the subpath to Minimal.db
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 3e3a1e17d96fb6a120632b0fc6c75ae221456724
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 19:52:00 2011 +0000
++
++    noting that Pavel used a custom build of gperf to generate keywords.c,
++    pointing to the README in ./pgperf
++
++ server/Makefile.in |    2 ++
++ 1 file changed, 2 insertions(+)
++
++commit 5c099757c290b1d899ce22e3870a5ea045a24b90
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 19:39:01 2011 +0000
++
++    "main" must return int, claims g++.
++
++ server/client_sysv.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 02dc2c64fc83a858e8a8fdb96e1b1d2ed6dae85e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 19:36:42 2011 +0000
++
++    commenting the rule "pure_moo" : 'purify' is a memory access tester
++    which today is IBM Rational Purify.
++
++ server/Makefile.in |    1 +
++ 1 file changed, 1 insertion(+)
++
++commit 52456fe45b9af0f954cbc70e834312be5a501e6e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jan 20 19:08:04 2011 +0000
++
++    adding config.log and config.cache to distclean
++
++ server/Makefile.in |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 34ba180d8aea2557b62b3cdb9102d6bcee038232
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 18 18:51:39 2010 +0000
++
++    gzipping the db files for massive space savings
++
++ server/databases/JHCore-DEV-2.db          |127729 --------------
++ server/databases/JHCore-DEV-2.db.gz       |  Bin 0 -> 637555 bytes
++ server/databases/LambdaCore-12Apr99.db    |256453 -----------------------------
++ server/databases/LambdaCore-12Apr99.db.gz |  Bin 0 -> 643504 bytes
++ 4 files changed, 384182 deletions(-)
++
++commit 3b51bee96557f9cb2a9e5c73c4496b0690174a8c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 18 18:28:58 2010 +0000
++
++    adding JHCore database and its copyright notice.
++
++ server/databases/COPYRIGHT.JHCore |   25 +
++ server/databases/JHCore-DEV-2.db  |127729 +++++++++++++++++++++++++++++++++++++
++ 2 files changed, 127754 insertions(+)
++
++commit 1553f1c53065574b460b70c4fc562013aea174d4
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Dec 17 02:43:23 2010 +0000
++
++    I forget where I picked up this patch, but it shows one way to add SSL support to the server.
++
++ server/misc/LambdaMOO-1.8.1-ssl.patch | 5709 +++++++++++++++++++++++++++++++++
++ 1 file changed, 5709 insertions(+)
++
++commit 9d6bc9aa0e1556258dcdfb52317742e08e379222
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Dec 17 02:42:24 2010 +0000
++
++    I found this via some link for the enCore database for LambdaMoo; in
++    fact, here: http://lingo.uib.no/v5/install/LambdaMOO-utf8.html
++    
++    There are other patches to make LambdaMoo work with utf-8, I
++    believe...
++
++ server/misc/unicode-moo-4.diff |    4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++commit 6eafe534ccf23a1ed6a0516408e096e40ed0dcbb
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Dec 17 02:40:32 2010 +0000
++
++    directory to store random artifacts like patch files... I will probably delete this directory in the future.
++
++ server/misc/unicode-moo-4.diff |  771 ++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 771 insertions(+)
++
++commit 320f0a71cb9ad9af6f25942ce72f433f2ec0328f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Dec 16 21:19:38 2010 +0000
++
++    added a note about missing features causing objects to throw errors; for example, the lander tries to call (player) but that function does not exist in stock LambdaCore.
++
++ server/objects/README     |    6 ++++++
++ server/objects/lander.moo |    4 ++++
++ 2 files changed, 10 insertions(+)
++
++commit d46c2a6a4e1762a586ca2ec4d978df2ce80e3b83
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Dec 16 21:07:48 2010 +0000
++
++    Adding a set of moo objects I've written over the years, mostly toys, which I want to use for testing.
++
++ server/objects/README           |   11 +++
++ server/objects/algoredoll.moo   |   20 +++++
++ server/objects/clippy.moo       |  116 ++++++++++++++++++++++++++++
++ server/objects/engrish.moo      |   29 +++++++
++ server/objects/governor.moo     |   26 +++++++
++ server/objects/gwbushdoll.moo   |   47 ++++++++++++
++ server/objects/knights.moo      |   19 +++++
++ server/objects/lander.moo       |  126 +++++++++++++++++++++++++++++++
++ server/objects/michaelscott.moo |   19 +++++
++ server/objects/parrot.moo       |   33 ++++++++
++ server/objects/puppet.moo       |  159 +++++++++++++++++++++++++++++++++++++++
++ server/objects/timer.moo        |   61 +++++++++++++++
++ 12 files changed, 666 insertions(+)
++
++commit dcb9810e9ad6b80ddff1478609e54184473e8199
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Dec 16 14:24:20 2010 +0000
++
++    Minor cleanup: creating a directory to store database files
++
++ server/LambdaCore-12Apr99.db           |256453 --------------------------------
++ server/Minimal.db                      |   76 -
++ server/databases/LambdaCore-12Apr99.db |256453 ++++++++++++++++++++++++++++++++
++ server/databases/Minimal.db            |   76 +
++ 4 files changed, 256529 insertions(+), 256529 deletions(-)
++
++commit 8a06be4e52bb54e8d160ef4a08d72ed896e9904e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Dec 8 02:06:01 2010 +0000
++
++    Adding Neil Fraser's Python tool to convert a Moo database file into XML
++
++ server/tools/moo2xml.py |  400 +++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 400 insertions(+)
++
++commit 0649da68b0bd4c5832402128eeb99eb34ee50e31
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Dec 7 21:03:32 2010 +0000
++
++    annotating a function, even if briefly
++
++ server/net_multi.c |    3 +++
++ 1 file changed, 3 insertions(+)
++
++commit fb17487ef0a619ea22f0fe846d945b8e33488e87
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 4 01:25:20 2010 +0000
++
++    Added a #ifndef for INT32_MAX, which is predefined by Darwin
++
++ server/config.h.in |    2 ++
++ 1 file changed, 2 insertions(+)
++
++commit d0cc41f94708c98e25285ed341f60d23f4447abe
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 4 01:14:20 2010 +0000
++
++    removing unused variable 'timeout' from proto_accept_connection():
++    
++        int timeout = server_int_option("name_lookup_timeout", 5);
++
++ server/net_bsd_tcp.c |    1 -
++ 1 file changed, 1 deletion(-)
++
++commit f6205f91e3b2e1074f3e3d5416bc1307e2a70ea0
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 4 01:10:45 2010 +0000
++
++    though I don't see what the deal is, the compiler warns about an
++    assignment used as a truth statement in the IF, and wants parentheses
++    around the statement. So, have some parentheses!
++
++ server/ext-xml.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit f929deb1f4452574500920165efd8000eea214fe
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 4 01:01:47 2010 +0000
++
++    Cleaning up warnings generated when compiled with -pendantic:
++    comparing signed and unsigned ints. The signed ints were just
++    temporary variables used as loop counters.
++    
++    I added one more int to db_find_property to achieve consistency in int
++    comparisons... previously 'i' was being reused, which was compared to
++    signed and unsigned in the original code.
++
++ server/db_properties.c |    9 +++++----
++ 1 file changed, 5 insertions(+), 4 deletions(-)
++
++commit 76d59839a8f1afbcc5f96f629e66ac350a3abf0d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Dec 4 00:55:47 2010 +0000
++
++    Cleaning up warnings generated when compiled with -pendantic:
++    comparing signed and unsigned ints. The signed ints were just
++    temporary variables used as loop counters.
++
++ server/code_gen.c |    7 ++++---
++ 1 file changed, 4 insertions(+), 3 deletions(-)
++
++commit 2db024eeccd13cf663b2f0a2519af0814c1763d2
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Dec 3 15:08:01 2010 +0000
++
++    removing ending comma, which -pedantic-errors complains about
++
++ server/db.h |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 7aa66ca32ba828d09a146da25d1a65ce0f3eec5c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Dec 1 18:07:35 2010 +0000
++
++    It seems, for Fedora 14, strchr() does not want a const char * as its
++    first argument, despite what the man page says; casting it to char *
++    gets around a compilation error, and Darwin seems OK with this change.
++
++ server/ext-xml.c |   26 +++++++++++++-------------
++ 1 file changed, 13 insertions(+), 13 deletions(-)
++
++commit d53c1e64dce266c8bfe45bf07a282e80f847069d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Nov 20 23:53:01 2010 +0000
++
++    I changed the printf's to cout's to try to make the compiler happy on
++    OSX, and will try it out on Linux now... I found the way the array
++    sizes are counted can be fixed by casting, and I cast the two malloc
++    calls, all to make g++ happy. Compiles with no warnings on OSX now and
++    seems to work with no segmentation faults.
++
++ server/tools/moobrowser.c |   59 ++++++++++++++++++++++++++++++---------------
++ 1 file changed, 39 insertions(+), 20 deletions(-)
++
++commit 6a167399b653ab7a6e0b06efa78282433e959f1a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Nov 19 17:08:08 2010 +0000
++
++    Linux, on the other hand, does not like $ld at all, so switching it to
++    $u. osx will have to deal with it for now.
++
++ server/tools/moobrowser.c |   24 ++++++++++++------------
++ 1 file changed, 12 insertions(+), 12 deletions(-)
++
++commit 65084952c8af0c560dd9c49da9219c8f7fc1c6eb
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Nov 19 17:04:49 2010 +0000
++
++    Changed the formatter in printf to ld, to satisfy gcc on osx
++
++ server/tools/moobrowser.c |   24 ++++++++++++------------
++ 1 file changed, 12 insertions(+), 12 deletions(-)
++
++commit d64ece3c71d2548c8ad2ee497e2c20c20b0798f9
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Nov 19 16:42:08 2010 +0000
++
++    adding braces so -Wall does not complain about no explict braces
++
++ server/tools/moobrowser.c |    8 +++++---
++ 1 file changed, 5 insertions(+), 3 deletions(-)
++
++commit 684f640d482604b1855738ec422a52ca98e03fd2
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Nov 19 16:25:43 2010 +0000
++
++    minor formatting change
++
++ manual/common.css |   10 +++++-----
++ 1 file changed, 5 insertions(+), 5 deletions(-)
++
++commit fca29693f5e972fcb3f8c60a34b6691be2050033
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Nov 18 05:05:30 2010 +0000
++
++    Minor formatting change
++
++ server/ext-xml.c |    8 ++++----
++ 1 file changed, 4 insertions(+), 4 deletions(-)
++
++commit 3247be2418806b1c5550c9b630a3e34e9c05a7ac
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Nov 17 22:01:25 2010 +0000
++
++    Rudimentary script to test the server
++
++ server/tools/test.exp |    2 ++
++ 1 file changed, 2 insertions(+)
++
++commit 582ef4253fed312b9ded266efef06a7080f7cc68
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Wed Nov 17 22:00:50 2010 +0000
++
++    Adding a tools directory, and two of Neil Fraser's moo tools (http://neil.fraser.name/software/moobrowser/)
++
++ server/tools/moobrowser.c |  865 +++++++++++++++++++++++++++++++++++++++++++++
++ server/tools/test.exp     |   31 ++
++ 2 files changed, 896 insertions(+)
++
++commit f6687fbd577f16078d8f8aae7f6595679abd2942
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Thu Oct 29 14:16:45 2009 +0000
++
++    handle nil value gracefully
++
++ server/network.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 3f1828424febde523d27518998987a2bc144d9d0
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Oct 27 20:13:12 2009 +0000
++
++    oops, missed one new file to commit
++
++ server/bg_name_lookup.c |  831 +++++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 831 insertions(+)
++
++commit b76eaa6e78f3183b1faa21daac08b25ba84c20b1
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Oct 27 20:03:18 2009 +0000
++
++    cleaning up
++
++ server/avalon-patches/CHANGES-Avalon.txt        |   23 -
++ server/avalon-patches/README.txt                |   23 -
++ server/avalon-patches/apply_order.sh            |   10 -
++ server/avalon-patches/d20040322-d20040323.patch |   22 -
++ server/avalon-patches/d20040323-d20040415.patch |   13 -
++ server/avalon-patches/d20040415-d20040416.patch |   53 -
++ server/avalon-patches/d20040416-d20041022.patch |   30 -
++ server/avalon-patches/d20041022-d20050324.patch |  406 ----
++ server/avalon-patches/d20050324-d20050327.patch | 2241 -----------------------
++ server/avalon-patches/d20050327-d20051106.patch |  256 ---
++ server/avalon-patches/d20051106-d20051107.patch |  626 -------
++ server/avalon-patches/tORIGINAL-d20040322.patch |  666 -------
++ 12 files changed, 4369 deletions(-)
++
++commit 52480d90e7b0fb6a3f447cda120c9d686d6e1f44
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Oct 27 20:00:32 2009 +0000
++
++    This largish commit is mostly the work of Merlin and Andy, getting the
++    bg_name_lookup stuff to work, and is the last of the Avalonpatches. Some function signatures were changed to accept void pointersto make them consistent with other functions... that is, up and downthe stack the arguments are void pointers, and the pointer is thencast within the function.
++
++ server/Makefile.in   |    6 +++-
++ server/bf_register.h |    3 ++
++ server/configure     |   87 ++++++++++++++++++++++++++++++++++++++++++++++++++
++ server/db_file.c     |    4 ++-
++ server/functions.c   |    3 ++
++ server/net_bsd_tcp.c |    4 ++-
++ server/server.c      |   52 +++++++++++++++++++++++-------
++ server/server.h      |   10 +++++-
++ 8 files changed, 153 insertions(+), 16 deletions(-)
++
++commit 4fabeff1732824aedb75f26045dd374eddf383d4
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Oct 26 22:17:58 2009 +0000
++
++    removing ident stuff; specifically, commented it out of options.h, and removed the flag I put in Makefile.in to look for the ident library.
++
++ server/Makefile.in |    2 +-
++ server/options.h   |    2 +-
++ 2 files changed, 2 insertions(+), 2 deletions(-)
++
++commit dbc541ca1e0c97e31e350ee19ffc98525fef5a93
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Oct 26 22:05:55 2009 +0000
++
++    Resolved the issues with expat and ident, and the casting problem with getsockaddress.
++
++ server/Makefile.in   |    8 ++++----
++ server/ext-xml.c     |    2 +-
++ server/list.c        |    2 +-
++ server/net_bsd_tcp.c |   10 +++++-----
++ 4 files changed, 11 insertions(+), 11 deletions(-)
++
++commit 8a3048bb798e50e20aa4d815ce9dce61de014324
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 21:39:07 2009 +0000
++
++    applied d20051106-d20051107.patch
++
++ server/db_io.c        |    9 ++
++ server/execute.c      |   13 ++-
++ server/net_mp_selct.c |    9 +-
++ server/net_mplex.h    |    2 +-
++ server/net_multi.c    |    2 +-
++ server/network.h      |    4 +-
++ server/server.c       |   20 +++--
++ server/tasks.c        |  223 ++++++++++++++++++++++++++++++++++++++++---------
++ server/tasks.h        |    4 +-
++ 9 files changed, 226 insertions(+), 60 deletions(-)
++
++commit 34c09ed2433fab02343b127f440f25c5789e0ed5
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 21:34:38 2009 +0000
++
++    applied d20050327-d20051106.patch
++
++ server/ext-xml.c   |   79 +++++++++++++++++++++++++++++++++++++++++++---------
++ server/net_multi.c |    2 ++
++ server/network.c   |   19 +++++++++++++
++ server/tasks.c     |   14 ++++++++++
++ 4 files changed, 101 insertions(+), 13 deletions(-)
++
++commit 9e2e789aecad865dfe98f9ead7c8725f4578d022
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 05:56:31 2009 +0000
++
++    applied d20041022-d20050324.patch
++
++ server/Makefile.in  |   17 +++-
++ server/ext-xml.c    |  233 +++++++++++++++++++++++++++++++++++++++++++++++++++
++ server/extensions.c |    7 ++
++ server/storage.h    |    1 +
++ 4 files changed, 254 insertions(+), 4 deletions(-)
++
++commit 23ab138935bed58c5edcfac4f5c19cbb0335cc02
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 05:50:34 2009 +0000
++
++    applied d20040416-d20041022.patch
++
++ server/extensions.c |   20 +++++++++++++-------
++ 1 file changed, 13 insertions(+), 7 deletions(-)
++
++commit 73cc93b001fd1ae05d2559e7c56b50d9b9c08c6a
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 05:49:59 2009 +0000
++
++    applied d20040415-d20040416.patch
++
++ server/extensions.c |   28 ++++++++++++++++++++++++++++
++ 1 file changed, 28 insertions(+)
++
++commit d7d6bd33eca201e8d08ea7cfdc3b1571dabf3422
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 05:49:38 2009 +0000
++
++    applied d20040323-d20040415.patch
++
++ server/extensions.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit eccbb21b1901ab20e4b0f1a95bf5c10a94c3dcdf
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 05:49:00 2009 +0000
++
++    applied d20040322-d20040323.patch
++
++ server/server.c |   10 ++++++++++
++ 1 file changed, 10 insertions(+)
++
++commit 33f2e5f6321797e23a3aaa38bc6c8b2cfa9882e4
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 05:42:28 2009 +0000
++
++    applied first avalon patch - tORIGINAL-d20040322.patch
++
++ server/Makefile.in       |    2 +-
++ server/configure.in      |    1 +
++ server/ext-FUP.c         |   67 +++++++++++-----------
++ server/ext-FUP_options.h |    6 +-
++ server/extensions.c      |  139 +++++++++++++++++++++++++++++++++++++++++++++-
++ server/net_bsd_tcp.c     |   93 +++++++++++++++++++++++++------
++ server/net_multi.c       |   26 +++++++++
++ server/network.c         |   22 +++++++-
++ server/network.h         |    2 +
++ server/options.h         |    4 +-
++ server/server.c          |  123 +++++++++++++++++++++++++++++++++++++---
++ 11 files changed, 418 insertions(+), 67 deletions(-)
++
++commit 59557bf78826138f58c36dbacf30abdebab87b31
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 04:21:44 2009 +0000
++
++    Tweak to let lrand48() be found on linux - use the header file instead of making our own extern delaration
++
++ server/random.h |    6 ++++--
++ 1 file changed, 4 insertions(+), 2 deletions(-)
++
++commit f9662df9ec74349a51a744a00675b87d8a0b817e
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 04:20:09 2009 +0000
++
++    Tweak to let crypt() be found on linux - use the header file instead of making our own extern delaration
++
++ server/list.c |    3 ++-
++ 1 file changed, 2 insertions(+), 1 deletion(-)
++
++commit 2ba6ccde2fb8088f91fc08595650cea00c5c016e
++Author: Randy Beiter <merlin4269@gmail.com>
++Date:   Mon Oct 26 03:45:55 2009 +0000
++
++    Tweaks to compile on RedHat based linux system
++
++ server/db_file.c    |    2 +-
++ server/exceptions.c |    2 +-
++ 2 files changed, 2 insertions(+), 2 deletions(-)
++
++commit 36f3bd227652f44299972cc0efa40b4234028aa6
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jul 3 00:19:44 2009 +0000
++
++    Adding FUP files per install instructions
++
++ server/ext-FUP.c         | 1156 ++++++++++++++++++++++++++++++++++++++++++++++
++ server/ext-FUP_options.h |   35 ++
++ 2 files changed, 1191 insertions(+)
++
++commit 407358d528ade5afd2d3c13a199ed4f528e06da4
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jul 2 20:13:07 2009 +0000
++
++    adding LambdaCore database
++
++ server/LambdaCore-12Apr99.db |256453 ++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 256453 insertions(+)
++
++commit efb5294fd583e45a0131c74aa34b31efad55b240
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jul 2 20:12:47 2009 +0000
++
++    commiting Avalon patch files for now; will delete later. removing tarball.
++
++ server/avalon-patches.tgz                       |  Bin 58836 -> 0 bytes
++ server/avalon-patches/CHANGES-Avalon.txt        |   23 +
++ server/avalon-patches/README.txt                |   23 +
++ server/avalon-patches/apply_order.sh            |   10 +
++ server/avalon-patches/d20040322-d20040323.patch |   22 +
++ server/avalon-patches/d20040323-d20040415.patch |   13 +
++ server/avalon-patches/d20040415-d20040416.patch |   53 +
++ server/avalon-patches/d20040416-d20041022.patch |   30 +
++ server/avalon-patches/d20041022-d20050324.patch |  406 ++++
++ server/avalon-patches/d20050324-d20050327.patch | 2241 +++++++++++++++++++++++
++ server/avalon-patches/d20050327-d20051106.patch |  256 +++
++ server/avalon-patches/d20051106-d20051107.patch |  626 +++++++
++ server/avalon-patches/tORIGINAL-d20040322.patch |  666 +++++++
++ 13 files changed, 4369 insertions(+)
++
++commit 810b0e19693c283deb895364b33caac92a96b2e9
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jul 2 03:01:50 2009 +0000
++
++    temporarily stashing this in svn so I don't lose it
++
++ server/avalon-patches.tgz |  Bin 0 -> 58836 bytes
++ 1 file changed, 0 insertions(+), 0 deletions(-)
++
++commit 6ad69f6e0bff990b9dcf23b92380b8a6035fd271
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jul 2 02:42:34 2009 +0000
++
++    adding FUP to the project; not yet compiled in, just adding the contents of the tarball, prior to applying the Avalon patches.
++
++ server/ext-FUP-1.8/ext-FUP.INSTALL          |   23 +
++ server/ext-FUP-1.8/ext-FUP.README           |  293 +++++++
++ server/ext-FUP-1.8/ext-FUP.c                | 1156 +++++++++++++++++++++++++++
++ server/ext-FUP-1.8/ext-FUP.changelog        |   53 ++
++ server/ext-FUP-1.8/ext-FUP.copyright        |   97 +++
++ server/ext-FUP-1.8/ext-FUP_file_handler.moo |  129 +++
++ server/ext-FUP-1.8/ext-FUP_options.h        |   35 +
++ server/ext-FUP-1.8/extensions.c             |  225 ++++++
++ server/ext-FUP-1.8/extensions.c.sample      |   34 +
++ 9 files changed, 2045 insertions(+)
++
++commit e0509858b96f3b0239a0683867a4066899bbc535
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Tue Jun 30 03:17:22 2009 +0000
++
++    Previously, in execute.c, I copied an enum out of a struct to solve
++    some scoping issue... instead I've gone through and qualified the enum
++    members with the enum name (i.e., BI_CALL becomes package::BI_CALL).
++
++ server/execute.c   |   30 +++++++++++++++---------------
++ server/functions.h |    8 --------
++ server/objects.c   |    2 +-
++ 3 files changed, 16 insertions(+), 24 deletions(-)
++
++commit 51f78f1cb1f8e29255809f6e34e206bb077911af
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 19:40:01 2009 +0000
++
++    cleaning up scripts used to massage the code base
++
++ server/varargs.patterns |   22 ----------------------
++ 1 file changed, 22 deletions(-)
++
++commit f4317f808ca8b75b604e805cc3fd6d66348dd5cf
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 19:39:00 2009 +0000
++
++    cleaning up scripts used to massage the code base
++
++ server/fixmallocs.sh |  182 --------------------------------------------------
++ server/fixthises.sh  |  144 ---------------------------------------
++ 2 files changed, 326 deletions(-)
++
++commit 4a46800565f83ca3df7fa943831bf561a351f12c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 19:38:29 2009 +0000
++
++    cleaning up scripts used to massage the code base
++
++ server/changenew.sh   |  134 -------------------------------------------------
++ server/changetries.sh |    6 ---
++ 2 files changed, 140 deletions(-)
++
++commit b3358f51f8c2b074e0662867faf83d642aa9a352
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 19:37:46 2009 +0000
++
++    cleaning up scripts used to massage the code base
++
++ server/fixmymallocs.pl |   85 -----------------------------------------------
++ server/fixnews.pl      |   80 --------------------------------------------
++ server/fixthese.pl     |   86 ------------------------------------------------
++ server/fixtries.pl     |   16 ---------
++ 4 files changed, 267 deletions(-)
++
++commit f5be3305e3cdc8baa50eda48a0f8b07abbf09aa9
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 19:00:10 2009 +0000
++
++    I commented out the definition of "var_type," an enum, in structures.h
++    and redefined them as const ints.  I preserved the order per the
++    original comments. This was necessary because in functions.c, the use
++    of C's variable arguments feature was causing an upcast from var_type
++    to int and the compiler warned the program would abort if the
++    instructions were were excuted... which it did. As of this commit, LambdaMOO now compiles with:
++    
++    make CFLAGS='-pg' CC='g++ -g'
++    
++    successfully; I can run the server with the LambdaCore database and it
++    seems to work fine.
++
++ server/functions.c  |   27 ++++++++++++++++-----------
++ server/structures.h |   30 ++++++++++++++++++++++--------
++ 2 files changed, 38 insertions(+), 19 deletions(-)
++
++commit ed3dd2ea3c2a8f6b3889a0012f6031e68da17f14
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 04:33:24 2009 +0000
++
++    Another casting fix, to get rid of the compiler's complaint about casting the lvalue
++
++ server/tasks.c |    3 ++-
++ 1 file changed, 2 insertions(+), 1 deletion(-)
++
++commit e74558d4854e43963a30f9f9d9bacd189e2c083f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 04:25:29 2009 +0000
++
++    Added workaround for casting a bitmask operation
++
++ server/db_io.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit c7b1bd0992e2c186b69af0e4e1083dffeb607b6c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 04:09:36 2009 +0000
++
++    Fix: cast to var_type
++
++ server/list.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 48373c46ce8a2d10cb7e1b96e8b7707bc332a48f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 03:04:37 2009 +0000
++
++    Casts, and two places there's an '=' in an if() statement where it should probably be '=='. Which I filed as a bug on sourceforge just now. (bug 2813733)
++
++ server/verbs.c |   20 ++++++++++----------
++ 1 file changed, 10 insertions(+), 10 deletions(-)
++
++commit 33353538202c75495aada11f79e6f57432ade54f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 02:58:11 2009 +0000
++
++    fixed a missed 'catch' keyword (changed to '_catch'), and a cast of a FILE pointer.
++
++ server/unparse.c |    4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++commit 4b27c8421df368160efb43e95b721aadda8c8dab
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 02:47:02 2009 +0000
++
++    More casts; one set of macros expanded to fix casting issues; and a pesky 'new' fixed
++
++ server/str_intern.c |    8 ++--
++ server/streams.c    |    4 +-
++ server/sym_table.c  |   13 +++---
++ server/tasks.c      |  116 ++++++++++++++++++++++++++++++++++++++++++---------
++ server/tasks.h      |    2 +
++ 5 files changed, 112 insertions(+), 31 deletions(-)
++
++commit 9519f914c95dae8fd7563ce296f6ca0e7105f833
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 02:29:01 2009 +0000
++
++    Some casts, and an accidental change of this_program to self_program fixed.
++
++ server/server.c |   59 +++++++++++++++++++++++++++++++++++++++++++++++--------
++ 1 file changed, 51 insertions(+), 8 deletions(-)
++
++commit 16785e0bce4913e3fb6155cdf96f778d0a9a26bb
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 02:21:12 2009 +0000
++
++    Fixed several function signatures, which were using pre-ANSI C style, I believe.
++
++ server/regexpr.c |   93 +++++++++++++++++++++++++++---------------------------
++ 1 file changed, 47 insertions(+), 46 deletions(-)
++
++commit df46af8686999cce3b223949a1ca6ca233772041
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 01:31:17 2009 +0000
++
++    Made a goof changing the function signature, omitting the all-important '*'
++
++ server/regexpr.h |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit d4c18f464731c526cfd1540c29b7a7ab92a711c7
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 29 01:02:20 2009 +0000
++
++    Fixing up the function signatures so it passes g++. The compiler was complaining that the function signature in the .c file had changed from the forward declaration in the .h file.
++
++ server/regexpr.c |   13 ++++---------
++ server/regexpr.h |    4 ++--
++ 2 files changed, 6 insertions(+), 11 deletions(-)
++
++commit c20a82c748f907d026ee43578957cd99e1956b8d
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 23:44:13 2009 +0000
++
++    assorted casts, none too scary looking
++
++ server/property.c |    6 +++---
++ 1 file changed, 3 insertions(+), 3 deletions(-)
++
++commit 6c05786727d2ad914eaa977cdc7a55877f73e359
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 23:43:14 2009 +0000
++
++    Casts, but these are rather suspicious to me...
++
++ server/pattern.c |   12 ++++++------
++ 1 file changed, 6 insertions(+), 6 deletions(-)
++
++commit ab768e5e6feab5455d5e20f9e6e6141aaa09b4ed
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 23:39:40 2009 +0000
++
++    More cast fixes
++
++ server/parse_cmd.c |    8 ++++----
++ 1 file changed, 4 insertions(+), 4 deletions(-)
++
++commit e927878e64b3a9bcb3fbe8b27fa942e9dee16ea5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 23:36:23 2009 +0000
++
++    various casts to make the compiler happy
++
++ server/objects.c |   32 ++++++++++++++++----------------
++ 1 file changed, 16 insertions(+), 16 deletions(-)
++
++commit 2b298e56a7a53776925267279d0671bd2a436824
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 23:27:26 2009 +0000
++
++    Borrowed the definition of the struct 'exception' from a Sun web page; I should think there's a flag to g++ though that would get it to compile properly. Also cast some TYPE_STRs with (var_type).
++
++ server/numbers.c |   22 +++++++++++++++++++---
++ 1 file changed, 19 insertions(+), 3 deletions(-)
++
++commit ecf3f86170b836634d5c13b23ccbc69d4427718f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 23:26:20 2009 +0000
++
++    Fixed calls to getsockname with casts
++
++ server/net_bsd_tcp.c  |    4 ++--
++ server/net_mp_selct.c |    2 +-
++ 2 files changed, 3 insertions(+), 3 deletions(-)
++
++commit 63ceb647055e62842a621e7a819af461f348943f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 28 22:55:32 2009 +0000
++
++    after macro expansion, g++ complained that:
++    
++    g++ -O  -c -o network.o network.c
++    network.c: In function 'Var network_connection_options(network_handle, Var)':
++    network.c:29: error: invalid conversion from 'int' to 'var_type'
++    make: *** [network.o] Error 1
++    
++    so I've commented out the original macros and replaced it with the
++    expanded code, as found via g++ -E.
++
++ server/network.c |   46 +++++++++++++++++++++++++++++++++++++++++++++-
++ 1 file changed, 45 insertions(+), 1 deletion(-)
++
++commit 4f9603f646a5f32dcce89ae8639ddccd0d0908d8
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Fri Jun 19 04:09:01 2009 +0000
++
++    Added comment pointing to the CPP manual, explaining the usage of:  do {} while(0)
++
++ server/server.h |    5 +++++
++ 1 file changed, 5 insertions(+)
++
++commit 0f0e28b72d8a44eccf683788e0f5167c3ad11dba
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Thu Jun 18 22:25:36 2009 +0000
++
++    ignoring the TAGS file
++
++commit 24008570252836c966f66811af0e65c6e3f8ee88
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sat Jun 13 19:39:53 2009 +0000
++
++    scratch file to be deleted later: list of occurances of varargs in the code base
++
++ server/varargs.patterns |   22 ++++++++++++++++++++++
++ 1 file changed, 22 insertions(+)
++
++commit 2468cdec940760a10a233b864b6833507ba7afdb
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 04:20:53 2009 +0000
++
++    one _new, and a number of casts made.
++
++ server/net_multi.c |   20 ++++++++++----------
++ 1 file changed, 10 insertions(+), 10 deletions(-)
++
++commit 3f177610806fe1cba14dae141a833f96e5641ea6
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 04:16:32 2009 +0000
++
++    Moved an enum out of a struct, so it would be in scope. Removed some void pointer casts that were kludges for older systems.
++
++ server/name_lookup.c |   23 +++++++++++++++--------
++ 1 file changed, 15 insertions(+), 8 deletions(-)
++
++commit 86b1355d64e756b850a7fcbcd3866daf5e119b7c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 04:01:35 2009 +0000
++
++    one cast to fix this file, for our old void pointer friend 'data'
++
++ server/match.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 5b7810a34b7f54fd87f08b21cd0acead351ea7ba
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 03:59:46 2009 +0000
++
++    There were a few cases of __new and new, which should be _new. Also template became _template, and some casts, mostly for var_type but also one for (error).
++
++ server/list.c |   54 +++++++++++++++++++++++++++---------------------------
++ 1 file changed, 27 insertions(+), 27 deletions(-)
++
++commit 9364b8b144e65c474ce9729dd5254c11d118669a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 03:50:47 2009 +0000
++
++    Casts all around to satisfy the compiler.
++
++ server/parser.y |   22 +++++++++++-----------
++ 1 file changed, 11 insertions(+), 11 deletions(-)
++
++commit d5d99d454944b1ca69025063f6d75b957639d8ea
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 03:50:12 2009 +0000
++
++    Fixing a few more enum comparisons the compiler didn't like. Tho I don't care for the way I did it.
++
++ server/execute.c |    4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++commit 3aa45596f983e9955993c6047e7f72709b95ebcf
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 03:32:34 2009 +0000
++
++    Oops. Accidentally converted this_arm to self_arm, which broke it. Undoing.
++
++ server/parser.y |    6 +++---
++ 1 file changed, 3 insertions(+), 3 deletions(-)
++
++commit cf6047842ba8781329ed10b7381cfc00d0a0118a
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Mon Jun 8 03:25:22 2009 +0000
++
++    For now, committing this even though the compiler issues a rather dire warning:
++    
++    g++ -O  -c -o functions.o functions.c
++    functions.c: In function 'unsigned int register_common(const char*, int, int, package (*)(Var, Byte, void*, Objid), void* (*)(), void (*)(void*), char*)':
++    functions.c:122: warning: 'var_type' is promoted to 'int' when passed through '...'
++    functions.c:122: warning: (so you should pass 'int' not 'var_type' to 'va_arg')
++    functions.c:122: note: if this code is reached, the program will abort
++    
++    The problem is the use of C's variable arguments. I think var_type is
++    always an int; actually I know it is because it's an enum.
++
++ server/functions.c |   26 ++++++++++++++------------
++ 1 file changed, 14 insertions(+), 12 deletions(-)
++
++commit e867447ccc3af3e7a4d30496286dfe542de310e5
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 21:16:57 2009 +0000
++
++    The biggest issue in this commit was the copying of an enum out of a struct. The compiler now gives warnings that we're comparing an enum to an enum inside a struct:
++    
++    +enum {
++    +  BI_RETURN,		/* Normal function return */
++    +  BI_RAISE,		/* Raising an error */
++    +  BI_CALL,		/* Making a nested verb call */
++    +  BI_SUSPEND,		/* Suspending the current task */
++    +  BI_KILL			/* Kill the current task */
++    +};
++    
++    was pulled out, and lines like:
++    
++    -    p.kind = BI_RAISE;
++    +    p.kind = p.BI_RAISE;
++    
++    give it indigestion. But we roll on.
++    
++    There were a few cases of _this left over, changed now to 'self'. Assorted casts were added to solve void pointer or other casting problems.
++
++ server/exceptions.h |   16 ++++++++--------
++ server/execute.c    |   33 +++++++++++++++++----------------
++ server/execute.h    |    8 ++++----
++ server/functions.h  |    9 +++++++++
++ 4 files changed, 38 insertions(+), 28 deletions(-)
++
++commit 7ae986447a95f67c025578bc6b5f34f7d585f294
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 20:48:59 2009 +0000
++
++    Changed (void *) to (int *) to satisfy longjmp(); note that cb->jmp is of type jmp_buf, defined in setjmp.h.
++
++ server/exceptions.c |    4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++commit 70238c9bd1003f999d10386a1326773b2645ca9e
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 20:42:41 2009 +0000
++
++    Minor cast fix. But casting TYPE_STR is getting to be quite common as I go.
++
++ server/eval_env.c |    2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++commit 2892cac5021d3fc8e7740f4165ae04885d43b3ec
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 20:40:52 2009 +0000
++
++    A tricky one. The passed in 'data' struct pointer was also named 'data'.
++
++ server/disassemble.c |   10 +++++-----
++ 1 file changed, 5 insertions(+), 5 deletions(-)
++
++commit 2c7d20a334e4c65b8a8635285bb64115dcabbf8f
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 20:35:15 2009 +0000
++
++    More cast fixes; should have all instances of 'try' as '_try' now. Committing work scripts for the 'try' fixes.
++
++ server/changetries.sh |    6 ++++
++ server/decompile.c    |   82 ++++++++++++++++++++++++-------------------------
++ server/fixtries.pl    |   16 ++++++++++
++ server/unparse.c      |    2 +-
++ 4 files changed, 64 insertions(+), 42 deletions(-)
++
++commit edd5e6932038d140e510162a2615bd6ff4084b7c
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 20:20:58 2009 +0000
++
++    Another one to watch out for, as I did this:
++    
++    +    short foo;
++    
++         if (h) {
++    -	*dobj = (h->verbdef->perms >> DOBJSHIFT) & OBJMASK;
++    -	*prep = h->verbdef->prep;
++    -	*iobj = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
++    +      *dobj = (db_arg_spec) ((h->verbdef->perms >> DOBJSHIFT) & OBJMASK);
++    +      *prep = (db_prep_spec) h->verbdef->prep;
++    +      foo = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
++    +      *iobj = (db_arg_spec)foo;
++    
++    By introducing a temporary short int, I got around the compiler complaints about converting an int into a db_arg_spec.
++
++ server/db_verbs.c |   20 ++++++++++++--------
++ 1 file changed, 12 insertions(+), 8 deletions(-)
++
++commit 10f4ae34702a0012ebebcd6ecb0adaf3e9e90f2b
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 20:03:49 2009 +0000
++
++    largely, cast fixes and replacing new with _new
++
++ server/db_properties.c |   27 ++++++++++++++-------------
++ 1 file changed, 14 insertions(+), 13 deletions(-)
++
++commit 763e7648518c54cf011f4df6011cc796b6838175
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 19:57:15 2009 +0000
++
++    Another questionable change that could cause headaches in the future:
++    
++    -	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
++    +	_new = (Object **) mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
++    
++    That is, the (Object **) cast. The compiler likes it but I can't vouch for it.
++
++ server/db_objects.c |   10 +++++-----
++ 1 file changed, 5 insertions(+), 5 deletions(-)
++
++commit 50ab79c23453e779441b15d3650bea782b1bebb1
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 19:53:15 2009 +0000
++
++    Mass changing of new to _new; some might have been missed since I was grepping out lines with patterns like newbuf, newflags and so on... also committing the Perl script and resulting file. I made several hand edits that they missed.
++
++ server/changenew.sh    |  134 ++++++++++++++++++++++++++++++++++++++++++++++++
++ server/db_objects.c    |   36 ++++++-------
++ server/db_properties.c |   16 +++---
++ server/disassemble.c   |    4 +-
++ server/fixnews.pl      |   80 +++++++++++++++++++++++++++++
++ server/gnu-malloc.c    |    6 +--
++ server/list.c          |   42 +++++++--------
++ server/my-stdio.h      |    2 +-
++ server/net_multi.c     |    6 +--
++ server/parse_cmd.c     |    4 +-
++ server/ref_count.c     |    4 +-
++ server/str_intern.c    |   10 ++--
++ server/sym_table.c     |   10 ++--
++ 13 files changed, 284 insertions(+), 70 deletions(-)
++
++commit 740ed4a198b9644676a1d35dd704f4ee12a2b7c8
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 19:41:29 2009 +0000
++
++    This is a tough one for a C newbie. The change here:
++    
++    -	r.type |= TYPE_COMPLEX_FLAG;
++    +	(int)r.type |= 128;
++    
++    changes a cast error into an lvalue warning, so we may continue compilation; but it needs revisiting because it can't be any good. Otherwise, in this commit, a few mymalloc() calls were not cast to (state *).
++    
++    	(int)r.type |= 128;
++
++ server/db_io.c |   10 +++++-----
++ 1 file changed, 5 insertions(+), 5 deletions(-)
++
++commit c7b9cf521033fa816fbe650c8d00c720e453cfdf
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 19:28:43 2009 +0000
++
++    Replaced the TRY, CATCH and ENDTRY macros with their respective code bodies to solve a void pointer problem.
++
++ server/db_file.c |  150 ++++++++++++++++++++++++++++++++++++------------------
++ 1 file changed, 101 insertions(+), 49 deletions(-)
++
++commit 3a6febd8cb3a492cd0a598919ea3fbb4b3166985
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 18:36:44 2009 +0000
++
++    two minor fixes
++
++ server/code_gen.c |    4 ++--
++ server/db_file.c  |    2 +-
++ 2 files changed, 3 insertions(+), 3 deletions(-)
++
++commit 4ecb6adc0266d48a34503988b547c2a6ab64cb49
++Author: Steve Wainstead <wainstead@gmail.com>
++Date:   Sun Jun 7 18:28:36 2009 +0000
++
++    convert catch to _catch to get around c++ keyword
++
++ server/code_gen.c  |   12 ++++++------
++ server/decompile.c |   20 ++++++++++----------
++ server/parser.y    |   10 +++++-----
++ server/unparse.c   |   16 ++++++++--------
++ 4 files changed, 29 insertions(+), 29 deletions(-)
++
++;  commit 5a0d34a4692a390b4cb212f2443e5e951b64a3e5
++;  Author: Steve Wainstead <wainstead@gmail.com>
++;  Date:   Sun Jun 7 18:23:47 2009 +0000
++;  
++;      Changed 'this' to 'self' to get around c++ keyword collision
++;  
++;   server/execute.c    |   50 +++++++++---------
++;   server/fixthese.pl  |   86 ++++++++++++++++++++++++++++++
++;   server/fixthises.sh |  144 +++++++++++++++++++++++++++++++++++++++++++++++++++
++;   server/parser.y     |    6 +--
++;   server/server.c     |    2 +-
++;   server/tasks.c      |   22 ++++----
++;   server/tasks.h      |    2 +-
++;   server/timers.c     |   50 +++++++++---------
++;   8 files changed, 296 insertions(+), 66 deletions(-)
++;  
++;  commit 51a0f67451e1bedb1dcefbbad8ce6b1e2cb3740e
++;  Author: Steve Wainstead <wainstead@gmail.com>
++;  Date:   Sun Jun 7 17:41:50 2009 +0000
++;  
++;      perl script used to convert mymalloc calls to use a cast. and its scratch file,  to be deleted later.
++;  
++;   server/fixmallocs.sh   |  182 ++++++++++++++++++++++++++++++++++++++++++++++++
++;   server/fixmymallocs.pl |   85 ++++++++++++++++++++++
++;   2 files changed, 267 insertions(+)
++;  
++;  commit 34695aabe7e8aaeef3ec14debf98b4c4ae84bc20
++;  Author: Steve Wainstead <wainstead@gmail.com>
++;  Date:   Sun Jun 7 17:38:00 2009 +0000
++;  
++;      Cast all myallocs that use sizeof(), to solve some of the void pointer errors from g++
++;  
++;   server/code_gen.c      |   28 ++++++++++++++--------------
++;   server/db_file.c       |    6 +++---
++;   server/db_objects.c    |    2 +-
++;   server/db_properties.c |   10 +++++-----
++;   server/db_verbs.c      |    4 ++--
++;   server/eval_env.c      |    2 +-
++;   server/eval_vm.c       |    4 ++--
++;   server/execute.c       |    4 ++--
++;   server/extensions.c    |    2 +-
++;   server/list.c          |    4 ++--
++;   server/net_bsd_lcl.c   |    2 +-
++;   server/net_mp_fake.c   |    2 +-
++;   server/net_mp_poll.c   |    2 +-
++;   server/net_multi.c     |    8 ++++----
++;   server/net_sysv_lcl.c  |    2 +-
++;   server/numbers.c       |    2 +-
++;   server/pattern.c       |    2 +-
++;   server/ref_count.c     |    2 +-
++;   server/server.c        |    2 +-
++;   server/streams.c       |    2 +-
++;   server/sym_table.c     |    2 +-
++;   server/tasks.c         |    8 ++++----
++;   22 files changed, 51 insertions(+), 51 deletions(-)
++;  
++;  commit 755558bdd368cb23a8c9a9fa52df4f4febcdf54b
++;  Author: Steve Wainstead <wainstead@gmail.com>
++;  Date:   Sun Jun 7 17:07:21 2009 +0000
++;  
++;      First round of changes to compile under c++
++;  
++;   server/ast.c        |   32 ++++++++++++++++----------------
++;   server/ast.h        |    6 +++---
++;   server/db.h         |    2 +-
++;   server/exceptions.h |   35 +++++++++++++++++++----------------
++;   server/execute.h    |    8 ++++----
++;   5 files changed, 43 insertions(+), 40 deletions(-)
+-- 
+1.7.9.5
+

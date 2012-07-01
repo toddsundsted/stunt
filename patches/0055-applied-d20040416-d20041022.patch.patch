@@ -1,0 +1,43 @@
+From 23ab138935bed58c5edcfac4f5c19cbb0335cc02 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 05:50:34 +0000
+Subject: [PATCH 055/223] applied d20040416-d20041022.patch
+
+---
+ server/extensions.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/server/extensions.c b/server/extensions.c
+index 8ed072d..5f8ec44 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -242,13 +242,19 @@ bf_vrandomseed(Var arglist, Byte next, void *vdata, Objid progr)
+     free_var(arglist);
+ 
+     if (nargs != 0) {
+-        unsigned long newRegA = (unsigned long) *arglist.v.list[1].v.list[1].v.fnum;
+-        unsigned long newRegB = (unsigned long) *arglist.v.list[1].v.list[2].v.fnum;
+-        unsigned long newRegC = (unsigned long) *arglist.v.list[1].v.list[3].v.fnum;
+-
+-        regA = newRegA;
+-        regB = newRegB;
+-        regC = newRegC;
++	if (nargs != 1 || arglist.v.list[1].v.list[0].v.num != 3) {
++            return make_error_pack(E_INVARG);
++	} else if (arglist.v.list[1].v.list[1].type != TYPE_FLOAT || arglist.v.list[1].v.list[2].type != TYPE_FLOAT || arglist.v.list[1].v.list[3].type != TYPE_FLOAT) {
++            return make_error_pack(E_INVARG);
++        } else {
++            unsigned long newRegA = (unsigned long) *arglist.v.list[1].v.list[1].v.fnum;
++            unsigned long newRegB = (unsigned long) *arglist.v.list[1].v.list[2].v.fnum;
++            unsigned long newRegC = (unsigned long) *arglist.v.list[1].v.list[3].v.fnum;
++
++            regA = newRegA;
++            regB = newRegB;
++            regC = newRegC;
++        }
+     }
+ 
+     r = new_list(3);
+-- 
+1.7.9.5
+

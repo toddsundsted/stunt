@@ -1,0 +1,28 @@
+From 1b3d06129748d3a00320ebccb357a43cdbb95e0d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 24 Jun 2011 04:29:14 +0000
+Subject: [PATCH 167/223] Explanatory comments for the case of zero...
+
+---
+ server/misc/args.cc |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/server/misc/args.cc b/server/misc/args.cc
+index 66ec3c5..34abcc7 100644
+--- a/server/misc/args.cc
++++ b/server/misc/args.cc
+@@ -83,7 +83,10 @@ int main(int argc, char** argv)
+             exit(EXIT_FAILURE);
+ 
+         case 0:
+-            printf("Matched zero: '%s'\n", optarg);
++            // getopt_long() set a variable, just keep going; this is
++            // the case for something like:
++            // { "blippy", required_argument, &myvar, 42},
++            // and now myvar == 42.
+             break;
+ 
+         default:
+-- 
+1.7.9.5
+

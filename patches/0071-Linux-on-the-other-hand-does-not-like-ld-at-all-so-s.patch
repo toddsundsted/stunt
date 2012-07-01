@@ -1,0 +1,126 @@
+From 6a167399b653ab7a6e0b06efa78282433e959f1a Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 19 Nov 2010 17:08:08 +0000
+Subject: [PATCH 071/223] Linux, on the other hand, does not like $ld at all,
+ so switching it to $u. osx will have to deal with
+ it for now.
+
+---
+ server/tools/moobrowser.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/server/tools/moobrowser.c b/server/tools/moobrowser.c
+index f2bf3be..5409520 100644
+--- a/server/tools/moobrowser.c
++++ b/server/tools/moobrowser.c
+@@ -164,7 +164,7 @@ char *read_big_str(FILE *fh) {
+     size += strlen(bufferstr);
+     lineptr = (char *) malloc(sizeof(char) * size);
+     if (!lineptr) {
+-      printf("Unable to allocate %ld bytes of memory. (read_big_str: lineptr)\n", sizeof(char) * size);
++      printf("Unable to allocate %u bytes of memory. (read_big_str: lineptr)\n", sizeof(char) * size);
+       exit(1);
+     }
+     if (oldlineptr) {
+@@ -255,7 +255,7 @@ char *parse_value(int wanted, FILE *fh) {
+     case TYPE_OBJ:
+       returnstr = (char *) malloc(sizeof(char) * 20);
+       if (!returnstr) {
+-        printf("Unable to allocate %ld bytes of memory (parse_value: OBJ).\n", sizeof(char) * 20);
++        printf("Unable to allocate %u bytes of memory (parse_value: OBJ).\n", sizeof(char) * 20);
+         exit(1);
+       }
+       strcpy(returnstr, "#");
+@@ -277,7 +277,7 @@ char *parse_value(int wanted, FILE *fh) {
+       /* Increase the size of the string to acommodate the two quotes and any escapes. */
+       returnstr = (char *) malloc(sizeof(char) * (1+strlen(tmpstr)+escapes+1+1));
+       if (!returnstr) {
+-        printf("Unable to allocate %ld bytes of memory (parse_value: STR: main).\n", sizeof(char) * (1+strlen(tmpstr)+escapes+1+1));
++        printf("Unable to allocate %u bytes of memory (parse_value: STR: main).\n", sizeof(char) * (1+strlen(tmpstr)+escapes+1+1));
+         exit(1);
+       }
+       /* Add a placeholder for the start quote. */
+@@ -293,7 +293,7 @@ char *parse_value(int wanted, FILE *fh) {
+         /* Copy the tail of the string into a temporary var. */
+         tmpstr = (char *) malloc(sizeof(char) * (strlen(elementstr)+1));
+         if (!tmpstr) {
+-          printf("Unable to allocate %ld bytes of memory (parse_value: STR: tail).\n", sizeof(char) * (strlen(elementstr)+1));
++          printf("Unable to allocate %u bytes of memory (parse_value: STR: tail).\n", sizeof(char) * (strlen(elementstr)+1));
+           exit(1);
+         }
+         strcpy(tmpstr, elementstr);
+@@ -312,7 +312,7 @@ char *parse_value(int wanted, FILE *fh) {
+     case TYPE_ERR:
+       returnstr = (char *) malloc(sizeof(char) * 15);
+       if (!returnstr) {
+-        printf("Unable to allocate %ld bytes of memory (parse_value: ERR).\n", sizeof(char) * 15);
++        printf("Unable to allocate %u bytes of memory (parse_value: ERR).\n", sizeof(char) * 15);
+         exit(1);
+       }
+       read_int(errornum, fh);
+@@ -329,7 +329,7 @@ char *parse_value(int wanted, FILE *fh) {
+         /* Allow room for a '}' character and a null character. */
+         returnstr = (char *) malloc(sizeof(char) * 3);
+         if (!returnstr) {
+-          printf("Unable to allocate %ld bytes of memory (parse_value: LIST: open).\n", sizeof(char) * 3);
++          printf("Unable to allocate %u bytes of memory (parse_value: LIST: open).\n", sizeof(char) * 3);
+           exit(1);
+         }
+         strcpy(returnstr, "{");
+@@ -343,7 +343,7 @@ char *parse_value(int wanted, FILE *fh) {
+           /* Allow room for a ', ' string, a '}' character and a null character. */
+           returnstr = (char *) malloc(sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1));
+           if (!returnstr) {
+-            printf("Unable to allocate %ld bytes of memory (parse_value: LIST: element).\n", sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1));
++            printf("Unable to allocate %u bytes of memory (parse_value: LIST: element).\n", sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1));
+             exit(1);
+           }
+           strcpy(returnstr, tmpstr);
+@@ -368,7 +368,7 @@ char *parse_value(int wanted, FILE *fh) {
+     case TYPE_CLEAR:
+       returnstr = (char *) malloc(sizeof(char) * 10);
+       if (!returnstr) {
+-        printf("Unable to allocate %ld bytes of memory (parse_value: clear).\n", sizeof(char) * 10);
++        printf("Unable to allocate %u bytes of memory (parse_value: clear).\n", sizeof(char) * 10);
+         exit(1);
+       }
+       strcpy(returnstr, "[clear]");
+@@ -614,7 +614,7 @@ void parse_obj(FILE *fh) {
+     /* We are interested in the object.  Record all the property names. */
+     propdefnames = malloc(propdefs * sizeof(char *));
+     if (!propdefnames) {
+-      printf("Unable to allocate %ld bytes of memory. (parse_obj: propdefnames)\n", propdefs * sizeof(char *));
++      printf("Unable to allocate %u bytes of memory. (parse_obj: propdefnames)\n", propdefs * sizeof(char *));
+       exit(1);
+     }
+     for (i = 1; i <= propdefs; i++)
+@@ -630,7 +630,7 @@ void parse_obj(FILE *fh) {
+     /* Now that we know the total number of properties, build a structure to hold this info. */
+     propstructs = malloc(nprops * sizeof(struct property));
+     if (!propstructs) {
+-      printf("Unable to allocate %ld bytes of memory. (parse_obj: propstructs)\n", nprops * sizeof(struct property));
++      printf("Unable to allocate %u bytes of memory. (parse_obj: propstructs)\n", nprops * sizeof(struct property));
+       exit(1);
+     }
+     /* Copy over the defined list of prop names. */
+@@ -705,7 +705,7 @@ void parse_verb(FILE *fh) {
+     /* Note: This code assumes that no compiled Moo verb can have a line ending with a dot. */
+     lineptr = (char *) malloc(sizeof(char) * 256);
+     if (!lineptr) {
+-      printf("Unable to allocate %ld bytes of memory (parse_verb).\n", sizeof(char) * 256);
++      printf("Unable to allocate %u bytes of memory (parse_verb).\n", sizeof(char) * 256);
+       exit(1);
+     }
+     do
+@@ -781,7 +781,7 @@ int main(int argc, char *argv[]) {
+   /* Save the filename into a global variable so that other functions can reopen it for deeper data. */
+   databasename = (char *) malloc(sizeof(char) * (strlen(argv[1])+1));
+   if (!databasename) {
+-    printf("Unable to allocate %ld bytes of memory. (main: databasename)\n", sizeof(char) * (strlen(argv[1])+1));
++    printf("Unable to allocate %u bytes of memory. (main: databasename)\n", sizeof(char) * (strlen(argv[1])+1));
+     exit(1);
+   }
+   strcpy(databasename, argv[1]);
+-- 
+1.7.9.5
+

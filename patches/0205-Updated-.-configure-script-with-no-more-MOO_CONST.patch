@@ -1,0 +1,24 @@
+From 3a4e3736d1f22b5fb28ce45637b51c1c4a55ff05 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 20 Aug 2011 23:19:28 +0000
+Subject: [PATCH 205/223] Updated ./configure script with no more MOO_CONST.
+
+---
+ server/configure |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/server/configure b/server/configure
+index 6b2af4c..ec32cf5 100755
+--- a/server/configure
++++ b/server/configure
+@@ -4630,7 +4630,6 @@ $as_echo "none needed" >&6; } ;; #(
+ $as_echo "$ac_cv_prog_cc_stdc" >&6; } ;;
+ esac
+ 
+-MOO_CONST
+ CPP=""
+ ac_fn_cxx_check_header_mongrel "$LINENO" "sys/bsdtypes.h" "ac_cv_header_sys_bsdtypes_h" "$ac_includes_default"
+ if test "x$ac_cv_header_sys_bsdtypes_h" = xyes; then :
+-- 
+1.7.9.5
+

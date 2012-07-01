@@ -1,0 +1,39 @@
+From 2ba6ccde2fb8088f91fc08595650cea00c5c016e Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 03:45:55 +0000
+Subject: [PATCH 048/223] Tweaks to compile on RedHat based linux system
+
+---
+ server/db_file.c    |    2 +-
+ server/exceptions.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/server/db_file.c b/server/db_file.c
+index e13b9eb..060ca91 100644
+--- a/server/db_file.c
++++ b/server/db_file.c
+@@ -520,7 +520,7 @@ write_db_file(const char *reason)
+     ES_ctx.link = ES_exceptionStack;		
+     ES_exceptionStack = &ES_ctx;		
+ 	    						
+-    if (setjmp((int *) ES_ctx.jmp) != 0)	
++    if (setjmp(ES_ctx.jmp) != 0)	
+       ES_es = ES_Exception;			
+ 		    					
+     while (1) {					
+diff --git a/server/exceptions.c b/server/exceptions.c
+index 651511a..b20e137 100644
+--- a/server/exceptions.c
++++ b/server/exceptions.c
+@@ -60,7 +60,7 @@ ES_RaiseException(Exception * exception, int value)
+     ES_exceptionStack = cb;
+     cb->id = exception;
+     cb->value = value;
+-    longjmp((int *) cb->jmp, 1);
++    longjmp(cb->jmp, 1);
+ }
+ 
+ char rcsid_exceptions[] = "$Id: exceptions.c,v 1.3 1998-12-14 13:17:48 nop Exp $";
+-- 
+1.7.9.5
+

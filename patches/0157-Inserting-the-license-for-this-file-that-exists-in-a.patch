@@ -1,0 +1,38 @@
+From 9517accac55f13e82bdc85eb1950e714c1a62bfc Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 15 Jun 2011 03:43:55 +0000
+Subject: [PATCH 157/223] Inserting the license for this file that exists in
+ all the other files found in the same package.
+
+---
+ server/ext-FUP_options.h |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/server/ext-FUP_options.h b/server/ext-FUP_options.h
+index db78bd0..1cecc8f 100644
+--- a/server/ext-FUP_options.h
++++ b/server/ext-FUP_options.h
+@@ -1,3 +1,20 @@
++/******************************************************************************
++  Copyright (c) 1994,1995,1996 Weizmann Institute. All rights reserved.
++  This is version 1.8 of the File Utilities Package (FUP), suitable for use
++  with all versions of MOO1.8.0, up to beta2 inclusive.
++  This file includes routines for file management and direct file access
++  developed and written by Jaime Prilusky and Gustavo Glusman, Weizmann
++  Institute of Science, Israel.
++  This software is intended to work with the MOO server written by
++  Pavel Curtis, Xerox PARC (Pavel@Xerox.Com), depending on routines
++  and code from the MOO server itself.
++  For questions, suggestions  and comments, please  send email to
++  lsprilus@weizmann.weizmann.ac.il (Jaime Prilusky)
++  Gustavo@bioinformatics.weizmann.ac.il (Gustavo Glusman)
++
++  filemkdir and filermdir in collaboration with Jeremy Cooper <jeremy@crl.com>
++  Thanks to Alex Stewart for valuable suggestions for improvements.
++ *****************************************************************************/
+ 
+ 
+ /*************************************************************************
+-- 
+1.7.9.5
+

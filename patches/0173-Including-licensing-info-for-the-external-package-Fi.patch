@@ -1,0 +1,45 @@
+From dcb711f261c426d35c31d538a1d31ec98609f4a1 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 15 Jul 2011 02:40:44 +0000
+Subject: [PATCH 173/223] Including licensing info for the external package
+ File I/O
+
+---
+ server/LICENSE |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/server/LICENSE b/server/LICENSE
+index a242028..1ea8b22 100644
+--- a/server/LICENSE
++++ b/server/LICENSE
+@@ -200,3 +200,27 @@ USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ PERFORMANCE OF THIS SOFTWARE.
+ 
++
++========
++File I/O
++========
++
++  Copyright 1996, 1997 by Ken Fox.  Copyright 1997 by Andy Bakun.
++
++  All Rights Reserved
++
++  Permission to use, copy, modify, and distribute this software and its
++  documentation for any purpose and without fee is hereby granted,
++  provided that the above copyright notice appear in all copies and that
++  both that copyright notice and this permission notice appear in
++  supporting documentation.
++
++  KEN FOX AND ANDY BAKUN DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
++  SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
++  FITNESS, IN NO EVENT SHALL KEN FOX OR ANDY BAKUN BE LIABLE FOR ANY
++  SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
++  RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
++  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
++  CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++
++File I/O is an optional package copiled into the server.
+-- 
+1.7.9.5
+

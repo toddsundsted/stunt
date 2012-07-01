@@ -1,0 +1,33 @@
+From 3bf9619f93d9bbf7c619888f38610190d668f2c4 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 30 Jan 2011 00:34:06 +0000
+Subject: [PATCH 122/223] commenting what a static inline function is, in C
+ terminology
+
+---
+ server/storage.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/server/storage.c b/server/storage.c
+index 8cc9d02..9ab9403 100644
+--- a/server/storage.c
++++ b/server/storage.c
+@@ -28,6 +28,15 @@
+ 
+ static unsigned alloc_num[Sizeof_Memory_Type];
+ 
++
++/**
++ * explanation of static inline functions:
++ * "If you wanted to keep your inline function entirely private to one
++ * translation unit, you make it static inline."
++ *
++ * C's 'inline' does pretty much what C++'s does.
++ */
++
+ static inline int
+ refcount_overhead(Memory_Type type)
+ {
+-- 
+1.7.9.5
+

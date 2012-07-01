@@ -1,0 +1,35 @@
+From d5d99d454944b1ca69025063f6d75b957639d8ea Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 8 Jun 2009 03:50:12 +0000
+Subject: [PATCH 011/223] Fixing a few more enum comparisons the compiler
+ didn't like. Tho I don't care for the way I did it.
+
+---
+ server/execute.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/server/execute.c b/server/execute.c
+index 9408401..ad63361 100644
+--- a/server/execute.c
++++ b/server/execute.c
+@@ -345,7 +345,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
+ 			bi_func_data = p.u.call.data;
+ 			break;
+ 		    }
+-		} while (p.kind == BI_CALL && bi_func_pc != 0);		/* !tailcall */
++		} while (p.kind == p.BI_CALL && bi_func_pc != 0);		/* !tailcall */
+ 	    }
+ 	} else if (why == FIN_RETURN) {		/* Push the value on the stack & go */
+ 	    a = &(activ_stack[top_activ_stack]);
+@@ -2408,7 +2408,7 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
+ 	free_data(s);
+     }
+ 
+-    if (p.kind == BI_CALL) {
++    if (p.kind == p.BI_CALL) {
+       s = (cf_state *)alloc_data(sizeof(struct cf_state));
+ 	s->fnum = fnum;
+ 	s->data = p.u.call.data;
+-- 
+1.7.9.5
+

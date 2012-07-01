@@ -1,0 +1,83 @@
+From ee890c181ef7503001322c9d8db28aebb2539214 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 28 Jan 2011 03:53:13 +0000
+Subject: [PATCH 116/223] removed outdated bits, updated others...
+
+---
+ server/README |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
+
+diff --git a/server/README b/server/README
+index 41cf0ca..b8c219d 100644
+--- a/server/README
++++ b/server/README
+@@ -12,7 +12,7 @@ LambdaMOO has been successfully compiled and tested on several machines and
+ operating systems; a table appears at the end of this file.
+ 
+ People compiling on any of these machines should only need to do the following:
+-  -- run the command `sh configure'; it will take a couple of minutes, trying
++  -- run the command `./configure'; it will take a small while, trying
+      out various features of your operating system, figuring out which of a
+      long list of known quirks must be patched around for your system.  It will
+      produce a fair amount of output as it runs, every line of it beginning
+@@ -58,7 +58,7 @@ feel free to send me mail and I'll help you try to make it work.
+ 
+ To start the server, use a command like this:
+ 
+-	./moo INITIAL-DB-FILE CHECKPOINT-DB-FILE
++	./moo databases/INITIAL-DB-FILE databases/CHECKPOINT-DB-FILE
+ 
+ where INITIAL-DB-FILE is the name of an existing LambdaMOO database file and
+ CHECKPOINT-DB-FILE is the filename the server should use for its periodic
+@@ -87,6 +87,9 @@ and the script does the following:
+ The `restart' script is really the only good way to start up the server; it's
+ all I ever use for LambdaMOO itself.
+ 
++(Note that `restart' is a csh script, and restart.sh is its bash
++brethren. They are otherwise identical).
++
+ If your server gets a lot of use and your users start getting the error message
+     *** Sorry, but the server cannot accept any more connections right now.
+     *** Please try again later.
+@@ -118,12 +121,14 @@ crucial verbs in such a way as to make it impossible to log in as usual.  Type
+ The only database included with the release is Minimal.db.  Getting from there
+ to something usable is possible, but tedious; see README.Minimal for details.
+ 
+-Also available for FTP from ftp.parc.xerox.com is a version of LambdaCore.db, a
+-snapshot of the core pieces of the LambdaMOO database.  New snapshots are made
+-at irregular intervals as sufficient changes happen to the LambdaMOO database.
++Also available are versions of the LambdaCore.db, a snapshot of the
++core pieces of the LambdaMOO database, and JHCore, an extended version
++of the LambdaCore database with more features. These are in the
++databases directory of the project.
+ 
+-The LambdaMOO Programmer's Manual is also available for FTP from the same
+-place.  It comes in plain-text, Texinfo, and Postscript formats.
++The LambdaMOO Programmer's Manual is also available all around the
++net; just google for it. Also look for the LambdaCore Database
++programmer's manual.
+ 
+ Once the database has been loaded, the server reacts to various standard UNIX
+ process signals as follows:
+@@ -155,16 +160,9 @@ present from time to time; it is a copy of the main server process that is
+ systems (wherever possible), the server changes the output of the `ps' command
+ to show you explicitly which of these processes is which.
+ 
+-Finally, if you're putting up a LambdaMOO server, you should probably be a
+-member of the MOO-Cows mailing list.  Send email to MOO-Cows-Request@Xerox.Com
+-saying just `subscribe' to get yourself added to the list.
+-
+-	Pavel Curtis
+-	aka Lambda
+-	aka Haakon
+-	Archwizard of LambdaMOO
++For help running your MOO have a look at this Google Group:
+ 
+-	Pavel@Xerox.Com
++         http://groups.google.com/group/MOO-talk
+ 
+ ------------------------------------------------------------------------------
+ 
+-- 
+1.7.9.5
+

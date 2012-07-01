@@ -1,0 +1,3214 @@
+From 87ac8cf88bf8fb9cfa1c1d49e46cea4da15a8a52 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 29 Jan 2011 04:22:34 +0000
+Subject: [PATCH 118/223] Removing more (hopefull, all) of the CVS log entries
+ and RCS string constants.
+
+---
+ server/Makefile.in    |  148 -------------------------------------------------
+ server/ast.h          |   47 ----------------
+ server/bf_register.h  |   26 ---------
+ server/code_gen.h     |   18 ------
+ server/config.h.in    |   54 ------------------
+ server/db.h           |   44 ---------------
+ server/db_io.h        |   30 ----------
+ server/db_private.h   |   26 ---------
+ server/decompile.h    |   17 ------
+ server/disassemble.h  |   19 -------
+ server/eval_env.h     |   27 ---------
+ server/eval_vm.h      |   33 -----------
+ server/execute.h      |   89 -----------------------------
+ server/functions.h    |   52 -----------------
+ server/getpagesize.h  |   17 ------
+ server/keywords.gperf |   16 ------
+ server/keywords.h     |   22 --------
+ server/list.h         |   23 --------
+ server/log.h          |   33 -----------
+ server/match.h        |   29 ----------
+ server/md5.h          |   12 ----
+ server/my-ctype.h     |   17 ------
+ server/my-fcntl.h     |   32 -----------
+ server/my-in.h        |   43 --------------
+ server/my-inet.h      |   20 -------
+ server/my-ioctl.h     |   30 ----------
+ server/my-math.h      |   17 ------
+ server/my-poll.h      |   20 -------
+ server/my-signal.h    |   35 ------------
+ server/my-socket.h    |   42 --------------
+ server/my-stat.h      |   26 ---------
+ server/my-stdarg.h    |   26 ---------
+ server/my-stdio.h     |   41 --------------
+ server/my-stdlib.h    |   47 ----------------
+ server/my-string.h    |   47 ----------------
+ server/my-stropts.h   |   16 ------
+ server/my-sys-time.h  |   33 -----------
+ server/my-time.h      |   31 -----------
+ server/my-tiuser.h    |   26 ---------
+ server/my-types.h     |   50 -----------------
+ server/my-unistd.h    |   51 -----------------
+ server/my-wait.h      |   20 -------
+ server/name_lookup.h  |   14 -----
+ server/net_mplex.h    |   20 -------
+ server/net_multi.h    |   17 ------
+ server/net_proto.h    |   42 --------------
+ server/network.h      |   48 ----------------
+ server/numbers.h      |   12 ----
+ server/opcode.h       |   48 ----------------
+ server/options.h      |  116 --------------------------------------
+ server/parse_cmd.h    |   33 -----------
+ server/parser.h       |   33 -----------
+ server/parser.y       |  107 -----------------------------------
+ server/pattern.h      |   17 ------
+ server/program.h      |   38 -------------
+ server/quota.h        |   20 -------
+ server/random.h       |   38 -------------
+ server/ref_count.h    |   23 --------
+ server/regexpr.h      |   10 ----
+ server/restart        |   20 -------
+ server/restart.sh     |   14 -----
+ server/server.h       |   39 -------------
+ server/storage.h      |   70 -----------------------
+ server/streams.h      |   26 ---------
+ server/structures.h   |   68 -----------------------
+ server/sym_table.h    |   31 -----------
+ server/timers.h       |   23 --------
+ server/tokens.h       |   11 ----
+ server/unparse.h      |   36 ------------
+ server/utils.h        |   76 -------------------------
+ server/verbs.h        |   17 ------
+ server/version.h      |   32 -----------
+ 72 files changed, 2551 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 2cbc5b6..9eebda8 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -150,154 +150,6 @@ all: moo
+ 
+ .PHONY: all clean distclean tags depend pure_moo
+ 
+-###############################################################################
+-# $Log: not supported by cvs2svn $
+-# Revision 1.9  2004/05/22 01:25:43  wrog
+-# merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+-#
+-# Revision 1.8.10.1  2003/06/01 12:33:07  wrog
+-# added net_tcp.c; (put db_tune.h in HDRS); ran makedepend
+-#
+-# Revision 1.8  2000/05/11 06:32:27  xythian
+-# fixed bloody "suspicious line 293" emacs warning when saving Makefile.in
+-# by tweaking quotes
+-#
+-# Revision 1.7  2000/01/11 01:54:05  nop
+-# CFLAGS line for poor users without inline keyword.
+-#
+-# Revision 1.6  2000/01/11 01:39:14  nop
+-# Long overdue make depend
+-#
+-# Revision 1.5  1998/02/19 07:36:16  nop
+-# Initial string interning during db load.
+-#
+-# Revision 1.4  1997/03/03 06:36:23  nop
+-# clean target doesn't force reconfiguration; distclean now does.
+-#
+-# Revision 1.3  1997/03/03 05:55:14  nop
+-# Changed to ed for make depend, since ex is a cheap plastic imitation of ed
+-# on many Linux systems.  Added better optimization suggestion.
+-#
+-# Revision 1.2  1997/03/03 04:40:46  nop
+-# Avoid running autoconf automatically
+-#
+-# Revision 1.1.1.1  1997/03/03 03:45:05  nop
+-# LambdaMOO 1.8.0p5
+-#
+-# Revision 2.10  1996/04/19  01:28:40  pavel
+-# Ran a new `make depend'.  Release 1.8.0p4.
+-#
+-# Revision 2.9  1996/03/10  01:31:24  pavel
+-# Added pgperf directory and aclocal.m4 file to the distribution.
+-# Release 1.8.0.
+-#
+-# Revision 2.8  1996/02/18  23:18:02  pavel
+-# Added md5.[ch].  Release 1.8.0beta3.
+-#
+-# Revision 2.7  1996/02/08  07:26:19  pavel
+-# Updated copyright notice for 1996.  Release 1.8.0beta1 (again).
+-#
+-# Revision 2.6  1996/02/08  05:46:27  pavel
+-# Added numbers.h, AddingNewMOOTypes.txt.  Updated dependencies.  Made pure_moo
+-# depend on moo.  Release 1.8.0beta1.
+-#
+-# Revision 2.5  1996/01/16  07:35:55  pavel
+-# Fixed dependencies.  Release 1.8.0alpha6.
+-#
+-# Revision 2.4  1996/01/11  07:58:54  pavel
+-# Fixed dependencies for parser.o.  Release 1.8.0alpha5.
+-#
+-# Revision 2.3  1995/12/31  03:29:29  pavel
+-# Fixed dependencies for parser.y and the networking modules.
+-# Release 1.8.0alpha4.
+-#
+-# Revision 2.2  1995/12/28  00:32:32  pavel
+-# Added verbs.h.  Release 1.8.0alpha3.
+-#
+-# Revision 2.1  1995/12/11  08:07:47  pavel
+-# Added a few more derived files to `make clean'.  Release 1.8.0alpha2.
+-#
+-# Revision 2.0  1995/11/30  05:45:03  pavel
+-# New baseline version, corresponding to release 1.8.0alpha1.
+-#
+-# Revision 1.26  1992/10/23  23:10:29  pavel
+-# Updated dependency information for release 1.7.0 and added copyright notice.
+-#
+-# Revision 1.25  1992/10/23  19:12:08  pavel
+-# A few last portability changes for release 1.7.0.
+-#
+-# Revision 1.24  1992/10/21  03:02:35  pavel
+-# Converted to use new automatic configuration system.
+-#
+-# Revision 1.23  1992/10/17  20:14:17  pavel
+-# Numerous changes in response to beta-testing portability problems.
+-#
+-# Revision 1.22  1992/10/06  01:32:41  pavel
+-# Dyked out useless XNS network support.
+-# Added sources for clients and a few new my-*.h files.
+-# Fixed nasty bug in `make depend' code.
+-#
+-# Revision 1.21  1992/09/23  17:23:08  pavel
+-# Added support for the whole family of networking protocol and multiplexing
+-# wait implementations; it should now be easy to add new `optional' sources,
+-# only used if certain combinations of preprocessor flags are set.
+-#
+-# Revision 1.20  1992/09/14  18:42:47  pjames
+-# Updated.
+-#
+-# Revision 1.19  1992/09/14  17:46:39  pjames
+-# Updated.
+-#
+-# Revision 1.18  1992/09/08  22:49:59  pjames
+-# Took out bf_move.c
+-#
+-# Revision 1.17  1992/09/08  22:09:23  pjames
+-# Updated for new bf_ filenames
+-#
+-# Revision 1.16  1992/09/03  23:49:13  pavel
+-# Added support for multiple complete network implementations.
+-#
+-# Revision 1.15  1992/09/03  16:32:40  pjames
+-# Updated.
+-#
+-# Revision 1.14  1992/08/31  23:43:57  pavel
+-# Added math library to the LIBRARIES line for A/UX.
+-#
+-# Revision 1.13  1992/08/28  16:32:18  pjames
+-# Added ref_count modules.
+-#
+-# Revision 1.12  1992/08/21  01:09:56  pavel
+-# Minor fix.
+-#
+-# Revision 1.11  1992/08/21  00:56:39  pavel
+-# Shortened the names of several files to fit within the 14-character limit
+-# imposed on certain systems.
+-# Moved the specification of all configuration options other than those
+-# directly related to the compiler command line into config.h.  Also
+-# reorganized the ones that are left to make it easier for folks to see what's
+-# necessary.
+-#
+-# Revision 1.10  1992/08/14  00:35:21  pavel
+-# Fixed rule for dist.tar.Z to be idempotent.
+-#
+-# Revision 1.9  1992/08/13  23:35:42  pavel
+-# Cleaned up CFLAGS organization.
+-#
+-# Revision 1.8  1992/08/13  23:24:34  pavel
+-# Did a more recent `make depend'...
+-#
+-# Revision 1.7  1992/08/13  22:48:20  pjames
+-# Added my-math.h
+-#
+-# Revision 1.6  1992/08/13  21:29:58  pjames
+-# Added -DMOO to COMPILE.c
+-#
+-# Revision 1.5  1992/08/11  17:06:45  pjames
+-# Updated with new source files, removed old source files, fixed dependencies.
+-#
+-# Revision 1.3  1992/07/27  18:30:21  pjames
+-# Update what vector.o and vector.po depend on.
+-###############################################################################
+ 
+ # Have to do this one manually, since make depend cannot hack yacc files.
+ parser.o:	my-ctype.h my-math.h my-stdlib.h my-string.h \
+diff --git a/server/ast.h b/server/ast.h
+index 298ca17..1cfcca5 100644
+--- a/server/ast.h
++++ b/server/ast.h
+@@ -214,50 +214,3 @@ extern void free_stmt(Stmt *);
+ 
+ #endif				/* !AST_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:22  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  05:59:43  pavel
+- * Updated copyright notice for 1996.  Added exponentiation expression, named
+- * WHILE loops, BREAK and CONTINUE statements, support for floating-point.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.2  1996/01/16  07:13:43  pavel
+- * Add support for scattering assignment.  Release 1.8.0alpha6.
+- *
+- * Revision 2.1  1995/12/31  03:14:38  pavel
+- * Added EXPR_LENGTH.  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:50:19  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.8  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.7  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.6  1992/08/31  22:21:43  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.5  1992/08/28  23:13:36  pjames
+- * Added ASGN_RANGE to assignment type enumeration.
+- * Added range arm to assigment union.
+- *
+- * Revision 1.4  1992/08/14  00:15:28  pavel
+- * Removed trailing comma in an enumeration.
+- *
+- * Revision 1.3  1992/08/14  00:01:11  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.2  1992/07/30  21:21:21  pjames
+- * Removed max_stack from AST structures.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/bf_register.h b/server/bf_register.h
+index df89747..a76d784 100644
+--- a/server/bf_register.h
++++ b/server/bf_register.h
+@@ -31,29 +31,3 @@ extern void register_verbs(void);
+ extern void register_name_lookup(void);
+ /* !bg_name_lookup */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:29:12  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1996/01/16  07:28:09  pavel
+- * Added `register_functions()'.  Release 1.8.0alpha6.
+- *
+- * Revision 2.0  1995/11/30  04:50:30  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/09/08  22:04:15  pjames
+- * Updated to have new procedure names.
+- *
+- * Revision 1.2  1992/08/10  17:22:22  pjames
+- * Added register_bf_log(void);
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/code_gen.h b/server/code_gen.h
+index 457be28..548b12e 100644
+--- a/server/code_gen.h
++++ b/server/code_gen.h
+@@ -21,21 +21,3 @@
+ 
+ extern Program *generate_code(Stmt *, DB_Version);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:25  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:28:58  pavel
+- * Made generate_code() version-dependent.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/11/30  05:04:34  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 2.0  1995/11/30  05:04:03  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/config.h.in b/server/config.h.in
+index a74ad04..14002b2 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -273,57 +273,3 @@
+ 
+ #endif /* !Config_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2.10.1  2003/06/01 12:39:27  wrog
+- * ensure definitions for in_addr_t, INADDR_NONE
+- *
+- * Revision 1.2  1998/12/29 05:26:51  nop
+- * Fixed one more Log keyword that slipped by.
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:06  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/02/11  00:41:40  pavel
+- * Added check for matherr().  Release 1.8.0beta2.
+- *
+- * Revision 2.4  1996/02/08  07:23:16  pavel
+- * Added NDECL_STRTOD.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/11  07:49:01  pavel
+- * Added HAVE_CRYPT.  Release 1.8.0alpha5.
+- *
+- * Revision 2.2  1995/12/31  03:18:30  pavel
+- * Added SYS_STAT_H_NEEDS_HELP.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:57:13  pavel
+- * Added definition of INT32_MAX.  Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  05:17:32  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1993/10/11  19:25:17  pavel
+- * Changed from config.h.in to raw_config.h.in, along with several new tests
+- * being added.
+- *
+- * Revision 1.5  1992/10/28  01:57:38  pavel
+- * Changed NDECL_VPRINTF to NDECL_VFPRINTF, which is the one we care about...
+- *
+- * Revision 1.4  1992/10/23  23:11:21  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/23  19:19:22  pavel
+- * Added NEED_MALLOC_H, NDECL_{SIGEMPTYSET,FSTAT,PERROR,REMOVE,VPRINTF,MEMSET,
+- * FORK,WAITPID}, SELECT_WORKS_ON_FIFOS, and POSIX_NONBLOCKING_WORKS.
+- *
+- * Revision 1.2  1992/10/21  03:12:59  pavel
+- * Fixed up the comment leader string for this file.
+- *
+- * Revision 1.1  1992/10/21  03:06:52  pavel
+- * Initial RCS-controlled version.
+- */
+-
+-/* Local Variables: */
+-/* mode: c */
+-/* End: */
+diff --git a/server/db.h b/server/db.h
+index bb4d032..bc2f119 100644
+--- a/server/db.h
++++ b/server/db.h
+@@ -520,47 +520,3 @@ extern void db_delete_verb(db_verb_handle);
+ 
+ #endif				/* !DB_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4.10.1  2003/06/03 12:18:00  wrog
+- * allow temporary flags on objects
+- *
+- * Revision 1.4  2001/01/29 08:38:44  bjj
+- * Fix Sourceforge Bug #127620: add_verb() should return verbindex
+- * And now it does.  Old servers always returned 0, new servers will always
+- * return a positive integer.
+- *
+- * Revision 1.3  1998/12/14 13:17:32  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:26  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/05/12  21:31:37  pavel
+- * Added documentation of the memory-management policy for db_add_verb().
+- * Release 1.8.0p5.
+- *
+- * Revision 2.4  1996/02/11  00:47:04  pavel
+- * Enhanced db_find_property() to report the defining object of the found
+- * property.  Release 1.8.0beta2.
+- *
+- * Revision 2.3  1996/02/08  06:28:33  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/28  00:30:27  pavel
+- * Added db_disk_size().  Changed db_delete_verb() to unbundle how the verb is
+- * found.  Added support to db_find_defined_verb() for suppressing old
+- * numeric-string behavior.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  07:56:12  pavel
+- * Added `db_object_bytes()' and `db_rename_propdef()'.  Clarified
+- * reference-counting behavior of built-in property references.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  05:05:11  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- */
+diff --git a/server/db_io.h b/server/db_io.h
+index cca2408..5d76c78 100644
+--- a/server/db_io.h
++++ b/server/db_io.h
+@@ -96,33 +96,3 @@ extern void dbio_write_var(Var);
+ extern void dbio_write_program(Program *);
+ extern void dbio_write_forked_program(Program * prog, int f_index);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/02/19 07:36:16  nop
+- * Initial string interning during db load.
+- *
+- * Revision 1.2  1997/03/03 04:18:28  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  06:28:21  pavel
+- * Added dbio_input_version, dbio_read/write_float().  Made dbio_read_program
+- * version-dependent.  Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/28  00:46:52  pavel
+- * Added support for printing location of MOO-compilation warnings and errors
+- * during loading.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:00:11  pavel
+- * Removed another silly use of `unsigned'.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  05:05:29  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:05:21  pavel
+- * Initial revision
+- */
+diff --git a/server/db_private.h b/server/db_private.h
+index 0ba252e..7e80719 100644
+--- a/server/db_private.h
++++ b/server/db_private.h
+@@ -160,29 +160,3 @@ extern Exception dbpriv_dbio_failed;
+ extern void dbpriv_set_dbio_input(FILE *);
+ extern void dbpriv_set_dbio_output(FILE *);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:53  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2  1997/03/03 04:18:30  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  06:27:28  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/31  03:18:05  pavel
+- * Removed a few more uses of `unsigned'.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:57:51  pavel
+- * Added dbpriv_build_prep_table().  Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  05:05:53  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:05:38  pavel
+- * Initial revision
+- */
+diff --git a/server/decompile.h b/server/decompile.h
+index 0d3dba3..ac54cad 100644
+--- a/server/decompile.h
++++ b/server/decompile.h
+@@ -21,20 +21,3 @@
+ extern Stmt *decompile_program(Program * program, int vector);
+ extern int find_line_number(Program * program, int vector, int pc);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:33  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:27:19  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:06:15  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:06:05  pavel
+- * Initial revision
+- */
+diff --git a/server/disassemble.h b/server/disassemble.h
+index a7aaae2..94e9ff7 100644
+--- a/server/disassemble.h
++++ b/server/disassemble.h
+@@ -21,22 +21,3 @@
+ 
+ extern void disassemble_to_file(FILE * fp, Program * program);
+ extern void disassemble_to_stderr(Program * program);
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:35  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:27:06  pavel
+- * Added disassemble_to_file().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:06:29  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:06:21  pavel
+- * Initial revision
+- */
+diff --git a/server/eval_env.h b/server/eval_env.h
+index 61da435..8a7c539 100644
+--- a/server/eval_env.h
++++ b/server/eval_env.h
+@@ -34,30 +34,3 @@ void fill_in_rt_consts(Var * env, DB_Version);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:36  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:26:34  pavel
+- * Made fill_in_rt_consts() version-dependent.  Updated copyright notice for
+- * 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:50:38  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/08/31  22:22:36  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.1  1992/08/10  16:20:00  pjames
+- * Initial RCS-controlled version
+- */
+diff --git a/server/eval_vm.h b/server/eval_vm.h
+index 98e08cb..798190f 100644
+--- a/server/eval_vm.h
++++ b/server/eval_vm.h
+@@ -29,36 +29,3 @@ extern activation top_activ(vm);
+ extern Objid progr_of_cur_verb(vm);
+ extern unsigned suspended_lineno_of_vm(vm);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:36  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:26:06  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:50:51  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1993/12/21  23:41:30  pavel
+- * Add new `outcome' result from the interpreter.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/17  20:26:16  pavel
+- * Changed return-type of read_vm() from `char' to `int', for systems that use
+- * unsigned chars.
+- *
+- * Revision 1.2  1992/08/31  22:22:56  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.1  1992/08/10  16:20:00  pjames
+- * Initial RCS-controlled version
+- */
+diff --git a/server/execute.h b/server/execute.h
+index a6a6bd8..2d8a902 100644
+--- a/server/execute.h
++++ b/server/execute.h
+@@ -127,92 +127,3 @@ extern int read_activ(activation * a, int which_vector);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.7.2.2  2003/06/07 13:14:24  wrog
+- * fix log entry
+- *
+- * Revision 1.7.2.1  2003/06/04 21:28:59  wrog
+- * removed useless arguments from resume_from_previous_vm(), do_forked_task();
+- * replaced current_task_kind with is_fg argument for do_task();
+- * made enum task_kind internal to tasks.c
+- *
+- * Revision 1.7  2002/09/15 23:21:01  xplat
+- * GNU indent normalization.
+- *
+- * Revision 1.6  2002/08/18 09:47:26  bjj
+- * Finally made free_activation() take a pointer after noticing how !$%^&
+- * much time it was taking in a particular profiling run.
+- *
+- * Revision 1.5  2001/03/12 05:10:54  bjj
+- * Split out call_verb and call_verb2.  The latter must only be called with
+- * strings that are already MOO strings (str_ref-able).
+- *
+- * Revision 1.4  1998/12/14 13:17:51  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/03/05 08:41:49  bjj
+- * A few malloc-friendly changes:  rt_stacks are now centrally allocated/freed
+- * so that we can keep a pool of them handy.  rt_envs are similarly pooled.
+- * Both revert to malloc/free for large requests.
+- *
+- * Revision 1.2  1997/03/03 04:18:40  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/03/10  01:20:08  pavel
+- * Added new `caller()' entry point, for use by built-in fns.  Release 1.8.0.
+- *
+- * Revision 2.4  1996/02/08  06:25:47  pavel
+- * Added support for in-DB traceback handling.  Updated copyright notice for
+- * 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/11  07:46:58  pavel
+- * Added support for getting the value of a resumed task.
+- * Release 1.8.0alpha5.
+- *
+- * Revision 2.2  1995/12/31  03:25:34  pavel
+- * Removed extraneous #include "options.h".  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/11  07:58:55  pavel
+- * Removed another silly use of `unsigned'.
+- *
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:51:15  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:29:09  pavel
+- * Changed return-type of read_activ() from char to int, for systems that use
+- * unsigned chars.
+- *
+- * Revision 1.7  1992/09/25  21:11:03  pjames
+- * Added error_pc to the activation data structure.
+- *
+- * Revision 1.6  1992/09/24  16:43:35  pavel
+- * Added `task_timed_out' to the interface.
+- *
+- * Revision 1.5  1992/09/02  18:42:25  pavel
+- * Fixed resume_from_previous_vm() to accept any MOO value as the resumption
+- * value, instead of just strings.
+- *
+- * Revision 1.4  1992/08/31  22:27:38  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.3  1992/08/10  17:44:28  pjames
+- * Moved several functions declarations to eval_env.h and eval_vm.h
+- *
+- * Revision 1.2  1992/07/27  18:01:45  pjames
+- * Changed name of ct_env to var_names
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- * */
+diff --git a/server/functions.h b/server/functions.h
+index c834f43..6a033b2 100644
+--- a/server/functions.h
++++ b/server/functions.h
+@@ -94,55 +94,3 @@ extern void load_server_options(void);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  1998/12/14 13:17:54  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/03/03 05:03:51  nop
+- * steak2: move protectedness into builtin struct, load_server_options()
+- * now required for $server_options updates.
+- *
+- * Revision 1.2  1997/03/03 04:18:42  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/04/19  01:22:04  pavel
+- * Added tail_call_pack() declaration and patches to allow generation of the
+- * new warning in read_bi_func_data().  Release 1.8.0p4.
+- *
+- * Revision 2.1  1996/02/08  06:25:15  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:51:31  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.8  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.7  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.6  1992/10/17  20:31:21  pavel
+- * Changed return-type of read_bi_func_data() from char to int, for systems
+- * that use unsigned chars.
+- *
+- * Revision 1.5  1992/08/14  00:00:56  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.4  1992/08/13  21:25:52  pjames
+- * Added register_bi_functions() which registers all bi_functions.
+- *
+- * Revision 1.3  1992/08/12  01:49:19  pjames
+- * Var_types in bft_entry is now a pointer instead of a preallocated array.
+- *
+- * Revision 1.2  1992/08/10  17:38:21  pjames
+- * Added func_pc and func_data to package struct.  Built in functions now
+- * receive an Objid (progr) instead of a Parse_Info.  Changed
+- * registration method to use var_args.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/getpagesize.h b/server/getpagesize.h
+index 0f217d6..bb59594 100644
+--- a/server/getpagesize.h
++++ b/server/getpagesize.h
+@@ -40,20 +40,3 @@
+ 
+ #endif				/* not HAVE_GETPAGESIZE */
+ 
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:24:58  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:51:46  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/keywords.gperf b/server/keywords.gperf
+index 7fd821d..225f519 100644
+--- a/server/keywords.gperf
++++ b/server/keywords.gperf
+@@ -70,19 +70,3 @@ find_keyword(const char *word)
+     return in_word_set(word, strlen(word));
+ }
+ 
+-char rcsid_keywords[] = "$Id: keywords.gperf,v 1.1.1.1 1997-03-03 03:45:02 nop Exp $";
+-
+-/* $Log: not supported by cvs2svn $
+- * Revision 2.2  1996/02/08  06:33:21  pavel
+- * Added `break', `continue', and E_FLOAT.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  08:15:42  pavel
+- * Added #include "tokens.h" removed from keywords.h.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  05:02:56  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:01:47  pavel
+- * Initial revision
+- */
+diff --git a/server/keywords.h b/server/keywords.h
+index 590c497..008c660 100644
+--- a/server/keywords.h
++++ b/server/keywords.h
+@@ -29,25 +29,3 @@ struct keyword {
+ typedef const struct keyword Keyword;
+ 
+ extern Keyword *find_keyword(const char *);
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:46  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:24:47  pavel
+- * Fixed type of version number.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/11  08:15:02  pavel
+- * Removed useless #include "tokens.h".  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  05:06:50  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:06:40  pavel
+- * Initial revision
+- */
+diff --git a/server/list.h b/server/list.h
+index 0a70e33..9f39f5c 100644
+--- a/server/list.h
++++ b/server/list.h
+@@ -34,26 +34,3 @@ extern Var new_list(int size);
+ extern const char *value2str(Var);
+ extern const char *value_to_literal(Var);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:47  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:23:44  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:51:57  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/08/28  23:20:04  pjames
+- * Added `listrangeset()' and `strrangeset()'.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/log.h b/server/log.h
+index 9ad54e0..cd7e2cb 100644
+--- a/server/log.h
++++ b/server/log.h
+@@ -36,36 +36,3 @@ extern void add_command_to_history(Objid player, const char *command);
+ extern int log_pcount;
+ extern int log_report_progress_cktime();
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3.10.1  2003/06/03 12:19:27  wrog
+- * added log_report_progress()
+- *
+- * Revision 1.3  1998/12/14 13:18:00  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:48  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/04/08  01:05:28  pavel
+- * Added `set_log_file()' entry point.  Release 1.8.0p3.
+- *
+- * Revision 2.1  1996/02/08  06:23:32  pavel
+- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:52:07  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/match.h b/server/match.h
+index 81633be..a96d83f 100644
+--- a/server/match.h
++++ b/server/match.h
+@@ -20,32 +20,3 @@
+ 
+ extern Objid match_object(Objid player, const char *name);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:50  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:22:33  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:52:16  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/09/14  17:43:40  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.2  1992/08/31  22:26:59  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/md5.h b/server/md5.h
+index be68e9f..2008c2c 100644
+--- a/server/md5.h
++++ b/server/md5.h
+@@ -65,15 +65,3 @@ void md5_Final(md5ctx_t * context, uint8 digest[16]);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:52  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 1.1  1996/02/18  23:18:53  pavel
+- * Initial revision
+- *
+- */
+diff --git a/server/my-ctype.h b/server/my-ctype.h
+index a288265..d1c3f16 100644
+--- a/server/my-ctype.h
++++ b/server/my-ctype.h
+@@ -28,20 +28,3 @@ extern int toupper(int);
+ 
+ #endif				/* !My_Ctype_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:52  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:05:23  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:08:25  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:08:19  pavel
+- * Initial revision
+- */
+diff --git a/server/my-fcntl.h b/server/my-fcntl.h
+index ff49ab5..67855cd 100644
+--- a/server/my-fcntl.h
++++ b/server/my-fcntl.h
+@@ -31,35 +31,3 @@ extern int open(const char *, int, ...);
+ #define NONBLOCK_FLAG O_NDELAY
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:52  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:05:07  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:57:10  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/23  19:27:57  pavel
+- * Changed to conditionalize on POSIX_NONBLOCKING_WORKS instead of
+- * defined(O_NONBLOCK).
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/17  20:34:42  pavel
+- * Added some more system-dependent #if's.
+- * Added definition of NONBLOCK_FLAG, to allow use of POSIX-style non-blocking
+- * on systems where it is available.
+- *
+- * Revision 1.1  1992/10/06  01:38:46  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-in.h b/server/my-in.h
+index aed3ae2..2ef67fd 100644
+--- a/server/my-in.h
++++ b/server/my-in.h
+@@ -48,46 +48,3 @@ typedef unsigned32 in_addr_t;
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3.10.1  2003/06/01 12:39:27  wrog
+- * ensure definitions for in_addr_t, INADDR_NONE
+- *
+- * Revision 1.3  1998/12/14 13:18:09  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:53  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:04:58  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:57:23  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1993/08/10  20:56:44  pavel
+- * Fixed syntax error in default declaration of htonl() and friends.
+- *
+- * Revision 1.6  1993/08/04  00:11:59  pavel
+- * Removed default big-endian definition for htonl() and friends, replacing it
+- * with an external function declaration.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/23  19:28:46  pavel
+- * Added protection against multiple inclusions, for systems that aren't
+- * clever enough to do that for themselves.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/04  04:56:05  pavel
+- * Removed misplaced declaration for inet_addr().
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-inet.h b/server/my-inet.h
+index 586e732..6a2ffaf 100644
+--- a/server/my-inet.h
++++ b/server/my-inet.h
+@@ -24,23 +24,3 @@
+ 
+ #include <arpa/inet.h>
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:04:48  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:57:31  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.1  1992/10/09  00:04:28  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-ioctl.h b/server/my-ioctl.h
+index 77d0514..39607de 100644
+--- a/server/my-ioctl.h
++++ b/server/my-ioctl.h
+@@ -23,33 +23,3 @@
+ extern int ioctl(int, int, ...);
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:53  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:04:38  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:57:38  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/17  20:35:51  pavel
+- * Changed declaration of ioctl() to avoid specifying the type of the last
+- * argument.
+- *
+- * Revision 1.2  1992/07/30  00:31:12  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-math.h b/server/my-math.h
+index 8719240..27139e4 100644
+--- a/server/my-math.h
++++ b/server/my-math.h
+@@ -25,20 +25,3 @@
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/03/10  01:06:01  pavel
+- * Replaced HUGE_VAL with DBL_MAX, since some systems (e.g., BSDi 1.1)
+- * mis-define the former as positive infinity.  Release 1.8.0.
+- *
+- * Revision 2.1  1996/02/08  06:04:22  pavel
+- * Updated copyright notice for 1996.  Added inclusion of <math.h> for all of
+- * the standard math functions.  Added IS_REAL() check for NaNs and
+- * infinities.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:15:40  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- */
+diff --git a/server/my-poll.h b/server/my-poll.h
+index 2858965..b9187e1 100644
+--- a/server/my-poll.h
++++ b/server/my-poll.h
+@@ -23,23 +23,3 @@
+ extern int poll(struct pollfd *, unsigned long, int);
+ #endif
+ 
+-/* $Log: not supported by cvs2svn $
+- * Revision 2.1  1996/02/08  06:03:22  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:57:46  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/06  18:27:51  pavel
+- * Added `#ifdef sun' around the declaration of poll(), since only SunOS seems
+- * to need it.
+- *
+- * Revision 1.1  1992/10/03  00:52:26  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-signal.h b/server/my-signal.h
+index 9a03e01..88ba4c8 100644
+--- a/server/my-signal.h
++++ b/server/my-signal.h
+@@ -47,38 +47,3 @@ extern int sigrelse(int);
+ #define SIGCHLD SIGCLD
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:54  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:03:00  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:57:56  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1993/08/10  20:50:08  pavel
+- * Split out the optional declaration of sigprocmask as a separate case.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/23  19:29:19  pavel
+- * Added declarations for POSIX-style mask-manipulation functions.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/17  20:36:19  pavel
+- * Added some more system-dependent #if's.
+- *
+- * Revision 1.2  1992/07/30  00:32:20  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-socket.h b/server/my-socket.h
+index f37d4bc..538346f 100644
+--- a/server/my-socket.h
++++ b/server/my-socket.h
+@@ -43,45 +43,3 @@ extern int connect(int, struct sockaddr *, int);
+ extern int shutdown(int, int);
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:54  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:02:39  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/31  03:24:41  pavel
+- * Added getsockname().  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:58:09  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.8  1993/08/03  21:41:53  pavel
+- * Broke out bind() and connect() for a separate NDECL test.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.5  1992/10/17  20:36:37  pavel
+- * Added some more system-dependent #if's.
+- *
+- * Revision 1.4  1992/10/06  01:34:00  pavel
+- * Added SGI and AIX to the list of losers who don't #include the right things
+- * from inside their own header files.
+- *
+- * Revision 1.3  1992/09/23  22:35:52  pavel
+- * Added conditional #include of "my-types.h", for systems that need it.
+- *
+- * Revision 1.2  1992/08/31  22:26:43  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-stat.h b/server/my-stat.h
+index 967c385..e4f61bf 100644
+--- a/server/my-stat.h
++++ b/server/my-stat.h
+@@ -36,29 +36,3 @@ extern int mknod(const char *file, int mode, int dev);
+ #define mkfifo(path, mode)	mknod(path, S_IFIFO | (mode), 0)
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:55  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  06:02:22  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/31  03:25:59  pavel
+- * Added test for <sys/stat.h> needing help.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:36:26  pavel
+- * Added declaration of stat().  Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:58:21  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/10/23  22:25:00  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-stdarg.h b/server/my-stdarg.h
+index cc41c54..d8750da 100644
+--- a/server/my-stdarg.h
++++ b/server/my-stdarg.h
+@@ -55,29 +55,3 @@ typedef void *va_list;
+ 
+ #endif				/* BUGGY_STDARG */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:55  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:02:14  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:58:36  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/09/22  22:47:15  pavel
+- * Added missing #include of "config.h".
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-stdio.h b/server/my-stdio.h
+index 5a0e275..7b3dd7d 100644
+--- a/server/my-stdio.h
++++ b/server/my-stdio.h
+@@ -65,44 +65,3 @@ extern int vfscanf(FILE *, const char *, va_list);
+ 
+ #endif				/* !My_Stdio_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:18:17  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:56  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:02:04  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1996/01/11  07:44:48  pavel
+- * Added declaration for fwrite().  Release 1.8.0alpha5.
+- *
+- * Revision 2.0  1995/11/30  04:58:44  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1992/10/28  01:58:05  pavel
+- * Changed NDECL_VPRINTF to NDECL_VFPRINTF, which is the one we care about...
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/23  19:30:14  pavel
+- * Split up the declarations into four equivalence classes instead of just one.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/17  20:37:59  pavel
+- * Added support for systems that lack rename() and/or remove().
+- *
+- * Revision 1.2  1992/09/03  23:53:10  pavel
+- * Added declaration for printf().
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-stdlib.h b/server/my-stdlib.h
+index 646afc0..e7b19f9 100644
+--- a/server/my-stdlib.h
++++ b/server/my-stdlib.h
+@@ -69,50 +69,3 @@ extern int srandom(unsigned);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:56  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:01:42  pavel
+- * Updated copyright notice for 1996.  Added strtod().  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:58:54  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1993/08/04  01:16:15  pavel
+- * Added default definition for strtoul(), as a synonym for strtol().
+- *
+- * Revision 1.9  1993/08/04  00:27:53  pavel
+- * Added declaration for strtoul().
+- *
+- * Revision 1.8  1993/08/04  00:13:30  pavel
+- * Added declarations of random() and srandom(), moved from random.h.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/23  19:31:29  pavel
+- * Added protection against multiple inclusions, for systems that aren't
+- * clever enough to do that for themselves.
+- * Added declaration of realloc().
+- * Added support for NEED_MALLOC_H.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/10/17  20:39:19  pavel
+- * Removed apparently-useless declaration of exit()... (*sigh*)
+- *
+- * Revision 1.3  1992/09/27  19:25:12  pavel
+- * Added declaration of exit() for SunOS.
+- *
+- * Revision 1.2  1992/07/30  00:33:28  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-string.h b/server/my-string.h
+index 2a3784c..812153b 100644
+--- a/server/my-string.h
++++ b/server/my-string.h
+@@ -86,50 +86,3 @@ extern void *memset(void *, int, size_t);
+ 
+ #endif				/* !My_String_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3.10.1  2003/06/11 10:36:14  wrog
+- * added memmove()
+- *
+- * Revision 1.3  1998/12/14 13:18:19  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:57  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:01:23  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:59:02  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.8  1993/08/03  21:32:18  pavel
+- * Added support for bzero() being declared in <stdlib.h> on some systems.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/23  19:33:23  pavel
+- * Added declarations of bcopy() and memset().
+- * Commented out unnecessary USE_OWN_STRING_H declarations of memcmp(),
+- * memcpy(), and strlen().
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/10/17  20:40:26  pavel
+- * Added some more system-dependent #if's.
+- * Added declaration of memcmp() for SunOS.
+- *
+- * Revision 1.3  1992/08/31  22:26:51  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.2  1992/07/30  00:34:15  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-stropts.h b/server/my-stropts.h
+index c7a639b..935a88f 100644
+--- a/server/my-stropts.h
++++ b/server/my-stropts.h
+@@ -24,19 +24,3 @@
+ 
+ #include <stropts.h>
+ 
+-/* $Log: not supported by cvs2svn $
+- * Revision 2.1  1996/02/08  06:01:12  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:59:12  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.1  1992/10/06  01:38:46  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-sys-time.h b/server/my-sys-time.h
+index d980dfe..79a2c4a 100644
+--- a/server/my-sys-time.h
++++ b/server/my-sys-time.h
+@@ -39,36 +39,3 @@ extern int setitimer(int, struct itimerval *, struct itimerval *);
+ extern int select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:57  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:01:00  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:59:21  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1993/08/12  01:23:11  pavel
+- * -- Split out optional declaration of setitimer() to be independent of the
+- *    one for getitimer().
+- * -- Only use declaration of select() if MP_SELECT is enabled.
+- * -- Include <sys/select.h> if it exists.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/17  21:01:10  pavel
+- * Dyked out useless declaration of gettimeofday().
+- * Added some more system-dependent #if's.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-time.h b/server/my-time.h
+index 6af734a..bd5d4b7 100644
+--- a/server/my-time.h
++++ b/server/my-time.h
+@@ -51,34 +51,3 @@ extern char *tzname;
+ 
+ #endif				/* !My_Time_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:18:58  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:00:41  pavel
+- * *** empty log message ***
+- *
+- * Revision 2.0  1995/11/30  04:59:30  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/23  19:35:14  pavel
+- * Added check for avoiding strftime() on CMU MACH systems, since they declare
+- * it wrong (though they implement it right).
+- * Added missing #include "my-types.h" for strftime() declaration.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/07/30  00:38:08  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-tiuser.h b/server/my-tiuser.h
+index af40b0d..456c71e 100644
+--- a/server/my-tiuser.h
++++ b/server/my-tiuser.h
+@@ -35,29 +35,3 @@ extern int t_errno;
+ extern char *t_errlist[];
+ #endif
+ 
+-/* $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:00:32  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:59:38  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1993/10/11  19:09:23  pavel
+- * Separated out the check for an undeclared t_errlist, since Solaris, for one,
+- * declares everying *but* that...
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/10/17  20:41:40  pavel
+- * Added some more system-dependent #if's.
+- *
+- * Revision 1.1  1992/10/06  01:40:02  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-types.h b/server/my-types.h
+index f893e91..b3c380a 100644
+--- a/server/my-types.h
++++ b/server/my-types.h
+@@ -41,53 +41,3 @@
+ 
+ #endif				/* !My_Types_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/03/03 06:39:28  nop
+- * sys/time.h necessary for FD_ZERO et al...maybe.
+- *
+- * Revision 1.2  1997/03/03 04:18:58  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:00:13  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:59:47  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.11  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.10  1992/10/23  19:35:43  pavel
+- * Moved bzero declaration to my-string.h.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:41:53  pavel
+- * Added some more system-dependent #if's.
+- *
+- * Revision 1.7  1992/09/27  19:27:19  pavel
+- * Added declaration of mode_t for non-POSIX systems.
+- *
+- * Revision 1.6  1992/09/23  17:15:03  pavel
+- * Moved declaration of bzero (for SunOS) to here from net_multi.c.
+- *
+- * Revision 1.5  1992/09/21  17:43:16  pavel
+- * Added missing #include of "config.h".
+- *
+- * Revision 1.4  1992/08/31  23:42:15  pavel
+- * Changed to conditionalize on FD_ZERO rather than AUX for the fd_set macros.
+- *
+- * Revision 1.3  1992/08/21  00:45:50  pavel
+- * Changed to conditionalize on the option AVOID_POSIX rather than USE_POSIX.
+- *
+- * Revision 1.2  1992/07/30  00:39:05  pavel
+- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-unistd.h b/server/my-unistd.h
+index eca5d35..06b3f77 100644
+--- a/server/my-unistd.h
++++ b/server/my-unistd.h
+@@ -43,54 +43,3 @@ extern int fsync(int);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:18:23  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:18:59  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:00:01  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:59:57  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.11  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.10  1992/10/23  19:37:01  pavel
+- * Added support for systems that have <unistd.h>, but still don't declare
+- * most of the functions in it...
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:42:25  pavel
+- * Added declarations of link() and unlink().
+- *
+- * Revision 1.7  1992/09/27  19:30:09  pavel
+- * Added declarations of chmod() and pipe() for non-POSIX systems.
+- *
+- * Revision 1.6  1992/09/21  17:08:59  pavel
+- * Added missing #include of config.h.
+- *
+- * Revision 1.5  1992/09/03  23:53:33  pavel
+- * Added declaration for sleep().
+- *
+- * Revision 1.4  1992/08/31  22:26:21  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.3  1992/08/21  00:46:08  pavel
+- * Changed to conditionalize on the option AVOID_POSIX rather than USE_POSIX.
+- *
+- * Revision 1.2  1992/08/13  23:19:46  pavel
+- * Added declaration for dup()...
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/my-wait.h b/server/my-wait.h
+index 8e73ba8..a224039 100644
+--- a/server/my-wait.h
++++ b/server/my-wait.h
+@@ -24,23 +24,3 @@
+ extern pid_t waitpid(pid_t, int *, int);
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:00  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  05:58:27  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:00:04  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/10/23  22:25:00  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/name_lookup.h b/server/name_lookup.h
+index b859fe8..d04ef31 100644
+--- a/server/name_lookup.h
++++ b/server/name_lookup.h
+@@ -50,17 +50,3 @@ extern const char *lookup_name_from_addr(struct sockaddr_in *addr,
+ 
+ #endif				/* Name_Lookup_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:01  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.0  1995/11/30  05:07:03  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:06:56  pavel
+- * Initial revision
+- */
+diff --git a/server/net_mplex.h b/server/net_mplex.h
+index 854e3cd..0d06c8c 100644
+--- a/server/net_mplex.h
++++ b/server/net_mplex.h
+@@ -70,23 +70,3 @@ extern int mplex_is_writable(int fd);
+ 
+ #endif				/* !Net_MPlex_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:05  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:18:23  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:53:08  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/09/23  17:14:17  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/net_multi.h b/server/net_multi.h
+index 410f5a4..77ede8c 100644
+--- a/server/net_multi.h
++++ b/server/net_multi.h
+@@ -47,20 +47,3 @@ extern int network_set_nonblocking(int fd);
+ 
+ #endif				/* !Net_Multi_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:06  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:18:14  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:07:18  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:07:10  pavel
+- * Initial revision
+- */
+diff --git a/server/net_proto.h b/server/net_proto.h
+index d6da387..c7a9109 100644
+--- a/server/net_proto.h
++++ b/server/net_proto.h
+@@ -158,45 +158,3 @@ extern void proto_close_listener(int fd);
+ 
+ #endif				/* !Net_Proto_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:07  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  06:16:01  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/31  00:00:31  pavel
+- * Changed to support multiple listening-points.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/28  00:35:18  pavel
+- * Removed old support for protocol-specific input EOL conventions.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:53:19  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1993/08/04  02:07:23  pavel
+- * -- Added support for the new network_listen() protocol.
+- * -- Added support for better logging of outbound connections.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/06  18:18:04  pavel
+- * Replaced struct proto members empty_read_errno and full_write_errno by
+- * believe_eof, as part of the move of the non-blocking code from protocol
+- * implementations to net_multi.c.
+- *
+- * Revision 1.2  1992/09/26  02:24:07  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.1  1992/09/23  17:14:17  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/network.h b/server/network.h
+index 66961fb..c422bf7 100644
+--- a/server/network.h
++++ b/server/network.h
+@@ -244,51 +244,3 @@ extern void network_shutdown(void);
+ 
+ #endif				/* Network_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:18:36  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:10  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/03/10  01:15:13  pavel
+- * Added support for `connection_option()'.  Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/08  06:19:13  pavel
+- * Added network_set_connection_binary() and network_connection_options().
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1996/01/11  07:45:43  pavel
+- * Added network_send_bytes() and network_buffered_output_length().  Removed
+- * one more `unsigned' from the server.  Release 1.8.0alpha5.
+- *
+- * Revision 2.1  1995/12/30  23:57:35  pavel
+- * Added support for the new multiple-listening-points interface.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:52:44  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/09/26  02:26:30  pavel
+- * Added support for printing the network protocol name on server start-up.
+- *
+- * Revision 1.3  1992/09/13  00:30:36  pavel
+- * Added missing #include of config.h, for OUTBOUND_NETWORK option.
+- *
+- * Revision 1.2  1992/09/11  21:22:49  pavel
+- * Added return value from network_process_io() indicating whether or not any
+- * I/O was done (i.e., whether or not the entire timeout was used up).
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/numbers.h b/server/numbers.h
+index cba0853..16cf093 100644
+--- a/server/numbers.h
++++ b/server/numbers.h
+@@ -31,15 +31,3 @@ extern Var do_divide(Var, Var);
+ extern Var do_modulus(Var, Var);
+ extern Var do_power(Var, Var);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:11  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 1.1  1996/02/08  07:28:25  pavel
+- * Initial revision
+- *
+- */
+diff --git a/server/opcode.h b/server/opcode.h
+index 92a0421..9f5ba06 100644
+--- a/server/opcode.h
++++ b/server/opcode.h
+@@ -122,51 +122,3 @@ typedef enum Extended_Opcode Extended_Opcode;
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:18:40  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2.2.1  1997/09/09 07:01:17  bjj
+- * Change bytecode generation so that x=f(x) calls f() without holding a ref
+- * to the value of x in the variable slot.  See the options.h comment for
+- * BYTECODE_REDUCE_REF for more details.
+- *
+- * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+- * new code is not conditional and still works either way).
+- *
+- * Revision 1.2  1997/03/03 04:19:13  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  06:18:03  pavel
+- * Removed unused NUM_BUILTIN_NAMES constant.  Rearranged EOPs to support tick
+- * counting and added COUNT_EOP_TICK().  Added EOP_EXP, EOP_WHILE_ID,
+- * EOP_EXIT, and EOP_EXIT_ID.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.2  1996/01/16  07:22:07  pavel
+- * Added EOP_SCATTER.  Release 1.8.0alpha6.
+- *
+- * Revision 2.1  1995/12/31  03:13:27  pavel
+- * Added EOP_LENGTH.  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:53:27  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/17  20:48:34  pavel
+- * Added some (unsigned) casts to placate over-protective compilers.
+- * Removed unused IS_EXPR_OP macro.
+- *
+- * Revision 1.2  1992/08/28  23:19:33  pjames
+- * Added Extended_Opcode enumeration, and OP_RANGESET.
+- * Replaced LABEL with OP_EXTENDED.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/options.h b/server/options.h
+index 79806cd..5b7d4e8 100644
+--- a/server/options.h
++++ b/server/options.h
+@@ -400,119 +400,3 @@
+ 
+ #endif				/* !Options_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.10  2006/09/07 00:55:02  bjj
+- * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+- * store strlen with strings.  This is basically free, since most string
+- * allocations are rounded up by malloc anyway.  This saves lots of cycles
+- * computing strlen.  (The change is originally from jitmoo, where I wanted
+- * inline range checks for string ops).
+- *
+- * Revision 1.9  2004/05/22 01:25:44  wrog
+- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
+- *
+- * Revision 1.8.10.3  2004/05/21 00:02:59  wrog
+- * allow for OUT_OF_BAND_QUOTE_PREFIX being undefined
+- *
+- * Revision 1.8.10.2  2003/06/11 10:36:45  wrog
+- * added OUT_OF_BAND_QUOTE_PREFIX
+- *
+- * Revision 1.8.10.1  2003/06/01 12:42:30  wrog
+- * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
+- *
+- * Revision 1.8  2001/01/29 09:08:40  bjj
+- * Made STRING_INTERNING optional via options.h.
+- *
+- * Revision 1.7  2000/01/11 02:05:27  nop
+- * More doc tweaking, really warn about BYTECODE_REDUCE_REF.
+- *
+- * Revision 1.6  2000/01/09 22:20:15  nop
+- * Round one of doc cleanup.
+- *
+- * Revision 1.5  1999/08/09 04:09:54  nop
+- * Turn up the buffer sizes a notch.  They're still really too small...
+- *
+- * Revision 1.4  1998/12/14 13:18:41  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3.2.1  1997/09/09 07:01:17  bjj
+- * Change bytecode generation so that x=f(x) calls f() without holding a ref
+- * to the value of x in the variable slot.  See the options.h comment for
+- * BYTECODE_REDUCE_REF for more details.
+- *
+- * This checkin also makes x[y]=z (OP_INDEXSET) take advantage of that (that
+- * new code is not conditional and still works either way).
+- *
+- * Revision 1.3  1997/03/03 06:14:45  nop
+- * Nobody actually uses protected properties.  Make IGNORE_PROP_PROTECTED
+- * the default.
+- *
+- * Revision 1.2  1997/03/03 04:19:13  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.5  1996/03/19  07:13:35  pavel
+- * Changed CONNECT_TIMEOUT into DEFAULT_CONNECT_TIMEOUT.  Release 1.8.0p2.
+- *
+- * Revision 2.4  1996/03/10  01:12:55  pavel
+- * Added definitions of DEFAULT_PORT and DEFAULT_CONNECT_FILE, moved here
+- * from elsewhere.  Release 1.8.0.
+- *
+- * Revision 2.3  1996/02/08  06:15:51  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/31  00:06:58  pavel
+- * Clarified that OUTBOUND_NETWORK may not be defined for non-TCP
+- * configurations.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/11  08:07:02  pavel
+- * Moved USE_GNU_MALLOC to a less prominent place in the file.
+- * Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:53:59  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.11  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.10  1992/10/23  22:21:10  pavel
+- * Fixed MPLEX_STYLE-defaulting code to avoid assuming that select() always
+- * works on FIFOs by conditionalizing on SELECT_WORKS_ON_FIFOS rather than
+- * HAVE_SELECT.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:20:16  pavel
+- * Generalize treatment of system-dependent replacements for rand().
+- * Allow for systems that don't have rename() and/or remove().
+- *
+- * Revision 1.7  1992/10/06  18:23:07  pavel
+- * Dyked out useless XNS support and fixed a bug in the default definition of
+- * MPLEX_STYLE.
+- *
+- * Revision 1.6  1992/09/23  17:16:25  pavel
+- * Added definitions of NETWORK_PROTOCOL etc. to support new networking
+- * architecture.
+- *
+- * Revision 1.5  1992/09/11  21:17:54  pavel
+- * Reset to refrain from defining SINGLE_USER in the distribution.
+- *
+- * Revision 1.4  1992/09/03  23:52:45  pavel
+- * Added support for multiple complete network implementations.
+- *
+- * Revision 1.3  1992/08/21  01:01:22  pavel
+- * Radically reorganized and verbosely commented to make it easy for people to
+- * understand what all of the configuration options mean.
+- *
+- * Moved all of the -DFOO options out of the Makefile and into here.
+- *
+- * Revision 1.2  1992/08/20  17:33:54  pavel
+- * Added #define for OUT_OF_BAND_PREFIX.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/parse_cmd.h b/server/parse_cmd.h
+index d57e94a..840c212 100644
+--- a/server/parse_cmd.h
++++ b/server/parse_cmd.h
+@@ -44,36 +44,3 @@ extern void free_parsed_command(Parsed_Command *);
+ 
+ #endif				/* !Parse_Cmd_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:15  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:15:41  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:54:11  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/09/14  17:43:03  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.3  1992/08/31  22:26:06  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.2  1992/08/10  17:34:34  pjames
+- * Added find_verb() which doesn't fill in a Parse_Info, just returns
+- * information about the verb.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/parser.h b/server/parser.h
+index f7af73a..85bc232 100644
+--- a/server/parser.h
++++ b/server/parser.h
+@@ -33,36 +33,3 @@ extern Program *parse_list_as_program(Var code, Var * errors);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:16  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/02/08  06:15:30  pavel
+- * Removed ungetch() method on Parser_Client, added version number to
+- * parse_program.  Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/28  00:47:29  pavel
+- * Added support for MOO-compilation warnings.  Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:54:19  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.5  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.4  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.3  1992/10/06  18:26:41  pavel
+- * Changed name of global Parser_Client to avoid a name clash.
+- *
+- * Revision 1.2  1992/09/14  17:42:46  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/parser.y b/server/parser.y
+index 8a66939..ce93938 100644
+--- a/server/parser.y
++++ b/server/parser.y
+@@ -1230,110 +1230,3 @@ parse_list_as_program(Var code, Var *errors)
+ 
+ char rcsid_parser[] = "$Id: parser.y,v 1.4 2004-05-22 01:25:44 wrog Exp $";
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  2004/04/09 19:52:52  bjj
+- * == Revision 1.2.8.1  2003/06/07 20:16:24 wrog
+- * fixed 6 rules that were missing final semicolons to make newer bison happy.
+- *
+- * Revision 1.2  1998/12/14 13:18:45  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.11  1996/05/12  21:28:37  pavel
+- * Removed non-backward-compatible parse error for negating a non-numeric
+- * literal.  Made certain aspects of floating-point literal parsing be
+- * language-version-dependent, to maintain backward compatibility with DBs
+- * written by pre-float servers.  Release 1.8.0p5.
+- *
+- * Revision 2.10  1996/04/19  01:26:38  pavel
+- * Fixed potential memory smash when `$' expression occurs in an illegal
+- * context.  Release 1.8.0p4.
+- *
+- * Revision 2.9  1996/03/10  01:08:01  pavel
+- * Removed bogus `call_function("foo", ...)' --> `foo(...)' conversion.
+- * Fixed line numbers of renamed-variable warnings.  Release 1.8.0.
+- *
+- * Revision 2.8  1996/02/18  23:14:54  pavel
+- * Liberalized parsing of floating-point numbers to accept `3.' and `3.e1'.
+- * Changed parsing to replace call_function("foo", @args) with foo(@args) if
+- * foo is a known function.  Release 1.8.0beta3.
+- *
+- * Revision 2.7  1996/02/11  00:46:01  pavel
+- * Liberalized parsing of floating-point literals to accept `.02' and the
+- * like.  Fixed a bug where `1E6' and the like would be parsed as an integer.
+- * Release 1.8.0beta2.
+- *
+- * Revision 2.6  1996/02/08  06:32:48  pavel
+- * Added support for floating-point literals, exponentiation expression, named
+- * WHILE loops, and BREAK and CONTINUE statements.  Generalized support for
+- * version-dependent compilation.  Renamed TYPE_NUM to TYPE_INT.  Removed use
+- * of ungetch() method on Parser_Client.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.5  1996/01/16  07:17:05  pavel
+- * Add support for scattering assignment.  Release 1.8.0alpha6.
+- *
+- * Revision 2.4  1996/01/11  07:50:49  pavel
+- * Added missing #include "my-string.h".  Release 1.8.0alpha5.
+- *
+- * Revision 2.3  1995/12/31  00:09:40  pavel
+- * Removed unused tokens tRAISE and tFORLIST (huh?).  Added `$' expression.
+- * Release 1.8.0alpha4.
+- *
+- * Revision 2.2  1995/12/28  00:43:25  pavel
+- * Added some support for MOO-compilation warnings.  Changed `unknown built-in
+- * function' error into a warning with recovery.  Changed identifier-renaming
+- * log message into a warning.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:01:26  pavel
+- * Added support for `$foo(...)' syntax.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:48:11  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.13  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.12  1992/10/23  22:21:43  pavel
+- * Eliminated all uses of the useless macro NULL.
+- *
+- * Revision 1.11  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.10  1992/08/31  22:25:51  pjames
+- * Changed some `char *'s to `const char *'
+- * 
+- * Revision 1.9  1992/08/28  23:18:38  pjames
+- * Added ASGN_RANGE parsing code.  Fixed tiny memory leak.
+- * 
+- * Revision 1.8  1992/08/28  16:16:52  pjames
+- * Changed `ak_dealloc_string()' to `free_str()'.
+- * 
+- * Revision 1.7  1992/08/12  01:49:58  pjames
+- * Negative literals are now accepted (instead of negated positive literals).
+- * 
+- * Revision 1.6  1992/08/10  16:55:59  pjames
+- * Updated #includes.
+- * 
+- * Revision 1.5  1992/07/30  21:22:08  pjames
+- * Removed max_stack calculations (moved to vector.c).
+- * 
+- * Revision 1.4  1992/07/29  18:05:12  pjames
+- * $$ no longer = NULL when there is an illegal left hand side of an
+- * expression.
+- * 
+- * Revision 1.3  1992/07/27  18:12:41  pjames
+- * Changed name of ct_env to var_names and const_env to literals.
+- * Modified call to vectorize to use new argument format.
+- * Assignment statements now check left hand side properly for allowable
+- * expressions, and now frees memory from reused expressions.
+- * 
+- * Revision 1.2  1992/07/21  00:05:16  pavel
+- * Added rcsid_<filename-root> declaration to hold the RCS ident. string.
+- * 
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/pattern.h b/server/pattern.h
+index 0f8b204..7e854aa 100644
+--- a/server/pattern.h
++++ b/server/pattern.h
+@@ -34,20 +34,3 @@ extern Match_Result match_pattern(Pattern p, const char *string,
+ 				  Match_Indices * indices, int is_reverse);
+ extern void free_pattern(Pattern p);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:17  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:14:35  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:07:35  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:07:25  pavel
+- * Initial revision
+- */
+diff --git a/server/program.h b/server/program.h
+index 73e377a..447af15 100644
+--- a/server/program.h
++++ b/server/program.h
+@@ -62,41 +62,3 @@ extern void free_program(Program *);
+ 
+ #endif				/* !Program_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.4  1998/12/14 13:18:49  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.3  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.1  1997/06/05 09:00:01  bjj
+- * Cache one pc/lineno pair with each Program.  Hopefully most programs that
+- * fail multiple times usually do it on the same line!
+- *
+- * Revision 1.2  1997/03/03 04:19:18  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/02/08  06:14:19  pavel
+- * Added version number on programs.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.2  1995/12/31  03:13:02  pavel
+- * Added numbytes_stack field to Bytecodes values.  Release 1.8.0alpha4.
+- *
+- * Revision 2.1  1995/12/11  08:03:22  pavel
+- * Removed a useless macro definition.  Added `null_program()' and
+- * `program_bytes()'.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:54:29  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/quota.h b/server/quota.h
+index 9bb54e5..a94c7a8 100644
+--- a/server/quota.h
++++ b/server/quota.h
+@@ -20,23 +20,3 @@
+ extern int decr_quota(Objid player);
+ extern void incr_quota(Objid player);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:19  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:13:52  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:54:39  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.2  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/random.h b/server/random.h
+index c42bb45..f69c37f 100644
+--- a/server/random.h
++++ b/server/random.h
+@@ -34,41 +34,3 @@
+ #    define SRANDOM	srand
+ #  endif
+ #endif
+-
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:20  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:13:41  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:54:47  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1993/08/04  00:04:28  pavel
+- * Moved declaration of random() and srandom() to my-stdlib.h.
+- *
+- * Revision 1.6  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.5  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.4  1992/10/17  20:50:13  pavel
+- * Generalized support for rand() replacements on systems that have better
+- * generators.
+- *
+- * Revision 1.3  1992/09/11  21:16:41  pavel
+- * Fixed to include config.h, to test USE_RANDOM.
+- *
+- * Revision 1.2  1992/08/14  00:38:20  pavel
+- * Changed declaration of srandom() to be compatible with IRIX 4.0; I sure hope
+- * this doesn't break any other ports...
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/ref_count.h b/server/ref_count.h
+index 2a29d76..0819e4d 100644
+--- a/server/ref_count.h
++++ b/server/ref_count.h
+@@ -26,26 +26,3 @@ extern unsigned int delref(const void *p);
+ #define refcount(X) (((int *)(X))[-1])
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.1  1997/03/20 18:59:25  bjj
+- * Allocate refcounts with objects that can be addref()'d (strings, lists,
+- * floats).  Use macros to manipulate those counts.  This completely replaces
+- * the external hash table addref and friends.
+- *
+- * Revision 1.2  1997/03/03 04:19:21  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:13:28  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  05:07:57  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- */
+diff --git a/server/regexpr.h b/server/regexpr.h
+index 802c9e9..3028f9d 100644
+--- a/server/regexpr.h
++++ b/server/regexpr.h
+@@ -114,13 +114,3 @@ int re_exec(char *s);
+ 
+ #endif				/* REGEXPR_H */
+ 
+-/* RCS stuff added for LambdaMOO
+-
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.0  1995/11/30  05:39:25  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- */
+diff --git a/server/restart b/server/restart
+index 8af4632..7200d25 100755
+--- a/server/restart
++++ b/server/restart
+@@ -41,23 +41,3 @@ echo `date`: RESTARTED >> $1.log
+ #unlimit descriptors
+ nohup ./moo $1.db $1.db.new $2 >>& $1.log &
+ 
+-###############################################################################
+-# $Log: not supported by cvs2svn $
+-# Revision 2.1  1996/02/08  07:25:52  pavel
+-# Updated copyright notice for 1996.  Release 1.8.0beta1.
+-#
+-# Revision 2.0  1995/11/30  05:14:17  pavel
+-# New baseline version, corresponding to release 1.8.0alpha1.
+-#
+-# Revision 1.4  1992/10/23  23:15:21  pavel
+-# Added copyright notice.
+-#
+-# Revision 1.3  1992/08/18  00:34:52  pavel
+-# Added automatic compression of the .old database and the provision of a new
+-# log file for each activation, saving the old log file on the end of a
+-# .log.old file.
+-#
+-# Revision 1.2  1992/07/20  23:29:34  pavel
+-# Trying out an RCS change log in this file to see if it'll work properly.
+-#
+-###############################################################################
+diff --git a/server/restart.sh b/server/restart.sh
+index 34aba9f..699baba 100755
+--- a/server/restart.sh
++++ b/server/restart.sh
+@@ -40,17 +40,3 @@ fi
+ echo `date`: RESTARTED >> $1.log
+ nohup ./moo $1.db $1.db.new $2 >> $1.log 2>&1 &
+ 
+-###############################################################################
+-# $Log: not supported by cvs2svn $
+-# Revision 2.1  1996/02/08  07:25:45  pavel
+-# Updated copyright notice for 1996.  Release 1.8.0beta1.
+-#
+-# Revision 2.0  1995/11/30  05:14:43  pavel
+-# New baseline version, corresponding to release 1.8.0alpha1.
+-#
+-# Revision 1.2  1994/05/26  16:43:13  pavel
+-# Fixed up copyright, RCS info; removed debugging switch.
+-#
+-# Revision 1.1  1994/05/26  16:41:32  pavel
+-# Initial revision
+-###############################################################################
+diff --git a/server/server.h b/server/server.h
+index 6662d7c..8fc1cc9 100644
+--- a/server/server.h
++++ b/server/server.h
+@@ -254,42 +254,3 @@ extern int read_active_connections(void);
+ 
+ #endif				/* Server_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3.10.1  2003/06/07 12:59:04  wrog
+- * introduced connection_option macros
+- *
+- * Revision 1.3  1998/12/14 13:18:58  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:26  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/04/08  01:07:52  pavel
+- * Made get_server_option() public.  Release 1.8.0p3.
+- *
+- * Revision 2.2  1996/02/08  06:13:19  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/31  03:22:30  pavel
+- * Added support for multiple listening points.  Added entry point for dealing
+- * with the server-full condition.  Release 1.8.0alpha4.
+- *
+- * Revision 2.0  1995/11/30  04:54:57  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/09/08  22:05:35  pjames
+- * Removed procedures which are no longer exported.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/storage.h b/server/storage.h
+index a0a8546..b79c405 100644
+--- a/server/storage.h
++++ b/server/storage.h
+@@ -68,73 +68,3 @@ free_str(const char *s)
+ 
+ #endif				/* Storage_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.6  2006/09/07 00:55:02  bjj
+- * Add new MEMO_STRLEN option which uses the refcounting mechanism to
+- * store strlen with strings.  This is basically free, since most string
+- * allocations are rounded up by malloc anyway.  This saves lots of cycles
+- * computing strlen.  (The change is originally from jitmoo, where I wanted
+- * inline range checks for string ops).
+- *
+- * Revision 1.5  1998/12/14 13:19:00  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.4  1998/02/19 07:36:17  nop
+- * Initial string interning during db load.
+- *
+- * Revision 1.3  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.2.2.4  1997/05/29 20:47:33  nop
+- * Stupid hack to allow non-gcc compilers to use -Dinline= to make the server
+- * compile.
+- *
+- * Revision 1.2.2.3  1997/05/20 03:01:34  nop
+- * parse_into_words was allocating pointers to strings as strings.  Predictably,
+- * the refcount prepend code was not prepared for this, causing unaligned memory
+- * access on the Alpha.  Added new M_STRING_PTRS allocation class that could
+- * be renamed to something better, perhaps.
+- *
+- * Revision 1.2.2.2  1997/03/21 15:19:24  bjj
+- * add myrealloc interface, inline free_str
+- *
+- * Revision 1.2.2.1  1997/03/20 07:26:04  nop
+- * First pass at the new verb cache.  Some ugly code inside.
+- *
+- * Revision 1.2  1997/03/03 04:19:27  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:13:09  pavel
+- * Added M_FLOAT, removed unused M_PI.  Updated copyright notice for 1996.
+- * Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:55:11  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.5  1992/10/17  20:53:28  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref, to avoid conflict on systems that provide their own
+- * definition of strdup().
+- *
+- * Revision 1.4  1992/09/14  17:39:30  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.3  1992/08/31  22:23:29  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.2  1992/08/28  16:25:17  pjames
+- * Added memory types for refcount module.  Added `strref()' and `free_str()'.
+- *
+- * Revision 1.1  1992/08/10  16:20:00  pjames
+- * Initial RCS-controlled version
+- */
+diff --git a/server/streams.h b/server/streams.h
+index 1a3640b..edd4e45 100644
+--- a/server/streams.h
++++ b/server/streams.h
+@@ -38,29 +38,3 @@ extern int stream_length(Stream *);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1998/12/14 13:19:02  nop
+- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
+- *
+- * Revision 1.2  1997/03/03 04:19:28  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:12:33  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:55:31  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/structures.h b/server/structures.h
+index dab7d99..c6f587c 100644
+--- a/server/structures.h
++++ b/server/structures.h
+@@ -126,71 +126,3 @@ extern Var zero;		/* useful constant */
+ 
+ #endif				/* !Structures_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.3  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- * 
+- * Revision 1.2.2.2  1997/05/23 07:01:30  nop
+- * Added experimental support for 32-bit pointer model on Alpha with DEC cc.
+- *
+- * Revision 1.2.2.1  1997/03/20 18:07:52  bjj
+- * Add a flag to the in-memory type identifier so that inlines can cheaply
+- * identify Vars that need actual work done to ref/free/dup them.  Add the
+- * appropriate inlines to utils.h and replace old functions in utils.c with
+- * complex_* functions which only handle the types with external storage.
+- *
+- * Revision 1.2  1997/03/03 04:19:29  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:12:21  pavel
+- * Added E_FLOAT, TYPE_FLOAT, and TYPE_NUMERIC.  Renamed TYPE_NUM to TYPE_INT.
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:55:46  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.12  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.11  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.10  1992/09/14  17:40:51  pjames
+- * Moved db_modification code to db modules.
+- *
+- * Revision 1.9  1992/09/04  01:17:29  pavel
+- * Added support for the `f' (for `fertile') bit on objects.
+- *
+- * Revision 1.8  1992/09/03  16:25:12  pjames
+- * Added TYPE_CLEAR for Var.
+- * Changed Property definition lists to be arrays instead of linked lists.
+- *
+- * Revision 1.7  1992/08/31  22:25:04  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.6  1992/08/14  00:00:36  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.5  1992/08/10  16:52:00  pjames
+- * Moved several types/procedure declarations to storage.h
+- *
+- * Revision 1.4  1992/07/30  21:24:31  pjames
+- * Added M_COND_ARM_STACK and M_STMT_STACK for vector.c
+- *
+- * Revision 1.3  1992/07/28  17:18:48  pjames
+- * Added M_COND_ARM_STACK for unparse.c
+- *
+- * Revision 1.2  1992/07/27  18:21:34  pjames
+- * Changed name of ct_env to var_names, const_env to literals and
+- * f_vectors to fork_vectors, removed M_CT_ENV, M_LOCAL_ENV, and
+- * M_LABEL_MAPS, changed M_CONST_ENV to M_LITERALS, M_IM_STACK to
+- * M_EXPR_STACK, M_F_VECTORS to M_FORK_VECTORS, M_ID_LIST to M_VL_LIST
+- * and M_ID_VALUE to M_VL_VALUE.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/sym_table.h b/server/sym_table.h
+index f373e29..348f282 100644
+--- a/server/sym_table.h
++++ b/server/sym_table.h
+@@ -57,34 +57,3 @@ extern void free_names(Names *);
+ 
+ #endif				/* !Sym_Table_h */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:30  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.2  1996/03/10  01:15:53  pavel
+- * Removed a number of obsolete declarations.  Release 1.8.0.
+- *
+- * Revision 2.1  1996/02/08  06:11:23  pavel
+- * Made new_builtin_names() and first_user_slot() version-dependent to support
+- * version numbers on suspended-task frames.  Added SLOT_INT and SLOT_FLOAT.
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:55:57  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.4  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.3  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.2  1992/08/31  22:24:26  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/timers.h b/server/timers.h
+index 60a74bb..cef8f12 100644
+--- a/server/timers.h
++++ b/server/timers.h
+@@ -34,26 +34,3 @@ extern int virtual_timer_available();
+ 
+ #endif				/* !Timers_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:33  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:09:00  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:56:13  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/09/23  17:12:25  pavel
+- * Added protection against this file being included more than once.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/tokens.h b/server/tokens.h
+index cef167b..383077e 100644
+--- a/server/tokens.h
++++ b/server/tokens.h
+@@ -24,14 +24,3 @@
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.0  1995/11/30  05:08:14  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.1  1995/11/30  05:08:05  pavel
+- * Initial revision
+- */
+diff --git a/server/unparse.h b/server/unparse.h
+index de8402f..5e3d3da 100644
+--- a/server/unparse.h
++++ b/server/unparse.h
+@@ -41,39 +41,3 @@ extern const char *unparse_error(enum error);	/* E_NONE -> "No error" */
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:35  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:08:46  pavel
+- * Added unparse_to_file() and unparse_to_stderr().  Updated copyright notice
+- * for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/11/30  04:56:22  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.7  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.6  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.5  1992/08/31  22:23:46  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.4  1992/08/21  00:40:15  pavel
+- * Renamed include file "parse_command.h" to "parse_cmd.h".
+- *
+- * Revision 1.3  1992/08/13  23:59:27  pavel
+- * Converted to a typedef of `var_type' = `enum var_type'.
+- *
+- * Revision 1.2  1992/08/10  16:41:25  pjames
+- * Changed ip to pc.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/utils.h b/server/utils.h
+index e5f55b0..eccb2f5 100644
+--- a/server/utils.h
++++ b/server/utils.h
+@@ -84,79 +84,3 @@ extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
+ 
+ #endif
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.5  1997/07/07 03:24:55  nop
+- * Merge UNSAFE_OPTS (r5) after extensive testing.
+- *
+- * Revision 1.4.2.2  1997/03/21 15:11:22  bjj
+- * add var_refcount interface
+- *
+- * Revision 1.4.2.1  1997/03/20 18:07:49  bjj
+- * Add a flag to the in-memory type identifier so that inlines can cheaply
+- * identify Vars that need actual work done to ref/free/dup them.  Add the
+- * appropriate inlines to utils.h and replace old functions in utils.c with
+- * complex_* functions which only handle the types with external storage.
+- *
+- * Revision 1.4  1997/03/05 08:20:51  bjj
+- * With 1.2 (oops) add MIN/MAX macros that do the obvious thing, with undef to
+- * avoid clashing with system definitions.
+- *
+- * Revision 1.3  1997/03/05 08:15:55  bjj
+- * *** empty log message ***
+- *
+- * Revision 1.2  1997/03/03 04:19:37  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.4  1996/02/08  06:08:07  pavel
+- * Moved become_number and compare_ints to number.h.  Updated copyright notice
+- * for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.3  1996/01/11  07:46:18  pavel
+- * Added raw_bytes_to_binary() and binary_to_raw_bytes(), in support of binary
+- * I/O facilities.  Release 1.8.0alpha5.
+- *
+- * Revision 2.2  1995/12/28  00:39:38  pavel
+- * Removed declaration for private variable `cmap'.  Release 1.8.0alpha3.
+- *
+- * Revision 2.1  1995/12/11  08:09:56  pavel
+- * Add `value_bytes()'.  Release 1.8.0alpha2.
+- *
+- * Revision 2.0  1995/11/30  04:56:31  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.10  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.9  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.8  1992/10/17  20:57:30  pavel
+- * Global rename of strdup->str_dup, strref->str_ref, vardup->var_dup, and
+- * varref->var_ref.
+- * Removed useless #ifdef of STRCASE.
+- *
+- * Revision 1.7  1992/09/08  21:55:12  pjames
+- * Added `become_number()' (from bf_num.c).
+- *
+- * Revision 1.6  1992/09/03  16:23:16  pjames
+- * Make cmap[] visible.
+- *
+- * Revision 1.5  1992/08/31  22:22:05  pjames
+- * Changed some `char *'s to `const char *'
+- *
+- * Revision 1.4  1992/08/28  16:24:15  pjames
+- * Added `varref()'.  Removed `copy_pi()'.
+- *
+- * Revision 1.3  1992/08/10  16:38:28  pjames
+- * Added is_true (from execute.h) and *_activ_as_pi routines.
+- *
+- * Revision 1.2  1992/07/27  18:03:48  pjames
+- * Changed name of ct_env to var_names
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+diff --git a/server/verbs.h b/server/verbs.h
+index ec412f0..9d9ecbd 100644
+--- a/server/verbs.h
++++ b/server/verbs.h
+@@ -21,20 +21,3 @@
+ extern enum error validate_verb_descriptor(Var desc);
+ extern db_verb_handle find_described_verb(Objid oid, Var desc);
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:38  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.1  1996/02/08  06:07:21  pavel
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.0  1995/12/28  00:16:05  pavel
+- * Release 1.8.0alpha3.
+- *
+- * Revision 1.1  1995/12/28  00:14:25  pavel
+- * Initial revision
+- */
+diff --git a/server/version.h b/server/version.h
+index fd63da9..e6a9fac 100644
+--- a/server/version.h
++++ b/server/version.h
+@@ -57,35 +57,3 @@ extern int check_version(DB_Version);
+ 
+ #endif				/* !Version_H */
+ 
+-/* 
+- * $Log: not supported by cvs2svn $
+- * Revision 1.2  1997/03/03 04:19:39  nop
+- * GNU Indent normalization
+- *
+- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
+- * LambdaMOO 1.8.0p5
+- *
+- * Revision 2.3  1996/04/19  01:25:21  pavel
+- * Added somewhat bogus DBV_BFBugFixed version.  Release 1.8.0p4.
+- *
+- * Revision 2.2  1996/02/08  06:07:10  pavel
+- * Added DBV_BreakCont and DBV_Float versions, check_version().  Moved
+- * db_in_version to db_io.h and renamed db_out_version to current_version.
+- * Updated copyright notice for 1996.  Release 1.8.0beta1.
+- *
+- * Revision 2.1  1995/12/28  00:48:42  pavel
+- * Fixed list of new keywords in comment to remove transient `raise' keyword.
+- * Release 1.8.0alpha3.
+- *
+- * Revision 2.0  1995/11/30  04:56:42  pavel
+- * New baseline version, corresponding to release 1.8.0alpha1.
+- *
+- * Revision 1.3  1992/10/23  23:03:47  pavel
+- * Added copyright notice.
+- *
+- * Revision 1.2  1992/10/21  03:02:35  pavel
+- * Converted to use new automatic configuration system.
+- *
+- * Revision 1.1  1992/07/20  23:23:12  pavel
+- * Initial RCS-controlled version.
+- */
+-- 
+1.7.9.5
+

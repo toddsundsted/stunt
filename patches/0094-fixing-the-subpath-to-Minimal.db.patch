@@ -1,0 +1,25 @@
+From 4ff053db371cf523a5a974365a1cb1005ed2a5f5 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 20 Jan 2011 19:55:14 +0000
+Subject: [PATCH 094/223] fixing the subpath to Minimal.db
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 32dc9ab..df95535 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -80,7 +80,7 @@ ALL_CSRCS = $(CSRCS) $(OPT_CSRCS) $(CLIENT_SRCS)
+ SRCS = $(ALL_CSRCS) keywords.gperf $(YSRCS) $(HDRS) $(SYSHDRS)
+ 
+ DISTFILES = $(SRCS) Makefile.in restart restart.sh \
+-	Minimal.db README.Minimal \
++	databases/Minimal.db README.Minimal \
+ 	ChangeLog.txt README configure.in configure config.h.in \
+ 	MOOCodeSequences.txt AddingNewMOOTypes.txt pgperf aclocal.m4
+ 
+-- 
+1.7.9.5
+

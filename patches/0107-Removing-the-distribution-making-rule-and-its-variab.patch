@@ -1,0 +1,53 @@
+From 92792295da0585c6e3fe7017b18da8bbe5624cea Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 23 Jan 2011 21:20:24 +0000
+Subject: [PATCH 107/223] Removing the distribution-making rule and its
+ variable DISTFILES. I've created a top level
+ Makefile that uses 'svn export' to build a distro
+ for release.
+
+---
+ server/Makefile.in |   20 --------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 4ce14ae..2cbc5b6 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -78,11 +78,6 @@ ALL_CSRCS = $(CSRCS) $(OPT_CSRCS) $(CLIENT_SRCS)
+ 
+ SRCS = $(ALL_CSRCS) keywords.gperf $(YSRCS) $(HDRS) $(SYSHDRS)
+ 
+-DISTFILES = $(SRCS) Makefile.in restart restart.sh \
+-	databases/Minimal.db README.Minimal \
+-	ChangeLog.txt README configure.in configure config.h.in \
+-	MOOCodeSequences.txt AddingNewMOOTypes.txt pgperf aclocal.m4
+-
+ COBJS = $(CSRCS:.c=.o)
+ 
+ YOBJS = $(YSRCS:.y=.o)
+@@ -132,21 +127,6 @@ keywords.c: keywords.gperf
+ 		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
+ 		> keywords.c
+ 
+-dist.tar.Z:	$(DISTFILES)
+-	rm -f version_number
+-	grep "server_version = " version.c \
+-		| sed -e 's/^.* = "//' -e 's/";//' > version_number
+-	rm -fr MOO-`cat version_number`
+-	mkdir MOO-`cat version_number`
+-	chmod 755 MOO-`cat version_number`
+-	cp -pr $(DISTFILES) MOO-`cat version_number`
+-	chmod u+w MOO-`cat version_number`/*
+-	tar cvf - MOO-`cat version_number` | compress -c > dist.tar.Z.NEW
+-	mv dist.tar.Z.NEW dist.tar.Z
+-	rm -f LambdaMOO-`cat version_number`.tar.Z
+-	ln dist.tar.Z LambdaMOO-`cat version_number`.tar.Z
+-	rm -fr MOO-`cat version_number` version_number
+-
+ tags:
+ 	etags $(SRCS)
+ 
+-- 
+1.7.9.5
+

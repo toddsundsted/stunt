@@ -1,0 +1,381 @@
+From 06935aa2e7e544211803ed2d92da6a570b229c8c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 8 Feb 2011 21:51:59 +0000
+Subject: [PATCH 123/223] Experimental patch that converts the Task struct to
+ a class with all public members, and changes all
+ mymalloc() calls for it to 'new' and 'delete'.
+ Seemed to work OK.
+
+---
+ server/misc/tasks-to-classes.patch |  359 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 359 insertions(+)
+ create mode 100644 server/misc/tasks-to-classes.patch
+
+diff --git a/server/misc/tasks-to-classes.patch b/server/misc/tasks-to-classes.patch
+new file mode 100644
+index 0000000..df45c5c
+--- /dev/null
++++ b/server/misc/tasks-to-classes.patch
+@@ -0,0 +1,359 @@
++Index: tasks.c
++===================================================================
++--- tasks.c	(revision 410)
+++++ tasks.c	(working copy)
++@@ -47,7 +47,7 @@
++ #include "verbs.h"
++ #include "version.h"
++ 
++-typedef enum {
+++enum TaskKind {
++     /* Input Tasks */
++     TASK_INBAND,		/* vanilla in-band */
++     TASK_OOB,			/* out-of-band unless disable_oob */
++@@ -56,39 +56,56 @@
++     /* Background Tasks */
++     TASK_FORKED,
++     TASK_SUSPENDED
++-} task_kind;
+++};
++ 
++-typedef struct ForkedTask {
+++class Task;
+++
+++class ForkedTask {
+++public: 
++     int id;
++     Program *program;
++     activation a;
++     Var *rt_env;
++     int f_index;
++     struct timeval start_time;
++-} ForkedTask;
+++};
++ 
++-typedef struct SuspendedTask {
+++class SuspendedTask {
+++public:
++     vm the_vm;
++     struct timeval start_time;
++     Var value;
++-} SuspendedTask;
+++};
++ 
++-typedef struct {
+++class InputTask {
+++public:
++     char *string;
++     int length;
++-    struct Task *next_itail;	/* see tqueue.first_itail */
++-} InputTask;
+++    Task *next_itail;	/* see tqueue.first_itail */
+++};
++ 
++-typedef struct Task {
++-    struct Task *next;
++-    task_kind kind;
+++class Task {
+++
+++public:
+++    Task() {
+++        oklog("Task created...\n");
+++    }
+++
+++    ~Task() {
+++        oklog("Task destroyed...\n");
+++    }
+++
+++    Task *next;
+++    TaskKind kind;
++     union {
++ 	InputTask input;
++ 	ForkedTask forked;
++ 	SuspendedTask suspended;
++     } t;
++-} task;
+++};
++ 
+++
+++
++ enum icmd_flag {
++     /* fix icmd_index() if you change any of the following numbers: */
++     ICMD_SUFFIX = 1,
++@@ -129,8 +146,8 @@
++     Objid player;
++     Objid handler;
++     int connected;
++-    task *first_input, **last_input;
++-    task *first_itail, **last_itail;
+++    Task *first_input, **last_input;
+++    Task *first_itail, **last_itail;
++     /* The input queue alternates between contiguous sequences of TASK_OOBs
++      * and sequences of non-TASK_OOBs; the "itail queue" is the queue of all
++      * sequence-ending tasks threaded along the next_itail pointers.
++@@ -146,7 +163,7 @@
++     int last_input_task_id;
++     int input_suspended;
++ 
++-    task *first_bg, **last_bg;
+++    Task *first_bg, **last_bg;
++     int usage;			/* a kind of inverted priority */
++     int num_bg_tasks;		/* in either here or waiting_tasks */
++     char *output_prefix, *output_suffix;
++@@ -175,7 +192,7 @@
++ 
++ int current_task_id;
++ static tqueue *idle_tqueues = 0, *active_tqueues = 0;
++-static task *waiting_tasks = 0;	/* forked and suspended tasks */
+++static Task *waiting_tasks = 0;	/* forked and suspended tasks */
++ static ext_queue *external_queues = 0;
++ 
++ #define GET_START_TIME(ttt) \
++@@ -498,17 +515,17 @@
++ }
++ 
++ static void
++-enqueue_bg_task(tqueue * tq, task * t)
+++enqueue_bg_task(tqueue * tq, Task * t)
++ {
++     *(tq->last_bg) = t;
++     tq->last_bg = &(t->next);
++     t->next = 0;
++ }
++ 
++-static task *
+++static Task *
++ dequeue_bg_task(tqueue * tq)
++ {
++-    task *t = tq->first_bg;
+++    Task *t = tq->first_bg;
++ 
++     if (t) {
++ 	tq->first_bg = t->next;
++@@ -526,11 +543,11 @@
++ 
++ enum dequeue_how { DQ_FIRST = -1, DQ_OOB = 0, DQ_INBAND = 1 };
++ 
++-static task *
+++static Task *
++ dequeue_input_task(tqueue * tq, enum dequeue_how how)
++ {
++-    task *t;
++-    task **pt, **pitail;
+++    Task *t;
+++    Task **pt, **pitail;
++ 
++     if (tq->disable_oob) {
++ 	if (how == DQ_OOB)
++@@ -589,7 +606,7 @@
++ }
++ 
++ static void
++-free_task(task * t, int strong)
+++free_task(Task * t, int strong)
++ {				/* for FORKED tasks, strong == 1 means free the rt_env also.
++ 				   for SUSPENDED tasks, strong == 1 means free the vm also. */
++     switch (t->kind) {
++@@ -616,7 +633,7 @@
++ 	    free_vm(t->t.suspended.the_vm, 1);
++ 	break;
++     }
++-    myfree(t, M_TASK);
+++    delete(t);
++ }
++ 
++ static int
++@@ -871,7 +888,7 @@
++ 	Objid new_player = result.v.obj;
++ 	Objid old_player = tq->player;
++ 	tqueue *dead_tq = find_tqueue(new_player, 0);
++-	task *t;
+++	Task *t;
++ 
++ 	tq->player = new_player;
++ 	if (tq->num_bg_tasks) {
++@@ -1135,9 +1152,9 @@
++ 		   int binary)
++ {
++     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
++-    task *t;
+++    Task *t;
++ 
++-    t = (task *) mymalloc(sizeof(task), M_TASK);
+++    t = new Task();
++     if (binary)
++ 	t->kind = TASK_BINARY;
++     else if (oob_quote_prefix_length > 0
++@@ -1202,7 +1219,7 @@
++ {
++     if (tq->first_input) {
++ 	Stream *s = new_stream(100);
++-	task *t;
+++	Task *t;
++ 
++ 	if (show_messages)
++ 	    notify(tq->player, ">> Flushing the following pending input:");
++@@ -1233,7 +1250,7 @@
++ }
++ 
++ static void
++-enqueue_waiting(task * t)
+++enqueue_waiting(Task * t)
++ {				/* either FORKED or SUSPENDED */
++ 
++     struct timeval start_time = GET_START_TIME(t);
++@@ -1248,7 +1265,7 @@
++ 	t->next = waiting_tasks;
++ 	waiting_tasks = t;
++     } else {
++-	task *tt;
+++	Task *tt;
++ 
++ 	for (tt = waiting_tasks; tt->next; tt = tt->next)
++ 	    if (timeval_lt(&start_time, &GET_START_TIME(tt->next)))
++@@ -1262,7 +1279,7 @@
++ enqueue_ft(Program * program, activation a, Var * rt_env,
++ 	   int f_index, struct timeval start_time, int id)
++ {
++-    task *t = (task *) mymalloc(sizeof(task), M_TASK);
+++    Task *t = new Task();
++ 
++     t->kind = TASK_FORKED;
++     t->t.forked.program = program;
++@@ -1342,13 +1359,13 @@
++     double after_seconds = *((double *) data);
++     struct timeval now;
++     struct timeval wait;
++-    task *t;
+++    Task *t;
++ 
++     gettimeofday(&now, NULL);
++     double_to_timeval(after_seconds, &wait);
++ 
++     if (check_user_task_limit(progr_of_cur_verb(the_vm))) {
++-	t = (task *) mymalloc(sizeof(task), M_TASK);
+++	t = new Task();
++ 	t->kind = TASK_SUSPENDED;
++ 	t->t.suspended.the_vm = the_vm;
++ 	timeval_add(&t->t.suspended.start_time, &now, &wait);
++@@ -1363,7 +1380,7 @@
++ void
++ resume_task(vm the_vm, Var value)
++ {
++-    task *t = (task *) mymalloc(sizeof(task), M_TASK);
+++    Task *t = new Task();
++     Objid progr = progr_of_cur_verb(the_vm);
++     tqueue *tq = find_tqueue(progr, 1);
++ 
++@@ -1380,7 +1397,7 @@
++ read_input_now(Objid connection)
++ {
++     tqueue *tq = find_tqueue(connection, 0);
++-    task *t;
+++    Task *t;
++     Var r;
++ 
++     if (!tq || is_out_of_input(tq)) {
++@@ -1392,7 +1409,7 @@
++     } else {
++ 	r.type = (var_type) TYPE_STR;
++ 	r.v.str = t->t.input.string;
++-	myfree(t, M_TASK);
+++	delete(t);
++     }
++ 
++     return r;
++@@ -1459,7 +1476,7 @@
++ void
++ run_ready_tasks(void)
++ {
++-    task *t, *next_t;
+++    Task *t, *next_t;
++     struct timeval now;
++     tqueue *tq, *next_tq;
++ 
++@@ -1668,7 +1685,7 @@
++ {
++     int forked_count = 0;
++     int suspended_count = 0;
++-    task *t;
+++    Task *t;
++     tqueue *tq;
++ 
++     dbio_printf("0 clocks\n");	/* for compatibility's sake */
++@@ -1783,7 +1800,7 @@
++ 	return 0;
++     }
++     for (; suspended_count > 0; suspended_count--) {
++-	task *t = (task *) mymalloc(sizeof(task), M_TASK);
+++	Task *t = new Task();
++ 	int task_id;
++ 	double st;
++ 	char c;
++@@ -2108,7 +2125,7 @@
++     Var tasks;
++     int show_all = is_wizard(progr);
++     tqueue *tq;
++-    task *t;
+++    Task *t;
++     int i, count = 0;
++     ext_queue *eq;
++     struct qcl_data qdata;
++@@ -2211,7 +2228,7 @@
++ find_suspended_task(int id)
++ {
++     tqueue *tq;
++-    task *t;
+++    Task *t;
++     ext_queue *eq;
++     struct fcl_data fdata;
++ 
++@@ -2274,14 +2291,14 @@
++ static enum error
++ kill_task(int id, Objid owner)
++ {
++-    task **tt;
+++    Task **tt;
++     tqueue *tq;
++ 
++     if (id == current_task_id) {
++ 	return E_NONE;
++     }
++     for (tt = &waiting_tasks; *tt; tt = &((*tt)->next)) {
++-	task *t = *tt;
+++	Task *t = *tt;
++ 	Objid progr;
++ 
++ 	if (t->kind == TASK_FORKED && t->t.forked.id == id)
++@@ -2322,7 +2339,7 @@
++ 	    return E_NONE;
++ 	}
++ 	for (tt = &(tq->first_bg); *tt; tt = &((*tt)->next)) {
++-	    task *t = *tt;
+++	    Task *t = *tt;
++ 
++ 	    if ((t->kind == TASK_FORKED && t->t.forked.id == id)
++ 		|| (t->kind == TASK_SUSPENDED
++@@ -2378,11 +2395,11 @@
++ static enum error
++ do_resume(int id, Var value, Objid progr)
++ {
++-    task **tt;
+++    Task **tt;
++     tqueue *tq;
++ 
++     for (tt = &waiting_tasks; *tt; tt = &((*tt)->next)) {
++-	task *t = *tt;
+++	Task *t = *tt;
++ 	Objid owner;
++ 
++ 	if (t->kind == TASK_SUSPENDED
++@@ -2405,7 +2422,7 @@
++ 
++     for (tq = active_tqueues; tq; tq = tq->next) {
++ 	for (tt = &(tq->first_bg); *tt; tt = &((*tt)->next)) {
++-	    task *t = *tt;
+++	    Task *t = *tt;
++ 
++ 	    if (t->kind == TASK_SUSPENDED
++ 		&& t->t.suspended.the_vm->task_id == id) {
+-- 
+1.7.9.5
+

@@ -1,0 +1,32 @@
+From f34d25defc8614b46597185cf570c1870f97374f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 10 Feb 2011 02:56:47 +0000
+Subject: [PATCH 138/223] Added USE_EXT_FUP and HAVE_EXPAT_H for conditional
+ compilation.
+
+---
+ server/config.h.in |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index 14002b2..8c61de2 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -271,5 +271,14 @@
+ #  endif
+ #endif
+ 
++/* ext-FUP is an external package for manipulating files (one of two
++ * such packages, in fact).
++ */
++#undef USE_EXT_FUP
++
++/* Expat is the XML parsing library by James Clark. */
++#undef HAVE_EXPAT_H
++
++
+ #endif /* !Config_H */
+ 
+-- 
+1.7.9.5
+

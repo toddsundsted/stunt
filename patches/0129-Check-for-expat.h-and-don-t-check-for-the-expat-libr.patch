@@ -1,0 +1,34 @@
+From 40ff483073575756aea2967ff1d0b47f445ea097 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 03:37:34 +0000
+Subject: [PATCH 129/223] Check for expat.h, and don't check for the expat
+ library twice...
+
+---
+ server/configure.in |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/server/configure.in b/server/configure.in
+index a8aa8cf..54ec624 100644
+--- a/server/configure.in
++++ b/server/configure.in
+@@ -520,6 +520,7 @@ yes
+ ], test -r /dev/tcp && MOO_ADD_NET_CONFIG(NS_SYSV/NP_TCP))
+ 
+ AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h limits.h malloc.h memory.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h unistd.h])
++AC_CHECK_HEADERS([expat.h])
+ AC_C_INLINE
+ AC_FUNC_ALLOCA
+ AC_FUNC_ERROR_AT_LINE
+@@ -534,8 +535,6 @@ AC_PROG_LN_S
+ AC_TYPE_SSIZE_T
+ AC_CHECK_FUNCS([alarm bzero floor gethostbyaddr gethostbyname getpagesize gettimeofday inet_ntoa memmove memset mkdir mkfifo modf pow re_comp rmdir select socket strchr strcspn strerror strrchr strstr strtol strtoul])
+ 
+-AC_CHECK_LIB([expat], [main])
+-
+ echo "----------------------------------------------------------------------"
+ echo "| The following networking configurations will probably work on your"
+ echo "| system; any configuration *not* listed here almost certainly will"
+-- 
+1.7.9.5
+

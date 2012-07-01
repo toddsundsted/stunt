@@ -1,0 +1,32 @@
+From 7ec9edff6e95d18243d10b8ee683d50d1aad8a67 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 24 Sep 2011 11:44:47 -0700
+Subject: [PATCH 211/223] Xythian's .gitignore from lambdamoo on github
+
+---
+ .gitignore |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+ create mode 100644 .gitignore
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..ebf37c5
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,12 @@
++Makefile
++configure
++autom4te.cache
++config.h
++config.log
++config.status
++y.tab.h
++*.o
++moo
++*.db
++\#*\#
++.\#*
+\ No newline at end of file
+-- 
+1.7.9.5
+

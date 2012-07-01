@@ -1,0 +1,81 @@
+From a7dbea8ccd92eb33d065ca2eb47c2461cca97266 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 11 Feb 2011 05:18:53 +0000
+Subject: [PATCH 147/223] Rolling back my changes for now; not sure why all
+ the tests fail when updating the macro...
+
+---
+ server/configure.ac |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index bfbc093..a1894c3 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -264,7 +264,7 @@ for opt in "" -Aa -Xa -ansi
+ do
+ SAVECC="$CC"
+ CC="$CC $opt"
+-AC_RUN_IFELSE([
++AC_TEST_PROGRAM([
+ int main(int argc, char *argv) { void *ptr; exit(0); }
+ ],
+ [have_ansi=1
+@@ -388,7 +388,7 @@ AC_TEST_CPP([
+ 
+ dnl ***************************************************************************
+ echo "checking whether or not fstat() can tell how much data is in a FIFO"
+-AC_RUN_IFELSE([#include <sys/types.h>
++AC_TEST_PROGRAM([#include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ main()
+@@ -412,7 +412,7 @@ main()
+ 
+ dnl ***************************************************************************
+ echo "checking whether or not select() can be used on FIFOs"
+-AC_RUN_IFELSE([#include <sys/types.h>
++AC_TEST_PROGRAM([#include <sys/types.h>
+ #include <sys/time.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+@@ -444,11 +444,11 @@ main()
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+-], AC_DEFINE(SELECT_WORKS_ON_FIFOS), AC_MSG_NOTICE([select() cannot be used on FIFOs]))
++], AC_DEFINE(SELECT_WORKS_ON_FIFOS))
+ 
+ dnl ***************************************************************************
+ echo "checking whether or not poll() can be used on FIFOs"
+-AC_RUN_IFELSE([#include <sys/types.h>
++AC_TEST_PROGRAM([#include <sys/types.h>
+ #include <poll.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+@@ -465,11 +465,11 @@ main()
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+-], AC_DEFINE(POLL_WORKS_ON_FIFOS), AC_MSG_NOTICE([poll() cannot be used on FIFOs]))
++], AC_DEFINE(POLL_WORKS_ON_FIFOS))
+ 
+ dnl ***************************************************************************
+ echo checking whether POSIX-style non-blocking I/O works
+-AC_RUN_IFELSE([#include <sys/types.h>
++AC_TEST_PROGRAM([#include <sys/types.h>
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <signal.h>
+@@ -493,7 +493,7 @@ main ()
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+-], AC_DEFINE(POSIX_NONBLOCKING_WORKS), AC_MSG_NOTICE([POSIX-style non-blocking I/O does not work]))
++], AC_DEFINE(POSIX_NONBLOCKING_WORKS))
+ 
+ dnl ***************************************************************************
+ echo checking which MOO networking configurations are likely to work...
+-- 
+1.7.9.5
+

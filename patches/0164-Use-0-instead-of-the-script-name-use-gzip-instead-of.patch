@@ -1,0 +1,37 @@
+From de0dbfffb2bf50d1b9c3d1ac0a5f7446d5e39af6 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 23 Jun 2011 02:09:01 +0000
+Subject: [PATCH 164/223] Use '$0' instead of the script name; use gzip
+ instead of /usr/bin/compress.
+
+---
+ server/mooctl |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/server/mooctl b/server/mooctl
+index 699baba..3cb129b 100755
+--- a/server/mooctl
++++ b/server/mooctl
+@@ -16,7 +16,7 @@
+ #   Pavel@Xerox.Com
+ 
+ if [ $# -lt 1 -o $# -gt 2 ]; then
+-	echo 'Usage: restart dbase-prefix [port]'
++	echo "Usage: $0 dbase-prefix [port]"
+ 	exit 1
+ fi
+ 
+@@ -28,8 +28,8 @@ fi
+ if [ -r $1.db.new ]; then
+ 	mv $1.db $1.db.old
+ 	mv $1.db.new $1.db
+-	rm -f $1.db.old.Z
+-	compress $1.db.old &
++	rm -f $1.db.old.gz
++	gzip $1.db.old &
+ fi
+ 
+ if [ -f $1.log ]; then
+-- 
+1.7.9.5
+

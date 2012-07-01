@@ -1,0 +1,78 @@
+From 41439446ea38e2be6f0a413dc37ec5e1b5eda215 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 16 Jun 2011 04:18:53 +0000
+Subject: [PATCH 161/223] Expounding some more on the licensing of the
+ sources, and I think I'm pretty much done with the
+ licensing issues for now. Waverous uses BSD-style
+ licensing.
+
+---
+ server/LICENSE |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/server/LICENSE b/server/LICENSE
+index bb76947..731c02b 100644
+--- a/server/LICENSE
++++ b/server/LICENSE
+@@ -1,3 +1,21 @@
++The original license for the LambdaMOO server code (the Xerox one) is
++a BSD-compatible license. All sources in this project have been
++audited to make sure they are compliant; while a few sources are GPL,
++they are not compiled into the Waverous LambdaMOO server code. They
++are standalone programs and are listed below.
++
++Unlicensed files:
++    str_intern.h
++    str_intern.c
++    db_tune.h   
++
++These were contributed over time to the project but never had any
++copyright or licensing notices in them.
++
++===
++moo
++===
++
+ The Lambdamoo server code's license is:
+ 
+   Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
+@@ -16,7 +34,6 @@ The Lambdamoo server code's license is:
+     Pavel@Xerox.Com
+ 
+ 
+-Below are all other files with varying copyrights and licenses:
+ 
+ ======
+ pgperf
+@@ -30,7 +47,7 @@ Pavel Curtis from GNU gperf, and is licensed under the GPL.
+ ext-FUP
+ =======
+ Copyright (C) 1994,1995,1996, The Weizmann Institute of Science. See
+-the full license in the file ext-FUP-1.8/ext-FUP.copyright.
++the full BSD-style license in the file ext-FUP-1.8/ext-FUP.copyright.
+ 
+ ext-FUP is optionally compiled into the server.
+ 
+@@ -79,7 +96,7 @@ the Lambdamoo server; they are standalone programs.
+ ===================
+ waverous-tester.exp
+ ===================
+-Copyright 2010, 2011 by Steve Wainstead, wainstead@gmail.com and is
++Copyright 2010, 2011 by Steve Wainstead <wainstead@gmail.com> and is
+ licensed under version 2 of the GNU Public License. It is a standalone
+ program and is not compiled into the server.
+ 
+@@ -183,10 +200,3 @@ USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ PERFORMANCE OF THIS SOFTWARE.
+ 
+-
+-
+-
+-Unlicensed files:
+-    str_intern.h
+-    str_intern.c
+-    db_tune.h   
+-- 
+1.7.9.5
+

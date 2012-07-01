@@ -1,0 +1,26 @@
+From 0649da68b0bd4c5832402128eeb99eb34ee50e31 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 7 Dec 2010 21:03:32 +0000
+Subject: [PATCH 080/223] annotating a function, even if briefly
+
+---
+ server/net_multi.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/server/net_multi.c b/server/net_multi.c
+index 0234eae..f1ed9f2 100644
+--- a/server/net_multi.c
++++ b/server/net_multi.c
+@@ -220,6 +220,9 @@ network_set_nonblocking(int fd)
+ #endif
+ }
+ 
++/**
++ * This is the function that prints output to the player
++ */
+ static int
+ push_output(nhandle * h)
+ {
+-- 
+1.7.9.5
+

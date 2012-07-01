@@ -1,0 +1,35 @@
+From f9662df9ec74349a51a744a00675b87d8a0b817e Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 04:20:09 +0000
+Subject: [PATCH 049/223] Tweak to let crypt() be found on linux - use the
+ header file instead of making our own extern
+ delaration
+
+---
+ server/list.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/server/list.c b/server/list.c
+index 98e2774..87ab55c 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -35,6 +35,8 @@
+ #include "unparse.h"
+ #include "utils.h"
+ 
++#include <crypt.h>
++
+ Var
+ new_list(int size)
+ {
+@@ -563,7 +565,6 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
+     const char *saltp;
+     static char saltstuff[] =
+     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
+-    extern const char *crypt(const char *, const char *);
+ 
+     if (arglist.v.list[0].v.num == 1 || memo_strlen(arglist.v.list[2].v.str) < 2) {
+ 	/* provide a random 2-letter salt, works with old and new crypts */
+-- 
+1.7.9.5
+

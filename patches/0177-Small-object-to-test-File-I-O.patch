@@ -1,0 +1,36 @@
+From 13232c3483e562bbc9321eae11349a4a193a708a Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 19 Jul 2011 04:04:09 +0000
+Subject: [PATCH 177/223] Small object to test File I/O.
+
+---
+ server/objects/openreadwrite.moo |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+ create mode 100644 server/objects/openreadwrite.moo
+
+diff --git a/server/objects/openreadwrite.moo b/server/objects/openreadwrite.moo
+new file mode 100644
+index 0000000..275868f
+--- /dev/null
++++ b/server/objects/openreadwrite.moo
+@@ -0,0 +1,17 @@
++@recycle testbot
++@create $thing named testbot,t
++
++@describe testbot as "A testing robot."
++
++@verb testbot:test this
++
++@program testbot:test
++myfile = "myfile.txt";
++player:tell("Opening file " + myfile);
++fh = file_open(myfile, "a+tf");
++file_writeline(fh, "Boy, Howdy!");
++file_close(fh);
++player:tell("Closed the file.");
++.
++
++drop testbot
+-- 
+1.7.9.5
+

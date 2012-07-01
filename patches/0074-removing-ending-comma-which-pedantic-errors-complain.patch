@@ -1,0 +1,26 @@
+From 2db024eeccd13cf663b2f0a2519af0814c1763d2 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 3 Dec 2010 15:08:01 +0000
+Subject: [PATCH 074/223] removing ending comma, which -pedantic-errors
+ complains about
+
+---
+ server/db.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/db.h b/server/db.h
+index 50016c5..5bbb7ca 100644
+--- a/server/db.h
++++ b/server/db.h
+@@ -181,7 +181,7 @@ typedef enum {
+      * (not saved; can be renumbered with impunity)
+      * make sure FLAG_FIRST_TEMP > last permanent flag
+      */
+-    FLAG_FIRST_TEMP = 14,
++    FLAG_FIRST_TEMP = 14
+     /* allows space for the 2 needed by validate_hierarchies(),
+      * just in case int is only 16 bits
+      */
+-- 
+1.7.9.5
+

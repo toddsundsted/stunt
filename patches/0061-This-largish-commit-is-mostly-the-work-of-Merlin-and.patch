@@ -1,0 +1,325 @@
+From 52480d90e7b0fb6a3f447cda120c9d686d6e1f44 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 27 Oct 2009 20:00:32 +0000
+Subject: [PATCH 061/223] This largish commit is mostly the work of Merlin and
+ Andy, getting the bg_name_lookup stuff to work, and
+ is the last of the Avalonpatches. Some function
+ signatures were changed to accept void pointersto
+ make them consistent with other functions... that
+ is, up and downthe stack the arguments are void
+ pointers, and the pointer is thencast within the
+ function.
+
+---
+ server/Makefile.in   |    6 +++-
+ server/bf_register.h |    3 ++
+ server/configure     |   87 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ server/db_file.c     |    4 ++-
+ server/functions.c   |    3 ++
+ server/net_bsd_tcp.c |    4 ++-
+ server/server.c      |   52 +++++++++++++++++++++++-------
+ server/server.h      |   10 +++++-
+ 8 files changed, 153 insertions(+), 16 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index b27b4db..4250af4 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -44,7 +44,8 @@ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+ 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+ 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+-	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c ext-xml.c
++	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c \
++	ext-xml.c bg_name_lookup.c
+ 
+ OPT_NET_SRCS = net_single.c net_multi.c \
+ 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+@@ -520,3 +521,6 @@ client_bsd.o: client_bsd.c my-socket.h config.h my-stdio.h my-stdlib.h \
+ client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h \
+  my-stdio.h my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h \
+  options.h
++bg_name_lookup.o : bg_name_lookup.c tasks.h structures.h functions.h \
++ utils.h list.h my-in.h log.h exceptions.h net_multi.h storage.h \
++ server.h
+diff --git a/server/bf_register.h b/server/bf_register.h
+index 2b40626..df89747 100644
+--- a/server/bf_register.h
++++ b/server/bf_register.h
+@@ -27,6 +27,9 @@ extern void register_property(void);
+ extern void register_server(void);
+ extern void register_tasks(void);
+ extern void register_verbs(void);
++/* bg_name_lookup */
++extern void register_name_lookup(void);
++/* !bg_name_lookup */
+ 
+ /* 
+  * $Log: not supported by cvs2svn $
+diff --git a/server/configure b/server/configure
+index 7b61060..a85ebf1 100755
+--- a/server/configure
++++ b/server/configure
+@@ -1403,6 +1403,93 @@ rm -f conftest*
+ 
+ done
+ 
++for func in ident_id
++do
++    trfrom='[a-z]' trto='[A-Z]'
++  var=HAVE_`echo $func | tr "$trfrom" "$trto"`
++    echo checking for $func
++cat > conftest.c <<EOF
++#include "confdefs.h"
++#include <assert.h>
++int main() { exit(0); }
++int t() { 
++/* The GNU C library defines this for functions which it implements
++    to always fail with ENOSYS.  Some functions are actually named
++    something starting with __ and the normal name is an alias.  */
++#if defined (__stub_$func) || defined (__stub___$func)
++choke me
++#else
++/* Override any gcc2 internal prototype to avoid an error.  */
++extern char $func(); $func();
++#endif
++ }
++EOF
++if eval $compile; then
++  rm -rf conftest*
++  {
++test -n "$verbose" && \
++echo "	defining $var"
++echo "#define" $var 1 >> confdefs.h
++DEFS="$DEFS -D$var=1"
++SEDDEFS="${SEDDEFS}\${SEDdA}$var\${SEDdB}$var\${SEDdC}1\${SEDdD}
++\${SEDuA}$var\${SEDuB}$var\${SEDuC}1\${SEDuD}
++\${SEDeA}$var\${SEDeB}$var\${SEDeC}1\${SEDeD}
++"
++}
++
++
++else
++  rm -rf conftest*
++  SAVELIBS="$LIBS"
++    for lib in -lident
++    do
++      LIBS="$LIBS $lib"
++      echo checking for $func
++cat > conftest.c <<EOF
++#include "confdefs.h"
++#include <assert.h>
++int main() { exit(0); }
++int t() { 
++/* The GNU C library defines this for functions which it implements
++    to always fail with ENOSYS.  Some functions are actually named
++    something starting with __ and the normal name is an alias.  */
++#if defined (__stub_$func) || defined (__stub___$func)
++choke me
++#else
++/* Override any gcc2 internal prototype to avoid an error.  */
++extern char $func(); $func();
++#endif
++ }
++EOF
++if eval $compile; then
++  rm -rf conftest*
++  
++{
++test -n "$verbose" && \
++echo "	defining $var"
++echo "#define" $var 1 >> confdefs.h
++DEFS="$DEFS -D$var=1"
++SEDDEFS="${SEDDEFS}\${SEDdA}$var\${SEDdB}$var\${SEDdC}1\${SEDdD}
++\${SEDuA}$var\${SEDuB}$var\${SEDuC}1\${SEDuD}
++\${SEDeA}$var\${SEDeB}$var\${SEDeC}1\${SEDeD}
++"
++}
++
++			 break
++
++else
++  rm -rf conftest*
++  LIBS="$SAVELIBS"
++fi
++rm -f conftest*
++
++    done
++    
++fi
++rm -f conftest*
++
++done
++
+ for hdr in unistd.h sys/cdefs.h stdlib.h tiuser.h machine/endian.h
+ do
+ trhdr=HAVE_`echo $hdr | tr '[a-z]./' '[A-Z]__'`
+diff --git a/server/db_file.c b/server/db_file.c
+index 060ca91..3f7ffae 100644
+--- a/server/db_file.c
++++ b/server/db_file.c
+@@ -627,7 +627,9 @@ dump_database(Dump_Reason reason)
+     reset_command_history();
+ #else
+     if (reason == DUMP_CHECKPOINT) {
+-	switch (fork_server("checkpointer")) {
++/* bg_name_lookup */
++        switch (fork_server("checkpointer", &checkpoint_pid)) {
++/* !bg_name_lookup */
+ 	case FORK_PARENT:
+ 	    reset_command_history();
+ 	    free_stream(s);
+diff --git a/server/functions.c b/server/functions.c
+index acc198d..bd04a26 100644
+--- a/server/functions.c
++++ b/server/functions.c
+@@ -55,6 +55,9 @@ static registry bi_function_registries[] =
+     register_server,
+     register_tasks,
+     register_verbs
++/* bg_name_lookup */
++    ,register_name_lookup
++/* !bg_name_lookup */
+ };
+ 
+ void
+diff --git a/server/net_bsd_tcp.c b/server/net_bsd_tcp.c
+index 9ad2282..81d0f40 100644
+--- a/server/net_bsd_tcp.c
++++ b/server/net_bsd_tcp.c
+@@ -180,7 +180,9 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
+     }
+     *read_fd = *write_fd = fd;
+     stream_printf(s, "%s, port %d",
+-		  lookup_name_from_addr(&address, timeout),
++/* bg_name_lookup */
++                  inet_ntoa(address. sin_addr),
++/* !bg_name_lookup */
+ 		  (int) ntohs(address.sin_port));
+     *name = reset_stream(s);
+     return PA_OKAY;
+diff --git a/server/server.c b/server/server.c
+index e344056..12cf10d 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -48,6 +48,10 @@
+ 
+ #include "execute.h"
+ 
++/* bg_name_lookup */
++pid_t checkpoint_pid = 0;
++/* !bg_name_lookup */
++
+ static pid_t parent_pid;
+ int in_child = 0;
+ 
+@@ -223,7 +227,9 @@ panic(const char *message)
+ }
+ 
+ enum Fork_Result
+-fork_server(const char *subtask_name)
++/* bg_name_lookup - Throw pid in *child_pid if child_pid not NULL */
++fork_server(const char *subtask_name, pid_t *child_pid)
++/* !bg_name_lookup */
+ {
+     pid_t pid;
+     Stream *s = new_stream(100);
+@@ -240,7 +246,13 @@ fork_server(const char *subtask_name)
+ 	in_child = 1;
+ 	return FORK_CHILD;
+     } else
+-	return FORK_PARENT;
++/* bg_name_lookup */
++    {
++        if (child_pid != NULL)
++          *child_pid=pid;
++        return FORK_PARENT;
++    }
++/* !bg_name_lookup */
+ }
+ 
+ static void
+@@ -282,26 +294,42 @@ child_completed_signal(int sig)
+ {
+     int status;
+ 
+-    /* (Void *) casts to avoid warnings on systems that mis-declare the
+-     * argument type.
+-     */
++    /* bg_name_lookup */
++    pid_t pid;
++     
++#   define CHECKPID                                   \
++    if (pid && pid == checkpoint_pid)                 \
++    {                                                 \
++      /* 1 = failure, 2 = success */                  \
++      checkpoint_finished = (status == 0) + 1;        \
++    }                                                 \
++     
+ #if HAVE_WAITPID
+-    while (waitpid(-1, (int *) &status, WNOHANG) > 0);
++    do {
++      pid = waitpid(-1, (int *) &status, WNOHANG);
++      CHECKPID;
++    } while (pid > 0);
+ #else
+ #if HAVE_WAIT3
+-    while (wait3((void *) &status, WNOHANG, 0) >= 0);
++    do {
++      pid = wait3((int *) &status, WNOHANG, 0);
++      CHECKPID;
++    } while (pid > 0)
+ #else
+ #if HAVE_WAIT2
+-    while (wait2((void *) &status, WNOHANG) >= 0);
++    do {
++      pid = wait2((int *) &status, WNOHANG);
++      CHECKPID;
++    } while (pid > 0)
+ #else
+-    wait((void *) &status);
++    pid = wait((int *) &status);
++    CHECKPID;
+ #endif
+ #endif
+ #endif
+-
++     
+     signal(sig, child_completed_signal);
+-
+-    checkpoint_finished = (status == 0) + 1;	/* 1 = failure, 2 = success */
++    /* !bg_name_lookup */
+ }
+ 
+ static void
+diff --git a/server/server.h b/server/server.h
+index 05fc092..cb0b6a7 100644
+--- a/server/server.h
++++ b/server/server.h
+@@ -26,6 +26,10 @@
+ #ifndef Server_H
+ #define Server_H 1
+ 
++/* bg_name_lookup */
++#include <sys/types.h> /* pid_t */
++/* !bg_name_lookup */
++
+ #include "my-stdio.h"
+ 
+ #include "config.h"
+@@ -148,7 +152,11 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
+ enum Fork_Result {
+     FORK_PARENT, FORK_CHILD, FORK_ERROR
+ };
+-extern enum Fork_Result fork_server(const char *subtask_name);
++
++/* bg_name_lookup */
++extern pid_t checkpoint_pid;
++extern enum Fork_Result fork_server(const char *subtask_name, pid_t *child_pid);
++/* !bg_name_lookup */
+ 
+ extern void player_connected(Objid old_id, Objid new_id,
+ 			     int is_newly_created);
+-- 
+1.7.9.5
+

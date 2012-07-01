@@ -1,0 +1,50 @@
+From 26cf474ce4c57c2b78118dda95a360f59a2a7e0f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 21 Jun 2012 13:44:48 -0500
+Subject: [PATCH 217/223] Fix void pointer problems when BYTECODE_REDUCE_REF
+ is defined
+
+When BYTECODE_REDUCE_REF is defined, a block of code is called that
+wants to call the C standard library's qsort(). qsort() takes a
+function pointer whose signature is:
+
+     void
+     qsort(void *base, size_t nel, size_t width,
+         int (*compar)(const void *, const void *));
+
+I found the solution on cplusplus.com, which is to cast the function
+arguments within the body of the "compar" function.
+---
+ server/code_gen.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/server/code_gen.c b/server/code_gen.c
+index 171c964..358218b 100644
+--- a/server/code_gen.c
++++ b/server/code_gen.c
+@@ -1135,10 +1135,11 @@ ref_size(unsigned max)
+ }
+ 
+ #ifdef BYTECODE_REDUCE_REF
++// See http://www.cplusplus.com/reference/clibrary/cstdlib/qsort/
+ static int
+-bbd_cmp(int *a, int *b)
++bbd_cmp(const void *a, const void *b)
+ {
+-    return *a - *b;
++  return ( *(int *)a - *(int *)b );
+ }
+ #endif				/* BYTECODE_REDUCE_REF */
+ 
+@@ -1209,7 +1210,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
+      * the bottom you had to have started at the top", include the
+      * *destinations* of the jumps (hence the qsort).
+      */
+-    bbd = mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
++    bbd = (int *) mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
+     n_bbd = 0;
+     bbd[n_bbd++] = 0;
+     bbd[n_bbd++] = state.num_bytes;
+-- 
+1.7.9.5
+

@@ -1,0 +1,27 @@
+From fb17487ef0a619ea22f0fe846d945b8e33488e87 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 4 Dec 2010 01:25:20 +0000
+Subject: [PATCH 079/223] Added a #ifndef for INT32_MAX, which is predefined
+ by Darwin
+
+---
+ server/config.h.in |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index c68cb03..a74ad04 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -258,7 +258,9 @@
+ #if INT_MAX == 2147483647
+    typedef int		int32;
+    typedef unsigned	unsigned32;
++#  ifndef INT32_MAX
+ #  define INT32_MAX	INT_MAX
++#  endif
+ #else
+ #  if LONG_MAX == 2147483647
+      typedef long int		int32;
+-- 
+1.7.9.5
+

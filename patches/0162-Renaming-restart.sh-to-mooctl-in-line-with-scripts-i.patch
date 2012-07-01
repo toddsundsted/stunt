@@ -1,0 +1,167 @@
+From 28cdaa741af422a2f7e6d762eff69ed94093a836 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 22 Jun 2011 23:52:43 +0000
+Subject: [PATCH 162/223] Renaming restart.sh to mooctl, in line with scripts
+ in other projects like apachectl. Eventually 'make'
+ will install this shell script in /usr/local/sbin,
+ in line with filesystem standards.
+
+Deleting the sibling csh script, since most modern Unix and GNU/Linux
+systems support /bin/sh.
+---
+ server/mooctl     |   42 ++++++++++++++++++++++++++++++++++++++++++
+ server/restart    |   43 -------------------------------------------
+ server/restart.sh |   42 ------------------------------------------
+ 3 files changed, 42 insertions(+), 85 deletions(-)
+ create mode 100755 server/mooctl
+ delete mode 100755 server/restart
+ delete mode 100755 server/restart.sh
+
+diff --git a/server/mooctl b/server/mooctl
+new file mode 100755
+index 0000000..699baba
+--- /dev/null
++++ b/server/mooctl
+@@ -0,0 +1,42 @@
++#!/bin/sh
++
++# Copyright (c) 1992, 1994, 1995, 1996 Xerox Corporation.  All rights reserved.
++# Portions of this code were written by Stephen White, aka ghond.
++# Use and copying of this software and preparation of derivative works based
++# upon this software are permitted.  Any distribution of this software or
++# derivative works must comply with all applicable United States export
++# control laws.  This software is made available AS IS, and Xerox Corporation
++# makes no warranty about the software, its performance or its conformity to
++# any specification.  Any person obtaining a copy of this software is requested
++# to send their name and post office or electronic mail address to:
++#   Pavel Curtis
++#   Xerox PARC
++#   3333 Coyote Hill Rd.
++#   Palo Alto, CA 94304
++#   Pavel@Xerox.Com
++
++if [ $# -lt 1 -o $# -gt 2 ]; then
++	echo 'Usage: restart dbase-prefix [port]'
++	exit 1
++fi
++
++if [ ! -r $1.db ]; then
++	echo "Unknown database: $1.db"
++	exit 1
++fi
++
++if [ -r $1.db.new ]; then
++	mv $1.db $1.db.old
++	mv $1.db.new $1.db
++	rm -f $1.db.old.Z
++	compress $1.db.old &
++fi
++
++if [ -f $1.log ]; then
++	cat $1.log >> $1.log.old
++	rm $1.log
++fi
++
++echo `date`: RESTARTED >> $1.log
++nohup ./moo $1.db $1.db.new $2 >> $1.log 2>&1 &
++
+diff --git a/server/restart b/server/restart
+deleted file mode 100755
+index 7200d25..0000000
+--- a/server/restart
++++ /dev/null
+@@ -1,43 +0,0 @@
+-#!/bin/csh -f
+-
+-# Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
+-# Portions of this code were written by Stephen White, aka ghond.
+-# Use and copying of this software and preparation of derivative works based
+-# upon this software are permitted.  Any distribution of this software or
+-# derivative works must comply with all applicable United States export
+-# control laws.  This software is made available AS IS, and Xerox Corporation
+-# makes no warranty about the software, its performance or its conformity to
+-# any specification.  Any person obtaining a copy of this software is requested
+-# to send their name and post office or electronic mail address to:
+-#   Pavel Curtis
+-#   Xerox PARC
+-#   3333 Coyote Hill Rd.
+-#   Palo Alto, CA 94304
+-#   Pavel@Xerox.Com
+-
+-if ($#argv < 1 || $#argv > 2) then
+-	echo 'Usage: restart dbase-prefix [port]'
+-	exit 1
+-endif
+-
+-if (! -r $1.db) then
+-	echo "Unknown database: $1.db"
+-	exit 1
+-endif
+-
+-if (-r $1.db.new) then
+-	mv $1.db $1.db.old
+-	mv $1.db.new $1.db
+-	rm -f $1.db.old.Z
+-	compress $1.db.old &
+-endif
+-
+-if (-f $1.log) then
+-	cat $1.log >> $1.log.old
+-	rm $1.log
+-endif
+-
+-echo `date`: RESTARTED >> $1.log
+-#unlimit descriptors
+-nohup ./moo $1.db $1.db.new $2 >>& $1.log &
+-
+diff --git a/server/restart.sh b/server/restart.sh
+deleted file mode 100755
+index 699baba..0000000
+--- a/server/restart.sh
++++ /dev/null
+@@ -1,42 +0,0 @@
+-#!/bin/sh
+-
+-# Copyright (c) 1992, 1994, 1995, 1996 Xerox Corporation.  All rights reserved.
+-# Portions of this code were written by Stephen White, aka ghond.
+-# Use and copying of this software and preparation of derivative works based
+-# upon this software are permitted.  Any distribution of this software or
+-# derivative works must comply with all applicable United States export
+-# control laws.  This software is made available AS IS, and Xerox Corporation
+-# makes no warranty about the software, its performance or its conformity to
+-# any specification.  Any person obtaining a copy of this software is requested
+-# to send their name and post office or electronic mail address to:
+-#   Pavel Curtis
+-#   Xerox PARC
+-#   3333 Coyote Hill Rd.
+-#   Palo Alto, CA 94304
+-#   Pavel@Xerox.Com
+-
+-if [ $# -lt 1 -o $# -gt 2 ]; then
+-	echo 'Usage: restart dbase-prefix [port]'
+-	exit 1
+-fi
+-
+-if [ ! -r $1.db ]; then
+-	echo "Unknown database: $1.db"
+-	exit 1
+-fi
+-
+-if [ -r $1.db.new ]; then
+-	mv $1.db $1.db.old
+-	mv $1.db.new $1.db
+-	rm -f $1.db.old.Z
+-	compress $1.db.old &
+-fi
+-
+-if [ -f $1.log ]; then
+-	cat $1.log >> $1.log.old
+-	rm $1.log
+-fi
+-
+-echo `date`: RESTARTED >> $1.log
+-nohup ./moo $1.db $1.db.new $2 >> $1.log 2>&1 &
+-
+-- 
+1.7.9.5
+

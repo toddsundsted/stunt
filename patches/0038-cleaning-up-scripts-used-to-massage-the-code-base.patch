@@ -1,0 +1,310 @@
+From b3358f51f8c2b074e0662867faf83d642aa9a352 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 19:37:46 +0000
+Subject: [PATCH 038/223] cleaning up scripts used to massage the code base
+
+---
+ server/fixmymallocs.pl |   85 -----------------------------------------------
+ server/fixnews.pl      |   80 --------------------------------------------
+ server/fixthese.pl     |   86 ------------------------------------------------
+ server/fixtries.pl     |   16 ---------
+ 4 files changed, 267 deletions(-)
+ delete mode 100755 server/fixmymallocs.pl
+ delete mode 100755 server/fixnews.pl
+ delete mode 100755 server/fixthese.pl
+ delete mode 100755 server/fixtries.pl
+
+diff --git a/server/fixmymallocs.pl b/server/fixmymallocs.pl
+deleted file mode 100755
+index 9d9d35b..0000000
+--- a/server/fixmymallocs.pl
++++ /dev/null
+@@ -1,85 +0,0 @@
+-#!/usr/bin/perl
+-
+-while ($input = <DATA>) {
+-    chomp $input;
+-    ($file, $line) = split(/:\s+/, $input);
+-    $line =~ m/sizeof\(([a-zA-Z0-9_]+)\)/;
+-    print "# line:   $line\n";
+-    print "# match:  $1\n";
+-    if ($1) {
+-        $match = $1;
+-        $newline = $line;
+-        $newline =~ s/mymalloc/($match *) mymalloc/;
+-        printf 'perl -pi -e \'s|\Q%s\E|%s|\' %s', $line,  $newline, $file;
+-        print "\n";
+-    }
+-}
+-
+-__END__
+-code_gen.c:    state->fixups = mymalloc(sizeof(Fixup) * state->max_fixups, M_CODE_GEN);
+-code_gen.c:    state->bytes = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-code_gen.c:    state->pushmap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-code_gen.c:    state->trymap = mymalloc(sizeof(Byte) * state->max_bytes, M_BYTECODES);
+-code_gen.c:    state->loops = mymalloc(sizeof(Loop) * state->max_loops, M_CODE_GEN);
+-code_gen.c:	Fixup *new_fixups = mymalloc(sizeof(Fixup) * new_max,
+-code_gen.c:	    Var *new_literals = mymalloc(sizeof(Var) * new_max,
+-code_gen.c:	Bytecodes *new_fv = mymalloc(sizeof(Bytecodes) * new_max,
+-code_gen.c:	Loop *new_loops = mymalloc(sizeof(Loop) * new_max,
+-code_gen.c:    bc.vector = mymalloc(sizeof(Byte) * bc.size, M_BYTECODES);
+-code_gen.c:    bbd = mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
+-code_gen.c:	prog->literals = mymalloc(sizeof(Var) * gstate.num_literals,
+-db_file.c:	v = mymalloc(sizeof(Verbdef), M_VERBDEF);
+-db_file.c:	o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
+-db_file.c:	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+-db_objects.c:	objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
+-db_objects.c:	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+-db_objects.c:    o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
+-db_properties.c:    new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+-db_properties.c:	o->propdefs.l = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+-db_properties.c:	new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+-db_properties.c:		new_props = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+-db_properties.c:	new_propval = mymalloc((local + new + common) * sizeof(Pval), M_PVAL);
+-db_verbs.c:	    current_alias = mymalloc(sizeof(struct pt_entry), M_PREP);
+-db_verbs.c:    newv = mymalloc(sizeof(Verbdef), M_VERBDEF);
+-db_verbs.c:    vc_table = mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
+-db_verbs.c:    new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+-decompile.c:    expr_stack = mymalloc(sum * sizeof(Expr *), M_DECOMPILE);
+-disassemble.c:	char **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+-eval_env.c:	ret = mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
+-eval_vm.c:    vm the_vm = mymalloc(sizeof(vmstruct), M_VM);
+-eval_vm.c:    the_vm->activ_stack = mymalloc(sizeof(activation) * stack_size, M_VM);
+-execute.c:	res = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+-execute.c:	activ_stack = mymalloc(sizeof(activation) * max, M_VM);
+-extensions.c:    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
+-list.c:	    emptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);
+-list.c:    s = mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+-net_bsd_lcl.c:    l = mymalloc(sizeof(listener), M_NETWORK);
+-net_mp_fake.c:	Port *new_ports = mymalloc(new_max * sizeof(Port), M_NETWORK);
+-net_mp_poll.c:	Port *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);
+-net_multi.c:	reg_fds = mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
+-net_multi.c:	fd_reg *new = mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
+-net_multi.c:    h = mymalloc(sizeof(nhandle), M_NETWORK);
+-net_multi.c:	nl->ptr = l = mymalloc(sizeof(nlistener), M_NETWORK);
+-net_sysv_lcl.c:    l = mymalloc(sizeof(listener), M_NETWORK);
+-numbers.c:    v.v.fnum = mymalloc(sizeof(double), M_FLOAT);
+-parse_cmd.c:	words = mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
+-parse_cmd.c:	    char **new = mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
+-pattern.c:    regexp_t buf = mymalloc(sizeof(*buf), M_PATTERN);
+-pattern.c:	buf->fastmap = mymalloc(256 * sizeof(char), M_PATTERN);
+-ref_count.c:    ref_table = mymalloc(table_size * sizeof(reftab_entry *), M_REF_TABLE);
+-ref_count.c:	ans = mymalloc(sizeof(reftab_entry), M_REF_ENTRY);
+-ref_count.c:	new_table = mymalloc(table_size * sizeof(reftab_entry *), M_REF_TABLE);
+-server.c:    slistener *l = mymalloc(sizeof(slistener), M_NETWORK);
+-str_intern.c:    new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+-str_intern.c:    new->contents = mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
+-str_intern.c:    table = mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
+-str_intern.c:    /* p = mymalloc(sizeof(struct intern_entry), M_INTERN_ENTRY); */
+-streams.c:    Stream *s = mymalloc(sizeof(Stream), M_STREAM);
+-sym_table.c:    Names *names = mymalloc(sizeof(Names), M_NAMES);
+-sym_table.c:    names->names = mymalloc(sizeof(char *) * max_size, M_NAMES);
+-tasks.c:    tq = mymalloc(sizeof(tqueue), M_TASK);
+-tasks.c:	t = mymalloc(sizeof(task), M_TASK);
+-tasks.c:    task *t = mymalloc(sizeof(task), M_TASK);
+-tasks.c:    ext_queue *eq = mymalloc(sizeof(ext_queue), M_TASK);
+-parser.y:    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+-parser.y:    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+diff --git a/server/fixnews.pl b/server/fixnews.pl
+deleted file mode 100755
+index 11c84ad..0000000
+--- a/server/fixnews.pl
++++ /dev/null
+@@ -1,80 +0,0 @@
+-#!/usr/bin/perl
+-
+-while ($input = <DATA>) {
+-
+-    chomp $input;
+-    ($file, $lineno, $string) = split /:\s*/, $input;
+-    print "# $file has $string\n";
+-    $newstring = $string;
+-    $newstring =~ s/new/_new/g;
+-    print "perl -pi -e 's/\\Q$string\\E/$newstring/' $file\n";
+-}
+-
+-__END__
+-my-stdio.h:63:#  define rename(old, new)	(link(old, new) && unlink(old))
+-db_objects.c:80:	    new[i] = objects[i];
+-db_objects.c:82:	objects = new;
+-db_objects.c:184:    Objid new;
+-db_objects.c:189:    for (new = 0; new < old; new++) {
+-db_objects.c:190:	if (objects[new] == 0) {
+-db_objects.c:192:	    o = objects[new] = objects[old];
+-db_objects.c:194:	    objects[new]->id = new;
+-db_objects.c:211:		    objects[oid]->parent = new;
+-db_objects.c:229:		    objects[oid]->location = new;
+-db_objects.c:233:	    if (is_user(new)) {
+-db_objects.c:238:			all_users.v.list[i].v.obj = new;
+-db_objects.c:255:		    if (o->owner == new)
+-db_objects.c:258:			o->owner = new;
+-db_objects.c:261:			if (v->owner == new)
+-db_objects.c:264:			    v->owner = new;
+-db_objects.c:269:			if (p[i].owner == new)
+-db_objects.c:272:			    p[i].owner = new;
+-db_objects.c:276:	    return new;
+-db_properties.c:174:		h = db_find_property(oid, new, 0);
+-db_properties.c:176:		|| property_defined_at_or_below(new, str_hash(new), oid))
+-db_properties.c:180:	    props->l[i].name = str_ref(new);
+-db_properties.c:181:	    props->l[i].hash = str_hash(new);
+-db_properties.c:591:fix_props(Objid oid, int parent_local, int old, int new, int common)
+-db_properties.c:605:    if (local + new + common != 0) {
+-db_properties.c:609:	for (i = 0; i < new; i++) {
+-db_properties.c:628:	fix_props(c, local, old, new, common);
+-disassemble.c:423:	    new[i] = d->lines[i];
+-disassemble.c:426:	d->lines = new;
+-gnu-malloc.c:657:	if ((new = malloc(n)) == 0)
+-gnu-malloc.c:659:	bcopy(mem, new, tocopy);
+-gnu-malloc.c:661:	return new;
+-list.c:41:    Var new;
+-list.c:56:    new.type = TYPE_LIST;
+-list.c:58:    new.v.list[0].type = TYPE_INT;
+-list.c:59:    new.v.list[0].v.num = size;
+-list.c:60:    return new;
+-list.c:109:    Var new;
+-list.c:121:	new.v.list[i] = var_ref(list.v.list[i]);
+-list.c:122:    new.v.list[pos] = value;
+-list.c:124:	new.v.list[i + 1] = var_ref(list.v.list[i]);
+-list.c:126:    return new;
+-list.c:148:    Var new;
+-list.c:153:	new.v.list[i] = var_ref(list.v.list[i]);
+-list.c:156:	new.v.list[i - 1] = var_ref(list.v.list[i]);
+-list.c:158:    return new;
+-list.c:166:    Var new;
+-list.c:171:	new.v.list[i] = var_ref(first.v.list[i]);
+-list.c:173:	new.v.list[i + lfirst] = var_ref(second.v.list[i]);
+-list.c:177:    return new;
+-net_multi.c:131:		new[i] = reg_fds[i];
+-net_multi.c:133:		new[i].fd = -1;
+-net_multi.c:138:	reg_fds = new;
+-parse_cmd.c:55:		new[i] = words[i];
+-parse_cmd.c:58:	    words = new;
+-ref_count.c:164:	    ll_insert_entry(&new[index], link);
+-ref_count.c:167:    return new;
+-str_intern.c:40:    new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+-str_intern.c:41:    new->size = size;
+-str_intern.c:42:    new->handout = 0;
+-str_intern.c:44:    new->next = NULL;
+-str_intern.c:46:    return new;
+-sym_table.c:48:    new->size = old->size;
+-sym_table.c:49:    for (i = 0; i < new->size; i++)
+-sym_table.c:50:	new->names[i] = str_ref(old->names[i]);
+-sym_table.c:52:    return new;
+-sym_table.c:129:	new->size = old_max;
+diff --git a/server/fixthese.pl b/server/fixthese.pl
+deleted file mode 100755
+index ebacf88..0000000
+--- a/server/fixthese.pl
++++ /dev/null
+@@ -1,86 +0,0 @@
+-#!/usr/bin/perl
+-
+-while ($input = <DATA>) {
+-    next if $input =~ /_this/;
+-    chomp $input;
+-    ($file, $lineno, $string) = split /:\s*/, $input;
+-    print "# $file has $string\n";
+-    $newstring = $string;
+-    $newstring =~ s/this/self/g;
+-    print "perl -pi -e 's/\\Q$string\\E/$newstring/' $file\n";
+-}
+-
+-__END__
+-execute.h:102:extern enum outcome do_server_program_task(Objid _this, const char *verb,
+-tasks.h:91:extern enum outcome run_server_program_task(Objid this, const char *verb,
+-execute.c:129:	if (activ_stack[t].vloc != activ_stack[t].this)
+-execute.c:130:	    stream_printf(str, " (this == #%d)", activ_stack[t].this);
+-execute.c:404:	    v.v.list[1].v.obj = stack[i].this;
+-execute.c:537:enum error call_verb2(Objid this, const char *vname, Var args, int do_pass);
+-execute.c:544:call_verb(Objid this, const char *vname_in, Var args, int do_pass)
+-execute.c:549:    result = call_verb2(this, vname, args, do_pass);
+-execute.c:556:call_verb2(Objid this, const char *vname, Var args, int do_pass)
+-execute.c:580:	where = this;
+-execute.c:592:    RUN_ACTIV.this = this;
+-execute.c:609:    set_rt_env_obj(env, SLOT_THIS, this);
+-execute.c:610:    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
+-execute.c:2162:    return RUN_ACTIV.this;
+-execute.c:2246:do_server_verb_task(Objid this, const char *verb, Var args, db_verb_handle h,
+-execute.c:2250:    return do_server_program_task(this, verb, args, db_verb_definer(h),
+-execute.c:2258:do_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+-execute.c:2269:    RUN_ACTIV.this = this;
+-execute.c:2279:    set_rt_env_obj(env, SLOT_THIS, this);
+-execute.c:2293:do_input_task(Objid user, Parsed_Command * pc, Objid this, db_verb_handle vh)
+-execute.c:2302:    RUN_ACTIV.this = this;
+-execute.c:2312:    set_rt_env_obj(env, SLOT_THIS, this);
+-execute.c:2351:    set_rt_env_obj(env, SLOT_CALLER, CALLER_ACTIV.this);
+-execute.c:2362:    RUN_ACTIV.this = NOTHING;
+-execute.c:2547:    enum error e = call_verb2(RUN_ACTIV.this, RUN_ACTIV.verb, arglist, 1);
+-execute.c:2651:	    a.this, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
+-execute.c:2675:		 &a->this, &dummy, &dummy, &a->player, &dummy, &a->progr,
+-server.c:1186:    char *this_program = str_dup(argv[0]);
+-tasks.c:689:	    Objid this;
+-tasks.c:704:	    } else if (find_verb_on(this = tq->player, pc, &vh)
+-tasks.c:705:		       || find_verb_on(this = location, pc, &vh)
+-tasks.c:706:		       || find_verb_on(this = pc->dobj, pc, &vh)
+-tasks.c:707:		       || find_verb_on(this = pc->iobj, pc, &vh)
+-tasks.c:708:		       || (valid(this = location)
+-tasks.c:711:		do_input_task(tq->player, pc, this, vh);
+-tasks.c:1345:run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+-tasks.c:1351:    return do_server_program_task(this, verb, args, vloc, verbname, program,
+-tasks.c:1709:    list.v.list[9].v.obj = ft.a.this;
+-tasks.c:1751:    list.v.list[9].v.obj = top_activ(the_vm).this;
+-timers.c:50:	Timer_Entry *this = free_timers;
+-timers.c:52:	free_timers = this->next;
+-timers.c:53:	return this;
+-timers.c:59:free_timer(Timer_Entry * this)
+-timers.c:61:    this->next = free_timers;
+-timers.c:62:    free_timers = this;
+-timers.c:70:    Timer_Entry *this = active_timers;
+-timers.c:71:    Timer_Proc proc = this->proc;
+-timers.c:72:    Timer_ID id = this->id;
+-timers.c:73:    Timer_Data data = this->data;
+-timers.c:76:    free_timer(this);
+-timers.c:87:    Timer_Entry *this = virtual_timer;
+-timers.c:88:    Timer_Proc proc = this->proc;
+-timers.c:89:    Timer_ID id = this->id;
+-timers.c:90:    Timer_Data data = this->data;
+-timers.c:93:    free_timer(this);
+-timers.c:160:    Timer_Entry *this = allocate_timer();
+-timers.c:163:    this->id = next_id++;
+-timers.c:164:    this->when = time(0) + seconds;
+-timers.c:165:    this->proc = proc;
+-timers.c:166:    this->data = data;
+-timers.c:171:    while (*t && this->when >= (*t)->when)
+-timers.c:173:    this->next = *t;
+-timers.c:174:    *t = this;
+-timers.c:178:    return this->id;
+-parser.y:276:		    Cond_Arm *this_arm = alloc_cond_arm($4, $6);
+-parser.y:283:			tmp->next = this_arm;
+-parser.y:286:			$$ = this_arm;
+-parser.y:621:		    Arg_List *this_arg = alloc_arg_list(ARG_NORMAL, $3);
+-parser.y:628:			tmp->next = this_arg;
+-parser.y:631:			$$ = this_arg;
+-parser.y:635:		    Arg_List *this_arg = alloc_arg_list(ARG_SPLICE, $4);
+-parser.y:642:			tmp->next = this_arg;
+-parser.y:645:			$$ = this_arg;
+diff --git a/server/fixtries.pl b/server/fixtries.pl
+deleted file mode 100755
+index 1634198..0000000
+--- a/server/fixtries.pl
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#!/usr/bin/perl
+-
+-while ($input = <DATA>) {
+-
+-    chomp $input;
+-    ($file, $lineno, $string) = split /:\s*/, $input;
+-    print "# $file has $string\n";
+-    $newstring = $string;
+-    $newstring =~ s/try/_try/g;
+-    print "perl -pi -e 's/\\Q$string\\E/$newstring/' $file\n";
+-}
+-
+-__END__
+-decompile.c:675:			e->e._catch.try = try_expr;
+-unparse.c:638:	unparse_expr(str, expr->e._catch.try);
+-parser.y:582:		    $$->e._catch.try = $2;
+-- 
+1.7.9.5
+

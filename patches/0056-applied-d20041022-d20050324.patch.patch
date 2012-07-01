@@ -1,0 +1,329 @@
+From 9e2e789aecad865dfe98f9ead7c8725f4578d022 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 05:56:31 +0000
+Subject: [PATCH 056/223] applied d20041022-d20050324.patch
+
+---
+ server/Makefile.in  |   17 +++-
+ server/ext-xml.c    |  233 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ server/extensions.c |    7 ++
+ server/storage.h    |    1 +
+ 4 files changed, 254 insertions(+), 4 deletions(-)
+ create mode 100644 server/ext-xml.c
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 444e696..0677ce7 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -13,11 +13,20 @@
+ #   Palo Alto, CA 94304
+ #   Pavel@Xerox.Com
+ 
+-CC = @CC@
+-LIBRARIES = @LIBS@
++# 
++# with autoconf2 I'll go edit it to support --with-expat=
++# Until then, set this to where you unpacked and compiled expat
++#
++EXPAT = /usr/local/src/standard/expat
++
++
++EXPAT_OBJS = $(EXPAT)/xmltok/*.o $(EXPAT)/xmlparse/*.o 
++
++CC = @CC@ -I$(EXPAT)/xmlparse
++LIBRARIES = @LIBS@ $(EXPAT_OBJS)
+ YACC = @YACC@
+ 
+-CFLAGS = -O
++CFLAGS = -O -DEXPAT_XML
+ # If you're using GCC, you may prefer:
+ # CFLAGS = -O2 -finline-functions
+ #
+@@ -35,7 +44,7 @@ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+ 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+ 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+-	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
++	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c ext-xml.c
+ 
+ OPT_NET_SRCS = net_single.c net_multi.c \
+ 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+new file mode 100644
+index 0000000..bfa2512
+--- /dev/null
++++ b/server/ext-xml.c
+@@ -0,0 +1,233 @@
++/*
++ * XML for the MOO Server using the expat library
++ */
++
++
++
++#include "bf_register.h"
++#include "functions.h"
++#include "db_tune.h"
++#include "storage.h"
++#include "list.h"
++#include "streams.h"
++#include "utils.h"
++
++#include "exceptions.h"
++#include "tasks.h"
++
++#include "xmlparse.h"
++
++
++/*
++ * quick'n'dirty
++ * <foo a="1">
++ *   <bar>11</bar>
++ * </foo> 
++ * =
++ * {"foo", {{"a", "1"}}, {{"bar", {}, {"11"}}}}
++ */
++
++typedef struct XMLdata XMLdata;
++
++struct XMLdata {
++  XMLdata *parent;
++  Stream *body;
++  Var element;
++};
++
++
++static XMLdata *
++new_node(XMLdata *parent, const char *name) 
++{
++  /* TODO: may want a suballocator here; gonna be needing a lot of
++   * these 2-ptr + 1 var nodes
++   */
++  XMLdata *node;
++  Var element;
++  node = (XMLdata *)mymalloc(1*sizeof(XMLdata), M_XML_DATA);
++  element = new_list(4);
++  /* {name, attribs, body, children} */ 
++  element.v.list[1].type = TYPE_STR;
++  element.v.list[1].v.str = str_dup(name);
++  element.v.list[2] = new_list(0);
++  element.v.list[3].type = TYPE_INT;
++  element.v.list[3].v.num = 0;
++  element.v.list[4] = new_list(0);
++  node->body = NULL;
++  node->element = element;
++  node->parent = parent;
++  return node;
++}			
++
++static void 
++finish_node(XMLdata *data)
++{
++  XMLdata *parent = data->parent;
++  Var element = data->element;
++  Var body;
++  Stream *s = data->body;
++  body.type = TYPE_STR;
++  if(s == NULL) {
++    body.v.str = str_dup("");
++  } else {
++    body.v.str = str_dup(reset_stream(s));
++  }
++  element.v.list[3] = body;
++  if(parent != NULL) {
++    Var pelement = parent->element;
++    pelement.v.list[4] = listappend(pelement.v.list[4], var_ref(element));
++  }
++}
++  
++static void
++free_node(XMLdata *data) 
++{
++  free_var(data->element);
++  if(data->body != NULL)
++    free_stream(data->body);
++  myfree(data, M_XML_DATA);
++}
++
++static void
++flush_nodes(XMLdata *bottom) 
++{
++  XMLdata *parent = bottom->parent;
++  free_node(bottom);
++  if(parent != NULL) {
++    flush_nodes(parent);
++  }
++}
++
++static void
++xml_startElement(void *userData, const char *name, const char **atts)
++{
++  XMLdata **data = (XMLdata**)userData;
++  XMLdata *parent = *data;
++
++  XMLdata *node = new_node(parent, name);
++  const char **patts = atts;
++
++  while(*patts != NULL) {
++    Var pair = new_list(2);
++    pair.v.list[1].type = TYPE_STR;
++    pair.v.list[1].v.str = str_dup(patts[0]);
++    pair.v.list[2].type = TYPE_STR;
++    pair.v.list[2].v.str = str_dup(patts[1]); 
++    patts += 2;
++    node->element.v.list[2] = listappend(node->element.v.list[2], pair);
++  }
++  *data = node;
++}
++
++static void 
++xml_characterDataHandler(void *userData, const XML_Char *s, int len)
++{
++  XMLdata **data = (XMLdata**)userData;
++  XMLdata *node = *data;
++  Stream *sp = node->body;
++
++  if(sp == NULL) {
++    node->body = new_stream(len);
++    sp = node->body; 
++  }
++
++  stream_add_string(sp, raw_bytes_to_binary(s, len));
++}
++
++static void 
++xml_streamCharacterDataHandler(void *userData, const XML_Char *s, int len)
++{
++  XMLdata **data = (XMLdata**)userData;
++  XMLdata *node = *data;
++  Var element = node->element;
++  Var v;
++  v.type = TYPE_STR;
++  v.v.str = str_dup(raw_bytes_to_binary(s, len));
++  element.v.list[4] = listappend(element.v.list[4], v);
++}
++
++
++static void
++xml_endElement(void *userData, const char *name)
++{
++  XMLdata **data = (XMLdata**)userData;
++  XMLdata *node = *data;
++  XMLdata *parent = node->parent;
++  finish_node(node);
++  free_node(node);
++  *data = parent;
++}
++
++/**
++ * Parse an XML string into a nested list.
++ * The second parameter indicates if body text (text within XML tags)
++ * should show up among the children of the tag or in its own
++ * section.
++ *
++ * See documentation (ext-xml.README) for examples.
++ */
++static package 
++parse_xml(const char *data, int bool_stream)
++  {
++  /*
++   * FIXME: Feed expat smaller chunks of the string and 
++   * check for task timeout between chunks
++   *
++   */
++  int decoded_length;
++  const char *decoded;
++  package result; 
++  XML_Parser parser = XML_ParserCreate(NULL);
++  XMLdata *root = new_node(NULL, "");
++  XMLdata *child = root;
++  
++  decoded_length = strlen(data);
++  decoded = data;
++  XML_SetUserData(parser, &child);
++  XML_SetElementHandler(parser, xml_startElement, xml_endElement);
++  if(bool_stream) {
++    XML_SetCharacterDataHandler(parser, xml_streamCharacterDataHandler);
++  } else {
++    XML_SetCharacterDataHandler(parser, xml_characterDataHandler);
++  }
++  if (!XML_Parse(parser, decoded, decoded_length, 1)) {
++    Var r;
++    r.type = TYPE_INT;
++    r.v.num = XML_GetCurrentByteIndex(parser);
++    flush_nodes(child);
++    result = make_raise_pack(E_INVARG, 
++			     XML_ErrorString(XML_GetErrorCode(parser)),
++			     r);
++  } else {
++    finish_node(root);
++    result = make_var_pack(var_ref(root->element.v.list[4].v.list[1]));
++    free_node(root);
++  }
++  XML_ParserFree(parser);
++  return result; 
++}
++
++
++static package
++bf_parse_xml_document(Var arglist, Byte next, void *vdata, Objid progr) 
++{
++  package result = parse_xml(arglist.v.list[1].v.str, 1);
++  free_var(arglist);
++  return result;
++}
++
++static package
++bf_parse_xml_tree(Var arglist, Byte next, void *vdata, Objid progr)
++{
++  package result = parse_xml(arglist.v.list[1].v.str, 0);
++  free_var(arglist);
++  return result;
++}
++
++void
++register_xml()
++{
++    register_function("xml_parse_tree", 1, 1, bf_parse_xml_tree, TYPE_STR);
++    register_function("xml_parse_document", 1, 1, bf_parse_xml_document, TYPE_STR);
++}
++
+diff --git a/server/extensions.c b/server/extensions.c
+index 5f8ec44..c2f0ac7 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -333,6 +333,10 @@ bf_utime(Var arglist, Byte next, void *vdata, Objid progr)
+ }
+ // end utime - andy
+ 
++#ifdef EXPAT_XML
++extern void register_xml(void);
++#endif
++
+ void
+ register_extensions()
+ {
+@@ -345,6 +349,9 @@ register_extensions()
+     register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+ #endif
++#ifdef EXPAT_XML
++    register_xml();
++#endif
+     register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
+     register_function("vrandomseed", 0, 3, bf_vrandomseed, TYPE_LIST);
+     register_function("vrandom", 0, 1, bf_vrandom, TYPE_INT);
+diff --git a/server/storage.h b/server/storage.h
+index 51dbecc..dc77794 100644
+--- a/server/storage.h
++++ b/server/storage.h
+@@ -35,6 +35,7 @@ typedef enum Memory_Type {
+ 
+     M_REF_ENTRY, M_REF_TABLE, M_VC_ENTRY, M_VC_TABLE, M_STRING_PTRS,
+     M_INTERN_POINTER, M_INTERN_ENTRY, M_INTERN_HUNK,
++    M_XML_DATA,
+ 
+     Sizeof_Memory_Type
+ 
+-- 
+1.7.9.5
+

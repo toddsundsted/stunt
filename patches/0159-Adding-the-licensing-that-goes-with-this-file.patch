@@ -1,0 +1,65 @@
+From 5e91696aba144687d2d3f304d0407b53b0171c04 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 15 Jun 2011 03:44:40 +0000
+Subject: [PATCH 159/223] Adding the licensing that goes with this file.
+
+---
+ server/ext-xml.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index 1191cc8..e7ae13f 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -1,3 +1,48 @@
++/***********************************************************************
++
++This file (ext-xml.c) was originally obtained from this URL:
++http://www.xythian.com/moo/expat-binding/
++
++The copyright notice for this file is given by the URL:
++http://www.xythian.com/moo/expat-binding/docs/ext-xml.README
++
++and it reads:
++
++
++  This is a binding of expat to MOO providing two functions for
++  parsing XML.
++  
++  It was written by Ken Fox <fox@mars.org>.
++  
++  This patch's "home page" (for now) is
++     http://www.xythian.com/moo/expat-binding/
++  
++  expat is an XML Parser Toolkit available at 
++     http://www.jclark.com/xml/expat.html
++  
++  The binding is covered under the following license:
++  
++  --- 
++  
++  
++  Copyright 2000 by Ken Fox.
++  
++  Permission to use, copy, modify, and distribute this software and
++  its documentation for any purpose and without fee is hereby granted,
++  provided that the above copyright notice appear in all copies and
++  that both that copyright notice and this permission notice appear in
++  supporting documentation.
++  
++  KEN FOX DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
++  INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
++  NO EVENT SHALL KEN FOX BE LIABLE FOR ANY SPECIAL, INDIRECT OR
++  CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
++  OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
++  NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
++  WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++  
++***********************************************************************/
++
+ /*
+  * XML for the MOO Server using the expat library
+  */
+-- 
+1.7.9.5
+

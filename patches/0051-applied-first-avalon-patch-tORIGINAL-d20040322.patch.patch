@@ -1,0 +1,898 @@
+From 33f2e5f6321797e23a3aaa38bc6c8b2cfa9882e4 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 05:42:28 +0000
+Subject: [PATCH 051/223] applied first avalon patch -
+ tORIGINAL-d20040322.patch
+
+---
+ server/Makefile.in       |    2 +-
+ server/configure.in      |    1 +
+ server/ext-FUP.c         |   67 +++++++++++-----------
+ server/ext-FUP_options.h |    6 +-
+ server/extensions.c      |  139 +++++++++++++++++++++++++++++++++++++++++++++-
+ server/net_bsd_tcp.c     |   93 +++++++++++++++++++++++++------
+ server/net_multi.c       |   26 +++++++++
+ server/network.c         |   22 +++++++-
+ server/network.h         |    2 +
+ server/options.h         |    4 +-
+ server/server.c          |  123 +++++++++++++++++++++++++++++++++++++---
+ 11 files changed, 418 insertions(+), 67 deletions(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 0ef2c32..444e696 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -31,7 +31,7 @@ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
+ 
+ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	db_verbs.c decompile.c disassemble.c eval_env.c eval_vm.c \
+-	exceptions.c execute.c extensions.c functions.c keywords.c list.c \
++	exceptions.c execute.c extensions.c ext-FUP.c functions.c keywords.c list.c \
+ 	log.c malloc.c match.c md5.c name_lookup.c network.c net_mplex.c \
+ 	net_proto.c numbers.c objects.c parse_cmd.c pattern.c program.c \
+ 	property.c quota.c ref_count.c regexpr.c server.c storage.c streams.c str_intern.c \
+diff --git a/server/configure.in b/server/configure.in
+index 76a8096..c1fcfdf 100644
+--- a/server/configure.in
++++ b/server/configure.in
+@@ -315,6 +315,7 @@ MOO_HAVE_FUNC_LIBS(mkfifo waitpid sigemptyset, -lposix /lib/libposix.a)
+ MOO_HAVE_FUNC_LIBS(accept, "-lsocket -lnsl" -lsocket -linet)
+ MOO_HAVE_FUNC_LIBS(t_open, -lnsl -lnsl_s)
+ MOO_HAVE_FUNC_LIBS(crypt, -lcrypt -lcrypt_d)
++MOO_HAVE_FUNC_LIBS(ident_id, -lident)
+ AC_HAVE_HEADERS(unistd.h sys/cdefs.h stdlib.h tiuser.h machine/endian.h)
+ AC_HAVE_FUNCS(remove rename poll select strerror strftime strtoul matherr)
+ AC_HAVE_FUNCS(random lrand48 wait3 wait2 sigsetmask sigprocmask sigrelse)
+diff --git a/server/ext-FUP.c b/server/ext-FUP.c
+index 52cfbd4..180e63f 100644
+--- a/server/ext-FUP.c
++++ b/server/ext-FUP.c
+@@ -75,17 +75,16 @@ matches(char *subject, const char *pattern)
+ }
+ 
+ void
+-remove_LAST_character(theStr)
+-char    *theStr;
++remove_LAST_character(char *theStr)
+ {
+  theStr[strlen(theStr)-1] = '\0';
+ }
+ 
+ void
+-remove_special_characters(theStr)
+-char	*theStr;
++remove_special_characters(char *theStr)
+ {
+-    register char *cp,*cp2;
++    const char *cp;
++    register char *cp2;
+     char buf[BUF_LEN];
+     int currlen = 0;
+ 
+@@ -120,11 +119,8 @@ char	*theStr;
+     strcpy( theStr, buf);
+ }
+ 
+-int
+-build_dir_name(thePathStr, theDirName, spec)
+-char *thePathStr;
+-char *theDirName;
+-char spec;
++enum error
++build_dir_name(const char *thePathStr, char *theDirName, char spec)
+ {
+     char external_files  [BUF_LEN];
+     char localthePathStr [BUF_LEN];
+@@ -164,12 +160,8 @@ char spec;
+      return E_NONE;
+ }
+ 
+-int
+-build_file_name(thePathStr, theNameStr, theFileName, spec)
+-char *thePathStr;
+-char *theNameStr;
+-char *theFileName;
+-char spec;
++enum error
++build_file_name(const char *thePathStr, const char *theNameStr, char *theFileName, char spec)
+ {
+     char external_files  [BUF_LEN];
+     char localthePathStr [BUF_LEN];
+@@ -253,7 +245,7 @@ bf_filelength(Var arglist, Byte next, void *vdata, Objid progr)
+         int num_lines = -1;
+         char buffer[BUF_LEN];
+         Var ret;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             infileName,
+@@ -277,7 +269,7 @@ bf_filesize(Var arglist, Byte next, void *vdata, Objid progr)
+         char infileName[BUF_LEN];
+         struct stat st;
+         Var ret;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             infileName,
+@@ -310,7 +302,7 @@ bf_filewrite(Var arglist, Byte next, void *vdata, Objid progr)
+         int end_line   = MAX_INT;
+         char buffer[BUF_LEN];
+         Var ret, theline;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             infileName,
+@@ -406,7 +398,7 @@ bf_fileread(Var arglist, Byte next, void *vdata, Objid progr)
+         int index;
+         int start_line = 1;
+         int end_line   = MAX_INT;
+-         int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             infileName,
+@@ -460,7 +452,7 @@ bf_fileappend(Var arglist, Byte next, void *vdata, Objid progr)
+         char outfileName[BUF_LEN];
+         int i, thelength;
+         Var ret, theline;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             outfileName,
+@@ -516,7 +508,7 @@ bf_filedelete(Var arglist, Byte next, void *vdata, Objid progr)
+ { /* (directory, filename) */
+         char infileName[BUF_LEN];
+         Var ret;
+-         int result;
++         enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             infileName,
+@@ -550,7 +542,7 @@ bf_filelist(Var arglist, Byte next, void *vdata, Objid progr)
+         char dirName [BUF_LEN];
+         Var ret, listOfDirs, listOfFiles, theline;
+         int srchlen = 0;
+-        int result;
++        enum error result;
+         result = build_dir_name(arglist.v.list[1].v.str,
+                             rootDir,
+                             'd');
+@@ -611,7 +603,7 @@ bf_filegrep(Var arglist, Byte next, void *vdata, Objid progr)
+         int strings = TRUE;
+         int numbers = FALSE;
+         int showfound = TRUE;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             infileName,
+@@ -680,7 +672,7 @@ bf_fileextract(Var arglist, Byte next, void *vdata, Objid progr)
+         int numOfLine = 0;
+         int status = 1;
+         int requiredPattern = (arglist.v.list[0].v.num > 4);
+-        int result;
++        enum error result;
+         
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+@@ -772,7 +764,7 @@ bf_filerename(Var arglist, Byte next, void *vdata, Objid progr)
+         char oldFilename[BUF_LEN];
+         char newFilename[BUF_LEN];
+         Var ret;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             oldFilename,
+@@ -812,7 +804,8 @@ bf_filechmod(Var arglist, Byte next, void *vdata, Objid progr)
+         mode_t  mode;
+         char filemode[BUF_LEN];
+         int r1, r2; 
+-        int result;
++        enum error result;
++        char localthePathStr [BUF_LEN];
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             filename,
+@@ -822,14 +815,16 @@ bf_filechmod(Var arglist, Byte next, void *vdata, Objid progr)
+                 return make_error_pack(result);
+         }
+ 
+-        remove_special_characters(arglist.v.list[3].v.str);
+-        if (strlen(arglist.v.list[3].v.str) == 0) {
++
++        strcpy(localthePathStr, arglist.v.list[3].v.str);
++        remove_special_characters(localthePathStr);
++        if (strlen(localthePathStr) == 0) {
+                    free_var(arglist);
+                    return make_error_pack(E_INVARG); }
+ 
+         strcpy(external_files,EXTERN_FILES_DIR);
+         sprintf(theRequestedAction,"chmod %s %s%s/%s\n",
+-                                   arglist.v.list[3].v.str,
++                                   localthePathStr,
+                                    external_files,
+                                    arglist.v.list[1].v.str,
+                                    arglist.v.list[2].v.str);
+@@ -871,7 +866,7 @@ bf_fileinfo(Var arglist, Byte next, void *vdata, Objid progr)
+         mode_t  mode;
+         int r0, r1, r2; 
+         char filemode[BUF_LEN];
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             filename,
+@@ -983,8 +978,10 @@ bf_filerun(Var arglist, Byte next, void *vdata, Objid progr)
+         for (i = 1; i <= numOfArgs; i++) {
+ 	        switch (arglist.v.list[i].type) {
+ 	          case TYPE_STR:
+-                theline.v.str = str_dup(arglist.v.list[i].v.str);
+-                remove_special_characters( theline.v.str); 
++                char localthePathStr [BUF_LEN];
++                strcpy(localthePathStr, arglist.v.list[i].v.str);
++                remove_special_characters( localthePathStr); 
++                theline.v.str = str_dup(localthePathStr);
+ 
+                 if (( strstr(theline.v.str,"/.")) ||
+                    (!strncmp(theline.v.str,".",1)) ||
+@@ -1066,7 +1063,7 @@ bf_filemkdir(Var arglist, Byte next, void *vdata, Objid progr)
+       char newdirName[BUF_LEN];
+       mode_t create_mode = CREATE_NEW_DIR_MODE;
+       Var ret;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             newdirName,
+@@ -1091,7 +1088,7 @@ bf_filermdir(Var arglist, Byte next, void *vdata, Objid prog)
+ {  /* filermdir(base-directory-name, directory-name) */
+         char rmDirName[BUF_LEN];
+         Var  ret;
+-        int result;
++        enum error result;
+         result = build_file_name(arglist.v.list[1].v.str,
+                             arglist.v.list[2].v.str,
+                             rmDirName,
+diff --git a/server/ext-FUP_options.h b/server/ext-FUP_options.h
+index 0011ad8..cef173c 100644
+--- a/server/ext-FUP_options.h
++++ b/server/ext-FUP_options.h
+@@ -26,10 +26,14 @@ The default name for the directory that holds the executables is defined in:
+ You can also make this base directory either read-only or read-and-write.
+ It is read-only by default. To make it writable from the MOO, comment the line:
+ */
+-     #define EXTERN_FILES_DIR_READ_ONLY
++//     #define EXTERN_FILES_DIR_READ_ONLY
+ 
+ 
+ /**********************************************************
+ The default mode for new directories can be configured too:
+ */
+      #define CREATE_NEW_DIR_MODE		0755
++
++#define INCLUDE_FILECHMOD
++#define INCLUDE_FILERUN
++
+diff --git a/server/extensions.c b/server/extensions.c
+index f93a306..555d513 100644
+--- a/server/extensions.c
++++ b/server/extensions.c
+@@ -36,8 +36,6 @@
+ #include "functions.h"
+ #include "db_tune.h"
+ 
+-#if EXAMPLE
+-
+ #include "my-unistd.h"
+ 
+ #include "exceptions.h"
+@@ -46,6 +44,22 @@
+ #include "storage.h"
+ #include "tasks.h"
+ 
++/* FUP extension */
++#include "structures.h"
++#include "utils.h"
++/* FUP extension */
++
++/* vrandom extension */
++#include "list.h"
++/* vrandom extension */
++
++#include <math.h>
++#include <stdlib.h>
++
++extern void register_files(void);
++
++#if EXAMPLE
++
+ typedef struct stdin_waiter {
+     struct stdin_waiter *next;
+     vm the_vm;
+@@ -172,10 +186,126 @@ bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+ }
+ #endif
+ 
++static package
++bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
++{
++  Objid what = arglist.v.list[1].v.obj;
++  Objid targ = arglist.v.list[2].v.obj;
++  Var   r;
++
++  free_var(arglist);
++
++  r.type = TYPE_INT;
++
++  while (valid(what))
++  {
++    if (what == targ)
++    {
++      r.v.num = 1;
++      return make_var_pack(r);
++    }
++
++    what = db_object_parent(what);
++  }
++
++  r.v.num = 0;
++  return make_var_pack(r);
++}
++
++// Begin VERYRANDOM code from tiresias
++
++static unsigned long regA, regB, regC;
++
++//int VERYRANDOM(unsigned long &regA, unsigned long &regB, unsigned long &regC) {
++int VERYRANDOM() {
++  regA=((((regA>>31)^(regA>>6)^(regA>>4)^(regA>>2)^(regA<<1)^regA) & 0x00000001)<<31) | (regA>>1);
++  regB=((((regB>>30)^(regB>>2)) & 0x00000001)<<30) | (regB>>1);
++  regC=((((regC>>28)^(regC>>1)) & 0x00000001)<<28) | (regC>>1);
++
++  return ((regA ^ regB ^ regC) & 0x00000001);
++//  return ((regA & regB) | (!regA & regC)) & 0x00000001;
++}
++
++static package
++bf_vrandomseed(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    int nargs = arglist.v.list[0].v.num;
++    Var r;
++
++    free_var(arglist);
++
++    if (nargs != 0) {
++        unsigned long newRegA = (unsigned long) *arglist.v.list[1].v.list[1].v.fnum;
++        unsigned long newRegB = (unsigned long) *arglist.v.list[1].v.list[2].v.fnum;
++        unsigned long newRegC = (unsigned long) *arglist.v.list[1].v.list[3].v.fnum;
++
++        regA = newRegA;
++        regB = newRegB;
++        regC = newRegC;
++    }
++
++    r = new_list(3);
++    r.v.list[1].type = TYPE_FLOAT;
++    r.v.list[1].v.fnum = (double *) mymalloc(sizeof(double), M_FLOAT);
++    *r.v.list[1].v.fnum = (float) regA;
++
++    r.v.list[2].type = TYPE_FLOAT;
++    r.v.list[2].v.fnum = (double *) mymalloc(sizeof(double), M_FLOAT);
++    *r.v.list[2].v.fnum = (float) regB;
++
++    r.v.list[3].type = TYPE_FLOAT;
++    r.v.list[3].v.fnum = (double *) mymalloc(sizeof(double), M_FLOAT);
++    *r.v.list[3].v.fnum = (float) regC;
++
++    return make_var_pack(r);
++}
++
++static package
++bf_vrandom(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    int nargs = arglist.v.list[0].v.num;
++    int num = (nargs >= 1 ? arglist.v.list[1].v.num : 1);
++
++    free_var(arglist);
++
++    if (num <= 0)
++        return make_error_pack(E_INVARG);
++    else {
++        Var r;
++        int bits = 0;
++        int result = -1;
++
++        r.type = TYPE_INT;
++        if (nargs == 0)
++            bits = 31;
++        else {
++            double x = pow(num, .5);
++            bits=(int)((double)abs((int)x)==x?x:abs((int)x+1));
++        }
++
++        while (result < 1 || result > num) {
++            result = 1;
++            int x = 0;
++            for (x=0; x<bits; x++) {
++                int rbit, powwow;
++                powwow = (int) pow(2, x);
++//              rbit = VERYRANDOM(regA, regB, regC);
++                rbit = VERYRANDOM();
++                result = result + (rbit*powwow);
++            }
++        }
++
++        r.v.num = result;
++        return make_var_pack(r);
++    }
++}
++
++// end VERYRANDOM code
+ 
+ void
+ register_extensions()
+ {
++  oklog("          LOADING: extensions ...\n");
+ #if EXAMPLE
+     register_task_queue(stdin_enumerator);
+     register_function("read_stdin", 0, 0, bf_read_stdin);
+@@ -184,6 +314,11 @@ register_extensions()
+     register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
+     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
+ #endif
++    register_function("isa", 2, 2, bf_isa, TYPE_OBJ, TYPE_OBJ);
++    register_function("vrandomseed", 0, 3, bf_vrandomseed, TYPE_LIST);
++    register_function("vrandom", 0, 1, bf_vrandom, TYPE_INT);
++  register_files();
++  oklog("          LOADING: extensions ... finished\n");
+ }
+ 
+ char rcsid_extensions[] = "$Id: extensions.c,v 1.4 1998-12-14 13:17:52 nop Exp $";
+diff --git a/server/net_bsd_tcp.c b/server/net_bsd_tcp.c
+index 92bd41f..8d57e01 100644
+--- a/server/net_bsd_tcp.c
++++ b/server/net_bsd_tcp.c
+@@ -43,6 +43,8 @@
+ 
+ #include "net_tcp.c"
+ 
++#include <netdb.h>
++
+ const char *
+ proto_name(void)
+ {
+@@ -78,8 +80,8 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+     if (!st)
+ 	st = new_stream(20);
+ 
+-    if (desc.type != TYPE_INT)
+-	return E_TYPE;
++    if (desc.type != TYPE_INT && desc.type != TYPE_LIST)
++        return E_TYPE;
+ 
+     port = desc.v.num;
+     s = socket(AF_INET, SOCK_STREAM, 0);
+@@ -93,8 +95,26 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+ 	close(s);
+ 	return E_QUOTA;
+     }
++    memset((char *) &address, 0, sizeof(address));
+     address.sin_family = AF_INET;
+-    address.sin_addr.s_addr = bind_local_ip;
++    if (desc.type == TYPE_INT) {
++      port = desc.v.num;
++      address.sin_addr.s_addr = bind_local_ip;
++    } else {
++      unsigned long inaddr;
++      inaddr = inet_addr(desc.v.list[1].v.str);
++      if (inaddr != INADDR_NONE) {
++        memcpy(&address.sin_addr, &inaddr, sizeof(inaddr));
++      } else {
++        struct hostent *hp;
++        hp=gethostbyname(desc.v.list[1].v.str);
++        if (hp == NULL)
++          return E_INVARG;
++
++        memcpy(&address.sin_addr,hp->h_addr,hp->h_length);
++      }
++      port = desc.v.list[2].v.num;
++    }
+     address.sin_port = htons(port);
+     if (bind(s, (struct sockaddr *) &address, sizeof(address)) < 0) {
+ 	enum error e = E_QUOTA;
+@@ -118,7 +138,11 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+     } else
+ 	*canon = var_ref(desc);
+ 
+-    stream_printf(st, "port %d", canon->v.num);
++    if (desc.type == TYPE_INT) {
++      stream_printf(st, "port %d", canon->v.num);
++    } else {
++      stream_printf(st, "%s port %d", canon->v.list[1].v.str, canon->v.list[2].v.num);
++    }
+     *name = reset_stream(st);
+ 
+     *fd = s;
+@@ -201,7 +225,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
+     static Timer_ID id;
+     size_t length;
+     int s, result;
+-    int timeout = server_int_option("name_lookup_timeout", 5);
++    int timeout = server_int_option("outbound_name_lookup_timeout", 5);
+     static struct sockaddr_in addr;
+     static Stream *st1 = 0, *st2 = 0;
+ 
+@@ -252,18 +276,55 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
+ 	    return e;
+ 	}
+     }	 
+-    TRY {
+-	id = set_timer(server_int_option("outbound_connect_timeout", 5),
+-		       timeout_proc, 0);
+-	result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
+-	cancel_timer(id);
+-    }
+-    EXCEPT(timeout_exception) {
+-	result = -1;
+-	errno = ETIMEDOUT;
+-	reenable_timers();
++
++    {
++        ES_CtxBlock         ES_ctx;
++        volatile ES_Value   ES_es = ES_Initialize;
++
++        ES_ctx.nx = 0;
++        ES_ctx._finally = 0;
++        ES_ctx.link = ES_exceptionStack;
++        ES_exceptionStack = &ES_ctx;
++
++        if (setjmp(ES_ctx.jmp) != 0)
++            ES_es = ES_Exception;
++
++        while (1) {
++            if (ES_es == ES_EvalBody) {
++                            /* TRY body goes here */
++                            {
++                                id = set_timer(server_int_option("outbound_connect_timeout", 5),
++                                               timeout_proc, 0);
++                                result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
++                                cancel_timer(id);
++                            }
++                /* TRY body or handler goes here */
++                if (ES_es == ES_EvalBody)
++                    ES_exceptionStack = ES_ctx.link;
++                break;
++            }
++            if (ES_es == ES_Initialize) {
++                if (ES_ctx.nx >= ES_MaxExceptionsPerScope)
++                    panic("Too many EXCEPT clauses!");
++                ES_ctx.array[ES_ctx.nx++] = &timeout_exception;
++            } else if (ES_ctx.id == &timeout_exception  ||  &timeout_exception == &ANY) {
++                int exception_value = ES_ctx.value;
++
++                ES_exceptionStack = ES_ctx.link;
++                exception_value = exception_value;
++                    /* avoid warnings */
++                            /* handler goes here */
++
++                            {
++                                result = -1;
++                                errno = ETIMEDOUT;
++                                reenable_timers();
++                            }
++                break;
++            }
++            ES_es = ES_EvalBody;
++        }
+     }
+-    ENDTRY;
+ 
+     if (result < 0) {
+ 	close(s);
+diff --git a/server/net_multi.c b/server/net_multi.c
+index fca11d8..1465d3e 100644
+--- a/server/net_multi.c
++++ b/server/net_multi.c
+@@ -41,6 +41,10 @@
+ #include "timers.h"
+ #include "utils.h"
+ 
++#ifdef NETWORK_IDENT
++#include <ident.h>
++#endif
++
+ static struct proto proto;
+ static int eol_length;		/* == strlen(proto.eol_out_string) */
+ 
+@@ -82,6 +86,8 @@ typedef struct nhandle {
+ #if NETWORK_PROTOCOL == NP_TCP
+     int client_echo;
+ #endif
++    char *user_name;
++    int user_client;
+ } nhandle;
+ 
+ static nhandle *all_nhandles = 0;
+@@ -326,6 +332,18 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
+ #if NETWORK_PROTOCOL == NP_TCP
+     h->client_echo = 1;
+ #endif
++    h->user_name = NULL;
++
++#ifdef NETWORK_IDENT
++    if (server_int_option("ident_lookup", 1)) {
++      h->user_name = ident_id(rfd, server_int_option("ident_lookup_timeout", 5));
++    }
++#endif
++
++    h->user_client = 0;
++    if (!h->user_name || h->user_name[0] == '[') {
++      h->user_name = str_dup("unknown");
++    }
+ 
+     stream_printf(s, "%s %s %s",
+ 		  local_name, outbound ? "to" : "from", remote_name);
+@@ -614,6 +632,14 @@ network_connection_name(network_handle nh)
+     return h->name;
+ }
+ 
++const char *
++network_connection_user(network_handle nh)
++{
++    nhandle *h = (nhandle *) nh.ptr;
++
++    return h->user_name;
++}
++
+ void
+ network_set_connection_binary(network_handle nh, int do_binary)
+ {
+diff --git a/server/network.c b/server/network.c
+index c7cea34..5e42194 100644
+--- a/server/network.c
++++ b/server/network.c
+@@ -34,6 +34,13 @@ network_connection_options(network_handle nh, Var list)
+       pair.v.list[2].type = (TYPE_INT);
+       pair.v.list[2].v.num = (((nhandle *)(nh).ptr)->client_echo);
+       (list) = listappend((list), pair);
++
++      pair = new_list(2);
++      pair.v.list[1].type = TYPE_STR;
++      pair.v.list[1].v.str = str_dup("user-client");
++      pair.v.list[2].type = TYPE_INT; 
++      pair.v.list[2].v.num = (((nhandle *)(nh).ptr)->user_client);
++      list = listappend(list, pair);
+     } return (list);
+   } while (0);
+ }
+@@ -44,7 +51,13 @@ network_connection_option(network_handle nh, const char *option, Var * value)
+   do { if (!mystrcasecmp((option), "client-echo")) { (value)->type = (TYPE_INT);
+       (value)->v.num = (((nhandle *)(nh).ptr)->client_echo);
+       return 1;
+-    } return 0;
++    } 
++    if (!mystrcasecmp(option, "user-client")) {
++        (value)->type = TYPE_INT;
++        (value)->v.num = (((nhandle *)(nh).ptr)->user_client);
++        return 1;
++    }
++    return 0;
+   } while (0);
+ }
+ 
+@@ -53,7 +66,12 @@ network_set_connection_option(network_handle nh, const char *option, Var value)
+ {
+   do { if (!mystrcasecmp((option), "client-echo")) { network_set_client_echo((nh), is_true((value)));;
+       return 1;
+-    } return 0;
++    }
++    if (!mystrcasecmp(option, "user-client")) {
++        (((nhandle *)(nh).ptr)->user_client) = value.v.num;
++       return 1;
++     }
++    return 0;
+   } while (0);
+ }
+ 
+diff --git a/server/network.h b/server/network.h
+index 07e7f78..437a191 100644
+--- a/server/network.h
++++ b/server/network.h
+@@ -188,6 +188,8 @@ extern int network_set_connection_option(network_handle nh,
+ 				 * the given setting if valid.
+ 				 */
+ 
++extern const char *network_connection_user(network_handle nh);
++
+ #ifdef OUTBOUND_NETWORK
+ #include "structures.h"
+ 
+diff --git a/server/options.h b/server/options.h
+index 9dd1212..cbb684c 100644
+--- a/server/options.h
++++ b/server/options.h
+@@ -177,7 +177,7 @@
+ /* #define OUTBOUND_NETWORK 0 */
+ 
+ /* enable by default, -O disables: */
+-/* #define OUTBOUND_NETWORK 1 */
++#define OUTBOUND_NETWORK 1
+ 
+ 
+ /******************************************************************************
+@@ -309,6 +309,8 @@
+ 
+ /* #define USE_GNU_MALLOC */
+ 
++#define NETWORK_IDENT
++
+ /*****************************************************************************
+  ********** You shouldn't need to change anything below this point. **********
+  *****************************************************************************/
+diff --git a/server/server.c b/server/server.c
+index eb369a2..2805ef0 100644
+--- a/server/server.c
++++ b/server/server.c
+@@ -1591,6 +1591,67 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
+ }
+ 
+ static package
++bf_connection_user(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    Objid       who = arglist.v.list[1].v.obj;
++    shandle    *h = find_shandle(who);
++    const char *user_name;
++    Var         r;
++
++/*    free_var(arglist);
++    r.type = TYPE_STR;
++    r.v.str = str_dup("unknown");
++    return make_var_pack(r);*/
++
++    if (h)
++        user_name = network_connection_user(h->nhandle);
++    else
++        user_name = 0;
++
++    free_var(arglist);
++    if (!is_wizard(progr)  &&  progr != who)
++        return make_error_pack(E_PERM);
++    else if (!user_name)
++        return make_error_pack(E_INVARG);
++    else {
++        r.type = TYPE_STR;
++        r.v.str = str_dup(user_name);
++        return make_var_pack(r);
++    }
++}
++
++Objid
++connection_listener(Objid player)
++{
++    shandle    *h = find_shandle(player);
++
++    if (h)
++        return h->listener;
++    else
++        return -1;
++}
++
++static package
++bf_connection_listener(Var arglist, Byte next, void *vdata, Objid progr)
++{
++    Objid       who = arglist.v.list[1].v.obj;
++    shandle    *h = find_shandle(who);
++    Var         r;
++
++    free_var(arglist);
++    if (!is_wizard(progr)  &&  progr != who)
++        return make_error_pack(E_PERM);
++
++    if (h) {
++        r.type = TYPE_OBJ;
++        r.v.obj = h->listener;
++        return make_var_pack(r);
++    } else {
++        return make_error_pack(E_INVARG);
++    }
++}
++
++static package
+ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
+ {				/* (player, string [, no_flush]) */
+     Objid conn = arglist.v.list[1].v.obj;
+@@ -1715,19 +1776,36 @@ static package
+ bf_listen(Var arglist, Byte next, void *vdata, Objid progr)
+ {				/* (oid, desc) */
+     Objid oid = arglist.v.list[1].v.obj;
+-    Var desc = arglist.v.list[2];
++    Var desc;
+     int nargs = arglist.v.list[0].v.num;
+     int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
+-    enum error e;
++    enum error e = E_NONE;
+     slistener *l = 0;
+ 
+-    if (!is_wizard(progr))
+-	e = E_PERM;
+-    else if (!valid(oid) || find_slistener(desc))
+-	e = E_INVARG;
+-    else if (!(l = new_slistener(oid, desc, print_messages, &e)));	/* Do nothing; e is already set */
+-    else if (!start_listener(l))
+-	e = E_QUOTA;
++    if (arglist.v.list[2].type == TYPE_LIST) {
++        if (arglist.v.list[2].v.list[0].v.num == 2 && arglist.v.list[2].v.list[1].type == TYPE_STR && arglist.v.list[2].v.list[2].type == TYPE_INT) {
++            desc = new_list(2);
++            desc.v.list[1].type = TYPE_STR;
++            desc.v.list[1].v.str = str_dup(arglist.v.list[2].v.list[1].v.str);
++            desc.v.list[2] = arglist.v.list[2].v.list[2];
++        } else {
++            e = E_INVARG;
++        }
++    } else if (arglist.v.list[2].type == TYPE_INT) {
++        desc = arglist.v.list[2];
++    } else {
++      e = E_INVARG;
++    }
++
++    if (e == E_NONE) {
++        if (!is_wizard(progr))
++	    e = E_PERM;
++        else if (!valid(oid) || find_slistener(desc))
++	    e = E_INVARG;
++        else if (!(l = new_slistener(oid, desc, print_messages, &e)));	/* Do nothing; e is already set */
++        else if (!start_listener(l))
++	    e = E_QUOTA;
++    }
+ 
+     free_var(arglist);
+     if (e == E_NONE)
+@@ -1804,6 +1882,30 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
+     return make_var_pack(r);
+ }
+ 
++static package
++bf_chr(Var arglist, Byte next, void *vdata, Objid progr)
++{ /* (number) */
++    Var r;
++    char c[2];
++
++    if (!is_wizard(progr)) {
++      free_var(arglist);
++      return make_error_pack(E_PERM);
++    }
++
++    c[0] = arglist.v.list[1].v.num;
++    c[1] = 0;
++
++    if (arglist.v.list[1].v.num == 10)
++      return make_error_pack(E_INVARG);
++
++    free_var(arglist);
++
++    r.type = TYPE_STR;
++    r.v.str = str_dup(c);
++    return make_var_pack(r);
++}
++
+ void
+ register_server(void)
+ {
+@@ -1835,6 +1937,9 @@ register_server(void)
+     register_function("listeners", 0, 0, bf_listeners);
+     register_function("buffered_output_length", 0, 1,
+ 		      bf_buffered_output_length, TYPE_OBJ);
++    register_function("connection_listener", 1, 1, bf_connection_listener, TYPE_OBJ);
++    register_function("connection_user", 1, 1, bf_connection_user, TYPE_OBJ);
++    register_function("chr", 1, 1, bf_chr, TYPE_INT);
+ }
+ 
+ char rcsid_server[] = "$Id: server.c,v 1.12 2007-06-02 21:34:36 wrog Exp $";
+-- 
+1.7.9.5
+

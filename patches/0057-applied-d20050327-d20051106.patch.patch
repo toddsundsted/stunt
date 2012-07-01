@@ -1,0 +1,273 @@
+From 34c09ed2433fab02343b127f440f25c5789e0ed5 Mon Sep 17 00:00:00 2001
+From: Randy Beiter <merlin4269@gmail.com>
+Date: Mon, 26 Oct 2009 21:34:38 +0000
+Subject: [PATCH 057/223] applied d20050327-d20051106.patch
+
+---
+ server/ext-xml.c   |   79 +++++++++++++++++++++++++++++++++++++++++++---------
+ server/net_multi.c |    2 ++
+ server/network.c   |   19 +++++++++++++
+ server/tasks.c     |   14 ++++++++++
+ 4 files changed, 101 insertions(+), 13 deletions(-)
+
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index bfa2512..b244425 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -27,6 +27,8 @@
+  * {"foo", {{"a", "1"}}, {{"bar", {}, {"11"}}}}
+  */
+ 
++#define NS_DELIMITER '\t'
++
+ typedef struct XMLdata XMLdata;
+ 
+ struct XMLdata {
+@@ -35,7 +37,6 @@ struct XMLdata {
+   Var element;
+ };
+ 
+-
+ static XMLdata *
+ new_node(XMLdata *parent, const char *name) 
+ {
+@@ -44,18 +45,42 @@ new_node(XMLdata *parent, const char *name)
+    */
+   XMLdata *node;
+   Var element;
++
++  char *nametemp=NULL;
++  const char *nodename=NULL;
++  char *nsname=NULL;
++  char *delim=NULL;
++
++  if ((delim=strchr(name, NS_DELIMITER)) != NULL) {
++    int index = delim - name;
++    nametemp=str_dup(name);
++    nametemp[index]='\0';
++    nodename = nametemp + index + 1;
++    nsname = nametemp;
++  } else {
++    nodename = name;
++  }
++
+   node = (XMLdata *)mymalloc(1*sizeof(XMLdata), M_XML_DATA);
+-  element = new_list(4);
++  element = new_list(nsname ? 5 : 4);
++
+   /* {name, attribs, body, children} */ 
+   element.v.list[1].type = TYPE_STR;
+-  element.v.list[1].v.str = str_dup(name);
++  element.v.list[1].v.str = str_dup(nodename);
+   element.v.list[2] = new_list(0);
+   element.v.list[3].type = TYPE_INT;
+   element.v.list[3].v.num = 0;
+   element.v.list[4] = new_list(0);
++  if (nsname) {
++    element.v.list[5].type = TYPE_STR;
++    element.v.list[5].v.str = str_dup(nsname);
++  }
+   node->body = NULL;
+   node->element = element;
+   node->parent = parent;
++
++  if (nametemp) free_str(nametemp);
++
+   return node;
+ }			
+ 
+@@ -107,15 +132,35 @@ xml_startElement(void *userData, const char *name, const char **atts)
+   XMLdata *node = new_node(parent, name);
+   const char **patts = atts;
+ 
++  char *delim;
++
+   while(*patts != NULL) {
+-    Var pair = new_list(2);
+-    pair.v.list[1].type = TYPE_STR;
+-    pair.v.list[1].v.str = str_dup(patts[0]);
++    Var pair;
++    if (delim = strchr(patts[0], NS_DELIMITER))
++    {
++      int index = delim - patts[0];
++      char *nametemp = str_dup(patts[0]);
++      nametemp[index] = '\0';
++
++      pair = new_list(3);
++      pair.v.list[3].type = TYPE_STR;
++      pair.v.list[3].v.str = str_dup(nametemp);
++      pair.v.list[1].type = TYPE_STR;
++      pair.v.list[1].v.str = str_dup(nametemp + index + 1);
++      if (nametemp) free_str(nametemp);
++    }
++    else
++    {
++      pair = new_list(2);
++      pair.v.list[1].type = TYPE_STR;
++      pair.v.list[1].v.str = str_dup(patts[0]);
++    }
+     pair.v.list[2].type = TYPE_STR;
+-    pair.v.list[2].v.str = str_dup(patts[1]); 
++    pair.v.list[2].v.str = str_dup(patts[1]);
+     patts += 2;
+     node->element.v.list[2] = listappend(node->element.v.list[2], pair);
+   }
++
+   *data = node;
+ }
+ 
+@@ -167,7 +212,7 @@ xml_endElement(void *userData, const char *name)
+  * See documentation (ext-xml.README) for examples.
+  */
+ static package 
+-parse_xml(const char *data, int bool_stream)
++parse_xml(const char *data, int bool_stream, int bool_parsens)
+   {
+   /*
+    * FIXME: Feed expat smaller chunks of the string and 
+@@ -177,9 +222,15 @@ parse_xml(const char *data, int bool_stream)
+   int decoded_length;
+   const char *decoded;
+   package result; 
+-  XML_Parser parser = XML_ParserCreate(NULL);
++  XML_Parser parser;
+   XMLdata *root = new_node(NULL, "");
+   XMLdata *child = root;
++
++  if (bool_parsens) {
++    parser = XML_ParserCreateNS(NULL, NS_DELIMITER);
++  } else {
++    parser = XML_ParserCreate(NULL);
++  }
+   
+   decoded_length = strlen(data);
+   decoded = data;
+@@ -211,7 +262,8 @@ parse_xml(const char *data, int bool_stream)
+ static package
+ bf_parse_xml_document(Var arglist, Byte next, void *vdata, Objid progr) 
+ {
+-  package result = parse_xml(arglist.v.list[1].v.str, 1);
++  int bool_parsens = (arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]));
++  package result = parse_xml(arglist.v.list[1].v.str, 1, bool_parsens);
+   free_var(arglist);
+   return result;
+ }
+@@ -219,7 +271,8 @@ bf_parse_xml_document(Var arglist, Byte next, void *vdata, Objid progr)
+ static package
+ bf_parse_xml_tree(Var arglist, Byte next, void *vdata, Objid progr)
+ {
+-  package result = parse_xml(arglist.v.list[1].v.str, 0);
++  int bool_parsens = (arglist.v.list[0].v.num >= 2 && is_true(arglist.v.list[2]));
++  package result = parse_xml(arglist.v.list[1].v.str, 0, bool_parsens);
+   free_var(arglist);
+   return result;
+ }
+@@ -227,7 +280,7 @@ bf_parse_xml_tree(Var arglist, Byte next, void *vdata, Objid progr)
+ void
+ register_xml()
+ {
+-    register_function("xml_parse_tree", 1, 1, bf_parse_xml_tree, TYPE_STR);
+-    register_function("xml_parse_document", 1, 1, bf_parse_xml_document, TYPE_STR);
++    register_function("xml_parse_tree", 1, 2, bf_parse_xml_tree, TYPE_STR, TYPE_ANY);
++    register_function("xml_parse_document", 1, 2, bf_parse_xml_document, TYPE_STR, TYPE_ANY);
+ }
+ 
+diff --git a/server/net_multi.c b/server/net_multi.c
+index 1465d3e..25a7b1b 100644
+--- a/server/net_multi.c
++++ b/server/net_multi.c
+@@ -88,6 +88,7 @@ typedef struct nhandle {
+ #endif
+     char *user_name;
+     int user_client;
++    char *connect_host;
+ } nhandle;
+ 
+ static nhandle *all_nhandles = 0;
+@@ -333,6 +334,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
+     h->client_echo = 1;
+ #endif
+     h->user_name = NULL;
++    h->connect_host = NULL;
+ 
+ #ifdef NETWORK_IDENT
+     if (server_int_option("ident_lookup", 1)) {
+diff --git a/server/network.c b/server/network.c
+index 5e42194..1e0ebb2 100644
+--- a/server/network.c
++++ b/server/network.c
+@@ -41,6 +41,13 @@ network_connection_options(network_handle nh, Var list)
+       pair.v.list[2].type = TYPE_INT; 
+       pair.v.list[2].v.num = (((nhandle *)(nh).ptr)->user_client);
+       list = listappend(list, pair);
++
++      pair = new_list(2);
++      pair.v.list[1].type = TYPE_STR;
++      pair.v.list[1].v.str = str_dup("connect_host");
++      pair.v.list[2].type = TYPE_STR; 
++      pair.v.list[2].v.str = (((nhandle *)(nh).ptr)->connect_host) ? str_ref((((nhandle *)(nh).ptr)->connect_host)) : str_dup("");
++      list = listappend(list, pair);
+     } return (list);
+   } while (0);
+ }
+@@ -57,6 +64,11 @@ network_connection_option(network_handle nh, const char *option, Var * value)
+         (value)->v.num = (((nhandle *)(nh).ptr)->user_client);
+         return 1;
+     }
++    if (!mystrcasecmp(option, "connect_host")) {
++        (value)->type = TYPE_STR;
++        (value)->v.str = str_ref(((nhandle *)(nh).ptr)->connect_host);
++        return 1;
++    }
+     return 0;
+   } while (0);
+ }
+@@ -71,6 +83,13 @@ network_set_connection_option(network_handle nh, const char *option, Var value)
+         (((nhandle *)(nh).ptr)->user_client) = value.v.num;
+        return 1;
+      }
++    if (!mystrcasecmp(option, "connect_host")) {
++        if (value.type == TYPE_STR && value.v.str[0] != '\0')
++          (((nhandle *)(nh).ptr)->connect_host) = str_dup(value.v.str);
++        else
++          (((nhandle *)(nh).ptr)->connect_host) = 0;
++       return 1;
++     }
+     return 0;
+   } while (0);
+ }
+diff --git a/server/tasks.c b/server/tasks.c
+index 992b0f6..517c9f6 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -679,6 +679,13 @@ do_command_task(tqueue * tq, char *command)
+     } else {
+ 	Parsed_Command *pc = parse_command(command, tq->player);
+ 
++        {
++            char *s = str_dup("");
++            run_server_task(tq->player, SYSTEM_OBJECT, "do_prompt",
++                            parse_into_wordlist(s), s, 0);
++            free_str(s);
++        }
++
+ 	if (!pc)
+ 	    return 0;
+ 
+@@ -718,6 +725,13 @@ do_command_task(tqueue * tq, char *command)
+ 		notify(tq->player, tq->output_suffix);
+ 
+ 	    free_var(result);
++
++            {
++                char *s = str_dup("");
++                run_server_task(tq->player, SYSTEM_OBJECT, "do_prompt",
++                                parse_into_wordlist(s), s, 0);
++                free_str(s);
++            }
+ 	}
+ 
+ 	free_parsed_command(pc);
+-- 
+1.7.9.5
+

@@ -1,0 +1,2471 @@
+From bcf4fe0f51cd9f141841983790120f3b70e41c4e Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 7 Jul 2011 23:44:07 +0000
+Subject: [PATCH 169/223] Adding the MCP 2.1 implementation, updating the
+ README for moo objects included in this distro.
+
+---
+ server/objects/MCP/README              |  489 ++++++++++++++++++++++++++++++++
+ server/objects/MCP/cdispatch.moo       |  169 +++++++++++
+ server/objects/MCP/cord.moo            |   96 +++++++
+ server/objects/MCP/create.moo          |    8 +
+ server/objects/MCP/dispatch.moo        |   76 +++++
+ server/objects/MCP/encore.system.moo   |   94 ++++++
+ server/objects/MCP/index.html          |  223 +++++++++++++++
+ server/objects/MCP/jhcore.system.moo   |   80 ++++++
+ server/objects/MCP/listutils.extra.moo |   48 ++++
+ server/objects/MCP/lmcore.system.moo   |   92 ++++++
+ server/objects/MCP/mcp.moo             |  176 ++++++++++++
+ server/objects/MCP/negotiate.moo       |   38 +++
+ server/objects/MCP/package.moo         |  105 +++++++
+ server/objects/MCP/parser.moo          |  163 +++++++++++
+ server/objects/MCP/registry.moo        |  113 ++++++++
+ server/objects/MCP/session.moo         |  307 ++++++++++++++++++++
+ server/objects/MCP/wizme.moo           |   23 ++
+ server/objects/README                  |   14 +-
+ 18 files changed, 2313 insertions(+), 1 deletion(-)
+ create mode 100644 server/objects/MCP/README
+ create mode 100644 server/objects/MCP/cdispatch.moo
+ create mode 100644 server/objects/MCP/cord.moo
+ create mode 100644 server/objects/MCP/create.moo
+ create mode 100644 server/objects/MCP/dispatch.moo
+ create mode 100644 server/objects/MCP/encore.system.moo
+ create mode 100644 server/objects/MCP/index.html
+ create mode 100644 server/objects/MCP/jhcore.system.moo
+ create mode 100644 server/objects/MCP/listutils.extra.moo
+ create mode 100644 server/objects/MCP/lmcore.system.moo
+ create mode 100644 server/objects/MCP/mcp.moo
+ create mode 100644 server/objects/MCP/negotiate.moo
+ create mode 100644 server/objects/MCP/package.moo
+ create mode 100644 server/objects/MCP/parser.moo
+ create mode 100644 server/objects/MCP/registry.moo
+ create mode 100644 server/objects/MCP/session.moo
+ create mode 100644 server/objects/MCP/wizme.moo
+
+diff --git a/server/objects/MCP/README b/server/objects/MCP/README
+new file mode 100644
+index 0000000..fab8e0a
+--- /dev/null
++++ b/server/objects/MCP/README
+@@ -0,0 +1,489 @@
++PORTING JHCORE'S MCP/2.1 IMPLEMENTATION TO OTHER MOOS
++
++CONTENTS
++
++    INTRODUCTION
++    JHCORE MCP/2.1 IMPLEMENTATION
++    JHCORE COPYRIGHT NOTICE AND LICENCE
++    MANIFEST
++    THE MCP/2.1 SUITE
++    PORTING THE OBJECTS
++    CORE-SPECIFIC NOTES
++    TESTING
++    GENERAL COMMENTS
++    QUOTA ISSUES
++
++    IN-DB API
++
++
++INTRODUCTION
++
++This file details how to port the objects from JHCore's MCP/2.1
++implementation to another MOO.  This is not programmer documentation
++for MCP/2.1, nor will it tell you how to use the objects once you've
++installed them.
++
++The objects in this distribution were extracted from JHCore-21May98b5.db.
++The suite has been tested for enCore-1.0.db and LambdaCore-latest.db
++(from around August 98).
++
++You can find out more about MCP/2.1 here:
++
++    http://www.moo.mud.org/mcp2/
++
++
++JHCORE MCP/2.1 IMPLEMENTATION
++
++The JHCore MCP/2.1 implementation is extracted from JHCore and is
++subject to the JHCore Copyright notice and LICENCE.
++
++
++JHCORE COPYRIGHT NOTICE AND LICENCE
++
++Portions of this database are derived from the LambdaCore distribution,
++available for anonymous ftp at parcftp.xerox.com. The following
++copyright notice applies to new and derived works within this
++database.
++
++Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998 by Ken Fox. 
++
++All Rights Reserved 
++
++Permission to use, copy, modify, and distribute this software and
++its documentation for any purpose and without fee is hereby granted,
++provided that the above copyright notice appear in all copies and
++that both that copyright notice and this permission notice appear
++in supporting documentation.
++
++KEN FOX DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
++INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS,
++IN NO EVENT SHALL KEN FOX BE LIABLE FOR ANY SPECIAL, INDIRECT OR
++CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
++OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
++OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
++USE OR PERFORMANCE OF THIS SOFTWARE.
++
++
++MANIFEST
++
++The file MCP.tar.gz contains the following files:
++
++    README			this file
++    encore.system.moo		modified verbs on #0 for enCore
++    jhcore.system.moo		modified verbs on #0 for JHCore
++    lmcore.system.moo		modified verbs on #0 for LambdaCore
++    listutils.extra.moo		additional verbs for $list_utils
++    package.moo
++    cdispatch.moo
++    parser.moo
++    cord.moo
++    mcp.moo
++    registry.moo
++    create.moo
++    negotiate.moo
++    session.moo
++    dispatch.moo
++    wizme.moo			make some verbs and properties wiz-owned
++
++
++THE MCP/2.1 SUITE
++
++The object's in JHCore's MCP/2.1 suite are owned by a non wizard
++user and contain several wizardly verbs and properties.  It's a
++good idea to port the objects with this in mind, don't have all
++the objects owned by a wizard.  Instead, choose a good programmer
++user (you or 'Mr MCP', or somesuch) and port all the objects as
++that user.  Then use a wizard character to make some of the verbs
++and properties wizardly.
++
++For no good reason, I've taken MOO's normal output from the @dump
++command and modified it replacing certain object numbers with
++__TOKENS__.  The file 'create.moo' contains a short script for
++creating the objects (with no verbs or properties), and the object
++created by each command corresponds to a __TOKEN__.
++
++
++PORTING THE OBJECTS
++
++You will need:
++
++	o	patience
++	o	a decent text editor that lets you search and
++		replace strings
++	o	a way to paste large amounts of text in to the MOO
++
++1.	As an ordinary user, use the 'create.moo' file to create
++	all the objects required.  Make a note of the newly created
++	object numbers for the next step.
++
++2.	As an ordinary user, port the files in the order they appear
++	in the 'File' column below.
++
++	When a file contains one of the __*__ tokens you need to
++	replace the token with the MOO object number produced by
++	the create.moo file.  Replace the __WIZARD__ token with
++	the empty string ("").
++
++	Object heirarchy		File		__TOKEN__
++	----------------		----		---------
++        generic message dispatch object	dispatch.moo
++            generic MCP package		package.moo	__PACKAGE__
++                mcp-negotiate		negotiate.moo	__NEGOTIATE__
++                mcp-cord		cord.moo	__MCP-CORD__
++        MCP 2.1 parser			parser.moo	__PARSER__
++        MCP 2.1 session			session.moo	__SESSION__
++        MCP package registry		registry.moo	__REGISTRY__
++        MCP 2.1				mcp.moo		__MCP__
++    
++       (unused: cdispatch.moo **)
++
++3.	Nominate a wizard character to own wizz'd verbs, and
++	properties.  As a wizard, port the wizme.moo file to change
++	the verb and property ownership. Nominated wizard ==
++	__WIZARD__.
++
++4.	You now need to modify existing versb on the System Object
++	(#0) to make it call $mcp.  You'll need to think about
++	this, one place MOOs tend to differ a lot is in their
++	implementation of #0 verbs.  I've included examples of the
++	following 4 verbs for JHCore, LambdaCore and enCore derived
++	MOOs:
++
++            #0:do_out_of_band_command
++            #0:user_created
++            #0:user_disconnected
++            #0:user_reconnected
++
++	See 'CORE-SPECIFIC NOTES' for more details.
++
++5.	You need to register the various packages, as a wizard
++
++            @add-package __NEGOTIATE__ to __REGISTRY__
++            @add-package __MCP-CORD__ to __REGISTRY__
++
++6.	Now you can try and log in.  Good luck...
++
++
++CORE-SPECIFIC NOTES
++
++The MCP/2.1 suite expects some special verbs to be present on
++$list_utils.  These verbs are defined in the file:
++
++	listutils.extra.moo
++
++You can use these definitions to upgrade your own $list_utils, but
++it's just as correct to place these verbs on $mcp (say) and make
++all callers refer to $mcp:<verb> instead of $list_utils:<verb>.
++This further reduces the number of changes you need to make to your
++own 'core' objects.
++
++Several JHCore idioms may be present.  Verbs like :dnamec(),
++:name("#") etc can usually be rewritten as .name without any loss
++of functionality.
++
++The '@add-package' verb implements the default security policy for
++adding new packages to MCP.  It expects the person issuing the
++command to be a Wizard, that is, someone who knows just what the
++package they're adding is going to do the the sustem an to the
++users.  Some MOOs may choose to relax this security policy to allow
++trusted users or anyone else to add or remove packages.
++
++
++TESTING
++
++Here are a couple of verbs you can put on yourself or a FO.  '@mcp'
++lists the MCP/2.1 package supported by your connection, or the
++connection of another user.  '@mcps' lists the other users on your
++MOO who appear to support MCP/2.1.
++
++--- cut here ---
++@program me:@mcp any none none
++if (!valid(who = player:my_match_object(dobjstr)))
++  who = player;
++endif
++session = $mcp:session_for(who);
++packages = session.packages;
++player:tell("session: ", session);
++for p in (packages)
++  player:tell(p[1].name, " (", p[1], ") ", p[2][1], ".", p[2][2]);
++endfor
++player:tell("---");
++.
++
++@program me:@mcps none none none
++for p in (connected_players())
++  session = $mcp:session_for(p);
++  if (session:handles_package($mcp:match_package("mcp-negotiate")))
++    player:tell(p.name);
++  endif
++endfor
++player:tell("---");
++.
++--- cut here ---
++
++
++GENERAL COMMENTS
++
++The extracted JHCore implementation contained 22 verbs and one
++property bearing the Wizard bit.  It might be possible to reduce
++the amount of code running under wizard permissions in this
++implementation.  This would help to make the security review
++procedure a lot simpler for people who're porting the code to new
++MOOs.
++
++No attempt has been made to port the $cord support object from
++JHCore.  The $cord object is like a _utils object in the normal
++MOO sense.  The ported suite *does* contain the cord package, and
++the MOO will be able to send and receive cord messages, though in
++the current port they'll be a little tricky to use.
++
++JHCore is tuned for the LambdaMOO/1.8x architecture and contains
++code that might not work on LambdaMOO/1.7x servers.  For example
++code containing the 'try...' and " ` ... ' " idioms may need to be
++rewritten for LambdaMOO/1.7x.
++
++**	cdispatch.moo contains the $cord dispatcher from JHCore.
++	I just don't know how this works and have nothing client-side
++	that tests it.  Ask someone else...
++
++There's no $player.mcp_snoop interface in the May98 JHCore.  That's
++a pity because it's useful.
++
++
++QUOTA ISSUES
++
++Once MCP/2.1 is installed each connected player object will be
++shadowed by a connection object.  Connection objects are around
++500 bytes in size and can grow when client configuration details
++are added, ie the list of supported packages compiled during the
++MCP negotiation phase.  A connection object supporting 5 different
++packages is around 1300 bytes.
++
++When connection objects are created they're taken from the quota
++of the owner of the MCP/2.1 object suite.  So you need to ensure
++that the owner has a quota sufficiently large to support all the
++connection objects of the peak number of players connected to your
++server at any time.  If this quota is exceeded the current
++implementation traces back with a warning like:
++
++--- cut here ---
++#2024:create_session, line 5:  Resource limit exceeded
++... called from #2024:initialize_connection, line 5
++... called from #2024:user_created user_connected user_reconnected, line 6
++... called from #0:user_created user_connected, line 9
++(End of traceback)
++--- cut here ---
++
++The message isn't fatal, you'll still be connected, but the MCP/2.1
++functionality will not be available.  The remedy is to increase
++the available quota for the MCP/2.1 owner.
++
++
++IN-DB API
++
++Several properties are defined to be part of the JHCore MCP/2.1
++API and are used throughout the code.  If you're porting this
++implementation then these properties should remain defined, other
++packages rely upon their existance.
++
++$mcp.registry
++
++    the object identifier of the MCP Registry Object
++
++$mcp.parser
++
++    the object supporting the MCP/2.1 parsing code
++
++$mcp.session
++
++    the generic MCP/2.1 session class
++
++$mcp.cord
++
++    the the object identifier of the mcp-cord package
++
++$mcp.negotiate
++
++    the the object identifier of the mcp-negotiate package
++
++@create __PACKAGE__ named dns-com-awns-example		__EXAMPLE__
++
++    the name of the object is important it should be the full name
++    of the MCP/2.1 package.  the object can have an alias for the
++    sake of convenience, but the .name property is used by the
++    MCP/2.1 for matching purposes.
++
++;__EXAMPLE__:set_version_range({"1.0", "1.0"})
++
++    sets the min-version and max-version version supported by this
++    package.  if the package only supports version 1.0 (say) then
++    both min-version and max-version should be set to "1.0".  the
++    version numbers are STRings not FLOATs
++
++;__EXAMPLE__:set_messages_in({{"", {"foo", "bar"}}, {"blah", {"wibble"}}})
++;__EXAMPLE__:set_messages_out({{"", {"foo", "bar"}}, {"blah", {"data"}}, {"woo", {}}})
++
++
++@add-package __EXAMPLE__ to __REGISTER__
++
++    you need to be a wizard to do this when using the standard
++    version of the JHCore MCP/2.1 implementation.  the choice is
++    down to the MOO's administrators though, so you could modify
++    @add-package to let other trusted people maintain the list of
++    MCP/2.1 packages.
++
++$mcp:session_for(player)
++
++    returns the out-of-band session object for 'player' or $nothing
++    if the player is not connected.  a session object exists whether
++    or not the player's client supports MCP/2.1.
++
++$mcp:match_package(package_name)
++
++    returns the object identifier for the MCP/2.1 package registered
++    in $mcp.registry (__REGISTRY__) whos name matches 'package_name'.
++    returns $failed_match if no matching package is available.
++
++session:handles_package(package)
++
++    test to see if the session can understand messages from 'package'.
++    returns a list comprising the major and minor version numbers
++    of the supported package eg {1, 0}, otherwise returns the empty
++    list {}.
++
++    for example the following code fragment tests to see if the
++    player's out-of-band session is able to support version 1.0 of
++    the dns-com-awns-example package.
++
++        session = $mcp:session_for(player)
++        package = $mcp:match_package("dns-com-awns-example");
++        "do we support dns-com-awns-example/1.0...";
++        "** note that version 1.0 is represented by the list {1, 0}";
++        if ( session:handles_package(package) != {1, 0} )
++            "no joy..."
++            return E_PERM;
++        endif
++        "continue processing..."
++        package:send_(session);
++
++Set up some handlers for the dns-com-awns-example package.  Each
++message defined by the :messages_in(...) initialisation requires
++a handler verb.  The verb name is the string 'handle_' followed by
++the name of the message, after the package name has been removed.
++
++The message 'dns-com-awns-example' of the dns-com-awns-example
++package requires a handler verb named 'handle_':
++
++    @verb __EXAMPLE__:handle_ tnt
++    @program __EXAMPLE__:handle_
++    {session} = args;
++    .
++
++The message 'dns-com-awns-example-blah' of the dns-com-awns-example
++package requires a handler verb named 'handle_blah':
++
++    @verb __EXAMPLE__:handle_blah tnt
++    @program __EXAMPLE__:handle_blah
++    {session, wibble} = args;
++    .
++
++When messages are received from the client, the message arguments
++will be parsed out and used to build the 'args' of the handler_
++verb.  The first argument is always the MCP session id for the
++connection.
++
++protection in __PACKAGE__:send_* requires that only the package
++itself can call :send_*.  a useful approach is to write a wrapper
++verb for the send_ call which performs some meaningful permissions
++checking and parameter validation.  for example, the following
++wrapper sends the 'empty' message for the dns-com-awns-example
++package:
++
++    @program __EXAMPLE__:send_ tnt
++    "send dns-com-awns-example";
++    "perms/parameter checks go here...";
++    return pass(@args);
++    .
++
++the following wrapper ends the 'blah' message for the dns-com-awns-example
++package, it also check that the caller's permissions are from a
++list of trusted users, and also performs some arguments checking.
++
++    @program __EXAMPLE__:send_blah tnt
++    {session, data} = args;
++    "send dns-com-awns-example-blah";
++    "do we permit the caller to send this message?"
++    if ( ! (caller_perms() in this.trusted) )
++        return E_PERM;
++    endif;
++    "check the data argument";
++    if ( ! (data in {"1", "2", "5"}) ) {
++        return E_PERM;
++    endif;
++    return pass(@args);
++    .
++
++it's good practice to have a different wrapper for each message in
++the package.  the wrapper verbs should be named as ':send_<message
++name>', so that you're sure which messages you're checking permissions
++for.  for example, the following wrapper sends the 'woo' message
++of the dns-com-awns-example package:
++
++    @program __EXAMPLE__:send_woo tnt
++    "send dns-com-awns-example-woo";
++    "perms/parameter checks go here...";
++    return pass(@args);
++    .
++
++if several messages share the same permissions then you can use
++verbs with multiple names.  for example, the following wrapper
++sends both the 'msg1' and  'msg2' messages of the dns-com-awns-example
++package:
++
++    @program __EXAMPLE__:"send_msg1 send_msg2" tnt
++    "send either dns-com-awns-example-msg1 or dns-com-awns-example-msg2";
++    "perms/parameter checks go here...";
++    return pass(@args);
++    .
++
++session:wait_for_package(package, ?timeout)
++
++    it's sometimes useful to initiate an action that requires a
++    packages support before you know for certain that the session
++    can handle the package.  you may want to write code that is
++    called immediately upon the user's connection to the MOO.
++    calling :wait_for_package will delay a verb until such time as
++    the session becomes able to deal with the package.
++
++    for example the following MOO code fragment waits till the
++    user's session becomes aware of version 1.0 of the dns-com-awns-example
++    package before sending the 'dns-com-awns-example-woo' message.
++    the code will wait no longer than 60 seconds before proceeding.
++
++        "wait till we can deal with dns-com-awns-example-woo";
++        session = $mcp:session_for(player);
++        package = $mcp:match_package("dns-com-awns-example");
++        if ( session:wait_for_package(package, 60) != {1, 0} ) 
++	    "whoops, we either timed out OR the negotiation phase";
++	    "is over and the session still doesn't know how to handle";
++	    "this package OR the session was destroyed, perhaps the";
++	    "user disconnected";
++            return;
++        endif;
++        "ok to proceed...";
++        package:send_woo();
++
++    :wait_for_package returns the package version immediately if
++    the session knows the package, otherwise waits until the session
++    learns about the package, or until the 'timeout' seconds have
++    passed, if specified.  if the code is forced to wait it will
++    eventually return either the package version if one is available
++    or it will return false.
++
++    if no timeout is given, :wait_for_package will wait until the
++    session is destroyed, this usually happens when the user
++    disconnects from the MOO.  if the client sends the message
++    'mcp-negotiate-end' then this means that no more negotiation
++    messages will be arriving.  any package waiters still waiting
++    will be told that the package they're waiting for is never
++    going to turn up.
+diff --git a/server/objects/MCP/cdispatch.moo b/server/objects/MCP/cdispatch.moo
+new file mode 100644
+index 0000000..7f3be03
+--- /dev/null
++++ b/server/objects/MCP/cdispatch.moo
+@@ -0,0 +1,169 @@
++@create $root_class named "Cord Dispatcher",cdisp
++@prop cdisp."root" #220 rc
++@prop cdisp."next_id" 1 ""
++@prop cdisp."registry" {} r
++@prop cdisp."type_root" #91 r
++@prop cdisp."registry_ids" {} r
++;cdisp.("unique") = 1
++
++@verb cdisp:"open" this none this
++@program cdisp:open
++"Usage:  :open(connection, type) => cord";
++"";
++"Open a cord between the calling object and something at the other end of the is_player() object given by `connection'.  Return the stub object representing the cord, or raise or return an error.";
++{connection, type} = args;
++if (!valid(session = $mcp:session_for(connection)))
++  return E_INVARG;
++elseif (!session:handles_package($mcp.cord))
++  return E_INVARG;
++elseif (!$object_utils:isa(type, this.type_root))
++  return E_INVARG;
++endif
++cord = $recycler:_create(type.cord_class);
++if (typeof(cord) == ERR)
++  return $error:raise_or_return(cord);
++endif
++cord.type = type;
++cord.id = tostr("R", this.next_id);
++cord.our_side = caller;
++"ask `connection' whether it's willing to put up with a new cord.";
++if (!`session:cord_open(cord, caller) ! E_VERBNF => 1')
++  $recycler:_recycle(cord);
++  raise(E_PERM);
++endif
++cord.session = session;
++cord.connection = connection;
++res = $mcp.cord:send_open(session, cord.id, $mcp.cord:type_name(type), {"objnum", tostr(cord)});
++if (typeof(res) == ERR)
++  $recycler:_recycle(cord);
++  return $error:raise_or_return(res);
++endif
++this.next_id = this.next_id + 1;
++this.registry_ids = {tostr(cord.id), @this.registry_ids};
++this.registry = {cord, @this.registry};
++return cord;
++.
++
++@verb cdisp:"lookup" this none this
++@program cdisp:lookup
++"Usage:  :lookup(id)";
++"";
++{id} = args;
++if (idx = tostr(id) in this.registry_ids)
++  return this.registry[idx];
++else
++  return $nothing;
++endif
++.
++
++@verb cdisp:"mcp_receive" this none this
++@program cdisp:mcp_receive
++"Usage:  :mcp_receive(idstr, messagestr, assocs)";
++"";
++idstr = args[1];
++messagestr = args[2];
++assocs = args[3];
++(caller == $mcp.cord) || $error:raise(E_PERM);
++cord = this:lookup(idstr);
++"valid(cord) && cord:receive(messagestr, assocs);";
++valid(cord) && cord.our_side:("cord__" + messagestr)(cord, @cord.type:parse_receive_args(messagestr, assocs));
++.
++
++@verb cdisp:"mcp_closed" this none this
++@program cdisp:mcp_closed
++"Usage:  :mcp_closed(idstr)";
++"";
++idstr = args[1];
++if (caller != $mcp.cord)
++  raise(E_PERM);
++endif
++cord = this:lookup(idstr);
++valid(cord) && cord:closed();
++"version: 1.0 Fox Wed Jul  5 17:58:16 1995 EDT";
++.
++
++@verb cdisp:"closed" this none this
++@program cdisp:closed
++"Usage:  :closed(cord)";
++"";
++cord = args[1];
++if ((caller != cord.our_side) && (caller != cord))
++  $error:raise(E_PERM);
++endif
++$recycler:_recycle(cord);
++"version: 1.0 Fox Wed Jul  5 17:58:16 1995 EDT";
++.
++
++@verb cdisp:"cleanup" this none this rx
++@program cdisp:cleanup
++"Usage:  :cleanup(cord)";
++"";
++cord = args[1];
++if ((caller != this) && (caller != cord))
++  $error:raise(E_PERM);
++endif
++if (idx = cord in this.registry)
++  this.registry = listdelete(this.registry, idx);
++  this.registry_ids = listdelete(this.registry_ids, idx);
++endif
++if (valid(c = cord.our_side))
++  c:cord_closed(cord);
++endif
++if (valid(c = cord.session))
++  `c:cord_closed(cord, cord.our_side) ! ANY';
++endif
++"version: 1.0 Fox Wed Jul  5 17:58:16 1995 EDT";
++.
++
++@verb cdisp:"connection" this none this
++@program cdisp:connection
++"Usage:  :connection(cord)";
++"";
++cord = args[1];
++if (caller != cord.our_side)
++  return $error:raise_or_return(E_PERM);
++endif
++return cord.connection;
++.
++
++@verb cdisp:"module_finish_unpack" this none this
++@program cdisp:module_finish_unpack
++"Usage:  :module_finish_unpack()";
++"";
++if (!$perm_utils:controls(caller_perms(), this))
++  raise(E_PERM);
++endif
++try
++  add_property(#0, "cord", this, {this.owner, "r"});
++except (E_INVARG)
++  `$cord = this ! ANY';
++endtry
++.
++
++@verb cdisp:"init_for_module" this none this
++@program cdisp:init_for_module
++"Usage:  :init_for_module()";
++"";
++if ((caller != this) && (!$perm_utils:controls(caller_perms(), this)))
++  raise(E_PERMS);
++endif
++this.registry = {};
++this.next_id = 1;
++this.registry_ids = {};
++.
++
++@verb cdisp:"nominate_for_core" this none this
++@program cdisp:nominate_for_core
++return {@pass(@args), this.root, this.type_root};
++.
++
++@verb cdisp:"init_for_core" this none this
++@program cdisp:init_for_core
++if ($__core_init_phase)
++  pass(@args);
++  this:init_for_module();
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/cord.moo b/server/objects/MCP/cord.moo
+new file mode 100644
+index 0000000..861264a
+--- /dev/null
++++ b/server/objects/MCP/cord.moo
+@@ -0,0 +1,96 @@
++@create "generic MCP package" named mcp-cord,cord
++@prop cord."next_id" 1 r
++@prop cord."cords" {} r
++;cord.("cord_types") = {}
++;cord:set_messages_in({{"open", {"_id", "_type"}}, {"", {"_id", "_message"}}, {"closed", {"_id"}}})
++;cord:set_messages_out({{"open", {"_id", "_type"}}, {"", {"_id", "_message"}}, {"closed", {"_id"}}})
++;cord.("unique") = 0
++
++@verb cord:"next_id" this none this
++@program cord:next_id
++if (caller == this)
++  return tostr("I", this.next_id = this.next_id + 1);
++else
++  raise(E_PERM);
++endif
++.
++
++@verb cord:"cord_send" this none this rxd __WIZARD__
++@program cord:cord_send
++{message, alist} = args;
++cord = caller;
++session = cord.session;
++if (cord in $cord.registry)
++  return this:send_(session, tostr(cord.id), message, @alist);
++else
++  raise(E_PERM);
++endif
++.
++
++@verb cord:"cord_closed" this none this rxd __WIZARD__
++@program cord:cord_closed
++cord = caller;
++session = cord.session;
++this:send_closed(session, tostr(cord.id));
++.
++
++@verb cord:"handle_" this none this
++@program cord:handle_
++{session, id, message, @assocs} = args;
++if (caller == this)
++  $cord:mcp_receive(id, message, assocs);
++endif
++.
++
++@verb cord:"handle_closed" this none this
++@program cord:handle_closed
++{session, id, @rest} = args;
++if (caller == this)
++  $cord:mcp_closed(id);
++endif
++.
++
++@verb cord:"find_type" this none this
++@program cord:find_type
++{name} = args;
++for i in ($object_utils:leaves($cord.type_root))
++  if (name == (($mcp.registry:package_name(i.parent_package) + "-") + i.cord_name))
++    return i;
++  endif
++endfor
++return $failed_Match;
++.
++
++@verb cord:"send_open" this none this
++@program cord:send_open
++if (caller == $cord)
++  return pass(@args);
++endif
++.
++
++@verb cord:"finalize_connection" this none this rxd __WIZARD__
++@program cord:finalize_connection
++session = caller;
++len = length($cord.registry_ids);
++for i in [0..len - 1]
++  idx = len - i;
++  cord = $cord.registry[idx];
++  if (cord.session == session)
++    $recycler:_recycle(cord);
++  endif
++endfor
++.
++
++@verb cord:"type_name" this none this
++@program cord:type_name
++{cord_type} = args;
++parent = $mcp:package_name(cord_type.parent_package);
++if (suffix = cord_type.cord_name)
++  return (parent + "-") + suffix;
++else
++  return parent;
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/create.moo b/server/objects/MCP/create.moo
+new file mode 100644
+index 0000000..2ffd806
+--- /dev/null
++++ b/server/objects/MCP/create.moo
+@@ -0,0 +1,8 @@
++@create $root_class named generic message dispatch object:generic message dispatch object
++@create "generic message dispatch object" named generic MCP package:generic MCP package
++@create "generic MCP package" named mcp-negotiate:mcp-negotiate
++@create "generic MCP package" named mcp-cord:mcp-cord
++@create $root_class named MCP 2.1 parser:MCP 2.1 parser
++@create $root_class named generic MCP 2.1 session:generic MCP 2.1 session
++@create $root_class named MCP package registry:MCP package registry
++@create $root_class named MCP 2.1:MCP 2.1
+diff --git a/server/objects/MCP/dispatch.moo b/server/objects/MCP/dispatch.moo
+new file mode 100644
+index 0000000..9534a17
+--- /dev/null
++++ b/server/objects/MCP/dispatch.moo
+@@ -0,0 +1,76 @@
++@create $root_class named "generic message dispatch object",dispatch
++@prop dispatch."messages_in" {} r
++@prop dispatch."messages_out" {} r
++;dispatch.("unique") = 0
++
++@verb dispatch:"parse_send_args" this none this
++@program dispatch:parse_send_args
++"Usage:  :parse_send_args(msg, @posargs, @keywordargs)";
++"";
++"Transform a given message's arguments (mostly given positionally) into the correct form for MCP.  The cord type has an ordered list of argument keywords for all valid messages; these are matched with the arguments provided to produce an alist.  If more arguments are provided than keywords are available, then the remaining arguments should be {keyword, value} pairs.  This allows the passing of optional arguments and such.";
++"";
++"This verb returns an alist suitable for use with :client_notify().";
++"";
++"Examples:";
++"  .messages_out = {{\"edit\", {\"name\", \"text\"}}}";
++"  :parse_send_args(\"edit\", \"#123.foo\", {\"This is the first line.\"})";
++"    => {{\"name\", \"#123.foo\"}, {\"text\", {\"This is the first line.\"}}}";
++"  :parse_send_args(\"edit\", \"#123:foo\", {\"Hi!\"}, {\"type\", \"MOO-Code\"})";
++"    => {{\"name\", \"#123.foo\"}, {\"text\", {\"Hi!\"}}, {\"type\", \"MOO-Code\"}}";
++{msg, @rest} = args;
++a = $list_utils:assoc(msg, this.messages_out);
++if (!a)
++  raise(E_INVARG, "Invalid message");
++endif
++keywords = a[2];
++lkeywords = length(keywords);
++lrest = length(rest);
++if (lrest < lkeywords)
++  raise(E_ARGS, "Incorrect number of message arguments");
++endif
++return {@$list_utils:make_alist({keywords, rest[1..lkeywords]}), @rest[lkeywords + 1..$]};
++.
++
++@verb dispatch:"parse_receive_args" this none this
++@program dispatch:parse_receive_args
++"Usage:  :parse_receive_args(msg, alist)";
++"";
++"Transform a messages arguments from an alist into a mostly-positional list.  The cord type has an ordered list of argument keywords for all valid messages; these are used to construct an ordered list of the items from the alist that correspond to those keywords.  If there are items in the alist that do not match a known keyword, they will be appended to the positional list with keywords attached.";
++"";
++"Examples:";
++"  .messages_in = {{\"edit\", {\"name\", \"text\"}}}";
++"  :parse_receive_args({{\"name\", \"#123.foo\"}, {\"text\", {\"Hi!\"}}})";
++"    => {\"#123.foo\", \"Hi!\"}";
++"  :parse_receive_args({{\"name\", \"#123.foo\"}, {\"text\", {\"Hi!\"}}, {\"type\", \"MOO-Code\"}})";
++"    => {\"#123.foo\", \"Hi!\", {\"type\", \"MOO-Code\"}};";
++{msg, alist} = args;
++a = $list_utils:assoc(msg, this.messages_in);
++if (!a)
++  "this should be caught upstream.";
++  raise(E_INVARG, "Invalid cord message");
++endif
++ret = {};
++for keyword in (a[2])
++  i = $list_utils:iassoc(keyword, alist);
++  if (!i)
++    "this too should be caught.";
++    raise(E_INVARG, "Missing argument in cord message");
++  endif
++  ret = {@ret, alist[i][2]};
++  alist = listdelete(alist, i);
++endfor
++return {@ret, @alist};
++.
++
++@verb dispatch:"set_messages_in set_messages_out" this none this
++@program dispatch:set_messages_in
++"This is the standard :set_foo verb.  It allows the property to be set if called by this or called with adequate permissions (this's owner or wizardly).";
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  return this.(verb[5..length(verb)]) = args[1];
++else
++  return E_PERM;
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/encore.system.moo b/server/objects/MCP/encore.system.moo
+new file mode 100644
+index 0000000..e4661b9
+--- /dev/null
++++ b/server/objects/MCP/encore.system.moo
+@@ -0,0 +1,94 @@
++"For enCore
++"
++"    :user_reconnected sure looks to have a bug, user:confunc is
++"    never called if you're not a guest.  perhaps they have no
++"    concept of :reconfunc or similar, that might explain it.
++
++@program #0:user_reconnected
++if (callers())
++  return;
++endif
++if ($object_utils:isa(user = args[1], $guest))
++  "from $guest:boot";
++  oldloc = user.location;
++  move(user, $nothing);
++  "..force enterfunc to be called so that the newbie gets a room description.";
++  move(user, user.home);
++  user:do_reset();
++  if ($object_utils:isa(oldloc, $room))
++    oldloc:announce("In the distance you hear someone's alarm clock going off.");
++    if (oldloc != user.location)
++      oldloc:announce(user.name, " wavers and vanishes into insubstantial mist.");
++    else
++      oldloc:announce(user.name, " undergoes a wrenching personality shift.");
++    endif
++  endif
++  set_task_perms(user);
++  `user:confunc() ! ANY';
++endif
++$mcp:(verb)(@args);
++.
++
++@program #0:user_disconnected
++if (callers())
++  return;
++endif
++if (args[1] < #0)
++  "not logged in user.  probably should do something clever here involving Carrot's no-spam hack.  --yduJ";
++  return;
++endif
++$mcp:(verb)(@args);
++user = args[1];
++user.last_disconnect_time = time();
++set_task_perms(user);
++fork (0)
++  $login_watcher:goodbye(user);
++endfork
++`user:disfunc() ! ANY => 0';
++`user.location:disfunc(user) ! ANY => 0';
++"Last modified Sun Jul 20 13:23:16 1997 CDT by Wizard (#2).";
++.
++
++@program #0:user_created
++if (callers())
++  return;
++endif
++user = args[1];
++try
++  "Added to provide guests with the opportunity to select their own names, Jan";
++  if ((user in children($guest)) && $real_guest_names)
++    user:set_guest_name(user);
++  endif
++  set_task_perms(user);
++  user.location:confunc(user);
++  user:confunc();
++  fork (0)
++    $login_watcher:hello(user);
++  endfork
++except id (ANY)
++  user:tell("Confunc failed: ", id[2], ".");
++  for tb in (id[4])
++    user:tell("... called from ", tb[1], ":", tb[2], ", line ", tb[6]);
++  endfor
++  user:tell("(End of traceback)");
++endtry
++$mcp:(verb)(@args);
++"Last modified Wed Apr 15 13:13:47 1998 CDT by Wizard (#2).";
++.
++
++@program #0:do_out_of_band_command
++if (callers())
++  return E_PERM;
++elseif (!valid(player))
++  return;
++else
++  set_task_perms(player);
++endif
++if ((length(args) > 1) && (args[1] == "#$#MacMOOSE"))
++  oob_verb = args[2];
++  tokens = $macmoose_utils:simple_tokenize(argstr);
++  oob_args = ((len = length(tokens)) > 2) ? tokens[3..len] | {};
++  $macmoose_utils:(oob_verb)(@oob_args);
++endif
++return $mcp:(verb)(@args);
++.
+diff --git a/server/objects/MCP/index.html b/server/objects/MCP/index.html
+new file mode 100644
+index 0000000..83d500f
+--- /dev/null
++++ b/server/objects/MCP/index.html
+@@ -0,0 +1,223 @@
++<HTML>
++<HEAD>
++<TITLE> MCP/2.1 Software for MOO </TITLE>
++</HEAD>
++<BODY BGCOLOR=#ffffff>
++
++<FONT FACE=Helvetica>
++
++<A HREF=../tkMOO-light/>tkMOO-light</A>
++
++<HR>
++
++<H3> MCP/2.1 Software for MOO </H3>
++
++MCP/2.1 is an out of band protocol used for sending messages between
++servers and clients.  Several useful applications are available
++that are built on MCP/2.1.  Programmers can use MCP/2.1 to create
++new applications for MOO.
++
++<P>
++
++An overview of the MUD Client Protocol (MCP) and the protocol
++specification are available here:
++
++<UL>
++<DD> <A HREF=http://www.moo.mud.org/mcp2/>http://www.moo.mud.org/mcp2/</A>
++</UL>
++
++
++<H3> JHCore MCP/2.1 Implementation  </H3>
++
++The JHCore MCP/2.1 implementation is extracted from JHCore and is
++subject to the <A HREF=#1>JHCore Copyright notice and LICENCE</A>.  
++
++<P>
++
++The latest version of the JHCore database, which also contains this
++code is available here:
++
++<UL>
++<DD> <A HREF=ftp://ftp.ccs.neu.edu/pub/mud/sites/jhm/database/>ftp://ftp.ccs.neu.edu/pub/mud/sites/jhm/database/</A>
++</UL>
++
++<H3> Introduction </H3>
++
++JHCore implements MCP/2.1 support with a suite of objects which
++are hooked to the System Object.  This architecture means that it's
++very easy to extract the suite from a JHCore database and port it
++to other MOO databases.  So far I've been able to do this for (old)
++JHCore, LambdaCore and enCore databases and it's likely that the
++same can be said of any MOO database.
++
++<P>
++
++I've dumped the suite of objects to text files written a small
++README file and tarred the whole lot up so that other people can
++have a go.  Here it is:
++
++<UL>
++    <LI> <A HREF=README>README</A>
++    <LI> <A HREF=MCP.tar.gz>MCP.tar.gz</A>
++</UL>
++
++<H3>MCP/2.1 Packages</H3>
++
++The following packages are available separately as .tar.gz archives.
++These packages are written using the JHCore MCP/2.1 Implementation's
++API.
++
++<DL>
++
++    <DT> <STRONG>dns-org-mud-moo-simpleedit</STRONG>
++	 (<A HREF=packages/dns-org-mud-moo-simpleedit.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-org-mud-moo-simpleedit>README</A>)
++    <DD>
++    The package dns-org-mud-moo-simpleedit provides support for
++    local-editors in cooperating clients.  The package supports
++    the data in the form of a <STRONG>string</STRONG> a
++    <STRONG>string-list</STRONG> or <STRONG>moo-code</STRONG>.
++    Clients that don't provide special support for moo-code editing
++    can treat moo-code identically to string-list.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-displayurl</STRONG>
++	 (<A HREF=packages/dns-com-awns-displayurl.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-displayurl>README</A>)
++    <DD>
++    The package dns-com-awns-displayurl allows the server to send URLs
++    to the client.  The client should then use a client-side webbrowser
++    to display the contents of the URL.  The client can optionally
++    display a warning message to the user requesting if the URL should
++    be displayed.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-serverinfo</STRONG>
++	 (<A HREF=packages/dns-com-awns-serverinfo.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-serverinfo>README</A>)
++    <DD>
++    The package dns-com-awns-serverinfo lets the server give the
++    client a couple of useful URLs, the server's Home Page and Help
++    Page if such exist.  The client is free to make these available
++    though a Help menu or by some other method.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-jtext</STRONG>
++	 (<A HREF=packages/dns-com-awns-jtext.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-jtext>README</A>)
++    <DD>
++    The package dns-com-awns-jtext allows the client to access jtext
++    links.  Jtext is a hypertext format for the JHCore and this package
++    provides an MCP/2.1 version of the MCP/1.0 'jtext-pick' message.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-status</STRONG>
++	 (<A HREF=packages/dns-com-awns-status.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-status>README</A>)
++    <DD> 
++    The package dns-com-awns-status allows the server to send short,
++    human readable, informational messages to cooperating clients.  The
++    client can display the message in a number of ways.  For example
++    on the main chat screen, or in a special part of the client's status
++    bar or log window.  The client is free to ignore the message
++    completely if it wishes.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-ping</STRONG>
++	 (<A HREF=packages/dns-com-awns-ping.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-ping>README</A>)
++    <DD>
++    The package dns-com-awns-ping allows both client and server to
++    test the latency of a user's connection, a rough indication
++    of net-lag.  Accordingly the server can choose to 'back off'
++    a bandwidth-heavy activity to a slow user, to make the best of
++    what little connectivity the connection has to spare.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-visual</STRONG>
++	 (<A HREF=packages/dns-com-awns-visual.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-visual>README</A>)
++    <DD>
++    The package dns-com-awns-visual provides clients with up-to-date
++    information about places, topology and people online.  Clients can
++    display this information in the form of navigable maps or user
++    listings.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-rehash</STRONG>
++	 (<A HREF=packages/dns-com-awns-rehash.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-rehash>README</A>)
++    <DD>
++    The package dns-com-awns-rehash provides clients with up-to-date
++    information about the set of server commands which can be typed
++    by the user.  Clients can use this information for tricks like
++    command-completion, or the implementation of 'say'/'do'
++    interfaces.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-getset</STRONG>
++	 (<A HREF=packages/dns-com-awns-getset.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-getset>README</A>)
++    <DD>
++    The package dns-com-awns-getset allows clients to save data to
++    and load data from the server.
++
++    <P>
++
++    <DT> <STRONG>dns-com-awns-timezone</STRONG>
++	 (<A HREF=packages/dns-com-awns-timezone.tar.gz>archive</A>,
++	 <A HREF=packages/README.dns-com-awns-timezone>README</A>)
++    <DD>
++    The package dns-com-awns-timezone allows the client to send the
++    user's time-zone to the server.  Server-side applications can make
++    use of this information.
++
++</DL>
++
++<A NAME=1>
++<H3>JHCore Copyright notice and LICENCE </H3>
++</A>
++
++Portions of this database are derived from the LambdaCore distribution,
++available for anonymous ftp at parcftp.xerox.com. The following
++copyright notice applies to new and derived works within this
++database.
++
++<P>
++
++Copyright 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998 by Ken Fox. 
++
++<P>
++
++All Rights Reserved 
++
++<P>
++
++Permission to use, copy, modify, and distribute this software and
++its documentation for any purpose and without fee is hereby granted,
++provided that the above copyright notice appear in all copies and
++that both that copyright notice and this permission notice appear
++in supporting documentation.
++
++<P>
++
++KEN FOX DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
++INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS,
++IN NO EVENT SHALL KEN FOX BE LIABLE FOR ANY SPECIAL, INDIRECT OR
++CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
++OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
++OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
++USE OR PERFORMANCE OF THIS SOFTWARE.
++
++</FONT>
++
++</BODY>
++</HTML>
+diff --git a/server/objects/MCP/jhcore.system.moo b/server/objects/MCP/jhcore.system.moo
+new file mode 100644
+index 0000000..812d273
+--- /dev/null
++++ b/server/objects/MCP/jhcore.system.moo
+@@ -0,0 +1,80 @@
++" Verbs on JHCore's system object contain hooks to the $mcp suite.
++" The latest JHCore's verbs look like this:
++
++@verb system:"do_out_of_band_command" this none this
++@program system:do_out_of_band_command
++if (callers())
++  return E_PERM;
++elseif (!valid(player))
++  return;
++endif
++return $mcp:(verb)(@args);
++.
++
++@verb system:"user_created user_connected" this none this
++@program system:user_created
++user = args[1];
++if (callers())
++  raise(E_PERM);
++endif
++if (args[1] < #0)
++  return;
++endif
++$mcp:(verb)(@args);
++fork (0)
++  `user:confunc() ! E_VERBNF';
++endfork
++fork (0)
++  $login_watcher:hello(user);
++endfork
++`user.location:confunc(user) ! E_VERBNF';
++`user:anyconfunc() ! E_VERBNF';
++.
++
++
++
++@verb system:"user_disconnected user_client_disconnected" this none this
++@program system:user_disconnected
++if (callers())
++  return;
++endif
++user = args[1];
++if (user < #0)
++  return $network:connection_closed(user);
++elseif ($login:is_tester(user))
++  $login:tester_disconnecting(user);
++endif
++$mcp:(verb)(@args);
++"...";
++"... record disconnect time...";
++user.last_disconnect_time = time();
++user.total_connect_time = user.total_connect_time + (user.last_disconnect_time - user.last_connect_time);
++if (user.started_keeping_total == 0)
++  user.started_keeping_total = user.last_connect_time;
++endif
++"...";
++fork (0)
++  `user.location:disfunc(user) ! E_INVIND, E_VERBNF';
++endfork
++fork (0)
++  $login_watcher:goodbye(user);
++endfork
++`user:disfunc() ! E_VERBNF';
++.
++
++@verb system:"user_reconnected" this none this
++@program system:user_reconnected
++user = args[1];
++if (user < #0)
++  return;
++endif
++$mcp:(verb)(@args);
++fork (0)
++  `user.location:reconfunc(user) ! E_INVIND, E_VERBNF';
++endfork
++fork (0)
++  `user:reconfunc() ! E_VERBNF';
++endfork
++`user:anyconfunc() ! E_VERBNF';
++.
++
+diff --git a/server/objects/MCP/listutils.extra.moo b/server/objects/MCP/listutils.extra.moo
+new file mode 100644
+index 0000000..eb67e07
+--- /dev/null
++++ b/server/objects/MCP/listutils.extra.moo
+@@ -0,0 +1,48 @@
++" JHCore uses a pair of new verbs on $list_utils.  You can use these
++" definitions to upgrade your own $list_utils, but it's just as
++" correct to place these versb on $mcp (say) and make all callers
++" refer to $mcp:<verb> instead of $list_utils:<verb>
++
++@verb list_utils:"passoc" this none this
++@program list_utils:passoc
++"passoc(key,list1,list2)";
++"passoc() behaves rather similarly to assoc, with the exception that it's intended for";
++"parallel lists.  given a key from list1, it returns a list containing the key and the";
++"corresponding item from list2 (\"corresponding\", in the case of parallel lists, means";
++"having the same index.)";
++indx = args[1] in args[2];
++if (indx)
++  return {args[1], args[3][indx]};
++else
++  return {};
++endif
++.
++
++@verb list_utils:"max_length" this none this rx
++@program list_utils:max_length
++":max_length(strings-or-lists[, default])";
++"Return the maximum length of a set of strings or lists.";
++"default is the minimum length that can be returned; 0 is a safe bet.";
++max = args[2] || 0;
++for item in (args[1])
++  max = max(max, length(item));
++endfor
++return max;
++.
++
++@verb list_utils:"make_alist" this none this rxd
++@program list_utils:make_alist
++":make_alist(lists[, pad])";
++"Make an alist out of n parallel lists (basically a matrix transpose).";
++"If the lists are of uneven length, fill the remaining tuples with pad (defaults to 0).";
++alist = {};
++pad = (length(args) > 1) ? args[2] | 0;
++for i in [1..$list_utils:max_length(args[1])]
++  tuple = {};
++  for l in (args[1])
++    tuple = {@tuple, (i > length(l)) ? pad | l[i]};
++  endfor
++  alist = {@alist, tuple};
++endfor
++return alist;
++.
+diff --git a/server/objects/MCP/lmcore.system.moo b/server/objects/MCP/lmcore.system.moo
+new file mode 100644
+index 0000000..18152ce
+--- /dev/null
++++ b/server/objects/MCP/lmcore.system.moo
+@@ -0,0 +1,92 @@
++@verb system:"user_created user_connected" this none this
++@program system:user_created
++"Copied from The System Object (#0):user_connected by Slartibartfast (#4242) Sun May 21 18:14:16 1995 PDT";
++if (callers())
++  return;
++endif
++$mcp:(verb)(@args);
++user = args[1];
++set_task_perms(user);
++try
++  user.location:confunc(user);
++  user:confunc();
++except id (ANY)
++  user:tell("Confunc failed: ", id[2], ".");
++  for tb in (id[4])
++    user:tell("... called from ", tb[1], ":", tb[2], ", line ", tb[6]);
++  endfor
++  user:tell("(End of traceback)");
++endtry
++.
++
++@verb system:"user_disconnected user_client_disconnected" this none this
++@program system:user_disconnected
++if (callers())
++  return;
++endif
++if (args[1] < #0)
++  "not logged in user.  probably should do something clever here involving Carrot's no-spam hack.  --yduJ";
++  return;
++endif
++$mcp:(verb)(@args);
++user = args[1];
++user.last_disconnect_time = time();
++set_task_perms(user);
++`user:disfunc() ! ANY => 0';
++`user.location:disfunc(user) ! ANY => 0';
++.
++
++@verb system:"user_reconnected" this none this
++@program system:user_reconnected
++if (callers())
++  return;
++endif
++"JHCore uses the following test...";
++"if (user < #0)";
++"  return;";
++"endif";
++$mcp:(verb)(@args);
++if ($object_utils:isa(user = args[1], $guest))
++  "from $guest:boot";
++  oldloc = user.location;
++  move(user, $nothing);
++  "..force enterfunc to be called so that the newbie gets a room description.";
++  move(user, user.home);
++  user:do_reset();
++  if ($object_utils:isa(oldloc, $room))
++    oldloc:announce("In the distance you hear someone's alarm clock going off.");
++    if (oldloc != user.location)
++      oldloc:announce(user.name, " wavers and vanishes into insubstantial mist.");
++    else
++      oldloc:announce(user.name, " undergoes a wrenching personality shift.");
++    endif
++  endif
++  set_task_perms(user);
++  `user:confunc() ! ANY';
++endif
++.
++
++@verb system:"do_out_of_band_command doobc" this none this
++@program system:do_out_of_band_command
++if (callers())
++  return E_PERM;
++elseif (!valid(player))
++  return;
++endif
++return $mcp:(verb)(@args);
++"A cheap and very dirty do_out_of_band verb.  Forwards to verb on player with same name.";
++if (!callers())
++  try
++    if (valid(player) && is_player(player))
++      set_task_perms(player);
++      player:do_out_of_band_command(@args);
++    else
++      $login:do_out_of_band_command(@args);
++    endif
++  except e (ANY)
++    raise(e[1]);
++  endtry
++endif
++.
++
++
+diff --git a/server/objects/MCP/mcp.moo b/server/objects/MCP/mcp.moo
+new file mode 100644
+index 0000000..9f4d109
+--- /dev/null
++++ b/server/objects/MCP/mcp.moo
+@@ -0,0 +1,176 @@
++@create $root_class named "MCP 2.1",mcp
++@prop mcp."parser" __PARSER__ rc
++@prop mcp."session" __SESSION__ r
++@prop mcp."version" {} rc
++;mcp.("version") = {2, 1}
++@prop mcp."package" __PACKAGE__ r __WIZARD__
++@prop mcp."negotiate" __NEGOTIATE__ r __WIZARD__
++@prop mcp."registry" __REGISTRY__ rc
++@prop mcp."cord" __MCP-CORD__ r
++;mcp.("unique") = 0
++
++@verb mcp:"create_session" this none this
++@program mcp:create_session
++{connection} = args;
++if (caller != this)
++  raise(E_PERM);
++elseif (typeof(session = $recycler:_create(this.session)) != OBJ)
++  raise(session);
++endif
++session:set_connection(connection);
++session:initialize_connection();
++return session;
++.
++
++@verb mcp:"destroy_session" this none this
++@program mcp:destroy_session
++{session} = args;
++if (!(caller in {this, session}))
++  raise(E_PERM);
++elseif (!$object_utils:isa(session, this.session))
++  raise(E_INVARG);
++elseif (session == this.session)
++  raise(E_INVARG);
++else
++  $recycler:_recycle(session);
++endif
++.
++
++@verb mcp:"initialize_connection" this none this rxd __WIZARD__
++@program mcp:initialize_connection
++{who} = args;
++if (caller != this)
++  raise(E_PERM);
++endif
++return this:create_session(who);
++.
++
++@verb mcp:"finalize_connection" this none this rxd __WIZARD__
++@program mcp:finalize_connection
++{con} = args;
++if (caller == con)
++  this:destroy_session(con);
++endif
++.
++
++@verb mcp:"parse_version" this none this rxd __WIZARD__
++@program mcp:parse_version
++"string version number -> {major, minor}";
++{version} = args;
++if (m = match(version, "%([0-9]+%)%.%([0-9]+%)"))
++  return {tonum(substitute("%1", m)), tonum(substitute("%2", m))};
++endif
++.
++
++@verb mcp:"compare_version_range" this none this rxd __WIZARD__
++@program mcp:compare_version_range
++{client, server} = args;
++{min1, max1} = client;
++{min2, max2} = server;
++min1 = (typeof(min1) == STR) ? this:parse_version(min1) | min1;
++min2 = (typeof(min2) == STR) ? this:parse_version(min2) | min2;
++max1 = (typeof(max1) == STR) ? this:parse_version(max1) | max1;
++max2 = (typeof(max2) == STR) ? this:parse_version(max2) | max2;
++if (!(((min1 && min2) && max1) && max2))
++  return;
++else
++  if ((this:compare_version(max1, min2) <= 0) && (this:compare_version(max2, min1) <= 0))
++    if (this:compare_version(max1, max2) < 0)
++      return max2;
++    else
++      return max1;
++    endif
++  endif
++endif
++return 0;
++.
++
++@verb mcp:"compare_version" this none this rxd __WIZARD__
++@program mcp:compare_version
++"-1 if v1 > v2, 0 if v1 = v2, 1 if v1 < v2";
++{v1, v2} = args;
++if (v1 == v2)
++  return 0;
++else
++  {major1, minor1} = v1;
++  {major2, minor2} = v2;
++  if (major1 == major2)
++    if (minor1 > minor2)
++      return -1;
++    else
++      return 1;
++    endif
++  elseif (major1 > major2)
++    return -1;
++  else
++    return 1;
++  endif
++endif
++.
++
++@verb mcp:"unparse_version" this none this rxd __WIZARD__
++@program mcp:unparse_version
++{major, minor} = args;
++return tostr(major, ".", minor);
++.
++
++@verb mcp:"session_for" this none this rxd __WIZARD__
++@program mcp:session_for
++{who} = args;
++return `who.out_of_band_session ! E_PROPNF => $failed_match';
++.
++
++@verb mcp:"user_created user_connected user_reconnected" this none this rxd __WIZARD__
++@program mcp:user_created
++{who} = args;
++if ($list_utils:assoc(caller, listeners()))
++  if ($recycler:valid(who.out_of_band_session))
++    `who.out_of_band_session:finish() ! ANY';
++  endif
++  who.out_of_band_session = this:initialize_connection(who);
++endif
++.
++
++@verb mcp:"user_disconnected user_client_disconnected" this none this rxd __WIZARD__
++@program mcp:user_disconnected
++{who} = args;
++if ($list_utils:assoc(caller, listeners()))
++  if ($recycler:valid(who.out_of_band_session))
++    `who.out_of_band_session:finish() ! ANY';
++    who.out_of_band_session = $nothing;
++  endif
++else
++  raise(E_PERM);
++endif
++.
++
++@verb mcp:"do_out_of_band_command" this none this rxd __WIZARD__
++@program mcp:do_out_of_band_command
++if ($list_utils:assoc(caller, listeners()))
++  if ($recycler:valid(session = player.out_of_band_session))
++    set_task_perms(player);
++    return session:do_out_of_band_command(@args);
++  endif
++endif
++.
++
++@verb mcp:"package_name match_package packges" this none this
++@program mcp:package_name
++return this.registry:(verb)(@args);
++.
++
++@verb mcp:"handles_package wait_for_package" this none this
++@program mcp:handles_package
++{who, @rest} = args;
++if (valid(session = this:session_for(who)))
++  return session:(verb)(@rest);
++endif
++.
++
++@verb mcp:"nominate_for_core" this none this rxd __WIZARD__
++@program mcp:nominate_for_core
++return {@pass(@args), this.package, this.session, this.registry, this.parser, $cord};
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/negotiate.moo b/server/objects/MCP/negotiate.moo
+new file mode 100644
+index 0000000..2b3bffd
+--- /dev/null
++++ b/server/objects/MCP/negotiate.moo
+@@ -0,0 +1,38 @@
++@create "generic MCP package" named "mcp-negotiate",negotiate
++;negotiate:set_version_range({"1.0", "2.0"})
++;negotiate:set_messages_in({{"can", {"package", "min-version", "max-version"}}, {"end", {}}})
++;negotiate:set_messages_out({{"can", {"package", "min-version", "max-version"}}, {"end", {}}})
++;negotiate.("unique") = 0
++
++@verb negotiate:"do_negotiation" this none this
++@program negotiate:do_negotiation
++connection = caller;
++for keyval in ($mcp.registry:packages())
++  {name, package} = keyval;
++  this:send_can(connection, name, @package.version_range);
++endfor
++this:send_end(connection);
++.
++
++@verb negotiate:"handle_can" this none this
++@program negotiate:handle_can
++if (caller == this)
++  {connection, package, minv, maxv, @rest} = args;
++  if (valid(pkg = $mcp.registry:match_package(package)))
++    if (version = $mcp:compare_version_range({minv, maxv}, pkg.version_range))
++      connection:add_package(pkg, version);
++    endif
++  endif
++endif
++.
++
++@verb negotiate:"handle_end" this none this
++@program negotiate:handle_end
++if (caller == this)
++  {connection, @rest} = args;
++  connection:end_negotiation();
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/package.moo b/server/objects/MCP/package.moo
+new file mode 100644
+index 0000000..6bf8494
+--- /dev/null
++++ b/server/objects/MCP/package.moo
+@@ -0,0 +1,105 @@
++@create "generic message dispatch object" named "generic MCP package",package
++@prop package."version_range" {} r
++;package.("version_range") = {"1.0", "1.0"}
++@prop package."cord_types" {} r
++;package.("unique") = 0
++
++@verb package:"set_version_range" this none this rx
++@program package:set_version_range
++"This is the standard :set_foo verb.  It allows the property to be set if called by this or called with adequate permissions (this's owner or wizardly).";
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  return this.(verb[5..length(verb)]) = args[1];
++else
++  return E_PERM;
++endif
++"version: 1.0 Fox Wed Jul  5 17:58:13 1995 EDT";
++.
++
++@verb package:"dispatch" this none this rxd __WIZARD__
++@program package:dispatch
++"Usage:  :dispatch_request(who, authkey, name, arguments)";
++"";
++connection = caller;
++{message, alist} = args;
++if (verbname = this:message_name_to_verbname(message))
++  set_task_perms(caller_perms());
++  this:(verbname)(connection, @this:parse_receive_args(message, alist));
++endif
++.
++
++@verb package:"match_request" this none this
++@program package:match_request
++"Usage:  :match_request(request)";
++"";
++request = args[1];
++if ($object_utils:has_verb(this, verbname = "mcp_" + request))
++  return verbname;
++else
++  return 0;
++endif
++"version: 1.0 Fox Wed Jul  5 17:58:14 1995 EDT";
++.
++
++@verb package:"initialize_connection" this none this
++@program package:initialize_connection
++"Usage:  :initialize_connection()";
++"";
++{version} = args;
++connection = caller;
++messages = $list_utils:slice(this.messages_in);
++connection:register_handlers(messages);
++.
++
++@verb package:"message_name_to_verbname" this none this
++@program package:message_name_to_verbname
++{message} = args;
++if ($object_utils:has_callable_verb(this, vname = "handle_" + message))
++  return vname;
++else
++  return 0;
++endif
++.
++
++@verb package:"finalize_connection" this none this
++@program package:finalize_connection
++connection = caller;
++return 0;
++.
++
++@verb package:"add_cord_type" this none this
++@program package:add_cord_type
++"Usage:  :add_cord_type(cord_type)";
++"";
++{cord_type} = args;
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  return this.cord_types = setadd(this.cord_types, cord_type);
++else
++  raise(E_PERM);
++endif
++.
++
++@verb package:"remove_cord_type" this none this
++@program package:remove_cord_type
++"Usage:  :remove_cord_type(cord_type)";
++"";
++{cord_type} = args;
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  return this.cord_types = setremove(this.cord_types, cord_type);
++else
++  raise(E_PERM);
++endif
++.
++
++@verb package:"send_*" this none this
++@program package:send_
++{connection, @args} = args;
++if (caller == this)
++  message = verb[6..$];
++  `connection:send(message, this:parse_send_args(message, @args)) ! E_VERBNF';
++else
++  raise(E_PERM);
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/parser.moo b/server/objects/MCP/parser.moo
+new file mode 100644
+index 0000000..8ea010d
+--- /dev/null
++++ b/server/objects/MCP/parser.moo
+@@ -0,0 +1,163 @@
++@create $root_class named "MCP 2.1 parser",parser
++@prop parser."next_datakey" 9445 r
++@prop parser."unquoted_string" "^[]a-zA-Z0-9-%~`!@#$^&()=+{}[|';?/><.,]+$" r __WIZARD__
++;parser.("unique") = 0
++
++@verb parser:"parse_mcp_alist" this none this
++@program parser:parse_mcp_alist
++"take args and return a list in the format:";
++"{true if contains multiline, { { keyword-name, data, multiline }, ... }";
++alist = {};
++if (length(alist) % 2)
++  raise(E_ARGS);
++endif
++contains_multiline = 0;
++while (args)
++  {keyword, value, @args} = args;
++  if (keyword[$] != ":")
++    raise(E_INVARG, "invalid keyword: " + keyword);
++  else
++    if (keyword[$ - 1] == "*")
++      contains_multiline = 1;
++      value = {};
++      keyword = keyword[1..$ - 2];
++    else
++      keyword = keyword[1..$ - 1];
++    endif
++    alist = {@alist, {keyword, value}};
++  endif
++endwhile
++return {contains_multiline, alist};
++.
++
++@verb parser:"parse_mcp" this none this
++@program parser:parse_mcp
++"parse_mcp(@args) =>";
++"relies on argstr being a version of @args unwordified";
++"{request-name, contains-multiline, authentication-key, data-tag, { { keyword-name, data }, ... } }";
++if (length(args) < 1)
++  raise(E_INVARG, "not enough arguments");
++endif
++request_name = args[1][4..$];
++if (!request_name)
++  raise(E_INVARG, "no request name");
++endif
++if (request_name == "*")
++  return this:parse_mcp_continuation(@args[2..$]);
++endif
++"... if there is an authentication key, the length of args will be even ...";
++if (length(args) % 2)
++  authentication_key = E_NONE;
++  message_args = args[2..$];
++else
++  authentication_key = args[2];
++  message_args = args[3..$];
++endif
++{contains_multiline, alist} = this:parse_mcp_alist(@message_args);
++if (contains_multiline)
++  if (tag = $list_utils:iassoc("_data-tag", alist))
++    "mulitline with a datatag, OK";
++    data_tag = alist[tag][2];
++    alist = listdelete(alist, tag);
++  else
++    raise(E_INVARG, "multiline fields with no data tag");
++  endif
++else
++  data_tag = E_NONE;
++endif
++if (typeof(alist) == LIST)
++  return {request_name, contains_multiline, authentication_key, data_tag, alist};
++else
++  return alist;
++endif
++.
++
++@verb parser:"parse_mcp_continuation" this none this
++@program parser:parse_mcp_continuation
++{data_tag, keyword, @rest} = args;
++value = argstr[(index(argstr, keyword) + length(keyword)) + 1..$];
++keyword = keyword[1..$ - 1];
++return {"*", data_tag, keyword, value};
++.
++
++@verb parser:"parse" this none this
++@program parser:parse
++"parse(@args) => parsed MCP message ready for dispatch or 0";
++"                if there was nothing to dispatch for this message";
++"                (as in multiline continuations, dispatch";
++"                for those occurs at the END";
++"returns {message, authkey, alist} or 0";
++"argstr must equal the unmodified line from the client";
++{argstr, @words} = args;
++session = caller;
++message = this:parse_mcp(@words);
++if (message[1] == "*")
++  {n, data_tag, keyword, value} = message;
++  session:multiline_add_value(data_tag, keyword, value);
++elseif ((message[1] == ":") || (message[1] == "END"))
++  {request, dummy, data_tag, dummy, dummy} = message;
++  return session:multiline_finish(player, data_tag);
++else
++  {request, contains_multiline, authkey, data_tag, alist} = message;
++  if (contains_multiline)
++    session:multiline_begin(request, authkey, data_tag, alist);
++  else
++    return {request, authkey, alist};
++  endif
++endif
++return 0;
++.
++
++@verb parser:"unparse" this none this
++@program parser:unparse
++{request, authkey, alist} = args;
++keyvals = "";
++need_data_tag = 0;
++multilines = {};
++for keyval in (alist)
++  {keyword, value, ?maybe_ignore} = keyval;
++  if (typeof(value) == STR)
++    if (!match(value, this.unquoted_string))
++      value = toliteral(value);
++    endif
++  elseif (typeof(value) == LIST)
++    need_data_tag = 1;
++    multilines = {@multilines, {keyword, value}};
++    keyword = keyword + "*";
++    value = "\"\"";
++  else
++    value = toliteral(value);
++  endif
++  keyvals = (((keyvals + " ") + keyword) + ": ") + value;
++endfor
++if (need_data_tag)
++  data_tag = this:next_datakey();
++  keyvals = (keyvals + " _data-tag: ") + data_tag;
++endif
++message = "#$#" + request;
++if (authkey)
++  message = (message + " ") + authkey;
++endif
++message = {message + keyvals};
++if (need_data_tag)
++  prefix = ("#$#* " + data_tag) + " ";
++  for field in (multilines)
++    {keyword, value} = field;
++    for line in (value)
++      message = {@message, ((prefix + keyword) + ": ") + line};
++    endfor
++  endfor
++  message = {@message, "#$#: " + data_tag};
++endif
++return message;
++.
++
++@verb parser:"next_datakey" this none this
++@program parser:next_datakey
++datakey = tostr(random(), this.next_datakey);
++this.next_datakey = this.next_datakey + 1;
++return datakey;
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/registry.moo b/server/objects/MCP/registry.moo
+new file mode 100644
+index 0000000..8e91ccf
+--- /dev/null
++++ b/server/objects/MCP/registry.moo
+@@ -0,0 +1,113 @@
++@create $root_class named "MCP package registry",registry
++@prop registry."package_names" {} r
++@prop registry."packages" {} r
++@prop registry."core_package_names" {} r
++;registry.("core_package_names") = {"mcp-negotiate", "mcp-cord" }
++;registry.("key") = 0
++;registry.("unique") = 0
++
++@verb registry:"add_package" this none this
++@program registry:add_package
++{name, package} = args;
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  if (name in this.package_names)
++    raise(E_INVARG, "Another package with that name already exists");
++  elseif (package in this.packages)
++    raise(E_INVARG, "That package already is registered under a different name.");
++  else
++    this.package_names = {@this.package_names, name};
++    this.packages = {@this.packages, package};
++  endif
++endif
++.
++
++@verb registry:"remove_package" this none this
++@program registry:remove_package
++{name} = args;
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  if (idx = name in this.package_names)
++    this.package_names = listdelete(this.package_names, idx);
++    this.packages = listdelete(this.packages, idx);
++  else
++    raise(E_INVARG, "Not a defined package");
++  endif
++endif
++.
++
++@verb registry:"match_package" this none this
++@program registry:match_package
++{name} = args;
++if (idx = name in this.package_names)
++  return this.packages[idx];
++else
++  return $failed_match;
++endif
++.
++
++@verb registry:"package_name" this none this
++@program registry:package_name
++{package} = args;
++if (idx = package in this.packages)
++  return this.package_names[idx];
++else
++  return "";
++endif
++.
++
++@verb registry:"packages" this none this
++@program registry:packages
++return $list_utils:make_alist({this.package_names, this.packages});
++.
++
++@verb registry:"init_for_module init_for_core" this none this
++@program registry:init_for_module
++"Usage:  :init_for_module()";
++if (((!$__core_init_phase) && (caller != this)) && (!$perm_utils:controls(caller_perms(), this)))
++  raise(E_PERM);
++endif
++for name in (this.package_names)
++  if (!(name in this.core_package_names))
++    this:remove_package(name);
++  endif
++endfor
++.
++
++@verb registry:"nominate_for_core" this none this rxd __WIZARD__
++@program registry:nominate_for_core
++corenames = this.core_package_names;
++corepackages = {};
++for name in (corenames)
++  corepackages = {@corepackages, this:match_package(name)};
++endfor
++return {@pass(@args), @corepackages};
++.
++
++@verb registry:"@add-package @remove-package" any to this rd __WIZARD__
++@program registry:@add-package
++if (!$perm_utils:controls(player, this))
++  player:tell("You don't have permission to add or remove MCP 2.1 packages.");
++elseif ($command_utils:object_match_failed(dobj, dobjstr))
++elseif (!$object_utils:isa(dobj, $mcp.package))
++  player:tell(dobj.name, " is not a valid MCP 2.1 package (descendant of ", $mcp.package, ").");
++elseif (!$perm_utils:controls(player, dobj))
++  player:tell("You don't control ", dobj.name, " in order to add or remove it.");
++else
++  name = dobj.name;
++  package = dobj;
++  try
++    if (verb == "@add-package")
++      this:add_package(name, package);
++      player:tell("Added ", package.name, ".");
++    else
++      this:remove_package(name);
++      player:tell("Removed ", package.name, ".");
++    endif
++  except v (ANY)
++    {code, message, value, tb} = v;
++    player:tell(code, ": ", message);
++  endtry
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/session.moo b/server/objects/MCP/session.moo
+new file mode 100644
+index 0000000..0703d43
+--- /dev/null
++++ b/server/objects/MCP/session.moo
+@@ -0,0 +1,307 @@
++@create $root_class named "generic MCP 2.1 session",session
++@prop session."connection" #-1 r
++@prop session."pending_multilines" {} ""
++@prop session."packages" {} r
++@prop session."authentication_key" E_NONE ""
++@prop session."phase" 0 r
++@prop session."package_waiters" {} ""
++@prop session."message_handlers" {} r
++;session.("message_handlers") = {{}, {}}
++;session.("unique") = 0
++;session.("handlers") = {{}, {}}
++
++@verb session:"set_connection" this none this rx
++@program session:set_connection
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  this.connection = args[1];
++  this:set_name("session for " + tostr(this.connection));
++  return 1;
++else
++  return E_PERM;
++endif
++.
++
++@verb session:"multiline_begin" this none this
++@program session:multiline_begin
++{request, authkey, data_tag, alist} = args;
++if (caller != $mcp.parser)
++  raise(E_PERM);
++elseif ($list_utils:assoc(data_tag, this.pending_multilines))
++  "it's not valid to begin two requests with the same data tag, drop it";
++  return;
++endif
++this.pending_multilines = {@this.pending_multilines, {data_tag, authkey, request, alist}};
++.
++
++@verb session:"multiline_finish" this none this
++@program session:multiline_finish
++{who, data_tag} = args;
++if ((caller != this) && (caller != $mcp.parser))
++  raise(E_PERM);
++elseif (!(n = $list_utils:iassoc(data_tag, this.pending_multilines)))
++  "drop it";
++  return;
++else
++  {data_tag, authkey, request, alist} = this.pending_multilines[n];
++  this.pending_multilines = listdelete(this.pending_multilines, n);
++  return {request, authkey, alist};
++endif
++.
++
++@verb session:"multiline_add_value" this none this
++@program session:multiline_add_value
++{data_tag, keyword, value} = args;
++if (caller != $mcp.parser)
++  raise(E_PERM);
++elseif (!(n = $list_utils:iassoc(data_tag, this.pending_multilines)))
++  "drop it";
++  return;
++elseif (!(nkey = $list_utils:iassoc(keyword, this.pending_multilines[n][4])))
++  "drop it";
++  return;
++elseif (typeof(this.pending_multilines[n][4][nkey][2]) != LIST)
++  "not a multiline, drop it.";
++  return;
++else
++  this.pending_multilines[n][4][nkey][2] = {@this.pending_multilines[n][4][nkey][2], value};
++endif
++.
++
++@verb session:"do_out_of_band_command" this none this rxd __WIZARD__
++@program session:do_out_of_band_command
++if (caller != $mcp)
++  raise(E_PERM);
++else
++  set_task_perms(caller_perms());
++  if (message = $mcp.parser:parse(argstr, @args))
++    if (`player.MCP_snoop ! ANY')
++      player:tell("C->S: ", argstr);
++    endif
++    this:dispatch(@message);
++  endif
++endif
++.
++
++@verb session:"finish" this none this
++@program session:finish
++if (caller == $mcp)
++  this:_signal_package_waiter(E_INVARG);
++  for package in ($list_utils:slice(this.packages))
++    fork (0)
++      package:finalize_connection();
++    endfork
++  endfor
++  return $mcp:finalize_connection(this);
++endif
++.
++
++@verb session:"initialize_connection" this none this
++@program session:initialize_connection
++if (caller != $mcp)
++  raise(E_PERM);
++else
++  this:send("mcp", {{"version", "2.1"}, {"to", "2.1"}});
++endif
++.
++
++@verb session:"set_packages set_authentication_key set_phase" this none this
++@program session:set_packages
++"This is the standard :set_foo verb.  It allows the property to be set if called by this or called with adequate permissions (this's owner or wizardly).";
++if ((caller == this) || $perm_utils:controls(caller_perms(), this))
++  return this.(verb[5..length(verb)]) = args[1];
++else
++  return E_PERM;
++endif
++.
++
++@verb session:"add_package" this none this
++@program session:add_package
++{package, version} = args;
++if (caller in {$mcp.negotiate, this})
++  if (n = $list_utils:iassoc(package, this.packages))
++    packages = this.packages;
++    packages[n][2] = version;
++    this:set_packages(packages);
++  else
++    this:set_packages({@this.packages, {package, version}});
++  endif
++  package:initialize_connection(version);
++  this:_signal_package_waiter(package, version);
++endif
++.
++
++@verb session:"handles_package" this none this
++@program session:handles_package
++{package} = args;
++if (assoc = $list_utils:assoc(package, this.packages))
++  return assoc[2];
++endif
++.
++
++@verb session:"register_handlers" this none this
++@program session:register_handlers
++{messages} = args;
++package = caller;
++{plist, mlist} = this.message_handlers;
++prefix = this:package_name(package);
++for message in (messages)
++  message = this:message_fullname(prefix, message);
++  if (idx = message in mlist)
++    if (plist[idx] != package)
++      raise(E_INVARG);
++    endif
++  else
++    plist = {@plist, package};
++    mlist = {@mlist, message};
++  endif
++endfor
++this.message_handlers = {plist, mlist};
++.
++
++@verb session:"dispatch" this none this rxd __WIZARD__
++@program session:dispatch
++{message, authkey, alist} = args;
++if (caller == this)
++  if ((!this.phase) && (message == "mcp"))
++    authkey = $list_utils:assoc("authentication-key", alist);
++    minv = $list_utils:assoc("version", alist);
++    maxv = $list_utils:Assoc("to", alist);
++    if (((authkey && minv) && maxv) && $mcp:compare_version_range({minv[2], maxv[2]}, {$mcp.version, $mcp.version}))
++      this:set_authentication_key(authkey[2]);
++      this:add_package($mcp.negotiate, $mcp.negotiate.version_range[1]);
++    else
++      "woop woop break somehow";
++      return;
++    endif
++    this:set_phase(1);
++    $mcp.negotiate:do_negotiation();
++  elseif (this.phase)
++    if ((this.authentication_key != E_NONE) && (authkey != this.authentication_key))
++      return;
++    endif
++    package = this:find_handler(message);
++    if (typeof(package) == OBJ)
++      set_task_perms(caller_perms());
++      package:dispatch(this:strip_prefix(this:package_name(package), message), alist);
++    endif
++    "figure out which package to dispatch to";
++    "do dispatch";
++  endif
++endif
++.
++
++@verb session:"send" this none this rxd __WIZARD__
++@program session:send
++{message, alist} = args;
++who = caller_perms();
++if (caller == this)
++  prefix = "";
++elseif ($list_utils:assoc(caller, this.packages))
++  package = caller;
++  message = this:message_fullname(this:package_name(package), message);
++else
++  raise(E_PERM);
++endif
++con = this.connection;
++snoop = `this.connection.MCP_snoop ! E_PROPNF => 0';
++for line in ($mcp.parser:unparse(message, this.authentication_key, alist))
++  notify(con, line);
++  if (snoop)
++    notify(con, "S->C: " + line);
++  endif
++endfor
++.
++
++@verb session:"find_handler" this none this
++@program session:find_handler
++{message} = args;
++if (assoc = $list_utils:passoc(message, this.message_handlers[2], this.message_handlers[1]))
++  return assoc[2];
++endif
++.
++
++@verb session:"connection" this none this
++@program session:connection
++return this.connection;
++.
++
++@verb session:"package_name" this none this
++@program session:package_name
++{package} = args;
++return $mcp.registry:package_name(package);
++.
++
++@verb session:"message_fullname" this none this
++@program session:message_fullname
++{prefix, message} = args;
++if (message)
++  message = (prefix + "-") + message;
++else
++  message = prefix;
++endif
++return message;
++.
++
++@verb session:"strip_prefix" this none this
++@program session:strip_prefix
++{prefix, message} = args;
++if (index(message, prefix + "-") == 1)
++  return message[length(prefix) + 2..$];
++elseif (index(message, prefix) == 1)
++  return message[length(prefix) + 1..$];
++elseif (message == prefix)
++  return "";
++else
++  return message;
++endif
++.
++
++@verb session:"end_negotiation" this none this
++@program session:end_negotiation
++if (caller == $mcp.negotiate)
++  this:_signal_package_waiter(0);
++endif
++.
++
++@verb session:"_add_package_waiter" this none this
++@program session:_add_package_waiter
++{package, timeout} = args;
++if (caller == this)
++  this.package_waiters = {@this.package_waiters, {package, task_id()}};
++  if (timeout < 0)
++    r = suspend();
++  else
++    r = suspend(timeout);
++  endif
++  this.package_waiters = setremove(this.package_waiters, {package, task_id()});
++  return r;
++endif
++.
++
++@verb session:"_signal_package_waiter" this none this
++@program session:_signal_package_waiter
++{?package = $nothing, value} = args;
++if (caller == this)
++  all = package == $nothing;
++  for keyval in (this.package_waiters)
++    {pkg, tid} = keyval;
++    if (all || (pkg == package))
++      `resume(tid, value) ! ANY';
++    endif
++  endfor
++endif
++.
++
++@verb session:"wait_for_package" this none this
++@program session:wait_for_package
++{package, ?timeout} = args;
++timeout = `timeout ! E_VARNF => -1';
++if (v = this:handles_package(package))
++  return v;
++else
++  return this:_add_package_waiter(package, timeout);
++endif
++.
++
++"***finished***
++
+diff --git a/server/objects/MCP/wizme.moo b/server/objects/MCP/wizme.moo
+new file mode 100644
+index 0000000..86321be
+--- /dev/null
++++ b/server/objects/MCP/wizme.moo
+@@ -0,0 +1,23 @@
++@chown cord:"cord_send" __WIZARD__
++@chown cord:"cord_closed" __WIZARD__
++@chown cord:"finalize_connection" __WIZARD__
++@chown mcp."package" __WIZARD__
++@chown mcp."negotiate" __WIZARD__
++@chown mcp:"initialize_connection" __WIZARD__
++@chown mcp:"finalize_connection" __WIZARD__
++@chown mcp:"parse_version" __WIZARD__
++@chown mcp:"compare_version_range" __WIZARD__
++@chown mcp:"compare_version" __WIZARD__
++@chown mcp:"unparse_version" __WIZARD__
++@chown mcp:"session_for" __WIZARD__
++@chown mcp:"user_created" __WIZARD__
++@chown mcp:"user_disconnected" __WIZARD__
++@chown mcp:"do_out_of_band_command" __WIZARD__
++@chown package:"dispatch" __WIZARD__
++@chown parser."unquoted_string" __WIZARD__
++@chown registry:"@add-package" __WIZARD__
++@chown session:"do_out_of_band_command" __WIZARD__
++@chown session:"dispatch" __WIZARD__
++@chown session:"send" __WIZARD__
++@prop #0.mcp __MCP__
++@prop $player.out_of_band_session #-1 "r" __WIZARD__
+diff --git a/server/objects/README b/server/objects/README
+index 6a53222..3b12b10 100644
+--- a/server/objects/README
++++ b/server/objects/README
+@@ -1,4 +1,16 @@
+-These are a handful of objects I've created over the years; toys, mostly.
++MCP: the MUD Client Protocol is an attempt to provide a standard
++message format on which to build MUD-based client-server
++applications. This directory contains the JHCore implementation; for
++more information see http://www.moo.mud.org/mcp/
++
++
++These are a handful of objects I've created over the years; toys,
++mostly:
++
++algoredoll.moo		gwbushdoll.moo		parrot.moo
++clippy.moo		knights.moo		puppet.moo
++engrish.moo		lander.moo		timer.moo
++governor.moo		michaelscott.moo
+ 
+ To load them via tf, do:
+ 
+-- 
+1.7.9.5
+

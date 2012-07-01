@@ -1,0 +1,68 @@
+From ce2e724984ba8d024550bce612dc72fb7dc97657 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 22 Jun 2011 23:59:37 +0000
+Subject: [PATCH 163/223] Updating the instructions by s/restart/mooctl/g.
+ Noted at the top that these are the original
+ instructions since the 1990s.
+
+---
+ server/README |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/server/README b/server/README
+index b8c219d..2be6b98 100644
+--- a/server/README
++++ b/server/README
+@@ -1,3 +1,9 @@
++(Below is the original README file that has shipped with the LambdaMOO
++server since time immemorial, and hasn't updated much in almost twenty
++years. It's still entirely valid though, save for the fact that
++LambdaMOO was tested on Irix. Certainly shows the project's age! --sw)
++
++
+ WARNING: If you are upgrading an existing LambdaMOO database from an earlier
+ version of the server, you should read the relevant notes in ChangeLog.txt
+ regarding DB changes you may need to make *before* doing the upgrade.  Such
+@@ -67,10 +73,10 @@ IS STRONGLY ADVISED that you not use the same file name for both
+ INITIAL-DB-FILE and CHECKPOINT-DB-FILE; this could, in the event of a crash,
+ leave you with no useful DB file at all.
+ 
+-Included with the release is a little shell script called `restart' that
++Included with the release is a little shell script called `mooctl' that
+ handles the server start-up in a more convenient way.  You type a command like
+ 
+-	./restart FOOBAR
++	./mooctl FOOBAR
+ 
+ and the script does the following:
+ 
+@@ -84,12 +90,9 @@ and the script does the following:
+      there was already a file named FOOBAR.log, its old contents are appended
+      to FOOBAR.log.old and FOOBAR.log is removed first.
+ 
+-The `restart' script is really the only good way to start up the server; it's
++The `mooctl' script is really the only good way to start up the server; it's
+ all I ever use for LambdaMOO itself.
+ 
+-(Note that `restart' is a csh script, and restart.sh is its bash
+-brethren. They are otherwise identical).
+-
+ If your server gets a lot of use and your users start getting the error message
+     *** Sorry, but the server cannot accept any more connections right now.
+     *** Please try again later.
+@@ -99,10 +102,10 @@ up the limit (though there's a hard limit in the UNIX kernel that you won't be
+ able to exceed).  To bump up the limit as far as it will go, remove the `#' at
+ the beginning of the line
+     #unlimit descriptors
+-in the `restart' script before starting up your server.
++in the `mooctl' script before starting up your server.
+ 
+ For most of the networking options supported by the server, both the `moo' and
+-`restart' commands take an optional argument for changing some network
++`mooctl' commands take an optional argument for changing some network
+ connection information; type just `./moo' to see what the argument is for the
+ option you've chosen.  The only one for which you're at all likely to want to
+ override the default concerns the NP_TCP networking options; for them, the
+-- 
+1.7.9.5
+

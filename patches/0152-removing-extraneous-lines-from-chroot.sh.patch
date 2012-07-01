@@ -1,0 +1,23 @@
+From 6e7755e4630fb723692b2d9254589ca596cf1223 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 14 Jun 2011 04:03:39 +0000
+Subject: [PATCH 152/223] removing extraneous lines from chroot.sh
+
+---
+ server/tools/chroot.sh |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/server/tools/chroot.sh b/server/tools/chroot.sh
+index e08e5a4..081a085 100755
+--- a/server/tools/chroot.sh
++++ b/server/tools/chroot.sh
+@@ -40,5 +40,3 @@ cp /usr/lib/libstdc++.so.6 usr/lib/
+ # running the server; but running it via restart.sh would be better,
+ # because your changes are lost otherwise
+ #chroot $CHROOTDIR /sbin/moo -l /logs/my.log /databases/LambdaCore-12Apr99.db /databases/LambdaCore-12Apr99.mine.db
+-# on slim:
+-# /usr/sbin/chroot /waverous/chroot /sbin/moo -l /logs/my.log /databases/LambdaCore-12Apr99.db /databases/LambdaCore-12Apr99.mine.db
+\ No newline at end of file
+-- 
+1.7.9.5
+

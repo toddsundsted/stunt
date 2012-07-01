@@ -1,0 +1,25 @@
+From c7b1bd0992e2c186b69af0e4e1083dffeb607b6c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Mon, 29 Jun 2009 04:09:36 +0000
+Subject: [PATCH 034/223] Fix: cast to var_type
+
+---
+ server/list.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/list.c b/server/list.c
+index d322e37..98e2774 100644
+--- a/server/list.c
++++ b/server/list.c
+@@ -579,7 +579,7 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
+     r.type = (var_type)TYPE_STR;
+     r.v.str = str_dup(crypt(arglist.v.list[1].v.str, saltp));
+ #else				/* !HAVE_CRYPT */
+-    r.type = TYPE_STR;
++    r.type = (var_type) TYPE_STR;
+     r.v.str = str_ref(arglist.v.list[1].v.str);
+ #endif
+ 
+-- 
+1.7.9.5
+

@@ -1,0 +1,31 @@
+From e4ea0c310e773537165ba03086076d468aee2d44 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 4 Oct 2011 20:07:36 -0700
+Subject: [PATCH 212/223] Example 'make distcheck' per the Autotools book
+
+---
+ Makefile |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 11fdaec..2fd4b90 100644
+--- a/Makefile
++++ b/Makefile
+@@ -16,4 +16,12 @@ $(distdir).tar.gz: $(distdir)
+ $(distdir):
+ 	svn export https://waverous.googlecode.com/svn/trunk $(distdir)
+ 
+-.PHONY: all clean dist
+\ No newline at end of file
++
++distcheck: $(distdir).tar.gz
++	gzip -cd $(distdir).tar.gz | tar xvf -
++	cd $(distdir) && $(MAKE) moo
++	cd $(distdir) && $(MAKE) clean
++	rm -rf $(distdir)
++	@echo "*** Package $(distdir).tar.gz is ready for distribution."
++
++.PHONY: all clean dist distcheck
+-- 
+1.7.9.5
+

@@ -1,0 +1,28 @@
+From 2b72a6008554753053db5fbfee75d7f1053d9c4a Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 30 Jul 2011 02:23:43 +0000
+Subject: [PATCH 182/223] Note added about 'make install' in the future.
+
+---
+ server/misc/args.cc |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/server/misc/args.cc b/server/misc/args.cc
+index ed2ded1..1ae7264 100644
+--- a/server/misc/args.cc
++++ b/server/misc/args.cc
+@@ -150,6 +150,10 @@ here's what the -O and +O flags mean...
+ ./configure:
+ --with-outbound-network
+ --without-outbound-network
+-x
++
++Also, in a "make install" we don't want to overwrite existing database
++files. Very bad. This can be avoided by the end user with Item 10 in
++Chapter 11 of the Autotools book: passing the flag -C to
++/usr/bin/install.
+ 
+  */
+-- 
+1.7.9.5
+

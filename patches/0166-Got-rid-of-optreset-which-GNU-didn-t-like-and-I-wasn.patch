@@ -1,0 +1,34 @@
+From 34a19ac0e207a473e3b96f7d4dfce446d4d4e1bc Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 24 Jun 2011 04:22:26 +0000
+Subject: [PATCH 166/223] Got rid of optreset, which GNU didn't like and I
+ wasn't using anyhow.
+
+---
+ server/misc/args.cc |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/server/misc/args.cc b/server/misc/args.cc
+index a99ea36..66ec3c5 100644
+--- a/server/misc/args.cc
++++ b/server/misc/args.cc
+@@ -6,7 +6,7 @@ extern char *optarg;
+ extern int optind;
+ extern int optopt;   // when an invalid arg is found, it's put in this global variable
+ extern int opterr;   
+-extern int optreset;
++
+ 
+ void display_usage() { printf("usage: [-b --buffy] [-f --fluoride <val>] [-w --wheezy <val>]\n"); }
+ 
+@@ -44,7 +44,6 @@ int main(int argc, char** argv)
+         printf("\toptind:   %d\n" , optind   );
+         printf("\toptopt:   %d\n" , optopt   );
+         printf("\topterr:   %d\n" , opterr   );
+-        printf("\toptreset: %d\n" , optreset );
+ 
+         switch (ch) {
+ 
+-- 
+1.7.9.5
+

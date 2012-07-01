@@ -1,0 +1,208 @@
+From d53c1e64dce266c8bfe45bf07a282e80f847069d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 20 Nov 2010 23:53:01 +0000
+Subject: [PATCH 072/223] I changed the printf's to cout's to try to make the
+ compiler happy on OSX, and will try it out on Linux
+ now... I found the way the array sizes are counted
+ can be fixed by casting, and I cast the two malloc
+ calls, all to make g++ happy. Compiles with no
+ warnings on OSX now and seems to work with no
+ segmentation faults.
+
+---
+ server/tools/moobrowser.c |   59 ++++++++++++++++++++++++++++++---------------
+ 1 file changed, 39 insertions(+), 20 deletions(-)
+
+diff --git a/server/tools/moobrowser.c b/server/tools/moobrowser.c
+index 5409520..686f6cf 100644
+--- a/server/tools/moobrowser.c
++++ b/server/tools/moobrowser.c
+@@ -19,6 +19,8 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
++#include <iostream>
++using namespace std;
+ 
+ char *databasename;
+ char tmp_int[20];
+@@ -117,6 +119,7 @@ static const char *error_list[] =
+     "E_FLOAT",
+ };
+ 
++
+ /* A structure defining the attributes of a property. */
+ struct property {
+   int rootobj;
+@@ -164,7 +167,8 @@ char *read_big_str(FILE *fh) {
+     size += strlen(bufferstr);
+     lineptr = (char *) malloc(sizeof(char) * size);
+     if (!lineptr) {
+-      printf("Unable to allocate %u bytes of memory. (read_big_str: lineptr)\n", sizeof(char) * size);
++      //printf("Unable to allocate %u bytes of memory. (read_big_str: lineptr)\n", sizeof(char) * size);
++      cout << "Unable to allocate " << sizeof(char) * size << " bytes of memory. (read_big_str: lineptr)\n";
+       exit(1);
+     }
+     if (oldlineptr) {
+@@ -194,7 +198,7 @@ void read_junk_str(FILE *fh) {
+ 
+ 
+ /* Return the smallest non-null integer of two integers. */
+-int minpos(int a, int b) {
++char * minpos(char *a, char *b) {
+   if (a > 0 && b <= 0)
+     return a;
+   if (b > 0 && a <= 0)
+@@ -255,7 +259,8 @@ char *parse_value(int wanted, FILE *fh) {
+     case TYPE_OBJ:
+       returnstr = (char *) malloc(sizeof(char) * 20);
+       if (!returnstr) {
+-        printf("Unable to allocate %u bytes of memory (parse_value: OBJ).\n", sizeof(char) * 20);
++        //printf("Unable to allocate %u bytes of memory (parse_value: OBJ).\n", sizeof(char) * 20);
++        cout << "Unable to allocate " <<  sizeof(char) * 20 << " bytes of memory (parse_value: OBJ).\n";
+         exit(1);
+       }
+       strcpy(returnstr, "#");
+@@ -268,7 +273,11 @@ char *parse_value(int wanted, FILE *fh) {
+       /* Count the number of escapes needed. */
+       escapes = 0;
+       elementstr = returnstr;
+-      while ((elementstr = (char *) minpos((int) strchr(elementstr, '"'), (int) strchr(elementstr, '\\')))) {
++      
++      while ((elementstr = (char *) minpos( 
++                                           strchr(elementstr, '"'),
++                                           strchr(elementstr, '\\')
++                                            ) )) {
+         elementstr++;
+         escapes++;
+       }
+@@ -277,7 +286,8 @@ char *parse_value(int wanted, FILE *fh) {
+       /* Increase the size of the string to acommodate the two quotes and any escapes. */
+       returnstr = (char *) malloc(sizeof(char) * (1+strlen(tmpstr)+escapes+1+1));
+       if (!returnstr) {
+-        printf("Unable to allocate %u bytes of memory (parse_value: STR: main).\n", sizeof(char) * (1+strlen(tmpstr)+escapes+1+1));
++        //printf("Unable to allocate %u bytes of memory (parse_value: STR: main).\n", sizeof(char) * (1+strlen(tmpstr)+escapes+1+1));
++        cout << "Unable to allocate " <<  sizeof(char) * (1+strlen(tmpstr)+escapes+1+1) << " bytes of memory (parse_value: STR: main).\n";
+         exit(1);
+       }
+       /* Add a placeholder for the start quote. */
+@@ -289,11 +299,12 @@ char *parse_value(int wanted, FILE *fh) {
+ 
+       /* Escape all " and / characters. */
+       elementstr = returnstr;
+-      while ((elementstr = (char *) minpos((int) strchr(elementstr, '"'), (int) strchr(elementstr, '\\')))) {
++      while ((elementstr = (char *) minpos( strchr(elementstr, '"'), strchr(elementstr, '\\')))) {
+         /* Copy the tail of the string into a temporary var. */
+         tmpstr = (char *) malloc(sizeof(char) * (strlen(elementstr)+1));
+         if (!tmpstr) {
+-          printf("Unable to allocate %u bytes of memory (parse_value: STR: tail).\n", sizeof(char) * (strlen(elementstr)+1));
++          //printf("Unable to allocate %u bytes of memory (parse_value: STR: tail).\n", sizeof(char) * (strlen(elementstr)+1));
++          cout << "Unable to allocate " <<  sizeof(char) * (strlen(elementstr)+1) << " bytes of memory (parse_value: STR: tail).\n";
+           exit(1);
+         }
+         strcpy(tmpstr, elementstr);
+@@ -312,11 +323,12 @@ char *parse_value(int wanted, FILE *fh) {
+     case TYPE_ERR:
+       returnstr = (char *) malloc(sizeof(char) * 15);
+       if (!returnstr) {
+-        printf("Unable to allocate %u bytes of memory (parse_value: ERR).\n", sizeof(char) * 15);
++        //printf("Unable to allocate %u bytes of memory (parse_value: ERR).\n", sizeof(char) * 15);
++        cout << "Unable to allocate " <<  sizeof(char) * 15 << " bytes of memory (parse_value: ERR).\n";
+         exit(1);
+       }
+       read_int(errornum, fh);
+-      if (0 <= errornum || errornum < sizeof(error_list) / sizeof(*error_list))
++      if (0 <= errornum || errornum < (int)(sizeof(error_list) / sizeof(*error_list)))
+         strcpy(returnstr, error_list[errornum]);
+       else {
+         printf("Unknown error code: %d\n", errornum); exit(1);
+@@ -329,7 +341,8 @@ char *parse_value(int wanted, FILE *fh) {
+         /* Allow room for a '}' character and a null character. */
+         returnstr = (char *) malloc(sizeof(char) * 3);
+         if (!returnstr) {
+-          printf("Unable to allocate %u bytes of memory (parse_value: LIST: open).\n", sizeof(char) * 3);
++          //printf("Unable to allocate %u bytes of memory (parse_value: LIST: open).\n", sizeof(char) * 3);
++          cout << "Unable to allocate " <<  sizeof(char) * 3 << " bytes of memory (parse_value: LIST: open).\n";
+           exit(1);
+         }
+         strcpy(returnstr, "{");
+@@ -343,7 +356,8 @@ char *parse_value(int wanted, FILE *fh) {
+           /* Allow room for a ', ' string, a '}' character and a null character. */
+           returnstr = (char *) malloc(sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1));
+           if (!returnstr) {
+-            printf("Unable to allocate %u bytes of memory (parse_value: LIST: element).\n", sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1));
++            //printf("Unable to allocate %u bytes of memory (parse_value: LIST: element).\n", sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1));
++            cout << "Unable to allocate " << sizeof(char) * (strlen(tmpstr)+2+strlen(elementstr)+1+1) << " bytes of memory (parse_value: LIST: element).\n";
+             exit(1);
+           }
+           strcpy(returnstr, tmpstr);
+@@ -368,7 +382,8 @@ char *parse_value(int wanted, FILE *fh) {
+     case TYPE_CLEAR:
+       returnstr = (char *) malloc(sizeof(char) * 10);
+       if (!returnstr) {
+-        printf("Unable to allocate %u bytes of memory (parse_value: clear).\n", sizeof(char) * 10);
++        //printf("Unable to allocate %u bytes of memory (parse_value: clear).\n", sizeof(char) * 10);
++        cout << "Unable to allocate " << sizeof(char) * 10 << " bytes of memory (parse_value: clear).\n";
+         exit(1);
+       }
+       strcpy(returnstr, "[clear]");
+@@ -580,8 +595,8 @@ void parse_obj(FILE *fh) {
+         printf("any");
+       else if (vprep == PREP_NONE)
+         printf("none");
+-      else if (0 <= vprep || vprep < sizeof(prep_list) / sizeof(*prep_list))
+-        printf(prep_list[vprep]);
++      else if (0 <= vprep || vprep < (int)(sizeof(prep_list) / sizeof(*prep_list)))
++        printf("%s", prep_list[vprep]);
+       else {
+         printf("\nUnknown prep: %d\n", vprep);
+         exit(1);
+@@ -612,9 +627,10 @@ void parse_obj(FILE *fh) {
+   read_int(propdefs, fh);
+   if ((mode == OBJECT || mode == PROP) && mode_object == objnumber) {
+     /* We are interested in the object.  Record all the property names. */
+-    propdefnames = malloc(propdefs * sizeof(char *));
++    propdefnames = (char **)malloc(propdefs * sizeof(char *));
+     if (!propdefnames) {
+-      printf("Unable to allocate %u bytes of memory. (parse_obj: propdefnames)\n", propdefs * sizeof(char *));
++      //printf("Unable to allocate %u bytes of memory. (parse_obj: propdefnames)\n", propdefs * sizeof(char *));
++      cout << "Unable to allocate " << propdefs * sizeof(char *) << " bytes of memory. (parse_obj: propdefnames)\n";
+       exit(1);
+     }
+     for (i = 1; i <= propdefs; i++)
+@@ -628,9 +644,10 @@ void parse_obj(FILE *fh) {
+   read_int(nprops, fh);
+   if ((mode == OBJECT || mode == PROP) && mode_object == objnumber) {
+     /* Now that we know the total number of properties, build a structure to hold this info. */
+-    propstructs = malloc(nprops * sizeof(struct property));
++    propstructs = (property *)malloc(nprops * sizeof(struct property));
+     if (!propstructs) {
+-      printf("Unable to allocate %u bytes of memory. (parse_obj: propstructs)\n", nprops * sizeof(struct property));
++      //printf("Unable to allocate %u bytes of memory. (parse_obj: propstructs)\n", nprops * sizeof(struct property));
++      cout << "Unable to allocate " << nprops * sizeof(struct property) << " bytes of memory. (parse_obj: propstructs)\n";
+       exit(1);
+     }
+     /* Copy over the defined list of prop names. */
+@@ -705,7 +722,8 @@ void parse_verb(FILE *fh) {
+     /* Note: This code assumes that no compiled Moo verb can have a line ending with a dot. */
+     lineptr = (char *) malloc(sizeof(char) * 256);
+     if (!lineptr) {
+-      printf("Unable to allocate %u bytes of memory (parse_verb).\n", sizeof(char) * 256);
++      //printf("Unable to allocate %u bytes of memory (parse_verb).\n", sizeof(char) * 256);
++      cout << "Unable to allocate " << sizeof(char) * 256 << " bytes of memory (parse_verb).\n";
+       exit(1);
+     }
+     do
+@@ -781,7 +799,8 @@ int main(int argc, char *argv[]) {
+   /* Save the filename into a global variable so that other functions can reopen it for deeper data. */
+   databasename = (char *) malloc(sizeof(char) * (strlen(argv[1])+1));
+   if (!databasename) {
+-    printf("Unable to allocate %u bytes of memory. (main: databasename)\n", sizeof(char) * (strlen(argv[1])+1));
++    //printf("Unable to allocate %u bytes of memory. (main: databasename)\n", sizeof(char) * (strlen(argv[1])+1));
++    cout << "Unable to allocate " << sizeof(char) * (strlen(argv[1])+1) << " bytes of memory. (main: databasename)\n";
+     exit(1);
+   }
+   strcpy(databasename, argv[1]);
+-- 
+1.7.9.5
+

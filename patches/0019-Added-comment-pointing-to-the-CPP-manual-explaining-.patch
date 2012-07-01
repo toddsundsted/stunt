@@ -1,0 +1,29 @@
+From 4f9603f646a5f32dcce89ae8639ddccd0d0908d8 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 19 Jun 2009 04:09:01 +0000
+Subject: [PATCH 019/223] Added comment pointing to the CPP manual, explaining
+ the usage of:  do {} while(0)
+
+---
+ server/server.h |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/server/server.h b/server/server.h
+index 03a81cb..05fc092 100644
+--- a/server/server.h
++++ b/server/server.h
+@@ -207,6 +207,11 @@ extern int read_active_connections(void);
+  * (nothing should need to invoke these directly):
+  */
+ #define _RMPAREN2(ARG1,ARG2) ARG1,ARG2
++
++/* the following macro, using while(0), is a common kludge; see:
++ * http://gcc.gnu.org/onlinedocs/cpp/Stringification.html#Stringification
++ * http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
++ */
+ #define _STATEMENT(STMT) do STMT while (0)
+ 
+ #define _CONNECT_OPTION_GET_SINGLE(NAME, OPTION, VALUE,		\
+-- 
+1.7.9.5
+

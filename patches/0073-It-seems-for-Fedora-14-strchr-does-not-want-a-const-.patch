@@ -1,0 +1,70 @@
+From 7aa66ca32ba828d09a146da25d1a65ce0f3eec5c Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 1 Dec 2010 18:07:35 +0000
+Subject: [PATCH 073/223] It seems, for Fedora 14, strchr() does not want a
+ const char * as its first argument, despite what
+ the man page says; casting it to char * gets around
+ a compilation error, and Darwin seems OK with this
+ change.
+
+---
+ server/ext-xml.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index 9b134bf..177acb4 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -51,12 +51,12 @@ new_node(XMLdata *parent, const char *name)
+   char *nsname         = NULL;
+   char *delim          = NULL;
+ 
+-  if ((delim=strchr(name, NS_DELIMITER)) != NULL) {
+-    int index = delim - name;
+-    nametemp=str_dup(name);
+-    nametemp[index]='\0';
+-    nodename = nametemp + index + 1;
+-    nsname = nametemp;
++  if ( (delim = strchr((char *)name, NS_DELIMITER)) != NULL ) {
++    int index       = delim - name;
++    nametemp        = str_dup(name);
++    nametemp[index] = '\0';
++    nodename        = nametemp + index + 1;
++    nsname          = nametemp;
+   } else {
+     nodename = name;
+   }
+@@ -65,12 +65,12 @@ new_node(XMLdata *parent, const char *name)
+   element = new_list(nsname ? 5 : 4);
+ 
+   /* {name, attribs, body, children} */ 
+-  element.v.list[1].type = TYPE_STR;
++  element.v.list[1].type  = TYPE_STR;
+   element.v.list[1].v.str = str_dup(nodename);
+-  element.v.list[2] = new_list(0);
+-  element.v.list[3].type = TYPE_INT;
++  element.v.list[2]       = new_list(0);
++  element.v.list[3].type  = TYPE_INT;
+   element.v.list[3].v.num = 0;
+-  element.v.list[4] = new_list(0);
++  element.v.list[4]       = new_list(0);
+   if (nsname) {
+     element.v.list[5].type = TYPE_STR;
+     element.v.list[5].v.str = str_dup(nsname);
+@@ -136,10 +136,10 @@ xml_startElement(void *userData, const char *name, const char **atts)
+ 
+   while(*patts != NULL) {
+     Var pair;
+-    if (delim = strchr(patts[0], NS_DELIMITER))
++    if (delim = (char *)strchr(patts[0], NS_DELIMITER))
+     {
+-      int index = delim - patts[0];
+-      char *nametemp = str_dup(patts[0]);
++      int index       = delim - patts[0];
++      char *nametemp  = str_dup(patts[0]);
+       nametemp[index] = '\0';
+ 
+       pair = new_list(3);
+-- 
+1.7.9.5
+

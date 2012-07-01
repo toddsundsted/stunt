@@ -1,0 +1,74 @@
+From 751eae30fbc1a966f064bbb3078287acf5bd9b48 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 24 Jun 2012 09:17:00 -0400
+Subject: [PATCH 218/223] Commented out SHAs I've applied as patches to Stunt
+ LambdaMOO
+
+---
+ server/log |   50 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
+
+diff --git a/server/log b/server/log
+index 32cadb6..9b4addd 100644
+--- a/server/log
++++ b/server/log
+@@ -2715,31 +2715,31 @@ Date:   Sun Jun 7 19:53:15 2009 +0000
+  server/sym_table.c     |   10 ++--
+  13 files changed, 284 insertions(+), 70 deletions(-)
+ 
+-commit 740ed4a198b9644676a1d35dd704f4ee12a2b7c8
+-Author: Steve Wainstead <wainstead@gmail.com>
+-Date:   Sun Jun 7 19:41:29 2009 +0000
+-
+-    This is a tough one for a C newbie. The change here:
+-    
+-    -	r.type |= TYPE_COMPLEX_FLAG;
+-    +	(int)r.type |= 128;
+-    
+-    changes a cast error into an lvalue warning, so we may continue compilation; but it needs revisiting because it can't be any good. Otherwise, in this commit, a few mymalloc() calls were not cast to (state *).
+-    
+-    	(int)r.type |= 128;
+-
+- server/db_io.c |   10 +++++-----
+- 1 file changed, 5 insertions(+), 5 deletions(-)
+-
+-commit c7b9cf521033fa816fbe650c8d00c720e453cfdf
+-Author: Steve Wainstead <wainstead@gmail.com>
+-Date:   Sun Jun 7 19:28:43 2009 +0000
+-
+-    Replaced the TRY, CATCH and ENDTRY macros with their respective code bodies to solve a void pointer problem.
+-
+- server/db_file.c |  150 ++++++++++++++++++++++++++++++++++++------------------
+- 1 file changed, 101 insertions(+), 49 deletions(-)
+-
++;  commit 740ed4a198b9644676a1d35dd704f4ee12a2b7c8
++;  Author: Steve Wainstead <wainstead@gmail.com>
++;  Date:   Sun Jun 7 19:41:29 2009 +0000
++;  
++;      This is a tough one for a C newbie. The change here:
++;      
++;      -	r.type |= TYPE_COMPLEX_FLAG;
++;      +	(int)r.type |= 128;
++;      
++;      changes a cast error into an lvalue warning, so we may continue compilation; but it needs revisiting because it can't be any good. Otherwise, in this commit, a few mymalloc() calls were not cast to (state *).
++;      
++;      	(int)r.type |= 128;
++;  
++;   server/db_io.c |   10 +++++-----
++;   1 file changed, 5 insertions(+), 5 deletions(-)
++;  
++;  commit c7b9cf521033fa816fbe650c8d00c720e453cfdf
++;  Author: Steve Wainstead <wainstead@gmail.com>
++;  Date:   Sun Jun 7 19:28:43 2009 +0000
++;  
++;      Replaced the TRY, CATCH and ENDTRY macros with their respective code bodies to solve a void pointer problem.
++;  
++;   server/db_file.c |  150 ++++++++++++++++++++++++++++++++++++------------------
++;   1 file changed, 101 insertions(+), 49 deletions(-)
++;  
+ ;  commit 3a6febd8cb3a492cd0a598919ea3fbb4b3166985
+ ;  Author: Steve Wainstead <wainstead@gmail.com>
+ ;  Date:   Sun Jun 7 18:36:44 2009 +0000
+-- 
+1.7.9.5
+

@@ -1,0 +1,154 @@
+From e0509858b96f3b0239a0683867a4066899bbc535 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 30 Jun 2009 03:17:22 +0000
+Subject: [PATCH 042/223] Previously, in execute.c, I copied an enum out of a
+ struct to solve some scoping issue... instead I've
+ gone through and qualified the enum members with
+ the enum name (i.e., BI_CALL becomes
+ package::BI_CALL).
+
+---
+ server/execute.c   |   30 +++++++++++++++---------------
+ server/functions.h |    8 --------
+ server/objects.c   |    2 +-
+ 3 files changed, 16 insertions(+), 24 deletions(-)
+
+diff --git a/server/execute.c b/server/execute.c
+index ad63361..1d4b5ee 100644
+--- a/server/execute.c
++++ b/server/execute.c
+@@ -279,10 +279,10 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
+ 		p = call_bi_func(bi_func_id, value, bi_func_pc, a->progr,
+ 				 bi_func_data);
+ 		switch (p.kind) {
+-		case BI_RETURN:
++		case package::BI_RETURN:
+ 		    *(a->top_rt_stack++) = p.u.ret;
+ 		    return 0;
+-		case BI_RAISE:
++		case package::BI_RAISE:
+ 		    if (a->debug)
+ 			return raise_error(p, outcome);
+ 		    else {
+@@ -291,7 +291,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
+ 			free_var(p.u.raise.value);
+ 			return 0;
+ 		    }
+-		case BI_SUSPEND:
++		case package::BI_SUSPEND:
+ 		    {
+ 			enum error e = suspend_task(p);
+ 
+@@ -305,13 +305,13 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
+ 			    return unwind_stack(FIN_RAISE, value, outcome);
+ 			}
+ 		    }
+-		case BI_CALL:
++		case package::BI_CALL:
+ 		    a = &(activ_stack[top_activ_stack]);	/* TOS has changed */
+ 		    a->bi_func_id = bi_func_id;
+ 		    a->bi_func_pc = p.u.call.pc;
+ 		    a->bi_func_data = p.u.call.data;
+ 		    return 0;
+-		case BI_KILL:
++		case package::BI_KILL:
+ 		    return unwind_stack(FIN_ABORT, zero, outcome);
+ 		}
+ 	    } else {
+@@ -328,18 +328,18 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
+ 		    p = call_bi_func(bi_func_id, zero, bi_func_pc, a->progr,
+ 				     bi_func_data);
+ 		    switch (p.kind) {
+-		    case BI_RETURN:
++		    case package::BI_RETURN:
+ 			free_var(p.u.ret);
+ 			break;
+-		    case BI_RAISE:
++		    case package::BI_RAISE:
+ 			free_var(p.u.raise.code);
+ 			free_str(p.u.raise.msg);
+ 			free_var(p.u.raise.value);
+ 			break;
+-		    case BI_SUSPEND:
+-		    case BI_KILL:
++		    case package::BI_SUSPEND:
++		    case package::BI_KILL:
+ 			break;
+-		    case BI_CALL:
++		    case package::BI_CALL:
+ 			free_activation(&activ_stack[top_activ_stack--], 0);
+ 			bi_func_pc = p.u.call.pc;
+ 			bi_func_data = p.u.call.data;
+@@ -1621,10 +1621,10 @@ do {    						    	\
+ 		    LOAD_STATE_VARIABLES();
+ 
+ 		    switch (p.kind) {
+-		    case BI_RETURN:
++		    case package::BI_RETURN:
+ 			PUSH(p.u.ret);
+ 			break;
+-		    case BI_RAISE:
++		    case package::BI_RAISE:
+ 			if (RUN_ACTIV.debug) {
+ 			    if (raise_error(p, 0))
+ 				return OUTCOME_ABORTED;
+@@ -1636,13 +1636,13 @@ do {    						    	\
+ 			    free_var(p.u.raise.value);
+ 			}
+ 			break;
+-		    case BI_CALL:
++		    case package::BI_CALL:
+ 			/* another activ has been pushed onto activ_stack */
+ 			RUN_ACTIV.bi_func_id = func_id;
+ 			RUN_ACTIV.bi_func_data = p.u.call.data;
+ 			RUN_ACTIV.bi_func_pc = p.u.call.pc;
+ 			break;
+-		    case BI_SUSPEND:
++		    case package::BI_SUSPEND:
+ 			{
+ 			    enum error e = suspend_task(p);
+ 
+@@ -1652,7 +1652,7 @@ do {    						    	\
+ 				PUSH_ERROR(e);
+ 			}
+ 			break;
+-		    case BI_KILL:
++		    case package::BI_KILL:
+ 			STORE_STATE_VARIABLES();
+ 			unwind_stack(FIN_ABORT, zero, 0);
+ 			return OUTCOME_ABORTED;
+diff --git a/server/functions.h b/server/functions.h
+index f3ba281..22ea40e 100644
+--- a/server/functions.h
++++ b/server/functions.h
+@@ -26,14 +26,6 @@
+ #include "structures.h"
+ 
+ 
+-enum {
+-  BI_RETURN,		/* Normal function return */
+-  BI_RAISE,		/* Raising an error */
+-  BI_CALL,		/* Making a nested verb call */
+-  BI_SUSPEND,		/* Suspending the current task */
+-  BI_KILL			/* Kill the current task */
+-};
+-
+ typedef struct {
+     enum {
+ 	BI_RETURN,		/* Normal function return */
+diff --git a/server/objects.c b/server/objects.c
+index 2e99d20..112db81 100644
+--- a/server/objects.c
++++ b/server/objects.c
+@@ -156,7 +156,7 @@ bf_move(Var arglist, Byte next, void *vdata, Objid progr)
+     p = do_move(arglist, next, data, progr);
+     free_var(arglist);
+ 
+-    if (p.kind != BI_CALL)
++    if (p.kind != package::BI_CALL)
+ 	free_data(data);
+ 
+     return p;
+-- 
+1.7.9.5
+

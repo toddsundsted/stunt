@@ -1,0 +1,128 @@
+From 636b5b556e2ef7673103ca1e9b26d90db5624042 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Tue, 23 Aug 2011 00:48:44 +0000
+Subject: [PATCH 206/223] Make OUTBOUND_NETWORK a configure option
+
+One way this project strayed from original LambdaMOO is the
+OUTBOUND_NETWORK setting in options.h was defaulting to "enabled."
+This meant that the default was to allow outbound network connectinos
+from MOO code, which the comments frown upon. Even though every
+installation of LambdaMOO today probably has this enabled I'm
+reverting to the default of having OUTBOUND_NETWORK undefined, meaning
+no outbound connections can be made.
+
+This change is one step closer to resolving issue #16, where NP_LOCAL
+and NP_SINGLE currently won't compile, and to moving all compile-time
+options out into the configure script.
+---
+ server/config.h.in  |   25 +++++++++++++++++++++++++
+ server/configure.ac |   19 +++++++++++++++++++
+ server/options.h    |   26 +++-----------------------
+ 3 files changed, 47 insertions(+), 23 deletions(-)
+
+diff --git a/server/config.h.in b/server/config.h.in
+index 4633f32..c704d90 100644
+--- a/server/config.h.in
++++ b/server/config.h.in
+@@ -293,3 +293,28 @@
+ 
+ #endif /* !Config_H */
+ 
++/******************************************************************************
++ * The built-in MOO function open_network_connection(), when enabled,
++ * allows (only) wizard-owned MOO code to make outbound network connections
++ * from the server.  When disabled, it raises E_PERM whenever called.
++ *
++ * The +O and -O command line options can explicitly enable and disable this
++ * function.  If neither option is supplied, the definition given to
++ * OUTBOUND_NETWORK here determines the default behavior
++ * (use 0 to disable by default, 1 or blank to enable by default).
++ * 
++ * If OUTBOUND_NETWORK is not defined at all,
++ * open_network_connection() is permanently disabled and +O is ignored.
++ *
++ * *** THINK VERY HARD BEFORE ENABLING THIS FUNCTION ***
++ * In some contexts, this could represent a serious breach of security.  
++ *
++ * Note: OUTBOUND_NETWORK may not be defined if NETWORK_PROTOCOL is either
++ *	 NP_SINGLE or NP_LOCAL.
++ */
++
++/* possible values:                                     */
++/* 0: disabled by default, +O enables at runtime        */
++/* 1: enabled by default, -O disables at runtime        */
++/* undef: outbound network connections are not possible */
++#undef OUTBOUND_NETWORK
+diff --git a/server/configure.ac b/server/configure.ac
+index d4dfc8c..08e21ff 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -339,6 +339,25 @@ else
+    AC_MSG_NOTICE([The server will fork() when doing a database checkpoint])
+ fi
+ 
++dnl Enable/disable outbound network connections
++AC_ARG_WITH([outbound-network],
++        [AS_HELP_STRING([--with-outbound-network],
++        [Outbound network connections. Args: enabled/disabled/blocked  @<:@default: blocked@:>@])],
++        [outbound_network=${withval}],
++        [outbound_network=blocked])
++
++if test "x${outbound_network}" = xblocked || test "x${outbound_network}" = xno; then
++   AC_MSG_NOTICE([Outbound network connections will be completely blocked])
++elif test "x${outbound_network}" = xdisabled; then
++   AC_MSG_NOTICE([Outbound network connections are disabled by default (enable with +O at runtime)])
++   AC_DEFINE([OUTBOUND_NETWORK], 0, [Outbound network connections are disabled by default (enable with +O at runtime)])
++elif test "x${outbound_network}" = xenabled || test "x${outbound_network}" = xyes; then
++   AC_MSG_NOTICE([Outbound network connections will be enabled by default (disable with -O at runtime)])
++   AC_DEFINE([OUTBOUND_NETWORK], 1, [Outbound network connections are enabled by default (disable with -O at runtime)])
++else
++   AC_MSG_ERROR([Invalid argument for outbound-network: '${outbound_network}' (valid options are: blocked/enabled/disabled)])
++fi
++
+ 
+ dnl Let the user choose to include openssl or not
+ AC_ARG_WITH([openssl],
+diff --git a/server/options.h b/server/options.h
+index f8b4337..e32a354 100644
+--- a/server/options.h
++++ b/server/options.h
+@@ -133,32 +133,12 @@
+ 
+ /* #define MPLEX_STYLE MP_POLL */
+ 
++
+ /******************************************************************************
+- * The built-in MOO function open_network_connection(), when enabled,
+- * allows (only) wizard-owned MOO code to make outbound network connections
+- * from the server.  When disabled, it raises E_PERM whenever called.
+- *
+- * The +O and -O command line options can explicitly enable and disable this
+- * function.  If neither option is supplied, the definition given to
+- * OUTBOUND_NETWORK here determines the default behavior
+- * (use 0 to disable by default, 1 or blank to enable by default).
+- * 
+- * If OUTBOUND_NETWORK is not defined at all,
+- * open_network_connection() is permanently disabled and +O is ignored.
+- *
+- * *** THINK VERY HARD BEFORE ENABLING THIS FUNCTION ***
+- * In some contexts, this could represent a serious breach of security.  
+- *
+- * Note: OUTBOUND_NETWORK may not be defined if NETWORK_PROTOCOL is either
+- *	 NP_SINGLE or NP_LOCAL.
++OUTBOUND_NETWORK is now a compilation option; see ./configure --help
++for details.
+  */
+ 
+-/* disable by default, +O enables: */
+-/* #define OUTBOUND_NETWORK 0 */
+-
+-/* enable by default, -O disables: */
+-#define OUTBOUND_NETWORK 1
+-
+ 
+ /******************************************************************************
+  * The following constants define certain aspects of the server's network
+-- 
+1.7.9.5
+

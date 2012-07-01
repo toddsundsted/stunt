@@ -1,0 +1,25 @@
+From a440f6b1fde619975fd2f1412909276e9038812e Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 9 Feb 2011 04:18:57 +0000
+Subject: [PATCH 133/223] typo fix: missing space
+
+---
+ server/Makefile.in |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 83bc18e..4310856 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -23,7 +23,7 @@ INSTALL         = @INSTALL@
+ INSTALL_DATA	= @INSTALL_DATA@
+ 
+ YFLAGS = -d
+-COMPILE.c = $(CC) $(CFLAGS) $(DEFS)$(CPPFLAGS) -c
++COMPILE.c = $(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) -c
+ 
+ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
+ 	db_verbs.c decompile.c disassemble.c eval_env.c eval_vm.c \
+-- 
+1.7.9.5
+

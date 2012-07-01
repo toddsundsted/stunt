@@ -1,0 +1,120 @@
+From 49d3401d4da7e2bdd6ba10957d833fcd8f62065f Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sat, 29 Jan 2011 04:39:32 +0000
+Subject: [PATCH 119/223] Reformatted struct names that are internal to this
+ module, following Google's C++ style guide
+
+---
+ server/tasks.c |   36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/server/tasks.c b/server/tasks.c
+index bf986a3..a1095ca 100644
+--- a/server/tasks.c
++++ b/server/tasks.c
+@@ -58,34 +58,34 @@ typedef enum {
+     TASK_SUSPENDED
+ } task_kind;
+ 
+-typedef struct forked_task {
++typedef struct ForkedTask {
+     int id;
+     Program *program;
+     activation a;
+     Var *rt_env;
+     int f_index;
+     struct timeval start_time;
+-} forked_task;
++} ForkedTask;
+ 
+-typedef struct suspended_task {
++typedef struct SuspendedTask {
+     vm the_vm;
+     struct timeval start_time;
+     Var value;
+-} suspended_task;
++} SuspendedTask;
+ 
+ typedef struct {
+     char *string;
+     int length;
+-    struct task *next_itail;	/* see tqueue.first_itail */
+-} input_task;
++    struct Task *next_itail;	/* see tqueue.first_itail */
++} InputTask;
+ 
+-typedef struct task {
+-    struct task *next;
++typedef struct Task {
++    struct Task *next;
+     task_kind kind;
+     union {
+-	input_task input;
+-	forked_task forked;
+-	suspended_task suspended;
++	InputTask input;
++	ForkedTask forked;
++	SuspendedTask suspended;
+     } t;
+ } task;
+ 
+@@ -1543,7 +1543,7 @@ run_ready_tasks(void)
+ 		    break;
+ 		case TASK_FORKED:
+ 		    {
+-			forked_task ft;
++			ForkedTask ft;
+ 
+ 			ft = t->t.forked;
+ 			current_task_id = ft.id;
+@@ -1642,7 +1642,7 @@ register_task_queue(task_enumerator enumerator)
+ }
+ 
+ static void
+-write_forked_task(forked_task ft)
++write_forked_task(ForkedTask ft)
+ {
+     int lineno = find_line_number(ft.program, ft.f_index, 0);
+ 
+@@ -1655,7 +1655,7 @@ write_forked_task(forked_task ft)
+ }
+ 
+ static void
+-write_suspended_task(suspended_task st)
++write_suspended_task(SuspendedTask st)
+ {
+     dbio_printf("%lf %d ", timeval_to_double(&st.start_time),
+ 		st.the_vm->task_id);
+@@ -1959,9 +1959,9 @@ activation_bytes(activation * ap)
+ }
+ 
+ static int
+-forked_task_bytes(forked_task ft)
++forked_task_bytes(ForkedTask ft)
+ {
+-    int total = sizeof(forked_task);
++    int total = sizeof(ForkedTask);
+ 
+     /* ft.program is duplicated in ft.a */
+     total += activation_bytes(&ft.a) - sizeof(activation);
+@@ -1971,7 +1971,7 @@ forked_task_bytes(forked_task ft)
+ }
+ 
+ static Var
+-list_for_forked_task(forked_task ft)
++list_for_forked_task(ForkedTask ft)
+ {
+     Var list;
+ 
+@@ -2042,7 +2042,7 @@ list_for_vm(vm the_vm)
+ }
+ 
+ static Var
+-list_for_suspended_task(suspended_task st)
++list_for_suspended_task(SuspendedTask st)
+ {
+     Var list;
+ 
+-- 
+1.7.9.5
+

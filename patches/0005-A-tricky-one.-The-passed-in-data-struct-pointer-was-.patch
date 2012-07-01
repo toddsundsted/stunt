@@ -1,0 +1,52 @@
+From 2892cac5021d3fc8e7740f4165ae04885d43b3ec Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 7 Jun 2009 20:40:52 +0000
+Subject: [PATCH 005/223] A tricky one. The passed in 'data' struct pointer
+ was also named 'data'.
+
+---
+ server/disassemble.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/server/disassemble.c b/server/disassemble.c
+index 318c441..4f49797 100644
+--- a/server/disassemble.c
++++ b/server/disassemble.c
+@@ -387,7 +387,7 @@ disassemble(Program * prog, Printer p, void *data)
+ static void
+ print_line(const char *line, void *data)
+ {
+-    FILE *f = data;
++  FILE *f = (FILE *)data;
+ 
+     fprintf(f, "%s\n", line);
+ }
+@@ -410,13 +410,13 @@ struct data {
+ };
+ 
+ static void
+-add_line(const char *line, void *data)
++add_line(const char *line, void *passed_in_data)
+ {
+-    struct data *d = data;
++  struct data *d = (data *)passed_in_data;
+ 
+     if (d->used >= d->max) {
+ 	int new_max = (d->max == 0 ? 20 : d->max * 2);
+-	char **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
++	char **_new = (char **) mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+ 	int i;
+ 
+ 	for (i = 0; i < d->used; i++)
+@@ -458,7 +458,7 @@ bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
+     disassemble(db_verb_program(h), add_line, &data);
+     r = new_list(data.used);
+     for (i = 1; i <= data.used; i++) {
+-	r.v.list[i].type = TYPE_STR;
++      r.v.list[i].type = (var_type)TYPE_STR;
+ 	r.v.list[i].v.str = data.lines[i - 1];
+     }
+     if (data.lines)
+-- 
+1.7.9.5
+

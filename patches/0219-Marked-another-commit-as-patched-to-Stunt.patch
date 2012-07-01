@@ -1,0 +1,67 @@
+From b241dfef7c85e6ac22bb785951f146c0f4b2d7d4 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Sun, 1 Jul 2012 14:36:14 -0700
+Subject: [PATCH 219/223] Marked another commit as patched to Stunt
+
+I'm tracking what commits to Waverous I've applied to Stunt via this
+log file, which is just a dump of git log.
+---
+ server/log |   42 +++++++++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/server/log b/server/log
+index 9b4addd..5cbecfe 100644
+--- a/server/log
++++ b/server/log
+@@ -2694,27 +2694,27 @@ Date:   Sun Jun 7 19:57:15 2009 +0000
+  server/db_objects.c |   10 +++++-----
+  1 file changed, 5 insertions(+), 5 deletions(-)
+ 
+-commit 50ab79c23453e779441b15d3650bea782b1bebb1
+-Author: Steve Wainstead <wainstead@gmail.com>
+-Date:   Sun Jun 7 19:53:15 2009 +0000
+-
+-    Mass changing of new to _new; some might have been missed since I was grepping out lines with patterns like newbuf, newflags and so on... also committing the Perl script and resulting file. I made several hand edits that they missed.
+-
+- server/changenew.sh    |  134 ++++++++++++++++++++++++++++++++++++++++++++++++
+- server/db_objects.c    |   36 ++++++-------
+- server/db_properties.c |   16 +++---
+- server/disassemble.c   |    4 +-
+- server/fixnews.pl      |   80 +++++++++++++++++++++++++++++
+- server/gnu-malloc.c    |    6 +--
+- server/list.c          |   42 +++++++--------
+- server/my-stdio.h      |    2 +-
+- server/net_multi.c     |    6 +--
+- server/parse_cmd.c     |    4 +-
+- server/ref_count.c     |    4 +-
+- server/str_intern.c    |   10 ++--
+- server/sym_table.c     |   10 ++--
+- 13 files changed, 284 insertions(+), 70 deletions(-)
+-
++; commit 50ab79c23453e779441b15d3650bea782b1bebb1
++; Author: Steve Wainstead <wainstead@gmail.com>
++; Date:   Sun Jun 7 19:53:15 2009 +0000
++; 
++;     Mass changing of new to _new; some might have been missed since I was grepping out lines with patterns like newbuf, newflags and so on... also committing the Perl script and resulting file. I made several hand edits that they missed.
++; 
++;  server/changenew.sh    |  134 ++++++++++++++++++++++++++++++++++++++++++++++++
++;  server/db_objects.c    |   36 ++++++-------
++;  server/db_properties.c |   16 +++---
++;  server/disassemble.c   |    4 +-
++;  server/fixnews.pl      |   80 +++++++++++++++++++++++++++++
++;  server/gnu-malloc.c    |    6 +--
++;  server/list.c          |   42 +++++++--------
++;  server/my-stdio.h      |    2 +-
++;  server/net_multi.c     |    6 +--
++;  server/parse_cmd.c     |    4 +-
++;  server/ref_count.c     |    4 +-
++;  server/str_intern.c    |   10 ++--
++;  server/sym_table.c     |   10 ++--
++;  13 files changed, 284 insertions(+), 70 deletions(-)
++; 
+ ;  commit 740ed4a198b9644676a1d35dd704f4ee12a2b7c8
+ ;  Author: Steve Wainstead <wainstead@gmail.com>
+ ;  Date:   Sun Jun 7 19:41:29 2009 +0000
+-- 
+1.7.9.5
+

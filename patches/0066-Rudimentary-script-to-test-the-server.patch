@@ -1,0 +1,24 @@
+From 3247be2418806b1c5550c9b630a3e34e9c05a7ac Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 17 Nov 2010 22:01:25 +0000
+Subject: [PATCH 066/223] Rudimentary script to test the server
+
+---
+ server/tools/test.exp |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/server/tools/test.exp b/server/tools/test.exp
+index 22b1a3e..320dcd2 100755
+--- a/server/tools/test.exp
++++ b/server/tools/test.exp
+@@ -1,5 +1,7 @@
+ #!/usr/bin/expect
+ 
++# Start up the server, login, run commands, shutdown
++
+ puts "MOO test starting"
+ 
+ #cd "~swain/Sites/projects/lambdamoo/build"
+-- 
+1.7.9.5
+

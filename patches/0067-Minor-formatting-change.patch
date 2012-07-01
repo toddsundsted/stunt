@@ -1,0 +1,31 @@
+From fca29693f5e972fcb3f8c60a34b6691be2050033 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Thu, 18 Nov 2010 05:05:30 +0000
+Subject: [PATCH 067/223] Minor formatting change
+
+---
+ server/ext-xml.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/server/ext-xml.c b/server/ext-xml.c
+index 262e2d2..9b134bf 100644
+--- a/server/ext-xml.c
++++ b/server/ext-xml.c
+@@ -46,10 +46,10 @@ new_node(XMLdata *parent, const char *name)
+   XMLdata *node;
+   Var element;
+ 
+-  char *nametemp=NULL;
+-  const char *nodename=NULL;
+-  char *nsname=NULL;
+-  char *delim=NULL;
++  char *nametemp       = NULL;
++  const char *nodename = NULL;
++  char *nsname         = NULL;
++  char *delim          = NULL;
+ 
+   if ((delim=strchr(name, NS_DELIMITER)) != NULL) {
+     int index = delim - name;
+-- 
+1.7.9.5
+

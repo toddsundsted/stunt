@@ -1,0 +1,73 @@
+From 4798ed179f9e718605afa0f31d25ee0a6c27ec57 Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 11 Feb 2011 05:00:21 +0000
+Subject: [PATCH 146/223] yet another newest version of configure
+
+---
+ server/configure |   17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/server/configure b/server/configure
+index f3cb041..462a54a 100755
+--- a/server/configure
++++ b/server/configure
+@@ -5966,6 +5966,9 @@ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+   $as_echo "#define SELECT_WORKS_ON_FIFOS 1" >>confdefs.h
+ 
++else
++  { $as_echo "$as_me:${as_lineno-$LINENO}: select() cannot be used on FIFOs" >&5
++$as_echo "$as_me: select() cannot be used on FIFOs" >&6;}
+ fi
+ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+   conftest.$ac_objext conftest.beam conftest.$ac_ext
+@@ -5987,14 +5990,14 @@ else
+ #include <fcntl.h>
+ main()
+ {
+-  int	rfd, wfd, result; struct pollfd fds[1];
++  int	rfd, wfd, result; struct pollfd fds1;
+   unlink("/tmp/conftest-fifo");
+   result = (mknod("/tmp/conftest-fifo", 0666 | S_IFIFO, 0) < 0
+ 	    || (rfd = open("/tmp/conftest-fifo", O_RDONLY | O_NDELAY)) < 0
+ 	    || (wfd = open("/tmp/conftest-fifo", O_WRONLY)) < 0
+ 	    || write(wfd, "foo", 3) != 3
+-	    || (fds[0].fd = rfd, fds[0].events = POLLIN, poll(fds, 1, 1) != 1)
+-	    || (fds[0].revents & POLLIN) == 0);
++	    || (fds0.fd = rfd, fds0.events = POLLIN, poll(fds, 1, 1) != 1)
++	    || (fds0.revents & POLLIN) == 0);
+   unlink("/tmp/conftest-fifo");
+   exit(result);
+ }
+@@ -6003,6 +6006,9 @@ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+   $as_echo "#define POLL_WORKS_ON_FIFOS 1" >>confdefs.h
+ 
++else
++  { $as_echo "$as_me:${as_lineno-$LINENO}: poll() cannot be used on FIFOs" >&5
++$as_echo "$as_me: poll() cannot be used on FIFOs" >&6;}
+ fi
+ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+   conftest.$ac_objext conftest.beam conftest.$ac_ext
+@@ -6029,7 +6035,7 @@ main ()
+ /* The NeXT claims to have FIFOs, but using them panics the kernel... */
+   exit(-1);
+ #endif
+-  int	rfd, wfd, flags, result; char buffer[10];
++  int	rfd, wfd, flags, result; char buffer10;
+   unlink("/tmp/conftest-fifo");
+   signal(SIGALRM, handler);
+   result = (mknod("/tmp/conftest-fifo", 0666 | S_IFIFO, 0) < 0
+@@ -6047,6 +6053,9 @@ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+   $as_echo "#define POSIX_NONBLOCKING_WORKS 1" >>confdefs.h
+ 
++else
++  { $as_echo "$as_me:${as_lineno-$LINENO}: POSIX-style non-blocking I/O does not work" >&5
++$as_echo "$as_me: POSIX-style non-blocking I/O does not work" >&6;}
+ fi
+ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+   conftest.$ac_objext conftest.beam conftest.$ac_ext
+-- 
+1.7.9.5
+

@@ -1,0 +1,36 @@
+From d7466c107dad863c7bafd670f190100d81d224ac Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Wed, 15 Jun 2011 03:45:07 +0000
+Subject: [PATCH 160/223] Commenting on the licensing of this file.
+
+---
+ server/net_tcp.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/server/net_tcp.c b/server/net_tcp.c
+index 116f88b..64f2512 100644
+--- a/server/net_tcp.c
++++ b/server/net_tcp.c
+@@ -7,6 +7,19 @@
+  *
+  */
+ 
++/**
++This file appears to have been added by wrog in a branch in CVS:
++
++http://lambdamoo.cvs.sourceforge.net/viewvc/lambdamoo/server/net_tcp.c?view=log
++Revision 1.1
++Sun Jun 1 12:42:30 2003 UTC (8 years ago) by wrog
++file net_tcp.c was initially added on branch SRCIP.
++
++Since it appears to be extracted from the two files mentioned above
++(net_bsd_tcp.c and net_sysv_tcp.c) it would fall under the Xerox
++license of other files.
++*/
++
+ #ifdef OUTBOUND_NETWORK
+ static char outbound_network_enabled = OUTBOUND_NETWORK;
+ #endif
+-- 
+1.7.9.5
+

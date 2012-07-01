@@ -1,0 +1,28 @@
+From 0c8c0f2ef96f6bb5f53788a8f15a3a28a5e17c9d Mon Sep 17 00:00:00 2001
+From: Steve Wainstead <wainstead@gmail.com>
+Date: Fri, 19 Aug 2011 04:42:09 +0000
+Subject: [PATCH 201/223] Removing errant use of AC_PREREQ, which autoconf
+ 2.61 from MacPorts never once complained about but
+ autoconf 2.59 on my ISP's NetBSD box did... it pays
+ to test on other machines.
+
+---
+ server/configure.ac |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/server/configure.ac b/server/configure.ac
+index 704fa93..73a9768 100644
+--- a/server/configure.ac
++++ b/server/configure.ac
+@@ -389,7 +389,7 @@ AC_FUNC_REALLOC
+ AC_FUNC_STRTOD
+ AC_FUNC_WAIT3
+ AC_HEADER_STDBOOL
+-AC_PREREQ
++
+ AC_PROG_LN_S
+ AC_TYPE_SSIZE_T
+ AC_CHECK_FUNCS([alarm bzero floor gethostbyaddr gethostbyname getpagesize gettimeofday inet_ntoa memmove memset mkdir mkfifo modf pow re_comp rmdir select socket strchr strcspn strerror strrchr strstr strtol strtoul])
+-- 
+1.7.9.5
+
