@@ -84,17 +84,17 @@ ensure_new_object(void)
 {
     if (max_objects == 0) {
 	max_objects = 100;
-	objects = mymalloc(max_objects * sizeof(Object4 *), M_OBJECT_TABLE);
+	objects = (Object4 **) mymalloc(max_objects * sizeof(Object4 *), M_OBJECT_TABLE);
     }
     if (num_objects >= max_objects) {
 	int i;
-	Object4 **new;
+	Object4 **_new;
 
-	new = mymalloc(max_objects * 2 * sizeof(Object4 *), M_OBJECT_TABLE);
+	_new = (Object4 **) mymalloc(max_objects * 2 * sizeof(Object4 *), M_OBJECT_TABLE);
 	for (i = 0; i < max_objects; i++)
-	    new[i] = objects[i];
+	    _new[i] = objects[i];
 	myfree(objects, M_OBJECT_TABLE);
-	objects = new;
+	objects = _new;
 	max_objects *= 2;
     }
 }
@@ -105,7 +105,7 @@ dbv4_new_object(void)
     Object4 *o;
 
     ensure_new_object();
-    o = objects[num_objects] = mymalloc(sizeof(Object4), M_OBJECT);
+    o = objects[num_objects] = (Object4 *) mymalloc(sizeof(Object4), M_OBJECT);
     o->id = num_objects;
     num_objects++;
 
@@ -352,7 +352,7 @@ ng_read_object(void)
     o->verbdefs = 0;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
-	v = mymalloc(sizeof(Verbdef), M_VERBDEF);
+	v = (Verbdef *) mymalloc(sizeof(Verbdef), M_VERBDEF);
 	read_verbdef(v);
 	*prevv = v;
 	prevv = &(v->next);
@@ -362,7 +362,7 @@ ng_read_object(void)
     o->propdefs.max_length = 0;
     o->propdefs.l = 0;
     if ((i = dbio_read_num()) != 0) {
-	o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
+        o->propdefs.l = (Propdef *) mymalloc(i * sizeof(Propdef), M_PROPDEF);
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++)
@@ -370,7 +370,7 @@ ng_read_object(void)
     }
     nprops = dbio_read_num();
     if (nprops)
-	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+        o->propval = (Pval *) mymalloc(nprops * sizeof(Pval), M_PVAL);
     else
 	o->propval = 0;
 
@@ -803,29 +803,29 @@ v4_upgrade_objects()
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-	    Object *new = dbpriv_new_object();
-	    new->name = o->name;
-	    new->flags = o->flags;
+	    Object *_new = dbpriv_new_object();
+	    _new->name = o->name;
+	    _new->flags = o->flags;
 
-	    new->owner = o->owner;
+	    _new->owner = o->owner;
 
 	    Objid iter;
 
-	    new->parents = var_dup(new_obj(o->parent));
+	    _new->parents = var_dup(new_obj(o->parent));
 
-	    new->children = new_list(0);
+	    _new->children = new_list(0);
 	    for (iter = o->child; iter != NOTHING; iter = objects[iter]->sibling)
-		new->children = listappend(new->children, var_dup(new_obj(iter)));
+		_new->children = listappend(_new->children, var_dup(new_obj(iter)));
 
-	    new->location = var_dup(new_obj(o->location));
+	    _new->location = var_dup(new_obj(o->location));
 
-	    new->contents = new_list(0);
+	    _new->contents = new_list(0);
 	    for (iter = o->contents; iter != NOTHING; iter = objects[iter]->next)
-		new->contents = listappend(new->contents, var_dup(new_obj(iter)));
+		_new->contents = listappend(_new->contents, var_dup(new_obj(iter)));
 
-	    new->verbdefs = o->verbdefs;
-	    new->propdefs = o->propdefs;
-	    new->propval = o->propval;
+	    _new->verbdefs = o->verbdefs;
+	    _new->propdefs = o->propdefs;
+	    _new->propval = o->propval;
 	}
 	else {
 	    dbpriv_new_recycled_object();
