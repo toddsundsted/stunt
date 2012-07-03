@@ -86,13 +86,13 @@ ensure_new_object(void)
 {
     if (max_objects == 0) {
 	max_objects = 128;
-	objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
+	objects = (Object **) mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
     }
     if (num_objects >= max_objects) {
 	int i;
 	Object **_new;
 
-	_new = (Object *) mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
+	_new = (Object **) mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
 	for (i = 0; i < max_objects; i++)
 	    _new[i] = objects[i];
 	myfree(objects, M_OBJECT_TABLE);
@@ -102,11 +102,11 @@ ensure_new_object(void)
 
     if (array_size == 0) {
 	array_size = 4096;
-	bit_array = mymalloc(ARRAY_SIZE_IN_BYTES * sizeof(unsigned char), M_ARRAY);
+	bit_array = (unsigned char *) mymalloc(ARRAY_SIZE_IN_BYTES * sizeof(unsigned char), M_ARRAY);
     }
     if (num_objects >= array_size) {
 	myfree(bit_array, M_ARRAY);
-	bit_array = mymalloc(ARRAY_SIZE_IN_BYTES * 2 * sizeof(unsigned char), M_ARRAY);
+	bit_array = (unsigned char *) mymalloc(ARRAY_SIZE_IN_BYTES * 2 * sizeof(unsigned char), M_ARRAY);
 	array_size *= 2;
     }
 }
