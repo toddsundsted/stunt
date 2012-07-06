@@ -165,7 +165,7 @@ output_to_list(const char *line)
 {
     Var str;
 
-    str.type = TYPE_STR;
+    str.type = (var_type)TYPE_STR;
     str.v.str = str_dup(line);
     backtrace_list = listappend(backtrace_list, str);
 }
@@ -416,7 +416,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 	if (include_end || i != end) {
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
 	    v.v.list[1] = var_ref(stack[i].self);
-	    v.v.list[2].type = TYPE_STR;
+	    v.v.list[2].type = (var_type)TYPE_STR;
 	    v.v.list[2].v.str = str_ref(stack[i].verb);
 	    v.v.list[3].type = TYPE_OBJ;
 	    v.v.list[3].v.obj = stack[i].progr;
@@ -436,7 +436,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
 	    v.v.list[1].type = TYPE_OBJ;
 	    v.v.list[1].v.obj = NOTHING;
-	    v.v.list[2].type = TYPE_STR;
+	    v.v.list[2].type = (var_type)TYPE_STR;
 	    v.v.list[2].v.str = str_dup(name_func_by_num(stack[i].bi_func_id));
 	    v.v.list[3].type = TYPE_OBJ;
 	    v.v.list[3].v.obj = NOTHING;
@@ -480,7 +480,7 @@ raise_error(package p, enum outcome *outcome)
 	handler_activ = 0;	/* get entire stack in list */
     }
     value.v.list[1] = p.u.raise.code;
-    value.v.list[2].type = TYPE_STR;
+    value.v.list[2].type = (var_type)TYPE_STR;
     value.v.list[2].v.str = p.u.raise.msg;
     value.v.list[3] = p.u.raise.value;
     value.v.list[4] = make_stack_list(activ_stack, handler_activ,
@@ -517,7 +517,7 @@ abort_task(enum abort_reason reason)
 
     save_hinfo:
 	value = new_list(3);
-	value.v.list[1].type = TYPE_STR;
+	value.v.list[1].type = (var_type)TYPE_STR;
 	value.v.list[1].v.str = str_dup(htag);
 	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
 					  root_activ_vector, 1);
@@ -694,7 +694,7 @@ call_verb2(Objid recv, const char *vname, Var self, Var args, int do_pass)
 
 #undef ENV_COPY
 
-    v.type = TYPE_STR;
+    v.type = (var_type)TYPE_STR;
     v.v.str = str_ref(vname);
     set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
     set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
@@ -845,7 +845,7 @@ do {								\
     for (;;) {
       next_opcode:
 	error_bv = bv;
-	op = *bv++;
+	op = (Opcode)*bv++;
 
 	if (COUNT_TICK(op)) {
 	    if (--ticks_remaining <= 0) {
@@ -1300,10 +1300,10 @@ do {								\
 			ans.type = TYPE_ERR;
 			ans.v.err = E_QUOTA;
 		    } else {
-			str = mymalloc(flen + 1, M_STRING);
+                        str = (char *) mymalloc(flen + 1, M_STRING);
 			strcpy(str, lhs.v.str);
 			strcpy(str + llen, rhs.v.str);
-			ans.type = TYPE_STR;
+			ans.type = (var_type)TYPE_STR;
 			ans.v.str = str;
 		    }
 		} else {
@@ -1899,7 +1899,7 @@ do {								\
 
 	case OP_EXTENDED:
 	    {
-		register enum Extended_Opcode eop = *bv;
+              register enum Extended_Opcode eop = (Extended_Opcode)*bv;
 		bv++;
 		if (COUNT_EOP_TICK(eop))
 		    ticks_remaining--;
@@ -2185,7 +2185,8 @@ do {								\
 			case FIN_RETURN:
 			case FIN_UNCAUGHT:
 			    STORE_STATE_VARIABLES();
-			    if (unwind_stack(why.v.num, v, &outcome))
+                            //unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
+			    if (unwind_stack((Finally_Reason)why.v.num, v, &outcome))
 				return outcome;
 			    LOAD_STATE_VARIABLES();
 			    break;
@@ -2838,14 +2839,14 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
 	    p = call_bi_func(fnum, arglist, next, progr, vdata);
 	}
     } else {			/* return to function */
-	s = vdata;
+      s = (cf_state *)vdata;
 	fnum = s->fnum;
 	p = call_bi_func(fnum, arglist, next, progr, s->data);
 	free_data(s);
     }
 
     if (p.kind == BI_CALL) {
-	s = alloc_data(sizeof(struct cf_state));
+      s = (cf_state *)alloc_data(sizeof(struct cf_state));
 	s->fnum = fnum;
 	s->data = p.u.call.data;
 	p.u.call.data = s;
@@ -2856,7 +2857,7 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 bf_call_function_write(void *data)
 {
-    struct cf_state *s = data;
+  struct cf_state *s = (cf_state *)data;
 
     dbio_printf("bf_call_function data: fname = %s\n",
 		name_func_by_num(s->fnum));
@@ -2866,7 +2867,7 @@ bf_call_function_write(void *data)
 static void *
 bf_call_function_read(void)
 {
-    struct cf_state *s = alloc_data(sizeof(struct cf_state));
+  struct cf_state *s = (cf_state *)alloc_data(sizeof(struct cf_state));
     const char *line = dbio_read_string();
     const char *hdr = "bf_call_function data: fname = ";
     int hlen = strlen(hdr);
@@ -2894,7 +2895,7 @@ bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
 
     value = (nargs >= 3 ? var_ref(arglist.v.list[3]) : zero);
     free_var(arglist);
-    p.kind = BI_RAISE;
+    p.kind = p.BI_RAISE;
     p.u.raise.code = code;
     p.u.raise.msg = msg;
     p.u.raise.value = value;

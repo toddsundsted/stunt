@@ -1,12 +1,12 @@
 /******************************************************************************
   Copyright (c) 1992, 1995, 1996 Xerox Corporation.  All rights reserved.
-  Portions of _this code were written by Stephen White, aka ghond.
-  Use and copying of _this software and preparation of derivative works based
-  upon _this software are permitted.  Any distribution of _this software or
+  Portions of this code were written by Stephen White, aka ghond.
+  Use and copying of this software and preparation of derivative works based
+  upon this software are permitted.  Any distribution of this software or
   derivative works must comply with all applicable United States export
   control laws.  This software is made available AS IS, and Xerox Corporation
   makes no warranty about the software, its performance or its conformity to
-  any specification.  Any person obtaining a copy of _this software is requested
+  any specification.  Any person obtaining a copy of this software is requested
   to send their name and post office or electronic mail address to:
     Pavel Curtis
     Xerox PARC
@@ -29,10 +29,10 @@
 /* ------------------------------------------------------------------------- */
 /* The exceptions package provides a general exception handling mechanism    */
 /* for use with C that is portable across a variety of compilers and         */
-/* operating systems. The design of _this facility is based on the            */
+/* operating systems. The design of this facility is based on the            */
 /* exception handling mechanism used in the Modula-2+ language at DEC/SRC    */
 /* and is described in detail in the paper cited above.                      */
-/* For more background on the underlying motivation for _this design, see     */
+/* For more background on the underlying motivation for this design, see     */
 /* SRC Research Report #3.                                                   */
 /*****************************************************************************/
 
@@ -149,7 +149,7 @@ extern void ES_RaiseException(Exception * exception, int value);
 	}
 
 
-/* The exceptions package doesn't provide _this function, but it calls it */
+/* The exceptions package doesn't provide this function, but it calls it */
 /* whenever a fatal error occurs:                                        */
 /*      1) Too many EXCEPT clauses in a single TRY construct.            */
 /*      2) An unhandled exception is RAISEd.                             */
@@ -182,7 +182,7 @@ extern void panic(const char *message);
  * Converted to use _new automatic configuration system.
  *
  * Revision 1.2  1992/09/23  17:10:48  pavel
- * Added protection against _this file being included more than once.
+ * Added protection against this file being included more than once.
  *
  * Revision 1.1  1992/07/20  23:23:12  pavel
  * Initial RCS-controlled version.
