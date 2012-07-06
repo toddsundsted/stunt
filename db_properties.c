@@ -64,13 +64,13 @@ dbpriv_count_properties(Objid oid)
  * Returns -1 if `target' is not an ancestor of `this'.
  */
 static int
-properties_offset(Objid target, Objid this)
+properties_offset(Objid target, Objid self)
 {
     Var ancestor, ancestors;
     int i, c, offset = 0;
     Object *o;
 
-    ancestors = db_ancestors(this, true);
+    ancestors = db_ancestors(self, true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	if (target == ancestor.v.obj)
@@ -911,7 +911,7 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
 		    Var tmp, all = db_ancestors(op->id, true);
 		    FOR_EACH(tmp, all, i6, c6) {
 			old = setadd(old, var_ref(tmp));
-			_new = setadd(new, var_ref(tmp));
+			_new = setadd(_new, var_ref(tmp));
 		    }
 		    free_var(all);
 		}
