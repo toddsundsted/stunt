@@ -567,15 +567,15 @@ rbtprev(rbtrav *trav)
 static Var
 empty_map(void)
 {
-    Var new;
+    Var _new;
     rbtree *tree;
 
     if ((tree = rbnew()) == NULL)
 	panic("EMPTY_MAP: rbnew failed");
-    new.type = TYPE_MAP;
-    new.v.tree = tree;
+    _new.type = TYPE_MAP;
+    _new.v.tree = tree;
 
-    return new;
+    return _new;
 }
 
 Var
@@ -605,16 +605,16 @@ map_dup(Var map)
     rbtrav trav;
     rbnode node;
     const rbnode *pnode;
-    Var new = empty_map();
+    Var _new = empty_map();
 
     for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(new.v.tree, &node))
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
 
-    return new;
+    return _new;
 }
 
 /* called from utils.c */
@@ -646,20 +646,20 @@ mapinsert(Var map, Var key, Var value)
 	|| is_collection(key))
 	panic("MAPINSERT: invalid key");
 
-    Var new = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
+    Var _new = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
 
     rbnode node;
     node.key = key;
     node.value = value;
 
-    rberase(new.v.tree, &node);
+    rberase(_new.v.tree, &node);
 
-    if (!rbinsert(new.v.tree, &node))
+    if (!rbinsert(_new.v.tree, &node))
 	panic("MAPINSERT: rbinsert failed");
 
     free_var(map);
 
-    return new;
+    return _new;
 }
 
 const rbnode *
@@ -805,20 +805,20 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 {				/* consumes `map' */
     rbnode node;
     const rbnode *pnode = NULL;
-    Var new = empty_map();
+    Var _new = empty_map();
 
     do {
 	pnode = pnode == NULL ? from->it : rbtnext(from);
 
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(new.v.tree, &node))
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     } while (pnode != to->it);
 
     free_var(map);
 
-    return new;
+    return _new;
 }
 
 /* Replaces the specified range in the map.  `from' and `to' must be
@@ -827,7 +827,7 @@ maprange(Var map, rbtrav *from, rbtrav *to)
  * `E_NONE' if successful.
  */
 enum error
-maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
+maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 {				/* consumes `map', `value' */
     rbtrav trav;
     rbnode node;
@@ -841,18 +841,18 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 	    goto done;							\
 	}
 
-    if (new == NULL)
-	panic("MAP_DUP: new is NULL");
+    if (_new == NULL)
+	panic("MAP_DUP: _new is NULL");
 
-    free_var(*new);
-    *new = empty_map();
+    free_var(*_new);
+    *_new = empty_map();
 
     for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	if (pnode == from->it)
 	    break;
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(new->v.tree, &node))
+	if (!rbinsert(_new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
 	CHECK_LENGTH;
     }
@@ -860,8 +860,8 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	rberase(new->v.tree, &node);
-	if (!rbinsert(new->v.tree, &node))
+	rberase(_new->v.tree, &node);
+	if (!rbinsert(_new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
 	CHECK_LENGTH;
     }
@@ -869,8 +869,8 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     while ((pnode = rbtnext(to))) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	rberase(new->v.tree, &node);
-	if (!rbinsert(new->v.tree, &node))
+	rberase(_new->v.tree, &node);
+	if (!rbinsert(_new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
 	CHECK_LENGTH;
     }
