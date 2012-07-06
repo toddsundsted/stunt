@@ -115,7 +115,7 @@ void
 set_rt_env_str(Var * env, int slot, const char *s)
 {
     Var v;
-    v.type = TYPE_STR;
+    v.type = (var_type)TYPE_STR;
     v.v.str = s;
     env[slot] = v;
 }
