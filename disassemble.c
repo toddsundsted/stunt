@@ -406,7 +406,7 @@ disassemble(Program * prog, Printer p, void *data)
 static void
 print_line(const char *line, void *data)
 {
-    FILE *f = data;
+  FILE *f = (FILE *)data;
 
     fprintf(f, "%s\n", line);
 }
@@ -429,13 +429,13 @@ struct data {
 };
 
 static void
-add_line(const char *line, void *data)
+add_line(const char *line, void *passed_in_data)
 {
-    struct data *d = data;
+  struct data *d = (data *)passed_in_data;
 
     if (d->used >= d->max) {
 	int new_max = (d->max == 0 ? 20 : d->max * 2);
-	char **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+	char **_new = (char **) mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
 	int i;
 
 	for (i = 0; i < d->used; i++)
@@ -477,7 +477,7 @@ bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
     disassemble(db_verb_program(h), add_line, &data);
     r = new_list(data.used);
     for (i = 1; i <= data.used; i++) {
-	r.v.list[i].type = TYPE_STR;
+      r.v.list[i].type = (var_type)TYPE_STR;
 	r.v.list[i].v.str = data.lines[i - 1];
     }
     if (data.lines)
