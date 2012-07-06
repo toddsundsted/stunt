@@ -707,7 +707,7 @@ unparse_expr(Stream * str, Expr * expr)
 
     case EXPR_CATCH:
 	stream_add_string(str, "`");
-	unparse_expr(str, expr->e._catch.try);
+	unparse_expr(str, expr->e._catch._try);
 	stream_add_string(str, " ! ");
 	if (expr->e._catch.codes)
 	    unparse_arglist(str, expr->e._catch.codes);

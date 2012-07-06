@@ -149,30 +149,30 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 
     while (ptr < end) {
 	int op_hot = (ptr == hot_byte);
-	Opcode op = *ptr++;
+	Opcode op = (Opcode)*ptr++;
 
 	if (IS_PUSH_n(op)) {
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = PUSH_n_INDEX(op);
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    continue;
 #ifdef BYTECODE_REDUCE_REF
 	} else if (IS_PUSH_CLEAR_n(op)) {
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = PUSH_CLEAR_n_INDEX(op);
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    continue;
 #endif				/* BYTECODE_REDUCE_REF */
 	} else if (IS_PUT_n(op)) {
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = PUT_n_INDEX(op);
 	    e = alloc_binary(EXPR_ASGN, e, pop_expr());
-	    push_expr(HOT_OP1(e->e.bin.rhs, e));
+	    push_expr((Expr *)HOT_OP1(e->e.bin.rhs, e));
 	    continue;
 	} else if (IS_OPTIM_NUM_OPCODE(op)) {
 	    e = alloc_var(TYPE_INT);
 	    e->e.var.v.num = OPCODE_TO_OPTIM_NUM(op);
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    continue;
 	}
 	switch (op) {
@@ -234,7 +234,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		if (top != READ_JUMP(jump_hot))
 		    panic("FOR_RANGE jumps to wrong place in DECOMPILE!");
 		HOT_BOTTOM(jump_hot, s);
-		ADD_STMT(HOT_OP2(from, to, s));
+		ADD_STMT((Stmt *)HOT_OP2(from, to, s));
 	    }
 	    break;
 	case OP_WHILE:
@@ -253,7 +253,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		if (top != READ_JUMP(jump_hot))
 		    panic("WHILE jumps to wrong place in DECOMPILE!");
 		HOT_BOTTOM(jump_hot, s);
-		ADD_STMT(HOT_OP1(condition, s));
+		ADD_STMT((Stmt *)HOT_OP1(condition, s));
 	    }
 	    break;
 	case OP_FORK:
@@ -271,19 +271,19 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		(void) decompile(fbc, fbc.vector, fbc.vector + fbc.size,
 				 &(s->s.fork.body), 0);
 		HOT_BOTTOM(hot_byte == fbc.vector + fbc.size - 1, s);
-		ADD_STMT(HOT_OP1(time, s));
+		ADD_STMT((Stmt *)HOT_OP1(time, s));
 	    }
 	    break;
 	case OP_POP:
 	    s = alloc_stmt(STMT_EXPR);
 	    e = s->s.expr = pop_expr();
-	    ADD_STMT(HOT_OP1(e, s));
+	    ADD_STMT((Stmt *)HOT_OP1(e, s));
 	    break;
 	case OP_RETURN:
 	case OP_RETURN0:
 	    s = alloc_stmt(STMT_RETURN);
 	    e = s->s.expr = (op == OP_RETURN ? pop_expr() : 0);
-	    ADD_STMT(HOT(op_hot || (e && e == hot_node), s));
+	    ADD_STMT((Stmt *)HOT(op_hot || (e && e == hot_node), s));
 	    break;
 	case OP_DONE:
 	    if (ptr != end)
@@ -292,12 +292,12 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	case OP_IMM:
 	    e = alloc_expr(EXPR_VAR);
 	    e->e.var = var_ref(READ_LITERAL());
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    break;
 	case OP_G_PUSH:
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = READ_ID();
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    break;
 	case OP_AND:
 	case OP_OR:
@@ -310,14 +310,14 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    panic("AND/OR jumps to wrong place in DECOMPILE!");
 		e = alloc_binary(op == OP_AND ? EXPR_AND : EXPR_OR,
 				 e, pop_expr());
-		push_expr(HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
+		push_expr((Expr *)HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
 	    }
 	    break;
 	case OP_UNARY_MINUS:
 	case OP_NOT:
 	    e = alloc_expr(op == OP_NOT ? EXPR_NOT : EXPR_NEGATE);
 	    e->e.expr = pop_expr();
-	    push_expr(HOT_OP1(e->e.expr, e));
+	    push_expr((Expr *)HOT_OP1(e->e.expr, e));
 	    break;
 	case OP_GET_PROP:
 	case OP_PUSH_GET_PROP:
@@ -365,7 +365,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	  finish_binary:
 	    e = pop_expr();
 	    e = alloc_binary(kind, pop_expr(), e);
-	    push_expr(HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
+	    push_expr((Expr *)HOT_OP2(e->e.bin.lhs, e->e.bin.rhs, e));
 	    break;
 	case OP_RANGE_REF:
 	    {
@@ -376,7 +376,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		e->e.range.base = pop_expr();
 		e->e.range.from = e2;
 		e->e.range.to = e1;
-		push_expr(HOT_OP3(e1, e2, e->e.range.base, e));
+		push_expr((Expr *)HOT_OP3(e1, e2, e->e.range.base, e));
 	    }
 	    break;
 	case OP_BI_FUNC_CALL:
@@ -389,7 +389,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		e->e.call.args = a->e.list;
 		dealloc_node(a);
 		e->e.call.func = READ_BYTES(1);
-		push_expr(HOT_OP1(a, e));
+		push_expr((Expr *)HOT_OP1(a, e));
 	    }
 	    break;
 	case OP_CALL_VERB:
@@ -401,7 +401,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    panic("Missing arglist for CALL_VERB in DECOMPILE!");
 		e = alloc_verb(pop_expr(), e2, a->e.list);
 		dealloc_node(a);
-		push_expr(HOT_OP3(e->e.verb.obj, a, e2, e));
+		push_expr((Expr *)HOT_OP3(e->e.verb.obj, a, e2, e));
 	    }
 	    break;
 	case OP_IF_QUES:
@@ -418,7 +418,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		if (ptr != bc.vector + label)
 		    panic("THEN jumps to wrong place in DECOMPILE!");
 		e->e.cond.alternate = pop_expr();
-		push_expr(HOT3(op_hot || jump_hot, e->e.cond.condition,
+		push_expr((Expr *)HOT3(op_hot || jump_hot, e->e.cond.condition,
 			       e->e.cond.consequent, e->e.cond.alternate,
 			       e));
 	    }
@@ -437,7 +437,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		Expr *index = pop_expr();
 
 		e = alloc_binary(EXPR_INDEX, pop_expr(), index);
-		push_expr(HOT3(op_hot || asgn_hot,
+		push_expr((Expr *)HOT3(op_hot || asgn_hot,
 			       e->e.bin.lhs, index, rvalue,
 			       alloc_binary(EXPR_ASGN, e, rvalue)));
 	    }
@@ -457,7 +457,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	    e = alloc_expr(EXPR_ID);
 	    e->e.id = READ_ID();
 	    e = alloc_binary(EXPR_ASGN, e, pop_expr());
-	    push_expr(HOT_OP1(e->e.bin.rhs, e));
+	    push_expr((Expr *)HOT_OP1(e->e.bin.rhs, e));
 	    break;
 	case OP_PUT_PROP:
 	    {
@@ -465,14 +465,14 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 
 		e = pop_expr();
 		e = alloc_binary(EXPR_PROP, pop_expr(), e);
-		push_expr(HOT_OP3(e->e.bin.lhs, e->e.bin.rhs, rvalue,
+		push_expr((Expr *)HOT_OP3(e->e.bin.lhs, e->e.bin.rhs, rvalue,
 				  alloc_binary(EXPR_ASGN, e, rvalue)));
 	    }
 	    break;
 	case OP_MAP_CREATE:
 	    e = alloc_expr(EXPR_MAP);
 	    e->e.map = 0;
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *))HOT_OP(e));
 	    break;
 	case OP_MAP_INSERT:
 	    {
@@ -488,23 +488,23 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		}
 		else
 		    e->e.map = alloc_map_list(key, value);
-		push_expr(HOT_OP2(e->e.map->key, e->e.map->value, e));
+		push_expr((Stmt *)HOT_OP2(e->e.map->key, e->e.map->value, e));
 	    }
 	    break;
 	case OP_MAKE_EMPTY_LIST:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = 0;
-	    push_expr(HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    break;
 	case OP_MAKE_SINGLETON_LIST:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = alloc_arg_list(ARG_NORMAL, pop_expr());
-	    push_expr(HOT_OP1(e->e.list->expr, e));
+	    push_expr((Expr *)HOT_OP1(e->e.list->expr, e));
 	    break;
 	case OP_CHECK_LIST_FOR_SPLICE:
 	    e = alloc_expr(EXPR_LIST);
 	    e->e.list = alloc_arg_list(ARG_SPLICE, pop_expr());
-	    push_expr(HOT_OP1(e->e.list->expr, e));
+	    push_expr((Expr *)HOT_OP1(e->e.list->expr, e));
 	    break;
 	case OP_LIST_ADD_TAIL:
 	case OP_LIST_APPEND:
@@ -519,7 +519,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		for (a = list->e.list; a->next; a = a->next);
 		a->next = alloc_arg_list(op == OP_LIST_APPEND ? ARG_SPLICE
 					 : ARG_NORMAL, e);
-		push_expr(HOT_OP1(e, list));
+		push_expr((Expr *)HOT_OP1(e, list));
 	    }
 	    break;
 	case OP_PUSH_TEMP:
@@ -528,7 +528,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	    break;
 	case OP_EXTENDED:
 	    {
-		Extended_Opcode eop = *ptr++;
+              Extended_Opcode eop = (Extended_Opcode)*ptr++;
 
 		switch (eop) {
 		case EOP_RANGESET:
@@ -542,7 +542,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			e->e.range.to = pop_expr();
 			e->e.range.from = pop_expr();
 			e->e.range.base = pop_expr();
-			push_expr(HOT4(op_hot || asgn_hot,
+			push_expr((Expr *)HOT4(op_hot || asgn_hot,
 				       e->e.range.base, e->e.range.from,
 				       e->e.range.to, rvalue,
 				    alloc_binary(EXPR_ASGN, e, rvalue)));
@@ -551,12 +551,12 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		case EOP_FIRST:
 		    READ_STACK();
 		    e = alloc_expr(EXPR_FIRST);
-		    push_expr(HOT_OP(e));
+		    push_expr((Expr *)HOT_OP(e));
 		    break;
 		case EOP_LAST:
 		    READ_STACK();
 		    e = alloc_expr(EXPR_LAST);
-		    push_expr(HOT_OP(e));
+		    push_expr((Expr *)HOT_OP(e));
 		    break;
 		case EOP_EXP:
 		    kind = EXPR_EXP;
@@ -615,7 +615,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 				    panic("Missing default POP in DECOMPILE!");
 			    }
 			e = alloc_binary(EXPR_ASGN, e, pop_expr());
-			push_expr(HOT2(is_hot, e->e.bin.lhs, e->e.bin.rhs, e));
+			push_expr((Expr *)HOT2(is_hot, e->e.bin.lhs, e->e.bin.rhs, e));
 			if (ptr != bc.vector + done)
 			    panic("Not at end of scatter in DECOMPILE!");
 		    }
@@ -623,7 +623,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		case EOP_PUSH_LABEL:
 		    e = alloc_var(TYPE_INT);
 		    e->e.var.v.num = READ_LABEL();
-		    push_expr(HOT_OP(e));
+		    push_expr((Expr *)HOT_OP(e));
 		    break;
 		case EOP_CATCH:
 		    {
@@ -657,7 +657,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (ptr != bc.vector + label)
 			    panic("Misplaced handler in DECOMPILE!");
 			is_hot = (is_hot || ptr == hot_byte);
-			op = *ptr++;
+			op = (Opcode)*ptr++;
 			if (op == OPTIM_NUM_TO_OPCODE(1)) {
 			    /* No default expression */
 			    is_hot = (is_hot || ptr == hot_byte);
@@ -673,10 +673,10 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (ptr != bc.vector + done)
 			    panic("CATCH ends in wrong place in DECOMPILE!");
 			e = alloc_expr(EXPR_CATCH);
-			e->e._catch.try = try_expr;
+			e->e._catch._try = try_expr;
 			e->e._catch.codes = a;
 			e->e._catch.except = default_expr;
-			push_expr(HOT3(is_hot || (default_expr
+			push_expr((Expr *)HOT3(is_hot || (default_expr
 					    && default_expr == hot_node),
 				       label_expr, codes, try_expr,
 				       e));
@@ -693,7 +693,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			int count = *ptr++, label;
 			unsigned done;
 
-			s = HOT_OP(alloc_stmt(STMT_TRY_EXCEPT));
+			s = (Stmt *)HOT_OP(alloc_stmt(STMT_TRY_EXCEPT));
 			s->s._catch.excepts = 0;
 			while (count--) {
 			    label_expr = pop_expr();
@@ -730,13 +730,13 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			    if (ex->label != ptr - bc.vector)
 				panic("Not at start of handler in DECOMPILE!");
 			    op_hot = (ptr == hot_byte);
-			    op = *ptr++;
+			    op = (Opcode)*ptr++;
 			    if (op == OP_G_PUT) {
 				ex->id = READ_ID();
-				op = *ptr++;
+				op = (Opcode)*ptr++;
 			    } else if (IS_PUT_n(op)) {
 				ex->id = PUT_n_INDEX(op);
-				op = *ptr++;
+				op = (Opcode)*ptr++;
 			    }
 			    HOT(op_hot || ptr - 1 == hot_byte, ex);
 			    if (op != OP_POP)
@@ -763,7 +763,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    {
 			int label = READ_LABEL();
 
-			s = HOT_OP(alloc_stmt(STMT_TRY_FINALLY));
+			s = (Stmt *)HOT_OP(alloc_stmt(STMT_TRY_FINALLY));
 			DECOMPILE(bc, ptr, end, &(s->s.finally.body), 0);
 			HOT_POS(ptr++ == hot_byte, s, ENDBODY);
 			if (*ptr++ != EOP_END_FINALLY)
@@ -796,7 +796,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    READ_STACK();
 		    if (READ_LABEL() < ptr - bc.vector)
 			s->kind = STMT_CONTINUE;
-		    ADD_STMT(HOT_OP(s));
+		    ADD_STMT((Stmt *)HOT_OP(s));
 		    break;
 
 		case EOP_FOR_LIST_1:
@@ -822,7 +822,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (top != READ_JUMP(jump_hot))
 			    panic("FOR_LIST_1 jumps to wrong place in DECOMPILE!");
 			HOT_BOTTOM(jump_hot, s);
-			ADD_STMT(HOT_OP2(iter, list, s));
+			ADD_STMT((Stmt *)HOT_OP2(iter, list, s));
 		    }
 		    break;
 
@@ -850,7 +850,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			if (top != READ_JUMP(jump_hot))
 			    panic("FOR_LIST_2 jumps to wrong place in DECOMPILE!");
 			HOT_BOTTOM(jump_hot, s);
-			ADD_STMT(HOT_OP2(iter, list, s));
+			ADD_STMT((Stmt *)HOT_OP2(iter, list, s));
 		    }
 		    break;
 
@@ -895,7 +895,7 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
     sum = program->main_vector.max_stack;
     for (i = 0; i < program->fork_vectors_size; i++)
 	sum += program->fork_vectors[i].max_stack;
-    expr_stack = mymalloc(sum * sizeof(Expr *), M_DECOMPILE);
+    expr_stack = (Expr **) mymalloc(sum * sizeof(Expr *), M_DECOMPILE);
     top_expr_stack = 0;
 
     bc = (vector == MAIN_VECTOR
