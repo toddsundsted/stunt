@@ -56,11 +56,11 @@ ES_RaiseException(Exception * exception, int value)
     if (!xb)
 	panic("Unhandled exception!");
 
-    for (cb = ES_exceptionStack; cb != xb && !cb->finally; cb = cb->link);
+    for (cb = ES_exceptionStack; cb != xb && !cb->_finally; cb = cb->link);
     ES_exceptionStack = cb;
     cb->id = exception;
     cb->value = value;
-    longjmp((void *) cb->jmp, 1);
+    longjmp((int *) cb->jmp, 1);
 }
 
 char rcsid_exceptions[] = "$Id: exceptions.c,v 1.3 1998/12/14 13:17:48 nop Exp $";
