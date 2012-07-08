@@ -324,7 +324,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 		    a->bi_func_data = p.u.call.data;
 		    return 0;
 		case BI_KILL:
-		    abort_task(p.u.ret.v.num);
+                    abort_task((abort_reason)p.u.ret.v.num);
 		    if (outcome)
 			*outcome = OUTCOME_ABORTED;
 		    return 1;
@@ -601,7 +601,7 @@ call_verb2(Objid recv, const char *vname, Var self, Var args, int do_pass)
        E_NONE */
 
     Objid where;
-    db_verb_handle h = { .ptr = NULL };
+    db_verb_handle h = { NULL };
     Program *program;
     Var *env;
     Var v;
@@ -1466,7 +1466,7 @@ do {								\
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH(list.v.list[index.v.num]);
-			list.v.list[index.v.num].type = E_NONE;
+			list.v.list[index.v.num].type = (var_type)E_NONE;
 		    }
 		} else {
 		    PUSH_ERROR(E_TYPE);
@@ -1889,7 +1889,7 @@ do {								\
 			break;
 		    case BI_KILL:
 			STORE_STATE_VARIABLES();
-			abort_task(p.u.ret.v.num);
+			abort_task((abort_reason)p.u.ret.v.num);
 			return OUTCOME_ABORTED;
 			/* NOTREACHED */
 		    }
