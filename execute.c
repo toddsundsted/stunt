@@ -360,7 +360,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 			bi_func_data = p.u.call.data;
 			break;
 		    }
-		} while (p.kind == BI_CALL && bi_func_pc != 0);		/* !tailcall */
+		} while (p.kind == p.BI_CALL && bi_func_pc != 0);		/* !tailcall */
 	    }
 	} else if (why == FIN_RETURN) {		/* Push the value on the stack & go */
 	    a = &(activ_stack[top_activ_stack]);
@@ -2845,7 +2845,7 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
 	free_data(s);
     }
 
-    if (p.kind == BI_CALL) {
+    if (p.kind == p.BI_CALL) {
       s = (cf_state *)alloc_data(sizeof(struct cf_state));
 	s->fnum = fnum;
 	s->data = p.u.call.data;
