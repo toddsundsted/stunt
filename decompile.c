@@ -472,7 +472,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 	case OP_MAP_CREATE:
 	    e = alloc_expr(EXPR_MAP);
 	    e->e.map = 0;
-	    push_expr((Expr *))HOT_OP(e));
+	    push_expr((Expr *)HOT_OP(e));
 	    break;
 	case OP_MAP_INSERT:
 	    {
@@ -488,7 +488,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		}
 		else
 		    e->e.map = alloc_map_list(key, value);
-		push_expr((Stmt *)HOT_OP2(e->e.map->key, e->e.map->value, e));
+		push_expr((Expr *)HOT_OP2(e->e.map->key, e->e.map->value, e));
 	    }
 	    break;
 	case OP_MAKE_EMPTY_LIST:

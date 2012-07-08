@@ -805,8 +805,8 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
      * hold the starting point of each sub-array.
      */
     int offset;
-    int old_count, *old_offsets = mymalloc((listlength(old_ancestors) + 1) * sizeof(int), M_INT);
-    int new_count, *new_offsets = mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
+    int old_count, *old_offsets = (int *) mymalloc((listlength(old_ancestors) + 1) * sizeof(int), M_INT);
+    int new_count, *new_offsets = (int *) mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
     int i1, c1;
 
     /* C arrays start at index 0, MOO arrays start at index 1 */
@@ -905,7 +905,7 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
 		    FOR_EACH(tmp, old_ancestors, i6, c6)
 			old = setadd(old, var_ref(tmp));
 		    FOR_EACH(tmp, new_ancestors, i6, c6)
-			_new = setadd(new, var_ref(tmp));
+			_new = setadd(_new, var_ref(tmp));
 		}
 		else {
 		    Var tmp, all = db_ancestors(op->id, true);
@@ -918,7 +918,7 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
 	    }
 	}
 	else {
-	    _new = listconcat(new, var_ref(new_ancestors));
+	    _new = listconcat(_new, var_ref(new_ancestors));
 	    old = listconcat(old, var_ref(old_ancestors));
 	}
 	dbpriv_fix_properties_after_chparent(child.v.obj, old, _new);
