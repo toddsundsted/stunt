@@ -51,7 +51,7 @@ typedef struct {
      * and 'vloc' is the object number of the object on which the verb
      * is actually defined.
      */
-    Var _this;
+    Var self;
     Objid player;
     Objid progr;
     Objid recv;
