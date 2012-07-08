@@ -222,7 +222,7 @@ dbio_read_var(void)
 	break;
     case _TYPE_STR:
 	r.v.str = dbio_read_string_intern();
-	(int)r.type |= 128;
+	r.type = (var_type) ( r.type | 128 );
 	break;
     case TYPE_OBJ:
     case TYPE_ERR:
