@@ -361,12 +361,12 @@ expr:
 		}
 	| tFLOAT
 		{
-		    $$ = alloc_var(TYPE_FLOAT);
+                  $$ = alloc_var((var_type)TYPE_FLOAT);
 		    $$->e.var.v.fnum = $1;
 		}
 	| tSTRING
 		{
-		    $$ = alloc_var(TYPE_STR);
+                  $$ = alloc_var((var_type)TYPE_STR);
 		    $$->e.var.v.str = $1;
 		}
 	| tOBJECT
@@ -388,7 +388,7 @@ expr:
 		{
 		    /* Treat $foo like #0.("foo") */
 		    Expr *obj = alloc_var(TYPE_OBJ);
-		    Expr *prop = alloc_var(TYPE_STR);
+		    Expr *prop = alloc_var((var_type)TYPE_STR);
 		    obj->e.var.v.obj = 0;
 		    prop->e.var.v.str = $2;
 		    $$ = alloc_binary(EXPR_PROP, obj, prop);
@@ -396,7 +396,7 @@ expr:
 	| expr '.' tID
 		{
 		    /* Treat foo.bar like foo.("bar") for simplicity */
-		    Expr *prop = alloc_var(TYPE_STR);
+		    Expr *prop = alloc_var((var_type)TYPE_STR);
 		    prop->e.var.v.str = $3;
 		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
@@ -407,7 +407,7 @@ expr:
 	| expr ':' tID '(' arglist ')'
 		{
 		    /* treat foo:bar(args) like foo:("bar")(args) */
-		    Expr *verb = alloc_var(TYPE_STR);
+		    Expr *verb = alloc_var((var_type)TYPE_STR);
 		    verb->e.var.v.str = $3;
 		    $$ = alloc_verb($1, verb, $5);
 		}
@@ -415,7 +415,7 @@ expr:
 		{
 		    /* treat $bar(args) like #0:("bar")(args) */
 		    Expr *obj = alloc_var(TYPE_OBJ);
-		    Expr *verb = alloc_var(TYPE_STR);
+		    Expr *verb = alloc_var((var_type)TYPE_STR);
 		    obj->e.var.v.obj = 0;
 		    verb->e.var.v.str = $2;
 		    $$ = alloc_verb(obj, verb, $4);
@@ -486,7 +486,7 @@ expr:
 		    $$ = alloc_expr(EXPR_CALL);
 		    if ((f_no = number_func_by_name($1)) == FUNC_NOT_FOUND) {
 			/* Replace with call_function("$1", @args) */
-			Expr	       *fname = alloc_var(TYPE_STR);
+			Expr	       *fname = alloc_var((var_type)TYPE_STR);
 			Arg_List       *a = alloc_arg_list(ARG_NORMAL, fname);
 
 			fname->e.var.v.str = $1;
@@ -614,7 +614,7 @@ expr:
 	| '`' expr '!' codes default '\''
 		{
 		    $$ = alloc_expr(EXPR_CATCH);
-		    $$->e._catch.try = $2;
+		    $$->e._catch._try = $2;
 		    $$->e._catch.codes = $4;
 		    $$->e._catch.except = $5;
 		}
@@ -1076,7 +1076,7 @@ static struct loop_entry *loop_stack;
 static void
 push_loop_name(const char *name)
 {
-    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (loop_entry *) mymalloc(sizeof(struct loop_entry), M_AST);
 
     entry->next = loop_stack;
     entry->name = (name ? str_dup(name) : 0);
@@ -1104,7 +1104,7 @@ pop_loop_name(void)
 static void
 suspend_loop_scope(void)
 {
-    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (loop_entry *) mymalloc(sizeof(struct loop_entry), M_AST);
 
     entry->next = loop_stack;
     entry->name = 0;
@@ -1240,7 +1240,7 @@ my_error(void *data, const char *msg)
     struct parser_state	*state = (struct parser_state *) data;
     Var			v;
     
-    v.type = TYPE_STR;
+    v.type = (var_type)TYPE_STR;
     v.v.str = str_dup(msg);
     state->errors = listappend(state->errors, v);
 }
