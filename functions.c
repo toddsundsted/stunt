@@ -93,8 +93,13 @@ static struct bft_entry bf_table[MAX_FUNC];
 static unsigned top_bf_table = 0;
 
 static unsigned
-register_common(const char *name, int minargs, int maxargs, bf_type func,
-		bf_read_type read, bf_write_type write, va_list args)
+register_common(const char *name,
+                int minargs,
+                int maxargs,
+                bf_type func,
+		bf_read_type read,
+                bf_write_type write,
+                va_list args)
 {
     int va_index;
     int num_arg_types = maxargs == -1 ? minargs : maxargs;
@@ -107,17 +112,17 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 	errlog("too many functions.  %s cannot be registered.\n", name);
 	return 0;
     }
-    bf_table[top_bf_table].name = str_dup(name);
+    bf_table[top_bf_table].name        = str_dup(name);
     stream_printf(s, "protect_%s", name);
     bf_table[top_bf_table].protect_str = str_dup(reset_stream(s));
     stream_printf(s, "bf_%s", name);
-    bf_table[top_bf_table].verb_str = str_dup(reset_stream(s));
-    bf_table[top_bf_table].minargs = minargs;
-    bf_table[top_bf_table].maxargs = maxargs;
-    bf_table[top_bf_table].func = func;
-    bf_table[top_bf_table].read = read;
-    bf_table[top_bf_table].write = write;
-    bf_table[top_bf_table]._protected = 0;
+    bf_table[top_bf_table].verb_str    = str_dup(reset_stream(s));
+    bf_table[top_bf_table].minargs     = minargs;
+    bf_table[top_bf_table].maxargs     = maxargs;
+    bf_table[top_bf_table].func        = func;
+    bf_table[top_bf_table].read        = read;
+    bf_table[top_bf_table].write       = write;
+    bf_table[top_bf_table]._protected  = 0;
     
     if (num_arg_types > 0)
 	bf_table[top_bf_table].prototype =
@@ -126,7 +131,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 	bf_table[top_bf_table].prototype = 0;
 
     for (va_index = 0; va_index < num_arg_types; va_index++)
-	bf_table[top_bf_table].prototype[va_index] = va_arg(args, var_type);
+	bf_table[top_bf_table].prototype[va_index] = va_arg(args, int);
 
 
     return top_bf_table++;
