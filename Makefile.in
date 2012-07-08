@@ -33,10 +33,6 @@ CSRCS = ast.c code_gen.c db_file.c db_io.c db_objects.c db_properties.c \
 	property.c quota.c regexpr.c server.c storage.c streams.c str_intern.c \
 	sym_table.c tasks.c timers.c unparse.c utils.c verbs.c version.c
 
-OPT_EXT_XML_SRC = ext-xml.c
-OPT_EXT_FUP_SRC = ext-FUP.c
-OPT_FILEIO_SRC  = extension-fileio.c
-
 OPT_NET_SRCS = net_single.c net_multi.c \
 	net_mp_selct.c net_mp_poll.c net_mp_fake.c \
 	net_tcp.c \
@@ -63,11 +59,11 @@ SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 
 CLIENT_SRCS = client_bsd.c client_sysv.c
 
-ALL_CSRCS = $(CSRCS) $(OPT_EXT_FUP_SRC) $(OPT_EXT_XML_SRC) $(OPT_FILEIO_SRC) $(CLIENT_SRCS)
+ALL_CSRCS = $(CSRCS) $(CLIENT_SRCS)
 
 SRCS = $(ALL_CSRCS) keywords.gperf $(YSRCS) $(HDRS) $(SYSHDRS)
 
-COBJS = $(CSRCS:.c=.o) $(OPT_EXT_FUP_SRC:.c=.o)  $(OPT_EXT_XML_SRC:.c=.o) $(OPT_FILEIO_SRC:.c=.o)
+COBJS = $(CSRCS:.c=.o)
 
 YOBJS = $(YSRCS:.y=.o)
 
@@ -329,12 +325,6 @@ verbs.o: verbs.c my-string.h config.h db.h program.h structures.h \
   parse_cmd.h functions.h list.h log.h match.h parser.h server.h \
   network.h storage.h  unparse.h utils.h verbs.h
 version.o: version.c config.h version.h
-ext-FUP.o: ext-FUP.c config.h
-ext-xml.o: ext-xml.c config.h bf_register.h functions.h my-stdio.h \
-  execute.h db.h program.h structures.h version.h opcode.h options.h \
-  parse_cmd.h db_tune.h storage.h my-string.h  list.h \
-  streams.h utils.h exceptions.h tasks.h
-extension-fileio.o: extension-fileio.c
 client_bsd.o: client_bsd.c my-socket.h config.h my-stdio.h my-stdlib.h \
   my-string.h my-sys-time.h options.h my-types.h my-unistd.h
 client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h my-stdio.h \
