@@ -213,7 +213,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	/*
 	 * Check permissions, if protected
 	 */
-	if ((!is_obj(caller()) || caller().v.obj != SYSTEM_OBJECT) && f->protected) {
+	if ((!is_obj(caller()) || caller().v.obj != SYSTEM_OBJECT) && f->_protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
 	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, new_obj(SYSTEM_OBJECT), arglist, 0);
 
@@ -319,7 +319,7 @@ make_abort_pack(enum abort_reason reason)
 {
     package p;
 
-    p.kind = P.BI_KILL;
+    p.kind = p.BI_KILL;
     p.u.ret.type = TYPE_INT;
     p.u.ret.v.num = reason;
     return p;
@@ -447,7 +447,7 @@ load_server_protect_function_flags(void)
     int i;
 
     for (i = 0; i < top_bf_table; i++) {
-	bf_table[i].protected
+	bf_table[i]._protected
 	    = server_flag_option(bf_table[i].protect_str, 0);
     }
     oklog("Loaded protect cache for %d builtin functions\n", i);
