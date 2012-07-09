@@ -73,10 +73,10 @@ all_allowed(Var vars, Objid progr, db_object_flag f)
  * Returns true if `this' is a descendant of `obj'.
  */
 static bool
-is_a_descendant(Var this, Var obj)
+is_a_descendant(Var _this, Var obj)
 {
     Var descendants = db_descendants(obj.v.obj, true);
-    int ret = ismember(this, descendants, 1);
+    int ret = ismember(_this, descendants, 1);
     free_var(descendants);
     return ret ? true : false;
 }
@@ -87,11 +87,11 @@ is_a_descendant(Var this, Var obj)
 static bool
 any_are_descendants(Var these, Var obj)
 {
-    Var this, descendants = db_descendants(obj.v.obj, true);
+    Var _this, descendants = db_descendants(obj.v.obj, true);
     int i, c, ret;
-    FOR_EACH(this, these, i, c) {
-	ret = ismember(this, descendants, 1);
-	if (is_a_descendant(this, obj)) {
+    FOR_EACH(_this, these, i, c) {
+	ret = ismember(_this, descendants, 1);
+	if (is_a_descendant(_this, obj)) {
 	    free_var(descendants);
 	    return true;
 	}
@@ -198,11 +198,11 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 static package
 bf_move(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    struct bf_move_data *data = vdata;
+  struct bf_move_data *data = (bf_move_data *)vdata;
     package p;
 
     if (next == 1) {
-	data = alloc_data(sizeof(*data));
+        data = (bf_move_data *) alloc_data(sizeof(*data));
 	data->what = arglist.v.list[1].v.obj;
 	data->where = arglist.v.list[2].v.obj;
     }
@@ -218,7 +218,7 @@ bf_move(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 bf_move_write(void *vdata)
 {
-    struct bf_move_data *data = vdata;
+  struct bf_move_data *data = (bf_move_data *) vdata;
 
     dbio_printf("bf_move data: what = %d, where = %d\n",
 		data->what, data->where);
@@ -227,7 +227,7 @@ bf_move_write(void *vdata)
 static void *
 bf_move_read()
 {
-    struct bf_move_data *data = alloc_data(sizeof(*data));
+    struct bf_move_data *data = (bf_move_data *) alloc_data(sizeof(*data));
 
     if (dbio_scanf("bf_move data: what = %d, where = %d\n",
 		   &data->what, &data->where) == 2)
@@ -289,7 +289,7 @@ bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ|LIST parent [, OBJ owner]) */
-    Objid *data = vdata;
+    Objid *data = (Objid *)vdata;
     Var r;
 
     if (next == 1) {
@@ -344,7 +344,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 
 	    free_var(arglist);
 
-	    data = alloc_data(sizeof(*data));
+	    data = (Objid *) alloc_data(sizeof(*data));
 	    *data = oid;
 	    args = new_list(0);
 	    e = call_verb(oid, "initialize", new_obj(oid), args, 0);
@@ -381,7 +381,7 @@ bf_create_write(void *vdata)
 static void *
 bf_create_read(void)
 {
-    Objid *data = alloc_data(sizeof(Objid));
+    Objid *data = (Objid *) alloc_data(sizeof(Objid));
 
     if (dbio_scanf("bf_create data: oid = %d\n", data) == 1)
 	return data;
@@ -543,7 +543,7 @@ move_to_nothing(Objid oid)
 static int
 first_proc(void *data, Objid oid)
 {
-    Objid *oidp = data;
+    Objid *oidp = (Objid *) data;
 
     *oidp = oid;
     return 1;
@@ -565,7 +565,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
     Objid oid, c;
     Var args;
     enum error e;
-    Objid *data = vdata;
+    Objid *data = (Objid *) vdata;
 
     switch (func_pc) {
     case 1:
@@ -577,7 +577,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	else if (!controls(progr, oid))
 	    return make_error_pack(E_PERM);
 
-	data = alloc_data(sizeof(*data));
+	data = (Objid *) alloc_data(sizeof(*data));
 	*data = oid;
 	args = new_list(0);
 	e = call_verb(oid, "recycle", new_obj(oid), args, 0);
@@ -620,28 +620,28 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    else {
 		int i = 1;
 		int j = 1;
-		Var new = new_list(0);
+		Var _new = new_list(0);
 		while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
-		    new = setadd(new, var_ref(cp.v.list[i]));
+		    _new = setadd(_new, var_ref(cp.v.list[i]));
 		    i++;
 		}
 		if (is_obj(op)) {
 		    if (valid(op.v.obj))
-			new = setadd(new, var_ref(op));
+			_new = setadd(_new, var_ref(op));
 		}
 		else {
 		    while (j <= op.v.list[0].v.num) {
-			new = setadd(new, var_ref(op.v.list[j]));
+			_new = setadd(_new, var_ref(op.v.list[j]));
 			j++;
 		    }
 		}
 		i++;
 		while (i <= cp.v.list[0].v.num) {
-		    new = setadd(new, var_ref(cp.v.list[i]));
+		    _new = setadd(_new, var_ref(cp.v.list[i]));
 		    i++;
 		}
-		db_change_parent(c, new);
-		free_var(new);
+		db_change_parent(c, _new);
+		free_var(_new);
 	    }
 	}
 
@@ -662,7 +662,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 static void
 bf_recycle_write(void *vdata)
 {
-    Objid *data = vdata;
+    Objid *data = (Objid *) vdata;
 
     dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
 }
@@ -670,7 +670,7 @@ bf_recycle_write(void *vdata)
 static void *
 bf_recycle_read(void)
 {
-    Objid *data = alloc_data(sizeof(*data));
+    Objid *data = (Objid *) alloc_data(sizeof(*data));
     int dummy;
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'
