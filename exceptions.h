@@ -100,7 +100,7 @@ extern void ES_RaiseException(Exception * exception, int value);
 	    ES_ctx.link = ES_exceptionStack;			\
 	    ES_exceptionStack = &ES_ctx;			\
 	    							\
-	    if (setjmp((void *) ES_ctx.jmp) != 0)		\
+	    if (setjmp(ES_ctx.jmp) != 0)		\
 		ES_es = ES_Exception;				\
 		    						\
 	    while (1) {						\
@@ -131,7 +131,7 @@ extern void ES_RaiseException(Exception * exception, int value);
 		    /* TRY body goes here */			\
 		}						\
 		if (ES_es == ES_Initialize)			\
-		    ES_ctx.finally = 1;				\
+		    ES_ctx._finally = 1;				\
 		else {						\
 		    ES_exceptionStack = ES_ctx.link;		\
 		    /* FINALLY body goes here */		\
@@ -139,7 +139,7 @@ extern void ES_RaiseException(Exception * exception, int value);
 
 #define ENDTRY								\
 		    /* FINALLY body or handler goes here */		\
-		    if (ES_ctx.finally  &&  ES_es == ES_Exception)  	\
+		    if (ES_ctx._finally  &&  ES_es == ES_Exception)  	\
 			ES_RaiseException((Exception *) ES_ctx.id,	\
 					  (int) ES_ctx.value);		\
 		    break;						\
