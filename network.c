@@ -26,6 +26,50 @@
 Var
 network_connection_options(network_handle nh, Var list)
 {
+  do { 
+    { 
+      Var pair = new_list(2);
+      pair.v.list[1].type = (var_type)(_TYPE_STR | 0x80);
+      pair.v.list[1].v.str = str_dup("client-echo");
+      pair.v.list[2].type = (TYPE_INT);
+      pair.v.list[2].v.num = (((nhandle *)(nh).ptr)->client_echo);
+      (list) = listappend((list), pair);
+    } return (list);
+  } while (0);
+}
+
+int
+network_connection_option(network_handle nh, const char *option, Var * value)
+{
+  do { if (!mystrcasecmp((option), "client-echo")) { (value)->type = (TYPE_INT);
+      (value)->v.num = (((nhandle *)(nh).ptr)->client_echo);
+      return 1;
+    } return 0;
+  } while (0);
+}
+
+int
+network_set_connection_option(network_handle nh, const char *option, Var value)
+{
+  do { if (!mystrcasecmp((option), "client-echo")) { network_set_client_echo((nh), is_true((value)));;
+      return 1;
+    } return 0;
+  } while (0);
+}
+
+/*
+ * after macro expansion, g++ complained that:
+
+g++ -O  -c -o network.o network.c
+network.c: In function 'Var network_connection_options(network_handle, Var)':
+network.c:29: error: invalid conversion from 'int' to 'var_type'
+make: *** [network.o] Error 1
+
+* so I'm commenting this out and placing the macro-expanded copy above.
+
+Var
+network_connection_options(network_handle nh, Var list)
+{
     CONNECTION_OPTION_LIST(NETWORK_CO_TABLE, nh, list);
 }
 
@@ -40,7 +84,7 @@ network_set_connection_option(network_handle nh, const char *option, Var value)
 {
     CONNECTION_OPTION_SET(NETWORK_CO_TABLE, nh, option, value);
 }
-
+*/
 
 /* 
  * $Log: network.c,v $

@@ -108,7 +108,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
     if (port == 0) {
 	size_t length = sizeof(address);
 
-	if (getsockname(s, (struct sockaddr *) &address, &length) < 0) {
+	if (getsockname(s, (struct sockaddr *) &address, (socklen_t *) &length) < 0) {
 	    log_perror("Discovering local port number");
 	    close(s);
 	    return E_QUOTA;
@@ -145,7 +145,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
     if (!s)
 	s = new_stream(100);
 
-    fd = accept(listener_fd, (struct sockaddr *) &address, &addr_length);
+    fd = accept(listener_fd, (struct sockaddr *) &address, (socklen_t *) &addr_length);
     if (fd < 0) {
 	if (errno == EMFILE)
 	    return PA_FULL;

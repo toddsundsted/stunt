@@ -300,6 +300,11 @@ extern int read_active_connections(void);
  * (nothing should need to invoke these directly):
  */
 #define _RMPAREN2(ARG1,ARG2) ARG1,ARG2
+
+/* the following macro, using while(0), is a common kludge; see:
+ * http://gcc.gnu.org/onlinedocs/cpp/Stringification.html#Stringification
+ * http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+ */
 #define _STATEMENT(STMT) do STMT while (0)
 
 #define _CONNECT_OPTION_GET_SINGLE(NAME, OPTION, VALUE,		\
