@@ -51,19 +51,19 @@ void byteReverse(unsigned char *buf, unsigned longs)
 
 
 
-int hash_init_md5(void * ctx)
+int hash_init_md5(context_md5_t * ctx)
 {
   MD5Init(ctx);
   return FALSE;
 }
 
-int hash_update_md5(void *ctx, unsigned char *buf, uint64_t len)
+int hash_update_md5(context_md5_t *ctx, unsigned char *buf, uint64_t len)
 {
   MD5Update(ctx,buf,len);
   return FALSE;
 }
 
-int hash_final_md5(void *ctx, unsigned char *digest)
+int hash_final_md5(context_md5_t *ctx, unsigned char *digest)
 {
   MD5Final(digest,ctx);
   return FALSE;

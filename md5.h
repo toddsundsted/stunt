@@ -36,8 +36,8 @@ void MD5Update(context_md5_t *context, unsigned char *buf, unsigned len);
 void MD5Final(unsigned char digest[16], context_md5_t *context);
 void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 
-int hash_init_md5(void * ctx);
-int hash_update_md5(void *ctx, unsigned char *buf, uint64_t len);
-int hash_final_md5(void *ctx, unsigned char *digest);
+int hash_init_md5(context_md5_t * ctx);
+int hash_update_md5(context_md5_t *ctx, unsigned char *buf, uint64_t len);
+int hash_final_md5(context_md5_t *ctx, unsigned char *digest);
 
 #endif /* ifndef __MD5_H */
