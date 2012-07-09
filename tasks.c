@@ -275,7 +275,7 @@ icmd_list(int icmd_flags)
 {
     Var s;
     Var list = new_list(0);
-    s.type = TYPE_STR;
+    s.type = (var_type) TYPE_STR;
 #define _ICMD_MKSTR(ICMD_PREFIX,PREFIX,_)	\
 	if (icmd_flags & (1<<ICMD_PREFIX)) {	\
 	    s.v.str = str_dup(#PREFIX);		\
@@ -632,7 +632,7 @@ struct state {
 static void
 my_error(void *data, const char *msg)
 {
-    struct state *s = data;
+  struct state *s = (state *) data;
 
     notify(s->player, msg);
     s->nerrors++;
@@ -641,7 +641,7 @@ my_error(void *data, const char *msg)
 static int
 my_getc(void *data)
 {
-    struct state *s = data;
+  struct state *s = (state *) data;
 
     if (*(s->input) != '\0')
 	return *(s->input++);
@@ -663,7 +663,7 @@ end_programming(tqueue * tq)
 	db_verb_handle h;
 	Var desc;
 
-	desc.type = TYPE_STR;
+	desc.type = (var_type) TYPE_STR;
 	desc.v.str = tq->program_verb;
 	h = find_described_verb(tq->program_object, desc);
 
@@ -921,7 +921,7 @@ task_queue
 new_task_queue(Objid player, Objid handler)
 {
     task_queue result;
-    tqueue *tq = result.ptr = find_tqueue(player, 1);
+    tqueue *tq = (tqueue *) result.ptr = (tqueue *) find_tqueue(player, 1);
 
     tq->connected = 1;
     tq->handler = handler;
@@ -982,7 +982,7 @@ free_task_queue(task_queue q)
 	       if (!icmd_set_flags(tq, value))				\
 		   return 0;						\
 	   })								\
-
+    /*
 int
 tasks_set_connection_option(task_queue q, const char *option, Var value)
 {
@@ -999,6 +999,83 @@ Var
 tasks_connection_options(task_queue q, Var list)
 {
     CONNECTION_OPTION_LIST(TASK_CO_TABLE, (tqueue *)q.ptr, list);
+}
+    */
+
+int
+tasks_set_connection_option(task_queue q, const char *option, Var value)
+{
+  do { if (!mystrcasecmp((option), "flush-command")) { { if (((tqueue *)q.ptr)->flush_cmd) free_str(((tqueue *)q.ptr)->flush_cmd);
+        if ((value).type == (_TYPE_STR | 0x80) && (value).v.str[0] != '\0') ((tqueue *)q.ptr)->flush_cmd = str_ref((value).v.str);
+        else ((tqueue *)q.ptr)->flush_cmd = 0;
+      };
+      return 1;
+    } if (!mystrcasecmp((option), "hold-input")) { { ((tqueue *)q.ptr)->hold_input = is_true((value));
+        if (!((tqueue *)q.ptr)->hold_input && ((tqueue *)q.ptr)->first_input) ensure_usage(((tqueue *)q.ptr));
+      };
+      return 1;
+    } if (!mystrcasecmp((option), "disable-oob")) { { ((tqueue *)q.ptr)->disable_oob = is_true((value));
+        if (!((tqueue *)q.ptr)->disable_oob && ((tqueue *)q.ptr)->first_input && (((tqueue *)q.ptr)->first_itail->next || ((tqueue *)q.ptr)->first_input->kind == TASK_OOB)) ensure_usage(((tqueue *)q.ptr));
+      };
+      return 1;
+    } if (!mystrcasecmp((option), "intrinsic-commands")) { { if (!icmd_set_flags(((tqueue *)q.ptr), (value))) return 0;
+      };
+      return 1;
+    } return 0;
+  } while (0);
+
+}
+
+int
+tasks_connection_option(task_queue q, const char *option, Var * value)
+{
+  do { if (!mystrcasecmp((option), "flush-command")) { (value)->type = (var_type) ((_TYPE_STR | 0x80));
+      (value)->v.str = (((tqueue *)q.ptr)->flush_cmd ? str_ref(((tqueue *)q.ptr)->flush_cmd) : str_dup(""));
+      return 1;
+    } if (!mystrcasecmp((option), "hold-input")) { (value)->type = (TYPE_INT);
+      (value)->v.num = (((tqueue *)q.ptr)->hold_input);
+      return 1;
+    } if (!mystrcasecmp((option), "disable-oob")) { (value)->type = (TYPE_INT);
+      (value)->v.num = (((tqueue *)q.ptr)->disable_oob);
+      return 1;
+    } if (!mystrcasecmp((option), "intrinsic-commands")) { (value)->type = (var_type) ((_TYPE_LIST | 0x80));
+      (value)->v.list = (icmd_list(((tqueue *)q.ptr)->icmds).v.list);
+      return 1;
+    } return 0;
+  } while (0);
+
+}
+
+Var
+tasks_connection_options(task_queue q, Var list)
+{
+  do { { Var pair = new_list(2);
+      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
+      pair.v.list[1].v.str = str_dup("flush-command");
+      pair.v.list[2].type = (var_type) ((_TYPE_STR | 0x80));
+      pair.v.list[2].v.str = (((tqueue *)q.ptr)->flush_cmd ? str_ref(((tqueue *)q.ptr)->flush_cmd) : str_dup(""));
+      (list) = listappend((list), pair);
+    } { Var pair = new_list(2);
+      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
+      pair.v.list[1].v.str = str_dup("hold-input");
+      pair.v.list[2].type = (TYPE_INT);
+      pair.v.list[2].v.num = (((tqueue *)q.ptr)->hold_input);
+      (list) = listappend((list), pair);
+    } { Var pair = new_list(2);
+      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
+      pair.v.list[1].v.str = str_dup("disable-oob");
+      pair.v.list[2].type = (TYPE_INT);
+      pair.v.list[2].v.num = (((tqueue *)q.ptr)->disable_oob);
+      (list) = listappend((list), pair);
+    } { Var pair = new_list(2);
+      pair.v.list[1].type = (var_type) (_TYPE_STR | 0x80);
+      pair.v.list[1].v.str = str_dup("intrinsic-commands");
+      pair.v.list[2].type = (var_type) ((_TYPE_LIST | 0x80));
+      pair.v.list[2].v.list = (icmd_list(((tqueue *)q.ptr)->icmds).v.list);
+      (list) = listappend((list), pair);
+    } return (list);
+  } while (0);
+
 }
 
 #undef TASK_CO_TABLE
@@ -1062,7 +1139,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
 void
 task_suspend_input(task_queue q)
 {
-    tqueue *tq = q.ptr;
+  tqueue *tq = (tqueue *) q.ptr;
 
     if (!tq->input_suspended && tq->connected) {
 	server_suspend_input(tq->player);
@@ -1100,7 +1177,7 @@ flush_input(tqueue * tq, int show_messages)
 void
 new_input_task(task_queue q, const char *input, int binary)
 {
-    tqueue *tq = q.ptr;
+  tqueue *tq = (tqueue *) q.ptr;
 
     if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd) == 0) {
 	flush_input(tq, 1);
@@ -1275,7 +1352,7 @@ read_input_now(Objid connection)
 	r.type = TYPE_INT;
 	r.v.num = 0;
     } else {
-	r.type = TYPE_STR;
+	r.type = (var_type) TYPE_STR;
 	r.v.str = t->t.input.string;
 	myfree(t, M_TASK);
     }
@@ -1318,7 +1395,7 @@ make_http_task(vm the_vm, Objid player, int request)
 	tq->reading_vm = the_vm;
 	if (tq->parsing_state == NULL) {
 	    tq->parsing_state =
-		mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
+                (http_parsing_state *) mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
 	    init_http_parsing_state(tq->parsing_state);
 	}
 	tq->parsing_state->status = PARSING;
@@ -1372,7 +1449,7 @@ next_task_start(void)
 }
 
 static Var
-create_or_extend(Var in, const char *new, int newlen)
+create_or_extend(Var in, const char *_new, int newlen)
 {
     static Stream *s = NULL;
     if (!s)
@@ -1382,13 +1459,13 @@ create_or_extend(Var in, const char *new, int newlen)
 
     if (in.type == TYPE_STR) {
 	stream_add_string(s, in.v.str);
-	stream_add_raw_bytes_to_binary(s, new, newlen);
+	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
 	out.type = TYPE_STR;
 	out.v.str = str_dup(reset_stream(s));
     }
     else {
-	stream_add_raw_bytes_to_binary(s, new, newlen);
+	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
 	out.type = TYPE_STR;
 	out.v.str = str_dup(reset_stream(s));
@@ -1498,7 +1575,7 @@ on_message_complete_callback(http_parser *parser)
     if (parser->type == HTTP_REQUEST) {
 	Var method;
 	method.type = TYPE_STR;
-	method.v.str = str_dup(http_method_str(state->parser.method));
+	method.v.str = str_dup(http_method_str((http_method)state->parser.method));
 	state->result = mapinsert(state->result, var_dup(METHOD), method);
     }
     else { /* HTTP_RESPONSE */
@@ -1633,9 +1710,9 @@ run_ready_tasks(void)
 				key.v.str = str_dup("error");
 				value = new_list(2);
 				value.v.list[1].type = TYPE_STR;
-				value.v.list[1].v.str = str_dup(http_errno_name(tq->parsing_state->parser.http_errno));
+				value.v.list[1].v.str = str_dup(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
 				value.v.list[2].type = TYPE_STR;
-				value.v.list[2].v.str = str_dup(http_errno_description(tq->parsing_state->parser.http_errno));
+				value.v.list[2].v.str = str_dup(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
 				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
 				done = 1;
 			    }
@@ -2111,7 +2188,7 @@ find_verb_for_programming(Objid player, const char *verbref,
 	free_str(copy);
 	return h;
     }
-    desc.type = TYPE_STR;
+    desc.type = (var_type) TYPE_STR;
     desc.v.str = *vname;
     h = find_described_verb(oid, desc);
     free_str(copy);
@@ -2235,7 +2312,7 @@ list_for_forked_task(forked_task ft)
     list.v.list[5].v.obj = ft.a.progr;
     list.v.list[6].type = TYPE_OBJ;
     list.v.list[6].v.obj = ft.a.vloc;
-    list.v.list[7].type = TYPE_STR;
+    list.v.list[7].type = (var_type) TYPE_STR;
     list.v.list[7].v.str = str_ref(ft.a.verbname);
     list.v.list[8].type = TYPE_INT;
     list.v.list[8].v.num = find_line_number(ft.program, ft.f_index, 0);
@@ -2276,7 +2353,7 @@ list_for_vm(vm the_vm)
     list.v.list[5].v.obj = progr_of_cur_verb(the_vm);
     list.v.list[6].type = TYPE_OBJ;
     list.v.list[6].v.obj = top_activ(the_vm).vloc;
-    list.v.list[7].type = TYPE_STR;
+    list.v.list[7].type = (var_type) TYPE_STR;
     list.v.list[7].v.str = str_ref(top_activ(the_vm).verbname);
     list.v.list[8].type = TYPE_INT;
     list.v.list[8].v.num = suspended_lineno_of_vm(the_vm);
@@ -2316,7 +2393,7 @@ list_for_reading_task(Objid player, vm the_vm)
 static task_enum_action
 counting_closure(vm the_vm, const char *status, void *data)
 {
-    struct qcl_data *qdata = data;
+  struct qcl_data *qdata = (qcl_data *) data;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm))
 	qdata->i++;
@@ -2327,12 +2404,12 @@ counting_closure(vm the_vm, const char *status, void *data)
 static task_enum_action
 listing_closure(vm the_vm, const char *status, void *data)
 {
-    struct qcl_data *qdata = data;
+  struct qcl_data *qdata = (qcl_data *) data;
     Var list;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
 	list = list_for_vm(the_vm);
-	list.v.list[2].type = TYPE_STR;
+	list.v.list[2].type = (var_type) TYPE_STR;
 	list.v.list[2].v.str = str_dup(status);
 	qdata->tasks.v.list[qdata->i++] = list;
     }
@@ -2343,7 +2420,7 @@ listing_closure(vm the_vm, const char *status, void *data)
 static task_enum_action
 writing_closure(vm the_vm, const char *status, void *data)
 {
-    struct qcl_data *qdata = data;
+    struct qcl_data *qdata = (qcl_data *)data;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
 	dbio_printf("%d %s\n", the_vm->task_id, status);
@@ -2446,7 +2523,7 @@ struct fcl_data {
 static task_enum_action
 finding_closure(vm the_vm, const char *status, void *data)
 {
-    struct fcl_data *fdata = data;
+  struct fcl_data *fdata = (fcl_data *) data;
 
     if (the_vm->task_id == fdata->id) {
 	fdata->the_vm = the_vm;
@@ -2505,7 +2582,7 @@ struct kcl_data {
 static task_enum_action
 killing_closure(vm the_vm, const char *status, void *data)
 {
-    struct kcl_data *kdata = data;
+  struct kcl_data *kdata = (kcl_data *) data;
 
     if (the_vm->task_id == kdata->id) {
 	if (is_wizard(kdata->owner)
@@ -2719,7 +2796,8 @@ bf_output_delimiters(Var arglist, Byte next, void *vdata, Objid progr)
 	    suffix = "";
 
 	r = new_list(2);
-	r.v.list[1].type = r.v.list[2].type = TYPE_STR;
+	r.v.list[1].type = (var_type) TYPE_STR;
+        r.v.list[2].type = (var_type) TYPE_STR;
 	r.v.list[1].v.str = str_dup(prefix);
 	r.v.list[2].v.str = str_dup(suffix);
     }
@@ -2801,10 +2879,10 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid old_player = arglist.v.list[1].v.obj;
     Objid new_player = arglist.v.list[2].v.obj;
-    int new = 0;
+    int _new = 0;
 
     if (listlength(arglist) > 2)
-	new = is_true(arglist.v.list[3]);
+	_new = is_true(arglist.v.list[3]);
 
     free_var(arglist);
 
@@ -2852,7 +2930,7 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 	dead_tq->num_bg_tasks = 0;
     }
 
-    player_connected_silent(old_player, new_player, new);
+    player_connected_silent(old_player, new_player, _new);
     boot_player(old_player);
 
     return no_var_pack();

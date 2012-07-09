@@ -22,6 +22,8 @@
 #include "execute.h"
 #include "structures.h"
 
+// FIXME: have to find a solution for this void pointer
+// possibly the pointer will only ever point to a tqueue, but would have to trace it
 typedef struct {
     void *ptr;
 } task_queue;
