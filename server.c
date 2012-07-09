@@ -293,7 +293,7 @@ child_completed_signal(int sig)
      * argument type.
      */
 #if HAVE_WAITPID
-    while ((p = waitpid(-1, (void *) &status, WNOHANG)) > 0) {
+    while ((p = waitpid(-1, (int *) &status, WNOHANG)) > 0) {
 	if (!exec_complete(p, WEXITSTATUS(status)))
 	    checkpoint_child = p;
     }
@@ -588,6 +588,8 @@ init_cmdline(int argc, char *argv[])
 	       network_set_connection_binary(H->nhandle, H->binary);	\
 	   })								\
 
+
+/*
 static int
 server_set_connection_option(shandle * h, const char *option, Var value)
 {
@@ -604,6 +606,47 @@ static Var
 server_connection_options(shandle * h, Var list)
 {
     CONNECTION_OPTION_LIST(SERVER_CO_TABLE, h, list);
+}
+*/
+
+static int
+server_set_connection_option(shandle * h, const char *option, Var value)
+{
+  do {
+    if (!mystrcasecmp((option), "binary")) {
+      { (h)->binary = is_true((value));
+        network_set_connection_binary((h)->nhandle, (h)->binary);
+      };
+      return 1; }
+    return 0; }
+  while (0);
+}
+
+static int
+server_connection_option(shandle * h, const char *option, Var * value)
+{
+  do {
+    if (!mystrcasecmp((option), "binary")) {
+      (value)->type = (TYPE_INT);
+      (value)->v.num = ((h)->binary);
+      return 1; } 
+    return 0; } 
+  while (0);
+}
+
+static Var
+server_connection_options(shandle * h, Var list)
+{
+  do {
+    { Var pair = new_list(2);
+      pair.v.list[1].type = (var_type)(_TYPE_STR | 0x80);
+      pair.v.list[1].v.str = str_dup("binary");
+      pair.v.list[2].type = (TYPE_INT);
+      pair.v.list[2].v.num = ((h)->binary);
+      (list) = listappend((list), pair);
+    }
+    return (list);
+  } while (0);
 }
 
 #undef SERVER_CO_TABLE
@@ -699,7 +742,7 @@ emergency_mode()
 	    Program *program;
 	    Var str;
 
-	    str.type = TYPE_STR;
+	    str.type = (var_type)TYPE_STR;
 	    code = new_list(0);
 
 	    if (*++line == ';')
@@ -786,7 +829,7 @@ emergency_mode()
 		    Program *program;
 
 		    code = new_list(0);
-		    str.type = TYPE_STR;
+		    str.type = (var_type)TYPE_STR;
 
 		    while (strcmp(line = read_stdin_line(), ".")) {
 			str.v.str = str_dup(line);
@@ -964,7 +1007,7 @@ static Objid next_unconnected_player = NOTHING - 1;
 server_handle
 server_new_connection(server_listener sl, network_handle nh, int outbound)
 {
-    slistener *l = sl.ptr;
+  slistener *l = (slistener *) sl.ptr;
     shandle *h = (shandle *) mymalloc(sizeof(shandle), M_NETWORK);
     server_handle result;
 
@@ -1007,7 +1050,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 void
 server_refuse_connection(server_listener sl, network_handle nh)
 {
-    slistener *l = sl.ptr;
+  slistener *l = (slistener *) sl.ptr;
 
     if (l->print_messages)
 	send_message(l->oid, nh, "server_full_msg",
@@ -1244,7 +1287,7 @@ read_active_connections(void)
 int
 main(int argc, char **argv)
 {
-    char *self_program = str_dup(argv[0]);
+    char *this_program = str_dup(argv[0]);
     const char *log_file = 0;
     int emergency = 0;
     Var desc;
@@ -1350,7 +1393,7 @@ bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
 	r = server_version_full(arglist.v.list[1]);
     }
     else {
-	r.type = TYPE_STR;
+        r.type = (var_type)TYPE_STR;
 	r.v.str = str_dup(server_version);
     }
     free_var(arglist);
@@ -1611,7 +1654,7 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!conn_name)
 	return make_error_pack(E_INVARG);
     else {
-	r.type = TYPE_STR;
+      r.type = (var_type)TYPE_STR;
 	r.v.str = str_dup(conn_name);
 	return make_var_pack(r);
     }
