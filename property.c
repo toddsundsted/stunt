@@ -29,10 +29,10 @@ struct prop_data {
 static int
 add_to_list(void *data, const char *prop_name)
 {
-    struct prop_data *d = data;
+    struct prop_data *d = (prop_data *) data;
 
     d->i++;
-    d->r.v.list[d->i].type = TYPE_STR;
+    d->r.v.list[d->i].type = (var_type) TYPE_STR;
     d->r.v.list[d->i].v.str = str_ref(prop_name);
 
     return 0;
@@ -86,7 +86,7 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
     r = new_list(2);
     r.v.list[1].type = TYPE_OBJ;
     r.v.list[1].v.obj = db_property_owner(h);
-    r.v.list[2].type = TYPE_STR;
+    r.v.list[2].type = (var_type) TYPE_STR;
     s = perms;
     flags = db_property_flags(h);
     if (flags & PF_READ)
