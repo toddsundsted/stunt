@@ -58,7 +58,7 @@ int re_set_syntax(int);
 /* This sets the syntax to use and returns the previous syntax.  The
    syntax is specified by a bit mask of the above defined bits. */
 
-const char *re_compile_pattern(char, int, regexp_t);
+const char *re_compile_pattern(char *, int, regexp_t);
 /* This compiles the regexp (given in regex and length in regex_size).
    This returns NULL if the regexp compiled successfully, and an error
    message if an error was encountered.  The buffer field must be

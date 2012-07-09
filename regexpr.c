@@ -250,7 +250,7 @@ hex_char_to_decimal(int ch)
 }
 
 const char *
-re_compile_pattern(char regex, int size, regexp_t bufp)
+re_compile_pattern(char *regex, int size, regexp_t bufp)
 {
     int a, pos, op, current_level, level, opcode;
     int pattern_offset, alloc;
@@ -388,7 +388,7 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
     alloc = bufp->allocated;
     if (alloc == 0 || pattern == NULL) {
 	alloc = 256;
-	pattern = malloc(alloc);
+	pattern = (char *) malloc(alloc);
 	if (!pattern)
 	    goto out_of_memory;
     }
@@ -408,12 +408,24 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	if (pos >= size)
 	    op = Rend;
 	else {
-	    NEXTCHAR(ch);
+            //NEXTCHAR(ch);
+
+            do {
+              if (pos >= size) goto ends_prematurely;
+              (ch) = regex[pos];
+              pos++;
+            } while (0);
+
 	    if (translate)
 		ch = translate[(unsigned char) ch];
 	    op = regexp_plain_ops[(unsigned char) ch];
 	    if (op == Rquote) {
-		NEXTCHAR(ch);
+                //NEXTCHAR(ch);
+              do {
+                if (pos >= size) goto ends_prematurely;
+                (ch) = regex[pos];
+                pos++;
+              } while (0);
 		op = regexp_quoted_ops[(unsigned char) ch];
 		if (op == Rnormal && regexp_ansi_sequences)
 		    ANSI_TRANSLATE(ch);
@@ -441,7 +453,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	    opcode = Cexact;
 	  store_opcode_and_arg:	/* opcode & ch must be set */
 	    SET_LEVEL_START;
-	    ALLOC(2);
+	    //ALLOC(2);
+            do { if (pattern_offset+(2) > alloc) { alloc += 256 + (2); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 	    STORE(opcode);
 	    STORE(ch);
 	    break;
@@ -449,7 +462,9 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	    opcode = Canychar;
 	  store_opcode:
 	    SET_LEVEL_START;
-	    ALLOC(1);
+	    //ALLOC(1);
+            do { if (pattern_offset+(1) > alloc) { alloc += 256 + (1); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
+
 	    STORE(opcode);
 	    break;
 	case Rquote:
@@ -492,7 +507,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	    }
 	    if (CURRENT_LEVEL_START == pattern_offset)
 		break;		/* ignore empty patterns for ? */
-	    ALLOC(3);
+	    //ALLOC(3);
+            do { if (pattern_offset+(3) > alloc) { alloc += 256 + (3); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 	    INSERT_JUMP(CURRENT_LEVEL_START, Cfailure_jump,
 			pattern_offset + 3);
 	    break;
@@ -506,7 +522,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	    }
 	    if (CURRENT_LEVEL_START == pattern_offset)
 		break;		/* ignore empty patterns for + and * */
-	    ALLOC(9);
+	    //ALLOC(9);
+            do { if (pattern_offset+(9) > alloc) { alloc += 256 + (9); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 	    INSERT_JUMP(CURRENT_LEVEL_START, Cfailure_jump,
 			pattern_offset + 6);
 	    INSERT_JUMP(pattern_offset, Cstar_jump, CURRENT_LEVEL_START);
@@ -515,7 +532,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 			    CURRENT_LEVEL_START + 6);
 	    break;
 	case Ror:
-	    ALLOC(6);
+            //ALLOC(6);
+          do { if (pattern_offset+(6) > alloc) { alloc += 256 + (6); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 	    INSERT_JUMP(CURRENT_LEVEL_START, Cfailure_jump,
 			pattern_offset + 6);
 	    if (num_jumps >= MAX_NESTING)
@@ -530,7 +548,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	    SET_LEVEL_START;
 	    if (next_register < RE_NREGS) {
 		bufp->uses_registers = 1;
-		ALLOC(2);
+		//ALLOC(2);
+                do { if (pattern_offset+(2) > alloc) { alloc += 256 + (2); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 		STORE(Cstart_memory);
 		STORE(next_register);
 		open_registers[num_open_registers++] = next_register;
@@ -549,7 +568,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 	    paren_depth--;
 	    if (paren_depth < num_open_registers) {
 		bufp->uses_registers = 1;
-		ALLOC(2);
+		//ALLOC(2);
+                do { if (pattern_offset+(2) > alloc) { alloc += 256 + (2); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 		STORE(Cend_memory);
 		num_open_registers--;
 		STORE(open_registers[num_open_registers]);
@@ -581,7 +601,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 		int complement, prev, offset, range, firstchar;
 
 		SET_LEVEL_START;
-		ALLOC(1 + 256 / 8);
+		//ALLOC(1 + 256 / 8);
+                do { if (pattern_offset+(1 + 256 / 8) > alloc) { alloc += 256 + (1 + 256 / 8); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
 		STORE(Cset);
 		offset = pattern_offset;
 		for (a = 0; a < 256 / 8; a++)
@@ -681,7 +702,8 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
     if (starts_base != 0)
 	goto parenthesis_error;
     assert(num_jumps == 0);
-    ALLOC(1);
+    //ALLOC(1);
+    do { if (pattern_offset+(1) > alloc) { alloc += 256 + (1); pattern = (char *) realloc(pattern, alloc); if (!pattern) goto out_of_memory; } } while (0);
     STORE(Cend);
     SET_FIELDS;
     return NULL;
@@ -728,12 +750,10 @@ re_compile_pattern(char regex, int size, regexp_t bufp)
 #undef SETBIT
 #undef SET_FIELDS
 
-static void re_compile_fastmap_aux
- PROTO((char *, int, char *, char *, char *));
+static void re_compile_fastmap_aux(char *, int, char *, char *, char *);
+
 static void
-re_compile_fastmap_aux(code, pos, visited, can_be_null, fastmap)
-    char *code, *visited, *can_be_null, *fastmap;
-    int pos;
+re_compile_fastmap_aux(char *code, int pos, char *visited, char *can_be_null, char *fastmap)
 {
     int a, b, syntaxcode;
 
@@ -825,18 +845,16 @@ re_compile_fastmap_aux(code, pos, visited, can_be_null, fastmap)
 	}
 }
 
-static int re_do_compile_fastmap PROTO((char *, int, int, char *, char *));
+static int re_do_compile_fastmap(char *, int, int, char *, char *);
 static int
-re_do_compile_fastmap(buffer, used, pos, can_be_null, fastmap)
-    char *buffer, *fastmap, *can_be_null;
-    int used, pos;
+re_do_compile_fastmap(char *buffer, int used, int pos, char *can_be_null, char *fastmap)
 {
     char small_visited[512], *visited;
 
     if (used <= sizeof(small_visited))
 	visited = small_visited;
     else {
-	visited = malloc(used);
+      visited = (char *) malloc(used);
 	if (!visited)
 	    return 0;
     }
@@ -850,8 +868,7 @@ re_do_compile_fastmap(buffer, used, pos, can_be_null, fastmap)
 }
 
 void
-re_compile_fastmap(bufp)
-    regexp_t bufp;
+re_compile_fastmap(regexp_t bufp)
 {
     if (!bufp->fastmap || bufp->fastmap_accurate)
 	return;
@@ -873,11 +890,7 @@ re_compile_fastmap(bufp)
 
 
 int
-re_match_2(bufp, string1, size1, string2, size2, pos, regs, mstop)
-    regexp_t bufp;
-    char *string1, *string2;
-    int size1, size2, pos, mstop;
-    regexp_registers_t regs;
+re_match_2(regexp_t bufp, char *string1, int size1, char *string2, int size2, int pos, regexp_registers_t regs, int mstop)
 {
     struct failure_point {
 	char *text, *partend, *code;
@@ -1337,22 +1350,14 @@ re_match_2(bufp, string1, size1, string2, size2, pos, regs, mstop)
 #undef PUSH_FAILURE
 
 int
-re_match(bufp, string, size, pos, regs)
-    regexp_t bufp;
-    char *string;
-    int size, pos;
-    regexp_registers_t regs;
+re_match(regexp_t bufp, char *string, int size, int pos, regexp_registers_t regs)
 {
     return re_match_2(bufp, string, size, (char *) NULL, 0, pos, regs, size);
 }
 
 int
-re_search_2(bufp, string1, size1, string2, size2, pos, range, regs,
-	    mstop)
-    regexp_t bufp;
-    char *string1, *string2;
-    int size1, size2, pos, range, mstop;
-    regexp_registers_t regs;
+re_search_2(regexp_t bufp, char *string1, int size1, char *string2, int size2, int pos, int range, regexp_registers_t regs,
+	    int mstop)
 {
     char *fastmap, *translate, *text, *partstart, *partend;
     int dir, ret;
@@ -1448,11 +1453,7 @@ re_search_2(bufp, string1, size1, string2, size2, pos, range, regs,
 }
 
 int
-re_search(bufp, string, size, startpos, range, regs)
-    regexp_t bufp;
-    char *string;
-    int size, startpos, range;
-    regexp_registers_t regs;
+re_search(regexp_t bufp, char *string, int size, int startpos, int range, regexp_registers_t regs)
 {
     return re_search_2(bufp, string, size, (char *) NULL, 0,
 		       startpos, range, regs, size);
