@@ -54,11 +54,11 @@ typedef struct re_registers {
 #define RE_SYNTAX_GREP	(RE_BK_PLUS_QM|RE_NEWLINE_OR)
 #define RE_SYNTAX_EMACS	0
 
-int re_set_syntax(int syntax);
+int re_set_syntax(int);
 /* This sets the syntax to use and returns the previous syntax.  The
    syntax is specified by a bit mask of the above defined bits. */
 
-const char *re_compile_pattern(char *regex, int regex_size, regexp_t compiled);
+const char *re_compile_pattern(char, int, regexp_t);
 /* This compiles the regexp (given in regex and length in regex_size).
    This returns NULL if the regexp compiled successfully, and an error
    message if an error was encountered.  The buffer field must be

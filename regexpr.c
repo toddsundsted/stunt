@@ -224,9 +224,8 @@ re_compile_initialize()
     regexp_ansi_sequences = (regexp_syntax & RE_ANSI_HEX) != 0;
 }
 
-int
-re_set_syntax(syntax)
-    int syntax;
+int 
+re_set_syntax(int syntax)
 {
     int ret;
 
@@ -239,8 +238,7 @@ re_set_syntax(syntax)
 
 static int hex_char_to_decimal PROTO((int));
 static int
-hex_char_to_decimal(ch)
-    int ch;
+hex_char_to_decimal(int ch)
 {
     if (ch >= '0' && ch <= '9')
 	return ch - '0';
@@ -252,10 +250,7 @@ hex_char_to_decimal(ch)
 }
 
 const char *
-re_compile_pattern(regex, size, bufp)
-    char *regex;
-    int size;
-    regexp_t bufp;
+re_compile_pattern(char regex, int size, regexp_t bufp)
 {
     int a, pos, op, current_level, level, opcode;
     int pattern_offset, alloc;
