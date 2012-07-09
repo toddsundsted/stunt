@@ -41,10 +41,10 @@ struct verb_data {
 static int
 add_to_list(void *data, const char *verb_name)
 {
-    struct verb_data *d = data;
+    struct verb_data *d = (verb_data *) data;
 
     d->i++;
-    d->r.v.list[d->i].type = TYPE_STR;
+    d->r.v.list[d->i].type = (var_type) TYPE_STR;
     d->r.v.list[d->i].v.str = str_ref(verb_name);
 
     return 0;
@@ -287,7 +287,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     r = new_list(3);
     r.v.list[1].type = TYPE_OBJ;
     r.v.list[1].v.obj = db_verb_owner(h);
-    r.v.list[2].type = TYPE_STR;
+    r.v.list[2].type = (var_type) TYPE_STR;
     s = perms;
     flags = db_verb_flags(h);
     if (flags & VF_READ)
@@ -300,7 +300,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 	*s++ = 'd';
     *s = '\0';
     r.v.list[2].v.str = str_dup(perms);
-    r.v.list[3].type = TYPE_STR;
+    r.v.list[3].type = (var_type) TYPE_STR;
     r.v.list[3].v.str = str_ref(db_verb_names(h));
 
     return make_var_pack(r);
@@ -388,11 +388,11 @@ bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 
     db_verb_arg_specs(h, &dobj, &prep, &iobj);
     r = new_list(3);
-    r.v.list[1].type = TYPE_STR;
+    r.v.list[1].type = (var_type) TYPE_STR;
     r.v.list[1].v.str = unparse_arg_spec(dobj);
-    r.v.list[2].type = TYPE_STR;
+    r.v.list[2].type = (var_type) TYPE_STR;
     r.v.list[2].v.str = str_dup(db_unparse_prep(prep));
-    r.v.list[3].type = TYPE_STR;
+    r.v.list[3].type = (var_type) TYPE_STR;
     r.v.list[3].v.str = unparse_arg_spec(iobj);
 
     return make_var_pack(r);
@@ -438,7 +438,7 @@ lister(void *data, const char *line)
     Var *r = (Var *) data;
     Var v;
 
-    v.type = TYPE_STR;
+    v.type = (var_type) TYPE_STR;
     v.v.str = str_dup(line);
     *r = listappend(*r, v);
 }
