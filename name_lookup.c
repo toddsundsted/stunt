@@ -76,8 +76,9 @@ spawn_pipe(void (*child_proc) (int to_parent, int from_parent),
 
 	/* Cast to (void *) to avoid warnings on systems that misdeclare the
 	 * argument.
+         * june 2009: removing cast to satisfy g++. --sw
 	 */
-	wait((void *) &status);	/* wait for middleman to die */
+	wait( &status );	/* wait for middleman to die */
 	if (status != 0) {
 	    errlog("SPAWNING: Middleman died with status %d!\n", status);
 	    close(pipe_to_child[1]);
@@ -114,7 +115,7 @@ ensure_buffer(char **buffer, int *buflen, int len)
 	if (*buffer)
 	    myfree(*buffer, M_STRING);
 	*buflen = len;
-	*buffer = mymalloc(len, M_STRING);
+	*buffer = (char *) mymalloc(len, M_STRING);
     }
 }
 
@@ -134,10 +135,12 @@ robust_read(int fd, void *buffer, int len)
  * Data structures and types used by more than one process.
  *****************************************************************************/
 
+enum Req_Kind {
+  REQ_NAME_FROM_ADDR, REQ_ADDR_FROM_NAME
+};
+
 struct request {
-    enum {
-	REQ_NAME_FROM_ADDR, REQ_ADDR_FROM_NAME
-    } kind;
+    Req_Kind kind;
     unsigned timeout;
     union {
 	unsigned length;
@@ -180,8 +183,10 @@ lookup(int to_intermediary, int from_intermediary)
 	    id = set_timer(req.timeout, timeout_proc, 0);
 	    /* This cast is to work around systems like NeXT that declare
 	     * gethostbyname() to take a non-const string pointer.
+             *
+             * disabled june 2009. --sw
 	     */
-	    e = gethostbyname((void *) buffer);
+	    e = gethostbyname(buffer);
 	    cancel_timer(id);
 	    if (e && e->h_length == sizeof(unsigned32))
 		write(to_intermediary, e->h_addr_list[0], e->h_length);
@@ -189,7 +194,8 @@ lookup(int to_intermediary, int from_intermediary)
 		unsigned32 addr;
 
 		/* This cast is for the same reason as the one above... */
-		addr = inet_addr((void *) buffer);
+                // also disabled june 2009. --sw
+		addr = inet_addr(buffer);
 		write(to_intermediary, &addr, sizeof(addr));
 	    }
 	} else {
@@ -365,7 +371,8 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 
     if (dead_intermediary) {
 	/* Numeric addresses should always work... */
-	addr = inet_addr((void *) name);
+        // june 2009: removed void pointer cast. --sw
+	addr = inet_addr(name);
     } else {
 	req.kind = REQ_ADDR_FROM_NAME;
 	req.timeout = timeout;
