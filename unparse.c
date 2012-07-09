@@ -488,7 +488,7 @@ unparse_stmt(Stmt * stmt, int indent)
 	    output(str);
 	    break;
 	case STMT_TRY_EXCEPT:
-	    unparse_stmt_catch(str, stmt->s.catch, indent);
+	    unparse_stmt_catch(str, stmt->s._catch, indent);
 	    break;
 	case STMT_TRY_FINALLY:
 	    stream_add_string(str, "try");
@@ -802,7 +802,7 @@ unparse_program(Program * p, Unparser_Receiver r, void *data,
 static void
 print_line(void *data, const char *line)
 {
-    FILE *fp = data;
+  FILE *fp = (FILE *) data;
 
     fprintf(fp, "%s\n", line);
 }
