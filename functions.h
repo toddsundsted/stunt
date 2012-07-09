@@ -26,14 +26,6 @@
 #include "structures.h"
 
 
-enum {
-  BI_RETURN,		/* Normal function return */
-  BI_RAISE,		/* Raising an error */
-  BI_CALL,		/* Making a nested verb call */
-  BI_SUSPEND,		/* Suspending the current task */
-  BI_KILL			/* Kill the current task */
-};
-
 typedef struct {
     enum {
 	BI_RETURN,		/* Normal function return */

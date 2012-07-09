@@ -209,7 +209,7 @@ bf_move(Var arglist, Byte next, void *vdata, Objid progr)
     p = do_move(arglist, next, data, progr);
     free_var(arglist);
 
-    if (p.kind != BI_CALL)
+    if (p.kind != package::BI_CALL)
 	free_data(data);
 
     return p;
