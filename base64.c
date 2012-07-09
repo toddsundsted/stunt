@@ -51,7 +51,7 @@
 #include "utils.h"
 #include "server.h"
 
-static const unsigned char base64_table[64] =
+static const unsigned char base64_table[65] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
@@ -75,7 +75,7 @@ base64_encode(const char *src, size_t len, size_t *out_len)
 
     olen = len * 4 / 3 + 4; /* 3-byte blocks to 4-byte */
     olen++;                 /* nul termination */
-    out = mymalloc(olen, M_STRING);
+    out = (char *) mymalloc(olen, M_STRING);
     if (out == NULL)
 	return NULL;
 
@@ -140,7 +140,7 @@ base64_decode(const char *src, size_t len, size_t *out_len)
 	return NULL;
 
     olen = count / 4 * 3;
-    pos = out = mymalloc(olen + 1, M_STRING);
+    pos = out = (char *) mymalloc(olen + 1, M_STRING);
     if (out == NULL)
 	return NULL;
 
