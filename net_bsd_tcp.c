@@ -276,7 +276,7 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 	return E_QUOTA;
     }
     length = sizeof(addr);
-    if (getsockname(s, (struct sockaddr *) &addr, &length) < 0) {
+    if (getsockname(s, (struct sockaddr *) &addr, (socklen_t *) &length) < 0) {
 	close(s);
 	log_perror("Getting local name in proto_open_connection");
 	return E_QUOTA;
