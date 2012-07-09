@@ -110,7 +110,7 @@ new_pattern(const char *pattern, int case_matters)
 {
     int tpatlen = -1;
     const char *tpattern = translate_pattern(pattern, &tpatlen);
-    regexp_t buf = mymalloc(sizeof(*buf), M_PATTERN);
+    regexp_t buf = (re_pattern_buffer *) mymalloc(sizeof(*buf), M_PATTERN);
     Pattern p;
 
     init_casefold_once();
@@ -121,7 +121,7 @@ new_pattern(const char *pattern, int case_matters)
     re_set_syntax(MOO_SYNTAX);
 
     if (tpattern
-	&& !re_compile_pattern((void *) tpattern, tpatlen, buf)) {
+	&& !re_compile_pattern((char *) tpattern, tpatlen, buf)) {
 	buf->fastmap = (char *) mymalloc(256 * sizeof(char), M_PATTERN);
 	re_compile_fastmap(buf);
 	p.ptr = buf;
@@ -139,15 +139,15 @@ Match_Result
 match_pattern(Pattern p, const char *string, Match_Indices * indices,
 	      int is_reverse)
 {
-    regexp_t buf = p.ptr;
+    regexp_t buf = (re_pattern_buffer *) p.ptr;
     int len = strlen(string);
     int i;
     struct re_registers regs;
 
-    switch (re_search(buf, (void *) string, len,
+    switch (re_search(buf, (char *) string, len,
 		      is_reverse ? len : 0,
 		      is_reverse ? -len : len,
-		      &regs)) {
+		      (re_registers *) &regs)) {
     default:
 	for (i = 0; i < 10; i++) {
 	    /* Convert from 0-based open interval to 1-based closed one. */
@@ -165,7 +165,7 @@ match_pattern(Pattern p, const char *string, Match_Indices * indices,
 void
 free_pattern(Pattern p)
 {
-    regexp_t buf = p.ptr;
+    regexp_t buf = (re_pattern_buffer *) p.ptr;
 
     if (buf) {
 	free(buf->buffer);
