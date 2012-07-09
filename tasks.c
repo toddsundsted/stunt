@@ -921,7 +921,8 @@ task_queue
 new_task_queue(Objid player, Objid handler)
 {
     task_queue result;
-    tqueue *tq = (tqueue *) result.ptr = (tqueue *) find_tqueue(player, 1);
+    result.ptr = (tqueue *) find_tqueue(player, 1);
+    tqueue *tq = (tqueue *) result.ptr;
 
     tq->connected = 1;
     tq->handler = handler;
