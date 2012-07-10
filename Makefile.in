@@ -26,17 +26,17 @@ YFLAGS = -d
 COMPILE.c = $(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) -c
 
 CSRCS = ast.c base64.c code_gen.c collection.c db_file.c db_io.c	\
-	    db_objects.c db_properties.c db_verbs.c decompile.c		\
-	    disassemble.c eval_env.c eval_vm.c exceptions.c exec.c	\
-	    execute.c extension-fileio.c extensions.c functions.c	\
-	    hmac_sha2.c http_parser.c keywords.c list.c log.c map.c	\
-	    match.c md5.c name_lookup.c network.c net_mplex.c		\
-	    net_proto.c numbers.c objects.c parse_cmd.c pattern.c	\
-	    program.c property.c quota.c regexpr.c server.c sha1.c	\
-	   sha256.c storage.c streams.c str_intern.c sym_table.c	\
-	   tasks.c timers.c unparse.c utils.c verbs.c version.c		\
-	   yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c yajl_gen.c	\
-	   yajl_lex.c yajl_parser.c yajl_version.c
+	   db_objects.c db_properties.c db_verbs.c decompile.c		\
+	   disassemble.c eval_env.c eval_vm.c exceptions.c exec.c	\
+	   execute.c extension-fileio.c extensions.c functions.c	\
+	   hmac_sha2.c http_parser.c json.c keywords.c list.c log.c	\
+	   malloc.c map.c match.c md5.c name_lookup.c network.c		\
+	   net_mplex.c net_proto.c numbers.c objects.c parse_cmd.c	\
+	   pattern.c program.c property.c quota.c regexpr.c server.c	\
+	   sha1.c sha256.c storage.c streams.c str_intern.c		\
+	  sym_table.c tasks.c timers.c unparse.c utils.c verbs.c	\
+	  version.c yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c	\
+	  yajl_gen.c yajl_lex.c yajl_parser.c yajl_version.c
 
 OPT_NET_SRCS = net_single.c net_multi.c net_mp_selct.c net_mp_poll.c	\
 	net_mp_fake.c net_tcp.c net_bsd_tcp.c net_bsd_lcl.c		\
@@ -47,18 +47,18 @@ OPT_NET_OBJS = $(OPT_NET_SRCS:.c=.o)
 YSRCS = parser.y
 
 HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h	\
-	 db_io.h db_private.h decompile.h db_tune.h disassemble.h	\
-	 eval_env.h eval_vm.h exceptions.h execute.h exec.h		\
-	 extension-fileio.h functions.h getpagesize.h hmac_sha2.h	\
-	 http_parser.h keywords.h list.h log.h map.h match.h md5.h	\
-	name_lookup.h network.h net_mplex.h net_multi.h net_proto.h	\
-	numbers.h opcode.h options.h parse_cmd.h parser.h pattern.h	\
-	program.h quota.h random.h regexpr.h server.h sha1.h sha256.h	\
-	storage.h streams.h structures.h str_intern.h sym_table.h	\
-	tasks.h timers.h tokens.h unparse.h utils.h verbs.h version.h	\
-	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h		\
-	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h		\
-	yajl_parser.h yajl_version.h
+	  db_io.h db_private.h decompile.h db_tune.h disassemble.h	\
+	  eval_env.h eval_vm.h exceptions.h execute.h exec.h		\
+	  extension-fileio.h functions.h getpagesize.h hmac_sha2.h	\
+	  http_parser.h keywords.h json.h list.h log.h map.h match.h	\
+	 md5.h name_lookup.h network.h net_mplex.h net_multi.h		\
+	 net_proto.h numbers.h opcode.h options.h parse_cmd.h		\
+	 parser.h pattern.h program.h quota.h random.h regexpr.h	\
+	 server.h sha1.h sha256.h storage.h streams.h structures.h	\
+	 str_intern.h sym_table.h tasks.h timers.h tokens.h unparse.h	\
+	 utils.h verbs.h version.h yajl_alloc.h yajl_buf.h		\
+	 yajl_bytestack.h yajl_common.h yajl_encode.h yajl_gen.h	\
+	 yajl_lex.h yajl_parse.h yajl_parser.h yajl_version.h
 
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h		\
@@ -253,6 +253,10 @@ functions.o: functions.c my-stdarg.h config.h bf_register.h db_io.h \
   map.h server.h network.h storage.h my-string.h unparse.h utils.h
 hmac_sha2.o: hmac_sha2.c hmac_sha2.h sha256.h
 http_parser.o: http_parser.c http_parser.h
+json.o: json.c my-string.h config.h my-stdlib.h exceptions.h functions.h \
+  my-stdio.h execute.h db.h program.h structures.h version.h opcode.h \
+  options.h parse_cmd.h json.h list.h streams.h map.h numbers.h storage.h \
+  unparse.h utils.h yajl_parse.h yajl_common.h yajl_gen.h
 keywords.o: keywords.c my-ctype.h config.h my-string.h keywords.h \
   structures.h my-stdio.h version.h tokens.h ast.h parser.h program.h \
   sym_table.h y.tab.h utils.h execute.h db.h opcode.h options.h \
@@ -266,6 +270,7 @@ log.o: log.c my-stdarg.h config.h my-stdio.h my-string.h my-time.h \
   bf_register.h functions.h execute.h db.h program.h structures.h \
   version.h opcode.h options.h parse_cmd.h log.h storage.h streams.h \
   exceptions.h utils.h
+malloc.o: malloc.c options.h config.h
 map.o: map.c my-string.h config.h functions.h my-stdio.h execute.h db.h \
   program.h structures.h version.h opcode.h options.h parse_cmd.h list.h \
   streams.h exceptions.h log.h map.h server.h network.h storage.h utils.h
