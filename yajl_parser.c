@@ -308,7 +308,7 @@ yajl_do_parse(yajl_handle hand, const unsigned char * jsonText,
             }
             /* got a value.  transition depends on the state we're in. */
             {
-                yajl_state s = yajl_bs_current(hand->stateStack);
+                yajl_state s = (yajl_state)yajl_bs_current(hand->stateStack);
                 if (s == yajl_state_start) {
                     yajl_bs_set(hand->stateStack, yajl_state_parse_complete);
                 } else if (s == yajl_state_map_need_val) {

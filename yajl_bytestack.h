@@ -69,7 +69,7 @@ typedef struct yajl_bytestack_t
 #define yajl_bs_push(obs, byte) {                       \
     if (((obs).size - (obs).used) == 0) {               \
         (obs).size += YAJL_BS_INC;                      \
-        (obs).stack = (obs).yaf->realloc((obs).yaf->ctx,\
+        (obs).stack = (unsigned char *)(obs).yaf->realloc((obs).yaf->ctx, \
                                          (void *) (obs).stack, (obs).size);\
     }                                                   \
     (obs).stack[((obs).used)++] = (byte);               \
