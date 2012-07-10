@@ -5,6 +5,7 @@
 #define FILE_IO 1
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "my-stat.h"
 
@@ -76,9 +77,9 @@ const char *clean_to_raw_bytes(const char *buffer, int *buflen) {
  *  File types are either TEXT or BINARY
  */
 
-typedef struct file_type *file_type;
+typedef struct fileio_file_type *file_type;
 
-struct file_type { 
+struct fileio_file_type { 
     
   const char* (*in_filter)(const char *data, int buflen);
 
@@ -232,13 +233,13 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
   file_type t;
   file_mode m = 0;
 
-  if(!file_type_binary) {
-	 file_type_binary = mymalloc(sizeof(struct file_type), M_STRING);
-	 file_type_text = mymalloc(sizeof(struct file_type), M_STRING);
-	 file_type_binary->in_filter = raw_bytes_to_binary;
-	 file_type_binary->out_filter = binary_to_raw_bytes;
-	 file_type_text->in_filter = raw_bytes_to_clean;
-	 file_type_text->out_filter = clean_to_raw_bytes;
+  if (!file_type_binary) {
+    file_type_binary = (fileio_file_type *)mymalloc(sizeof(struct fileio_file_type), M_STRING);
+    file_type_text= (fileio_file_type *)mymalloc(sizeof(struct fileio_file_type), M_STRING);
+    file_type_binary->in_filter = raw_bytes_to_binary;
+    file_type_binary->out_filter = binary_to_raw_bytes;
+    file_type_text->in_filter = raw_bytes_to_clean;
+    file_type_text->out_filter = clean_to_raw_bytes;
   }
 
   
@@ -290,7 +291,7 @@ file_make_error(const char *errtype, const char *msg) {
   value.type = TYPE_STR;
   value.v.str = str_dup(errtype);
 
-  p.kind = BI_RAISE;
+  p.kind = p.BI_RAISE;
   p.u.raise.code.type = TYPE_ERR;
   p.u.raise.code.v.err = E_FILE;
   p.u.raise.msg = str_dup(msg);
@@ -644,7 +645,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
 }
     
 line_buffer *new_line_buffer(char *line) {
-  line_buffer *p = mymalloc(sizeof(line_buffer), M_STRUCT);
+  line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRING);
   p->line = line;
   p->next = NULL;
   return p;
