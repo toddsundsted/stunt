@@ -196,7 +196,7 @@ Var
 complex_var_dup(Var v)
 {
     int i;
-    Var new;
+    Var _new;
 
     switch ((int) v.type) {
     case TYPE_STR:
@@ -209,11 +209,11 @@ complex_var_dup(Var v)
 	v = iter_dup(v);
 	break;
     case TYPE_LIST:
-	new = new_list(v.v.list[0].v.num);
+	_new = new_list(v.v.list[0].v.num);
 	for (i = 1; i <= v.v.list[0].v.num; i++) {
-	    new.v.list[i] = var_ref(v.v.list[i]);
+	    _new.v.list[i] = var_ref(v.v.list[i]);
 	}
-	v.v.list = new.v.list;
+	v.v.list = _new.v.list;
 	break;
     case TYPE_FLOAT:
 	v = new_float(*v.v.fnum);
