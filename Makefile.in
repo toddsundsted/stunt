@@ -26,17 +26,17 @@ YFLAGS = -d
 COMPILE.c = $(CC) $(CFLAGS) $(DEFS) $(CPPFLAGS) -c
 
 CSRCS = ast.c base64.c code_gen.c collection.c db_file.c db_io.c	\
-	   db_objects.c db_properties.c db_verbs.c decompile.c		\
-	   disassemble.c eval_env.c eval_vm.c exceptions.c exec.c	\
-	   execute.c extension-fileio.c extensions.c functions.c	\
-	   hmac_sha2.c http_parser.c json.c keywords.c list.c log.c	\
-	   malloc.c map.c match.c md5.c name_lookup.c network.c		\
-	   net_mplex.c net_proto.c numbers.c objects.c parse_cmd.c	\
-	   pattern.c program.c property.c quota.c regexpr.c server.c	\
-	   sha1.c sha256.c storage.c streams.c str_intern.c		\
-	  sym_table.c tasks.c timers.c unparse.c utils.c verbs.c	\
-	  version.c yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c	\
-	  yajl_gen.c yajl_lex.c yajl_parser.c yajl_version.c
+	    db_objects.c db_properties.c db_verbs.c decompile.c		\
+	    disassemble.c eval_env.c eval_vm.c exceptions.c exec.c	\
+	    execute.c extension-fileio.c extensions.c functions.c	\
+	    hmac_sha2.c http_parser.c json.c keywords.c list.c log.c	\
+	    map.c match.c md5.c name_lookup.c network.c net_mplex.c	\
+	   net_proto.c numbers.c objects.c parse_cmd.c pattern.c	\
+	   program.c property.c quota.c regexpr.c server.c sha1.c	\
+	   sha256.c storage.c streams.c str_intern.c sym_table.c	\
+	   tasks.c timers.c unparse.c utils.c verbs.c version.c		\
+	   yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c yajl_gen.c	\
+	   yajl_lex.c yajl_parser.c yajl_version.c
 
 OPT_NET_SRCS = net_single.c net_multi.c net_mp_selct.c net_mp_poll.c	\
 	net_mp_fake.c net_tcp.c net_bsd_tcp.c net_bsd_lcl.c		\
@@ -44,7 +44,8 @@ OPT_NET_SRCS = net_single.c net_multi.c net_mp_selct.c net_mp_poll.c	\
 
 OPT_NET_OBJS = $(OPT_NET_SRCS:.c=.o)
 
-OPT_CSRCS = gnu-malloc.c $(OPT_NET_SRCS)
+# removed gnu-malloc.c from the line below, must consolidate
+OPT_CSRCS = $(OPT_NET_SRCS)
 
 YSRCS = parser.y
 
@@ -272,7 +273,6 @@ log.o: log.c my-stdarg.h config.h my-stdio.h my-string.h my-time.h \
   bf_register.h functions.h execute.h db.h program.h structures.h \
   version.h opcode.h options.h parse_cmd.h log.h storage.h streams.h \
   exceptions.h utils.h
-malloc.o: malloc.c options.h config.h
 map.o: map.c my-string.h config.h functions.h my-stdio.h execute.h db.h \
   program.h structures.h version.h opcode.h options.h parse_cmd.h list.h \
   streams.h exceptions.h log.h map.h server.h network.h storage.h utils.h
@@ -380,7 +380,6 @@ yajl_parser.o: yajl_parser.c yajl_lex.h yajl_common.h yajl_parser.h \
   yajl_bytestack.h yajl_buf.h yajl_alloc.h yajl_parse.h yajl_encode.h \
   yajl_gen.h
 yajl_version.o: yajl_version.c yajl_version.h yajl_common.h
-gnu-malloc.o: gnu-malloc.c getpagesize.h
 net_single.o: net_single.c my-ctype.h config.h my-fcntl.h my-stdio.h \
   my-unistd.h log.h structures.h network.h options.h server.h db.h \
   program.h version.h streams.h exceptions.h utils.h execute.h opcode.h \
