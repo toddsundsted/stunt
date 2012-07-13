@@ -61,19 +61,19 @@ A million repetitions of "a"
 
 int hash_init_sha1(void *ctx)
 {
-  SHA1Init(ctx);
+  SHA1Init((SHA1_CTX *)ctx);
   return FALSE;
 }
 
 int hash_update_sha1(void * ctx, unsigned char *buf, uint64_t len)
 {
-  SHA1Update(ctx, buf, len);
+  SHA1Update((SHA1_CTX *)ctx, buf, len);
   return FALSE;
 }
 
 int hash_final_sha1(void * ctx, unsigned char *digest)
 {
-  SHA1Final(digest,ctx);
+  SHA1Final(digest, (SHA1_CTX *)ctx);
   return FALSE;
 }
 
