@@ -23,19 +23,19 @@
 
 int hash_init_sha256(void * ctx)
 {
-  sha256_starts(ctx);
+  sha256_starts((context_sha256_t *)ctx);
   return FALSE;
 }
 
 int hash_update_sha256(void * ctx, unsigned char *buf, uint64_t len)
 {
-  sha256_update(ctx,buf,(uint32_t) len);
+  sha256_update((context_sha256_t *)ctx,buf,(uint32_t) len);
   return FALSE;
 }
 
 int hash_final_sha256(void * ctx, unsigned char *digest)
 {
-  sha256_finish(ctx, digest);
+  sha256_finish((context_sha256_t *)ctx, digest);
   return FALSE;
 }
 
