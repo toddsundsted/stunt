@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include "config.h"
+#include <stdlib.h>
 
 #if HAVE_LRAND48
 extern long lrand48(void);
