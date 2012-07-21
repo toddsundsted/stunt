@@ -277,6 +277,10 @@ module MooSupport
     simplify command %Q|; return descendants(#{args.map{|a| value_ref(a)}.join(', ')});|
   end
 
+  def isa(object, parent)
+    simplify command %Q|; return isa(#{obj_ref(object)}, #{obj_ref(parent)});|
+  end
+
   def recycle(object)
     simplify command %Q|; return recycle(#{obj_ref(object)});|
   end
