@@ -755,15 +755,15 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (what, parent) */
-    Objid oid = arglist.v.list[1].v.obj;
+{				/* (object, parent) */
+    Objid object = arglist.v.list[1].v.obj;
 
-    if (!valid(oid)) {
+    if (!valid(object)) {
 	free_var(arglist);
-	return make_error_pack(E_INVARG);
+	return make_var_pack(new_int(0));
     }
 
-    Var ancestors = db_ancestors(oid, true);
+    Var ancestors = db_ancestors(object, true);
 
     if (ismember(arglist.v.list[2], ancestors, 1)) {
 	free_var(arglist);
