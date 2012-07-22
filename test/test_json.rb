@@ -222,7 +222,7 @@ class TestJson < Test::Unit::TestCase
       assert_equal "{\"foo\":\"bar\\fbaz\"}", generate_json({"foo" => "bar~0Cbaz"})
       assert_equal "{\"foo\":\"bar\\nbaz\"}", generate_json({"foo" => "bar~0Abaz"})
       assert_equal "{\"foo\":\"bar\\rbaz\"}", generate_json({"foo" => "bar~0Dbaz"})
-      assert_equal "{\"foo\":\"bar\\tbaz\"}", generate_json({"foo" => "bar~09baz"})
+      assert_equal "{\"foo\":\"bar\\tbaz\"}", generate_json({"foo" => "bar\tbaz"})
 
       # everything else is just passed, as is
       assert_equal "{\"foo\":\"bar~00baz\"}", generate_json({"foo" => "bar~00baz"})
@@ -244,7 +244,7 @@ class TestJson < Test::Unit::TestCase
       assert_equal({"foo" => "bar~0Cbaz"}, parse_json('{\"foo\":\"bar\\\\fbaz\"}'))
       assert_equal({"foo" => "bar~0Abaz"}, parse_json('{\"foo\":\"bar\\\\nbaz\"}'))
       assert_equal({"foo" => "bar~0Dbaz"}, parse_json('{\"foo\":\"bar\\\\rbaz\"}'))
-      assert_equal({"foo" => "bar~09baz"}, parse_json('{\"foo\":\"bar\\\\tbaz\"}'))
+      assert_equal({"foo" => "bar\tbaz"}, parse_json('{\"foo\":\"bar\\\\tbaz\"}'))
 
       # ignore other escapes... this includes \u (Unicode) for the time being
       assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\ubaz\"}'))
