@@ -1,11 +1,9 @@
-require 'generator'
-
 module Fuzz
 
   G = ' !#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~'
 
   def with_mutating_binary_string(s)
-    g = Generator.new do |g|
+    g = Enumerator.new do |g|
       while true
         t = s.dup
         rand(t.length / 5).times do
