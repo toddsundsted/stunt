@@ -61,7 +61,6 @@ yajl_string_encode2(const yajl_print_t print,
                 case 'c': case 'C': escaped = "\\f"; break;
                 case 'a': case 'A': escaped = "\\n"; break;
                 case 'd': case 'D': escaped = "\\r"; break;
-                case '9': escaped = "\\t"; break;
                 default:
                     break;
             }
@@ -72,6 +71,11 @@ yajl_string_encode2(const yajl_print_t print,
             } else {
                 ++end;
             }
+        } else if (str[end] == '\t') {
+            const char * escaped = "\\t";
+            print(ctx, (const char *) (str + beg), end - beg);
+            print(ctx, escaped, (unsigned int)strlen(escaped));
+            beg = ++end;
         } else if (str[end] == '"') {
             const char * escaped = "\\\"";
             print(ctx, (const char *) (str + beg), end - beg);
@@ -107,7 +111,7 @@ void yajl_string_decode(yajl_buf buf, const unsigned char * str,
                 case 'f': unescaped = "~0C"; break;
                 case 'n': unescaped = "~0A"; break;
                 case 'r': unescaped = "~0D"; break;
-                case 't': unescaped = "~09"; break;
+                case 't': unescaped = "\t"; break;
                 default:
                     assert("this should never happen" == NULL);
             }
