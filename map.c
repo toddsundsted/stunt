@@ -835,12 +835,6 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     int32 len = 0;
     enum error e = E_NONE;
 
-#define CHECK_LENGTH							\
-	if (server_int_option_cached(SVO_MAX_MAP_CONCAT) <= len++) {	\
-	    e = E_QUOTA;						\
-	    goto done;							\
-	}
-
     if (new == NULL)
 	panic("MAP_DUP: new is NULL");
 
@@ -854,7 +848,6 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
-	CHECK_LENGTH;
     }
 
     for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
@@ -863,7 +856,6 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 	rberase(new->v.tree, &node);
 	if (!rbinsert(new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
-	CHECK_LENGTH;
     }
 
     while ((pnode = rbtnext(to))) {
@@ -872,12 +864,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 	rberase(new->v.tree, &node);
 	if (!rbinsert(new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
-	CHECK_LENGTH;
     }
-
-#undef CHECK_LENGTH
-
- done:
 
     free_var(map);
     free_var(value);

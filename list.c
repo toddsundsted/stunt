@@ -501,13 +501,14 @@ static package
 bf_setadd(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    Var list = var_ref(arglist.v.list[1]);
+    Var lst = var_ref(arglist.v.list[1]);
+    Var elt = var_ref(arglist.v.list[2]);
 
-    r = setadd(list, var_ref(arglist.v.list[2]));
     free_var(arglist);
 
-    if (r.v.list == list.v.list ||
-	r.v.list[0].v.num <= server_int_option_cached(SVO_MAX_LIST_CONCAT))
+    r = setadd(lst, elt);
+
+    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);
     else {
 	free_var(r);
@@ -523,7 +524,13 @@ bf_setremove(Var arglist, Byte next, void *vdata, Objid progr)
 
     r = setremove(var_ref(arglist.v.list[1]), arglist.v.list[2]);
     free_var(arglist);
-    return make_var_pack(r);
+
+    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+	return make_var_pack(r);
+    else {
+	free_var(r);
+	return make_space_pack();
+    }
 }
 
 
@@ -531,15 +538,10 @@ static package
 insert_or_append(Var arglist, int append1)
 {
     int pos;
+    Var r;
     Var lst = var_ref(arglist.v.list[1]);
     Var elt = var_ref(arglist.v.list[2]);
 
-    if (server_int_option_cached(SVO_MAX_LIST_CONCAT) <= lst.v.list[0].v.num) {
-	free_var(lst);
-	free_var(elt);
-	free_var(arglist);
-	return make_space_pack();
-    }
     if (arglist.v.list[0].v.num == 2)
 	pos = append1 ? lst.v.list[0].v.num + 1 : 1;
     else {
@@ -550,7 +552,15 @@ insert_or_append(Var arglist, int append1)
 	    pos = lst.v.list[0].v.num + 1;
     }
     free_var(arglist);
-    return make_var_pack(doinsert(lst, elt, pos));
+
+    r = doinsert(lst, elt, pos);
+
+    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+	return make_var_pack(r);
+    else {
+	free_var(r);
+	return make_space_pack();
+    }
 }
 
 
@@ -576,11 +586,18 @@ bf_listdelete(Var arglist, Byte next, void *vdata, Objid progr)
 	|| arglist.v.list[2].v.num > arglist.v.list[1].v.list[0].v.num) {
 	free_var(arglist);
 	return make_error_pack(E_RANGE);
-    } else {
-	r = listdelete(var_ref(arglist.v.list[1]), arglist.v.list[2].v.num);
     }
+
+    r = listdelete(var_ref(arglist.v.list[1]), arglist.v.list[2].v.num);
+
     free_var(arglist);
-    return make_var_pack(r);
+
+    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+	return make_var_pack(r);
+    else {
+	free_var(r);
+	return make_space_pack();
+    }
 }
 
 
@@ -592,12 +609,19 @@ bf_listset(Var arglist, Byte next, void *vdata, Objid progr)
 	|| arglist.v.list[3].v.num > arglist.v.list[1].v.list[0].v.num) {
 	free_var(arglist);
 	return make_error_pack(E_RANGE);
-    } else {
-	r = listset(var_dup(arglist.v.list[1]),
-		    var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
     }
+
+    r = listset(var_dup(arglist.v.list[1]),
+                var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
+
     free_var(arglist);
-    return make_var_pack(r);
+
+    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+	return make_var_pack(r);
+    else {
+	free_var(r);
+	return make_space_pack();
+    }
 }
 
 static package
@@ -1372,9 +1396,6 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_INVARG);
 
     if (fully) {
-	if (length > server_int_option_cached(SVO_MAX_LIST_CONCAT)) {
-	    return make_space_pack();
-	}
 	r = new_list(length);
 	for (i = 1; i <= length; i++) {
 	    r.v.list[i].type = TYPE_INT;
@@ -1397,10 +1418,6 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	    }
 	}
 
-	if (count > server_int_option_cached(SVO_MAX_LIST_CONCAT)) {
-	    free_stream(s);
-	    return make_space_pack();
-	}
 	r = new_list(count);
 	for (count = 1, in_string = 0, i = 0; i < length; i++) {
 	    unsigned char c = bytes[i];
@@ -1428,7 +1445,12 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	free_stream(s);
     }
 
-    return make_var_pack(r);
+    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+	return make_var_pack(r);
+    else {
+	free_var(r);
+	return make_space_pack();
+    }
 }
 
 static int
