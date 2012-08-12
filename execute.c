@@ -702,34 +702,6 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
     return E_NONE;
 }
 
-/* only user for lists and strings */
-static enum error
-rangeset_check(Var base, Var inst, int from, int to)
-{
-    int blen;
-    int ilen;
-    int max;
-    if (base.type == TYPE_STR) {
-	blen = memo_strlen(base.v.str);
-	ilen = memo_strlen(inst.v.str);
-	max  = server_int_option_cached(SVO_MAX_STRING_CONCAT);
-    }
-    else {
-	blen = base.v.list[0].v.num;
-	ilen = inst.v.list[0].v.num;
-	max  = server_int_option_cached(SVO_MAX_LIST_CONCAT);
-    }
-
-    if (from > blen + 1 || to < 0)
-	return E_RANGE;
-
-    if (max < (((from > 1) ? from - 1 : 0) + ilen
-	       + ((blen > to) ? blen - to : 0)))
-	return E_QUOTA;
-
-    return E_NONE;
-}
-
 #ifdef IGNORE_PROP_PROTECTED
 #define bi_prop_protected(prop, progr) (0)
 #else
@@ -964,25 +936,25 @@ do {								\
 
 	case OP_MAP_INSERT:
 	    {
-		Var map, key, value;
+		Var r, map, key, value;
 		enum error e = E_NONE;
-
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
-		if (map.type != TYPE_MAP || is_collection(key))
-		    e = E_TYPE;
-		else if (server_int_option_cached(SVO_MAX_MAP_CONCAT)
-			 <= maplength(map))
-		    e = E_QUOTA;
-
-		if (e != E_NONE) {
+		if (map.type != TYPE_MAP || is_collection(key)) {
 		    free_var(key);
 		    free_var(value);
 		    free_var(map);
-		    PUSH_ERROR_UNLESS_QUOTA(e);
-		} else
-		    PUSH(mapinsert(map, key, value));
+		    PUSH_ERROR(E_TYPE);
+		} else {
+		    r = mapinsert(map, key, value);
+		    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
+			PUSH(r);
+		    else {
+			free_var(r);
+			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+		    }
+		}
 	    }
 	    break;
 
@@ -997,51 +969,51 @@ do {								\
 
 	case OP_LIST_ADD_TAIL:
 	    {
-		Var tail, list;
-		enum error e = E_NONE;
+		Var r, tail, list;
 
 		tail = POP();	/* whatever */
 		list = POP();	/* should be list */
-		if (list.type != TYPE_LIST)
-		    e = E_TYPE;
-		else if (server_int_option_cached(SVO_MAX_LIST_CONCAT)
-			 <= list.v.list[0].v.num)
-		    e = E_QUOTA;
-
-		if (e != E_NONE) {
+		if (list.type != TYPE_LIST) {
 		    free_var(list);
 		    free_var(tail);
-		    PUSH_ERROR_UNLESS_QUOTA(e);
-		} else
-		    PUSH(listappend(list, tail));
+		    PUSH_ERROR(E_TYPE);
+		} else {
+		    r = listappend(list, tail);
+		    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+			PUSH(r);
+		    else {
+			free_var(r);
+			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+		    }
+		}
 	    }
 	    break;
 
 	case OP_LIST_APPEND:
 	    {
-		Var tail, list;
-		enum error e = E_NONE;
+		Var r, tail, list;
 
 		tail = POP();	/* second, should be list */
 		list = POP();	/* first, should be list */
-		if (tail.type != TYPE_LIST || list.type != TYPE_LIST)
-		    e = E_TYPE;
-		else if (server_int_option_cached(SVO_MAX_LIST_CONCAT)
-			 < list.v.list[0].v.num + tail.v.list[0].v.num)
-		    e = E_QUOTA;
-
-		if (e != E_NONE) {
-		    free_var(tail);
+		if (tail.type != TYPE_LIST || list.type != TYPE_LIST) {
 		    free_var(list);
-		    PUSH_ERROR_UNLESS_QUOTA(e);
-		} else
-		    PUSH(listconcat(list, tail));
+		    free_var(tail);
+		    PUSH_ERROR(E_TYPE);
+		} else {
+		    r = listconcat(list, tail);
+		    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+			PUSH(r);
+		    else {
+			free_var(r);
+			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+		    }
+		}
 	    }
 	    break;
 
-	/* This opcode will not increase the length of a list or
-	 * string but it may increase the size of a map, thus the
-	 * check on maps.
+	/* This opcode will not increase the length of a string
+	 * but it may increase the size of a list or map, thus the
+	 * check.
 	 */
 	case OP_INDEXSET:
 	    {
@@ -1084,16 +1056,21 @@ do {								\
 			res = var_dup(list);
 			free_var(list);
 		    }
-		    PUSH(listset(res, value, index.v.num));
-		} else if (list.type == TYPE_MAP) {
-		    if (server_int_option_cached(SVO_MAX_MAP_CONCAT)
-			 <= maplength(list)) {
-			free_var(value);
-			free_var(index);
-			free_var(list);
+		    res = listset(res, value, index.v.num);
+		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+			PUSH(res);
+		    else {
+			free_var(res);
 			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
-		    } else
-			PUSH(mapinsert(list, index, value));
+		    }
+		} else if (list.type == TYPE_MAP) {
+		    Var res = mapinsert(list, index, value);
+		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
+			PUSH(res);
+		    else {
+			free_var(res);
+			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+		    }
 		} else {	/* TYPE_STR */
 		    char *tmp_str = str_dup(list.v.str);
 		    free_str(list.v.str);
@@ -1916,7 +1893,7 @@ do {								\
 
 			if ((base.type != TYPE_MAP && base.type != TYPE_LIST
 			     && base.type != TYPE_STR)
-                            || (base.type != value.type)) {
+			    || (base.type != value.type)) {
 			    free_var(to);
 			    free_var(from);
 			    free_var(base);
@@ -1949,30 +1926,54 @@ do {								\
 				free_var(base);
 				free_var(value);
 				PUSH_ERROR(E_RANGE);
-			    } else if (E_NONE != (e = maprangeset(base, iterfrom.v.trav, iterto.v.trav, value, &res))) {
-				free_var(res);
-				free_var(to);
-				free_var(from);
-				free_var(iterto);
-				free_var(iterfrom);
-				PUSH_ERROR_UNLESS_QUOTA(e);
 			    } else {
+				maprangeset(base, iterfrom.v.trav, iterto.v.trav, value, &res);
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
 				free_var(iterfrom);
-				PUSH(res);
+				if (value_bytes(res) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
+				    PUSH(res);
+				else {
+				    free_var(res);
+				    PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+				}
 			    }
-			} else if (E_NONE != (e = rangeset_check(base, value, from.v.num, to.v.num))) {
-			    free_var(to);
-			    free_var(from);
-			    free_var(base);
-			    free_var(value);
-			    PUSH_ERROR_UNLESS_QUOTA(e);
-			} else if (base.type == TYPE_LIST)
-			    PUSH(listrangeset(base, from.v.num, to.v.num, value));
-			else	/* TYPE_STR */
-			    PUSH(strrangeset(base, from.v.num, to.v.num, value));
+			} else if (base.type == TYPE_LIST) {
+			    Var res;
+			    if (from.v.num > base.v.list[0].v.num + 1 || to.v.num < 0) {
+				free_var(to);
+				free_var(from);
+				free_var(base);
+				free_var(value);
+				PUSH_ERROR(E_RANGE);
+			    } else {
+				res = listrangeset(base, from.v.num, to.v.num, value);
+				if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
+				    PUSH(res);
+				else {
+				    free_var(res);
+				    PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+				}
+			    }
+			} else {	/* TYPE_STR */
+			    Var res;
+			    if (from.v.num > memo_strlen(base.v.str) + 1 || to.v.num < 0) {
+				free_var(to);
+				free_var(from);
+				free_var(base);
+				free_var(value);
+				PUSH_ERROR(E_RANGE);
+			    } else {
+				res = strrangeset(base, from.v.num, to.v.num, value);
+				if (memo_strlen(res.v.str) <= server_int_option_cached(SVO_MAX_STRING_CONCAT))
+				    PUSH(res);
+				else {
+				    free_var(res);
+				    PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
+				}
+			    }
+			}
 		    }
 		    break;
 
