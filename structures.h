@@ -146,13 +146,6 @@ extern Var none;		/* see objects.c */
 #define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
 #define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
 
-#define MAX_LIST	(INT32_MAX/sizeof(Var) - 2)
-
-/*
- * Maps are not allocated in chunks so set the max to the default.
- */
-#define MAX_MAP		DEFAULT_MAX_MAP_CONCAT
-
 static inline bool
 is_none(Var v)
 {

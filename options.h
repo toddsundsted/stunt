@@ -334,9 +334,6 @@
 #define DEFAULT_MAX_LIST_VALUE_BYTES 64537861
 #define DEFAULT_MAX_MAP_VALUE_BYTES  64537861
 
-#define DEFAULT_MAX_LIST_CONCAT      4194302 /* deprecated */
-#define DEFAULT_MAX_MAP_CONCAT       2097151 /* deprecated */
-
 /* In order to avoid weirdness from these limits being set too small,
  * we impose the following (arbitrary) respective minimum values.
  * That is, a positive value for $server_options.max_string_concat that
@@ -347,9 +344,6 @@
 #define MIN_STRING_CONCAT_LIMIT    1021
 #define MIN_LIST_VALUE_BYTES_LIMIT 1021
 #define MIN_MAP_VALUE_BYTES_LIMIT  1021
-
-#define MIN_LIST_CONCAT_LIMIT      1022 /* deprecated */
-#define MIN_MAP_CONCAT_LIMIT       1022 /* deprecated */
 
 /******************************************************************************
  * In the original LambdaMOO server, last chance command processessing
