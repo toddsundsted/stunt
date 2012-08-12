@@ -187,16 +187,6 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 		 value = MAX_MAP_VALUE_BYTES_LIMIT;			\
 	   }))								\
 								\
-  DEFINE( SVO_MAX_LIST_CONCAT, max_list_concat,			\
-								\
-	  int, DEFAULT_MAX_LIST_CONCAT,				\
-	 _STATEMENT({						\
-	     if (0 < value && value < MIN_LIST_CONCAT_LIMIT)	\
-		 value = MIN_LIST_CONCAT_LIMIT;			\
-	     else if (value <= 0 || MAX_LIST < value)		\
-		 value = MAX_LIST;				\
-	   }))							\
-								\
   DEFINE( SVO_MAX_STRING_CONCAT, max_string_concat,		\
 								\
 	  int, DEFAULT_MAX_STRING_CONCAT,			\
@@ -206,16 +196,6 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 	     else if (value <= 0 || MAX_STRING < value)		\
 		 value = MAX_STRING;				\
 	     stream_alloc_maximum = value + 1;			\
-	   }))							\
-								\
-  DEFINE( SVO_MAX_MAP_CONCAT, max_map_concat,			\
-								\
-	  int, DEFAULT_MAX_MAP_CONCAT,				\
-	 _STATEMENT({						\
-	     if (0 < value && value < MIN_MAP_CONCAT_LIMIT)	\
-		 value = MIN_MAP_CONCAT_LIMIT;			\
-	     else if (value <= 0 || MAX_MAP < value)		\
-		 value = MAX_MAP;				\
 	   }))							\
 								\
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
