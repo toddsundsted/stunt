@@ -200,4 +200,45 @@ class TestIndexAndRangeExtensions < Test::Unit::TestCase
     end
   end
 
+  def test_that_inverted_ranges_are_empty
+    run_test_as('programmer') do
+      assert_equal({}, eval(%|return [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7][6..2];|))
+      assert_equal [], eval(%|return {1, 2, 3, 4, 5, 6, 7}[6..2];|)
+      assert_equal '', eval(%|return "foobar"[5..2];|)
+    end
+  end
+
+  def test_that_inverted_ranges_are_empty_even_if_the_indexes_are_invalid
+    run_test_as('programmer') do
+      assert_equal({}, eval(%|return [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7][16..12];|))
+      assert_equal [], eval(%|return {1, 2, 3, 4, 5, 6, 7}[16..12];|)
+      assert_equal '', eval(%|return "foobar"[15..12];|)
+    end
+  end
+
+  def test_that_range_indexes_must_otherwise_be_valid
+    run_test_as('programmer') do
+      assert_equal E_RANGE, eval(%|return [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7][2..16];|)
+      assert_equal E_RANGE, eval(%|return {1, 2, 3, 4, 5, 6, 7}[2..16];|)
+      assert_equal E_RANGE, eval(%|return "foobar"[2..15];|)
+      assert_equal E_RANGE, eval(%|return [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7][12..16];|)
+      assert_equal E_RANGE, eval(%|return {1, 2, 3, 4, 5, 6, 7}[12..16];|)
+      assert_equal E_RANGE, eval(%|return "foobar"[12..15];|)
+      assert_equal E_RANGE, eval(%|return [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7][-2..6];|)
+      assert_equal E_RANGE, eval(%|return {1, 2, 3, 4, 5, 6, 7}[-2..6];|)
+      assert_equal E_RANGE, eval(%|return "foobar"[-2..5];|)
+    end
+  end
+
+  def test_that_range_indexes_must_be_valid_on_assignment
+    run_test_as('programmer') do
+      assert_equal E_RANGE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7]; x[16..12] = ["a" -> "a", "b" -> "b"];|)
+      assert_equal E_RANGE, eval(%|x = {1, 2, 3, 4, 5, 6, 7}; x[16..12] = {"a", "b"};|)
+      assert_equal E_RANGE, eval(%|x = "foobar"; x[15..12] = "ab";|)
+      assert_equal E_RANGE, eval(%|x = [1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7]; x[6..-2] = ["a" -> "a", "b" -> "b"];|)
+      assert_equal E_RANGE, eval(%|x = {1, 2, 3, 4, 5, 6, 7}; x[6..-2] = {"a", "b"};|)
+      assert_equal E_RANGE, eval(%|x = "foobar"; x[5..-2] = "ab";|)
+    end
+  end
+
 end
