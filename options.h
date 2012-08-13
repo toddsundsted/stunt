@@ -309,17 +309,17 @@
 /* #define USE_GNU_MALLOC */
 
 /******************************************************************************
- * DEFAULT_MAX_LIST_CONCAT,   if set to a postive value, is the length
- *                            of the largest constructible list.
- * DEFAULT_MAX_STRING_CONCAT, if set to a postive value, is the length
- *                            of the largest constructible string.
- * DEFAULT_MAX_MAP_CONCAT,    if set to a postive value, is the length
- *                            of the largest constructible map.
+ * DEFAULT_MAX_STRING_CONCAT,      if set to a postive value, is the length
+ *                                 of the largest constructible string.
+ * DEFAULT_MAX_LIST_VALUE_BYTES,   if set to a postive value, is the number of
+ *                                 bytes in the largest constructible list.
+ * DEFAULT_MAX_MAP_VALUE_BYTES,    if set to a postive value, is the number of
+ *                                 bytes in the largest constructible map.
  * Limits on "constructible" values apply to values built by concatenation,
- * splicing, subrange assignment and various builtin functions.
+ * splicing, index/subrange assignment and various builtin functions.
  *
- * If defined in the database, $server_options.max_list_concat,
- * $server_options.max_string_concat and $server_options.max_map_concat
+ * If defined in the database, $server_options.max_string_concat,
+ * $server_options.max_list_value_bytes and $server_options.max_map_value_bytes
  * override these defaults.  A zero value disables limit checking.
  *
  * $server_options.max_concat_catchable, if defined, causes an E_QUOTA error
@@ -330,19 +330,26 @@
  ******************************************************************************
  */
 
-#define DEFAULT_MAX_LIST_CONCAT    4194302
-#define DEFAULT_MAX_STRING_CONCAT 33554423
-#define DEFAULT_MAX_MAP_CONCAT     2097151
+#define DEFAULT_MAX_STRING_CONCAT    64537861
+#define DEFAULT_MAX_LIST_VALUE_BYTES 64537861
+#define DEFAULT_MAX_MAP_VALUE_BYTES  64537861
+
+#define DEFAULT_MAX_LIST_CONCAT      4194302 /* deprecated */
+#define DEFAULT_MAX_MAP_CONCAT       2097151 /* deprecated */
 
 /* In order to avoid weirdness from these limits being set too small,
  * we impose the following (arbitrary) respective minimum values.
- * That is, a positive value for $server_options.max_list_concat that
- * is less than MIN_LIST_CONCAT_LIMIT will be silently increased, and
- * likewise for the string limit.
+ * That is, a positive value for $server_options.max_string_concat that
+ * is less than MIN_STRING_CONCAT_LIMIT will be silently increased, and
+ * likewise for the list and map limits.
  */
-#define MIN_LIST_CONCAT_LIMIT   1022
-#define MIN_STRING_CONCAT_LIMIT 1015
-#define MIN_MAP_CONCAT_LIMIT    1022
+
+#define MIN_STRING_CONCAT_LIMIT    1021
+#define MIN_LIST_VALUE_BYTES_LIMIT 1021
+#define MIN_MAP_VALUE_BYTES_LIMIT  1021
+
+#define MIN_LIST_CONCAT_LIMIT      1022 /* deprecated */
+#define MIN_MAP_CONCAT_LIMIT       1022 /* deprecated */
 
 /******************************************************************************
  * In the original LambdaMOO server, last chance command processessing
@@ -367,14 +374,14 @@
 #define OUT_OF_BAND_QUOTE_PREFIX ""
 #endif
 
-#if DEFAULT_MAX_LIST_CONCAT < MIN_LIST_CONCAT_LIMIT
-#error DEFAULT_MAX_LIST_CONCAT < MIN_LIST_CONCAT_LIMIT ??
-#endif
 #if DEFAULT_MAX_STRING_CONCAT < MIN_STRING_CONCAT_LIMIT
 #error DEFAULT_MAX_STRING_CONCAT < MIN_STRING_CONCAT_LIMIT ??
 #endif
-#if DEFAULT_MAX_MAP_CONCAT < MIN_MAP_CONCAT_LIMIT
-#error DEFAULT_MAX_MAP_CONCAT < MIN_MAP_CONCAT_LIMIT ??
+#if DEFAULT_MAX_LIST_VALUE_BYTES < MIN_LIST_VALUE_BYTES_LIMIT
+#error DEFAULT_MAX_LIST_VALUE_BYTES < MIN_LIST_VALUE_BYTES_LIMIT ??
+#endif
+#if DEFAULT_MAX_MAP_VALUE_BYTES < MIN_MAP_VALUE_BYTES_LIMIT
+#error DEFAULT_MAX_MAP_VALUE_BYTES < MIN_MAP_VALUE_BYTES_LIMIT ??
 #endif
 
 #if PATTERN_CACHE_SIZE < 1
