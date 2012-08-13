@@ -34,6 +34,7 @@ extern Var strget(Var str, int i);
 extern Var new_list(int size);
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);
+extern int list_sizeof(Var *list);
 
 /*
  * Returns the length of the given list `l'.  Does *not* check to

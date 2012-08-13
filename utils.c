@@ -421,14 +421,11 @@ value_bytes(Var v)
     case TYPE_FLOAT:
 	size += sizeof(double);
 	break;
+    case TYPE_LIST:
+	size += list_sizeof(v.v.list);
+	break;
     case TYPE_MAP:
 	size += map_sizeof(v.v.tree);
-	break;
-    case TYPE_LIST:
-	len = v.v.list[0].v.num;
-	size += sizeof(Var);	/* for the `length' element */
-	for (i = 1; i <= len; i++)
-	    size += value_bytes(v.v.list[i]);
 	break;
     default:
 	break;

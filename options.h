@@ -289,6 +289,14 @@
 #define MEMO_STRLEN /* */
 
 /******************************************************************************
+ * Store the number of bytes of storage used by lists/maps WITH the list/map
+ * rather than recomputing it each time it is needed.
+ ******************************************************************************
+ */
+
+#define MEMO_VALUE_BYTES /* */
+
+/******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
  * Emacs.  This is a very nice and reasonably portable implementation, but some
  * systems, notably the NeXT machine, won't allow programs to provide their own
