@@ -135,17 +135,18 @@ extern Var nothing;		/* see objects.c */
 extern Var clear;		/* see objects.c */
 extern Var none;		/* see objects.c */
 
-/*
- * Hard limits on string and list sizes are imposed mainly to keep
- * malloc calculations from rolling over, and thus preventing the
- * ensuing buffer overruns.  Sizes allow space for reference counts
- * and cached length values.  Actual limits imposed on
- * user-constructed lists and strings should generally be smaller
- * (see DEFAULT_MAX_LIST_CONCAT and DEFAULT_MAX_STRING_CONCAT
- *  in options.h)
+/* Hard limits on string, list and map sizes are imposed mainly to
+ * keep malloc calculations from rolling over, and thus preventing the
+ * ensuing buffer overruns.  Sizes allow extra space for reference
+ * counts and cached length values.  Actual limits imposed on
+ * user-constructed maps, lists and strings should generally be
+ * smaller (see options.h)
  */
+#define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
+#define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
+#define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
+
 #define MAX_LIST	(INT32_MAX/sizeof(Var) - 2)
-#define MAX_STRING	(INT32_MAX - 9)
 
 /*
  * Maps are not allocated in chunks so set the max to the default.
