@@ -167,6 +167,26 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
  */
 #define SERVER_OPTIONS_CACHED_MISC(DEFINE, value)		\
 								\
+  DEFINE( SVO_MAX_LIST_VALUE_BYTES, max_list_value_bytes,		\
+									\
+	  int, DEFAULT_MAX_LIST_VALUE_BYTES,				\
+	 _STATEMENT({							\
+	     if (0 < value && value < MIN_LIST_VALUE_BYTES_LIMIT)	\
+		 value = MIN_LIST_VALUE_BYTES_LIMIT;			\
+	     else if (0 >= value || MAX_LIST_VALUE_BYTES_LIMIT < value)	\
+		 value = MAX_LIST_VALUE_BYTES_LIMIT;			\
+	   }))								\
+								\
+  DEFINE( SVO_MAX_MAP_VALUE_BYTES, max_list_value_bytes,		\
+									\
+	  int, DEFAULT_MAX_MAP_VALUE_BYTES,				\
+	 _STATEMENT({							\
+	     if (0 < value && value < MIN_MAP_VALUE_BYTES_LIMIT)	\
+		 value = MIN_MAP_VALUE_BYTES_LIMIT;			\
+	     else if (0 >= value || MAX_MAP_VALUE_BYTES_LIMIT < value)	\
+		 value = MAX_MAP_VALUE_BYTES_LIMIT;			\
+	   }))								\
+								\
   DEFINE( SVO_MAX_LIST_CONCAT, max_list_concat,			\
 								\
 	  int, DEFAULT_MAX_LIST_CONCAT,				\
