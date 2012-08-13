@@ -18,6 +18,8 @@
 #include "my-ctype.h"
 #include "my-string.h"
 
+#include "assert.h"
+
 #include "bf_register.h"
 #include "collection.h"
 #include "config.h"
@@ -89,10 +91,24 @@ setremove(Var list, Var value)
 
 Var
 listset(Var list, Var value, int pos)
-{
-    free_var(list.v.list[pos]);
-    list.v.list[pos] = value;
-    return list;
+{				/* consumes `list', `value' */
+    Var new;
+
+    if (var_refcount(list) > 1) {
+	new = var_dup(list);
+	free_var(list);
+    } else {
+	new = list;
+    }
+
+#ifdef MEMO_VALUE_BYTES
+    /* reset the memoized size */
+    ((int *)(new.v.list))[-2] = 0;
+#endif
+
+    free_var(new.v.list[pos]);
+    new.v.list[pos] = value;
+    return new;
 }
 
 static Var
@@ -104,6 +120,10 @@ doinsert(Var list, Var value, int pos)
 
     if (var_refcount(list) == 1 && pos == size) {
 	list.v.list = (Var *) myrealloc(list.v.list, (size + 1) * sizeof(Var), M_LIST);
+#ifdef MEMO_VALUE_BYTES
+	/* reset the memoized size */
+	((int *)(list.v.list))[-2] = 0;
+#endif
 	list.v.list[0].v.num = size;
 	list.v.list[pos] = value;
 	return list;
@@ -353,6 +373,34 @@ unparse_value(Stream * s, Var v)
 	errlog("UNPARSE_VALUE: Unknown Var type = %d\n", v.type);
 	stream_add_string(s, ">>Unknown value<<");
     }
+}
+
+/* called from utils.c */
+int
+list_sizeof(Var *list)
+{
+    int i, len, size;
+
+/*
+#ifdef MEMO_VALUE_BYTES
+    if ((size = (((int *)(list))[-2])))
+	return size;
+#endif
+*/
+
+    size = sizeof(Var);	/* for the `length' element */
+    len = list[0].v.num;
+    for (i = 1; i <= len; i++) {
+	size += value_bytes(list[i]);
+    }
+
+#ifdef MEMO_VALUE_BYTES
+    int memo_size = (((int *)(list))[-2]);
+    assert(!memo_size || memo_size == size);
+    (((int *)(list))[-2]) = size;
+#endif
+
+    return size;
 }
 
 Var
@@ -605,16 +653,17 @@ static package
 bf_listset(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    if (arglist.v.list[3].v.num <= 0
-	|| arglist.v.list[3].v.num > arglist.v.list[1].v.list[0].v.num) {
-	free_var(arglist);
-	return make_error_pack(E_RANGE);
-    }
 
-    r = listset(var_dup(arglist.v.list[1]),
-                var_ref(arglist.v.list[2]), arglist.v.list[3].v.num);
+    Var lst = var_ref(arglist.v.list[1]);
+    Var elt = var_ref(arglist.v.list[2]);
+    int pos = arglist.v.list[3].v.num;
 
     free_var(arglist);
+
+    if (pos <= 0 || pos > listlength(lst))
+	return make_error_pack(E_RANGE);
+
+    r = listset(lst, elt, pos);
 
     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);

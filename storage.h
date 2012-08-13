@@ -41,7 +41,7 @@ typedef enum Memory_Type {
 
     M_TREE, M_NODE, M_TRAV,
 
-    /* where no more specific type applies */
+    /* to be used when no more specific type applies */
     M_STRUCT, M_ARRAY,
 
     Sizeof_Memory_Type

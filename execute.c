@@ -1049,14 +1049,7 @@ do {								\
 		    free_var(list);
 		    PUSH_ERROR(E_INVARG);
 		} else if (list.type == TYPE_LIST) {
-		    Var res;
-		    if (var_refcount(list) == 1)
-			res = list;
-		    else {
-			res = var_dup(list);
-			free_var(list);
-		    }
-		    res = listset(res, value, index.v.num);
+		    Var res = listset(list, value, index.v.num);
 		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 			PUSH(res);
 		    else {

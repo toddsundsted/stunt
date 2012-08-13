@@ -29,6 +29,8 @@
 
 #include "my-string.h"
 
+#include "assert.h"
+
 #include "functions.h"
 #include "list.h"
 #include "log.h"
@@ -623,15 +625,29 @@ map_sizeof(rbtree *tree)
 {
     rbtrav trav;
     const rbnode *pnode;
-    int c = sizeof(rbtree);
+    int size;
 
+/*
+#ifdef MEMO_VALUE_BYTES
+    if ((size = (((int *)(tree))[-2])))
+	return size;
+#endif
+*/
+
+    size = sizeof(rbtree);
     for (pnode = rbtfirst(&trav, tree); pnode; pnode = rbtnext(&trav)) {
-	c += sizeof(rbnode) - 2 * sizeof(Var);
-	c += value_bytes(pnode->key);
-	c += value_bytes(pnode->value);
+	size += sizeof(rbnode) - 2 * sizeof(Var);
+	size += value_bytes(pnode->key);
+	size += value_bytes(pnode->value);
     }
 
-    return c;
+#ifdef MEMO_VALUE_BYTES
+    int memo_size = (((int *)(tree))[-2]);
+    assert(!memo_size || memo_size == size);
+    (((int *)(tree))[-2]) = size;
+#endif
+
+    return size;
 }
 
 Var
@@ -647,6 +663,11 @@ mapinsert(Var map, Var key, Var value)
 	panic("MAPINSERT: invalid key");
 
     Var new = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
+
+#ifdef MEMO_VALUE_BYTES
+    /* reset the memoized size */
+    ((int *)(new.v.tree))[-2] = 0;
+#endif
 
     rbnode node;
     node.key = key;
@@ -944,6 +965,11 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     r = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
+
+#ifdef MEMO_VALUE_BYTES
+    /* reset the memoized size */
+    ((int *)(r.v.tree))[-2] = 0;
+#endif
 
     rbnode node;
     node.key = key;

@@ -38,20 +38,29 @@ refcount_overhead(Memory_Type type)
      * refcount slot for allocations that won't need it.
      */
     switch (type) {
+    /* deal with systems with picky alignment issues */
     case M_FLOAT:
-	/* for systems with picky double alignment */
-	return MAX(sizeof(int), sizeof(double));
+	return MAX(sizeof(int), sizeof(double *));
+    case M_LIST:
+#ifdef MEMO_VALUE_BYTES
+	return MAX(sizeof(int), sizeof(Var *)) * 2;
+#else
+	return MAX(sizeof(int), sizeof(Var *));
+#endif /* MEMO_VALUE_BYTES */
+    case M_TREE:
+#ifdef MEMO_VALUE_BYTES
+	return MAX(sizeof(int), sizeof(rbtree *)) * 2;
+#else
+	return MAX(sizeof(int), sizeof(rbtree *));
+#endif /* MEMO_VALUE_BYTES */
+    case M_TRAV:
+	return MAX(sizeof(int), sizeof(rbtrav *));
     case M_STRING:
 #ifdef MEMO_STRLEN
-	return sizeof(int) + sizeof(int);
+	return sizeof(int) * 2;
 #else
 	return sizeof(int);
 #endif /* MEMO_STRLEN */
-    case M_LIST:
-    case M_TREE:
-    case M_TRAV:
-	/* for systems with picky pointer alignment */
-	return MAX(sizeof(int), sizeof(Var *));
     default:
 	return 0;
     }
@@ -68,7 +77,7 @@ mymalloc(unsigned size, Memory_Type type)
 	size = 1;
 
     offs = refcount_overhead(type);
-    memptr = (char *) malloc(size + offs);
+    memptr = (char *) malloc(offs + size);
     if (!memptr) {
 	sprintf(msg, "memory allocation (size %u) failed!", size);
 	panic(msg);
@@ -91,6 +100,12 @@ mymalloc(unsigned size, Memory_Type type)
 	if (type == M_STRING)
 	    ((int *) memptr)[-2] = size - 1;
 #endif /* MEMO_STRLEN */
+#ifdef MEMO_VALUE_BYTES
+	if (type == M_LIST)
+	    ((int *) memptr)[-2] = 0;
+	if (type == M_TREE)
+	    ((int *) memptr)[-2] = 0;
+#endif /* MEMO_VALUE_BYTES */
     }
     return memptr;
 }

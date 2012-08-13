@@ -55,6 +55,7 @@ my @options =
 		BYTECODE_REDUCE_REF
 		STRING_INTERNING
 		MEMO_STRLEN
+		MEMO_VALUE_BYTES
 	      )],
 
    # input options
