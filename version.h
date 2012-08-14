@@ -74,6 +74,8 @@ typedef enum {
 				 */
     DBV_Iter,			/* Addition of map iterator
 				 */
+    DBV_Anon,			/* Addition of anonymous objects
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
