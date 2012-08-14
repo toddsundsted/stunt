@@ -413,6 +413,10 @@ get_bi_value(db_prop_handle h, Var * value)
 	value->type = TYPE_INT;
 	value->v.num = db_object_has_flag(oid, FLAG_FERTILE);
 	break;
+    case BP_A:
+	value->type = TYPE_INT;
+	value->v.num = db_object_has_flag(oid, FLAG_ANONYMOUS);
+	break;
     case BP_LOCATION:
 	value->type = TYPE_OBJ;
 	value->v.obj = db_object_location(oid);
@@ -582,6 +586,9 @@ db_set_property_value(db_prop_handle h, Var value)
 	    goto finish_flag;
 	case BP_F:
 	    flag = FLAG_FERTILE;
+	    goto finish_flag;
+	case BP_A:
+	    flag = FLAG_ANONYMOUS;
 	  finish_flag:
 	    if (is_true(value))
 		db_set_object_flag(oid, flag);

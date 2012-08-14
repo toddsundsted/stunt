@@ -236,7 +236,8 @@ typedef enum {
     FLAG_READ,
     FLAG_WRITE,
     FLAG_OBSOLETE_2,
-    FLAG_FERTILE
+    FLAG_FERTILE,
+    FLAG_ANONYMOUS
     /* NOTE: New permanent flags must always be added here, rather
      *	     than replacing one of the obsolete ones, since old
      *	     databases might have old objects around that still have
@@ -334,6 +335,7 @@ extern int db_for_all_propdefs(Objid,
     DEFINE(R,r)					\
     DEFINE(W,w)					\
     DEFINE(F,f)					\
+    DEFINE(A,a)					\
     DEFINE(LOCATION,location)			\
     DEFINE(CONTENTS,contents)
 
