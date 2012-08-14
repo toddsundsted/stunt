@@ -1669,6 +1669,7 @@ do {								\
 			case BP_R:
 			case BP_W:
 			case BP_F:
+			case BP_A:
 			    if (!is_wizard(progr) &&
 				(bi_prop_protected(h.built_in, progr) ||
 				 progr != db_object_owner(obj.v.obj)))
