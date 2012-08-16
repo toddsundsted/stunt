@@ -263,17 +263,16 @@ db_for_all_verbs(Objid oid,
 }
 
 typedef struct {		/* Non-null db_verb_handles point to these */
-    Objid definer;
+    Object *definer;
     Verbdef *verbdef;
 } handle;
 
 void
 db_delete_verb(db_verb_handle vh)
 {
-    handle *h = (handle *) vh.ptr;
-    Objid oid = h->definer;
+    handle *h = (handle *)vh.ptr;
+    Object *o = h->definer;
     Verbdef *v = h->verbdef;
-    Object *o = dbpriv_find_object(oid);
     Verbdef *vv;
 
     db_priv_affected_callable_verb_lookup();
@@ -320,7 +319,7 @@ db_find_command_verb(Objid oid, const char *verb,
 		&& (vdobj == ASPEC_ANY || vdobj == dobj)
 		&& (v->prep == PREP_ANY || v->prep == prep)
 		&& (viobj == ASPEC_ANY || viobj == iobj)) {
-		h.definer = o->id;
+		h.definer = o;
 		h.verbdef = v;
 		vh.ptr = &h;
 
@@ -352,8 +351,7 @@ struct vc_entry {
 #ifdef RONG
     int generation;
 #endif
-    Objid oid_key;		/* Note that we proceed up the parent tree
-				   until we hit an object with verbs on it */
+    Object *object;
     char *verbname;
     handle h;
     struct vc_entry *next;
@@ -478,23 +476,41 @@ struct verbdef_definer_data {
 };
 
 static struct verbdef_definer_data
-find_callable_verbdef(Objid oid, const char *verb)
+find_callable_verbdef(Object *start, const char *verb)
 {
     Object *o = NULL;
     Verbdef *v = NULL;
-    Var ancestor, ancestors;
-    int i, c;
 
-    ancestors = db_ancestors(oid, true);
-
-    FOR_EACH(ancestor, ancestors, i, c) {
-	o = dbpriv_find_object(ancestor.v.obj);
-	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL) {
-	    break;
-	}
+    if ((v = find_verbdef_by_name(start, verb, 1)) != NULL) {
+	struct verbdef_definer_data data;
+	data.o = start;
+	data.v = v;
+	return data;
     }
 
-    free_var(ancestors);
+    Var stack = enlist_var(var_ref(start->parents));
+
+    while (listlength(stack) > 0) {
+	Var top;
+
+	POP_TOP(top, stack);
+
+	o = dbpriv_find_object(top.v.obj);
+	free_var(top);
+
+	if (!o) /* if it's invalid, AKA $nothing */
+	    continue;
+
+	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL)
+	    break;
+
+	if (TYPE_OBJ == o->parents.type)
+	    stack = listinsert(stack, var_ref(o->parents), 1);
+	else
+	    stack = listconcat(var_ref(o->parents), stack);
+    }
+
+    free_var(stack);
 
     struct verbdef_definer_data data;
     data.o = o;
@@ -502,9 +518,13 @@ find_callable_verbdef(Objid oid, const char *verb)
     return data;
 }
 
+/* does NOT consume `recv' and `verb' */
 db_verb_handle
-db_find_callable_verb(Objid oid, const char *verb)
+db_find_callable_verb(Var recv, const char *verb)
 {
+    if (TYPE_OBJ != recv.type && TYPE_ANON != recv.type)
+	panic("DB_FIND_CALLABLE_VERB: Not an object!");
+
     Object *o;
 #ifdef VERB_CACHE
     vc_entry *new_vc;
@@ -523,7 +543,7 @@ db_find_callable_verb(Objid oid, const char *verb)
      * point.
      */
     Var stack = new_list(0);
-    stack = listappend(stack, new_obj(oid));
+    stack = listappend(stack, var_ref(recv));
 
     try_again:
     while (listlength(stack) > 0) {
@@ -531,12 +551,10 @@ db_find_callable_verb(Objid oid, const char *verb)
 
 	POP_TOP(top, stack);
 
-	if (!valid(top.v.obj)) {
-	    /* just consume it */
-	    free_var(top);
-	    continue;
+	if (TYPE_ANON == top.type) {
+	    o = top.v.anon;
 	}
-	else {
+	else if (TYPE_OBJ == top.type && valid(top.v.obj)) {
 	    o = dbpriv_find_object(top.v.obj);
 	    if (o->verbdefs == NULL) {
 		/* keep looking */
@@ -548,10 +566,15 @@ db_find_callable_verb(Objid oid, const char *verb)
 		continue;
 	    }
 	}
+	else {
+	    /* just consume it */
+	    free_var(top);
+	    continue;
+	}
 
 	free_var(top);
 
-	Objid first_parent_with_verbs = o ? o->id : NOTHING;
+	uintptr_t first_parent_with_verbs = (uintptr_t)o;
 
 	/* found something with verbdefs, now check the cache */
 	unsigned int hash, bucket;
@@ -565,8 +588,7 @@ db_find_callable_verb(Objid oid, const char *verb)
 
 	for (vc = vc_table[bucket]; vc; vc = vc->next) {
 	    if (hash == vc->hash
-		&& first_parent_with_verbs == vc->oid_key
-		&& !mystrcasecmp(verb, vc->verbname)) {
+		&& o == vc->object && !mystrcasecmp(verb, vc->verbname)) {
 		/* we haaave a winnaaah */
 		if (vc->h.verbdef) {
 		    verbcache_hit++;
@@ -587,7 +609,12 @@ db_find_callable_verb(Objid oid, const char *verb)
 	verbcache_miss++;
 
 #else
-	o = dbpriv_find_object(oid);
+	if (TYPE_ANON == recv.type)
+	    o = recv.v.anon;
+	else if (TYPE_OBJ == recv.type && valid(recv.v.obj))
+	    o = dbpriv_find_object(recv.v.obj);
+	else
+	    o = NULL;
 #endif
 
 #ifdef VERB_CACHE
@@ -600,24 +627,24 @@ db_find_callable_verb(Objid oid, const char *verb)
 	new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
 
 	new_vc->hash = hash;
-	new_vc->oid_key = first_parent_with_verbs;
+	new_vc->object = o;
 	new_vc->verbname = str_dup(verb);
 	new_vc->h.verbdef = NULL;
 	new_vc->next = vc_table[bucket];
 	vc_table[bucket] = new_vc;
 #endif
 
-	struct verbdef_definer_data data = find_callable_verbdef(o->id, verb);
+	struct verbdef_definer_data data = find_callable_verbdef(o, verb);
 	if (data.o != NULL && data.v != NULL) {
 
 #ifdef VERB_CACHE
 	    free_var(stack);
 
-	    new_vc->h.definer = data.o->id;
+	    new_vc->h.definer = data.o;
 	    new_vc->h.verbdef = data.v;
 	    vh.ptr = &new_vc->h;
 #else
-	    h.definer = data.o->id;
+	    h.definer = data.o;
 	    h.verbdef = data.v;
 	    vh.ptr = &h;
 #endif
@@ -659,7 +686,7 @@ db_find_defined_verb(Objid oid, const char *vname, int allow_numbers)
 	    break;
 
     if (v) {
-	h.definer = o->id;
+	h.definer = o;
 	h.verbdef = v;
 	vh.ptr = &h;
 
@@ -681,7 +708,7 @@ db_find_indexed_verb(Objid oid, unsigned index)
 
     for (v = o->verbdefs, i = 0; v; v = v->next)
 	if (++i == index) {
-	    h.definer = o->id;
+	    h.definer = o;
 	    h.verbdef = v;
 	    vh.ptr = &h;
 
@@ -697,8 +724,8 @@ db_verb_definer(db_verb_handle vh)
 {
     handle *h = (handle *) vh.ptr;
 
-    if (h)
-	return h->definer;
+    if (h && h->definer)
+	return h->definer->id;
 
     panic("DB_VERB_DEFINER: Null handle!");
     return 0;
