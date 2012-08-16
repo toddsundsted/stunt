@@ -622,7 +622,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 	    int i, c;
 	    FOR_EACH(parent, parents, i, c) {
 		where = parent.v.obj;
-		h = db_find_callable_verb(where, vname);
+		h = db_find_callable_verb(new_obj(where), vname);
 		if (h.ptr)
 		    break;
 	    }
@@ -634,7 +634,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 	    where = parents.v.obj;
 	    if (!valid(where))
 		return E_INVIND;
-	    h = db_find_callable_verb(where, vname);
+	    h = db_find_callable_verb(new_obj(where), vname);
 	}
 	else {
 	    return E_VERBNF;
@@ -644,7 +644,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 	where = recv;
 	if (!valid(where))
 	    return E_INVIND;
-	h = db_find_callable_verb(where, vname);
+	h = db_find_callable_verb(new_obj(where), vname);
     }
 
     if (!h.ptr)
@@ -2562,7 +2562,7 @@ run_interpreter(char raise, enum error e,
 	Var handled, traceback;
 	int i;
 
-	h = db_find_callable_verb(SYSTEM_OBJECT, handler_verb_name);
+	h = db_find_callable_verb(new_obj(SYSTEM_OBJECT), handler_verb_name);
 	if (do_db_tracebacks && h.ptr) {
 	    hret = do_server_verb_task(SYSTEM_OBJECT, handler_verb_name,
 				       var_ref(args), h,

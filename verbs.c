@@ -527,7 +527,7 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
 	return make_error_pack(E_INVARG);
     }
 
-    db_verb_handle h = db_find_callable_verb(object, verb);
+    db_verb_handle h = db_find_callable_verb(new_obj(object), verb);
 
     free_var(arglist);
 

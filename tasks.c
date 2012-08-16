@@ -806,10 +806,10 @@ do_command_task(tqueue * tq, char *command)
 		       || find_verb_on(this = pc->iobj, pc, &vh)
 #ifndef PLAYER_HUH
 		       || (valid(location)
-			   && (vh = db_find_callable_verb(this = location, "huh"),
+			   && (vh = db_find_callable_verb(new_obj(this = location), "huh"),
 			       vh.ptr))) {
 #else
-		       || (vh = db_find_callable_verb(this = tq->player, "huh"),
+		       || (vh = db_find_callable_verb(new_obj(this = tq->player), "huh"),
 			   vh.ptr)) {
 #endif
 		do_input_task(tq->player, pc, this, vh);
@@ -1771,7 +1771,7 @@ run_server_task_setting_id(Objid player, Objid what, const char *verb,
     if (task_id)
 	*task_id = current_task_id;
 
-    h = db_find_callable_verb(what, verb);
+    h = db_find_callable_verb(new_obj(what), verb);
     if (h.ptr)
 	return do_server_verb_task(what, verb, args, h, player, argstr,
 				   result, 1/*traceback*/);
