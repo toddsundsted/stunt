@@ -103,6 +103,31 @@ extern void db_priv_affected_callable_verb_lookup(void);
 
 /*********** Objects ***********/
 
+extern Objid dbpriv_object_owner(Object *);
+extern void dbpriv_set_object_owner(Object *, Objid owner);
+
+extern const char *dbpriv_object_name(Object *);
+extern void dbpriv_set_object_name(Object *, const char *);
+				/* These functions do not change the reference
+				 * count of the name they accept/return.  Thus,
+				 * the caller should str_ref() the name if the
+				 * reference is to be persistent.
+				 */
+
+extern int dbpriv_object_has_flag(Object *, db_object_flag);
+extern void dbpriv_set_object_flag(Object *, db_object_flag);
+extern void dbpriv_clear_object_flag(Object *, db_object_flag);
+
+extern Var dbpriv_object_parents(Object *);
+extern Var dbpriv_object_children(Object *);
+extern Var dbpriv_object_location(Object *);
+extern Var dbpriv_object_contents(Object *);
+				/* These functions do not change the reference
+				 * count of the list they return.  Thus, the
+				 * caller should var_ref() the value if the
+				 * reference is to be persistent.
+				 */
+
 extern void dbpriv_set_all_users(Var);
 				/* Initialize the list returned by
 				 * db_all_users().

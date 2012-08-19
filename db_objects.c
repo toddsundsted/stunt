@@ -450,37 +450,93 @@ DEFUNC(all_contents, contents);
 /*********** Object attributes ***********/
 
 Objid
+db_object_owner2(Var obj)
+{
+    return (TYPE_ANON == obj.type) ?
+           dbpriv_object_owner(obj.v.anon) :
+           db_object_owner(obj.v.obj);
+}
+
+Var
+db_object_parents2(Var obj)
+{
+    return (TYPE_ANON == obj.type) ?
+           dbpriv_object_parents(obj.v.anon) :
+           db_object_parents(obj.v.obj);
+}
+
+Objid
+dbpriv_object_owner(Object *o)
+{
+    return o->owner;
+}
+
+void
+dbpriv_set_object_owner(Object *o, Objid owner)
+{
+    o->owner = owner;
+}
+
+Objid
 db_object_owner(Objid oid)
 {
-    return objects[oid]->owner;
+    return dbpriv_object_owner(objects[oid]);
 }
 
 void
 db_set_object_owner(Objid oid, Objid owner)
 {
-    objects[oid]->owner = owner;
+    dbpriv_set_object_owner(objects[oid], owner);
 }
 
 const char *
-db_object_name(Objid oid)
+dbpriv_object_name(Object *o)
 {
-    return objects[oid]->name;
+    return o->name;
 }
 
 void
-db_set_object_name(Objid oid, const char *name)
+dbpriv_set_object_name(Object *o, const char *name)
 {
-    Object *o = objects[oid];
-
     if (o->name)
 	free_str(o->name);
     o->name = name;
 }
 
-Var
-db_object_parent(Objid oid)
+const char *
+db_object_name(Objid oid)
 {
-    return objects[oid]->parents;
+    return dbpriv_object_name(objects[oid]);
+}
+
+void
+db_set_object_name(Objid oid, const char *name)
+{
+    dbpriv_set_object_name(objects[oid], name);
+}
+
+Var
+dbpriv_object_parents(Object *o)
+{
+    return o->parents;
+}
+
+Var
+dbpriv_object_children(Object *o)
+{
+    return o->children;
+}
+
+Var
+db_object_parents(Objid oid)
+{
+    return dbpriv_object_parents(objects[oid]);
+}
+
+Var
+db_object_children(Objid oid)
+{
+    return dbpriv_object_children(objects[oid]);
 }
 
 int
@@ -499,12 +555,6 @@ db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
 	    return 1;
 
     return 0;
-}
-
-Var
-db_children(Objid oid)
-{
-    return var_ref(objects[oid]->children);
 }
 
 static int
@@ -582,10 +632,22 @@ db_change_parent(Objid oid, Var new_parents)
     return 1;
 }
 
+Var
+dbpriv_object_location(Object *o)
+{
+    return o->location;
+}
+
 Objid
 db_object_location(Objid oid)
 {
-    return objects[oid]->location.v.obj;
+    return dbpriv_object_location(objects[oid]).v.obj;
+}
+
+Var
+dbpriv_object_contents(Object *o)
+{
+    return o->contents;
 }
 
 int
@@ -625,35 +687,44 @@ db_change_location(Objid oid, Objid new_location)
 }
 
 int
+dbpriv_object_has_flag(Object *o, db_object_flag f)
+{
+    return (o->flags & (1 << f)) != 0;
+}
+
+void
+dbpriv_set_object_flag(Object *o, db_object_flag f)
+{
+    o->flags |= (1 << f);
+}
+
+void
+dbpriv_clear_object_flag(Object *o, db_object_flag f)
+{
+    o->flags &= ~(1 << f);
+}
+
+int
 db_object_has_flag(Objid oid, db_object_flag f)
 {
-    return (objects[oid]->flags & (1 << f)) != 0;
+    return dbpriv_object_has_flag(objects[oid], f);
 }
 
 void
 db_set_object_flag(Objid oid, db_object_flag f)
 {
-    objects[oid]->flags |= (1 << f);
-    if (f == FLAG_USER) {
-	Var v;
+    dbpriv_set_object_flag(objects[oid], f);
 
-	v.type = TYPE_OBJ;
-	v.v.obj = oid;
-	all_users = setadd(all_users, v);
-    }
+    if (f == FLAG_USER)
+	all_users = setadd(all_users, new_obj(oid));
 }
 
 void
 db_clear_object_flag(Objid oid, db_object_flag f)
 {
-    objects[oid]->flags &= ~(1 << f);
-    if (f == FLAG_USER) {
-	Var v;
-
-	v.type = TYPE_OBJ;
-	v.v.obj = oid;
-	all_users = setremove(all_users, v);
-    }
+    dbpriv_clear_object_flag(objects[oid], f);
+    if (f == FLAG_USER)
+	all_users = setremove(all_users, new_obj(oid));
 }
 
 int

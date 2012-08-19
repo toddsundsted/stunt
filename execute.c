@@ -1543,28 +1543,30 @@ do {								\
 		Var propname, obj, prop;
 
 		propname = POP();	/* should be string */
-		obj = POP();	/* should be objid */
-		if (propname.type != TYPE_STR || obj.type != TYPE_OBJ) {
+		obj = POP();		/* should be an object */
+		if (!is_object(obj) || propname.type != TYPE_STR) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
-		} else if (!valid(obj.v.obj)) {
+		} else if (is_obj(obj) && !valid(obj.v.obj)) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_INVIND);
 		} else {
 		    db_prop_handle h;
+		    int built_in;
 
-		    h = db_find_property(obj.v.obj, propname.v.str, &prop);
+		    h = db_find_property(obj, propname.v.str, &prop);
+		    built_in = db_is_property_built_in(h);
 		    free_var(propname);
 		    free_var(obj);
 		    if (!h.ptr)
 			PUSH_ERROR(E_PROPNF);
-		    else if (h.built_in
-			 ? bi_prop_protected(h.built_in, RUN_ACTIV.progr)
+		    else if (built_in
+			 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
 		      : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
 			PUSH_ERROR(E_PERM);
-		    else if (h.built_in)
+		    else if (built_in)
 			PUSH(prop);	/* it's already freshly allocated */
 		    else
 			PUSH_REF(prop);
@@ -1576,24 +1578,26 @@ do {								\
 	    {
 		Var propname, obj, prop;
 
-		propname = TOP_RT_VALUE;
-		obj = NEXT_TOP_RT_VALUE;
-		if (propname.type != TYPE_STR || obj.type != TYPE_OBJ)
+		propname = TOP_RT_VALUE;	/* should be string */
+		obj = NEXT_TOP_RT_VALUE;	/* should be an object */
+		if (!is_object(obj) || propname.type != TYPE_STR)
 		    PUSH_ERROR(E_TYPE);
-		else if (!valid(obj.v.obj))
+		else if (is_obj(obj) && !valid(obj.v.obj))
 		    PUSH_ERROR(E_INVIND);
 		else {
 		    db_prop_handle h;
+		    int built_in;
 
-		    h = db_find_property(obj.v.obj, propname.v.str, &prop);
+		    h = db_find_property(obj, propname.v.str, &prop);
+		    built_in = db_is_property_built_in(h);
 		    if (!h.ptr)
 			PUSH_ERROR(E_PROPNF);
-		    else if (h.built_in
-			 ? bi_prop_protected(h.built_in, RUN_ACTIV.progr)
+		    else if (built_in
+			 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
 		      : !db_property_allows(h, RUN_ACTIV.progr, PF_READ))
 			PUSH_ERROR(E_PERM);
-		    else if (h.built_in)
-			PUSH(prop);
+		    else if (built_in)
+			PUSH(prop);	/* it's already freshly allocated */
 		    else
 			PUSH_REF(prop);
 		}
@@ -1604,30 +1608,32 @@ do {								\
 	    {
 		Var obj, propname, rhs;
 
-		rhs = POP();	/* any type */
+		rhs = POP();		/* any type */
 		propname = POP();	/* should be string */
-		obj = POP();	/* should be objid */
-		if (obj.type != TYPE_OBJ || propname.type != TYPE_STR) {
+		obj = POP();		/* should be an object */
+		if (!is_object(obj) || propname.type != TYPE_STR) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
-		} else if (!valid(obj.v.obj)) {
+		} else if (is_obj(obj) && !valid(obj.v.obj)) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_INVIND);
 		} else {
 		    db_prop_handle h;
+		    int built_in;
 		    enum error err = E_NONE;
 		    Objid progr = RUN_ACTIV.progr;
 
-		    h = db_find_property(obj.v.obj, propname.v.str, 0);
+		    h = db_find_property(obj, propname.v.str, 0);
+		    built_in = db_is_property_built_in(h);
 		    if (!h.ptr)
 			err = E_PROPNF;
 		    else {
-			switch (h.built_in) {
-			case BP_NONE:	/* Not a built-in property */
+			switch (built_in) {
+			case BP_NONE:	/* not a built-in property */
 			    if (!db_property_allows(h, progr, PF_WRITE))
 				err = E_PERM;
 			    break;
@@ -1635,9 +1641,9 @@ do {								\
 			    if (rhs.type != TYPE_STR)
 				err = E_TYPE;
 			    else if (!is_wizard(progr) &&
-				     (is_user(obj.v.obj) ||
-				      bi_prop_protected(h.built_in, progr) ||
-				      progr != db_object_owner(obj.v.obj)))
+				     ((is_obj(obj) && is_user(obj.v.obj)) ||
+				      bi_prop_protected(built_in, progr) ||
+				      progr != db_object_owner2(obj)))
 				err = E_PERM;
 			    break;
 			case BP_OWNER:
@@ -1650,7 +1656,9 @@ do {								\
 			case BP_WIZARD:
 			    if (!is_wizard(progr))
 				err = E_PERM;
-			    else if (h.built_in == BP_WIZARD
+			    else if (!is_obj(obj))
+				err = E_INVARG;
+			    else if (built_in == BP_WIZARD
 			     && !is_true(rhs) != !is_wizard(obj.v.obj)) {
 				/* Notify only on changes in state; the !'s above
 				 * serve to canonicalize the truth values.
@@ -1671,8 +1679,8 @@ do {								\
 			case BP_F:
 			case BP_A:
 			    if (!is_wizard(progr) &&
-				(bi_prop_protected(h.built_in, progr) ||
-				 progr != db_object_owner(obj.v.obj)))
+				(bi_prop_protected(built_in, progr) ||
+				 progr != db_object_owner2(obj)))
 				err = E_PERM;
 			    break;
 			case BP_LOCATION:

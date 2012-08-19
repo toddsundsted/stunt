@@ -75,10 +75,10 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    h = db_find_property(oid, pname, 0);
+    h = db_find_property(new_obj(oid), pname, 0);
     free_var(arglist);
 
-    if (!h.ptr || h.built_in)
+    if (!h.ptr || db_is_property_built_in(h))
 	return make_error_pack(E_PROPNF);
     else if (!db_property_allows(h, progr, PF_READ))
 	return make_error_pack(E_PERM);
@@ -161,9 +161,9 @@ set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
     if (e != E_NONE)
 	return e;
 
-    h = db_find_property(oid, pname, 0);
+    h = db_find_property(new_obj(oid), pname, 0);
 
-    if (!h.ptr || h.built_in)
+    if (!h.ptr || db_is_property_built_in(h))
 	return E_PROPNF;
     else if (!db_property_allows(h, progr, PF_WRITE)
 	     || (!is_wizard(progr) && db_property_owner(h) != new_owner))
@@ -173,7 +173,7 @@ set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
 	if (!db_rename_propdef(oid, pname, new_name))
 	    return E_INVARG;
 
-	h = db_find_property(oid, new_name, 0);
+	h = db_find_property(new_obj(oid), new_name, 0);
     }
     db_set_property_owner(h, new_owner);
     db_set_property_flags(h, new_flags);
@@ -259,13 +259,13 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid(oid))
 	e = E_INVARG;
     else {
-	h = db_find_property(oid, pname, 0);
+	h = db_find_property(new_obj(oid), pname, 0);
 	if (!h.ptr)
 	    e = E_PROPNF;
-	else if (h.built_in
+	else if (db_is_property_built_in(h)
 		 || (progr != db_property_owner(h) && !is_wizard(progr)))
 	    e = E_PERM;
-	else if (h.definer == oid)
+	else if (db_is_property_defined_on(h, new_obj(oid)))
 	    e = E_INVARG;
 	else {
 	    value.type = TYPE_CLEAR;
@@ -293,14 +293,14 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid(oid))
 	e = E_INVARG;
     else {
-	h = db_find_property(oid, pname, 0);
+	h = db_find_property(new_obj(oid), pname, 0);
 	if (!h.ptr)
 	    e = E_PROPNF;
-	else if (!h.built_in && !db_property_allows(h, progr, PF_READ))
+	else if (!db_is_property_built_in(h) && !db_property_allows(h, progr, PF_READ))
 	    e = E_PERM;
 	else {
 	    r.type = TYPE_INT;
-	    r.v.num = (!h.built_in && db_property_value(h).type == TYPE_CLEAR);
+	    r.v.num = (!db_is_property_built_in(h) && db_property_value(h).type == TYPE_CLEAR);
 	    e = E_NONE;
 	}
     }
