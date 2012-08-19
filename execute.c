@@ -600,17 +600,18 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
        case, else sets up the activ_stack for the verb call and then returns
        E_NONE */
 
-    Objid where;
     db_verb_handle h = { .ptr = NULL };
     Program *program;
     Var *env;
     Var v;
 
     if (do_pass) {
+	Objid where;
+
 	if (!valid(RUN_ACTIV.vloc))
 	    return E_INVIND;
 
-	Var parents = db_object_parent(RUN_ACTIV.vloc);
+	Var parents = db_object_parents(RUN_ACTIV.vloc);
 
 	if (TYPE_LIST == parents.type) {
 	  if (listlength(parents) == 0)
@@ -641,10 +642,12 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 	}
     }
     else {
-	where = recv;
-	if (!valid(where))
+	if (TYPE_ANON == this.type)
+	    h = db_find_callable_verb(this, vname);
+	else if (valid(recv))
+	    h = db_find_callable_verb(new_obj(recv), vname);
+	else
 	    return E_INVIND;
-	h = db_find_callable_verb(new_obj(where), vname);
     }
 
     if (!h.ptr)
@@ -1755,11 +1758,13 @@ do {								\
 		     * object that points us to the prototype/handler
 		     * for the primitive type.
 		     */
-#define		    MATCH_TYPE(t1, t2)							\
-			else if (obj.type == TYPE_##t1) {				\
-			    h = db_find_property(SYSTEM_OBJECT, #t2 "_proto", &p);	\
-			    if (h.ptr && p.type == TYPE_OBJ && valid(p.v.obj))		\
-				recv = p.v.obj;						\
+		    Var system = new_obj(SYSTEM_OBJECT);
+
+#define		    MATCH_TYPE(t1, t2)						\
+			else if (obj.type == TYPE_##t1) {			\
+			    h = db_find_property(system, #t2 "_proto", &p);	\
+			    if (h.ptr && p.type == TYPE_OBJ && valid(p.v.obj))	\
+				recv = p.v.obj;					\
 			}
 		    if (obj.type == TYPE_OBJ)
 			recv = obj.v.obj;
@@ -1771,7 +1776,9 @@ do {								\
 		    MATCH_TYPE(MAP, map)
 #undef		    MATCH_TYPE
 
-		    if (recv != NOTHING) {
+		    free_var(system);
+
+		    if (recv != NOTHING || is_object(obj)) {
 			STORE_STATE_VARIABLES();
 			err = call_verb2(recv, verb.v.str, obj, args, 0);
 			/* if there is no error, RUN_ACTIV is now the CALLEE's.
