@@ -148,7 +148,6 @@ complex_free_var(Var v)
     case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
 	    Var *pv;
-
 	    for (i = v.v.list[0].v.num, pv = v.v.list + 1; i > 0; i--, pv++)
 		free_var(*pv);
 	    myfree(v.v.list, M_LIST);
@@ -165,6 +164,10 @@ complex_free_var(Var v)
     case TYPE_FLOAT:
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
+	break;
+    case TYPE_ANON:
+	if (delref(v.v.anon) == 0)
+	    db_destroy_anonymous_object(v.v.anon);
 	break;
     }
 }
@@ -187,6 +190,9 @@ complex_var_ref(Var v)
 	break;
     case TYPE_FLOAT:
 	addref(v.v.fnum);
+	break;
+    case TYPE_ANON:
+	addref(v.v.anon);
 	break;
     }
     return v;
@@ -218,6 +224,9 @@ complex_var_dup(Var v)
     case TYPE_FLOAT:
 	v = new_float(*v.v.fnum);
 	break;
+    case TYPE_ANON:
+	addref(v.v.anon);
+	break;
     }
     return v;
 }
@@ -243,6 +252,9 @@ var_refcount(Var v)
 	break;
     case TYPE_FLOAT:
 	return refcount(v.v.fnum);
+	break;
+    case TYPE_ANON:
+	return refcount(v.v.anon);
 	break;
     }
     return 1;
@@ -324,6 +336,8 @@ equality(Var lhs, Var rhs, int case_matters)
 	    return listequal(lhs, rhs, case_matters);
 	case TYPE_MAP:
 	    return mapequal(lhs, rhs, case_matters);
+	case TYPE_ANON:
+	    return lhs.v.anon == rhs.v.anon;
 	default:
 	    panic("EQUALITY: Unknown value type");
 	}

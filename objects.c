@@ -269,8 +269,15 @@ bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
     Var r;
 
-    r.type = TYPE_INT;
-    r.v.num = valid(arglist.v.list[1].v.obj);
+    if (is_object(arglist.v.list[1])) {
+	r.type = TYPE_INT;
+	r.v.num = is_valid(arglist.v.list[1]);
+    }
+    else {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    }
+
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -830,9 +837,9 @@ register_objects(void)
 				      TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function_with_read_write("recycle", 1, 1, bf_recycle,
 				      bf_recycle_read, bf_recycle_write,
-				      TYPE_OBJ);
+				      TYPE_ANY);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_OBJ);
-    register_function("valid", 1, 1, bf_valid, TYPE_OBJ);
+    register_function("valid", 1, 1, bf_valid, TYPE_ANY);
     register_function("chparents", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_LIST);
     register_function("chparent", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_OBJ);
     register_function("parents", 1, 1, bf_parents, TYPE_ANY);

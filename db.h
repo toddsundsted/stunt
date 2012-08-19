@@ -99,6 +99,9 @@ extern void db_shutdown(void);
 
 /**** objects ****/
 
+extern int valid(Objid);
+extern int is_valid(Var);
+
 extern Objid db_create_object(void);
 				/* Creates a new object with parent & location
 				 * == #-1.  Returns new object's id number.
@@ -124,6 +127,16 @@ extern void db_destroy_object(Objid);
 				 * must == #-1.
 				 */
 
+extern void db_invalidate_anonymous_object(void *);
+				/* Marks the object as invalid but does not free
+				 * the associated storage.
+				 */
+
+extern void db_destroy_anonymous_object(void *);
+				/* Destroys object, freeing all associated
+				 * storage.
+				 */
+
 extern void *db_make_anonymous(Objid, Objid);
 				/* Makes the specified object anonymous by
 				 * removing it from the collection of numbered
@@ -136,8 +149,6 @@ extern Objid db_renumber_object(Objid);
 				/* Renumbers object to have the lowest free
 				 * object number.  Returns its new number.
 				 */
-
-extern int valid(Objid);
 
 extern int db_object_bytes(Objid);
 				/* Returns the number of bytes of memory
@@ -248,13 +259,14 @@ typedef enum {
     FLAG_WRITE,
     FLAG_OBSOLETE_2,
     FLAG_FERTILE,
-    FLAG_ANONYMOUS
+    FLAG_ANONYMOUS,
     /* NOTE: New permanent flags must always be added here, rather
      *	     than replacing one of the obsolete ones, since old
      *	     databases might have old objects around that still have
      *	     that flag set.
      */
 
+    FLAG_INVALID
     /* Temporary flags.
      * (not saved; can be renumbered with impunity)
      * make sure FLAG_FIRST_TEMP > last permanent flag
