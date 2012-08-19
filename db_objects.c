@@ -143,10 +143,10 @@ db_create_object(void)
     o->name = str_dup("");
     o->flags = 0;
 
-    o->parents = nothing;
+    o->parents = var_ref(nothing);
     o->children = new_list(0);
 
-    o->location = nothing;
+    o->location = var_ref(nothing);
     o->contents = new_list(0);
 
     o->propval = 0;
@@ -240,7 +240,53 @@ db_make_anonymous(Objid oid, Objid last)
 
     o->id = NOTHING;
 
-    return o;
+    free_var(o->children);
+    free_var(o->location);
+    free_var(o->contents);
+
+    /* Last step, reallocate the memory and copy -- anonymous objects
+     * require space for reference counting.
+     */
+    Object *t = mymalloc(sizeof(Object), M_ANON);
+    memcpy(t, o, sizeof(Object));
+    myfree(o, M_OBJECT);
+
+    return t;
+}
+
+void
+db_destroy_anonymous_object(void *obj)
+{
+    Object *o = (Object *)obj;
+
+    free_str(o->name);
+    o->name = NULL;
+
+    free_var(o->parents);
+
+    myfree(o, M_ANON);
+}
+
+void
+db_invalidate_anonymous_object(void *obj)
+{
+    Object *o = (Object *)obj;
+
+    dbpriv_set_object_flag(o, FLAG_INVALID);
+}
+
+int
+anon_valid(Object *o)
+{
+    return o && !dbpriv_object_has_flag(o, FLAG_INVALID);
+}
+
+int
+is_valid(Var obj)
+{
+    return (TYPE_ANON == obj.type) ?
+           anon_valid(obj.v.anon) :
+           valid(obj.v.obj);
 }
 
 Objid
