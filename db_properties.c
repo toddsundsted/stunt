@@ -188,7 +188,7 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
     int i;
     db_prop_handle h;
 
-    h = db_find_property(oid, pname, 0);
+    h = db_find_property(new_obj(oid), pname, 0);
 
     if (h.ptr || property_defined_at_or_below(pname, str_hash(pname), oid))
 	return 0;
@@ -233,7 +233,7 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
 	p = props->l[i];
 	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
 	    if (mystrcasecmp(old, new) != 0) {	/* Not changing just the case */
-		h = db_find_property(oid, new, 0);
+		h = db_find_property(new_obj(oid), new, 0);
 		if (h.ptr
 		|| property_defined_at_or_below(new, str_hash(new), oid))
 		    return 0;
@@ -382,64 +382,59 @@ add_to_list(void *data, Objid c)
 static void
 get_bi_value(db_prop_handle h, Var * value)
 {
-    Objid oid = *((Objid *) h.ptr);
+    Object *o = (Object *)h.ptr;
 
     switch (h.built_in) {
     case BP_NAME:
 	value->type = TYPE_STR;
-	value->v.str = str_ref(db_object_name(oid));
+	value->v.str = str_ref(dbpriv_object_name(o));
 	break;
     case BP_OWNER:
 	value->type = TYPE_OBJ;
-	value->v.obj = db_object_owner(oid);
+	value->v.obj = dbpriv_object_owner(o);
 	break;
     case BP_PROGRAMMER:
 	value->type = TYPE_INT;
-	value->v.num = db_object_has_flag(oid, FLAG_PROGRAMMER);
+	value->v.num = dbpriv_object_has_flag(o, FLAG_PROGRAMMER);
 	break;
     case BP_WIZARD:
 	value->type = TYPE_INT;
-	value->v.num = db_object_has_flag(oid, FLAG_WIZARD);
+	value->v.num = dbpriv_object_has_flag(o, FLAG_WIZARD);
 	break;
     case BP_R:
 	value->type = TYPE_INT;
-	value->v.num = db_object_has_flag(oid, FLAG_READ);
+	value->v.num = dbpriv_object_has_flag(o, FLAG_READ);
 	break;
     case BP_W:
 	value->type = TYPE_INT;
-	value->v.num = db_object_has_flag(oid, FLAG_WRITE);
+	value->v.num = dbpriv_object_has_flag(o, FLAG_WRITE);
 	break;
     case BP_F:
 	value->type = TYPE_INT;
-	value->v.num = db_object_has_flag(oid, FLAG_FERTILE);
+	value->v.num = dbpriv_object_has_flag(o, FLAG_FERTILE);
 	break;
     case BP_A:
 	value->type = TYPE_INT;
-	value->v.num = db_object_has_flag(oid, FLAG_ANONYMOUS);
+	value->v.num = dbpriv_object_has_flag(o, FLAG_ANONYMOUS);
 	break;
     case BP_LOCATION:
-	value->type = TYPE_OBJ;
-	value->v.obj = db_object_location(oid);
+	*value = var_ref(dbpriv_object_location(o));
 	break;
     case BP_CONTENTS:
-	{
-	    struct contents_data d;
-
-	    d.r = new_list(db_count_contents(oid));
-	    d.i = 0;
-	    db_for_all_contents(oid, add_to_list, &d);
-
-	    *value = d.r;
-	}
+	*value = var_ref(dbpriv_object_contents(o));
 	break;
     default:
 	panic("Unknown built-in property in GET_BI_VALUE!");
     }
 }
 
+/* does NOT consume `obj' and `name' */
 db_prop_handle
-db_find_property(Objid oid, const char *name, Var * value)
+db_find_property(Var obj, const char *name, Var *value)
 {
+    if (TYPE_OBJ != obj.type && TYPE_ANON != obj.type)
+	panic("DB_FIND_PROPERTY: Not an object!");
+
     static struct {
 	const char *name;
 	enum bi_prop prop;
@@ -450,9 +445,9 @@ db_find_property(Objid oid, const char *name, Var * value)
 #undef _ENTRY
     };
     static int ptable_init = 0;
+    int hash = str_hash(name);
     int i, n;
     db_prop_handle h;
-    int hash = str_hash(name);
     Object *o;
 
     if (!ptable_init) {
@@ -460,14 +455,18 @@ db_find_property(Objid oid, const char *name, Var * value)
 	    ptable[i].hash = str_hash(ptable[i].name);
 	ptable_init = 1;
     }
+
+    h.ptr = 0;
     h.definer = NOTHING;
+
+    o = (TYPE_OBJ == obj.type) ?
+        dbpriv_find_object(obj.v.obj) :
+        obj.v.anon;
+
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !mystrcasecmp(name, ptable[i].name)) {
-	    static Objid ret;
-
-	    ret = oid;
 	    h.built_in = ptable[i].prop;
-	    h.ptr = &ret;
+	    h.ptr = o;
 	    if (value)
 		get_bi_value(h, value);
 	    return h;
@@ -475,62 +474,92 @@ db_find_property(Objid oid, const char *name, Var * value)
     }
 
     h.built_in = BP_NONE;
+
+    Proplist *props = &(o->propdefs);
+    Propdef *defs = props->l;
+    int length = props->cur_length;
+
     n = 0;
 
-    Var ancestor, ancestors;
-    int i1, c1;
+    for (i = 0; i < length; i++, n++) {
+	if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+		h.ptr = o->propval + n;
+		goto done;
+	    }
+	}
 
-    ancestors = db_ancestors(oid, true);
+    Object *t;
+    Var ancestor, ancestors = enlist_var(var_ref(o->parents));
 
-    FOR_EACH(ancestor, ancestors, i1, c1) {
-	o = dbpriv_find_object(ancestor.v.obj);
+    while (listlength(ancestors) > 0) {
+	POP_TOP(ancestor, ancestors);
+	if (ancestor.v.obj == NOTHING)
+	    continue;
 
-	Proplist *props = &(o->propdefs);
-	Propdef *defs = props->l;
-	int length = props->cur_length;
+	t = dbpriv_find_object(ancestor.v.obj);
+
+	ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
+
+	props = &(t->propdefs);
+	defs = props->l;
+	length = props->cur_length;
 
 	for (i = 0; i < length; i++, n++) {
-	    if (defs[i].hash == hash
-		&& !mystrcasecmp(defs[i].name, name)) {
-		Pval *prop;
-
-		h.definer = o->id;
-		o = dbpriv_find_object(oid);
+	    if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+		h.definer = t->id;
 		h.ptr = o->propval + n;
-
-		if (value) {
-		    prop = h.ptr;
-
-		    while (prop->var.type == TYPE_CLEAR) {
-			if (TYPE_LIST == o->parents.type) {
-			    Var parent, parents = o->parents;
-			    int i2, c2, offset = 0;
-			    FOR_EACH(parent, parents, i2, c2)
-				if ((offset = properties_offset(h.definer, parent.v.obj)) > -1)
-				    break;
-			    o = dbpriv_find_object(parent.v.obj);
-			    prop = o->propval + offset + i;
-			}
-			else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
-			    int offset = properties_offset(h.definer, o->parents.v.obj);
-			    o = dbpriv_find_object(o->parents.v.obj);
-			    prop = o->propval + offset + i;
-			}
-		    }
-		    *value = prop->var;
-		}
-
+		free_var(ancestor);
 		free_var(ancestors);
-
-		return h;
+		goto done;
 	    }
 	}
     }
 
+    free_var(ancestor);
     free_var(ancestors);
 
-    h.ptr = 0;
+ done:
+
+    if (!h.ptr)
+	return h;
+
+    if (value) {
+	Pval *prop = h.ptr;
+
+	while (prop->var.type == TYPE_CLEAR) {
+	    if (TYPE_LIST == o->parents.type) {
+		Var parent, parents = o->parents;
+		int i2, c2, offset = 0;
+		FOR_EACH(parent, parents, i2, c2)
+		    if ((offset = properties_offset(h.definer, parent.v.obj)) > -1)
+			break;
+		o = dbpriv_find_object(parent.v.obj);
+		prop = o->propval + offset + i;
+	    }
+	    else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
+		int offset = properties_offset(h.definer, o->parents.v.obj);
+		o = dbpriv_find_object(o->parents.v.obj);
+		prop = o->propval + offset + i;
+	    }
+	}
+	*value = prop->var;
+    }
+
     return h;
+}
+
+int
+db_is_property_defined_on(db_prop_handle h, Var obj)
+{
+    Objid oid = obj.v.obj;
+
+    return (h.definer == oid);
+}
+
+int
+db_is_property_built_in(db_prop_handle h)
+{
+    return h.built_in;
 }
 
 Var
@@ -558,19 +587,19 @@ db_set_property_value(db_prop_handle h, Var value)
 	free_var(prop->var);
 	prop->var = value;
     } else {
-	Objid oid = *((Objid *) h.ptr);
+	Object *o = (Object *)h.ptr;
 	db_object_flag flag;
 
 	switch (h.built_in) {
 	case BP_NAME:
 	    if (value.type != TYPE_STR)
 		goto complain;
-	    db_set_object_name(oid, value.v.str);
+	    dbpriv_set_object_name(o, value.v.str);
 	    break;
 	case BP_OWNER:
 	    if (value.type != TYPE_OBJ)
 		goto complain;
-	    db_set_object_owner(oid, value.v.obj);
+	    dbpriv_set_object_owner(o, value.v.obj);
 	    break;
 	case BP_PROGRAMMER:
 	    flag = FLAG_PROGRAMMER;
@@ -591,9 +620,9 @@ db_set_property_value(db_prop_handle h, Var value)
 	    flag = FLAG_ANONYMOUS;
 	  finish_flag:
 	    if (is_true(value))
-		db_set_object_flag(oid, flag);
+		dbpriv_set_object_flag(o, flag);
 	    else
-		db_clear_object_flag(oid, flag);
+		dbpriv_clear_object_flag(o, flag);
 	    free_var(value);
 	    break;
 	case BP_LOCATION:

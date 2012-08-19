@@ -158,6 +158,12 @@ is_collection(Var v)
     return TYPE_LIST == v.type || TYPE_MAP == v.type;
 }
 
+static inline bool
+is_object(Var v)
+{
+    return TYPE_OBJ == v.type || TYPE_ANON == v.type;
+}
+
 static inline Var
 new_int(int32 num)
 {

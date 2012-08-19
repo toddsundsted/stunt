@@ -1169,7 +1169,7 @@ check_user_task_limit(Objid user)
     Var v;
 
     if (valid(user)
-	&& db_find_property(user, "queued_task_limit", &v).ptr
+	&& db_find_property(new_obj(user), "queued_task_limit", &v).ptr
 	&& v.type == TYPE_INT)
 	limit = v.v.num;
 

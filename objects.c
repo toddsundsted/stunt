@@ -489,7 +489,7 @@ bf_children(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid(oid))
 	return make_error_pack(E_INVARG);
     else
-	return make_var_pack(db_children(oid));
+	return make_var_pack(var_ref(db_object_children(oid)));
 }
 
 static package
@@ -612,8 +612,8 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 
 	/* Do the same thing for the inheritance hierarchy */
 	while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
-	    Var cp = db_object_parent(c);
-	    Var op = db_object_parent(oid);
+	    Var cp = db_object_parents(c);
+	    Var op = db_object_parents(oid);
 	    if (is_obj(cp)) {
 		db_change_parent(c, op);
 	    }

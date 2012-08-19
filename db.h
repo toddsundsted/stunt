@@ -138,14 +138,6 @@ extern int db_object_bytes(Objid);
 				 * properties.
 				 */
 
-extern Var db_children(Objid);
-				/* Returns a list of the children of the
-				 * given object.  db_children() does not/
-				 * can not free the returned list.  The caller
-				 * should therefore free it once it has finished
-				 * operating on it.
-				 */
-
 extern Var db_ancestors(Objid, bool);
 				/* Returns a list of the ancestors of the
 				 * given object.  db_ancestors() does not/
@@ -180,6 +172,9 @@ extern Var db_all_contents(Objid, bool);
 
 /**** object attributes ****/
 
+extern Objid db_object_owner2(Var);
+extern Var db_object_parents2(Var);
+
 extern Objid db_object_owner(Objid);
 extern void db_set_object_owner(Objid oid, Objid owner);
 
@@ -191,7 +186,15 @@ extern void db_set_object_name(Objid oid, const char *name);
 				 * reference is to be persistent.
 				 */
 
-extern Var db_object_parent(Objid);
+extern Var db_object_parents(Objid);
+extern Var db_object_children(Objid);
+				/* Returns a list of the parents/children of the
+				 * given object.  These functions do not change
+				 * the reference count of the value they return.
+				 * Thus, the caller should var_ref() the value
+				 * if the reference is to be persistent.
+				 */
+
 extern int db_count_children(Objid);
 extern int db_for_all_children(Objid,
 			       int (*)(void *, Objid),
@@ -346,13 +349,16 @@ enum bi_prop {
 #undef _BP_DO
 };
 
+/* Use the accessors `db_is_property_built_in' and `db_is_property_defined_on'
+ * to read the fields `built_in' and `definer'.
+ */
 typedef struct {
     enum bi_prop built_in;	/* true iff property is a built-in one */
     Objid definer;		/* if !built_in, the object defining prop */
     void *ptr;			/* null iff property not found */
 } db_prop_handle;
 
-extern db_prop_handle db_find_property(Objid oid, const char *name,
+extern db_prop_handle db_find_property(Var obj, const char *name,
 				       Var * value);
 				/* Returns a handle on the named property of
 				 * the given object.  If `value' is non-null,
@@ -418,6 +424,18 @@ extern int db_property_allows(db_prop_handle, Objid,
 				 * the indicated operation on the property.
 				 * This function may not be called for built-in
 				 * properties.
+				 */
+
+extern int db_is_property_defined_on(db_prop_handle, Var);
+				/* Returns true iff the property is defined on
+				 * the specified object.  The object value must
+				 * be either an object number or an anonymous
+				 * object.
+				 */
+
+extern int db_is_property_built_in(db_prop_handle);
+				/* Returns true iff the property is a built-in
+				 * property.
 				 */
 
 
@@ -518,7 +536,7 @@ extern db_verb_handle db_find_command_verb(Objid oid, const char *verb,
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_callable_verb(Objid oid, const char *verb);
+extern db_verb_handle db_find_callable_verb(Var recv, const char *verb);
 				/* Returns a handle on the first verb found
 				 * defined on OID or one of its ancestors with
 				 * a name matching VERB (and, for now, the
