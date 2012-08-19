@@ -642,7 +642,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
 	}
     }
     else {
-	if (TYPE_ANON == this.type)
+	if (TYPE_ANON == this.type && is_valid(this))
 	    h = db_find_callable_verb(this, vname);
 	else if (valid(recv))
 	    h = db_find_callable_verb(new_obj(recv), vname);
@@ -1551,7 +1551,7 @@ do {								\
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
-		} else if (is_obj(obj) && !valid(obj.v.obj)) {
+		} else if (!is_valid(obj)) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_INVIND);
@@ -1585,7 +1585,7 @@ do {								\
 		obj = NEXT_TOP_RT_VALUE;	/* should be an object */
 		if (!is_object(obj) || propname.type != TYPE_STR)
 		    PUSH_ERROR(E_TYPE);
-		else if (is_obj(obj) && !valid(obj.v.obj))
+		else if (!is_valid(obj))
 		    PUSH_ERROR(E_INVIND);
 		else {
 		    db_prop_handle h;
@@ -1619,7 +1619,7 @@ do {								\
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
-		} else if (is_obj(obj) && !valid(obj.v.obj)) {
+		} else if (!is_valid(obj)) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
@@ -1746,7 +1746,7 @@ do {								\
 
 		if (args.type != TYPE_LIST || verb.type != TYPE_STR)
 		    err = E_TYPE;
-		else if (obj.type == TYPE_OBJ && !valid(obj.v.obj))
+		else if (is_object(obj) && !is_valid(obj))
 		    err = E_INVIND;
 		else {
 		    Objid recv = NOTHING;
