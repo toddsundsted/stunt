@@ -124,6 +124,14 @@ extern void db_destroy_object(Objid);
 				 * must == #-1.
 				 */
 
+extern void *db_make_anonymous(Objid, Objid);
+				/* Makes the specified object anonymous by
+				 * removing it from the collection of numbered
+				 * objects.  Resets the high-water mark to the
+				 * last high-water mark.  Returns an opaque
+				 * pointer to the object.
+				 */
+
 extern Objid db_renumber_object(Objid);
 				/* Renumbers object to have the lowest free
 				 * object number.  Returns its new number.

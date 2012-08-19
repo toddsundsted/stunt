@@ -218,6 +218,31 @@ db_destroy_object(Objid oid)
     objects[oid] = 0;
 }
 
+void *
+db_make_anonymous(Objid oid, Objid last)
+{
+    Object *o = objects[oid];
+    Var old_parents = o->parents;
+    Var me = new_obj(oid);
+
+    Var parent;
+    int i, c;
+
+    /* remove me from my old parents' children */
+    if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
+	objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, me);
+    else if (old_parents.type == TYPE_LIST)
+	FOR_EACH(parent, old_parents, i, c)
+	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
+
+    objects[oid] = 0;
+    db_set_last_used_objid(last);
+
+    o->id = NOTHING;
+
+    return o;
+}
+
 Objid
 db_renumber_object(Objid old)
 {
