@@ -288,8 +288,8 @@ bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_create(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (OBJ|LIST parent [, OBJ owner]) */
-    Objid *data = vdata;
+{				/* (OBJ|LIST parent [, OBJ owner] [, INT anonymous]) */
+    Var *data = vdata;
     Var r;
 
     if (next == 1) {
@@ -298,12 +298,23 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    return make_error_pack(E_TYPE);
 	}
 
-	Objid owner = (arglist.v.list[0].v.num == 2
+	int n = arglist.v.list[0].v.num;
+
+	if ((n == 2 && arglist.v.list[2].type != TYPE_OBJ && arglist.v.list[2].type != TYPE_INT)
+	    || (n == 3 && (arglist.v.list[2].type != TYPE_OBJ || arglist.v.list[3].type != TYPE_INT))) {
+	    free_var(arglist);
+	    return make_error_pack(E_TYPE);
+	}
+
+	Objid owner = (n > 1 && arglist.v.list[2].type == TYPE_OBJ
 		       ? arglist.v.list[2].v.obj
 		       : progr);
+	int anonymous = (n > 1 && arglist.v.list[n].type == TYPE_INT
+		         ? arglist.v.list[n].v.obj
+		         : 0);
 
-	if ((!valid(owner)
-	     && owner != NOTHING)
+	if ((anonymous && owner == NOTHING)
+	    || (!valid(owner) && owner != NOTHING)
 	    || (arglist.v.list[1].type == TYPE_OBJ
 		&& !valid(arglist.v.list[1].v.obj)
 		&& arglist.v.list[1].v.obj != NOTHING)
@@ -315,9 +326,11 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	else if ((progr != owner && !is_wizard(progr))
 		 || (arglist.v.list[1].type == TYPE_OBJ
 		     && valid(arglist.v.list[1].v.obj)
-		     && !db_object_allows(arglist.v.list[1].v.obj, progr, FLAG_FERTILE))
+		     && !db_object_allows(arglist.v.list[1].v.obj, progr,
+		                          anonymous ? FLAG_ANONYMOUS : FLAG_FERTILE))
 		 || (arglist.v.list[1].type == TYPE_LIST
-		     && !all_allowed(arglist.v.list[1], progr, FLAG_FERTILE))) {
+		     && !all_allowed(arglist.v.list[1], progr,
+		                     anonymous ? FLAG_ANONYMOUS : FLAG_FERTILE))) {
 	    free_var(arglist);
 	    return make_error_pack(E_PERM);
 	}
@@ -332,7 +345,6 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    Objid oid = db_create_object();
 	    Var args;
 
-	    db_set_object_name(oid, str_dup(""));
 	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
 
 	    if (!db_change_parent(oid, arglist.v.list[1])) {
@@ -344,29 +356,39 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 
 	    free_var(arglist);
 
-	    data = alloc_data(sizeof(*data));
-	    *data = oid;
+	    /*
+	     * If anonymous, clean up the object used to create the
+	     * anonymous object; `oid' is invalid after that.
+	     */
+	    if (anonymous) {
+		r.type = TYPE_ANON;
+		r.v.anon = db_make_anonymous(oid, last);
+	    } else {
+		r.type = TYPE_OBJ;
+		r.v.obj = oid;
+	    }
+
+	    data = alloc_data(sizeof(Var));
+	    *data = var_ref(r);
 	    args = new_list(0);
-	    e = call_verb(oid, "initialize", new_obj(oid), args, 0);
+	    e = call_verb(oid, "initialize", var_ref(r), args, 0);
 	    /* e will not be E_INVIND */
 
 	    if (e == E_NONE)
 		return make_call_pack(2, data);
 
+	    free_var(*data);
 	    free_data(data);
 	    free_var(args);
 
 	    if (e == E_MAXREC)
 		return make_error_pack(e);
-	    else {		/* (e == E_VERBNF) do nothing */
-		r.type = TYPE_OBJ;
-		r.v.obj = oid;
+	    else		/* (e == E_VERBNF) do nothing */
 		return make_var_pack(r);
-	    }
 	}
     } else {			/* next == 2, returns from initialize verb_call */
-	r.type = TYPE_OBJ;
-	r.v.obj = *data;
+	r = var_ref(*data);
+	free_var(*data);
 	free_data(data);
 	return make_var_pack(r);
     }
@@ -442,41 +464,53 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
-    Objid obj = arglist.v.list[1].v.obj;
+    Var r;
+
+    if (TYPE_OBJ == arglist.v.list[1].type
+	&& !valid(arglist.v.list[1].v.obj)) {
+	    free_var(arglist);
+	    return make_error_pack(E_INVARG);
+    } else if (is_object(arglist.v.list[1])) {
+	r = db_object_parents2(arglist.v.list[1]);
+    } else {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    }
 
     free_var(arglist);
 
-    if (!valid(obj))
-	return make_error_pack(E_INVARG);
-    else {
-	Var r = db_object_parent(obj);
-	if (r.type == TYPE_LIST && listlength(r) == 0)
-	  return make_var_pack(new_obj(NOTHING));
-	else if (r.type == TYPE_LIST)
-	    return make_var_pack(var_ref(r.v.list[1]));
-	else
-	    return make_var_pack(var_ref(r));
-    }
+    if (r.type == TYPE_LIST && listlength(r) == 0)
+	return make_var_pack(new_obj(NOTHING));
+    else if (r.type == TYPE_LIST)
+	return make_var_pack(var_ref(r.v.list[1]));
+    else
+	return make_var_pack(var_ref(r));
 }
 
 static package
 bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
-    Objid obj = arglist.v.list[1].v.obj;
+    Var r;
+
+    if (TYPE_OBJ == arglist.v.list[1].type
+	&& !valid(arglist.v.list[1].v.obj)) {
+	    free_var(arglist);
+	    return make_error_pack(E_INVARG);
+    } else if (is_object(arglist.v.list[1])) {
+	r = db_object_parents2(arglist.v.list[1]);
+    } else {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    }
 
     free_var(arglist);
 
-    if (!valid(obj))
-	return make_error_pack(E_INVARG);
-    else {
-	Var r = db_object_parent(obj);
-	if (r.type == TYPE_OBJ && r.v.obj == NOTHING)
-	  return make_var_pack(new_list(0));
-	if (r.type == TYPE_OBJ)
-	    return make_var_pack(enlist_var(var_ref(r)));
-	else
-	    return make_var_pack(var_ref(r));
-    }
+    if (r.type == TYPE_OBJ && r.v.obj == NOTHING)
+	return make_var_pack(new_list(0));
+    if (r.type == TYPE_OBJ)
+	return make_var_pack(enlist_var(var_ref(r)));
+    else
+	return make_var_pack(var_ref(r));
 }
 
 static package
@@ -791,9 +825,9 @@ register_objects(void)
 
     register_function("toobj", 1, 1, bf_toobj, TYPE_ANY);
     register_function("typeof", 1, 1, bf_typeof, TYPE_ANY);
-    register_function_with_read_write("create", 1, 2, bf_create,
+    register_function_with_read_write("create", 1, 3, bf_create,
 				      bf_create_read, bf_create_write,
-				      TYPE_ANY, TYPE_OBJ);
+				      TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function_with_read_write("recycle", 1, 1, bf_recycle,
 				      bf_recycle_read, bf_recycle_write,
 				      TYPE_OBJ);
@@ -801,8 +835,8 @@ register_objects(void)
     register_function("valid", 1, 1, bf_valid, TYPE_OBJ);
     register_function("chparents", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_LIST);
     register_function("chparent", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_OBJ);
-    register_function("parents", 1, 1, bf_parents, TYPE_OBJ);
-    register_function("parent", 1, 1, bf_parent, TYPE_OBJ);
+    register_function("parents", 1, 1, bf_parents, TYPE_ANY);
+    register_function("parent", 1, 1, bf_parent, TYPE_ANY);
     register_function("children", 1, 1, bf_children, TYPE_OBJ);
     register_function("ancestors", 1, 2, bf_ancestors, TYPE_OBJ, TYPE_ANY);
     register_function("descendants", 1, 2, bf_descendants, TYPE_OBJ, TYPE_ANY);
