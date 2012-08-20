@@ -35,6 +35,12 @@ controls(Objid who, Objid what)
     return is_wizard(who) || who == db_object_owner(what);
 }
 
+static int
+controls2(Objid who, Var what)
+{
+    return is_wizard(who) || who == db_object_owner2(what);
+}
+
 static Var
 make_arglist(Objid what)
 {
@@ -611,43 +617,69 @@ get_first(Objid oid, int (*for_all) (Objid, int (*)(void *, Objid), void *))
 
 static package
 bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
-{				/* (OBJ object) */
-    Objid oid, c;
-    Var args;
+{				/* (OBJ|ANON object) */
+    Var *data = vdata;
     enum error e;
-    Objid *data = vdata;
+    Var obj;
+    Var args;
 
     switch (func_pc) {
     case 1:
-	oid = arglist.v.list[1].v.obj;
+	obj = var_ref(arglist.v.list[1]);
 	free_var(arglist);
 
-	if (!valid(oid))
+	if (!is_object(obj)) {
+	    free_var(obj);
+	    return make_error_pack(E_TYPE);
+	} else if (!is_valid(obj)) {
+	    free_var(obj);
 	    return make_error_pack(E_INVARG);
-	else if (!controls(progr, oid))
+	} else if (!controls2(progr, obj)) {
+	    free_var(obj);
 	    return make_error_pack(E_PERM);
+	}
 
-	data = alloc_data(sizeof(*data));
-	*data = oid;
+	data = alloc_data(sizeof(Var));
+	*data = var_ref(obj);
 	args = new_list(0);
-	e = call_verb(oid, "recycle", new_obj(oid), args, 0);
+	e = call_verb(is_obj(obj) ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
 	/* e != E_INVIND */
 
-	if (e == E_NONE)
+	if (e == E_NONE) {
+	    free_var(obj);
 	    return make_call_pack(2, data);
+	}
 	/* else e == E_VERBNF or E_MAXREC; fall through */
+
 	free_var(args);
+
 	goto moving_contents;
 
     case 2:			/* moving all contents to #-1 */
+	obj = var_ref(*data);
 	free_var(arglist);
-	oid = *data;
 
       moving_contents:
-	if (!valid(oid)) {
+
+	if (!is_valid(obj)) {
+	    free_var(obj);
+	    free_var(*data);
 	    free_data(data);
 	    return no_var_pack();
 	}
+
+	if (TYPE_ANON == obj.type) {
+	    incr_quota(db_object_owner2(obj));
+	    db_invalidate_anonymous_object(obj.v.anon);
+	    free_var(obj);
+	    free_var(*data);
+	    free_data(data);
+	    return no_var_pack();
+	}
+
+	Objid oid = obj.v.obj, c;
+	free_var(obj);
+
 	while ((c = get_first(oid, db_for_all_contents)) != NOTHING)
 	    if (move_to_nothing(c))
 		return make_call_pack(2, data);
@@ -701,6 +733,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	incr_quota(db_object_owner(oid));
 	db_destroy_object(oid);
 
+	free_var(*data);
 	free_data(data);
 	return no_var_pack();
     }

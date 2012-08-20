@@ -264,6 +264,9 @@ db_destroy_anonymous_object(void *obj)
 
     free_var(o->parents);
 
+    if (o->propval)
+	myfree(o->propval, M_PVAL);
+
     myfree(o, M_ANON);
 }
 
