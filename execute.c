@@ -593,7 +593,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
        will NOT be consumed  -- it must therefore be freed by caller */
     /* vname will never be consumed */
     /* vname *must* already be a MOO-string (as in str_ref-able) */
-    /* this will never be consumed */
+    /* `this' will never be consumed */
 
     /* will only return E_MAXREC, E_INVIND, E_VERBNF, or E_NONE */
     /* returns an error if there is one, and does not change the vm in that
