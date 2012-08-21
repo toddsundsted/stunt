@@ -138,6 +138,8 @@ insert_prop(Objid oid, int pos, Pval pval)
 
     o = dbpriv_find_object(oid);
 
+    dbpriv_assign_nonce(o);
+
     for (i = 0; i < pos; i++)
 	new_propval[i] = o->propval[i];
 
@@ -258,6 +260,8 @@ remove_prop(Objid oid, int pos)
 
     o = dbpriv_find_object(oid);
     nprops = dbpriv_count_properties(oid);
+
+    dbpriv_assign_nonce(o);
 
     free_var(o->propval[pos].var);	/* free deleted property */
 
@@ -913,6 +917,8 @@ dbpriv_fix_properties_after_chparent(Objid oid, Var old_ancestors, Var new_ances
 	myfree(me->propval, M_PVAL);
     }
     me->propval = new_propval;
+
+    dbpriv_assign_nonce(me);
 
     myfree(old_offsets, M_INT);
     myfree(new_offsets, M_INT);

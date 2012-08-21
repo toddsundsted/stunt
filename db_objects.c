@@ -34,6 +34,8 @@ static Object **objects;
 static int num_objects = 0;
 static int max_objects = 0;
 
+static unsigned int nonce = 0;
+
 static Var all_users;
 
 /* used in graph traversals */
@@ -111,6 +113,12 @@ ensure_new_object(void)
     }
 }
 
+void
+dbpriv_assign_nonce(Object *o)
+{
+    o->nonce = nonce++;
+}
+
 Object *
 dbpriv_new_object(void)
 {
@@ -120,6 +128,8 @@ dbpriv_new_object(void)
     o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
     o->id = num_objects;
     num_objects++;
+
+    dbpriv_assign_nonce(o);
 
     return o;
 }
@@ -279,9 +289,36 @@ db_invalidate_anonymous_object(void *obj)
 }
 
 int
+parents_ok(Object *o)
+{
+    if (TYPE_LIST == o->parents.type) {
+	Var parent;
+	int i, c;
+	FOR_EACH(parent, o->parents, i, c) {
+	    Objid oid = parent.v.obj;
+	    if (!valid(oid) || objects[oid]->nonce > o->nonce) {
+		dbpriv_set_object_flag(o, FLAG_INVALID);
+		return 0;
+	    }
+	}
+    }
+    else {
+	Objid oid = o->parents.v.obj;
+	if (!valid(oid) || objects[oid]->nonce > o->nonce) {
+	    dbpriv_set_object_flag(o, FLAG_INVALID);
+	    return 0;
+	}
+    }
+
+    return 1;
+}
+
+int
 anon_valid(Object *o)
 {
-    return o && !dbpriv_object_has_flag(o, FLAG_INVALID);
+    return o
+           && !dbpriv_object_has_flag(o, FLAG_INVALID)
+           && parents_ok(o);
 }
 
 int
