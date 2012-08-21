@@ -41,6 +41,8 @@ typedef enum Memory_Type {
 
     M_TREE, M_NODE, M_TRAV,
 
+    M_ANON, /* anonymous object */
+
     /* to be used when no more specific type applies */
     M_STRUCT, M_ARRAY,
 

@@ -117,6 +117,7 @@ become_integer(Var in, int *ret, int called_from_tonum)
 	break;
     case TYPE_MAP:
     case TYPE_LIST:
+    case TYPE_ANON:
 	return E_TYPE;
     default:
 	errlog("BECOME_INTEGER: Impossible var type: %d\n", (int) in.type);
@@ -146,6 +147,7 @@ become_float(Var in, double *ret)
 	break;
     case TYPE_MAP:
     case TYPE_LIST:
+    case TYPE_ANON:
 	return E_TYPE;
     default:
 	errlog("BECOME_FLOAT: Impossible var type: %d\n", (int) in.type);
