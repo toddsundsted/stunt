@@ -70,6 +70,12 @@ typedef struct Object {
     Verbdef *verbdefs;
     Proplist propdefs;
     Pval *propval;
+
+    /* The nonce marks changes to the propval layout caused by changes
+     * to parentage, property addition/deletion, etc.  Every value is
+     * globally unique.
+     */
+    unsigned int nonce;
 } Object;
 
 /*
@@ -102,6 +108,8 @@ extern void db_priv_affected_callable_verb_lookup(void);
 #endif
 
 /*********** Objects ***********/
+
+extern void dbpriv_assign_nonce(Object *);
 
 extern Objid dbpriv_object_owner(Object *);
 extern void dbpriv_set_object_owner(Object *, Objid owner);
