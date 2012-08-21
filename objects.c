@@ -384,19 +384,22 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    data = alloc_data(sizeof(Var));
 	    *data = var_ref(r);
 	    args = new_list(0);
-	    e = call_verb(oid, "initialize", var_ref(r), args, 0);
+	    e = call_verb(oid, "initialize", r, args, 0);
 	    /* e will not be E_INVIND */
 
-	    if (e == E_NONE)
+	    if (e == E_NONE) {
+		free_var(r);
 		return make_call_pack(2, data);
+	    }
 
 	    free_var(*data);
 	    free_data(data);
 	    free_var(args);
 
-	    if (e == E_MAXREC)
+	    if (e == E_MAXREC) {
+		free_var(r);
 		return make_error_pack(e);
-	    else		/* (e == E_VERBNF) do nothing */
+	    } else		/* (e == E_VERBNF) do nothing */
 		return make_var_pack(r);
 	}
     } else {			/* next == 2, returns from initialize verb_call */
@@ -479,25 +482,28 @@ bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (TYPE_OBJ == arglist.v.list[1].type
-	&& !valid(arglist.v.list[1].v.obj)) {
-	    free_var(arglist);
-	    return make_error_pack(E_INVARG);
-    } else if (is_object(arglist.v.list[1])) {
-	r = db_object_parents2(arglist.v.list[1]);
-    } else {
+    if (!is_object(arglist.v.list[1])) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
+    } else if (!is_valid(arglist.v.list[1])) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    } else {
+	r = var_ref(db_object_parents2(arglist.v.list[1]));
+	free_var(arglist);
     }
 
-    free_var(arglist);
+    if (TYPE_OBJ == r.type)
+	return make_var_pack(r);
 
-    if (r.type == TYPE_LIST && listlength(r) == 0)
+    if (0 == listlength(r)) {
+	free_var(r);
 	return make_var_pack(new_obj(NOTHING));
-    else if (r.type == TYPE_LIST)
-	return make_var_pack(var_ref(r.v.list[1]));
-    else
-	return make_var_pack(var_ref(r));
+    } else {
+	Var t = var_ref(r.v.list[1]);
+	free_var(r);
+	return make_var_pack(t);
+    }
 }
 
 static package
@@ -505,25 +511,28 @@ bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (TYPE_OBJ == arglist.v.list[1].type
-	&& !valid(arglist.v.list[1].v.obj)) {
-	    free_var(arglist);
-	    return make_error_pack(E_INVARG);
-    } else if (is_object(arglist.v.list[1])) {
-	r = db_object_parents2(arglist.v.list[1]);
-    } else {
+    if (!is_object(arglist.v.list[1])) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
+    }  else if (!is_valid(arglist.v.list[1])) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    } else {
+	r = var_ref(db_object_parents2(arglist.v.list[1]));
+	free_var(arglist);
     }
 
-    free_var(arglist);
+    if (TYPE_LIST == r.type)
+	return make_var_pack(r);
 
-    if (r.type == TYPE_OBJ && r.v.obj == NOTHING)
+    if (NOTHING == r.v.obj) {
+	free_var(r);
 	return make_var_pack(new_list(0));
-    if (r.type == TYPE_OBJ)
-	return make_var_pack(enlist_var(var_ref(r)));
-    else
-	return make_var_pack(var_ref(r));
+    } else {
+	Var t = new_list(1);
+	t.v.list[1] = r;
+	return make_var_pack(t);
+    }
 }
 
 static package
