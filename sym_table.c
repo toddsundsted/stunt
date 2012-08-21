@@ -63,6 +63,9 @@ first_user_slot(DB_Version version)
     if (version >= DBV_Map)
         count += 1;
 
+    if (version >= DBV_Anon)
+        count += 1;
+
     return count;
 }
 
@@ -100,6 +103,9 @@ new_builtin_names(DB_Version version)
 	}
         if (version >= DBV_Map) {
             bi->names[SLOT_MAP] = str_dup("MAP");
+        }
+        if (version >= DBV_Anon) {
+            bi->names[SLOT_ANON] = str_dup("ANON");
         }
     }
     return copy_names(builtins[version]);

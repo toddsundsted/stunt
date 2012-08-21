@@ -58,6 +58,9 @@ extern void free_names(Names *);
 /* Added in DBV_Map: */
 #define SLOT_MAP	18
 
+/* Added in DBV_Anon */
+#define SLOT_ANON	19
+
 #endif				/* !Sym_Table_h */
 
 /* 

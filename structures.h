@@ -61,7 +61,8 @@ typedef enum {
     TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
     _TYPE_FLOAT,		/* floating-point number; user-visible */
     _TYPE_MAP,			/* map; user-visible */
-    _TYPE_ITER			/* map iterator; not visible */
+    _TYPE_ITER,			/* map iterator; not visible */
+    _TYPE_ANON			/* anonymous object; user-visible */
 } var_type;
 
 /* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
@@ -79,6 +80,7 @@ typedef enum {
 #define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
 #define TYPE_MAP		(_TYPE_MAP | TYPE_COMPLEX_FLAG)
 #define TYPE_ITER		(_TYPE_ITER | TYPE_COMPLEX_FLAG)
+#define TYPE_ANON		(_TYPE_ANON | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
@@ -113,9 +115,10 @@ struct Var {
 	Objid obj;		/* OBJ */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
-        rbtree *tree;		/* MAP */
-        rbtrav *trav;		/* ITER */
+	rbtree *tree;		/* MAP */
+	rbtrav *trav;		/* ITER */
 	double *fnum;		/* FLOAT */
+	void *anon;		/* ANON */
     } v;
     var_type type;
 };
@@ -155,7 +158,7 @@ is_none(Var v)
 static inline bool
 is_collection(Var v)
 {
-    return TYPE_LIST == v.type || TYPE_MAP == v.type;
+    return TYPE_LIST == v.type || TYPE_MAP == v.type || TYPE_ANON == v.type;
 }
 
 static inline bool
