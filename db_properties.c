@@ -508,14 +508,12 @@ db_find_property(Var obj, const char *name, Var *value)
 	    if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
 		h.definer = t->id;
 		h.ptr = o->propval + n;
-		free_var(ancestor);
 		free_var(ancestors);
 		goto done;
 	    }
 	}
     }
 
-    free_var(ancestor);
     free_var(ancestors);
 
  done:

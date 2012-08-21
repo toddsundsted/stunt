@@ -1561,8 +1561,6 @@ do {								\
 
 		    h = db_find_property(obj, propname.v.str, &prop);
 		    built_in = db_is_property_built_in(h);
-		    free_var(propname);
-		    free_var(obj);
 		    if (!h.ptr)
 			PUSH_ERROR(E_PROPNF);
 		    else if (built_in
@@ -1573,6 +1571,9 @@ do {								\
 			PUSH(prop);	/* it's already freshly allocated */
 		    else
 			PUSH_REF(prop);
+
+		    free_var(propname);
+		    free_var(obj);
 		}
 	    }
 	    break;
@@ -1697,6 +1698,7 @@ do {								\
 
 		    free_var(propname);
 		    free_var(obj);
+
 		    if (err == E_NONE) {
 			db_set_property_value(h, var_ref(rhs));
 			PUSH(rhs);
