@@ -80,7 +80,7 @@ static int num_objects = 0;
 static int max_objects = 0;
 
 static void
-ensure_new_object(void)
+dbv4_ensure_new_object(void)
 {
     if (max_objects == 0) {
 	max_objects = 100;
@@ -104,7 +104,7 @@ dbv4_new_object(void)
 {
     Object4 *o;
 
-    ensure_new_object();
+    dbv4_ensure_new_object();
     o = objects[num_objects] = mymalloc(sizeof(Object4), M_OBJECT);
     o->id = num_objects;
     num_objects++;
@@ -115,7 +115,7 @@ dbv4_new_object(void)
 static void
 dbv4_new_recycled_object(void)
 {
-    ensure_new_object();
+    dbv4_ensure_new_object();
     objects[num_objects++] = 0;
 }
 
@@ -318,7 +318,7 @@ v4_read_object(void)
 }
 
 static int
-ng_read_object(void)
+ng_read_object(int anonymous)
 {
     Objid oid;
     Object *o;
@@ -327,7 +327,7 @@ ng_read_object(void)
     Verbdef *v, **prevv;
     int nprops;
 
-    if (dbio_scanf("#%d", &oid) != 1 || oid != db_last_used_objid() + 1)
+    if (dbio_scanf("#%d", &oid) != 1)
 	return 0;
     dbio_read_line(s, sizeof(s));
 
@@ -337,7 +337,17 @@ ng_read_object(void)
     } else if (strcmp(s, "\n") != 0)
 	return 0;
 
-    o = dbpriv_new_object();
+    /* At the point at which we're reading anonymous objects, we know
+     * we've already created all of the anonymous objects (they were
+     * created from references in tasks or other objects).
+     */
+    if (anonymous)
+	o = dbpriv_find_object(oid);
+    else {
+	o = dbpriv_new_object();
+	dbpriv_assign_nonce(o);
+    }
+
     o->name = dbio_read_string_intern();
     o->flags = dbio_read_num();
 
@@ -804,6 +814,9 @@ v4_upgrade_objects()
 	MAYBE_LOG_PROGRESS;
 	if (o) {
 	    Object *new = dbpriv_new_object();
+
+	    dbpriv_assign_nonce(new);
+
 	    new->name = o->name;
 	    new->flags = o->flags;
 
@@ -888,10 +901,18 @@ read_db_file(void)
      * says that suppressed assignments are not counted in determining
      * the returned value of `scanf'...
      */
-    if (dbio_scanf("%d\n%d\n%d\n%d\n",
-		   &nobjs, &nprogs, &dummy, &nusers) != 4) {
-	errlog("READ_DB_FILE: Bad header\n");
-	return 0;
+    if (DBV_Anon > dbio_input_version) {
+	if (dbio_scanf("%d\n%d\n%d\n%d\n",
+		       &nobjs, &nprogs, &dummy, &nusers) != 4) {
+	    errlog("READ_DB_FILE: Bad header\n");
+	    return 0;
+	}
+    }
+    else {
+	if (dbio_scanf("%d\n", &nusers) != 1) {
+	    errlog("READ_DB_FILE: Bad number of users\n");
+	    return 0;
+	}
     }
 
     user_list = new_list(nusers);
@@ -900,6 +921,30 @@ read_db_file(void)
 	user_list.v.list[i].v.obj = dbio_read_objid();
     }
     dbpriv_set_all_users(user_list);
+
+    if (DBV_Anon <= dbio_input_version) {
+	oklog("LOADING: Reading forked and suspended tasks ...\n");
+	if (!read_task_queue()) {
+	    errlog("READ_DB_FILE: Can't read task queue.\n");
+	    return 0;
+	}
+
+	oklog("LOADING: Reading list of formerly active connections ...\n");
+	if (!read_active_connections()) {
+	    errlog("DB_READ: Can't read active connections.\n");
+	    return 0;
+	}
+    }
+
+    /* First, read the permanent objects.  Then, read successive
+     * iterations of anonymous objects.
+     */
+    if (DBV_Anon <= dbio_input_version) {
+	if (dbio_scanf("%d\n", &nobjs) != 1) {
+	    errlog("READ_DB_FILE: Bad object count\n");
+	    return 0;
+	}
+    }
 
     oklog("LOADING: Reading %d objects ...\n", nobjs);
     for (i = 1; i <= nobjs; i++) {
@@ -910,13 +955,33 @@ read_db_file(void)
 	    }
 	}
 	else {
-	    if (!ng_read_object()) {
+	    if (!ng_read_object(0)) {
 		errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
 		return 0;
 	    }
 	}
 	if (i % 10000 == 0 || i == nobjs)
 	    oklog("LOADING: Done reading %d objects ...\n", i);
+    }
+
+    if (DBV_Anon <= dbio_input_version) {
+	while (1) {
+	    if (dbio_scanf("%d\n", &nobjs) != 1) {
+		errlog("READ_DB_FILE: Bad object count header\n");
+		return 0;
+	    }
+	    if (!nobjs)
+		break;
+	    oklog("LOADING: Reading %d objects ...\n", nobjs);
+	    for (i = 1; i <= nobjs; i++) {
+		if (!ng_read_object(1)) {
+		    errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
+		    return 0;
+		}
+		if (i % 10000 == 0 || i == nobjs)
+		    oklog("LOADING: Done reading %d objects ...\n", i);
+	    }
+	}
     }
 
     if (DBV_NextGen > dbio_input_version) {
@@ -928,6 +993,13 @@ read_db_file(void)
     else {
 	if (!ng_validate_hierarchies()) {
 	    errlog("READ_DB_FILE: Errors in object hierarchies.\n");
+	    return 0;
+	}
+    }
+
+    if (DBV_Anon <= dbio_input_version) {
+	if (dbio_scanf("%d\n", &nprogs) != 1) {
+	    errlog("READ_DB_FILE: Bad verb count header\n");
 	    return 0;
 	}
     }
@@ -972,16 +1044,18 @@ read_db_file(void)
 	    oklog("LOADING: Done reading %d verb programs ...\n", i);
     }
 
-    oklog("LOADING: Reading forked and suspended tasks ...\n");
-    if (!read_task_queue()) {
-	errlog("READ_DB_FILE: Can't read task queue.\n");
-	return 0;
-    }
+    if (DBV_Anon > dbio_input_version) {
+	oklog("LOADING: Reading forked and suspended tasks ...\n");
+	if (!read_task_queue()) {
+	    errlog("READ_DB_FILE: Can't read task queue.\n");
+	    return 0;
+	}
 
-    oklog("LOADING: Reading list of formerly active connections ...\n");
-    if (!read_active_connections()) {
-	errlog("DB_READ: Can't read active connections.\n");
-	return 0;
+	oklog("LOADING: Reading list of formerly active connections ...\n");
+	if (!read_active_connections()) {
+	    errlog("DB_READ: Can't read active connections.\n");
+	    return 0;
+	}
     }
 
     if (DBV_NextGen > dbio_input_version) {
@@ -990,6 +1064,8 @@ read_db_file(void)
 	    return 0;
 	}
     }
+
+    dbpriv_after_load();
 
     return 1;
 }
@@ -1001,37 +1077,52 @@ static int
 write_db_file(const char *reason)
 {
     Objid oid;
-    Objid max_oid = db_last_used_objid();
+    Objid last_oid = db_last_used_objid(), max_oid = -1;
+    int nprogs = 0;
     Verbdef *v;
     Var user_list;
     int i;
-    volatile int nprogs = 0;
     volatile int success = 1;
-
-    for (oid = 0; oid <= max_oid; oid++) {
-	if (valid(oid))
-	    for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next)
-		if (v->program)
-		    nprogs++;
-    }
-
-    user_list = db_all_users();
 
     TRY {
 	dbio_printf(header_format_string, current_db_version);
 
-	dbio_printf("%d\n%d\n%d\n%d\n",
-	            max_oid + 1, nprogs, 0, user_list.v.list[0].v.num);
+	user_list = db_all_users();
+
+	dbio_printf("%d\n", listlength(user_list));
 
 	for (i = 1; i <= user_list.v.list[0].v.num; i++)
 	    dbio_write_objid(user_list.v.list[i].v.obj);
 
-	oklog("%s: Writing %d objects ...\n", reason, max_oid + 1);
-	for (oid = 0; oid <= max_oid; oid++) {
-	    ng_write_object(oid);
-	    if ((oid + 1) % 10000 == 0 || oid == max_oid)
-		oklog("%s: Done writing %d objects ...\n", reason, oid + 1);
+	oklog("%s: Writing forked and suspended tasks ...\n", reason);
+	write_task_queue();
+
+	oklog("%s: Writing list of formerly active connections ...\n", reason);
+	write_active_connections();
+
+	while (last_oid > max_oid) {
+	    dbio_printf("%d\n", last_oid - max_oid);
+
+	    oklog("%s: Writing %d objects ...\n", reason, last_oid - max_oid);
+	    for (oid = max_oid + 1; oid <= last_oid; oid++) {
+		ng_write_object(oid);
+		if ((oid + 1) % 10000 == 0 || oid == last_oid)
+		    oklog("%s: Done writing %d objects ...\n", reason, last_oid - max_oid);
+	    }
+	    max_oid = last_oid;
+	    last_oid = db_last_used_objid();
 	}
+
+	dbio_printf("%d\n", 0);
+
+	for (oid = 0; oid <= max_oid; oid++) {
+	    if (valid(oid))
+		for (v = dbpriv_find_object(oid)->verbdefs; v; v = v->next)
+		    if (v->program)
+			nprogs++;
+	}
+
+	dbio_printf("%d\n", nprogs);
 
 	oklog("%s: Writing %d MOO verb programs ...\n", reason, nprogs);
 	for (i = 0, oid = 0; oid <= max_oid; oid++) {
@@ -1049,12 +1140,6 @@ write_db_file(const char *reason)
 		}
 	    }
 	}
-
-	oklog("%s: Writing forked and suspended tasks ...\n", reason);
-	write_task_queue();
-
-	oklog("%s: Writing list of formerly active connections ...\n", reason);
-	write_active_connections();
     }
     EXCEPT(dbpriv_dbio_failed) {
 	success = 0;

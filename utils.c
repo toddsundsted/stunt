@@ -166,7 +166,7 @@ complex_free_var(Var v)
 	    myfree(v.v.fnum, M_FLOAT);
 	break;
     case TYPE_ANON:
-	if (delref(v.v.anon) == 0)
+	if (v.v.anon && delref(v.v.anon) == 0)
 	    db_destroy_anonymous_object(v.v.anon);
 	break;
     }
@@ -192,7 +192,8 @@ complex_var_ref(Var v)
 	addref(v.v.fnum);
 	break;
     case TYPE_ANON:
-	addref(v.v.anon);
+	if (v.v.anon)
+	    addref(v.v.anon);
 	break;
     }
     return v;
@@ -225,7 +226,7 @@ complex_var_dup(Var v)
 	v = new_float(*v.v.fnum);
 	break;
     case TYPE_ANON:
-	addref(v.v.anon);
+	panic("cannot var_dup() anonymous objects\n");
 	break;
     }
     return v;
@@ -254,7 +255,8 @@ var_refcount(Var v)
 	return refcount(v.v.fnum);
 	break;
     case TYPE_ANON:
-	return refcount(v.v.anon);
+	if (v.v.anon)
+	    return refcount(v.v.anon);
 	break;
     }
     return 1;

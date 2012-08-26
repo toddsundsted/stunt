@@ -41,9 +41,6 @@ static Var all_users;
 /* used in graph traversals */
 static unsigned char *bit_array;
 static size_t array_size = 0;
-
-#define ARRAY_SIZE_IN_BYTES (array_size / 8)
-#define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
 
 
 /*********** Objects qua objects ***********/
@@ -51,7 +48,7 @@ static size_t array_size = 0;
 Object *
 dbpriv_find_object(Objid oid)
 {
-    if (oid < 0 || oid >= num_objects)
+    if (oid < 0 || oid >= max_objects)
 	return 0;
     else
 	return objects[oid];
@@ -84,33 +81,45 @@ db_set_last_used_objid(Objid oid)
 }
 
 static void
-ensure_new_object(void)
+extend(unsigned int new_objects)
 {
-    if (max_objects == 0) {
-	max_objects = 128;
-	objects = mymalloc(max_objects * sizeof(Object *), M_OBJECT_TABLE);
-    }
-    if (num_objects >= max_objects) {
-	int i;
-	Object **new;
+    int size;
 
-	new = mymalloc(max_objects * 2 * sizeof(Object *), M_OBJECT_TABLE);
-	for (i = 0; i < max_objects; i++)
-	    new[i] = objects[i];
+    for (size = 128; size < new_objects; size *= 2)
+	;
+
+    if (max_objects == 0) {
+	objects = mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+	memset(objects, 0, size * sizeof(Object *));
+    }
+    if (size > max_objects) {
+	Object **new = mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+	memcpy(new, objects, num_objects * sizeof(Object *));
+	memset(new + num_objects, 0, (size - num_objects) * sizeof(Object *));
 	myfree(objects, M_OBJECT_TABLE);
 	objects = new;
-	max_objects *= 2;
     }
 
+    max_objects = size;
+
+    for (size = 4096; size < new_objects; size *= 2)
+	;
+
     if (array_size == 0) {
-	array_size = 4096;
-	bit_array = mymalloc(ARRAY_SIZE_IN_BYTES * sizeof(unsigned char), M_ARRAY);
+	bit_array = mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
     }
-    if (num_objects >= array_size) {
+    if (size > array_size) {
 	myfree(bit_array, M_ARRAY);
-	bit_array = mymalloc(ARRAY_SIZE_IN_BYTES * 2 * sizeof(unsigned char), M_ARRAY);
-	array_size *= 2;
+	bit_array = mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
     }
+
+    array_size = size;
+}
+
+static void
+ensure_new_object(void)
+{
+    extend(num_objects + 1);
 }
 
 void
@@ -119,6 +128,24 @@ dbpriv_assign_nonce(Object *o)
     o->nonce = nonce++;
 }
 
+void
+dbpriv_after_load(void)
+{
+    int i;
+
+    for (i = num_objects; i < max_objects; i++) {
+	if (objects[i]) {
+	    dbpriv_assign_nonce(objects[i]);
+	    objects[i] = NULL;
+	}
+    }
+}
+
+/* Both `dbpriv_new_object()' and `dbpriv_new_anonymous_object()'
+ * allocate space for an `Object' and put the object into the array of
+ * Objects.  The difference is the storage type used.  `M_ANON'
+ * includes space for reference counts.
+ */
 Object *
 dbpriv_new_object(void)
 {
@@ -129,7 +156,18 @@ dbpriv_new_object(void)
     o->id = num_objects;
     num_objects++;
 
-    dbpriv_assign_nonce(o);
+    return o;
+}
+
+Object *
+dbpriv_new_anonymous_object(void)
+{
+    Object *o;
+
+    ensure_new_object();
+    o = objects[num_objects] = mymalloc(sizeof(Object), M_ANON);
+    o->id = NOTHING;
+    num_objects++;
 
     return o;
 }
@@ -138,17 +176,13 @@ void
 dbpriv_new_recycled_object(void)
 {
     ensure_new_object();
-    objects[num_objects++] = 0;
+    num_objects++;
 }
 
-Objid
-db_create_object(void)
+void
+db_init_object(Object *o)
 {
-    Object *o;
-    Objid oid;
-
-    o = dbpriv_new_object();
-    oid = o->id;
+    dbpriv_assign_nonce(o);
 
     o->name = str_dup("");
     o->flags = 0;
@@ -166,8 +200,17 @@ db_create_object(void)
     o->propdefs.l = 0;
 
     o->verbdefs = 0;
+}
 
-    return oid;
+Objid
+db_create_object(void)
+{
+    Object *o;
+
+    o = dbpriv_new_object();
+    db_init_object(o);
+
+    return o->id;
 }
 
 void
@@ -226,6 +269,56 @@ db_destroy_object(Objid oid)
 
     myfree(objects[oid], M_OBJECT);
     objects[oid] = 0;
+}
+
+Var
+db_read_anonymous()
+{
+    Var r;
+    int oid;
+    Object *o;
+
+    if ((oid = dbio_read_num()) == NOTHING) {
+	r.type = TYPE_ANON;
+	r.v.anon = NULL;
+    } else if (max_objects && (oid < max_objects && objects[oid])) {
+	r.type = TYPE_ANON;
+	r.v.anon = objects[oid];
+	addref(r.v.anon);
+    }
+    else {
+	/* back up the real object count */
+	int saved = num_objects;
+	num_objects = oid;
+	dbpriv_new_anonymous_object();
+	num_objects = saved;
+
+	r.type = TYPE_ANON;
+	r.v.anon = objects[oid];
+	addref(r.v.anon);
+    }
+
+    return r;
+}
+
+void
+db_write_anonymous(Var v)
+{
+    Objid oid;
+    Object *o = (Object *)v.v.anon;
+
+    if (!is_valid(v))
+	oid = NOTHING;
+    else if (o->id != NOTHING)
+	oid = o->id;
+    else {
+	ensure_new_object();
+	objects[num_objects] = o;
+	oid = o->id = num_objects;
+	num_objects++;
+    }
+
+    dbio_write_num(oid);
 }
 
 void *
@@ -472,6 +565,9 @@ db_object_bytes(Objid oid)
  * the correct length, but that would require one more round of bit
  * array bookkeeping.
  */
+
+#define ARRAY_SIZE_IN_BYTES (array_size / 8)
+#define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
 
 #define DEFUNC(name, field)						\
 static									\

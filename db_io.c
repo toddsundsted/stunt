@@ -254,6 +254,9 @@ dbio_read_var(void)
     case _TYPE_ITER:
 	r = dbio_read_var();
 	break;
+    case _TYPE_ANON:
+	r = db_read_anonymous();
+	break;
     default:
 	errlog("DBIO_READ_VAR: Unknown type (%d) at DB file pos. %ld\n",
 	       l, ftell(input));
@@ -402,6 +405,7 @@ dbio_write_var(Var v)
     }
 
     dbio_write_num((int) v.type & TYPE_DB_MASK);
+
     switch ((int) v.type) {
     case TYPE_CLEAR:
     case TYPE_NONE:
@@ -427,6 +431,12 @@ dbio_write_var(Var v)
 	dbio_write_num(v.v.list[0].v.num);
 	for (i = 0; i < v.v.list[0].v.num; i++)
 	    dbio_write_var(v.v.list[i + 1]);
+	break;
+    case TYPE_ANON:
+	db_write_anonymous(v);
+	break;
+    default:
+	errlog("DBIO_WRITE_VAR: Unknown type (%d)\n", (int)v.type);
 	break;
     }
 }

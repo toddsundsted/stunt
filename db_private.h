@@ -96,7 +96,7 @@ typedef struct Object {
  */
 
 #ifdef RONG
-#define db_priv_affected_callable_verb_lookup() (db_verb_generation++)  
+#define db_priv_affected_callable_verb_lookup() (db_verb_generation++)
                                  /* The choice of a new generation. */
 extern unsigned int db_verb_generation;
 #endif
@@ -104,10 +104,13 @@ extern unsigned int db_verb_generation;
 extern void db_priv_affected_callable_verb_lookup(void);
 
 #else /* no cache */
-#define db_priv_affected_callable_verb_lookup() 
+#define db_priv_affected_callable_verb_lookup()
 #endif
 
 /*********** Objects ***********/
+
+extern Var db_read_anonymous();
+extern void db_write_anonymous(Var);
 
 extern void dbpriv_assign_nonce(Object *);
 
@@ -142,9 +145,13 @@ extern void dbpriv_set_all_users(Var);
 				 */
 
 extern Object *dbpriv_new_object(void);
+extern Object *dbpriv_new_anonymous_object(void);
 				/* Creates a new object, assigning it a number,
 				 * but doesn't fill in any of the fields other
 				 * than `id'.
+				 */
+extern void db_init_object(Object *);
+				/* Initializes a new object.
 				 */
 
 extern void dbpriv_new_recycled_object(void);
@@ -156,6 +163,8 @@ extern void dbpriv_new_recycled_object(void);
 extern Object *dbpriv_find_object(Objid);
 				/* Returns 0 if given object is not valid.
 				 */
+
+extern void dbpriv_after_load(void);
 
 /*********** Properties ***********/
 
