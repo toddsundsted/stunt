@@ -284,7 +284,6 @@ db_read_anonymous()
     } else if (max_objects && (oid < max_objects && objects[oid])) {
 	r.type = TYPE_ANON;
 	r.v.anon = objects[oid];
-	addref(r.v.anon);
     }
     else {
 	/* back up the real object count */
@@ -295,7 +294,6 @@ db_read_anonymous()
 
 	r.type = TYPE_ANON;
 	r.v.anon = objects[oid];
-	addref(r.v.anon);
     }
 
     return r;
