@@ -260,18 +260,18 @@ typedef enum {
     FLAG_OBSOLETE_2,
     FLAG_FERTILE,
     FLAG_ANONYMOUS,
+    FLAG_INVALID,
+    FLAG_RECYCLED
     /* NOTE: New permanent flags must always be added here, rather
      *	     than replacing one of the obsolete ones, since old
      *	     databases might have old objects around that still have
      *	     that flag set.
      */
-
-    FLAG_INVALID
-    /* Temporary flags.
-     * (not saved; can be renumbered with impunity)
-     * make sure FLAG_FIRST_TEMP > last permanent flag
-     */
 } db_object_flag;
+
+extern int db_object_has_flag2(Var, db_object_flag);
+extern void db_set_object_flag2(Var, db_object_flag);
+extern void db_clear_object_flag2(Var, db_object_flag);
 
 extern int db_object_has_flag(Objid, db_object_flag);
 extern void db_set_object_flag(Objid, db_object_flag);

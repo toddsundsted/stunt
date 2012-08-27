@@ -2581,7 +2581,7 @@ run_interpreter(char raise, enum error e,
 
 	h = db_find_callable_verb(new_obj(SYSTEM_OBJECT), handler_verb_name);
 	if (do_db_tracebacks && h.ptr) {
-	    hret = do_server_verb_task(SYSTEM_OBJECT, handler_verb_name,
+	    hret = do_server_verb_task(new_obj(SYSTEM_OBJECT), SYSTEM_OBJECT, handler_verb_name,
 				       var_ref(args), h,
 				       activ_stack[0].player, "", &handled,
 				       0/*no-traceback*/);
@@ -2689,11 +2689,11 @@ resume_from_previous_vm(vm the_vm, Var v)
 /*** external functions ***/
 
 enum outcome
-do_server_verb_task(Objid recv, const char *verb, Var args, db_verb_handle h,
+do_server_verb_task(Var this, Objid recv, const char *verb, Var args, db_verb_handle h,
 		    Objid player, const char *argstr, Var * result,
 		    int do_db_tracebacks)
 {
-    return do_server_program_task(recv, verb, args, db_verb_definer(h),
+    return do_server_program_task(this, recv, verb, args, db_verb_definer(h),
 				  db_verb_names(h), db_verb_program(h),
 				  db_verb_owner(h),
 				  db_verb_flags(h) & VF_DEBUG,
@@ -2701,7 +2701,7 @@ do_server_verb_task(Objid recv, const char *verb, Var args, db_verb_handle h,
 }
 
 enum outcome
-do_server_program_task(Objid recv, const char *verb, Var args, Objid vloc,
+do_server_program_task(Var this, Objid recv, const char *verb, Var args, Objid vloc,
 		    const char *verbname, Program * program, Objid progr,
 		       int debug, Objid player, const char *argstr,
 		       Var * result, int do_db_tracebacks)
@@ -2712,7 +2712,7 @@ do_server_program_task(Objid recv, const char *verb, Var args, Objid vloc,
     top_activ_stack = 0;
 
     RUN_ACTIV.rt_env = env = new_rt_env(program->num_var_names);
-    RUN_ACTIV.this = new_obj(recv);
+    RUN_ACTIV.this = var_ref(this);
     RUN_ACTIV.player = player;
     RUN_ACTIV.progr = progr;
     RUN_ACTIV.recv = recv;

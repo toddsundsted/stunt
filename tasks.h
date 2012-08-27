@@ -85,7 +85,7 @@ extern Var read_input_now(Objid connection);
 
 extern int next_task_start(void);
 extern void run_ready_tasks(void);
-extern enum outcome run_server_task(Objid player, Objid what,
+extern enum outcome run_server_task(Objid player, Var what,
 				    const char *verb, Var args,
 				    const char *argstr, Var * result);
 extern enum outcome run_server_program_task(Objid this, const char *verb,
