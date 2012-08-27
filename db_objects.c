@@ -670,6 +670,33 @@ db_object_parents2(Var obj)
            db_object_parents(obj.v.obj);
 }
 
+
+int
+db_object_has_flag2(Var obj, db_object_flag f)
+{
+    return (TYPE_ANON == obj.type) ?
+            dbpriv_object_has_flag(obj.v.anon, f) :
+            db_object_has_flag(obj.v.obj, f);
+}
+
+void
+db_set_object_flag2(Var obj, db_object_flag f)
+{
+    (TYPE_ANON == obj.type) ?
+      dbpriv_set_object_flag(obj.v.anon, f) :
+      db_set_object_flag(obj.v.obj, f);
+}
+
+void
+db_clear_object_flag2(Var obj, db_object_flag f)
+{
+    (TYPE_ANON == obj.type) ?
+      dbpriv_clear_object_flag(obj.v.anon, f) :
+      db_clear_object_flag(obj.v.obj, f);
+}
+
+
+
 Objid
 dbpriv_object_owner(Object *o)
 {

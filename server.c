@@ -91,6 +91,15 @@ static slistener *all_slisteners = 0;
 
 server_listener null_server_listener = {0};
 
+struct pending_recycle {
+    struct pending_recycle *next;
+    Var v;
+};
+
+static struct pending_recycle *pending_free = 0;
+static struct pending_recycle *pending_head = 0;
+static struct pending_recycle *pending_tail = 0;
+
 static void
 free_shandle(shandle * h)
 {
@@ -275,7 +284,7 @@ call_checkpoint_notifier(int successful)
     args = new_list(1);
     args.v.list[1].type = TYPE_INT;
     args.v.list[1].v.num = successful;
-    run_server_task(-1, SYSTEM_OBJECT, "checkpoint_finished", args, "", 0);
+    run_server_task(-1, new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
 }
 
 static void
@@ -393,7 +402,7 @@ call_notifier(Objid player, Objid handler, const char *verb_name)
     args = new_list(1);
     args.v.list[1].type = TYPE_OBJ;
     args.v.list[1].v.obj = player;
-    run_server_task(player, handler, verb_name, args, "", 0);
+    run_server_task(player, new_obj(handler), verb_name, args, "", 0);
 }
 
 int
@@ -436,6 +445,60 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
     va_end(args);
 }
 
+void
+queue_anonymous_object(Var v)
+{
+    if (!pending_free) {
+	pending_free = mymalloc(sizeof(struct pending_recycle), M_STRUCT);
+	pending_free->next = NULL;
+    }
+
+    struct pending_recycle *next = pending_free;
+    pending_free = next->next;
+
+    next->v = v;
+
+    if (pending_tail) {
+	pending_tail->next = next;
+	pending_tail = next;
+    }
+    else {
+	pending_head = next;
+	pending_tail = next;
+    }
+}
+
+static void
+recycle_anonymous_objects(void)
+{
+    while (pending_head) {
+	Var v;
+
+	struct pending_recycle *head = pending_head;
+
+	if (pending_head == pending_tail)
+	    pending_head = pending_tail = NULL;
+	else
+	    pending_head = head->next;
+
+	head->next = pending_free;
+	pending_free = head;
+
+	v = head->v;
+
+	if (db_object_has_flag2(v, FLAG_RECYCLED) || db_object_has_flag2(v, FLAG_INVALID)) {
+	    db_destroy_anonymous_object(v.v.anon);
+	}
+	else {
+	    v = var_ref(v);
+	    run_server_task(-1, v, "recycle", new_list(0), "", 0);
+	    db_set_object_flag2(v, FLAG_RECYCLED);
+	    db_set_object_flag2(v, FLAG_INVALID);
+	    free_var(v);
+	}
+    }
+}
+
 static void
 main_loop(void)
 {
@@ -452,7 +515,7 @@ main_loop(void)
     free_var(checkpointed_connections);
 
     /* Second, run #0:server_started() */
-    run_server_task(-1, SYSTEM_OBJECT, "server_started", new_list(0), "", 0);
+    run_server_task(-1, new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
     set_checkpoint_timer(1);
 
     /* Now, we enter the main server loop */
@@ -469,7 +532,7 @@ main_loop(void)
 	    if (checkpoint_requested == CHKPT_SIGNAL)
 		oklog("CHECKPOINTING due to remote request signal.\n");
 	    checkpoint_requested = CHKPT_OFF;
-	    run_server_task(-1, SYSTEM_OBJECT, "checkpoint_started",
+	    run_server_task(-1, new_obj(SYSTEM_OBJECT), "checkpoint_started",
 			    new_list(0), "", 0);
 	    network_process_io(0);
 #ifdef UNFORKED_CHECKPOINTS
@@ -486,6 +549,8 @@ main_loop(void)
 	    checkpoint_finished = 0;
 	}
 #endif
+
+        recycle_anonymous_objects();
 
 	if (!network_process_io(seconds_left ? 1 : 0) && seconds_left > 1)
 	    db_flush(FLUSH_ONE_SECOND);

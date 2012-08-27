@@ -755,15 +755,15 @@ do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
     return 1;
 }
 
-/* I made `run_server_task_setting_id' static and removed it from the
- * header to better control access to a central point of task
+/* I made `run_server_task_setting_id' static and removed it from
+ * the header to better control access to a central point of task
  * creation.  Functions that want to run tasks should call one of the
  * externally visible entry points -- probably `run_server_task' --
  * which ensure things get cleaned up properly.
  */
 static
 enum outcome
-run_server_task_setting_id(Objid player, Objid what, const char *verb,
+run_server_task_setting_id(Objid player, Var what, const char *verb,
 			   Var args, const char *argstr, Var *result,
 			   int *task_id);
 
@@ -794,9 +794,9 @@ do_command_task(tqueue * tq, char *command)
 		notify(tq->player, tq->output_prefix);
 
 	    args = parse_into_wordlist(command);
-	    if (run_server_task_setting_id(tq->player, tq->handler,
-					   "do_command", args, command,
-				      &result, &(tq->last_input_task_id))
+	    if (run_server_task_setting_id(tq->player, new_obj(tq->handler),
+				           "do_command", args, command,
+				           &result, &(tq->last_input_task_id))
 		!= OUTCOME_DONE
 		|| is_true(result)) {
 		/* Do nothing more; we assume :do_command handled it. */
@@ -845,9 +845,9 @@ do_login_task(tqueue * tq, char *command)
 				 */
 
     args = parse_into_wordlist(command);
-    run_server_task_setting_id(tq->player, tq->handler, "do_login_command",
-			       args, command, &result,
-			       &(tq->last_input_task_id));
+    run_server_task_setting_id(tq->player, new_obj(tq->handler),
+			       "do_login_command", args, command,
+			        &result, &(tq->last_input_task_id));
     /* The connected player (tq->player) may be non-negative if
      * `do_login_command' already called the `switch_player' built-in
      * to log the connection in to a player.
@@ -903,7 +903,7 @@ do_login_task(tqueue * tq, char *command)
 static void
 do_out_of_band_command(tqueue * tq, char *command)
 {
-    run_server_task(tq->player, tq->handler, "do_out_of_band_command",
+    run_server_task(tq->player, new_obj(tq->handler), "do_out_of_band_command",
 		    parse_into_wordlist(command), command, 0);
 }
 
@@ -1739,7 +1739,7 @@ run_ready_tasks(void)
 }
 
 enum outcome
-run_server_task(Objid player, Objid what, const char *verb, Var args,
+run_server_task(Objid player, Var what, const char *verb, Var args,
 		const char *argstr, Var *result)
 {
     enum outcome ret = run_server_task_setting_id(player, what, verb,
@@ -1753,13 +1753,13 @@ run_server_task(Objid player, Objid what, const char *verb, Var args,
 }
 
 /* This is the usual entry point for a new task (the other being the
- * creation of a forked task.  It allocates the current task local
+ * creation of a forked task).  It allocates the current task local
  * value -- make sure it gets cleaned up properly when the task
  * finishes.
  */
 static
 enum outcome
-run_server_task_setting_id(Objid player, Objid what, const char *verb,
+run_server_task_setting_id(Objid player, Var what, const char *verb,
 			   Var args, const char *argstr, Var *result,
 			   int *task_id)
 {
@@ -1771,9 +1771,9 @@ run_server_task_setting_id(Objid player, Objid what, const char *verb,
     if (task_id)
 	*task_id = current_task_id;
 
-    h = db_find_callable_verb(new_obj(what), verb);
+    h = db_find_callable_verb(what, verb);
     if (h.ptr)
-	return do_server_verb_task(what, verb, args, h, player, argstr,
+	return do_server_verb_task(what, (TYPE_OBJ == what.type) ? what.v.obj : NOTHING, verb, args, h, player, argstr,
 				   result, 1/*traceback*/);
     else {
 	/* simulate an empty verb */
@@ -1796,7 +1796,7 @@ run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
     current_task_id = new_task_id();
     current_local = new_map();
 
-    enum outcome ret = do_server_program_task(this, verb, args, vloc, verbname, program,
+    enum outcome ret = do_server_program_task(new_obj(this), this, verb, args, vloc, verbname, program,
                                               progr, debug, player, argstr,
                                               result, 1/*traceback*/);
 

@@ -167,7 +167,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_ANON:
 	if (v.v.anon && delref(v.v.anon) == 0)
-	    db_destroy_anonymous_object(v.v.anon);
+	    queue_anonymous_object(v); /* queue for recycle */
 	break;
     }
 }
