@@ -631,13 +631,15 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	if (!is_object(obj)) {
 	    free_var(obj);
 	    return make_error_pack(E_TYPE);
-	} else if (!is_valid(obj)) {
+	} else if (!is_valid(obj) || db_object_has_flag2(obj, FLAG_RECYCLED)) {
 	    free_var(obj);
 	    return make_error_pack(E_INVARG);
 	} else if (!controls2(progr, obj)) {
 	    free_var(obj);
 	    return make_error_pack(E_PERM);
 	}
+
+	db_set_object_flag2(obj, FLAG_RECYCLED);
 
 	data = alloc_data(sizeof(Var));
 	*data = var_ref(obj);
