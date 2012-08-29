@@ -997,6 +997,39 @@ dbpriv_set_all_users(Var v)
     all_users = v;
 }
 
+int
+db_object_isa(Var object, Var parent)
+{
+    if (equality(object, parent, 0))
+	return 1;
+
+    Object *o, *t;
+
+    o = (TYPE_OBJ == object.type) ?
+        dbpriv_find_object(object.v.obj) :
+        object.v.anon;
+
+    Var ancestor, ancestors = enlist_var(var_ref(o->parents));
+
+    while (listlength(ancestors) > 0) {
+	POP_TOP(ancestor, ancestors);
+
+	if (ancestor.v.obj == NOTHING)
+	    continue;
+
+	if (equality(ancestor, parent, 0)) {
+	    free_var(ancestors);
+	    return 1;
+	}
+
+	t = dbpriv_find_object(ancestor.v.obj);
+
+	ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
+    }
+
+    return 0;
+}
+
 char rcsid_db_objects[] = "$Id: db_objects.c,v 1.5 2006/09/07 00:55:02 bjj Exp $";
 
 /*

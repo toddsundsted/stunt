@@ -296,6 +296,8 @@ extern Var db_all_users(void);
 				 * module.  The caller should thus var_ref() it
 				 * to make it persistent.
 				 */
+
+extern int db_object_isa(Var, Var);
 
 
 /**** properties *****/
