@@ -487,6 +487,7 @@ db_find_property(Var obj, const char *name, Var *value)
 
     for (i = 0; i < length; i++, n++) {
 	if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+		h.definer = o->id;
 		h.ptr = o->propval + n;
 		goto done;
 	    }
