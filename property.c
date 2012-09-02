@@ -262,8 +262,7 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 	h = db_find_property(new_obj(oid), pname, 0);
 	if (!h.ptr)
 	    e = E_PROPNF;
-	else if (db_is_property_built_in(h)
-		 || (progr != db_property_owner(h) && !is_wizard(progr)))
+	else if (db_is_property_built_in(h) || !db_property_allows(h, progr, PF_WRITE))
 	    e = E_PERM;
 	else if (db_is_property_defined_on(h, new_obj(oid)))
 	    e = E_INVARG;
