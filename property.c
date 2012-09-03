@@ -231,18 +231,21 @@ bf_add_prop(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_delete_prop(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, prop-name) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
     enum error e = E_NONE;
 
-    if (!valid(oid))
+    if (!is_object(obj))
+	e = E_TYPE;
+    if (!is_valid(obj))
 	e = E_INVARG;
-    else if (!db_object_allows(oid, progr, FLAG_WRITE))
+    else if (!db_object_allows(obj, progr, FLAG_WRITE))
 	e = E_PERM;
-    else if (!db_delete_propdef(oid, pname))
+    else if (!db_delete_propdef(obj, pname))
 	e = E_PROPNF;
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return no_var_pack();
     else
@@ -324,7 +327,7 @@ register_property(void)
     (void) register_function("add_property", 4, 4, bf_add_prop,
 			     TYPE_ANY, TYPE_STR, TYPE_ANY, TYPE_LIST);
     (void) register_function("delete_property", 2, 2, bf_delete_prop,
-			     TYPE_OBJ, TYPE_STR);
+			     TYPE_ANY, TYPE_STR);
     (void) register_function("clear_property", 2, 2, bf_clear_prop,
 			     TYPE_OBJ, TYPE_STR);
     (void) register_function("is_clear_property", 2, 2, bf_is_clear_prop,

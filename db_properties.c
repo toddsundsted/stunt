@@ -318,10 +318,36 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
 }
 
 static void
-remove_prop(Objid oid, int pos)
+remove_prop2(Object *o, int pos)
 {
     Pval *new_propval;
+    int i, nprops;
+
+    nprops = dbpriv_count_properties2(o);
+
+    dbpriv_assign_nonce(o);
+
+    free_var(o->propval[pos].var);	/* free deleted property */
+
+    if (nprops) {
+	new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+	for (i = 0; i < pos; i++)
+	    new_propval[i] = o->propval[i];
+	for (i = pos; i < nprops; i++)
+	    new_propval[i] = o->propval[i + 1];
+    } else
+	new_propval = 0;
+
+    if (o->propval)
+	myfree(o->propval, M_PVAL);
+    o->propval = new_propval;
+}
+
+static void
+remove_prop(Objid oid, int pos)
+{
     Object *o;
+    Pval *new_propval;
     int i, nprops;
 
     o = dbpriv_find_object(oid);
@@ -368,9 +394,10 @@ remove_prop_recursively(Objid root, int prop_pos)
 }
 
 int
-db_delete_propdef(Objid oid, const char *pname)
+db_delete_propdef(Var obj, const char *pname)
 {
-    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    Object *o = dbpriv_dereference(obj);
+    Proplist *props = &(o->propdefs);
     int hash = str_hash(pname);
     int count = props->cur_length;
     int max = props->max_length;
@@ -403,7 +430,12 @@ db_delete_propdef(Objid oid, const char *pname)
 		    props->l[j - 1] = props->l[j];
 
 	    props->cur_length--;
-	    remove_prop_recursively(oid, i);
+
+	    /* anonymous objects can't have children */
+	    if (TYPE_OBJ == obj.type)
+		remove_prop_recursively(obj.v.obj, i);
+	    else
+              remove_prop2(obj.v.anon, i);
 
 	    return 1;
 	}
