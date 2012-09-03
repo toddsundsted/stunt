@@ -308,12 +308,12 @@ typedef enum {
     PF_CHOWN = 04
 } db_prop_flag;
 
-extern int db_add_propdef(Objid oid, const char *pname,
+extern int db_add_propdef(Var obj, const char *pname,
 			  Var value, Objid owner,
 			  unsigned flags);
 				/* Returns true (and actually adds the property
-				 * to OID) iff (1) no property named PNAME
-				 * already exists on OID or one of its
+				 * to OBJ) iff (1) no property named PNAME
+				 * already exists on OBJ or one of its
 				 * ancestors or descendants, and (2) PNAME does
 				 * not name any built-in property.  This
 				 * function does not change the reference count
