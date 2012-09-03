@@ -323,12 +323,12 @@ extern int db_add_propdef(Var obj, const char *pname,
 				 * zero or more elements of `db_prop_flag'.
 				 */
 
-extern int db_rename_propdef(Objid oid, const char *old,
+extern int db_rename_propdef(Var obj, const char *old,
 			     const char *new);
 				/* Returns true (and actually renames the
-				 * propdef on OID) iff (1) a propdef with the
-				 * name OLD existed on OID, (2) no property
-				 * named NEW already exists on OID or one of
+				 * propdef on OBJ) iff (1) a propdef with the
+				 * name OLD existed on OBJ, (2) no property
+				 * named NEW already exists on OBJ or one of
 				 * its ancestors or descendants, and (3) NEW
 				 * does not name any built-in property.  If
 				 * condition (1) holds and OLD == NEW, then
