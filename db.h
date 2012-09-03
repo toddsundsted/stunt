@@ -341,8 +341,8 @@ extern int db_delete_propdef(Var, const char *);
 				 * to be deleted).
 				 */
 
-extern int db_count_propdefs(Objid);
-extern int db_for_all_propdefs(Objid,
+extern int db_count_propdefs(Var);
+extern int db_for_all_propdefs(Var,
 			       int (*)(void *, const char *),
 			       void *);
 				/* db_for_all_propdefs() does not change the
