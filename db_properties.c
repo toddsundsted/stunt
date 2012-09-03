@@ -287,9 +287,10 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 }
 
 int
-db_rename_propdef(Objid oid, const char *old, const char *new)
+db_rename_propdef(Var obj, const char *old, const char *new)
 {
-    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    Object *o = dbpriv_dereference(obj);
+    Proplist *props = &(o->propdefs);
     int hash = str_hash(old);
     int count = props->cur_length;
     int i;
@@ -300,10 +301,9 @@ db_rename_propdef(Objid oid, const char *old, const char *new)
 
 	p = props->l[i];
 	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
-	    if (mystrcasecmp(old, new) != 0) {	/* Not changing just the case */
-		h = db_find_property(new_obj(oid), new, 0);
-		if (h.ptr
-		|| property_defined_at_or_below(new, str_hash(new), oid))
+	    if (mystrcasecmp(old, new) != 0) {	/* not changing just the case */
+		h = db_find_property(obj, new, 0);
+		if (h.ptr || property_defined_at_or_below(new, str_hash(new), o))
 		    return 0;
 	    }
 	    free_str(props->l[i].name);

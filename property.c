@@ -61,22 +61,25 @@ bf_properties(Var arglist, Byte next, void *vdata, Objid progr)
     }
 }
 
-
 static package
 bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, prop-name) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
     db_prop_handle h;
     Var r;
     unsigned flags;
     char perms[4], *s;
 
-    if (!valid(oid)) {
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    }
+    else if (!is_valid(obj)) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    h = db_find_property(new_obj(oid), pname, 0);
+    h = db_find_property(obj, pname, 0);
     free_var(arglist);
 
     if (!h.ptr || db_is_property_built_in(h))
@@ -146,7 +149,7 @@ validate_prop_info(Var v, Objid * owner, unsigned *flags, const char **name)
 }
 
 static enum error
-set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
+set_prop_info(Var obj, const char *pname, Var info, Objid progr)
 {
     Objid new_owner;
     unsigned new_flags;
@@ -154,7 +157,9 @@ set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
     enum error e;
     db_prop_handle h;
 
-    if (!valid(oid))
+    if (!is_object(obj))
+	e = E_TYPE;
+    else if (!is_valid(obj))
 	e = E_INVARG;
     else
 	e = validate_prop_info(info, &new_owner, &new_flags, &new_name);
@@ -162,7 +167,7 @@ set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
     if (e != E_NONE)
 	return e;
 
-    h = db_find_property(new_obj(oid), pname, 0);
+    h = db_find_property(obj, pname, 0);
 
     if (!h.ptr || db_is_property_built_in(h))
 	return E_PROPNF;
@@ -171,10 +176,10 @@ set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
 	return E_PERM;
 
     if (new_name) {
-	if (!db_rename_propdef(oid, pname, new_name))
+	if (!db_rename_propdef(obj, pname, new_name))
 	    return E_INVARG;
 
-	h = db_find_property(new_obj(oid), new_name, 0);
+	h = db_find_property(obj, new_name, 0);
     }
     db_set_property_owner(h, new_owner);
     db_set_property_flags(h, new_flags);
@@ -185,12 +190,13 @@ set_prop_info(Objid oid, const char *pname, Var info, Objid progr)
 static package
 bf_set_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, prop-name, {owner, perms [, new-name]}) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
     Var info = arglist.v.list[3];
-    enum error e = set_prop_info(oid, pname, info, progr);
+    enum error e = set_prop_info(obj, pname, info, progr);
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return no_var_pack();
     else
@@ -323,9 +329,9 @@ register_property(void)
     (void) register_function("properties", 1, 1, bf_properties,
 			     TYPE_ANY);
     (void) register_function("property_info", 2, 2, bf_prop_info,
-			     TYPE_OBJ, TYPE_STR);
+			     TYPE_ANY, TYPE_STR);
     (void) register_function("set_property_info", 3, 3, bf_set_prop_info,
-			     TYPE_OBJ, TYPE_STR, TYPE_LIST);
+			     TYPE_ANY, TYPE_STR, TYPE_LIST);
     (void) register_function("add_property", 4, 4, bf_add_prop,
 			     TYPE_ANY, TYPE_STR, TYPE_ANY, TYPE_LIST);
     (void) register_function("delete_property", 2, 2, bf_delete_prop,
