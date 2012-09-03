@@ -209,6 +209,14 @@ extern Exception dbpriv_dbio_failed;
 extern void dbpriv_set_dbio_input(FILE *);
 extern void dbpriv_set_dbio_output(FILE *);
 
+static inline Object *
+dbpriv_dereference(Var v)
+{
+    return (TYPE_OBJ == v.type)
+           ? dbpriv_find_object(v.v.obj)
+           : v.v.anon;
+}
+
 /* 
  * $Log: db_private.h,v $
  * Revision 1.4  1998/12/14 13:17:37  nop
