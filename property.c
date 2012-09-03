@@ -199,7 +199,7 @@ bf_set_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_add_prop(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, prop-name, initial-value, initial-info) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
     Var value = arglist.v.list[3];
     Var info = arglist.v.list[4];
@@ -208,18 +208,20 @@ bf_add_prop(Var arglist, Byte next, void *vdata, Objid progr)
     const char *new_name;
     enum error e;
 
-    if ((e = validate_prop_info(info, &owner, &flags, &new_name)) != E_NONE);	/* Already failed */
-    else if (new_name)
+    if ((e = validate_prop_info(info, &owner, &flags, &new_name)) != E_NONE)
+	; /* already failed */
+    else if (new_name || !is_object(obj))
 	e = E_TYPE;
-    else if (!valid(oid))
+    else if (!is_valid(obj))
 	e = E_INVARG;
-    else if (!db_object_allows(oid, progr, FLAG_WRITE)
+    else if (!db_object_allows(obj, progr, FLAG_WRITE)
 	     || (progr != owner && !is_wizard(progr)))
 	e = E_PERM;
-    else if (!db_add_propdef(oid, pname, value, owner, flags))
+    else if (!db_add_propdef(obj, pname, value, owner, flags))
 	e = E_INVARG;
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return no_var_pack();
     else
@@ -320,7 +322,7 @@ register_property(void)
     (void) register_function("set_property_info", 3, 3, bf_set_prop_info,
 			     TYPE_OBJ, TYPE_STR, TYPE_LIST);
     (void) register_function("add_property", 4, 4, bf_add_prop,
-			     TYPE_OBJ, TYPE_STR, TYPE_ANY, TYPE_LIST);
+			     TYPE_ANY, TYPE_STR, TYPE_ANY, TYPE_LIST);
     (void) register_function("delete_property", 2, 2, bf_delete_prop,
 			     TYPE_OBJ, TYPE_STR);
     (void) register_function("clear_property", 2, 2, bf_clear_prop,

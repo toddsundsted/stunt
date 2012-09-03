@@ -59,6 +59,38 @@ dbpriv_count_properties(Objid oid)
     return nprops;
 }
 
+int
+dbpriv_count_properties2(const Object *o)
+{
+    Object *a;
+    Var ancestor, ancestors;
+    int i, c, nprops = 0;
+
+    if (NULL == o)
+	return 0;
+
+    nprops = o->propdefs.cur_length;
+
+    ancestors = enlist_var(var_ref(o->parents));
+
+    while (listlength(ancestors) > 0) {
+	POP_TOP(ancestor, ancestors);
+
+	if (NOTHING == ancestor.v.obj)
+	    continue;
+
+	a = dbpriv_find_object(ancestor.v.obj);
+
+	ancestors = listconcat(ancestors, enlist_var(var_ref(a->parents)));
+
+	nprops += a->propdefs.cur_length;
+    }
+
+    free_var(ancestors);
+
+    return nprops;
+}
+
 /*
  * Finds the offset of the properties defined on `target' in `this'.
  * Returns -1 if `target' is not an ancestor of `this'.
@@ -85,12 +117,12 @@ properties_offset(Objid target, Objid this)
 }
 
 /*
- * Returns true iff `oid' defines a property named `pname'.
+ * Returns true iff `o' defines a property named `pname'.
  */
 static int
-property_defined_at(const char *pname, int phash, Objid oid)
+property_defined_at(const char *pname, int phash, Object *o)
 {
-    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    Proplist *props = &(o->propdefs);
     int length = props->cur_length;
     int i;
 
@@ -103,13 +135,13 @@ property_defined_at(const char *pname, int phash, Objid oid)
 }
 
 /*
- * Return true iff some descendant of `oid' defines a property named
+ * Return true iff some descendant of `o' defines a property named
  * `pname'.
  */
 static int
-property_defined_at_or_below(const char *pname, int phash, Objid oid)
+property_defined_at_or_below(const char *pname, int phash, Object *o)
 {
-    Proplist *props = &dbpriv_find_object(oid)->propdefs;
+    Proplist *props = &(o->propdefs);
     int length = props->cur_length;
     int i;
 
@@ -118,19 +150,48 @@ property_defined_at_or_below(const char *pname, int phash, Objid oid)
 	    && !mystrcasecmp(props->l[i].name, pname))
 	    return 1;
 
-    Var children = dbpriv_find_object(oid)->children;
-    for (i = 1; i <= children.v.list[0].v.num; i++)
-	if (property_defined_at_or_below(pname, phash, children.v.list[i].v.obj))
+    Var children = o->children;
+    for (i = 1; i <= children.v.list[0].v.num; i++) {
+	Object *child = dbpriv_dereference(children.v.list[i]);
+	if (property_defined_at_or_below(pname, phash, child))
 	    return 1;
+    }
 
     return 0;
 }
 
 static void
-insert_prop(Objid oid, int pos, Pval pval)
+insert_prop2(Object *o, int pos, Pval pval)
 {
     Pval *new_propval;
+    int i, nprops;
+
+    nprops = dbpriv_count_properties2(o);
+    new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+
+    dbpriv_assign_nonce(o);
+
+    for (i = 0; i < pos; i++)
+	new_propval[i] = o->propval[i];
+
+    new_propval[pos] = pval;
+    new_propval[pos].var = var_ref(pval.var);
+    if (new_propval[pos].perms & PF_CHOWN)
+	new_propval[pos].owner = o->owner;
+
+    for (i = pos + 1; i < nprops; i++)
+	new_propval[i] = o->propval[i - 1];
+
+    if (o->propval)
+	myfree(o->propval, M_PVAL);
+    o->propval = new_propval;
+}
+
+static void
+insert_prop(Objid oid, int pos, Pval pval)
+{
     Object *o;
+    Pval *new_propval;
     int i, nprops;
 
     nprops = dbpriv_count_properties(oid);
@@ -182,7 +243,7 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 }
 
 int
-db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
+db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 	       unsigned flags)
 {
     Object *o;
@@ -190,12 +251,13 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
     int i;
     db_prop_handle h;
 
-    h = db_find_property(new_obj(oid), pname, 0);
+    o = dbpriv_dereference(obj);
 
-    if (h.ptr || property_defined_at_or_below(pname, str_hash(pname), oid))
+    h = db_find_property(obj, pname, 0);
+
+    if (h.ptr || property_defined_at_or_below(pname, str_hash(pname), o))
 	return 0;
 
-    o = dbpriv_find_object(oid);
     if (o->propdefs.cur_length == o->propdefs.max_length) {
 	Propdef *old_props = o->propdefs.l;
 	int new_size = (o->propdefs.max_length == 0
@@ -215,7 +277,11 @@ db_add_propdef(Objid oid, const char *pname, Var value, Objid owner,
     pval.owner = owner;
     pval.perms = flags;
 
-    insert_prop_recursively(oid, o->propdefs.cur_length - 1, pval);
+    /* anonymous objects can't have children */
+    if (TYPE_OBJ == obj.type)
+	insert_prop_recursively(obj.v.obj, o->propdefs.cur_length - 1, pval);
+    else
+	insert_prop2(obj.v.anon, o->propdefs.cur_length - 1, pval);
 
     return 1;
 }
