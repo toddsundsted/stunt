@@ -445,16 +445,16 @@ db_delete_propdef(Var obj, const char *pname)
 }
 
 int
-db_count_propdefs(Objid oid)
+db_count_propdefs(Var obj)
 {
-    return dbpriv_find_object(oid)->propdefs.cur_length;
+    return dbpriv_dereference(obj)->propdefs.cur_length;
 }
 
 int
-db_for_all_propdefs(Objid oid, int (*func) (void *, const char *), void *data)
+db_for_all_propdefs(Var obj, int (*func) (void *, const char *), void *data)
 {
     int i;
-    Object *o = dbpriv_find_object(oid);
+    Object *o = dbpriv_dereference(obj);
     int len = o->propdefs.cur_length;
 
     for (i = 0; i < len; i++)

@@ -41,20 +41,21 @@ add_to_list(void *data, const char *prop_name)
 static package
 bf_properties(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
 
     free_var(arglist);
 
-    if (!valid(oid))
+    if (!is_object(obj))
+	return make_error_pack(E_TYPE);
+    else if (!is_valid(obj))
 	return make_error_pack(E_INVARG);
-    else if (!db_object_allows(oid, progr, FLAG_READ))
+    else if (!db_object_allows(obj, progr, FLAG_READ))
 	return make_error_pack(E_PERM);
     else {
 	struct prop_data d;
-
-	d.r = new_list(db_count_propdefs(oid));
+	d.r = new_list(db_count_propdefs(obj));
 	d.i = 0;
-	db_for_all_propdefs(oid, add_to_list, &d);
+	db_for_all_propdefs(obj, add_to_list, &d);
 
 	return make_var_pack(d.r);
     }
@@ -319,7 +320,8 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_property(void)
 {
-    (void) register_function("properties", 1, 1, bf_properties, TYPE_OBJ);
+    (void) register_function("properties", 1, 1, bf_properties,
+			     TYPE_ANY);
     (void) register_function("property_info", 2, 2, bf_prop_info,
 			     TYPE_OBJ, TYPE_STR);
     (void) register_function("set_property_info", 3, 3, bf_set_prop_info,
