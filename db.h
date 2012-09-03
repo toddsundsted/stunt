@@ -277,13 +277,13 @@ extern int db_object_has_flag(Objid, db_object_flag);
 extern void db_set_object_flag(Objid, db_object_flag);
 extern void db_clear_object_flag(Objid, db_object_flag);
 
-extern int db_object_allows(Objid oid, Objid progr,
+extern int db_object_allows(Var obj, Objid progr,
 			    db_object_flag flag);
-				/* Returns true iff either OID has FLAG or
-				 * PROGR either is a wizard or owns OID; that
+				/* Returns true iff either OBJ has FLAG or
+				 * PROGR either is a wizard or owns OBJ; that
 				 * is, iff PROGR's authority is sufficient to
 				 * be allowed to do the indicated operation on
-				 * OID.
+				 * OBJ.
 				 */
 
 extern int is_wizard(Objid oid);
