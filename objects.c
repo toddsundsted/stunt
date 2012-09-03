@@ -70,7 +70,7 @@ all_allowed(Var vars, Objid progr, db_object_flag f)
     Var var;
     int i, c;
     FOR_EACH(var, vars, i, c)
-	if (!db_object_allows(var.v.obj, progr, f))
+	if (!db_object_allows(var, progr, f))
 	    return false;
     return true;
 }
@@ -339,7 +339,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	else if ((progr != owner && !is_wizard(progr))
 		 || (arglist.v.list[1].type == TYPE_OBJ
 		     && valid(arglist.v.list[1].v.obj)
-		     && !db_object_allows(arglist.v.list[1].v.obj, progr,
+		     && !db_object_allows(arglist.v.list[1], progr,
 		                          anonymous ? FLAG_ANONYMOUS : FLAG_FERTILE))
 		 || (arglist.v.list[1].type == TYPE_LIST
 		     && !all_allowed(arglist.v.list[1], progr,
@@ -449,7 +449,7 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!controls(progr, what)
 	     || (arglist.v.list[2].type == TYPE_OBJ
 		 && valid(arglist.v.list[2].v.obj)
-		 && !db_object_allows(arglist.v.list[2].v.obj, progr, FLAG_FERTILE))
+		 && !db_object_allows(arglist.v.list[2], progr, FLAG_FERTILE))
 	     || (arglist.v.list[2].type == TYPE_LIST
 		 && !all_allowed(arglist.v.list[2], progr, FLAG_FERTILE))) {
 	free_var(arglist);

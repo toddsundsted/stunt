@@ -960,11 +960,11 @@ db_clear_object_flag(Objid oid, db_object_flag f)
 }
 
 int
-db_object_allows(Objid oid, Objid progr, db_object_flag f)
+db_object_allows(Var obj, Objid progr, db_object_flag f)
 {
-    return (progr == db_object_owner(oid)
-	    || is_wizard(progr)
-	    || db_object_has_flag(oid, f));
+    return (is_wizard(progr)
+	    || progr == db_object_owner2(obj)
+	    || db_object_has_flag2(obj, f));
 }
 
 int
