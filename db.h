@@ -335,7 +335,7 @@ extern int db_rename_propdef(Objid oid, const char *old,
 				 * this is a no-op that returns true.
 				 */
 
-extern int db_delete_propdef(Objid, const char *);
+extern int db_delete_propdef(Var, const char *);
 				/* Returns true iff a propdef with the given
 				 * name existed on the object (i.e., was there
 				 * to be deleted).
