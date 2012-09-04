@@ -168,7 +168,7 @@ extern void dbpriv_after_load(void);
 
 /*********** Properties ***********/
 
-extern Propdef dbpriv_new_propdef(const char *name);
+extern Propdef dbpriv_new_propdef(const char *);
 
 extern int dbpriv_count_properties(Objid);
 
