@@ -376,7 +376,7 @@ enum bi_prop {
  */
 typedef struct {
     enum bi_prop built_in;	/* true iff property is a built-in one */
-    Objid definer;		/* if !built_in, the object defining prop */
+    void *definer;		/* null iff property is a built-in one */
     void *ptr;			/* null iff property not found */
 } db_prop_handle;
 
