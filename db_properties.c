@@ -558,8 +558,8 @@ db_find_property(Var obj, const char *name, Var *value)
 	ptable_init = 1;
     }
 
+    h.definer = 0;
     h.ptr = 0;
-    h.definer = NOTHING;
 
     o = (TYPE_OBJ == obj.type) ?
         dbpriv_find_object(obj.v.obj) :
@@ -585,7 +585,7 @@ db_find_property(Var obj, const char *name, Var *value)
 
     for (i = 0; i < length; i++, n++) {
 	if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
-		h.definer = o->id;
+		h.definer = o;
 		h.ptr = o->propval + n;
 		goto done;
 	    }
@@ -609,7 +609,7 @@ db_find_property(Var obj, const char *name, Var *value)
 
 	for (i = 0; i < length; i++, n++) {
 	    if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
-		h.definer = t->id;
+		h.definer = t;
 		h.ptr = o->propval + n;
 		free_var(ancestors);
 		goto done;
@@ -628,17 +628,23 @@ db_find_property(Var obj, const char *name, Var *value)
 	Pval *prop = h.ptr;
 
 	while (prop->var.type == TYPE_CLEAR) {
+	    /* We take a few liberties at this point.  If a property
+	     * value on an object is clear, then its `definer' must be
+	     * a permanent (not an anonymous) object, because
+	     * anonymous objects can't currently be parents of other
+	     * objects.
+	     */
 	    if (TYPE_LIST == o->parents.type) {
 		Var parent, parents = o->parents;
 		int i2, c2, offset = 0;
 		FOR_EACH(parent, parents, i2, c2)
-		    if ((offset = properties_offset(h.definer, parent.v.obj)) > -1)
+		    if ((offset = properties_offset(((Object *)h.definer)->id, parent.v.obj)) > -1)
 			break;
 		o = dbpriv_find_object(parent.v.obj);
 		prop = o->propval + offset + i;
 	    }
 	    else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
-		int offset = properties_offset(h.definer, o->parents.v.obj);
+		int offset = properties_offset(((Object *)h.definer)->id, o->parents.v.obj);
 		o = dbpriv_find_object(o->parents.v.obj);
 		prop = o->propval + offset + i;
 	    }
@@ -652,9 +658,7 @@ db_find_property(Var obj, const char *name, Var *value)
 int
 db_is_property_defined_on(db_prop_handle h, Var obj)
 {
-    Objid oid = obj.v.obj;
-
-    return (h.definer == oid);
+    return (dbpriv_dereference(obj) == h.definer);
 }
 
 int

@@ -262,21 +262,23 @@ bf_delete_prop(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, prop-name) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
     db_prop_handle h;
     Var value;
     enum error e;
 
-    if (!valid(oid))
+    if (!is_object(obj))
+	e = E_TYPE;
+    else if (!is_valid(obj))
 	e = E_INVARG;
     else {
-	h = db_find_property(new_obj(oid), pname, 0);
+	h = db_find_property(obj, pname, 0);
 	if (!h.ptr)
 	    e = E_PROPNF;
 	else if (db_is_property_built_in(h) || !db_property_allows(h, progr, PF_WRITE))
 	    e = E_PERM;
-	else if (db_is_property_defined_on(h, new_obj(oid)))
+	else if (db_is_property_defined_on(h, obj))
 	    e = E_INVARG;
 	else {
 	    value.type = TYPE_CLEAR;
@@ -286,6 +288,7 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return no_var_pack();
     else
@@ -295,16 +298,18 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, prop-name) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
-    Var r;
     db_prop_handle h;
+    Var r;
     enum error e;
 
-    if (!valid(oid))
+    if (!is_object(obj))
+	e = E_INVARG;
+    else if (!is_valid(obj))
 	e = E_INVARG;
     else {
-	h = db_find_property(new_obj(oid), pname, 0);
+	h = db_find_property(obj, pname, 0);
 	if (!h.ptr)
 	    e = E_PROPNF;
 	else if (!db_is_property_built_in(h) && !db_property_allows(h, progr, PF_READ))
@@ -317,6 +322,7 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return make_var_pack(r);
     else
@@ -337,9 +343,9 @@ register_property(void)
     (void) register_function("delete_property", 2, 2, bf_delete_prop,
 			     TYPE_ANY, TYPE_STR);
     (void) register_function("clear_property", 2, 2, bf_clear_prop,
-			     TYPE_OBJ, TYPE_STR);
+			     TYPE_ANY, TYPE_STR);
     (void) register_function("is_clear_property", 2, 2, bf_is_clear_prop,
-			     TYPE_OBJ, TYPE_STR);
+			     TYPE_ANY, TYPE_STR);
 }
 
 char rcsid_property[] = "$Id: property.c,v 1.4 2008/08/20 04:25:23 bjj Exp $";
