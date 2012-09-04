@@ -829,20 +829,21 @@ dbpriv_check_properties_for_chparent(Objid oid, Var parents)
 
     free_var(stack);
 
-    Object *o;
-    Var ancestor;
+    Object *o, *t = dbpriv_find_object(oid);
+    Proplist *props;
+    Var ancestor, obj;
     int i, c, x;
 
     /* check props in descendants */
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	o = dbpriv_find_object(ancestor.v.obj);
-	Proplist *props = &o->propdefs;
+	props = &o->propdefs;
 
 	for (x = 0; x < props->cur_length; x++)
 	    if (property_defined_at_or_below(props->l[x].name,
 					     props->l[x].hash,
-					     oid)) {
+					     t)) {
 		free_var(ancestors);
 		return 0;
 	    }
@@ -854,17 +855,16 @@ dbpriv_check_properties_for_chparent(Objid oid, Var parents)
 	POP_TOP(ancestor, ancestors);
 
 	o = dbpriv_find_object(ancestor.v.obj);
-	Proplist *props = &o->propdefs;
-
-	Var obj;
+	props = &o->propdefs;
 
 	FOR_EACH(obj, ancestors, i, c) {
 	    if (obj.v.obj == ancestor.v.obj)
 		continue;
+	    t = dbpriv_find_object(obj.v.obj);
 	    for (x = 0; x < props->cur_length; x++)
 		if (property_defined_at(props->l[x].name,
 					props->l[x].hash,
-					obj.v.obj)) {
+					t)) {
 		    free_var(ancestors);
 		    return 0;
 		}
