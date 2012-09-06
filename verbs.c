@@ -225,32 +225,34 @@ validate_verb_descriptor(Var desc)
 }
 
 db_verb_handle
-find_described_verb(Objid oid, Var desc)
+find_described_verb(Var obj, Var desc)
 {
     if (desc.type == TYPE_INT)
-	return db_find_indexed_verb(oid, desc.v.num);
+	return db_find_indexed_verb(obj, desc.v.num);
     else {
 	int flag = server_flag_option("support_numeric_verbname_strings", 0);
-
-	return db_find_defined_verb(oid, desc.v.str, flag);
+	return db_find_defined_verb(obj, desc.v.str, flag);
     }
 }
 
 static package
 bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     db_verb_handle h;
     enum error e;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE);	/* Do nothing; e is already set. */
-    else if (!valid(oid))
+    if ((e = validate_verb_descriptor(desc)) != E_NONE)
+	; /* e is already set. */
+    else if (!is_object(obj))
+	e = E_TYPE;
+    else if (!is_valid(obj))
 	e = E_INVARG;
-    else if (!db_object_allows(oid, progr, FLAG_WRITE))
+    else if (!db_object_allows(obj, progr, FLAG_WRITE))
 	e = E_PERM;
     else {
-	h = find_described_verb(oid, desc);
+	h = find_described_verb(obj, desc);
 	if (h.ptr)
 	    db_delete_verb(h);
 	else
@@ -258,6 +260,7 @@ bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return no_var_pack();
     else
@@ -612,7 +615,8 @@ register_verbs(void)
 		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
     register_function("add_verb", 3, 3, bf_add_verb,
 		      TYPE_ANY, TYPE_LIST, TYPE_LIST);
-    register_function("delete_verb", 2, 2, bf_delete_verb, TYPE_OBJ, TYPE_ANY);
+    register_function("delete_verb", 2, 2, bf_delete_verb,
+		      TYPE_ANY, TYPE_ANY);
     register_function("verb_code", 2, 4, bf_verb_code,
 		      TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("set_verb_code", 3, 3, bf_set_verb_code,
