@@ -53,20 +53,21 @@ add_to_list(void *data, const char *verb_name)
 static package
 bf_verbs(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
 
     free_var(arglist);
 
-    if (!valid(oid))
+    if (!is_object(obj))
+	return make_error_pack(E_TYPE);
+    else if (!is_valid(obj))
 	return make_error_pack(E_INVARG);
-    else if (!db_object_allows(oid, progr, FLAG_READ))
+    else if (!db_object_allows(obj, progr, FLAG_READ))
 	return make_error_pack(E_PERM);
     else {
 	struct verb_data d;
-
-	d.r = new_list(db_count_verbs(oid));
+	d.r = new_list(db_count_verbs(obj));
 	d.i = 0;
-	db_for_all_verbs(oid, add_to_list, &d);
+	db_for_all_verbs(obj, add_to_list, &d);
 
 	return make_var_pack(d.r);
     }
@@ -606,7 +607,8 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 void
 register_verbs(void)
 {
-    register_function("verbs", 1, 1, bf_verbs, TYPE_OBJ);
+    register_function("verbs", 1, 1, bf_verbs,
+		      TYPE_ANY);
     register_function("verb_info", 2, 2, bf_verb_info, TYPE_OBJ, TYPE_ANY);
     register_function("set_verb_info", 3, 3, bf_set_verb_info,
 		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);

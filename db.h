@@ -526,8 +526,8 @@ extern int  db_add_verb(Var obj, const char *vnames,
 				 * be persistent.
 				 */
 
-extern int db_count_verbs(Objid);
-extern int db_for_all_verbs(Objid,
+extern int db_count_verbs(Var);
+extern int db_for_all_verbs(Var,
 			    int (*)(void *, const char *),
 			    void *);
 				/* db_for_all_verbs() does not change the

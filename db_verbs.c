@@ -235,10 +235,10 @@ find_verbdef_by_name(Object * o, const char *vname, int check_x_bit)
 }
 
 int
-db_count_verbs(Objid oid)
+db_count_verbs(Var obj)
 {
     int count = 0;
-    Object *o = dbpriv_find_object(oid);
+    Object *o = dbpriv_dereference(obj);
     Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
@@ -248,11 +248,11 @@ db_count_verbs(Objid oid)
 }
 
 int
-db_for_all_verbs(Objid oid,
+db_for_all_verbs(Var obj,
 		 int (*func) (void *data, const char *vname),
 		 void *data)
 {
-    Object *o = dbpriv_find_object(oid);
+    Object *o = dbpriv_dereference(obj);
     Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
