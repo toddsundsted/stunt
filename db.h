@@ -516,7 +516,7 @@ extern const char *db_unparse_prep(db_prep_spec);
 				 * persistent.
 				 */
 
-extern int  db_add_verb(Objid oid, const char *vnames,
+extern int  db_add_verb(Var obj, const char *vnames,
 			Objid owner, unsigned flags,
 			db_arg_spec dobj, db_prep_spec prep,
 			db_arg_spec iobj);

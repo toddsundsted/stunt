@@ -173,7 +173,7 @@ validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
 static package
 bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, info, args) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var info = arglist.v.list[2];
     Var args = arglist.v.list[3];
     Var result;
@@ -185,22 +185,26 @@ bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e;
 
     if ((e = validate_verb_info(info, &owner, &flags, &names)) != E_NONE)
-	/* Already failed */ ;
+	; /* already failed */
     else if ((e = validate_verb_args(args, &dobj, &prep, &iobj)) != E_NONE)
 	free_str(names);
-    else if (!valid(oid)) {
+    else if (!is_object(obj)) {
 	free_str(names);
 	e = E_INVARG;
-    } else if (!db_object_allows(oid, progr, FLAG_WRITE)
+    } else if (!is_valid(obj)) {
+	free_str(names);
+	e = E_INVARG;
+    } else if (!db_object_allows(obj, progr, FLAG_WRITE)
 	       || (progr != owner && !is_wizard(progr))) {
 	free_str(names);
 	e = E_PERM;
     } else {
 	result.type = TYPE_INT;
-	result.v.num = db_add_verb(oid, names, owner, flags, dobj, prep, iobj);
+	result.v.num = db_add_verb(obj, names, owner, flags, dobj, prep, iobj);
     }
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return make_var_pack(result);
     else
@@ -607,7 +611,7 @@ register_verbs(void)
     register_function("set_verb_args", 3, 3, bf_set_verb_args,
 		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
     register_function("add_verb", 3, 3, bf_add_verb,
-		      TYPE_OBJ, TYPE_LIST, TYPE_LIST);
+		      TYPE_ANY, TYPE_LIST, TYPE_LIST);
     register_function("delete_verb", 2, 2, bf_delete_verb, TYPE_OBJ, TYPE_ANY);
     register_function("verb_code", 2, 4, bf_verb_code,
 		      TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
