@@ -195,10 +195,10 @@ db_unparse_prep(db_prep_spec prep)
 #define PERMMASK   0xF
 
 int
-db_add_verb(Objid oid, const char *vnames, Objid owner, unsigned flags,
+db_add_verb(Var obj, const char *vnames, Objid owner, unsigned flags,
 	    db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
-    Object *o = dbpriv_find_object(oid);
+    Object *o = dbpriv_dereference(obj);
     Verbdef *v, *newv;
     int count;
 
