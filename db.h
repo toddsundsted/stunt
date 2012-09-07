@@ -570,13 +570,13 @@ extern db_verb_handle db_find_callable_verb(Var recv, const char *verb);
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_defined_verb(Objid oid, const char *verb,
+extern db_verb_handle db_find_defined_verb(Var obj, const char *verb,
 					   int allow_numbers);
 				/* Returns a handle on the first verb found
-				 * defined on OID with a name matching VERB
+				 * defined on OBJ with a name matching VERB
 				 * (or, if ALLOW_NUMBERS is true and VERB has
 				 * the form of a decimal natural number, the
-				 * zero-based VERB'th verb defined on OID,
+				 * zero-based VERB'th verb defined on OBJ,
 				 * whichever comes first).  The `ptr' in the
 				 * result is null iff there is no such verb.
 				 * The returned handle is very volatile; only
@@ -585,9 +585,9 @@ extern db_verb_handle db_find_defined_verb(Objid oid, const char *verb,
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_indexed_verb(Objid oid, unsigned index);
+extern db_verb_handle db_find_indexed_verb(Var obj, unsigned index);
 				/* Returns a handle on the 1-based INDEX'th
-				 * verb defined on OID.  The `ptr' in the
+				 * verb defined on OBJ.  The `ptr' in the
 				 * result is null iff there is no such verb.
 				 * The returned handle is very volatile; only
 				 * the routines declared below as taking a

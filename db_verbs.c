@@ -667,9 +667,9 @@ db_find_callable_verb(Var recv, const char *verb)
 }
 
 db_verb_handle
-db_find_defined_verb(Objid oid, const char *vname, int allow_numbers)
+db_find_defined_verb(Var obj, const char *vname, int allow_numbers)
 {
-    Object *o = dbpriv_find_object(oid);
+    Object *o = dbpriv_dereference(obj);
     Verbdef *v;
     char *p;
     int num, i;
@@ -698,9 +698,9 @@ db_find_defined_verb(Objid oid, const char *vname, int allow_numbers)
 }
 
 db_verb_handle
-db_find_indexed_verb(Objid oid, unsigned index)
+db_find_indexed_verb(Var obj, unsigned index)
 {
-    Object *o = dbpriv_find_object(oid);
+    Object *o = dbpriv_dereference(obj);
     Verbdef *v;
     unsigned i;
     static handle h;
