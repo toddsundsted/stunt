@@ -271,7 +271,7 @@ bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     db_verb_handle h;
     Var r;
@@ -279,12 +279,15 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     char perms[5], *s;
     enum error e;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE
-	|| (e = E_INVARG, !valid(oid))) {
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if ((e = validate_verb_descriptor(desc)) != E_NONE
+	|| (e = E_INVARG, !is_valid(obj))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(obj, desc);
     free_var(arglist);
 
     if (!h.ptr)
@@ -317,7 +320,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc, {owner, flags, names}) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     Var info = arglist.v.list[3];
     Objid new_owner;
@@ -326,8 +329,11 @@ bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e;
     db_verb_handle h;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE);	/* Do nothing; e is already set. */
-    else if (!valid(oid))
+    if ((e = validate_verb_descriptor(desc)) != E_NONE)
+	; /* e is already set */
+    else if (!is_object(obj))
+	e = E_TYPE;
+    else if (!is_valid(obj))
 	e = E_INVARG;
     else
 	e = validate_verb_info(info, &new_owner, &new_flags, &new_names);
@@ -336,7 +342,9 @@ bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+
+    h = find_described_verb(obj, desc);
+
     free_var(arglist);
 
     if (!h.ptr) {
@@ -609,9 +617,10 @@ register_verbs(void)
 {
     register_function("verbs", 1, 1, bf_verbs,
 		      TYPE_ANY);
-    register_function("verb_info", 2, 2, bf_verb_info, TYPE_OBJ, TYPE_ANY);
+    register_function("verb_info", 2, 2, bf_verb_info,
+		      TYPE_ANY, TYPE_ANY);
     register_function("set_verb_info", 3, 3, bf_set_verb_info,
-		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+		      TYPE_ANY, TYPE_ANY, TYPE_LIST);
     register_function("verb_args", 2, 2, bf_verb_args, TYPE_OBJ, TYPE_ANY);
     register_function("set_verb_args", 3, 3, bf_set_verb_args,
 		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
