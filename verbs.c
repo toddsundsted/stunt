@@ -245,7 +245,7 @@ bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE)
-	; /* e is already set. */
+	; /* e is already set */
     else if (!is_object(obj))
 	e = E_TYPE;
     else if (!is_valid(obj))
