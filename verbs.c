@@ -381,7 +381,7 @@ unparse_arg_spec(db_arg_spec spec)
 static package
 bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     db_verb_handle h;
     db_arg_spec dobj, iobj;
@@ -389,12 +389,15 @@ bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     enum error e;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE
-	|| (e = E_INVARG, !valid(oid))) {
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } if ((e = validate_verb_descriptor(desc)) != E_NONE
+	|| (e = E_INVARG, !is_valid(obj))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(obj, desc);
     free_var(arglist);
 
     if (!h.ptr)
@@ -417,7 +420,7 @@ bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc, {dobj, prep, iobj}) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     Var args = arglist.v.list[3];
     enum error e;
@@ -425,8 +428,11 @@ bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
     db_arg_spec dobj, iobj;
     db_prep_spec prep;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE);	/* Do nothing; e is already set. */
-    else if (!valid(oid))
+    if ((e = validate_verb_descriptor(desc)) != E_NONE)
+	; /* e is already set */
+    else if (!is_object(obj))
+	e = E_TYPE;
+    else if (!is_valid(obj))
 	e = E_INVARG;
     else
 	e = validate_verb_args(args, &dobj, &prep, &iobj);
@@ -435,7 +441,7 @@ bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(obj, desc);
     free_var(arglist);
 
     if (!h.ptr)
