@@ -330,7 +330,7 @@ bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     db_verb_handle h;
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE)
-	; /* e is already set. */
+	; /* e is already set */
     else if (!is_object(obj))
 	e = E_TYPE;
     else if (!is_valid(obj))
