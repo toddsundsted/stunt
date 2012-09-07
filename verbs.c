@@ -627,9 +627,10 @@ register_verbs(void)
 		      TYPE_ANY, TYPE_ANY);
     register_function("set_verb_info", 3, 3, bf_set_verb_info,
 		      TYPE_ANY, TYPE_ANY, TYPE_LIST);
-    register_function("verb_args", 2, 2, bf_verb_args, TYPE_OBJ, TYPE_ANY);
+    register_function("verb_args", 2, 2, bf_verb_args,
+		      TYPE_ANY, TYPE_ANY);
     register_function("set_verb_args", 3, 3, bf_set_verb_args,
-		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+		      TYPE_ANY, TYPE_ANY, TYPE_LIST);
     register_function("add_verb", 3, 3, bf_add_verb,
 		      TYPE_ANY, TYPE_LIST, TYPE_LIST);
     register_function("delete_verb", 2, 2, bf_delete_verb,
