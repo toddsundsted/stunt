@@ -1028,7 +1028,7 @@ read_db_file(void)
 		       oid, vnum);
 		return 0;
 	    }
-	    h = db_find_indexed_verb(oid, vnum + 1);	/* DB file is 0-based. */
+	    h = db_find_indexed_verb(new_obj(oid), vnum + 1);	/* DB file is 0-based. */
 	    if (!h.ptr) {
 		errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
 		return 0;
