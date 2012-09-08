@@ -451,7 +451,7 @@ add_line(const char *line, void *data)
 static package
 bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     db_verb_handle h;
     struct data data;
@@ -459,12 +459,15 @@ bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
     int i;
     enum error e;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE
-	|| (e = E_INVARG, !valid(oid))) {
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if ((e = validate_verb_descriptor(desc)) != E_NONE
+	|| (e = E_INVARG, !is_valid(obj))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(obj, desc);
     free_var(arglist);
 
     if (!h.ptr)
@@ -488,7 +491,7 @@ bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
 void
 register_disassemble(void)
 {
-    register_function("disassemble", 2, 2, bf_disassemble, TYPE_OBJ, TYPE_ANY);
+    register_function("disassemble", 2, 2, bf_disassemble, TYPE_ANY, TYPE_ANY);
 }
 
 char rcsid_disassemble[] = "$Id";
