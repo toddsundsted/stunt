@@ -469,7 +469,7 @@ static package
 bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc [, fully-paren [, indent]]) */
     int nargs = arglist.v.list[0].v.num;
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     int parens = nargs >= 3 && is_true(arglist.v.list[3]);
     int indent = nargs < 4 || is_true(arglist.v.list[4]);
@@ -477,12 +477,15 @@ bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
     Var code;
     enum error e;
 
-    if ((e = validate_verb_descriptor(desc)) != E_NONE
-	|| (e = E_INVARG, !valid(oid))) {
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if ((e = validate_verb_descriptor(desc)) != E_NONE
+	|| (e = E_INVARG, !is_valid(obj))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(obj, desc);
     free_var(arglist);
 
     if (!h.ptr)
@@ -500,7 +503,7 @@ bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object, verb-desc, code) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
     Var code = arglist.v.list[3];
     int i;
@@ -514,12 +517,15 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 	    free_var(arglist);
 	    return make_error_pack(E_TYPE);
 	}
-    if ((e = validate_verb_descriptor(desc)) != E_NONE
-	|| (e = E_INVARG, !valid(oid))) {
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if ((e = validate_verb_descriptor(desc)) != E_NONE
+	|| (e = E_INVARG, !is_valid(obj))) {
 	free_var(arglist);
 	return make_error_pack(e);
     }
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(obj, desc);
     if (!h.ptr) {
 	free_var(arglist);
 	return make_error_pack(E_VERBNF);
@@ -636,9 +642,9 @@ register_verbs(void)
     register_function("delete_verb", 2, 2, bf_delete_verb,
 		      TYPE_ANY, TYPE_ANY);
     register_function("verb_code", 2, 4, bf_verb_code,
-		      TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+		      TYPE_ANY, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("set_verb_code", 3, 3, bf_set_verb_code,
-		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+		      TYPE_ANY, TYPE_ANY, TYPE_LIST);
     register_function("respond_to", 2, 2, bf_respond_to, TYPE_OBJ, TYPE_STR);
     register_function("eval", 1, 1, bf_eval, TYPE_STR);
 }
