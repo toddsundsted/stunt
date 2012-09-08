@@ -595,9 +595,11 @@ extern db_verb_handle db_find_indexed_verb(Var obj, unsigned index);
 				 * leave the handle intact.
 				 */
 
-extern Objid db_verb_definer(db_verb_handle);
+extern Var db_verb_definer(db_verb_handle);
 				/* Returns the object on which the given verb
-				 * is defined.
+				 * is defined.  The caller must var_ref(),
+				 * var_dup() the value if it is to be
+				 * persistent.
 				 */
 
 extern const char *db_verb_names(db_verb_handle);

@@ -262,7 +262,10 @@ db_for_all_verbs(Var obj,
     return 0;
 }
 
-typedef struct {		/* Non-null db_verb_handles point to these */
+/* A better plan may be to make `definer' a `Var', but this should
+ * work.  See `db_verb_definer' for the consequence of this decision.
+ */
+typedef struct {		/* non-null db_verb_handles point to these */
     Object *definer;
     Verbdef *verbdef;
 } handle;
@@ -522,7 +525,7 @@ find_callable_verbdef(Object *start, const char *verb)
 db_verb_handle
 db_find_callable_verb(Var recv, const char *verb)
 {
-    if (TYPE_OBJ != recv.type && TYPE_ANON != recv.type)
+    if (!is_object(recv))
 	panic("DB_FIND_CALLABLE_VERB: Not an object!");
 
     Object *o;
@@ -551,17 +554,13 @@ db_find_callable_verb(Var recv, const char *verb)
 
 	POP_TOP(top, stack);
 
-	if (TYPE_ANON == top.type) {
-	    o = top.v.anon;
-	}
-	else if (TYPE_OBJ == top.type && valid(top.v.obj)) {
-	    o = dbpriv_find_object(top.v.obj);
+	if (is_object(top) && is_valid(top)) {
+	    o = dbpriv_dereference(top);
 	    if (o->verbdefs == NULL) {
 		/* keep looking */
-		if (TYPE_OBJ == o->parents.type)
-		    stack = listinsert(stack, var_ref(o->parents), 1);
-		else
-		    stack = listconcat(var_ref(o->parents), stack);
+		stack = (TYPE_OBJ == o->parents.type)
+		        ? listinsert(stack, var_ref(o->parents), 1)
+		        : listconcat(var_ref(o->parents), stack);
 		free_var(top);
 		continue;
 	    }
@@ -574,7 +573,7 @@ db_find_callable_verb(Var recv, const char *verb)
 
 	free_var(top);
 
-	uintptr_t first_parent_with_verbs = (uintptr_t)o;
+	unsigned long first_parent_with_verbs = (unsigned long)o;
 
 	/* found something with verbdefs, now check the cache */
 	unsigned int hash, bucket;
@@ -609,10 +608,8 @@ db_find_callable_verb(Var recv, const char *verb)
 	verbcache_miss++;
 
 #else
-	if (TYPE_ANON == recv.type)
-	    o = recv.v.anon;
-	else if (TYPE_OBJ == recv.type && valid(recv.v.obj))
-	    o = dbpriv_find_object(recv.v.obj);
+	if (is_object(recv) && is_valid(recv))
+	    o = dbpriv_dereference(recv);
 	else
 	    o = NULL;
 #endif
@@ -719,16 +716,26 @@ db_find_indexed_verb(Var obj, unsigned index)
     return vh;
 }
 
-Objid
+Var
 db_verb_definer(db_verb_handle vh)
 {
+    Var r;
     handle *h = (handle *) vh.ptr;
 
-    if (h && h->definer)
-	return h->definer->id;
+    if (h && h->definer) {
+	if (h->definer->id > NOTHING) {
+	    r.type = TYPE_OBJ;
+	    r.v.obj = h->definer->id;
+	}
+	else {
+	    r.type = TYPE_ANON;
+	    r.v.anon = h->definer;
+	}
+	return r;
+    }
 
     panic("DB_VERB_DEFINER: Null handle!");
-    return 0;
+    return r;
 }
 
 const char *
