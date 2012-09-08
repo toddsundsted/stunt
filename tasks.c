@@ -172,6 +172,13 @@ typedef struct tqueue {
     int num_bg_tasks;		/* in either here or waiting_tasks */
     char *output_prefix, *output_suffix;
     const char *flush_cmd;
+
+    /* Used in emergency mode and when handling the `.program'
+     * intrinsic command.  `program_object' _could_ be changed to hold
+     * a reference to either a permanent or anonymous object, however
+     * the reader only handles object numbers, so for now we leave
+     * it as an `Objid'.
+     */
     Stream *program_stream;
     Objid program_object;
     const char *program_verb;
@@ -613,12 +620,17 @@ start_programming(tqueue * tq, char *argstr)
     db_verb_handle h;
     const char *message, *vname;
 
+    /* `find_verb_for_programming' only finds verbs on permanent
+     * objects (objects identified in the command by object number
+     * literals), thus the assumption below that `db_verb_definer'
+     * will return a reference to a permanent object.
+     */
     h = find_verb_for_programming(tq->player, argstr, &message, &vname);
     notify(tq->player, message);
 
     if (h.ptr) {
 	tq->program_stream = new_stream(100);
-	tq->program_object = db_verb_definer(h);
+	tq->program_object = db_verb_definer(h).v.obj;
 	tq->program_verb = str_dup(vname);
     }
 }
@@ -665,7 +677,7 @@ end_programming(tqueue * tq)
 
 	desc.type = TYPE_STR;
 	desc.v.str = tq->program_verb;
-	h = find_described_verb(tq->program_object, desc);
+	h = find_described_verb(new_obj(tq->program_object), desc);
 
 	if (!h.ptr)
 	    notify(player, "That verb appears to have disappeared ...");
@@ -2064,6 +2076,10 @@ read_task_queue(void)
     return 1;
 }
 
+/* Used in emergency mode and when handling the `.program' intrinsic
+ * command.  Is only capable of finding verbs defined on permanent
+ * objects (relies on `Objid' internally).
+ */
 db_verb_handle
 find_verb_for_programming(Objid player, const char *verbref,
 			  const char **message, const char **vname)
@@ -2113,7 +2129,7 @@ find_verb_for_programming(Objid player, const char *verbref,
     }
     desc.type = TYPE_STR;
     desc.v.str = *vname;
-    h = find_described_verb(oid, desc);
+    h = find_described_verb(new_obj(oid), desc);
     free_str(copy);
 
     if (!h.ptr)
