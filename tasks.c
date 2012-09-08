@@ -677,7 +677,7 @@ end_programming(tqueue * tq)
 
 	desc.type = TYPE_STR;
 	desc.v.str = tq->program_verb;
-	h = find_described_verb(tq->program_object, desc);
+	h = find_described_verb(new_obj(tq->program_object), desc);
 
 	if (!h.ptr)
 	    notify(player, "That verb appears to have disappeared ...");
