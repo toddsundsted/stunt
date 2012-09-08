@@ -2244,13 +2244,12 @@ list_for_forked_task(forked_task ft)
     list.v.list[2].type = TYPE_INT;
     list.v.list[2].v.num = ft.start_time;
     list.v.list[3].type = TYPE_INT;
-    list.v.list[3].v.num = 0;	/* OBSOLETE: was clock ID */
+    list.v.list[3].v.num = 0;			/* OBSOLETE: was clock ID */
     list.v.list[4].type = TYPE_INT;
     list.v.list[4].v.num = DEFAULT_BG_TICKS;	/* OBSOLETE: was clock ticks */
     list.v.list[5].type = TYPE_OBJ;
     list.v.list[5].v.obj = ft.a.progr;
-    list.v.list[6].type = TYPE_OBJ;
-    list.v.list[6].v.obj = ft.a.vloc;
+    list.v.list[6] = var_ref(ft.a.vloc);
     list.v.list[7].type = TYPE_STR;
     list.v.list[7].v.str = str_ref(ft.a.verbname);
     list.v.list[8].type = TYPE_INT;
@@ -2285,13 +2284,12 @@ list_for_vm(vm the_vm)
     list.v.list[1].v.num = the_vm->task_id;
 
     list.v.list[3].type = TYPE_INT;
-    list.v.list[3].v.num = 0;	/* OBSOLETE: was clock ID */
+    list.v.list[3].v.num = 0;			/* OBSOLETE: was clock ID */
     list.v.list[4].type = TYPE_INT;
     list.v.list[4].v.num = DEFAULT_BG_TICKS;	/* OBSOLETE: was clock ticks */
     list.v.list[5].type = TYPE_OBJ;
     list.v.list[5].v.obj = progr_of_cur_verb(the_vm);
-    list.v.list[6].type = TYPE_OBJ;
-    list.v.list[6].v.obj = top_activ(the_vm).vloc;
+    list.v.list[6] = var_ref(top_activ(the_vm).vloc);
     list.v.list[7].type = TYPE_STR;
     list.v.list[7].v.str = str_ref(top_activ(the_vm).verbname);
     list.v.list[8].type = TYPE_INT;

@@ -126,9 +126,15 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
     for (t = top_activ_stack; t >= 0; t--) {
 	if (t != top_activ_stack)
 	    stream_printf(str, "... called from ");
-	stream_printf(str, "#%d:%s", activ_stack[t].vloc,
-		      activ_stack[t].verbname);
-	if (equality(new_obj(activ_stack[t].vloc), activ_stack[t].this, 0)) {
+
+	if (TYPE_OBJ == activ_stack[t].vloc.type)
+	    stream_printf(str, "#%d:%s", activ_stack[t].vloc.v.obj,
+		          activ_stack[t].verbname);
+	else
+	    stream_printf(str, "!anonymous!:%s",
+		          activ_stack[t].verbname);
+
+	if (equality(activ_stack[t].vloc, activ_stack[t].this, 0)) {
 	    stream_add_string(str, " (this == ");
 	    unparse_value(str, activ_stack[t].this);
 	    stream_add_string(str, ")");
@@ -420,8 +426,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 	    v.v.list[2].v.str = str_ref(stack[i].verb);
 	    v.v.list[3].type = TYPE_OBJ;
 	    v.v.list[3].v.obj = stack[i].progr;
-	    v.v.list[4].type = TYPE_OBJ;
-	    v.v.list[4].v.obj = stack[i].vloc;
+	    v.v.list[4] = var_ref(stack[i].vloc);
 	    v.v.list[5].type = TYPE_OBJ;
 	    v.v.list[5].v.obj = stack[i].player;
 	    if (line_numbers_too) {
@@ -608,10 +613,10 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
     if (do_pass) {
 	Objid where;
 
-	if (!valid(RUN_ACTIV.vloc))
+	if (!is_valid(RUN_ACTIV.vloc))
 	    return E_INVIND;
 
-	Var parents = db_object_parents(RUN_ACTIV.vloc);
+	Var parents = db_object_parents2(RUN_ACTIV.vloc);
 
 	if (TYPE_LIST == parents.type) {
 	  if (listlength(parents) == 0)
@@ -660,7 +665,7 @@ call_verb2(Objid recv, const char *vname, Var this, Var args, int do_pass)
     RUN_ACTIV.this = var_ref(this);
     RUN_ACTIV.progr = db_verb_owner(h);
     RUN_ACTIV.recv = recv;
-    RUN_ACTIV.vloc = db_verb_definer(h);
+    RUN_ACTIV.vloc = var_ref(db_verb_definer(h));
     RUN_ACTIV.verb = str_ref(vname);
     RUN_ACTIV.verbname = str_ref(db_verb_names(h));
     RUN_ACTIV.debug = (db_verb_flags(h) & VF_DEBUG);
@@ -2716,7 +2721,7 @@ do_server_program_task(Var this, Objid recv, const char *verb, Var args, Objid v
     RUN_ACTIV.player = player;
     RUN_ACTIV.progr = progr;
     RUN_ACTIV.recv = recv;
-    RUN_ACTIV.vloc = vloc;
+    RUN_ACTIV.vloc = new_obj(vloc);
     RUN_ACTIV.verb = str_dup(verb);
     RUN_ACTIV.verbname = str_dup(verbname);
     RUN_ACTIV.debug = debug;
@@ -2750,7 +2755,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     RUN_ACTIV.player = user;
     RUN_ACTIV.progr = db_verb_owner(vh);
     RUN_ACTIV.recv = recv;
-    RUN_ACTIV.vloc = db_verb_definer(vh);
+    RUN_ACTIV.vloc = var_ref(db_verb_definer(vh));
     RUN_ACTIV.verb = str_ref(pc->verb);
     RUN_ACTIV.verbname = str_ref(db_verb_names(vh));
     RUN_ACTIV.debug = (db_verb_flags(vh) & VF_DEBUG);
@@ -2811,7 +2816,7 @@ setup_activ_for_eval(Program * prog)
     RUN_ACTIV.player = CALLER_ACTIV.player;
     RUN_ACTIV.progr = CALLER_ACTIV.progr;
     RUN_ACTIV.recv = NOTHING;
-    RUN_ACTIV.vloc = NOTHING;
+    RUN_ACTIV.vloc = var_ref(nothing);
     RUN_ACTIV.verb = str_dup("");
     RUN_ACTIV.verbname = str_dup("Input to EVAL");
     RUN_ACTIV.debug = 1;
@@ -3149,8 +3154,9 @@ write_activ_as_pi(activation a)
     dbio_write_var(dummy);
 
     dbio_write_var(a.this);
+    dbio_write_var(a.vloc);
     dbio_printf("%d %d %d %d %d %d %d %d %d\n",
-	    a.recv, -7, -8, a.player, -9, a.progr, a.vloc, -10, a.debug);
+	    a.recv, -7, -8, a.player, -9, a.progr, -10, -11, a.debug);
     dbio_write_string("No");
     dbio_write_string("More");
     dbio_write_string("Parse");
@@ -3162,14 +3168,16 @@ write_activ_as_pi(activation a)
 int
 read_activ_as_pi(activation * a)
 {
-    int dummy;
+    int dummy, vloc_oid;
     char c;
 
     free_var(dbio_read_var());
 
-    Var this;
+    Var this, vloc;
     if (dbio_input_version >= DBV_This)
 	this = dbio_read_var();
+    if (dbio_input_version >= DBV_Anon)
+	vloc = dbio_read_var();
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'
      * assignment-suppression syntax of `scanf' because it allows more
@@ -3179,20 +3187,27 @@ read_activ_as_pi(activation * a)
      */
     if (dbio_scanf("%d %d %d %d %d %d %d %d %d%c",
 		 &a->recv, &dummy, &dummy, &a->player, &dummy, &a->progr,
-		   &a->vloc, &dummy, &a->debug, &c) != 10
+		   &vloc_oid, &dummy, &a->debug, &c) != 10
 	|| c != '\n') {
 	if (dbio_input_version >= DBV_This)
 	    free_var(this);
+	if (dbio_input_version >= DBV_Anon)
+	    free_var(vloc);
 	errlog("READ_A: Bad numbers.\n");
 	return 0;
     }
 
-    /* Earlier versions of the database use the receiver for this.
+    /* Earlier versions of the database use `recv' for `this' and
+     * write `vloc' as an object number.
      */
-    if (dbio_input_version >= DBV_This)
-	a->this = this;
-    else
+    if (dbio_input_version < DBV_This)
 	a->this = new_obj(a->recv);
+    else
+	a->this = this;
+    if (dbio_input_version < DBV_Anon)
+	a->vloc = new_obj(vloc_oid);
+    else
+	a->vloc = vloc;
 
     dbio_read_string();		/* was argstr */
     dbio_read_string();		/* was dobjstr */

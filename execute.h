@@ -45,17 +45,16 @@ typedef struct {
     void *bi_func_data;
     Var temp;			/* VM's temp register */
 
-    /* `this' is the value on which the verb was invoked.  `recv' is
-     * the object number of the receiver of the verb invocation (the
-     * object number of the handler in the case of primitive values),
-     * and 'vloc' is the object number of the object on which the verb
-     * is actually defined.
+    /* `this' is the value on which the verb was invoked and 'vloc' is
+     * the object on which the verb is actually defined.  `recv' is
+     * the object number of the receiver of the verb invocation -- the
+     * object number of the handler in the case of primitive values.
      */
     Var this;
     Objid player;
     Objid progr;
     Objid recv;
-    Objid vloc;
+    Var vloc;
     const char *verb;
     const char *verbname;
     int debug;
