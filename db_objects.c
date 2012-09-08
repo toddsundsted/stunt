@@ -359,6 +359,7 @@ void
 db_destroy_anonymous_object(void *obj)
 {
     Object *o = (Object *)obj;
+    Verbdef *v, *w;
 
     free_str(o->name);
     o->name = NULL;
@@ -367,6 +368,16 @@ db_destroy_anonymous_object(void *obj)
 
     if (o->propval)
 	myfree(o->propval, M_PVAL);
+    if (o->propdefs.l)
+	myfree(o->propdefs.l, M_PROPDEF);
+
+    for (v = o->verbdefs; v; v = w) {
+	if (v->program)
+	    free_program(v->program);
+	free_str(v->name);
+	w = v->next;
+	myfree(v, M_VERBDEF);
+    }
 
     myfree(o, M_ANON);
 }
