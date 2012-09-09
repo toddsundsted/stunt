@@ -1785,7 +1785,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
 
     h = db_find_callable_verb(what, verb);
     if (h.ptr)
-	return do_server_verb_task(what, (TYPE_OBJ == what.type) ? what.v.obj : NOTHING, verb, args, h, player, argstr,
+	return do_server_verb_task(what, verb, args, h, player, argstr,
 				   result, 1/*traceback*/);
     else {
 	/* simulate an empty verb */
@@ -1808,7 +1808,7 @@ run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
     current_task_id = new_task_id();
     current_local = new_map();
 
-    enum outcome ret = do_server_program_task(new_obj(this), this, verb, args, vloc, verbname, program,
+    enum outcome ret = do_server_program_task(new_obj(this), verb, args, new_obj(vloc), verbname, program,
                                               progr, debug, player, argstr,
                                               result, 1/*traceback*/);
 
