@@ -297,6 +297,10 @@ module MooSupport
 
   ### Operations on Properties
 
+  def properties(object)
+    simplify command %Q|; return properties(#{obj_ref(object)});|
+  end
+
   def add_property(object, property, value, property_info)
     property_info = property_info_to_s(property_info)
     simplify command %Q|; return add_property(#{obj_ref(object)}, #{value_ref(property)}, #{value_ref(value)}, #{property_info});|
@@ -311,6 +315,10 @@ module MooSupport
     simplify command %Q|; return set_property_info(#{obj_ref(object)}, #{value_ref(property)}, #{property_info});|
   end
 
+  def is_clear_property(object, property)
+    simplify command %Q|; return is_clear_property(#{obj_ref(object)}, #{value_ref(property)});|
+  end
+
   def clear_property(object, property)
     simplify command %Q|; return clear_property(#{obj_ref(object)}, #{value_ref(property)});|
   end
@@ -321,14 +329,22 @@ module MooSupport
 
   ### Operations on Verbs
 
+  def verbs(object)
+    simplify command %Q|; return verbs(#{obj_ref(object)});|
+  end
+
   def add_verb(object, verb_info, verb_args)
     verb_info = verb_info_to_s(verb_info)
     verb_args = verb_args_to_s(verb_args)
     simplify command %Q|; return add_verb(#{obj_ref(object)}, #{verb_info}, #{verb_args});|
   end
 
-  def delete_verb(object, verb)
-    simplify command %Q|; return delete_verb(#{obj_ref(object)}, #{value_ref(verb)});|
+  def verb_info(object, verb)
+    simplify command %Q|; return verb_info(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def verb_args(object, verb)
+    simplify command %Q|; return verb_args(#{obj_ref(object)}, #{value_ref(verb)});|
   end
 
   def set_verb_info(object, verb, verb_info)
@@ -341,14 +357,31 @@ module MooSupport
     simplify command %Q|; return set_verb_args(#{obj_ref(object)}, #{value_ref(verb)}, #{verb_args});|
   end
 
-  def set_verb_code(object, verb, &verb_code)
-    vc = []
-    yield vc
-    verb_code = ''
-    vc.each { |v| verb_code << v.inspect << ',' }
-    verb_code = verb_code.empty? ? '{,' : '{' + verb_code
-    verb_code[-1] = '}'
-    simplify command %Q|; return set_verb_code(#{object}, #{value_ref(verb)}, #{verb_code});|
+  def verb_code(object, verb)
+    simplify command %Q|; return verb_code(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def set_verb_code(object, verb, vc = [])
+    if block_given?
+      yield vc
+    end
+    code = ''
+    vc.each { |v| code << v.inspect << ',' }
+    code = code.empty? ? '{,' : '{' + code
+    code[-1] = '}'
+    simplify command %Q|; return set_verb_code(#{object}, #{value_ref(verb)}, #{code});|
+  end
+
+  def delete_verb(object, verb)
+    simplify command %Q|; return delete_verb(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def respond_to(object, verb)
+    simplify command %Q|; return respond_to(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def disassemble(object, verb)
+    simplify command %Q|; return disassemble(#{obj_ref(object)}, #{value_ref(verb)});|
   end
 
   ## Operations on Network Connections
