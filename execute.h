@@ -101,12 +101,12 @@ extern enum outcome do_forked_task(Program * prog, Var * rt_env,
 				   activation a, int f_id);
 extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
 				  Objid recv, db_verb_handle vh);
-extern enum outcome do_server_verb_task(Var this, Objid recv, const char *verb,
+extern enum outcome do_server_verb_task(Var this, const char *verb,
 					Var args, db_verb_handle h,
 					Objid player, const char *argstr,
 					Var * result, int do_db_tracebacks);
-extern enum outcome do_server_program_task(Var this, Objid recv, const char *verb,
-					   Var args, Objid vloc,
+extern enum outcome do_server_program_task(Var this, const char *verb,
+					   Var args, Var vloc,
 					   const char *verbname,
 					   Program * program, Objid progr,
 					   int debug, Objid player,
