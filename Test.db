@@ -1,5 +1,5 @@
 ** LambdaMOO Database, Format Version 4 **
-6
+7
 4
 0
 2
@@ -29,12 +29,13 @@ handle_task_timeout
 3
 172
 -1
-4
+5
 nothing
 system
 object
+anonymous
 server_options
-4
+5
 1
 -1
 4
@@ -49,6 +50,10 @@ server_options
 1
 1
 5
+3
+1
+1
+6
 3
 1
 #1
@@ -112,6 +117,20 @@ Programmer
 0
 0
 #5
+Anonymous Class
+
+256
+3
+-1
+-1
+-1
+1
+-1
+6
+0
+0
+0
+#6
 Server Options
 
 0
@@ -127,6 +146,13 @@ Server Options
 0
 #0:0
 if ((args && (length(args) == 1)) && (args[1] == "shutdown"))
+reset_max_object();
+while (max_object() > #6)
+ticks_left() < 2000 || seconds_left() < 2 && suspend(0);
+`recycle(max_object()) ! ANY';
+reset_max_object();
+endwhile
+boot_player(player);
 shutdown();
 endif
 if ((args && (length(args) > 1)) && (args[1] == "connect"))

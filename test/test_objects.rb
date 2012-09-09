@@ -98,11 +98,9 @@ class TestObject < Test::Unit::TestCase
   def test_create_errors
     run_test_as('wizard') do
       assert_equal E_ARGS, create()
-      assert_equal E_ARGS, create(1, 2, 3)
       assert_equal E_TYPE, create(1)
       assert_equal E_TYPE, create('1')
       assert_equal E_TYPE, create(1, 2)
-      assert_equal E_TYPE, create(:object, 2)
       assert_equal E_TYPE, create(:object, '2')
 
       #assert_equal E_PERM, create(AMBIGUOUS_MATCH)
