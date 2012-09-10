@@ -406,7 +406,7 @@ parents_ok(Object *o)
     }
     else {
 	Objid oid = o->parents.v.obj;
-	if (!valid(oid) || objects[oid]->nonce > o->nonce) {
+	if (NOTHING != oid && (!valid(oid) || objects[oid]->nonce > o->nonce)) {
 	    dbpriv_set_object_flag(o, FLAG_INVALID);
 	    return 0;
 	}
