@@ -2,7 +2,19 @@ require 'test_helper'
 
 class TestAnonymous < Test::Unit::TestCase
 
-  def test_that_anonymous_objects_can_have_parents
+  def test_that_anonymous_objects_created_from_nothing_are_valid
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return valid(create($nothing, 1));"))
+    end
+  end
+
+  def test_that_anonymous_objects_created_from_an_empty_list_are_valid
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return valid(create({}, 1));"))
+    end
+  end
+
+  def test_that_anonymous_objects_have_parents
     run_test_as('programmer') do
       x = create(:nothing)
       a = create(x)
