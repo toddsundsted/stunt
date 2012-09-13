@@ -429,41 +429,38 @@ bf_create_read(void)
 
 static package
 bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (OBJ what, OBJ|LIST new_parent) */
-    if (!is_obj_or_list_of_objs(arglist.v.list[2])) {
+{				/* (OBJ obj, OBJ|LIST what) */
+    Var obj = arglist.v.list[1];
+    Var what = arglist.v.list[2];
+
+    if (!is_object(obj) || !is_obj_or_list_of_objs(what)) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
 
-    Objid what = arglist.v.list[1].v.obj;
-
-    if (!valid(what)
-	|| (arglist.v.list[2].type == TYPE_OBJ
-	    && !valid(arglist.v.list[2].v.obj)
-	    && arglist.v.list[2].v.obj != NOTHING)
-	|| (arglist.v.list[2].type == TYPE_LIST
-	    && !all_valid(arglist.v.list[2]))) {
+    if (!is_valid(obj)
+	|| (what.type == TYPE_OBJ && !valid(what.v.obj)
+	    && what.v.obj != NOTHING)
+	|| (what.type == TYPE_LIST
+	    && !all_valid(what))) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    else if (!controls(progr, what)
-	     || (arglist.v.list[2].type == TYPE_OBJ
-		 && valid(arglist.v.list[2].v.obj)
-		 && !db_object_allows(arglist.v.list[2], progr, FLAG_FERTILE))
-	     || (arglist.v.list[2].type == TYPE_LIST
-		 && !all_allowed(arglist.v.list[2], progr, FLAG_FERTILE))) {
+    else if (!controls2(progr, obj)
+	     || (what.type == TYPE_OBJ && valid(what.v.obj)
+		 && !db_object_allows(what, progr, FLAG_FERTILE))
+	     || (what.type == TYPE_LIST
+		 && !all_allowed(what, progr, FLAG_FERTILE))) {
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
-    else if ((arglist.v.list[2].type == TYPE_OBJ
-	      && is_a_descendant(arglist.v.list[2], arglist.v.list[1]))
-	     || (arglist.v.list[2].type == TYPE_LIST
-		 && any_are_descendants(arglist.v.list[2], arglist.v.list[1]))) {
+    else if ((what.type == TYPE_OBJ && is_a_descendant(what, obj))
+	     || (what.type == TYPE_LIST && any_are_descendants(what, obj))) {
 	free_var(arglist);
 	return make_error_pack(E_RECMOVE);
     }
     else {
-	if (!db_change_parent(what, arglist.v.list[2])) {
+	if (!db_change_parents(obj, what)) {
 	    free_var(arglist);
 	    return make_error_pack(E_INVARG);
 	}
@@ -899,8 +896,10 @@ register_objects(void)
 				      TYPE_ANY);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_OBJ);
     register_function("valid", 1, 1, bf_valid, TYPE_ANY);
-    register_function("chparents", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_LIST);
-    register_function("chparent", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_OBJ);
+    register_function("chparents", 2, 2, bf_chparent_chparents,
+		      TYPE_ANY, TYPE_LIST);
+    register_function("chparent", 2, 2, bf_chparent_chparents,
+		      TYPE_ANY, TYPE_OBJ);
     register_function("parents", 1, 1, bf_parents, TYPE_ANY);
     register_function("parent", 1, 1, bf_parent, TYPE_ANY);
     register_function("children", 1, 1, bf_children, TYPE_ANY);

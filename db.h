@@ -228,12 +228,12 @@ extern int db_for_all_children(Objid,
 				 *      db_renumber_object()
 				 *      db_change_parent()
 				 */
-extern int db_change_parent(Objid oid, Var parents);
-				/* db_change_parent() returns true (and
-				 * actually changes the parent of OID) iff
-				 * neither OID nor any of its descendents
+extern int db_change_parents(Var obj, Var parents);
+				/* db_change_parents() returns true (and
+				 * actually changes the parent of OBJ) iff
+				 * neither OBJ nor any of its descendents
 				 * defines any properties with the same names
-				 * as properties defined on PARENT or any of
+				 * as properties defined on PARENTS or any of
 				 * its ancestors.
 				 */
 
