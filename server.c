@@ -745,6 +745,7 @@ emergency_mode()
 	    if (!is_wizard(wizard)) {
 		if (first_valid < 0) {
 		    first_valid = db_create_object();
+		    db_change_parents(new_obj(first_valid), new_list(0));
 		    printf("** No objects in database; created #%d.\n",
 			   first_valid);
 		}

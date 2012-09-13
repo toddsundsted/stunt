@@ -47,7 +47,7 @@ dbpriv_count_properties(Objid oid)
     if (NOTHING == oid)
 	return 0;
 
-    ancestors = db_ancestors(oid, true);
+    ancestors = db_ancestors(new_obj(oid), true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	o = dbpriv_find_object(ancestor.v.obj);
@@ -62,9 +62,9 @@ dbpriv_count_properties(Objid oid)
 int
 dbpriv_count_properties2(const Object *o)
 {
-    Object *a;
     Var ancestor, ancestors;
-    int i, c, nprops = 0;
+    int i, nprops = 0;
+    Object *a;
 
     if (NULL == o)
 	return 0;
@@ -73,16 +73,11 @@ dbpriv_count_properties2(const Object *o)
 
     ancestors = enlist_var(var_ref(o->parents));
 
-    while (listlength(ancestors) > 0) {
-	POP_TOP(ancestor, ancestors);
-
-	if (NOTHING == ancestor.v.obj)
+    for (i = 1; i <= listlength(ancestors) && (ancestor = ancestors.v.list[i], 1); i++) {
+	if (!valid(ancestor.v.obj))
 	    continue;
-
 	a = dbpriv_find_object(ancestor.v.obj);
-
 	ancestors = listconcat(ancestors, enlist_var(var_ref(a->parents)));
-
 	nprops += a->propdefs.cur_length;
     }
 
@@ -102,7 +97,7 @@ properties_offset(Objid target, Objid this)
     int i, c, offset = 0;
     Object *o;
 
-    ancestors = db_ancestors(this, true);
+    ancestors = db_ancestors(new_obj(this), true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	if (target == ancestor.v.obj)
@@ -190,31 +185,9 @@ insert_prop2(Object *o, int pos, Pval pval)
 static void
 insert_prop(Objid oid, int pos, Pval pval)
 {
-    Object *o;
-    Pval *new_propval;
-    int i, nprops;
+    Object *o = dbpriv_find_object(oid);
 
-    nprops = dbpriv_count_properties(oid);
-    new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
-
-    o = dbpriv_find_object(oid);
-
-    dbpriv_assign_nonce(o);
-
-    for (i = 0; i < pos; i++)
-	new_propval[i] = o->propval[i];
-
-    new_propval[pos] = pval;
-    new_propval[pos].var = var_ref(pval.var);
-    if (new_propval[pos].perms & PF_CHOWN)
-	new_propval[pos].owner = o->owner;
-
-    for (i = pos + 1; i < nprops; i++)
-	new_propval[i] = o->propval[i - 1];
-
-    if (o->propval)
-	myfree(o->propval, M_PVAL);
-    o->propval = new_propval;
+    insert_prop2(o, pos, pval);
 }
 
 static void
@@ -225,7 +198,7 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
     pv.var.type = TYPE_CLEAR;	/* do after initial insert_prop so only
 				   children will be TYPE_CLEAR */
 
-    Var descendant, descendants = db_descendants(root, false);
+    Var descendant, descendants = db_descendants(new_obj(root), false);
     int i, c, offset = 0;
     int offsets[listlength(descendants)];
 
@@ -346,29 +319,9 @@ remove_prop2(Object *o, int pos)
 static void
 remove_prop(Objid oid, int pos)
 {
-    Object *o;
-    Pval *new_propval;
-    int i, nprops;
+    Object *o = dbpriv_find_object(oid);
 
-    o = dbpriv_find_object(oid);
-    nprops = dbpriv_count_properties(oid);
-
-    dbpriv_assign_nonce(o);
-
-    free_var(o->propval[pos].var);	/* free deleted property */
-
-    if (nprops) {
-	new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
-	for (i = 0; i < pos; i++)
-	    new_propval[i] = o->propval[i];
-	for (i = pos; i < nprops; i++)
-	    new_propval[i] = o->propval[i + 1];
-    } else
-	new_propval = 0;
-
-    if (o->propval)
-	myfree(o->propval, M_PVAL);
-    o->propval = new_propval;
+    remove_prop2(o, pos);
 }
 
 static void
@@ -376,7 +329,7 @@ remove_prop_recursively(Objid root, int prop_pos)
 {
     remove_prop(root, prop_pos);
 
-    Var descendant, descendants = db_descendants(root, false);
+    Var descendant, descendants = db_descendants(new_obj(root), false);
     int i, c, offset = 0;
     int offsets[listlength(descendants)];
 

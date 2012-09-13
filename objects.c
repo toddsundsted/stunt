@@ -360,7 +360,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 
 	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
 
-	    if (!db_change_parent(oid, arglist.v.list[1])) {
+	    if (!db_change_parents(new_obj(oid), arglist.v.list[1])) {
 		db_destroy_object(oid);
 		db_set_last_used_objid(last);
 		free_var(arglist);
@@ -711,7 +711,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    Var cp = db_object_parents(c);
 	    Var op = db_object_parents(oid);
 	    if (is_obj(cp)) {
-		db_change_parent(c, op);
+		db_change_parents(new_obj(c), op);
 	    }
 	    else {
 		int i = 1;
@@ -736,12 +736,12 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 		    new = setadd(new, var_ref(cp.v.list[i]));
 		    i++;
 		}
-		db_change_parent(c, new);
+		db_change_parents(new_obj(c), new);
 		free_var(new);
 	    }
 	}
 
-	db_change_parent(oid, nothing);
+	db_change_parents(new_obj(oid), nothing);
 
 	/* Finish the demolition. */
 	incr_quota(db_object_owner(oid));
