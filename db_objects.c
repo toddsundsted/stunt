@@ -182,8 +182,6 @@ dbpriv_new_recycled_object(void)
 void
 db_init_object(Object *o)
 {
-    dbpriv_assign_nonce(o);
-
     o->name = str_dup("");
     o->flags = 0;
 
@@ -637,9 +635,6 @@ db_##name(Var obj, bool full)						\
     int n, i = 0;							\
     Var list;								\
 									\
-    if (!is_valid(obj))							\
-	return new_list(0);						\
-									\
     o = dbpriv_dereference(obj);					\
     if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) ||	\
 	(o->field.type == TYPE_LIST && listlength(o->field) == 0))	\
@@ -833,15 +828,17 @@ check_for_duplicate_parents(Var parents)
 }
 
 int
-db_change_parent(Objid oid, Var new_parents)
+db_change_parents(Var obj, Var new_parents)
 {
     if (!check_for_duplicate_parents(new_parents))
 	return 0;
 
-    if (!dbpriv_check_properties_for_chparent(oid, new_parents))
+    if (!dbpriv_check_properties_for_chparent(obj, new_parents))
 	return 0;
 
-    if (listlength(objects[oid]->children) == 0 && objects[oid]->verbdefs == NULL) {
+    Object *o = dbpriv_dereference(obj);
+
+    if (listlength(o->children) == 0 && o->verbdefs == NULL) {
 	/* Since this object has no children and no verbs, we know that it
 	   can't have had any part in affecting verb lookup, since we use first
 	   parent with verbs as a key in the verb lookup cache. */
@@ -854,35 +851,43 @@ db_change_parent(Objid oid, Var new_parents)
 	db_priv_affected_callable_verb_lookup();
     }
 
-    Var me = new_obj(oid);
-    Var old_parents = objects[oid]->parents;
+    Var old_parents = o->parents;
 
     /* save this; we need it later */
-    Var old_ancestors = db_ancestors(oid, true);
+    Var old_ancestors = db_ancestors(obj, true);
 
-    Var parent;
-    int i, c;
+    /* only adjust the parent's children for permanent objects */
+    if (TYPE_OBJ == obj.type) {
+	Var parent;
+	int i, c;
 
-    /* Remove me from my old parents' children. */
-    if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
-	objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, me);
-    else if (old_parents.type == TYPE_LIST)
-	FOR_EACH(parent, old_parents, i, c)
-	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
+	/* remove me/obj from my old parents' children */
+	if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
+	    objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, obj);
+	else if (old_parents.type == TYPE_LIST)
+	    FOR_EACH(parent, old_parents, i, c)
+		objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, obj);
 
-    /* Add me to my new parents' children. */
-    if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
-	objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, me);
-    else if (new_parents.type == TYPE_LIST)
-	FOR_EACH(parent, new_parents, i, c)
-	    objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, me);
+	/* add me/obj to my new parents' children */
+	if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
+	    objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, obj);
+	else if (new_parents.type == TYPE_LIST)
+	    FOR_EACH(parent, new_parents, i, c)
+		objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, obj);
+    }
 
-    free_var(objects[oid]->parents);
+    free_var(o->parents);
+    o->parents = var_dup(new_parents);
 
-    objects[oid]->parents = var_dup(new_parents);
-    Var new_ancestors = db_ancestors(oid, true);
+    /* Nothing between this point and the completion of
+     * `dbpriv_fix_properties_after_chparent' may call `anon_valid'
+     * because `o' is currently invalid (the nonce is out of date and
+     * the aforementioned call will fix that).
+     */
 
-    dbpriv_fix_properties_after_chparent(oid, old_ancestors, new_ancestors);
+    Var new_ancestors = db_ancestors(obj, true);
+
+    dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors);
 
     free_var(old_ancestors);
     free_var(new_ancestors);
