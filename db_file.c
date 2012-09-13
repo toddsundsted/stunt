@@ -722,11 +722,8 @@ ng_validate_hierarchies()
 	if (o) {
 #           define CHECK(start, func, name)				\
 	    {								\
-		Var tmp;						\
-		tmp.type = TYPE_OBJ;					\
-		tmp.v.obj = start;					\
 		Var all = func(start, false);				\
-		if (ismember(tmp, all, 1)) {				\
+		if (ismember(start, all, 1)) {				\
 			errlog("VALIDATE: Cycle in %s chain of #%d.\n",	\
 			       name, oid);				\
 			broken = 1;					\
@@ -734,8 +731,8 @@ ng_validate_hierarchies()
 		free_var(all);						\
 	    }
 
-	    CHECK(oid, db_ancestors, "parent");
-	    CHECK(oid, db_all_locations, "location");
+	    CHECK(new_obj(oid), db_ancestors, "parent");
+	    CHECK(new_obj(oid), db_all_locations, "location");
 
 #	    undef CHECK
 	}
