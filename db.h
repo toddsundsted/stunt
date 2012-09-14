@@ -192,7 +192,9 @@ extern Var db_all_contents(Var, bool);
 /**** object attributes ****/
 
 extern Objid db_object_owner2(Var);
+
 extern Var db_object_parents2(Var);
+extern Var db_object_children2(Var);
 
 extern Objid db_object_owner(Objid);
 extern void db_set_object_owner(Objid oid, Objid owner);

@@ -689,6 +689,13 @@ db_object_parents2(Var obj)
            db_object_parents(obj.v.obj);
 }
 
+Var
+db_object_children2(Var obj)
+{
+    return (TYPE_ANON == obj.type) ?
+           dbpriv_object_children(obj.v.anon) :
+           db_object_children(obj.v.obj);
+}
 
 int
 db_object_has_flag2(Var obj, db_object_flag f)

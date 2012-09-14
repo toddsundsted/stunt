@@ -538,14 +538,19 @@ bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_children(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
 
-    free_var(arglist);
-
-    if (!valid(oid))
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if (!is_valid(obj)) {
+	free_var(arglist);
 	return make_error_pack(E_INVARG);
-    else
-	return make_var_pack(var_ref(db_object_children(oid)));
+    } else {
+	Var r = var_ref(db_object_children2(obj));
+	free_var(arglist);
+	return make_var_pack(r);
+    }
 }
 
 static package
@@ -898,7 +903,7 @@ register_objects(void)
     register_function("chparent", 2, 2, bf_chparent_chparents, TYPE_OBJ, TYPE_OBJ);
     register_function("parents", 1, 1, bf_parents, TYPE_ANY);
     register_function("parent", 1, 1, bf_parent, TYPE_ANY);
-    register_function("children", 1, 1, bf_children, TYPE_OBJ);
+    register_function("children", 1, 1, bf_children, TYPE_ANY);
     register_function("ancestors", 1, 2, bf_ancestors,
 		      TYPE_ANY, TYPE_ANY);
     register_function("descendants", 1, 2, bf_descendants,
