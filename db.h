@@ -157,7 +157,7 @@ extern int db_object_bytes(Objid);
 				 * properties.
 				 */
 
-extern Var db_ancestors(Objid, bool);
+extern Var db_ancestors(Var, bool);
 				/* Returns a list of the ancestors of the
 				 * given object.  db_ancestors() does not/
 				 * can not free the returned list.  The caller
@@ -165,7 +165,7 @@ extern Var db_ancestors(Objid, bool);
 				 * operating on it.
 				 */
 
-extern Var db_descendants(Objid, bool);
+extern Var db_descendants(Var, bool);
 				/* Returns a list of the descendants of the
 				 * given object.  db_descendants() does not/
 				 * can not free the returned list.  The caller
@@ -173,7 +173,7 @@ extern Var db_descendants(Objid, bool);
 				 * operating on it.
 				 */
 
-extern Var db_all_locations(Objid, bool);
+extern Var db_all_locations(Var, bool);
 				/* Returns a list of all objects that
 				 * contain the given object.
 				 * db_all_locations() does not/can not free the
@@ -181,7 +181,7 @@ extern Var db_all_locations(Objid, bool);
 				 * free it once it has finished operating on it.
 				 */
 
-extern Var db_all_contents(Objid, bool);
+extern Var db_all_contents(Var, bool);
 				/* Returns a list of all objects that are
 				 * contained by the given object.
 				 * db_all_contents() does not/can not free the

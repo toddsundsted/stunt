@@ -81,7 +81,7 @@ all_allowed(Var vars, Objid progr, db_object_flag f)
 static bool
 is_a_descendant(Var this, Var obj)
 {
-    Var descendants = db_descendants(obj.v.obj, true);
+    Var descendants = db_descendants(obj, true);
     int ret = ismember(this, descendants, 1);
     free_var(descendants);
     return ret ? true : false;
@@ -93,7 +93,7 @@ is_a_descendant(Var this, Var obj)
 static bool
 any_are_descendants(Var these, Var obj)
 {
-    Var this, descendants = db_descendants(obj.v.obj, true);
+    Var this, descendants = db_descendants(obj, true);
     int i, c, ret;
     FOR_EACH(this, these, i, c) {
 	ret = ismember(this, descendants, 1);
@@ -551,29 +551,39 @@ bf_children(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_ancestors(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
-    free_var(arglist);
-
-    if (!valid(oid))
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if (!is_valid(obj)) {
+	free_var(arglist);
 	return make_error_pack(E_INVARG);
-    else
-	return make_var_pack(db_ancestors(oid, full));
+    } else {
+	Var r = db_ancestors(obj, full);
+	free_var(arglist);
+	return make_var_pack(r);
+    }
 }
 
 static package
 bf_descendants(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Var obj = arglist.v.list[1];
     bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
-    free_var(arglist);
-
-    if (!valid(oid))
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if (!is_valid(obj)) {
+	free_var(arglist);
 	return make_error_pack(E_INVARG);
-    else
-	return make_var_pack(db_descendants(oid, full));
+    } else {
+	Var r = db_descendants(obj, full);
+	free_var(arglist);
+	return make_var_pack(r);
+    }
 }
 
 static int
@@ -889,8 +899,10 @@ register_objects(void)
     register_function("parents", 1, 1, bf_parents, TYPE_ANY);
     register_function("parent", 1, 1, bf_parent, TYPE_ANY);
     register_function("children", 1, 1, bf_children, TYPE_OBJ);
-    register_function("ancestors", 1, 2, bf_ancestors, TYPE_OBJ, TYPE_ANY);
-    register_function("descendants", 1, 2, bf_descendants, TYPE_OBJ, TYPE_ANY);
+    register_function("ancestors", 1, 2, bf_ancestors,
+		      TYPE_ANY, TYPE_ANY);
+    register_function("descendants", 1, 2, bf_descendants,
+		      TYPE_ANY, TYPE_ANY);
     register_function("max_object", 0, 0, bf_max_object);
     register_function("players", 0, 0, bf_players);
     register_function("is_player", 1, 1, bf_is_player, TYPE_OBJ);
