@@ -574,23 +574,28 @@ db_object_bytes(Objid oid)
  * the correct length, but that would require one more round of bit
  * array bookkeeping.
  */
+/* The following implementations depend on the fact that an object
+ * cannot appear in its own ancestors, descendants, location/contents
+ * hierarchy.  It also depends on the fact that an anonymous object
+ * cannot appear in any other object's hierarchies.  Consequently,
+ * we don't set a bit for the root object (which may not have an id).
+ */
 
 #define ARRAY_SIZE_IN_BYTES (array_size / 8)
 #define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
 
 #define DEFUNC(name, field)						\
-static									\
-int32 db1_##name(Object *o)						\
+									\
+static int								\
+db1_##name(Object *o)							\
 {									\
-    int i, c;								\
+    int i, c, n = 0;							\
     Var tmp, field = enlist_var(var_ref(o->field));			\
     Object *o2;								\
     Objid oid;								\
-    int32 n = 0;							\
 									\
     FOR_EACH(tmp, field, i, c) {					\
-	oid = tmp.v.obj;						\
-	if (valid(oid)) {						\
+	if (valid(oid = tmp.v.obj)) {					\
 	    o2 = dbpriv_find_object(oid);				\
 	    n += db1_##name(o2) + 1;					\
 	}								\
@@ -600,8 +605,9 @@ int32 db1_##name(Object *o)						\
 									\
     return n;								\
 }									\
-static									\
-void db2_##name(Object *o, Var *plist, int *px)				\
+									\
+static void								\
+db2_##name(Object *o, Var *plist, int *px)				\
 {									\
     int i, c;								\
     Var tmp, field = enlist_var(var_ref(o->field));			\
@@ -609,11 +615,12 @@ void db2_##name(Object *o, Var *plist, int *px)				\
     Objid oid;								\
 									\
     FOR_EACH(tmp, field, i, c) {					\
-	oid = tmp.v.obj;						\
-	if (valid(oid)) {						\
+	if (valid(oid = tmp.v.obj)) {					\
 	    if (bit_is_false(bit_array, oid)) {				\
 		bit_true(bit_array, oid);				\
-		plist->v.list[++(*px)] = new_obj(oid);			\
+		++(*px);						\
+		plist->v.list[*px].type = TYPE_OBJ;			\
+		plist->v.list[*px].v.obj = oid;				\
 		o2 = dbpriv_find_object(oid);				\
 		db2_##name(o2, plist, px);				\
 	    }								\
@@ -623,28 +630,29 @@ void db2_##name(Object *o, Var *plist, int *px)				\
     free_var(field);							\
 }									\
 									\
-Var db_##name(Objid oid, bool full)					\
+Var									\
+db_##name(Var obj, bool full)						\
 {									\
-    if (oid == NOTHING)							\
+    Object *o;								\
+    int n, i = 0;							\
+    Var list;								\
+									\
+    if (!is_valid(obj))							\
 	return new_list(0);						\
 									\
-    Object *o = dbpriv_find_object(oid);				\
-									\
+    o = dbpriv_dereference(obj);					\
     if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) ||	\
 	(o->field.type == TYPE_LIST && listlength(o->field) == 0))	\
-	return full ? enlist_var(new_obj(oid)) : new_list(0);		\
+	return full ? enlist_var(var_ref(obj)) : new_list(0);		\
 									\
-    int32 n = db1_##name(o) + (full ? 1 : 0);				\
+    n = db1_##name(o) + (full ? 1 : 0);					\
+									\
+    list = new_list(n);							\
 									\
     CLEAR_BIT_ARRAY();							\
 									\
-    Var list = new_list(n);						\
-    int i = 0;								\
-									\
-    if (full) {								\
-	list.v.list[++i] = new_obj(oid);				\
-	bit_true(bit_array, oid);					\
-    }									\
+    if (full)								\
+	list.v.list[++i] = var_ref(obj);				\
 									\
     db2_##name(o, &list, &i);						\
 									\
