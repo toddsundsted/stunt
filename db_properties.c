@@ -480,8 +480,8 @@ get_bi_value(db_prop_handle h, Var * value)
 db_prop_handle
 db_find_property(Var obj, const char *name, Var *value)
 {
-    if (TYPE_OBJ != obj.type && TYPE_ANON != obj.type)
-	panic("DB_FIND_PROPERTY: Not an object!");
+    Object *o = dbpriv_dereference(obj);
+    int hash = str_hash(name);
 
     static struct {
 	const char *name;
@@ -493,10 +493,8 @@ db_find_property(Var obj, const char *name, Var *value)
 #undef _ENTRY
     };
     static int ptable_init = 0;
-    int hash = str_hash(name);
-    int i, n;
     db_prop_handle h;
-    Object *o;
+    int i, n;
 
     if (!ptable_init) {
 	for (i = 0; i < Arraysize(ptable); i++)
@@ -506,10 +504,6 @@ db_find_property(Var obj, const char *name, Var *value)
 
     h.definer = 0;
     h.ptr = 0;
-
-    o = (TYPE_OBJ == obj.type) ?
-        dbpriv_find_object(obj.v.obj) :
-        obj.v.anon;
 
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !mystrcasecmp(name, ptable[i].name)) {
@@ -538,16 +532,14 @@ db_find_property(Var obj, const char *name, Var *value)
 	}
 
     Object *t;
-    Var ancestor, ancestors = enlist_var(var_ref(o->parents));
+    Var ancestor, ancestors = db_ancestors(obj, false);
+    int ai, ac;
 
-    while (listlength(ancestors) > 0) {
-	POP_TOP(ancestor, ancestors);
-	if (ancestor.v.obj == NOTHING)
+    FOR_EACH(ancestor, ancestors, ai, ac) {
+	if (!is_valid(ancestor))
 	    continue;
 
-	t = dbpriv_find_object(ancestor.v.obj);
-
-	ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
+	t = dbpriv_dereference(ancestor);
 
 	props = &(t->propdefs);
 	defs = props->l;
