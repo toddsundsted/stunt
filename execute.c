@@ -776,22 +776,22 @@ do {						\
     RUN_ACTIV.top_rt_stack = rts;		\
 } while (0)
 
-#define RAISE_ERROR(the_err) 			\
-do {						\
-    if (RUN_ACTIV.debug) { 			\
-	STORE_STATE_VARIABLES();		\
-	if (raise_error(make_error_pack(the_err), 0)) \
-	    return OUTCOME_ABORTED;		\
-	else {					\
-	    LOAD_STATE_VARIABLES();		\
-	    goto next_opcode;			\
-	}					\
-    } 						\
+#define RAISE_ERROR(the_err)				\
+do {							\
+    if (RUN_ACTIV.debug) { 				\
+	STORE_STATE_VARIABLES();			\
+	if (raise_error(make_error_pack(the_err), 0))	\
+	    return OUTCOME_ABORTED;			\
+	else {						\
+	    LOAD_STATE_VARIABLES();			\
+	    goto next_opcode;				\
+	}						\
+    } 							\
 } while (0)
 
-#define PUSH_ERROR(the_err)                                     \
-do {    						    	\
-    RAISE_ERROR(the_err);	/* may not return */		\
+#define PUSH_ERROR(the_err)					\
+do {    							\
+    RAISE_ERROR(the_err);	/* may not return!! */		\
     error_var.type = TYPE_ERR;					\
     error_var.v.err = the_err;					\
     PUSH(error_var);						\
@@ -1566,6 +1566,10 @@ do {								\
 
 		    h = db_find_property(obj, propname.v.str, &prop);
 		    built_in = db_is_property_built_in(h);
+
+		    free_var(propname);
+		    free_var(obj);
+
 		    if (!h.ptr)
 			PUSH_ERROR(E_PROPNF);
 		    else if (built_in
@@ -1576,9 +1580,6 @@ do {								\
 			PUSH(prop);	/* it's already freshly allocated */
 		    else
 			PUSH_REF(prop);
-
-		    free_var(propname);
-		    free_var(obj);
 		}
 	    }
 	    break;
