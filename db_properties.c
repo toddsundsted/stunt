@@ -50,7 +50,7 @@ dbpriv_count_properties(Objid oid)
     ancestors = db_ancestors(new_obj(oid), true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
-	o = dbpriv_find_object(ancestor.v.obj);
+	o = dbpriv_dereference(ancestor);
 	nprops += o->propdefs.cur_length;
     }
 
@@ -60,25 +60,20 @@ dbpriv_count_properties(Objid oid)
 }
 
 int
-dbpriv_count_properties2(const Object *o)
+dbpriv_count_properties2(Var obj)
 {
     Var ancestor, ancestors;
-    int i, nprops = 0;
-    Object *a;
+    int i, c, nprops = 0;
+    Object *o;
 
-    if (NULL == o)
+    if (!is_valid(obj))
 	return 0;
 
-    nprops = o->propdefs.cur_length;
+    ancestors = db_ancestors(obj, true);
 
-    ancestors = enlist_var(var_ref(o->parents));
-
-    for (i = 1; i <= listlength(ancestors) && (ancestor = ancestors.v.list[i], 1); i++) {
-	if (!valid(ancestor.v.obj))
-	    continue;
-	a = dbpriv_find_object(ancestor.v.obj);
-	ancestors = listconcat(ancestors, enlist_var(var_ref(a->parents)));
-	nprops += a->propdefs.cur_length;
+    FOR_EACH(ancestor, ancestors, i, c) {
+	o = dbpriv_dereference(ancestor);
+	nprops += o->propdefs.cur_length;
     }
 
     free_var(ancestors);
@@ -91,24 +86,24 @@ dbpriv_count_properties2(const Object *o)
  * Returns -1 if `target' is not an ancestor of `this'.
  */
 static int
-properties_offset(Objid target, Objid this)
+properties_offset(Var target, Var this)
 {
     Var ancestor, ancestors;
     int i, c, offset = 0;
     Object *o;
 
-    ancestors = db_ancestors(new_obj(this), true);
+    ancestors = db_ancestors(this, true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
-	if (target == ancestor.v.obj)
+	if (equality(target, ancestor, 0))
 	    break;
-	o = dbpriv_find_object(ancestor.v.obj);
+	o = dbpriv_dereference(ancestor);
 	offset += o->propdefs.cur_length;
     }
 
     free_var(ancestors);
 
-    return target == ancestor.v.obj ? offset : -1;
+    return i <= c ? offset : -1;
 }
 
 /*
@@ -156,12 +151,13 @@ property_defined_at_or_below(const char *pname, int phash, Object *o)
 }
 
 static void
-insert_prop2(Object *o, int pos, Pval pval)
+insert_prop2(Var obj, int pos, Pval pval)
 {
+    Object *o = dbpriv_dereference(obj);
     Pval *new_propval;
     int i, nprops;
 
-    nprops = dbpriv_count_properties2(o);
+    nprops = dbpriv_count_properties2(obj);
     new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
 
     dbpriv_assign_nonce(o);
@@ -185,9 +181,7 @@ insert_prop2(Object *o, int pos, Pval pval)
 static void
 insert_prop(Objid oid, int pos, Pval pval)
 {
-    Object *o = dbpriv_find_object(oid);
-
-    insert_prop2(o, pos, pval);
+    insert_prop2(new_obj(oid), pos, pval);
 }
 
 static void
@@ -203,7 +197,7 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
     int offsets[listlength(descendants)];
 
     FOR_EACH(descendant, descendants, i, c) {
-	offset = properties_offset(root, descendant.v.obj);
+	offset = properties_offset(new_obj(root), descendant);
 	offsets[i - 1] = offset;
     }
 
@@ -254,7 +248,7 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
     if (TYPE_OBJ == obj.type)
 	insert_prop_recursively(obj.v.obj, o->propdefs.cur_length - 1, pval);
     else
-	insert_prop2(obj.v.anon, o->propdefs.cur_length - 1, pval);
+	insert_prop2(obj, o->propdefs.cur_length - 1, pval);
 
     return 1;
 }
@@ -291,12 +285,13 @@ db_rename_propdef(Var obj, const char *old, const char *new)
 }
 
 static void
-remove_prop2(Object *o, int pos)
+remove_prop2(Var obj, int pos)
 {
+    Object *o = dbpriv_dereference(obj);
     Pval *new_propval;
     int i, nprops;
 
-    nprops = dbpriv_count_properties2(o);
+    nprops = dbpriv_count_properties2(obj);
 
     dbpriv_assign_nonce(o);
 
@@ -319,9 +314,7 @@ remove_prop2(Object *o, int pos)
 static void
 remove_prop(Objid oid, int pos)
 {
-    Object *o = dbpriv_find_object(oid);
-
-    remove_prop2(o, pos);
+    remove_prop2(new_obj(oid), pos);
 }
 
 static void
@@ -334,7 +327,7 @@ remove_prop_recursively(Objid root, int prop_pos)
     int offsets[listlength(descendants)];
 
     FOR_EACH(descendant, descendants, i, c) {
-	offset = properties_offset(root, descendant.v.obj);
+	offset = properties_offset(new_obj(root), descendant);
 	offsets[i - 1] = offset;
     }
 
@@ -388,7 +381,7 @@ db_delete_propdef(Var obj, const char *pname)
 	    if (TYPE_OBJ == obj.type)
 		remove_prop_recursively(obj.v.obj, i);
 	    else
-              remove_prop2(obj.v.anon, i);
+              remove_prop2(obj, i);
 
 	    return 1;
 	}
@@ -585,19 +578,19 @@ db_find_property(Var obj, const char *name, Var *value)
 	     * value on an object is clear, then its `definer' must be
 	     * a permanent (not an anonymous) object, because
 	     * anonymous objects can't currently be parents of other
-	     * objects.
+	     * objects.  Thus `new_obj()' below is okay.
 	     */
 	    if (TYPE_LIST == o->parents.type) {
 		Var parent, parents = o->parents;
 		int i2, c2, offset = 0;
 		FOR_EACH(parent, parents, i2, c2)
-		    if ((offset = properties_offset(((Object *)h.definer)->id, parent.v.obj)) > -1)
+		    if ((offset = properties_offset(new_obj(((Object *)h.definer)->id), parent)) > -1)
 			break;
 		o = dbpriv_find_object(parent.v.obj);
 		prop = o->propval + offset + i;
 	    }
 	    else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
-		int offset = properties_offset(((Object *)h.definer)->id, o->parents.v.obj);
+		int offset = properties_offset(new_obj(((Object *)h.definer)->id), o->parents);
 		o = dbpriv_find_object(o->parents.v.obj);
 		prop = o->propval + offset + i;
 	    }
@@ -949,7 +942,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 		Var parent, parents = enlist_var(var_ref(me->parents));
 		FOR_EACH(parent, parents, i3, c3)
 		    if (valid(parent.v.obj))
-			if ((offset = properties_offset(ancestor.v.obj, parent.v.obj)) > -1)
+			if ((offset = properties_offset(ancestor, parent)) > -1)
 			    break;
 		free_var(parents);
 		for (x = 0; n1 < n2; x++, n1++) {
