@@ -739,16 +739,16 @@ db_property_allows(db_prop_handle h, Objid progr, db_prop_flag flag)
 
 /*
  * `parents' is the proposed set of new parents.  Ensure that object
- * `obj' or one of its descendants does not define a property with the
- * same name as one defined on `parents' or any of their ancestors.
- * Ensure that none of the `parents' nor their ancestors define a
- * property with the same name.
+ * `obj' or one of its descendants (or anonymous children) does not
+ * define a property with the same name as one defined on `parents' or
+ * any of their ancestors.  Ensure that none of the `parents' nor
+ * their ancestors define a property with the same name.
  */
 int
-dbpriv_check_properties_for_chparent(Var obj, Var parents)
+dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
 {
     /* build a hypothetical list of ancestors from the supplied parents */
-    /* at this point, `obj' cannot be in any of `parents' ancestors */
+    /* `obj' must not be in any of `parents' ancestors */
 
     Var ancestors = new_list(0);
     Var stack = enlist_var(var_dup(parents));
@@ -766,29 +766,42 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents)
 
     free_var(stack);
 
-    /* check props in descendants */
-
+    int has_kids = (TYPE_LIST == anon_kids.type && listlength(anon_kids) > 0);
     Object *o2, *o3, *o = dbpriv_dereference(obj);
     Proplist *props;
     Var ancestor;
     int i, c, x;
+    int i2, c2;
+
+    /* check props in descendants & anonymous children */
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	o2 = dbpriv_dereference(ancestor);
 	props = &o2->propdefs;
 
-	for (x = 0; x < props->cur_length; x++)
+	for (x = 0; x < props->cur_length; x++) {
 	    if (property_defined_at_or_below(props->l[x].name,
 					     props->l[x].hash,
 					     o)) {
 		free_var(ancestors);
 		return 0;
 	    }
+
+	    if (has_kids) {
+		FOR_EACH(obj, anon_kids, i2, c2) {
+		    o3 = dbpriv_dereference(obj);
+		    if (property_defined_at(props->l[x].name,
+					    props->l[x].hash,
+					    o3)) {
+			free_var(ancestors);
+			return 0;
+		    }
+		}
+	    }
+	}
     }
 
     /* check props in parents */
-
-    int i2, c2;
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	o2 = dbpriv_dereference(ancestor);
@@ -798,14 +811,14 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents)
 	    if (equality(obj, ancestor, 0))
 		continue;
 	    o3 = dbpriv_dereference(obj);
-	    for (x = 0; x < props->cur_length; x++)
+	    for (x = 0; x < props->cur_length; x++) {
 		if (property_defined_at(props->l[x].name,
 					props->l[x].hash,
 					o3)) {
 		    free_var(ancestors);
 		    return 0;
 		}
-	    
+	    }
 	}
     }
 
@@ -827,7 +840,7 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents)
  *
  *      x - m
  *     /     \
- *    z       a ---- b - c
+ *    z       a ----- b - c
  *     \     /       /
  *      y - n       /
  *           \     /
@@ -872,7 +885,7 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents)
  * preserve information about those properties.
  */
 void
-dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancestors)
+dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancestors, Var anon_kids)
 {
     Object *o;
     Var ancestor;
@@ -969,10 +982,17 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
      * When we come to me (obj) as parent, use my old ancestors
      * instead of my new ancestors.
      */
-    Var child, parent;
+    Var parent, child;
     int i4, c4, i5, c5, i6, c6;
-    FOR_EACH(child, dbpriv_dereference(obj)->children, i4, c4) {
-	Object *oc = dbpriv_find_object(child.v.obj);
+    Var children;
+
+    if (TYPE_LIST == anon_kids.type)
+	children = listconcat(var_ref(me->children), var_ref(anon_kids));
+    else
+	children = var_ref(me->children);
+
+    FOR_EACH(child, children, i4, c4) {
+	Object *oc = dbpriv_dereference(child);
 	Var new = new_list(1);
 	Var old = new_list(1);
 	new.v.list[1] = var_ref(child);
@@ -1001,10 +1021,12 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 	    new = listconcat(new, var_ref(new_ancestors));
 	    old = listconcat(old, var_ref(old_ancestors));
 	}
-	dbpriv_fix_properties_after_chparent(child, old, new);
+	dbpriv_fix_properties_after_chparent(child, old, new, none);
 	free_var(new);
 	free_var(old);
     }
+
+    free_var(children);
 }
 
 char rcsid_db_properties[] = "$Id: db_properties.c,v 1.5 2010/04/23 04:46:18 wrog Exp $";

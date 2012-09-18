@@ -360,7 +360,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 
 	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
 
-	    if (!db_change_parents(new_obj(oid), arglist.v.list[1])) {
+	    if (!db_change_parents(new_obj(oid), arglist.v.list[1], none)) {
 		db_destroy_object(oid);
 		db_set_last_used_objid(last);
 		free_var(arglist);
@@ -429,13 +429,23 @@ bf_create_read(void)
 
 static package
 bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (OBJ obj, OBJ|LIST what) */
+{				/* (OBJ obj, OBJ|LIST what, LIST anon) */
     Var obj = arglist.v.list[1];
     Var what = arglist.v.list[2];
+    int n = listlength(arglist);
+    Var anon_kids = nothing;
 
     if (!is_object(obj) || !is_obj_or_list_of_objs(what)) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
+    }
+
+    if (n > 2 && !is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+    else if (n > 2) {
+	anon_kids = var_ref(arglist.v.list[3]);
     }
 
     if (!is_valid(obj)
@@ -460,7 +470,7 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_RECMOVE);
     }
     else {
-	if (!db_change_parents(obj, what)) {
+	if (!db_change_parents(obj, what, anon_kids)) {
 	    free_var(arglist);
 	    return make_error_pack(E_INVARG);
 	}
@@ -711,7 +721,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    Var cp = db_object_parents(c);
 	    Var op = db_object_parents(oid);
 	    if (is_obj(cp)) {
-		db_change_parents(new_obj(c), op);
+		db_change_parents(new_obj(c), op, none);
 	    }
 	    else {
 		int i = 1;
@@ -736,12 +746,12 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 		    new = setadd(new, var_ref(cp.v.list[i]));
 		    i++;
 		}
-		db_change_parents(new_obj(c), new);
+		db_change_parents(new_obj(c), new, none);
 		free_var(new);
 	    }
 	}
 
-	db_change_parents(new_obj(oid), nothing);
+	db_change_parents(new_obj(oid), nothing, none);
 
 	/* Finish the demolition. */
 	incr_quota(db_object_owner(oid));
@@ -896,10 +906,10 @@ register_objects(void)
 				      TYPE_ANY);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_OBJ);
     register_function("valid", 1, 1, bf_valid, TYPE_ANY);
-    register_function("chparents", 2, 2, bf_chparent_chparents,
-		      TYPE_ANY, TYPE_LIST);
-    register_function("chparent", 2, 2, bf_chparent_chparents,
-		      TYPE_ANY, TYPE_OBJ);
+    register_function("chparents", 2, 3, bf_chparent_chparents,
+		      TYPE_ANY, TYPE_LIST, TYPE_LIST);
+    register_function("chparent", 2, 3, bf_chparent_chparents,
+		      TYPE_ANY, TYPE_OBJ, TYPE_LIST);
     register_function("parents", 1, 1, bf_parents, TYPE_ANY);
     register_function("parent", 1, 1, bf_parent, TYPE_ANY);
     register_function("children", 1, 1, bf_children, TYPE_ANY);

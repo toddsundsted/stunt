@@ -23,7 +23,9 @@
 
 #include "config.h"
 #include "db.h"
+#include "db_io.h"
 #include "db_private.h"
+#include "collection.h"
 #include "list.h"
 #include "program.h"
 #include "storage.h"
@@ -274,7 +276,6 @@ db_read_anonymous()
 {
     Var r;
     int oid;
-    Object *o;
 
     if ((oid = dbio_read_num()) == NOTHING) {
 	r.type = TYPE_ANON;
@@ -716,8 +717,6 @@ db_clear_object_flag2(Var obj, db_object_flag f)
       db_clear_object_flag(obj.v.obj, f);
 }
 
-
-
 Objid
 dbpriv_object_owner(Object *o)
 {
@@ -811,34 +810,58 @@ db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
 }
 
 static int
-check_for_duplicate_parents(Var parents)
+check_for_duplicates(Var list)
 {
-    if (TYPE_LIST != parents.type && TYPE_OBJ != parents.type)
-	return 0;
+    int i, j, c;
 
-    if (TYPE_LIST == parents.type && listlength(parents) > 1) {
-	int i, j, c = listlength(parents);
-	for (i = 1; i <= c; i++)
-	    for (j = i + i; j <= c; j++)
-		if (equality(parents.v.list[i], parents.v.list[j], 1))
-		    return 0;
+    if (TYPE_LIST != list.type || (c = listlength(list)) < 1)
+	return 1;
+
+    for (i = 1; i <= c; i++)
+	for (j = i + i; j <= c; j++)
+	    if (equality(list.v.list[i], list.v.list[j], 1))
+		return 0;
+
+    return 1;
+}
+
+static int
+check_children_of_object(Var obj, Var anon_kids)
+{
+    Var kid;
+    int i, c;
+
+    if (TYPE_LIST != anon_kids.type || listlength(anon_kids) < 1)
+	return 1;
+
+    FOR_EACH (kid, anon_kids, i, c) {
+	Var parents = db_object_parents2(kid);
+	if (TYPE_ANON != kid.type
+	    || ((TYPE_OBJ == parents.type && !equality(obj, parents, 0))
+	        || (TYPE_LIST == parents.type && !ismember(obj, parents, 0))))
+	    return 0;
     }
 
     return 1;
 }
 
 int
-db_change_parents(Var obj, Var new_parents)
+db_change_parents(Var obj, Var new_parents, Var anon_kids)
 {
-    if (!check_for_duplicate_parents(new_parents))
+    if (!check_for_duplicates(new_parents))
 	return 0;
-
-    if (!dbpriv_check_properties_for_chparent(obj, new_parents))
+    if (!check_for_duplicates(anon_kids))
+	return 0;
+    if (!check_children_of_object(obj, anon_kids))
+	return 0;
+    if (!dbpriv_check_properties_for_chparent(obj, new_parents, anon_kids))
 	return 0;
 
     Object *o = dbpriv_dereference(obj);
 
-    if (listlength(o->children) == 0 && o->verbdefs == NULL) {
+    if (o->verbdefs == NULL
+        && listlength(o->children) == 0
+        && (TYPE_LIST != anon_kids.type || listlength(anon_kids) == 0)) {
 	/* Since this object has no children and no verbs, we know that it
 	   can't have had any part in affecting verb lookup, since we use first
 	   parent with verbs as a key in the verb lookup cache. */
@@ -887,7 +910,7 @@ db_change_parents(Var obj, Var new_parents)
 
     Var new_ancestors = db_ancestors(obj, true);
 
-    dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors);
+    dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors, anon_kids);
 
     free_var(old_ancestors);
     free_var(new_ancestors);
