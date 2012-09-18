@@ -228,7 +228,7 @@ extern int db_for_all_children(Objid,
 				 *      db_renumber_object()
 				 *      db_change_parent()
 				 */
-extern int db_change_parents(Var obj, Var parents);
+extern int db_change_parents(Var obj, Var parents, Var anon_kids);
 				/* db_change_parents() returns true (and
 				 * actually changes the parent of OBJ) iff
 				 * neither OBJ nor any of its descendents

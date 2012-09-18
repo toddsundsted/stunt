@@ -173,7 +173,8 @@ extern Propdef dbpriv_new_propdef(const char *);
 extern int dbpriv_count_properties(Objid);
 
 extern int dbpriv_check_properties_for_chparent(Var obj,
-						Var parents);
+						Var parents,
+						Var anon_kids);
 				/* Return true iff PARENTS defines no
 				 * properties that are also defined by either
 				 * OBJ or any of OBJ's descendants, or by
@@ -183,7 +184,8 @@ extern int dbpriv_check_properties_for_chparent(Var obj,
 
 extern void dbpriv_fix_properties_after_chparent(Var obj,
 						 Var old_ancestors,
-						 Var new_ancestors);
+						 Var new_ancestors,
+						 Var anon_kids);
 				/* OBJ has just had its parents changed.
 				 * Fix up the properties of OBJ and its
 				 * descendants, removing obsolete ones
