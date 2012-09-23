@@ -537,9 +537,9 @@ db_renumber_object(Objid old)
 }
 
 int
-db_object_bytes(Objid oid)
+db_object_bytes(Var obj)
 {
-    Object *o = objects[oid];
+    Object *o = dbpriv_dereference(obj);
     int i, len, count;
     Verbdef *v;
 

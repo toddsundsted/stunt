@@ -150,7 +150,7 @@ extern Objid db_renumber_object(Objid);
 				 * object number.  Returns its new number.
 				 */
 
-extern int db_object_bytes(Objid);
+extern int db_object_bytes(Var);
 				/* Returns the number of bytes of memory
 				 * currently required in order to represent the
 				 * given object and all of its verbs and

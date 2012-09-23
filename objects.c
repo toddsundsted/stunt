@@ -844,20 +844,27 @@ bf_set_player_flag(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Objid oid = arglist.v.list[1].v.obj;
-    Var v;
+    Var obj = arglist.v.list[1];
 
-    free_var(arglist);
-
-    if (!is_wizard(progr))
-	return make_error_pack(E_PERM);
-    else if (!valid(oid))
+    if (!is_object(obj)) {
+	free_var(arglist);
+	return make_error_pack(E_TYPE);
+    } else if (!is_valid(obj)) {
+	free_var(arglist);
 	return make_error_pack(E_INVIND);
+    } else if (!is_wizard(progr)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    } else {
+	Var v;
 
-    v.type = TYPE_INT;
-    v.v.num = db_object_bytes(oid);
+	v.type = TYPE_INT;
+	v.v.num = db_object_bytes(obj);
 
-    return make_var_pack(v);
+	free_var(arglist);
+
+	return make_var_pack(v);
+    }
 }
 
 static package
@@ -904,7 +911,7 @@ register_objects(void)
     register_function_with_read_write("recycle", 1, 1, bf_recycle,
 				      bf_recycle_read, bf_recycle_write,
 				      TYPE_ANY);
-    register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_OBJ);
+    register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_ANY);
     register_function("valid", 1, 1, bf_valid, TYPE_ANY);
     register_function("chparents", 2, 3, bf_chparent_chparents,
 		      TYPE_ANY, TYPE_LIST, TYPE_LIST);
