@@ -366,6 +366,20 @@ db_for_all_propdefs(Var obj, int (*func) (void *, const char *), void *data)
     return 0;
 }
 
+int
+db_for_all_propvals(Var obj, int (*func) (void *, Var), void *data)
+{
+    int i;
+    Object *o = dbpriv_dereference(obj);
+    int len = o->nval;
+
+    for (i = 0; i < len; i++)
+	if (func(data, o->propval[i].var))
+	    return 1;
+
+    return 0;
+}
+
 struct contents_data {
     Var r;
     int i;

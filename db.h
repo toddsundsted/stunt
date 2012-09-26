@@ -354,6 +354,16 @@ extern int db_for_all_propdefs(Var,
 				 * if the references are to be persistent.
 				 */
 
+extern int db_for_all_propvals(Var,
+			       int (*)(void *, Var),
+			       void *);
+				/* db_for_all_propvals() does not change the
+				 * reference counts of the values passed to
+				 * the given callback function.  Thus, the
+				 * caller should var_ref() the values if the
+				 * references are to be persistent.
+				 */
+
 #define BUILTIN_PROPERTIES(DEFINE)		\
     DEFINE(NAME,name)				\
     DEFINE(OWNER,owner)				\
