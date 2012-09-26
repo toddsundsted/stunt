@@ -57,6 +57,7 @@ typedef struct Pval {
 
 typedef struct Object {
     Objid id;
+
     Objid owner;
 
     const char *name;
@@ -67,9 +68,11 @@ typedef struct Object {
     Var parents;
     Var children;
 
+    Pval *propval;
+    unsigned int nval;
+
     Verbdef *verbdefs;
     Proplist propdefs;
-    Pval *propval;
 
     /* The nonce marks changes to the propval layout caused by changes
      * to parentage, property addition/deletion, etc.  Every value is
@@ -169,8 +172,6 @@ extern void dbpriv_after_load(void);
 /*********** Properties ***********/
 
 extern Propdef dbpriv_new_propdef(const char *);
-
-extern int dbpriv_count_properties(Objid);
 
 extern int dbpriv_check_properties_for_chparent(Var obj,
 						Var parents,

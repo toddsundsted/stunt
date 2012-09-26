@@ -194,6 +194,7 @@ db_init_object(Object *o)
     o->contents = new_list(0);
 
     o->propval = 0;
+    o->nval = 0;
 
     o->propdefs.max_length = 0;
     o->propdefs.cur_length = 0;
@@ -517,8 +518,8 @@ db_renumber_object(Objid old)
 			else if (v->owner == old)
 			    v->owner = new;
 
-		    count = dbpriv_count_properties(oid);
 		    p = o->propval;
+		    count = o->nval;
 		    for (i = 0; i < count; i++)
 			if (p[i].owner == new)
 			    p[i].owner = NOTHING;
@@ -556,7 +557,7 @@ db_object_bytes(Objid oid)
     for (i = 0; i < o->propdefs.cur_length; i++)
 	count += memo_strlen(o->propdefs.l[i].name) + 1;
 
-    len = dbpriv_count_properties(oid);
+    len = o->nval;
     count += (sizeof(Pval) - sizeof(Var)) * len;
     for (i = 0; i < len; i++)
 	count += value_bytes(o->propval[i].var);

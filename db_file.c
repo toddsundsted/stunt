@@ -378,12 +378,12 @@ ng_read_object(int anonymous)
 	for (i = 0; i < o->propdefs.cur_length; i++)
 	    o->propdefs.l[i] = read_propdef();
     }
-    nprops = dbio_read_num();
+
+    o->nval = nprops = dbio_read_num();
     if (nprops)
 	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
     else
 	o->propval = 0;
-
     for (i = 0; i < nprops; i++) {
 	read_propval(o->propval + i);
     }
@@ -475,8 +475,7 @@ ng_write_object(Objid oid)
     for (i = 0; i < o->propdefs.cur_length; i++)
 	write_propdef(&o->propdefs.l[i]);
 
-    nprops = dbpriv_count_properties(oid);
-
+    nprops = o->nval;
     dbio_write_num(nprops);
     for (i = 0; i < nprops; i++)
 	write_propval(o->propval + i);
@@ -833,9 +832,11 @@ v4_upgrade_objects()
 	    for (iter = o->contents; iter != NOTHING; iter = objects[iter]->next)
 		new->contents = listappend(new->contents, var_dup(new_obj(iter)));
 
+	    new->propval = o->propval;
+	    new->nval = dbv4_count_properties(oid);
+
 	    new->verbdefs = o->verbdefs;
 	    new->propdefs = o->propdefs;
-	    new->propval = o->propval;
 	}
 	else {
 	    dbpriv_new_recycled_object();

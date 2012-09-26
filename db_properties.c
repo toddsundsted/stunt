@@ -37,50 +37,6 @@ dbpriv_new_propdef(const char *name)
     return newprop;
 }
 
-int
-dbpriv_count_properties(Objid oid)
-{
-    Var ancestor, ancestors;
-    int i, c, nprops = 0;
-    Object *o;
-
-    if (NOTHING == oid)
-	return 0;
-
-    ancestors = db_ancestors(new_obj(oid), true);
-
-    FOR_EACH(ancestor, ancestors, i, c) {
-	o = dbpriv_dereference(ancestor);
-	nprops += o->propdefs.cur_length;
-    }
-
-    free_var(ancestors);
-
-    return nprops;
-}
-
-int
-dbpriv_count_properties2(Var obj)
-{
-    Var ancestor, ancestors;
-    int i, c, nprops = 0;
-    Object *o;
-
-    if (!is_valid(obj))
-	return 0;
-
-    ancestors = db_ancestors(obj, true);
-
-    FOR_EACH(ancestor, ancestors, i, c) {
-	o = dbpriv_dereference(ancestor);
-	nprops += o->propdefs.cur_length;
-    }
-
-    free_var(ancestors);
-
-    return nprops;
-}
-
 /*
  * Finds the offset of the properties defined on `target' in `this'.
  * Returns -1 if `target' is not an ancestor of `this'.
@@ -157,7 +113,7 @@ insert_prop2(Var obj, int pos, Pval pval)
     Pval *new_propval;
     int i, nprops;
 
-    nprops = dbpriv_count_properties2(obj);
+    nprops = ++o->nval;
     new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
 
     dbpriv_assign_nonce(o);
@@ -291,7 +247,7 @@ remove_prop2(Var obj, int pos)
     Pval *new_propval;
     int i, nprops;
 
-    nprops = dbpriv_count_properties2(obj);
+    nprops = --o->nval;
 
     dbpriv_assign_nonce(o);
 
@@ -926,6 +882,8 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
      */
     Object *me = dbpriv_dereference(obj);
     Pval *new_propval = NULL;
+
+    me->nval = new_count;
 
     if (new_count != 0) {
 	new_propval = mymalloc(new_count * sizeof(Pval), M_PVAL);
