@@ -56,16 +56,62 @@ new_list(int size)
 	    emptylist.v.list[0].type = TYPE_INT;
 	    emptylist.v.list[0].v.num = 0;
 	}
+
 	/* give the lucky winner a reference */
 	addref(emptylist.v.list);
 	return emptylist;
     }
+
     new.type = TYPE_LIST;
     new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
     new.v.list[0].type = TYPE_INT;
     new.v.list[0].v.num = size;
+
     return new;
 }
+
+/* called from utils.c */
+void
+destroy_list(Var list)
+{
+    int i;
+    Var *pv;
+
+    for (i = list.v.list[0].v.num, pv = list.v.list + 1; i > 0; i--, pv++)
+	free_var(*pv);
+
+    myfree(v.v.list, M_LIST);
+}
+
+/* called from utils.c */
+Var
+list_dup(Var list)
+{
+    int i, n = list.v.list[0].v.num;
+    Var new = new_list(n);
+
+    for (i = 1; i <= n; i++)
+	new.v.list[i] = var_ref(list.v.list[i]);
+
+    return new;
+}
+
+int
+listforeach(Var list, listfunc func, void *data)
+{				/* does NOT consume `list' */
+    int i, n;
+    int first = 1;
+    int ret;
+
+    for (i = 1, n = list.v.list[0].v.num; i <= n; i++) {
+	if ((ret = (*func)(list.v.list[i], data, first)))
+	    return ret;
+	first = 0;
+    }
+
+    return 0;
+}
+
 
 Var
 setadd(Var list, Var value)
