@@ -19,6 +19,8 @@
  * Routines for manipulating properties on DB objects
  *****************************************************************************/
 
+#include <assert.h>
+
 #include "collection.h"
 #include "config.h"
 #include "db.h"
@@ -897,7 +899,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
     Object *me = dbpriv_dereference(obj);
     Pval *new_propval = NULL;
 
-    me->nval = new_count;
+    assert(old_count == me->nval);
 
     if (new_count != 0) {
 	new_propval = mymalloc(new_count * sizeof(Pval), M_PVAL);
@@ -942,6 +944,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 	myfree(me->propval, M_PVAL);
     }
     me->propval = new_propval;
+    me->nval = new_count;
 
     dbpriv_assign_nonce(me);
 

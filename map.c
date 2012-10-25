@@ -203,7 +203,10 @@ rbdelete(rbtree *tree)
 	it = save;
     }
 
-    myfree(tree, M_TREE);
+    /* Since this map could possibly be the root of a cycle, final
+     * destruction is handled in the garbage collector.
+     */
+    /*myfree(tree, M_TREE);*/
 }
 
 /*

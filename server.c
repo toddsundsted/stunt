@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <assert.h>
+
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
 #include "my-stdarg.h"
@@ -31,11 +33,13 @@
 #include "exec.h"
 #include "execute.h"
 #include "functions.h"
+#include "garbage.h"
 #include "list.h"
 #include "log.h"
 #include "network.h"
 #include "options.h"
 #include "parser.h"
+#include "quota.h"
 #include "random.h"
 #include "server.h"
 #include "storage.h"
@@ -445,9 +449,36 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
     va_end(args);
 }
 
+/* Queue an anonymous object for eventual recycling.  This is the
+ * entry-point for anonymous objects that lose all references (see
+ * utils.c), and for anonymous objects that the garbage collector
+ * schedules for cycle busting (see garbage.c).  Objects added to the
+ * queue are var_ref'd to increment the refcount.  This prevents the
+ * garbage collector from recycling if the object makes its way onto
+ * the list of roots.  After they are recycled, they are freed.
+ */
+static int
+queue_includes(Var v)
+{
+    struct pending_recycle *head = pending_head;
+
+    while (head) {
+	if (head->v.v.anon == v.v.anon)
+	    return 1;
+	head = head->next;
+    }
+
+    return 0;
+}
+
 void
 queue_anonymous_object(Var v)
 {
+    assert(TYPE_ANON == v.type);
+    assert(!db_object_has_flag2(v, FLAG_RECYCLED));
+    assert(!db_object_has_flag2(v, FLAG_INVALID));
+    assert(!queue_includes(v));
+
     if (!pending_free) {
 	pending_free = mymalloc(sizeof(struct pending_recycle), M_STRUCT);
 	pending_free->next = NULL;
@@ -456,46 +487,51 @@ queue_anonymous_object(Var v)
     struct pending_recycle *next = pending_free;
     pending_free = next->next;
 
-    next->v = v;
+    next->v = var_ref(v);
+    next->next = pending_head;
+    pending_head = next;
 
-    if (pending_tail) {
-	pending_tail->next = next;
+    if (!pending_tail)
 	pending_tail = next;
-    }
-    else {
-	pending_head = next;
-	pending_tail = next;
-    }
 }
 
 static void
 recycle_anonymous_objects(void)
 {
-    while (pending_head) {
-	Var v;
+    if (!pending_head)
+	return;
 
-	struct pending_recycle *head = pending_head;
+    struct pending_recycle *next, *head = pending_head;
+    pending_head = pending_tail = NULL;
 
-	if (pending_head == pending_tail)
-	    pending_head = pending_tail = NULL;
-	else
-	    pending_head = head->next;
+    while (head) {
+	Var v = head->v;
 
+	next = head->next;
 	head->next = pending_free;
 	pending_free = head;
+	head = next;
 
-	v = head->v;
+	assert(!db_object_has_flag2(v, FLAG_RECYCLED));
+	assert(!db_object_has_flag2(v, FLAG_INVALID));
 
-	if (db_object_has_flag2(v, FLAG_RECYCLED) || db_object_has_flag2(v, FLAG_INVALID)) {
-	    db_destroy_anonymous_object(v.v.anon);
-	}
-	else {
-	    v = var_ref(v);
-	    run_server_task(-1, v, "recycle", new_list(0), "", 0);
-	    db_set_object_flag2(v, FLAG_RECYCLED);
-	    db_set_object_flag2(v, FLAG_INVALID);
-	    free_var(v);
-	}
+	db_set_object_flag2(v, FLAG_RECYCLED);
+
+        /* the best approximation I could think of */
+	run_server_task(-1, v, "recycle", new_list(0), "", 0);
+
+	/* We'd like to run `db_change_parents()' to be consistent
+	 * with the pattern laid out in `bf_recycle()', but we can't
+	 * because the object can be invalid at this point due to
+	 * changes in parentage.
+	 */
+	/*db_change_parents(v, nothing, none);*/
+
+	incr_quota(db_object_owner2(v));
+
+	db_destroy_anonymous_object(v.v.anon);
+
+	free_var(v);
     }
 }
 
@@ -550,7 +586,10 @@ main_loop(void)
 	}
 #endif
 
-        recycle_anonymous_objects();
+	if (gc_run_called || gc_roots_count > 2000)
+	    gc_collect();
+
+	recycle_anonymous_objects();
 
 	if (!network_process_io(seconds_left ? 1 : 0) && seconds_left > 1)
 	    db_flush(FLUSH_ONE_SECOND);
@@ -1397,9 +1436,22 @@ main(int argc, char **argv)
 	    exit(1);
 
 	main_loop();
+
 	network_shutdown();
     }
+
+    /* Repeat until there are no more pending objects waiting to be
+     * recycled and there is no more cyclic garbage.
+     */
+    gc_collect();
+    while (pending_head) {
+	while (pending_head)
+	    recycle_anonymous_objects();
+	gc_collect();
+    }
+
     db_shutdown();
+
     free_str(this_program);
 
     return 0;

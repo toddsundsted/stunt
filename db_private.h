@@ -61,7 +61,7 @@ typedef struct Object {
     Objid owner;
 
     const char *name;
-    int flags;
+    int flags; /* see db.h for `flags' values */
 
     Var location;
     Var contents;
@@ -211,6 +211,8 @@ extern Exception dbpriv_dbio_failed;
 
 extern void dbpriv_set_dbio_input(FILE *);
 extern void dbpriv_set_dbio_output(FILE *);
+
+/****/
 
 static inline Object *
 dbpriv_dereference(Var v)

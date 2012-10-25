@@ -61,7 +61,8 @@ static registry bi_function_registries[] =
     register_yajl,
     register_base64,
     register_fileio,
-    register_exec
+    register_exec,
+    register_gc
 };
 
 void
