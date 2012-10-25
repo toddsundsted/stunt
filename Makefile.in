@@ -37,14 +37,14 @@ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 CSRCS = ast.c base64.c code_gen.c collection.c db_file.c db_io.c \
 	db_objects.c db_properties.c db_verbs.c decompile.c \
 	disassemble.c eval_env.c eval_vm.c exceptions.c exec.c \
-	execute.c extensions.c functions.c hmac_sha2.c http_parser.c \
-	json.c keywords.c list.c log.c malloc.c map.c match.c md5.c \
-	name_lookup.c network.c net_mplex.c net_proto.c numbers.c \
-	objects.c parse_cmd.c pattern.c program.c property.c quota.c \
-	regexpr.c server.c sha1.c sha256.c storage.c streams.c \
-	str_intern.c sym_table.c tasks.c timers.c unparse.c utils.c \
-	verbs.c version.c yajl.c yajl_alloc.c yajl_buf.c \
-	yajl_encode.c yajl_gen.c yajl_lex.c yajl_parser.c \
+	execute.c extensions.c functions.c garbage.c hmac_sha2.c \
+	http_parser.c json.c keywords.c list.c log.c malloc.c map.c \
+	match.c md5.c name_lookup.c network.c net_mplex.c net_proto.c \
+	numbers.c objects.c parse_cmd.c pattern.c program.c \
+	property.c quota.c regexpr.c server.c sha1.c sha256.c \
+	storage.c streams.c str_intern.c sym_table.c tasks.c timers.c \
+	unparse.c utils.c verbs.c version.c yajl.c yajl_alloc.c \
+	yajl_buf.c yajl_encode.c yajl_gen.c yajl_lex.c yajl_parser.c \
 	yajl_version.c extension-fileio.c
 
 OPT_NET_SRCS = net_single.c net_multi.c \
@@ -61,13 +61,13 @@ YSRCS = parser.y
 HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
 	db_io.h db_private.h decompile.h db_tune.h disassemble.h \
 	eval_env.h eval_vm.h exceptions.h exec.h execute.h \
-	functions.h getpagesize.h hmac_sha2.h http_parser.h json.h \
-	keywords.h list.h log.h map.h match.h md5.h name_lookup.h \
-	network.h net_mplex.h net_multi.h net_proto.h numbers.h \
-	opcode.h options.h parse_cmd.h parser.h pattern.h program.h \
-	quota.h random.h regexpr.h server.h sha1.h sha256.h storage.h \
-	streams.h structures.h str_intern.h sym_table.h tasks.h \
-	timers.h tokens.h unparse.h utils.h verbs.h version.h \
+	functions.h garbage.h getpagesize.h hmac_sha2.h http_parser.h \
+	json.h keywords.h list.h log.h map.h match.h md5.h \
+	name_lookup.h network.h net_mplex.h net_multi.h net_proto.h \
+	numbers.h opcode.h options.h parse_cmd.h parser.h pattern.h \
+	program.h quota.h random.h regexpr.h server.h sha1.h sha256.h \
+	storage.h streams.h structures.h str_intern.h sym_table.h \
+	tasks.h timers.h tokens.h unparse.h utils.h verbs.h version.h \
 	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h \
 	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h \
 	yajl_parser.h yajl_version.h extension-fileio.h
@@ -471,6 +471,7 @@ functions.o: functions.c my-stdarg.h config.h bf_register.h db_io.h \
   program.h structures.h my-stdio.h version.h functions.h execute.h db.h \
   opcode.h options.h parse_cmd.h list.h streams.h exceptions.h log.h \
   map.h server.h network.h storage.h my-string.h unparse.h utils.h
+garbage.o: garbage.c functions.h list.h map.h options.h storage.h utils.h
 hmac_sha2.o: hmac_sha2.c hmac_sha2.h sha256.h
 http_parser.o: http_parser.c http_parser.h
 json.o: json.c my-string.h config.h my-stdlib.h exceptions.h functions.h \
@@ -543,8 +544,8 @@ regexpr.o: regexpr.c my-stdio.h config.h regexpr.h my-stdlib.h \
 server.o: server.c my-types.h config.h my-signal.h my-stdarg.h my-stdio.h \
   my-stdlib.h my-string.h my-unistd.h my-wait.h db.h program.h \
   structures.h version.h db_io.h disassemble.h exec.h execute.h opcode.h \
-  options.h parse_cmd.h functions.h list.h streams.h exceptions.h log.h \
-  network.h server.h parser.h random.h storage.h tasks.h timers.h \
+  options.h parse_cmd.h functions.h list.h streams.h exceptions.h  garbage.h \
+  log.h network.h server.h parser.h random.h storage.h tasks.h timers.h \
   my-time.h unparse.h utils.h
 sha1.o: sha1.c sha1.h
 sha256.o: sha256.c sha256.h
@@ -574,9 +575,9 @@ unparse.o: unparse.c my-ctype.h config.h my-stdio.h ast.h parser.h \
   functions.h execute.h db.h opcode.h options.h parse_cmd.h keywords.h \
   list.h streams.h log.h unparse.h storage.h my-string.h utils.h
 utils.o: utils.c my-ctype.h config.h my-stdio.h my-string.h db.h \
-  program.h structures.h version.h db_io.h exceptions.h list.h streams.h \
-  log.h map.h match.h numbers.h server.h network.h options.h storage.h \
-  utils.h execute.h opcode.h parse_cmd.h
+  program.h structures.h version.h db_io.h exceptions.h garbage.h list.h \
+  streams.h log.h map.h match.h numbers.h server.h network.h options.h \
+  storage.h utils.h execute.h opcode.h parse_cmd.h
 verbs.o: verbs.c my-string.h config.h db.h program.h structures.h \
   my-stdio.h version.h exceptions.h execute.h opcode.h options.h \
   parse_cmd.h functions.h list.h streams.h log.h match.h parser.h \

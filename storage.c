@@ -97,7 +97,9 @@ mymalloc(unsigned size, Memory_Type type)
 
     if (offs) {
 	memptr += offs;
-	((int *) memptr)[-1] = 1;
+	((reference_overhead *)memptr)[-1].count = 1;
+	((reference_overhead *)memptr)[-1].buffered = 0;
+	((reference_overhead *)memptr)[-1].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
 #ifdef MEMO_STRLEN
 	if (type == M_STRING)
 	    ((int *) memptr)[-2] = size - 1;

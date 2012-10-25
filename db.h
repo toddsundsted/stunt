@@ -127,11 +127,6 @@ extern void db_destroy_object(Objid);
 				 * must == #-1.
 				 */
 
-extern void db_invalidate_anonymous_object(void *);
-				/* Marks the object as invalid but does not free
-				 * the associated storage.
-				 */
-
 extern void db_destroy_anonymous_object(void *);
 				/* Destroys object, freeing all associated
 				 * storage.
@@ -262,8 +257,17 @@ typedef enum {
     FLAG_OBSOLETE_2,
     FLAG_FERTILE,
     FLAG_ANONYMOUS,
-    FLAG_INVALID,
-    FLAG_RECYCLED
+    FLAG_INVALID,	/* `FLAG_INVALID' indicates the anonymous
+			 * object is invalid due to parent/ancestor
+			 * changes, recycling, etc.  The object may
+			 * still be maintaining storage.
+			 */
+    FLAG_RECYCLED	/* `FLAG_RECYCLED' indicates the anonymous
+			 * object has been recycled (the `recycle'
+			 * verb has been called on the object, if
+			 * defined) and the object is scheduled
+			 * to have its internal storage freed.
+			 */
     /* NOTE: New permanent flags must always be added here, rather
      *	     than replacing one of the obsolete ones, since old
      *	     databases might have old objects around that still have

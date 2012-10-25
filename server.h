@@ -146,6 +146,12 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 				 * OPT.NAME and return 1; else return 0.
 				 */
 
+extern void queue_anonymous_object(Var v);
+				/* Adds the specified value to the queue of
+				 * values to be recycled in between running
+				 * player tasks.
+				 */
+
 #include "db.h"
 
 /* Some server options are cached for performance reasons.

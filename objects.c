@@ -445,7 +445,7 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_PERM);
     }
     else if (n > 2) {
-	anon_kids = var_ref(arglist.v.list[3]);
+	anon_kids = arglist.v.list[3];
     }
 
     if (!is_valid(obj)
@@ -663,6 +663,15 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 
 	db_set_object_flag2(obj, FLAG_RECYCLED);
 
+	/* Recycle permanent and anonymous objects.
+	 *
+	 * At this point in time, an anonymous object may be in the
+	 * root buffer and may be any color (purple, if the last
+	 * operation was a decrement, black, if the last operation was
+	 * an increment) (it _will_ have a reference, however -- a
+	 * reference to itself, at least).
+	 */
+
 	data = alloc_data(sizeof(Var));
 	*data = var_ref(obj);
 	args = new_list(0);
@@ -679,7 +688,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 
 	goto moving_contents;
 
-    case 2:			/* moving all contents to #-1 */
+    case 2:
 	obj = var_ref(*data);
 	free_var(arglist);
 
@@ -692,74 +701,83 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    return no_var_pack();
 	}
 
-	if (TYPE_ANON == obj.type) {
-	    incr_quota(db_object_owner2(obj));
-	    db_invalidate_anonymous_object(obj.v.anon);
+	if (TYPE_OBJ == obj.type) {
+	    Objid c, oid = obj.v.obj;
+
+	    while ((c = get_first(oid, db_for_all_contents)) != NOTHING)
+		if (move_to_nothing(c))
+		    return make_call_pack(2, data);
+
+	    if (db_object_location(oid) != NOTHING && move_to_nothing(oid))
+		/* Return to same case because this :exitfunc might add new */
+		/* contents to OID or even move OID right back in. */
+		return make_call_pack(2, data);
+
+	    /* we can now be confident that OID has no contents and no location */
+
+	    /* do the same thing for the inheritance hierarchy */
+	    while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
+		Var cp = db_object_parents(c);
+		Var op = db_object_parents(oid);
+		if (is_obj(cp)) {
+		    db_change_parents(new_obj(c), op, none);
+		}
+		else {
+		    int i = 1;
+		    int j = 1;
+		    Var new = new_list(0);
+		    while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
+			new = setadd(new, var_ref(cp.v.list[i]));
+			i++;
+		    }
+		    if (is_obj(op)) {
+			if (valid(op.v.obj))
+			    new = setadd(new, var_ref(op));
+		    }
+		    else {
+			while (j <= op.v.list[0].v.num) {
+			    new = setadd(new, var_ref(op.v.list[j]));
+			    j++;
+			}
+		    }
+		    i++;
+		    while (i <= cp.v.list[0].v.num) {
+			new = setadd(new, var_ref(cp.v.list[i]));
+			i++;
+		    }
+		    db_change_parents(new_obj(c), new, none);
+		    free_var(new);
+		}
+	    }
+
+	    db_change_parents(obj, nothing, none);
+
+	    incr_quota(db_object_owner(oid));
+
+	    db_destroy_object(oid);
+
 	    free_var(obj);
 	    free_var(*data);
 	    free_data(data);
 	    return no_var_pack();
 	}
+	else if (TYPE_ANON == obj.type) {
+	    /* We'd like to run `db_change_parents()' to be consistent
+	     * with the pattern laid out for permanent objects, but we
+	     * can't because the object can be invalid at this point
+	     * due to changes in parentage.
+	     */
+	    /*db_change_parents(obj, nothing, none);*/
 
-	Objid oid = obj.v.obj, c;
-	free_var(obj);
+	    incr_quota(db_object_owner2(obj));
 
-	while ((c = get_first(oid, db_for_all_contents)) != NOTHING)
-	    if (move_to_nothing(c))
-		return make_call_pack(2, data);
+	    db_destroy_anonymous_object(obj.v.anon);
 
-	if (db_object_location(oid) != NOTHING
-	    && move_to_nothing(oid))
-	    /* Return to same case because this :exitfunc might add new */
-	    /* contents to OID or even move OID right back in. */
-	    return make_call_pack(2, data);
-
-	/* We can now be confident that OID has no contents and no location */
-
-	/* Do the same thing for the inheritance hierarchy */
-	while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
-	    Var cp = db_object_parents(c);
-	    Var op = db_object_parents(oid);
-	    if (is_obj(cp)) {
-		db_change_parents(new_obj(c), op, none);
-	    }
-	    else {
-		int i = 1;
-		int j = 1;
-		Var new = new_list(0);
-		while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
-		    new = setadd(new, var_ref(cp.v.list[i]));
-		    i++;
-		}
-		if (is_obj(op)) {
-		    if (valid(op.v.obj))
-			new = setadd(new, var_ref(op));
-		}
-		else {
-		    while (j <= op.v.list[0].v.num) {
-			new = setadd(new, var_ref(op.v.list[j]));
-			j++;
-		    }
-		}
-		i++;
-		while (i <= cp.v.list[0].v.num) {
-		    new = setadd(new, var_ref(cp.v.list[i]));
-		    i++;
-		}
-		db_change_parents(new_obj(c), new, none);
-		free_var(new);
-	    }
+	    free_var(obj);
+	    free_var(*data);
+	    free_data(data);
+	    return no_var_pack();
 	}
-
-	db_change_parents(new_obj(oid), nothing, none);
-
-	/* Finish the demolition. */
-	incr_quota(db_object_owner(oid));
-	db_destroy_object(oid);
-
-	free_var(*data);
-	free_data(data);
-	return no_var_pack();
     }
 
     panic("Can't happen in BF_RECYCLE");

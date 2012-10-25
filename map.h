@@ -37,8 +37,6 @@ extern Var mapinsert(Var map, Var key, Var value);
 extern const rbnode *maplookup(Var map, Var key, Var *value, int case_matters);
 extern int mapseek(Var map, Var key, Var *iter, int case_matters);
 extern int mapequal(Var lhs, Var rhs, int case_matters);
-typedef int (*mapfunc) (Var key, Var value, void *data, int first);
-extern int mapforeach(Var map, mapfunc func, void *data);
 extern int32 maplength(Var map);
 extern int mapempty(Var map);
 
@@ -56,6 +54,9 @@ extern void iternext(Var iter);
 
 extern Var maprange(Var map, rbtrav *from, rbtrav *to);
 extern enum error maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new);
+
+typedef int (*mapfunc) (Var key, Var value, void *data, int first);
+extern int mapforeach(Var map, mapfunc func, void *data);
 
 /* You're never going to need to use this!
  * Clears a node in place by setting the associated value type to

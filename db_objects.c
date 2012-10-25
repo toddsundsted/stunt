@@ -255,10 +255,11 @@ db_destroy_object(Objid oid)
 	free_str(o->propdefs.l[i].name);
 	free_var(o->propval[i].var);
     }
-    if (o->propval)
-	myfree(o->propval, M_PVAL);
     if (o->propdefs.l)
 	myfree(o->propdefs.l, M_PROPDEF);
+    if (o->propval)
+	myfree(o->propval, M_PVAL);
+    o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
 	if (v->program)
@@ -360,16 +361,22 @@ db_destroy_anonymous_object(void *obj)
 {
     Object *o = (Object *)obj;
     Verbdef *v, *w;
+    int i;
 
     free_str(o->name);
     o->name = NULL;
 
     free_var(o->parents);
 
-    if (o->propval)
-	myfree(o->propval, M_PVAL);
+    for (i = 0; i < o->propdefs.cur_length; i++)
+	free_str(o->propdefs.l[i].name);
     if (o->propdefs.l)
 	myfree(o->propdefs.l, M_PROPDEF);
+    for (i = 0; i < o->nval; i++)
+	free_var(o->propval[i].var);
+    if (o->propval)
+	myfree(o->propval, M_PVAL);
+    o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
 	if (v->program)
@@ -379,15 +386,12 @@ db_destroy_anonymous_object(void *obj)
 	myfree(v, M_VERBDEF);
     }
 
-    myfree(o, M_ANON);
-}
-
-void
-db_invalidate_anonymous_object(void *obj)
-{
-    Object *o = (Object *)obj;
-
     dbpriv_set_object_flag(o, FLAG_INVALID);
+
+    /* Since this map could possibly be the root of a cycle, final
+     * destruction is handled in the garbage collector.
+     */
+    /*myfree(o, M_ANON);*/
 }
 
 int

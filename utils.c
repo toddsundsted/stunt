@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <assert.h>
+
 #include "my-ctype.h"
 #include "my-stdio.h"
 #include "my-string.h"
@@ -23,6 +25,7 @@
 #include "db.h"
 #include "db_io.h"
 #include "exceptions.h"
+#include "garbage.h"
 #include "list.h"
 #include "log.h"
 #include "map.h"
@@ -135,43 +138,99 @@ str_hash(const char *s)
     return ans;
 }
 
+/* Used by the cyclic garbage collector to free values that entered
+ * the buffer of possible roots, but subsequently had their refcount
+ * drop to zero.  Roughly corresponds to `Free' in Bacon and Rajan.
+ */
+void
+aux_free(Var v)
+{
+    switch ((int) v.type) {
+    case TYPE_LIST:
+	myfree(v.v.list, M_LIST);
+	break;
+    case TYPE_MAP:
+	myfree(v.v.tree, M_TREE);
+	break;
+    case TYPE_ANON:
+	assert(db_object_has_flag2(v, FLAG_INVALID));
+	myfree(v.v.anon, M_ANON);
+	break;
+    }
+}
+
+/* Corresponds to `Decrement' and `Release' in Bacon and Rajan. */
 void
 complex_free_var(Var v)
 {
-    int i;
-
     switch ((int) v.type) {
     case TYPE_STR:
 	if (v.v.str)
 	    free_str(v.v.str);
 	break;
+    case TYPE_FLOAT:
+	if (delref(v.v.fnum) == 0)
+	    myfree(v.v.fnum, M_FLOAT);
+	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
-	    Var *pv;
-	    for (i = v.v.list[0].v.num, pv = v.v.list + 1; i > 0; i--, pv++)
-		free_var(*pv);
-	    myfree(v.v.list, M_LIST);
+	    destroy_list(v);
+	    gc_set_color(v.v.list, GC_BLACK);
+	    if (!gc_is_buffered(v.v.list))
+		myfree(v.v.list, M_LIST);
 	}
+	else
+	    gc_possible_root(v);
 	break;
     case TYPE_MAP:
-	if (delref(v.v.tree) == 0)
+	if (delref(v.v.tree) == 0) {
 	    destroy_map(v);
+	    gc_set_color(v.v.tree, GC_BLACK);
+	    if (!gc_is_buffered(v.v.tree))
+		myfree(v.v.tree, M_TREE);
+	}
+	else
+	    gc_possible_root(v);
 	break;
     case TYPE_ITER:
 	if (delref(v.v.trav) == 0)
 	    destroy_iter(v);
 	break;
-    case TYPE_FLOAT:
-	if (delref(v.v.fnum) == 0)
-	    myfree(v.v.fnum, M_FLOAT);
-	break;
     case TYPE_ANON:
-	if (v.v.anon && delref(v.v.anon) == 0)
-	    queue_anonymous_object(v); /* queue for recycle */
+	/* The first time an anonymous object's reference count drops
+	 * to zero, it isn't immediately destroyed/freed.  Instead, it
+	 * is queued up to be "recycled" (to have its `recycle' verb
+	 * called) -- this has the effect of (perhaps temporarily)
+	 * creating a new reference to the object, as well as setting
+	 * the recycled flag and (eventually) the invalid flag.
+	 */
+	if (v.v.anon) {
+	    if (delref(v.v.anon) == 0) {
+		if (db_object_has_flag2(v, FLAG_RECYCLED)) {
+		    gc_set_color(v.v.anon, GC_BLACK);
+		    if (!gc_is_buffered(v.v.anon))
+			myfree(v.v.anon, M_ANON);
+		}
+		else if (db_object_has_flag2(v, FLAG_INVALID)) {
+		    incr_quota(db_object_owner2(v));
+		    db_destroy_anonymous_object(v.v.anon);
+		    gc_set_color(v.v.anon, GC_BLACK);
+		    if (!gc_is_buffered(v.v.anon))
+			myfree(v.v.anon, M_ANON);
+		}
+		else {
+		    queue_anonymous_object(v);
+		}
+	    }
+	    else {
+		gc_possible_root(v);
+	    }
+	}
 	break;
     }
 }
 
+/* Corresponds to `Increment' in Bacon and Rajan. */
 Var
 complex_var_ref(Var v)
 {
@@ -179,21 +238,24 @@ complex_var_ref(Var v)
     case TYPE_STR:
 	addref(v.v.str);
 	break;
+    case TYPE_FLOAT:
+	addref(v.v.fnum);
+	break;
+    case TYPE_LIST:
+	addref(v.v.list);
+	break;
     case TYPE_MAP:
 	addref(v.v.tree);
 	break;
     case TYPE_ITER:
 	addref(v.v.trav);
 	break;
-    case TYPE_LIST:
-	addref(v.v.list);
-	break;
-    case TYPE_FLOAT:
-	addref(v.v.fnum);
-	break;
     case TYPE_ANON:
-	if (v.v.anon)
+	if (v.v.anon) {
 	    addref(v.v.anon);
+	    if (gc_get_color(v.v.anon) != GC_GREEN)
+		gc_set_color(v.v.anon, GC_BLACK);
+	}
 	break;
     }
     return v;
@@ -202,28 +264,21 @@ complex_var_ref(Var v)
 Var
 complex_var_dup(Var v)
 {
-    int i;
-    Var new;
-
     switch ((int) v.type) {
     case TYPE_STR:
 	v.v.str = str_dup(v.v.str);
+	break;
+    case TYPE_FLOAT:
+	v = new_float(*v.v.fnum);
+	break;
+    case TYPE_LIST:
+	v = list_dup(v);
 	break;
     case TYPE_MAP:
 	v = map_dup(v);
 	break;
     case TYPE_ITER:
 	v = iter_dup(v);
-	break;
-    case TYPE_LIST:
-	new = new_list(v.v.list[0].v.num);
-	for (i = 1; i <= v.v.list[0].v.num; i++) {
-	    new.v.list[i] = var_ref(v.v.list[i]);
-	}
-	v.v.list = new.v.list;
-	break;
-    case TYPE_FLOAT:
-	v = new_float(*v.v.fnum);
 	break;
     case TYPE_ANON:
 	panic("cannot var_dup() anonymous objects\n");

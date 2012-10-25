@@ -80,7 +80,10 @@ destroy_list(Var list)
     for (i = list.v.list[0].v.num, pv = list.v.list + 1; i > 0; i--, pv++)
 	free_var(*pv);
 
-    myfree(v.v.list, M_LIST);
+    /* Since this list could possibly be the root of a cycle, final
+     * destruction is handled in the garbage collector.
+     */
+    /*myfree(list.v.list, M_LIST);*/
 }
 
 /* called from utils.c */

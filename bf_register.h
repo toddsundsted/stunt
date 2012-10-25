@@ -33,6 +33,7 @@ extern void register_yajl(void);
 extern void register_base64(void);
 extern void register_fileio(void);
 extern void register_exec(void);
+extern void register_gc(void);
 
 /* 
  * $Log: bf_register.h,v $
