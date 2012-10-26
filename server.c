@@ -586,8 +586,10 @@ main_loop(void)
 	}
 #endif
 
+#ifdef ENABLE_GC
 	if (gc_run_called || gc_roots_count > 2000)
 	    gc_collect();
+#endif
 
 	recycle_anonymous_objects();
 

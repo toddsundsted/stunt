@@ -28,6 +28,22 @@
 /* #define LOG_COMMANDS */
 
 /******************************************************************************
+ * Define ENABLE_GC to enable automatic garbage collection of cyclic data
+ * structures.  This is safe but adds overhead to the reference counting
+ * mechanism -- currently about a 5% penalty, even for operations that do not
+ * involve anonymous objects.  If disabled the server may leak memory
+ * because it will lose track of cyclic data structures.
+ */
+#define ENABLE_GC
+
+/******************************************************************************
+ * Define LOG_GC_STATS to enabled logging of reference cycle collection
+ * stats and debugging information while the server is running.
+ */
+
+#define LOG_GC_STATS
+
+/******************************************************************************
  * The server normally forks a separate process to make database checkpoints;
  * the original process continues to service user commands as usual while the
  * new process writes out the contents of its copy of memory to a disk file.

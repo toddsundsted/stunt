@@ -81,9 +81,12 @@ destroy_list(Var list)
 	free_var(*pv);
 
     /* Since this list could possibly be the root of a cycle, final
-     * destruction is handled in the garbage collector.
+     * destruction is handled in the garbage collector if garbage
+     * collection is enabled.
      */
-    /*myfree(list.v.list, M_LIST);*/
+#ifndef ENABLE_GC
+    myfree(list.v.list, M_LIST);
+#endif
 }
 
 /* called from utils.c */
