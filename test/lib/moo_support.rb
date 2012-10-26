@@ -11,6 +11,9 @@ module MooSupport
   NOTHING = MooObj.new('#-1')
   AMBIGUOUS_MATCH = MooObj.new('#-2')
   FAILED_MATCH = MooObj.new('#-3')
+  SYSTEM = MooObj.new('#0')
+  OBJECT = MooObj.new('#1')
+  ANONYMOUS = MooObj.new('#5')
 
   E_NONE = MooErr.new('E_NONE')
   E_TYPE = MooErr.new('E_TYPE')
@@ -31,6 +34,10 @@ module MooSupport
   E_FILE = MooErr.new('E_FILE')
   E_EXEC = MooErr.new('E_EXEC')
   E_INTRPT = MooErr.new('E_INTRPT')
+
+  TYPE_OBJ = 0
+  TYPE_INT = 1
+  TYPE_ANON = 12
 
   raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
 
@@ -120,6 +127,10 @@ module MooSupport
     simplify command "; return #{expression};"
   end
 
+  def _(wrapped)
+    simplify(command(%Q|; return #{wrapped};|))
+  end
+
   ## Support
 
   def nothing
@@ -169,6 +180,10 @@ module MooSupport
   end
 
   ### General Operations Applicable to all Values
+
+  def typeof(value)
+    simplify command %Q|; return typeof(#{value_ref(value)});|
+  end
 
   def tostr(value)
     simplify command %Q|; return tostr(#{value_ref(value)});|
@@ -249,32 +264,48 @@ module MooSupport
     true_or_false simplify command %Q|; return valid(#{obj_ref(object)});|
   end
 
-  def chparent(*args)
-    simplify command %Q|; return chparent(#{args.map{|a| value_ref(a)}.join(', ')});|
+  def chparent(object, parent, anons = [])
+    unless anons.empty?
+      simplify command %Q|; return chparent(#{obj_ref(object)}, #{obj_ref(parent)}, {#{anons.map{|a| obj_ref(a)}.join(', ')}});|
+    else
+      simplify command %Q|; return chparent(#{obj_ref(object)}, #{obj_ref(parent)});|
+    end
   end
 
-  def chparents(*args)
-    simplify command %Q|; return chparents(#{args.map{|a| value_ref(a)}.join(', ')});|
+  def chparents(object, parents, anons = [])
+    unless anons.empty?
+      simplify command %Q|; return chparents(#{obj_ref(object)}, {#{parents.map{|a| obj_ref(a)}.join(', ')}}, {#{anons.map{|a| obj_ref(a)}.join(', ')}});|
+    else
+      simplify command %Q|; return chparents(#{obj_ref(object)}, {#{parents.map{|a| obj_ref(a)}.join(', ')}});|
+    end
   end
 
   def parent(*args)
-    simplify command %Q|; return parent(#{args.map{|a| value_ref(a)}.join(', ')});|
+    simplify command %Q|; return parent(#{args.map{|a| obj_ref(a)}.join(', ')});|
   end
 
   def parents(*args)
-    simplify command %Q|; return parents(#{args.map{|a| value_ref(a)}.join(', ')});|
+    simplify command %Q|; return parents(#{args.map{|a| obj_ref(a)}.join(', ')});|
   end
 
   def children(object)
     simplify command %Q|; return children(#{obj_ref(object)});|
   end
 
-  def ancestors(*args)
-    simplify command %Q|; return ancestors(#{args.map{|a| value_ref(a)}.join(', ')});|
+  def ancestors(object, *args)
+    unless args.empty?
+      simplify command %Q|; return ancestors(#{obj_ref(object)}, #{args.map{|a| value_ref(a)}.join(', ')});|
+    else
+      simplify command %Q|; return ancestors(#{obj_ref(object)});|
+    end
   end
 
-  def descendants(*args)
-    simplify command %Q|; return descendants(#{args.map{|a| value_ref(a)}.join(', ')});|
+  def descendants(object, *args)
+    unless args.empty?
+      simplify command %Q|; return descendants(#{obj_ref(object)}, #{args.map{|a| value_ref(a)}.join(', ')});|
+    else
+      simplify command %Q|; return descendants(#{obj_ref(object)});|
+    end
   end
 
   def isa(object, parent)
@@ -478,6 +509,14 @@ module MooSupport
     simplify command %|; shutdown();|
   end
 
+  def run_gc
+    simplify command %|; return run_gc();|
+  end
+
+  def gc_stats
+    simplify command %|; return gc_stats();|
+  end
+
   ## Server Statistics and Miscellaneous Information
 
   def verb_cache_stats
@@ -608,7 +647,7 @@ module MooSupport
     end
   end
 
-  private
+  protected
 
   def obj_ref(obj_ref)
     case obj_ref
@@ -648,6 +687,8 @@ module MooSupport
       value
     end
   end
+
+  private
 
   def property_info_to_s(property_info)
     unless property_info.class == String

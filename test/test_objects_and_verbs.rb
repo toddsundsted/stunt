@@ -4,15 +4,48 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
 
   def setup
     run_test_as('programmer') do
-      @obj = simplify(command(%Q|; return create($nothing);|))
-      add_property(@obj, 'tmp', 0, ['player', 'rw'])
+      @obj = simplify(command(%Q|; o = create($nothing); o.r = 1; o.w = 1; return o;|))
     end
   end
 
   ## Must redefine this because anonymous objects can't be
   ## passed in/out/through Ruby-space.
-  def create(*args)
-    simplify(command(%Q|; #{@obj}.tmp = create(#{args.map{|a| value_ref(a)}.join(', ')}); return "#{@obj}.tmp";|))
+  def create(parents, *args)
+    case parents
+    when Array
+      parents = '{' + parents.map { |p| obj_ref(p) }.join(', ') + '}'
+    else
+      parents = obj_ref(parents)
+    end
+
+    p = rand(36**5).to_s(36)
+
+    owner = nil
+    anon = nil
+
+    unless args.empty?
+      if args.length > 1
+        owner, anon = *args
+      elsif args[0].kind_of? Numeric
+        anon = args[0]
+      else
+        owner = args[0]
+      end
+    end
+
+    if !owner.nil? and !anon.nil?
+      simplify(command(%Q|; add_property(#{@obj}, "_#{p}", create(#{parents}, #{obj_ref(owner)}, #{value_ref(anon)}), {player, "rw"}); return "#{@obj}._#{p}";|))
+    elsif !owner.nil?
+      simplify(command(%Q|; add_property(#{@obj}, "_#{p}", create(#{parents}, #{obj_ref(owner)}), {player, "rw"}); return "#{@obj}._#{p}";|))
+    elsif !anon.nil?
+      simplify(command(%Q|; add_property(#{@obj}, "_#{p}", create(#{parents}, #{value_ref(anon)}), {player, "rw"}); return "#{@obj}._#{p}";|))
+    else
+      simplify(command(%Q|; add_property(#{@obj}, "_#{p}", create(#{parents}), {player, "rw"}); return "#{@obj}._#{p}";|))
+    end
+  end
+
+  def typeof(*args)
+    simplify(command(%Q|; return typeof(#{args.join(', ')});|))
   end
 
   SCENARIOS = [
@@ -39,7 +72,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        assert_equal E_INVARG, add_verb(o, [:nothing, '', 'foobar'], ['this', 'none', 'this'])
+        assert_equal E_INVARG, add_verb(o, [NOTHING, '', 'foobar'], ['this', 'none', 'this'])
       end
     end
   end
@@ -115,7 +148,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('programmer') do
         o = create(*args)
-        assert_equal E_PERM, add_verb(o, [:system, '', 'foobar'], ['this', 'none', 'this'])
+        assert_equal E_PERM, add_verb(o, [SYSTEM, '', 'foobar'], ['this', 'none', 'this'])
       end
     end
   end
@@ -133,7 +166,7 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     SCENARIOS.each do |args|
       run_test_as('wizard') do
         o = create(*args)
-        assert_not_equal E_PERM, add_verb(o, [:system, '', 'foobar'], ['this', 'none', 'this'])
+        assert_not_equal E_PERM, add_verb(o, [SYSTEM, '', 'foobar'], ['this', 'none', 'this'])
       end
     end
   end
@@ -858,6 +891,334 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
       end
       run_test_as('wizard') do
         assert_not_equal E_PERM, disassemble(o, 'foobar')
+      end
+    end
+  end
+
+  ## miscellaneous
+
+  def test_that_invocation_and_inheritance_works
+    SCENARIOS.each do |args|
+      run_test_as('wizard') do
+        a = kahuna(NOTHING, 'a')
+        b = kahuna(a, 'b')
+        c = kahuna(b, 'c', args[1])
+
+        add_verb(a, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+        set_verb_code(a, 'foo') do |vc|
+          vc << %Q|return "foo";|
+        end
+
+        assert_equal 'foo', call(a, 'foo')
+        assert_equal 'foo', call(b, 'foo')
+        assert_equal 'foo', call(c, 'foo')
+
+        assert_equal 'a', call(a, 'a')
+        assert_equal 'b', call(b, 'b')
+        assert_equal 'c', call(c, 'c')
+
+        chparent(c, a)
+        chparent(b, NOTHING)
+        typeof(c) == TYPE_ANON ? chparent(a, b, [c]) : chparent(a, b)
+
+        assert_equal 'foo', call(a, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal 'foo', call(c, 'foo')
+
+        delete_verb(a, 'foo')
+
+        assert_equal E_VERBNF, call(a, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal E_VERBNF, call(c, 'foo')
+
+        assert_equal 'a', call(a, 'a')
+        assert_equal 'b', call(b, 'b')
+        assert_equal 'c', call(c, 'c')
+
+        add_verb(a, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+        set_verb_code(a, 'foo') do |vc|
+          vc << %Q|return "foo";|
+        end
+
+        chparents(c, [a, b])
+
+        assert_equal 'foo', call(a, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal 'foo', call(c, 'foo')
+
+        assert_equal 'a', call(c, 'a')
+        assert_equal 'b', call(c, 'b')
+        assert_equal 'c', call(c, 'c')
+
+        chparents(c, [b, a])
+
+        assert_equal 'foo', call(a, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal 'foo', call(c, 'foo')
+
+        assert_equal 'a', call(c, 'a')
+        assert_equal 'b', call(c, 'b')
+        assert_equal 'c', call(c, 'c')
+
+        delete_verb(a, 'foo')
+
+        assert_equal E_VERBNF, call(a, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal E_VERBNF, call(c, 'foo')
+
+        assert_equal 'a', call(a, 'a')
+        assert_equal 'b', call(b, 'b')
+        assert_equal 'c', call(c, 'c')
+      end
+    end
+  end
+
+  def test_that_the_verb_cache_works
+    SCENARIOS.each do |args|
+      run_test_as('wizard') do
+        c = kahuna(NOTHING, 'c')
+        b = kahuna(c, 'b')
+        a = kahuna(b, 'a')
+
+        add_verb(a, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+        set_verb_code(a, 'foo') do |vc|
+          vc << %Q|return verb;|
+        end
+
+        # Test a case that challenges the verb cache.  Both M and N
+        # inherit from E.  M also inherits from A.  Because E defines
+        # `bar' it is the `first_parent_with_verbs' in the list of
+        # ancestors for M.  However, with respect to verbs `a' and
+        # `foo', it is NOT the _correct_ first parent, because these
+        # verbs are defined in the line of ancestors through A.
+        #
+        #      n
+        #       \
+        #        e (bar)
+        #       /
+        #      m
+        #       \
+        #        a (foo) - b - c
+        #
+
+        e = create(NOTHING)
+        add_verb(e, ['player', 'xd', 'bar'], ['this', 'none', 'this'])
+        set_verb_code(e, 'bar') do |vc|
+          vc << %Q|return verb;|
+        end
+
+        n = create([e], args[1])
+        m = create([e, a], args[1])
+
+        assert_equal 'bar', call(m, 'bar')
+        assert_equal 'bar', call(n, 'bar')
+
+        assert_equal 'foo', call(m, 'foo')
+        assert_equal E_VERBNF, call(n, 'foo')
+
+        assert_equal E_VERBNF, call(n, 'c')
+        assert_equal 'c', call(m, 'c')
+
+        assert_equal 'a', call(m, 'a')
+        assert_equal E_VERBNF, call(n, 'a')
+
+        assert_equal E_VERBNF, call(n, 'b')
+        assert_equal 'b', call(m, 'b')
+
+        chparents(m, [e, b])
+
+        assert_equal E_VERBNF, call(n, 'c')
+        assert_equal 'c', call(m, 'c')
+
+        assert_equal E_VERBNF, call(m, 'a')
+        assert_equal E_VERBNF, call(n, 'a')
+
+        assert_equal E_VERBNF, call(n, 'b')
+        assert_equal 'b', call(m, 'b')
+
+        chparents(m, [e, c])
+
+        assert_equal E_VERBNF, call(n, 'c')
+        assert_equal 'c', call(m, 'c')
+
+        assert_equal E_VERBNF, call(m, 'a')
+        assert_equal E_VERBNF, call(n, 'a')
+
+        assert_equal E_VERBNF, call(n, 'b')
+        assert_equal E_VERBNF, call(m, 'b')
+
+        chparents(m, [e])
+
+        assert_equal E_VERBNF, call(n, 'c')
+        assert_equal E_VERBNF, call(m, 'c')
+
+        assert_equal E_VERBNF, call(m, 'a')
+        assert_equal E_VERBNF, call(n, 'a')
+
+        assert_equal E_VERBNF, call(n, 'b')
+        assert_equal E_VERBNF, call(m, 'b')
+      end
+
+      run_test_as('wizard') do
+        vcs = verb_cache_stats
+        unless (vcs[0] == 0 && vcs[1] == 0 && vcs[2] == 0 && vcs[3] == 0)
+          s = create(NOTHING);
+          t = create(NOTHING);
+          m = create(s);
+          n = create(t);
+          a = create([m, n], args[1])
+
+          add_verb(s, [player, 'xd', 's'], ['this', 'none', 'this'])
+          set_verb_code(s, 's') { |vc| vc << %|return "s";| }
+          add_verb(t, [player, 'xd', 't'], ['this', 'none', 'this'])
+          set_verb_code(t, 't') { |vc| vc << %|return "t";| }
+          add_verb(m, [player, 'xd', 'm'], ['this', 'none', 'this'])
+          set_verb_code(m, 'm') { |vc| vc << %|return "m";| }
+          add_verb(n, [player, 'xd', 'n'], ['this', 'none', 'this'])
+          set_verb_code(n, 'n') { |vc| vc << %|return "n";| }
+
+          x = create(NOTHING)
+          add_verb(x, [player, 'xd', 'x'], ['this', 'none', 'this'])
+          set_verb_code(x, 'x') do |vc|
+            vc << %|recycle(create($nothing));|
+              vc << %|a = verb_cache_stats();|
+              vc << %|#{a}:s();|
+              vc << %|b = verb_cache_stats();|
+              vc << %|#{a}:s();|
+              vc << %|c = verb_cache_stats();|
+              vc << %|#{a}:t();|
+              vc << %|d = verb_cache_stats();|
+              vc << %|#{a}:t();|
+              vc << %|e = verb_cache_stats();|
+              vc << %|return {a, b, c, d, e};|
+          end
+
+          r = call(x, 'x')
+          ra, rb, rc, rd, re = r
+
+          # a:s()
+
+          assert_equal ra[0], rb[0] # no hit
+          assert_equal ra[1], rb[1] # no -hit
+          assert_equal ra[2] + 1, rb[2] # miss! (m)
+
+          # a:s()
+
+          assert_equal rb[0] + 1, rc[0] # hit! (m)
+          assert_equal rb[1], rc[1] # no -hit
+          assert_equal rb[2], rc[2] # no miss
+
+          # a:t()
+
+          assert_equal rc[0], rd[0] # no hit
+          assert_equal rc[1], rd[1] # no -hit!
+          assert_equal rc[2] + 2, rd[2] # miss! (on m and n)
+
+          # a:t()
+
+          assert_equal rd[0] + 1, re[0] # hit! (n)
+          assert_equal rd[1] + 1, re[1] # -hit! (m)
+          assert_equal rd[2], re[2] # no miss
+
+          assert_equal [0, 1, 1, 3, 3], r.map { |z| z[4][1] }
+        end
+      end
+    end
+  end
+
+  def test_that_pass_works
+    SCENARIOS.each do |args|
+      run_test_as('wizard') do
+        e = kahuna(NOTHING, 'e')
+        b = kahuna(_(e), 'b')
+        c = kahuna(_(b), 'c', args[1])
+
+        add_verb(e, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+        set_verb_code(e, 'foo') do |vc|
+          vc << %Q|return {"e", @`pass() ! ANY => {}'};|
+        end
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal ['e'], call(b, 'foo')
+        assert_equal ['e'], call(c, 'foo')
+
+        add_verb(b, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+        set_verb_code(b, 'foo') do |vc|
+          vc << %Q|return {"b", @`pass() ! ANY => {}'};|
+        end
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal ['b', 'e'], call(b, 'foo')
+        assert_equal ['b', 'e'], call(c, 'foo')
+
+        add_verb(c, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+        set_verb_code(c, 'foo') do |vc|
+          vc << %Q|return {"c", @`pass() ! ANY => {}'};|
+        end
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal ['b', 'e'], call(b, 'foo')
+        assert_equal ['c', 'b', 'e'], call(c, 'foo')
+
+        add_verb(c, ['player', 'xd', 'boo'], ['this', 'none', 'this'])
+        set_verb_code(c, 'boo') do |vc|
+          vc << %Q|return {"c", @pass()};|
+        end
+
+        assert_equal E_VERBNF, call(c, 'boo')
+
+        add_verb(e, ['player', 'xd', 'hoo'], ['this', 'none', 'this'])
+        set_verb_code(e, 'hoo') do |vc|
+          vc << %Q|return {"e", @pass()};|
+        end
+
+        assert_equal E_INVIND, call(e, 'hoo')
+
+        chparents(c, [e, b])
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal ['b', 'e'], call(b, 'foo')
+        assert_equal ['c', 'e'], call(c, 'foo')
+
+        chparents(c, [b, e])
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal ['b', 'e'], call(b, 'foo')
+        assert_equal ['c', 'b', 'e'], call(c, 'foo')
+
+        typeof(c) == TYPE_ANON ? chparents(b, [], [c]) : chparents(b, [])
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal ['b'], call(b, 'foo')
+        assert_equal ['c', 'b'], call(c, 'foo')
+
+        delete_verb(b, 'foo')
+
+        assert_equal ['e'], call(e, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal ['c', 'e'], call(c, 'foo')
+
+        delete_verb(e, 'foo')
+
+        assert_equal E_VERBNF, call(e, 'foo')
+        assert_equal E_VERBNF, call(b, 'foo')
+        assert_equal ['c'], call(c, 'foo')
+
+        assert_equal [_(b), _(e)], parents(c)
+
+        assert_equal E_VERBNF, call(c, 'goo')
+      end
+    end
+  end
+
+  private
+
+  def kahuna(parent, name, opt = 0)
+    create(parent, opt).tap do |object|
+      set(object, 'name', name)
+      add_verb(object, [player, 'xd', name], ['this', 'none', 'this'])
+      set_verb_code(object, name) do |vc|
+        vc << %|return "#{name}";|
       end
     end
   end

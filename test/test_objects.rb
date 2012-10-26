@@ -189,7 +189,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_parent_chparent
+  def test_parent_chparent # migrated
     run_test_as('wizard') do
       a = create(NOTHING)
       b = create(NOTHING)
@@ -322,7 +322,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_parent_chparent_errors
+  def test_parent_chparent_errors # migrated
     run_test_as('wizard') do
       a = create(NOTHING)
       b = create(NOTHING)
@@ -331,19 +331,19 @@ class TestObject < Test::Unit::TestCase
       chparent a, b
       chparent b, c
 
-      assert_equal E_ARGS, parent()
-      assert_equal E_ARGS, parent(1, 2)
-      assert_equal E_TYPE, parent(1)
-      assert_equal E_TYPE, parent('1')
+      #assert_equal E_ARGS, parent()
+      #assert_equal E_ARGS, parent(1, 2)
+      #assert_equal E_TYPE, parent(1)
+      #assert_equal E_TYPE, parent('1')
       assert_equal E_INVARG, parent(:nothing)
       assert_equal E_INVARG, parent(invalid_object)
 
-      assert_equal E_ARGS, chparent()
-      assert_equal E_ARGS, chparent(1)
-      assert_equal E_ARGS, chparent(1, 2, 3)
-      assert_equal E_TYPE, chparent(1, 2)
-      assert_equal E_TYPE, chparent(:object, 2)
-      assert_equal E_TYPE, chparent(:object, '2')
+      #assert_equal E_ARGS, chparent()
+      #assert_equal E_ARGS, chparent(1)
+      #assert_equal E_ARGS, chparent(1, 2, 3)
+      #assert_equal E_TYPE, chparent(1, 2)
+      #assert_equal E_TYPE, chparent(:object, 2)
+      #assert_equal E_TYPE, chparent(:object, '2')
       assert_equal E_INVARG, chparent(NOTHING, :object)
       assert_equal E_INVARG, chparent(:object, invalid_object)
       assert_equal E_RECMOVE, chparent(:object, :object)
@@ -418,7 +418,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_that_parent_maps_parents_to_parent
+  def test_that_parent_maps_parents_to_parent # migrated
     run_test_as('programmer') do
 
       # Test that `parent()' performs the following mapping:
@@ -445,62 +445,62 @@ class TestObject < Test::Unit::TestCase
 
   def test_recycle
     run_test_as('wizard') do
-      a = kahuna(NOTHING, NOTHING, 'a')
-      b = kahuna(a, a, 'b')
+      e = kahuna(NOTHING, NOTHING, 'e')
+      b = kahuna(e, e, 'b')
       m = kahuna(b, b, 'm')
       n = kahuna(b, b, 'n')
 
-      assert_equal NOTHING, parent(a)
-      assert_equal a, parent(b)
+      assert_equal NOTHING, parent(e)
+      assert_equal e, parent(b)
       assert_equal b, parent(m)
       assert_equal b, parent(n)
 
-      assert_equal [b], children(a)
+      assert_equal [b], children(e)
       assert_equal [m, n], children(b)
       assert_equal [], children(m)
       assert_equal [], children(n)
 
-      assert_equal NOTHING, get(a, 'location')
-      assert_equal a, get(b, 'location')
+      assert_equal NOTHING, get(e, 'location')
+      assert_equal e, get(b, 'location')
       assert_equal b, get(m, 'location')
       assert_equal b, get(n, 'location')
 
-      assert_equal [b], get(a, 'contents')
+      assert_equal [b], get(e, 'contents')
       assert_equal [m, n], get(b, 'contents')
       assert_equal [], get(m, 'contents')
       assert_equal [], get(n, 'contents')
 
       recycle(b)
 
-      assert_equal NOTHING, parent(a)
+      assert_equal NOTHING, parent(e)
       assert_equal E_INVARG, parent(b)
-      assert_equal a, parent(m)
-      assert_equal a, parent(n)
+      assert_equal e, parent(m)
+      assert_equal e, parent(n)
 
-      assert_equal [m, n], children(a)
+      assert_equal [m, n], children(e)
       assert_equal E_INVARG, children(b)
       assert_equal [], children(m)
       assert_equal [], children(n)
 
-      assert_equal NOTHING, get(a, 'location')
+      assert_equal NOTHING, get(e, 'location')
       assert_equal E_INVIND, get(b, 'location')
       assert_equal NOTHING, get(m, 'location')
       assert_equal NOTHING, get(n, 'location')
 
-      assert_equal [], get(a, 'contents')
+      assert_equal [], get(e, 'contents')
       assert_equal E_INVIND, get(b, 'contents')
       assert_equal [], get(m, 'contents')
       assert_equal [], get(n, 'contents')
 
-      assert_equal 'a', call(a, 'a')
-      assert_equal 'a', call(m, 'a')
-      assert_equal 'a', call(n, 'a')
+      assert_equal 'e', call(e, 'e')
+      assert_equal 'e', call(m, 'e')
+      assert_equal 'e', call(n, 'e')
       assert_equal 'm', call(m, 'm')
       assert_equal 'n', call(n, 'n')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
       assert_equal 'm', get(m, 'm')
       assert_equal 'n', get(n, 'n')
 
@@ -574,7 +574,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_that_recycling_a_parent_does_not_blow_away_all_parents
+  def test_that_recycling_a_parent_does_not_blow_away_all_parents # migrated
     run_test_as('programmer') do
       a = create([])
       b = create([])
@@ -590,7 +590,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_that_recycling_a_parent_merges_remaining_parents_correctly
+  def test_that_recycling_a_parent_merges_remaining_parents_correctly # migrated
     run_test_as('programmer') do
       a = create(:object)
       b = create([a])
@@ -767,38 +767,38 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_pass
+  def test_pass # migrated
     run_test_as('wizard') do
-      a = kahuna(NOTHING, NOTHING, 'a')
-      b = kahuna(a, NOTHING, 'b')
+      e = kahuna(NOTHING, NOTHING, 'e')
+      b = kahuna(e, NOTHING, 'b')
       c = kahuna(b, NOTHING, 'c')
 
-      add_verb(a, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
-      set_verb_code(a, 'foo') do |vc|
-        vc << %Q|return {"a", @`pass() ! ANY => {}'};|
+      add_verb(e, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
+      set_verb_code(e, 'foo') do |vc|
+        vc << %Q|return {"e", @`pass() ! ANY => {}'};|
       end
 
-      assert_equal ['a'], call(a, 'foo')
-      assert_equal ['a'], call(b, 'foo')
-      assert_equal ['a'], call(c, 'foo')
+      assert_equal ['e'], call(e, 'foo')
+      assert_equal ['e'], call(b, 'foo')
+      assert_equal ['e'], call(c, 'foo')
 
       add_verb(b, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
       set_verb_code(b, 'foo') do |vc|
         vc << %Q|return {"b", @`pass() ! ANY => {}'};|
       end
 
-      assert_equal ['a'], call(a, 'foo')
-      assert_equal ['b', 'a'], call(b, 'foo')
-      assert_equal ['b', 'a'], call(c, 'foo')
+      assert_equal ['e'], call(e, 'foo')
+      assert_equal ['b', 'e'], call(b, 'foo')
+      assert_equal ['b', 'e'], call(c, 'foo')
 
       add_verb(c, ['player', 'xd', 'foo'], ['this', 'none', 'this'])
       set_verb_code(c, 'foo') do |vc|
         vc << %Q|return {"c", @`pass() ! ANY => {}'};|
       end
 
-      assert_equal ['a'], call(a, 'foo')
-      assert_equal ['b', 'a'], call(b, 'foo')
-      assert_equal ['c', 'b', 'a'], call(c, 'foo')
+      assert_equal ['e'], call(e, 'foo')
+      assert_equal ['b', 'e'], call(b, 'foo')
+      assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
       add_verb(c, ['player', 'xd', 'boo'], ['this', 'none', 'this'])
       set_verb_code(c, 'boo') do |vc|
@@ -807,50 +807,50 @@ class TestObject < Test::Unit::TestCase
 
       assert_equal E_VERBNF, call(c, 'boo')
 
-      add_verb(a, ['player', 'xd', 'hoo'], ['this', 'none', 'this'])
-      set_verb_code(a, 'hoo') do |vc|
-        vc << %Q|return {"a", @pass()};|
+      add_verb(e, ['player', 'xd', 'hoo'], ['this', 'none', 'this'])
+      set_verb_code(e, 'hoo') do |vc|
+        vc << %Q|return {"e", @pass()};|
       end
 
-      assert_equal E_INVIND, call(a, 'hoo')
+      assert_equal E_INVIND, call(e, 'hoo')
 
-      chparents(c, [a, b])
+      chparents(c, [e, b])
 
-      assert_equal ['a'], call(a, 'foo')
-      assert_equal ['b', 'a'], call(b, 'foo')
-      assert_equal ['c', 'a'], call(c, 'foo')
+      assert_equal ['e'], call(e, 'foo')
+      assert_equal ['b', 'e'], call(b, 'foo')
+      assert_equal ['c', 'e'], call(c, 'foo')
 
-      chparents(c, [b, a])
+      chparents(c, [b, e])
 
-      assert_equal ['a'], call(a, 'foo')
-      assert_equal ['b', 'a'], call(b, 'foo')
-      assert_equal ['c', 'b', 'a'], call(c, 'foo')
+      assert_equal ['e'], call(e, 'foo')
+      assert_equal ['b', 'e'], call(b, 'foo')
+      assert_equal ['c', 'b', 'e'], call(c, 'foo')
 
       chparents(b, [])
 
-      assert_equal ['a'], call(a, 'foo')
+      assert_equal ['e'], call(e, 'foo')
       assert_equal ['b'], call(b, 'foo')
       assert_equal ['c', 'b'], call(c, 'foo')
 
       delete_verb(b, 'foo')
 
-      assert_equal ['a'], call(a, 'foo')
+      assert_equal ['e'], call(e, 'foo')
       assert_equal E_VERBNF, call(b, 'foo')
-      assert_equal ['c', 'a'], call(c, 'foo')
+      assert_equal ['c', 'e'], call(c, 'foo')
 
-      delete_verb(a, 'foo')
+      delete_verb(e, 'foo')
 
-      assert_equal E_VERBNF, call(a, 'foo')
+      assert_equal E_VERBNF, call(e, 'foo')
       assert_equal E_VERBNF, call(b, 'foo')
       assert_equal ['c'], call(c, 'foo')
 
-      assert_equal [b, a], parents(c)
+      assert_equal [b, e], parents(c)
 
       assert_equal E_VERBNF, call(c, 'goo')
     end
   end
 
-  def test_verbs_and_invocation_and_inheritance
+  def test_verbs_and_invocation_and_inheritance # migrated
     run_test_as('wizard') do
       a = create(NOTHING)
       b = create(a)
@@ -1058,179 +1058,179 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_properties_and_inheritance
+  def test_properties_and_inheritance # migrated
     run_test_as('programmer') do
-      a = create(NOTHING)
+      e = create(NOTHING)
       b = create(NOTHING)
       c = create(NOTHING)
 
-      m = create(a)
-      n = create(a)
+      m = create(e)
+      n = create(e)
 
-      add_property(a, 'a1', 'a1', [player, ''])
-      add_property(a, 'a', 'a', [player, ''])
+      add_property(e, 'e1', 'e1', [player, ''])
+      add_property(e, 'e', 'e', [player, ''])
       add_property(b, 'b1', ['b1'], [player, 'r'])
       add_property(b, 'b', ['b'], [player, 'r'])
       add_property(c, 'c', location, [player, 'w'])
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal E_PROPNF, property_info(a, 'b')
-      assert_equal E_PROPNF, property_info(a, 'b1')
-      assert_equal E_PROPNF, property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a1')
-      assert_equal [player, ''], property_info(m, 'a')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal E_PROPNF, property_info(e, 'b')
+      assert_equal E_PROPNF, property_info(e, 'b1')
+      assert_equal E_PROPNF, property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e1')
+      assert_equal [player, ''], property_info(m, 'e')
       assert_equal E_PROPNF, property_info(n, 'b1')
       assert_equal E_PROPNF, property_info(n, 'b')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal E_PROPNF, get(a, 'b')
-      assert_equal E_PROPNF, get(a, 'b1')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal E_PROPNF, get(e, 'b')
+      assert_equal E_PROPNF, get(e, 'b1')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(n, 'e1')
 
-      assert_equal 'aa', set(a, 'a', 'aa')
-      assert_equal E_PROPNF, set(a, 'b', 'bb')
-      assert_equal E_PROPNF, set(a, 'c', 'cc')
-      assert_equal '11', set(m, 'a', '11')
-      assert_equal 'aa', set(n, 'a', 'aa')
+      assert_equal 'ee', set(e, 'e', 'ee')
+      assert_equal E_PROPNF, set(e, 'b', 'bb')
+      assert_equal E_PROPNF, set(e, 'c', 'cc')
+      assert_equal '11', set(m, 'e', '11')
+      assert_equal 'ee', set(n, 'e', 'ee')
 
-      assert_equal 'aa', get(a, 'a')
-      assert_equal E_PROPNF, get(a, 'b')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal '11', get(m, 'a')
-      assert_equal 'aa', get(n, 'a')
+      assert_equal 'ee', get(e, 'e')
+      assert_equal E_PROPNF, get(e, 'b')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal '11', get(m, 'e')
+      assert_equal 'ee', get(n, 'e')
 
-      assert_equal 'a', set(a, 'a', 'a')
+      assert_equal 'e', set(e, 'e', 'e')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal E_PROPNF, get(a, 'b')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal '11', get(m, 'a')
-      assert_equal 'aa', get(n, 'a')
+      assert_equal 'e', get(e, 'e')
+      assert_equal E_PROPNF, get(e, 'b')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal '11', get(m, 'e')
+      assert_equal 'ee', get(n, 'e')
 
-      clear_property(m, 'a')
-      clear_property(n, 'a')
+      clear_property(m, 'e')
+      clear_property(n, 'e')
 
-      assert chparent(a, b)
+      assert chparent(e, b)
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal [player, 'r'], property_info(a, 'b')
-      assert_equal [player, 'r'], property_info(a, 'b1')
-      assert_equal E_PROPNF, property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a1')
-      assert_equal [player, ''], property_info(m, 'a')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal [player, 'r'], property_info(e, 'b')
+      assert_equal [player, 'r'], property_info(e, 'b1')
+      assert_equal E_PROPNF, property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e1')
+      assert_equal [player, ''], property_info(m, 'e')
       assert_equal [player, 'r'], property_info(n, 'b1')
       assert_equal [player, 'r'], property_info(n, 'b')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(n, 'e1')
 
-      assert chparent(a, c)
+      assert chparent(e, c)
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal E_PROPNF, property_info(a, 'b')
-      assert_equal E_PROPNF, property_info(a, 'b1')
-      assert_equal [player, 'w'], property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a1')
-      assert_equal [player, ''], property_info(m, 'a')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal E_PROPNF, property_info(e, 'b')
+      assert_equal E_PROPNF, property_info(e, 'b1')
+      assert_equal [player, 'w'], property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e1')
+      assert_equal [player, ''], property_info(m, 'e')
       assert_equal E_PROPNF, property_info(n, 'b1')
       assert_equal E_PROPNF, property_info(n, 'b')
       assert_equal [player, 'w'], property_info(m, 'c')
       assert_equal [player, 'w'], property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal E_PROPNF, get(a, 'b')
-      assert_equal E_PROPNF, get(a, 'b1')
-      assert_equal location, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal E_PROPNF, get(e, 'b')
+      assert_equal E_PROPNF, get(e, 'b1')
+      assert_equal location, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
       delete_property(c, 'c')
       add_property(c, 'c', 'c', [player, 'c'])
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal E_PROPNF, property_info(a, 'b')
-      assert_equal E_PROPNF, property_info(a, 'b1')
-      assert_equal [player, 'c'], property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a1')
-      assert_equal [player, ''], property_info(m, 'a')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal E_PROPNF, property_info(e, 'b')
+      assert_equal E_PROPNF, property_info(e, 'b1')
+      assert_equal [player, 'c'], property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e1')
+      assert_equal [player, ''], property_info(m, 'e')
       assert_equal E_PROPNF, property_info(n, 'b1')
       assert_equal E_PROPNF, property_info(n, 'b')
       assert_equal [player, 'c'], property_info(m, 'c')
       assert_equal [player, 'c'], property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal E_PROPNF, get(a, 'b')
-      assert_equal E_PROPNF, get(a, 'b1')
-      assert_equal 'c', get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal E_PROPNF, get(e, 'b')
+      assert_equal E_PROPNF, get(e, 'b1')
+      assert_equal 'c', get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal 'c', get(m, 'c')
       assert_equal 'c', get(n, 'c')
 
-      assert_equal E_PROPNF, delete_property(m, 'a')
-      assert_equal E_PROPNF, delete_property(n, 'a')
+      assert_equal E_PROPNF, delete_property(m, 'e')
+      assert_equal E_PROPNF, delete_property(n, 'e')
 
       delete_property(c, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal E_PROPNF, get(a, 'b')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
+      assert_equal 'e', get(e, 'e')
+      assert_equal E_PROPNF, get(e, 'b')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
 
       add_property(c, 'c', location, [player, 'w'])
 
-      assert chparents(a, [b, c])
+      assert chparents(e, [b, c])
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal [player, 'r'], property_info(a, 'b')
-      assert_equal [player, 'r'], property_info(a, 'b1')
-      assert_equal [player, 'w'], property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a')
-      assert_equal [player, ''], property_info(m, 'a1')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal [player, 'r'], property_info(e, 'b')
+      assert_equal [player, 'r'], property_info(e, 'b1')
+      assert_equal [player, 'w'], property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e')
+      assert_equal [player, ''], property_info(m, 'e1')
       assert_equal [player, 'r'], property_info(m, 'b')
       assert_equal [player, 'r'], property_info(m, 'b1')
       assert_equal [player, 'w'], property_info(m, 'c')
-      assert_equal [player, ''], property_info(n, 'a')
-      assert_equal [player, ''], property_info(n, 'a1')
+      assert_equal [player, ''], property_info(n, 'e')
+      assert_equal [player, ''], property_info(n, 'e1')
       assert_equal [player, 'r'], property_info(n, 'b')
       assert_equal [player, 'r'], property_info(n, 'b1')
       assert_equal [player, 'w'], property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal location, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal location, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['b'], get(m, 'b')
       assert_equal ['b'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1238,25 +1238,25 @@ class TestObject < Test::Unit::TestCase
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
-      assert_equal 'aa', set(a, 'a', 'aa')
-      assert_equal ['bb'], set(a, 'b', ['bb'])
-      assert_equal location, set(a, 'c', location)
-      assert_equal '11', set(m, 'a', '11')
-      assert_equal 'aa', set(n, 'a', 'aa')
+      assert_equal 'ee', set(e, 'e', 'ee')
+      assert_equal ['bb'], set(e, 'b', ['bb'])
+      assert_equal location, set(e, 'c', location)
+      assert_equal '11', set(m, 'e', '11')
+      assert_equal 'ee', set(n, 'e', 'ee')
       assert_equal ['22'], set(m, 'b', ['22'])
       assert_equal ['bb'], set(n, 'b',  ['bb'])
       assert_equal location, set(m, 'c', location)
       assert_equal location, set(n, 'c', location)
 
-      assert_equal 'aa', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['bb'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal location, get(a, 'c')
-      assert_equal '11', get(m, 'a')
-      assert_equal 'aa', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'ee', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['bb'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal location, get(e, 'c')
+      assert_equal '11', get(m, 'e')
+      assert_equal 'ee', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['22'], get(m, 'b')
       assert_equal ['bb'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1264,17 +1264,17 @@ class TestObject < Test::Unit::TestCase
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
-      assert_equal 'a', set(a, 'a',  'a')
+      assert_equal 'e', set(e, 'e',  'e')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['bb'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal location, get(a, 'c')
-      assert_equal '11', get(m, 'a')
-      assert_equal 'aa', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['bb'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal location, get(e, 'c')
+      assert_equal '11', get(m, 'e')
+      assert_equal 'ee', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['22'], get(m, 'b')
       assert_equal ['bb'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1282,20 +1282,20 @@ class TestObject < Test::Unit::TestCase
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
-      clear_property(m, 'a')
-      clear_property(n, 'a')
+      clear_property(m, 'e')
+      clear_property(n, 'e')
       clear_property(m, 'b')
       clear_property(n, 'b')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['bb'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal location, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['bb'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal location, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['bb'], get(m, 'b')
       assert_equal ['bb'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1303,35 +1303,35 @@ class TestObject < Test::Unit::TestCase
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
-      assert_equal ['b'], set(a, 'b',  ['b'])
+      assert_equal ['b'], set(e, 'b',  ['b'])
 
-      assert chparent(a, [c, b])
+      assert chparent(e, [c, b])
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal [player, 'r'], property_info(a, 'b')
-      assert_equal [player, 'r'], property_info(a, 'b1')
-      assert_equal [player, 'w'], property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a')
-      assert_equal [player, ''], property_info(m, 'a1')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal [player, 'r'], property_info(e, 'b')
+      assert_equal [player, 'r'], property_info(e, 'b1')
+      assert_equal [player, 'w'], property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e')
+      assert_equal [player, ''], property_info(m, 'e1')
       assert_equal [player, 'r'], property_info(m, 'b')
       assert_equal [player, 'r'], property_info(m, 'b1')
       assert_equal [player, 'w'], property_info(m, 'c')
-      assert_equal [player, ''], property_info(n, 'a')
-      assert_equal [player, ''], property_info(n, 'a1')
+      assert_equal [player, ''], property_info(n, 'e')
+      assert_equal [player, ''], property_info(n, 'e1')
       assert_equal [player, 'r'], property_info(n, 'b')
       assert_equal [player, 'r'], property_info(n, 'b1')
       assert_equal [player, 'w'], property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal location, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal location, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['b'], get(m, 'b')
       assert_equal ['b'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1339,20 +1339,20 @@ class TestObject < Test::Unit::TestCase
       assert_equal location, get(m, 'c')
       assert_equal location, get(n, 'c')
 
-      assert_equal E_PROPNF, delete_property(m, 'a')
-      assert_equal E_PROPNF, delete_property(n, 'a')
+      assert_equal E_PROPNF, delete_property(m, 'e')
+      assert_equal E_PROPNF, delete_property(n, 'e')
 
       delete_property(c, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['b'], get(m, 'b')
       assert_equal ['b'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1366,26 +1366,26 @@ class TestObject < Test::Unit::TestCase
       add_property(r, 'rrr', 'rrr', [player, 'r'])
       add_property(r, 'rr', 'rr', [player, 'w'])
 
-      assert chparents(a, [b, r, c])
+      assert chparents(e, [b, r, c])
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal [player, 'r'], property_info(a, 'b')
-      assert_equal [player, 'r'], property_info(a, 'b1')
-      assert_equal [player, 'w'], property_info(a, 'rr')
-      assert_equal [player, 'r'], property_info(a, 'rrr')
-      assert_equal [player, ''], property_info(a, 'rrrr')
-      assert_equal E_PROPNF, property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a')
-      assert_equal [player, ''], property_info(m, 'a1')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal [player, 'r'], property_info(e, 'b')
+      assert_equal [player, 'r'], property_info(e, 'b1')
+      assert_equal [player, 'w'], property_info(e, 'rr')
+      assert_equal [player, 'r'], property_info(e, 'rrr')
+      assert_equal [player, ''], property_info(e, 'rrrr')
+      assert_equal E_PROPNF, property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e')
+      assert_equal [player, ''], property_info(m, 'e1')
       assert_equal [player, 'r'], property_info(m, 'b')
       assert_equal [player, 'r'], property_info(m, 'b1')
       assert_equal [player, 'w'], property_info(m, 'rr')
       assert_equal [player, 'r'], property_info(m, 'rrr')
       assert_equal [player, ''], property_info(m, 'rrrr')
       assert_equal E_PROPNF, property_info(m, 'c')
-      assert_equal [player, ''], property_info(n, 'a')
-      assert_equal [player, ''], property_info(n, 'a1')
+      assert_equal [player, ''], property_info(n, 'e')
+      assert_equal [player, ''], property_info(n, 'e1')
       assert_equal [player, 'r'], property_info(n, 'b')
       assert_equal [player, 'r'], property_info(n, 'b1')
       assert_equal [player, 'w'], property_info(n, 'rr')
@@ -1393,18 +1393,18 @@ class TestObject < Test::Unit::TestCase
       assert_equal [player, ''], property_info(n, 'rrrr')
       assert_equal E_PROPNF, property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal 'rr', get(a, 'rr')
-      assert_equal 'rrr', get(a, 'rrr')
-      assert_equal 'rrrr', get(a, 'rrrr')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'rr', get(e, 'rr')
+      assert_equal 'rrr', get(e, 'rrr')
+      assert_equal 'rrrr', get(e, 'rrrr')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['b'], get(m, 'b')
       assert_equal ['b'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1420,24 +1420,24 @@ class TestObject < Test::Unit::TestCase
 
       delete_property(r, 'rrr')
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal [player, 'r'], property_info(a, 'b')
-      assert_equal [player, 'r'], property_info(a, 'b1')
-      assert_equal [player, 'w'], property_info(a, 'rr')
-      assert_equal E_PROPNF, property_info(a, 'rrr')
-      assert_equal [player, ''], property_info(a, 'rrrr')
-      assert_equal E_PROPNF, property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a')
-      assert_equal [player, ''], property_info(m, 'a1')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal [player, 'r'], property_info(e, 'b')
+      assert_equal [player, 'r'], property_info(e, 'b1')
+      assert_equal [player, 'w'], property_info(e, 'rr')
+      assert_equal E_PROPNF, property_info(e, 'rrr')
+      assert_equal [player, ''], property_info(e, 'rrrr')
+      assert_equal E_PROPNF, property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e')
+      assert_equal [player, ''], property_info(m, 'e1')
       assert_equal [player, 'r'], property_info(m, 'b')
       assert_equal [player, 'r'], property_info(m, 'b1')
       assert_equal [player, 'w'], property_info(m, 'rr')
       assert_equal E_PROPNF, property_info(m, 'rrr')
       assert_equal [player, ''], property_info(m, 'rrrr')
       assert_equal E_PROPNF, property_info(m, 'c')
-      assert_equal [player, ''], property_info(n, 'a')
-      assert_equal [player, ''], property_info(n, 'a1')
+      assert_equal [player, ''], property_info(n, 'e')
+      assert_equal [player, ''], property_info(n, 'e1')
       assert_equal [player, 'r'], property_info(n, 'b')
       assert_equal [player, 'r'], property_info(n, 'b1')
       assert_equal [player, 'w'], property_info(n, 'rr')
@@ -1445,18 +1445,18 @@ class TestObject < Test::Unit::TestCase
       assert_equal [player, ''], property_info(n, 'rrrr')
       assert_equal E_PROPNF, property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal 'rr', get(a, 'rr')
-      assert_equal E_PROPNF, get(a, 'rrr')
-      assert_equal 'rrrr', get(a, 'rrrr')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal 'rr', get(e, 'rr')
+      assert_equal E_PROPNF, get(e, 'rrr')
+      assert_equal 'rrrr', get(e, 'rrrr')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['b'], get(m, 'b')
       assert_equal ['b'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1470,26 +1470,26 @@ class TestObject < Test::Unit::TestCase
       assert_equal E_PROPNF, get(m, 'c')
       assert_equal E_PROPNF, get(n, 'c')
 
-      assert chparents(a, [c, b])
+      assert chparents(e, [c, b])
 
-      assert_equal [player, ''], property_info(a, 'a')
-      assert_equal [player, ''], property_info(a, 'a1')
-      assert_equal [player, 'r'], property_info(a, 'b')
-      assert_equal [player, 'r'], property_info(a, 'b1')
-      assert_equal E_PROPNF, property_info(a, 'rr')
-      assert_equal E_PROPNF, property_info(a, 'rrr')
-      assert_equal E_PROPNF, property_info(a, 'rrrr')
-      assert_equal E_PROPNF, property_info(a, 'c')
-      assert_equal [player, ''], property_info(m, 'a')
-      assert_equal [player, ''], property_info(m, 'a1')
+      assert_equal [player, ''], property_info(e, 'e')
+      assert_equal [player, ''], property_info(e, 'e1')
+      assert_equal [player, 'r'], property_info(e, 'b')
+      assert_equal [player, 'r'], property_info(e, 'b1')
+      assert_equal E_PROPNF, property_info(e, 'rr')
+      assert_equal E_PROPNF, property_info(e, 'rrr')
+      assert_equal E_PROPNF, property_info(e, 'rrrr')
+      assert_equal E_PROPNF, property_info(e, 'c')
+      assert_equal [player, ''], property_info(m, 'e')
+      assert_equal [player, ''], property_info(m, 'e1')
       assert_equal [player, 'r'], property_info(m, 'b')
       assert_equal [player, 'r'], property_info(m, 'b1')
       assert_equal E_PROPNF, property_info(m, 'rr')
       assert_equal E_PROPNF, property_info(m, 'rrr')
       assert_equal E_PROPNF, property_info(m, 'rrrr')
       assert_equal E_PROPNF, property_info(m, 'c')
-      assert_equal [player, ''], property_info(n, 'a')
-      assert_equal [player, ''], property_info(n, 'a1')
+      assert_equal [player, ''], property_info(n, 'e')
+      assert_equal [player, ''], property_info(n, 'e1')
       assert_equal [player, 'r'], property_info(n, 'b')
       assert_equal [player, 'r'], property_info(n, 'b1')
       assert_equal E_PROPNF, property_info(n, 'rr')
@@ -1497,18 +1497,18 @@ class TestObject < Test::Unit::TestCase
       assert_equal E_PROPNF, property_info(n, 'rrrr')
       assert_equal E_PROPNF, property_info(n, 'c')
 
-      assert_equal 'a', get(a, 'a')
-      assert_equal 'a1', get(a, 'a1')
-      assert_equal ['b'], get(a, 'b')
-      assert_equal ['b1'], get(a, 'b1')
-      assert_equal E_PROPNF, get(a, 'rr')
-      assert_equal E_PROPNF, get(a, 'rrr')
-      assert_equal E_PROPNF, get(a, 'rrrr')
-      assert_equal E_PROPNF, get(a, 'c')
-      assert_equal 'a', get(m, 'a')
-      assert_equal 'a', get(n, 'a')
-      assert_equal 'a1', get(m, 'a1')
-      assert_equal 'a1', get(n, 'a1')
+      assert_equal 'e', get(e, 'e')
+      assert_equal 'e1', get(e, 'e1')
+      assert_equal ['b'], get(e, 'b')
+      assert_equal ['b1'], get(e, 'b1')
+      assert_equal E_PROPNF, get(e, 'rr')
+      assert_equal E_PROPNF, get(e, 'rrr')
+      assert_equal E_PROPNF, get(e, 'rrrr')
+      assert_equal E_PROPNF, get(e, 'c')
+      assert_equal 'e', get(m, 'e')
+      assert_equal 'e', get(n, 'e')
+      assert_equal 'e1', get(m, 'e1')
+      assert_equal 'e1', get(n, 'e1')
       assert_equal ['b'], get(m, 'b')
       assert_equal ['b'], get(n, 'b')
       assert_equal ['b1'], get(m, 'b1')
@@ -1524,7 +1524,16 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_that_adding_and_deleting_properties_works_with_multiple_inheritance
+  def test_leak_memory
+    run_test_as('wizard') do
+      simplify command %Q|; return #1.x;|
+      simplify command %Q|; return #1.x;|
+      simplify command %Q|; return #1.x;|
+      simplify command %Q|; return #1.name;|
+    end
+  end
+
+  def test_that_adding_and_deleting_properties_works_with_multiple_inheritance # migrated
     run_test_as('programmer') do
       a = create(NOTHING)
       add_property(a, 'x', 1, [player, ''])
@@ -1844,7 +1853,7 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
-  def test_verb_cache
+  def test_verb_cache # migrated
     run_test_as('wizard') do
       vcs = verb_cache_stats
       unless (vcs[0] == 0 && vcs[1] == 0 && vcs[2] == 0 && vcs[3] == 0)
