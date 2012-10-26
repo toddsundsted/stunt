@@ -388,8 +388,9 @@ db_destroy_anonymous_object(void *obj)
 
     dbpriv_set_object_flag(o, FLAG_INVALID);
 
-    /* Since this map could possibly be the root of a cycle, final
-     * destruction is handled in the garbage collector.
+    /* Since this object could possibly be the root of a cycle, final
+     * destruction is handled in the garbage collector if garbage
+     * collection is enabled.
      */
     /*myfree(o, M_ANON);*/
 }

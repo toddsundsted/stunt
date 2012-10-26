@@ -159,6 +159,7 @@ aux_free(Var v)
     }
 }
 
+#ifdef ENABLE_GC
 /* Corresponds to `Decrement' and `Release' in Bacon and Rajan. */
 void
 complex_free_var(Var v)
@@ -229,7 +230,51 @@ complex_free_var(Var v)
 	break;
     }
 }
+#else
+void
+complex_free_var(Var v)
+{
+    switch ((int) v.type) {
+    case TYPE_STR:
+	if (v.v.str)
+	    free_str(v.v.str);
+	break;
+    case TYPE_FLOAT:
+	if (delref(v.v.fnum) == 0)
+	    myfree(v.v.fnum, M_FLOAT);
+	break;
+    case TYPE_LIST:
+	if (delref(v.v.list) == 0)
+	    destroy_list(v);
+	break;
+    case TYPE_MAP:
+	if (delref(v.v.tree) == 0)
+	    destroy_map(v);
+	break;
+    case TYPE_ITER:
+	if (delref(v.v.trav) == 0)
+	    destroy_iter(v);
+	break;
+    case TYPE_ANON:
+	if (v.v.anon && delref(v.v.anon) == 0) {
+	    if (db_object_has_flag2(v, FLAG_RECYCLED)) {
+		myfree(v.v.anon, M_ANON);
+	    }
+	    else if (db_object_has_flag2(v, FLAG_INVALID)) {
+		incr_quota(db_object_owner2(v));
+		db_destroy_anonymous_object(v.v.anon);
+		myfree(v.v.anon, M_ANON);
+	    }
+	    else {
+		queue_anonymous_object(v);
+	    }
+	}
+	break;
+    }
+}
+#endif
 
+#ifdef ENABLE_GC
 /* Corresponds to `Increment' in Bacon and Rajan. */
 Var
 complex_var_ref(Var v)
@@ -260,6 +305,34 @@ complex_var_ref(Var v)
     }
     return v;
 }
+#else
+Var
+complex_var_ref(Var v)
+{
+    switch ((int) v.type) {
+    case TYPE_STR:
+	addref(v.v.str);
+	break;
+    case TYPE_FLOAT:
+	addref(v.v.fnum);
+	break;
+    case TYPE_LIST:
+	addref(v.v.list);
+	break;
+    case TYPE_MAP:
+	addref(v.v.tree);
+	break;
+    case TYPE_ITER:
+	addref(v.v.trav);
+	break;
+    case TYPE_ANON:
+	if (v.v.anon)
+	    addref(v.v.anon);
+	break;
+    }
+    return v;
+}
+#endif
 
 Var
 complex_var_dup(Var v)

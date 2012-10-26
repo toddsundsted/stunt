@@ -204,9 +204,12 @@ rbdelete(rbtree *tree)
     }
 
     /* Since this map could possibly be the root of a cycle, final
-     * destruction is handled in the garbage collector.
+     * destruction is handled in the garbage collector if garbage
+     * collection is enabled.
      */
-    /*myfree(tree, M_TREE);*/
+#ifndef ENABLE_GC
+    myfree(tree, M_TREE);
+#endif
 }
 
 /*
