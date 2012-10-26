@@ -24,9 +24,9 @@ class TestAnonymous < Test::Unit::TestCase
     end
   end
 
-  def test_that_anonymous_objects_cannot_have_children
+  def test_that_anonymous_objects_do_not_have_children
     run_test_as('programmer') do
-      assert_equal E_TYPE, simplify(command("; children(create($anonymous, 1));"))
+      assert_equal [], simplify(command("; return children(create($anonymous, 1));"))
     end
   end
 
@@ -306,6 +306,37 @@ class TestAnonymous < Test::Unit::TestCase
   def test_that_a_verb_call_on_an_invalid_anonymous_object_fails
     run_test_as('programmer') do
       assert_equal E_INVIND, simplify(command('; a = create($anonymous, 1); recycle(a); a:foo();'))
+    end
+  end
+
+  # TODO: test that anonymous object references aren't leaked in stack
+  # traces, callers(), task_stack(), queued_tasks(), etc.
+
+  def test_that_recycling_an_invalid_anonymous_object_doesnt_crash_the_server
+    run_test_as('programmer') do
+      simplify(command(%Q|; o = create($nothing); p = create(o, 1); add_property(o, "foo", 0, {player, ""});|))
+    end
+  end
+
+  def test_that_a_long_chain_of_anonymous_objects_doesnt_leak
+    run_test_as('programmer') do
+      a = create(:object)
+      simplify(command(%Q|; add_property(#{a}, "next", #{a}, {player, ""}); |))
+      add_verb(a, ['player', 'xd', 'go'], ['this', 'none', 'this'])
+      set_verb_code(a, 'go') do |vc|
+        lines = <<-EOF
+          r = o = create($nothing, 1);
+          for i in [1..100];
+              n = create($nothing, 1);
+              add_property(n, "next", o, {player, ""});
+            o = n;
+          endfor;
+        EOF
+        lines.split("\n").each do |line|
+          vc << line
+        end
+      end
+      call(a, 'go')
     end
   end
 
