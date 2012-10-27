@@ -568,7 +568,8 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
 	if (db_object_allows(object, progr, FLAG_READ)) {
 	    r = new_list(2);
 	    r.v.list[1] = var_ref(db_verb_definer(h));
-	    r.v.list[2] = new_str(db_verb_names(h));
+	    r.v.list[2].type = TYPE_STR;
+	    r.v.list[2].v.str = str_ref(db_verb_names(h));
 	}
 	else {
 	    r = new_int(1);
