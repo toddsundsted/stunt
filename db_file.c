@@ -152,33 +152,6 @@ dbv4_count_properties(Objid oid)
     return nprops;
 }
 
-typedef struct {
-    Objid definer;
-    Verbdef *verbdef;
-} handle;
-
-static db_verb_handle
-dbv4_find_indexed_verb(Objid oid, unsigned index)
-{
-    Object4 *o = dbv4_find_object(oid);
-    Verbdef *v;
-    unsigned i;
-    static handle h;
-    db_verb_handle vh;
-
-    for (v = o->verbdefs, i = 0; v; v = v->next)
-	if (++i == index) {
-	    h.definer = o->id;
-	    h.verbdef = v;
-	    vh.ptr = &h;
-
-	    return vh;
-	}
-    vh.ptr = 0;
-
-    return vh;
-}
-
 /*
  * The following functions work with both the version 4 database and
  * the latest database version.  If that changes they will need to be
@@ -995,6 +968,13 @@ read_db_file(void)
 	}
     }
 
+    if (DBV_NextGen > dbio_input_version) {
+	if (!v4_upgrade_objects()) {
+	    errlog("READ_DB_FILE: Errors upgrading objects.\n");
+	    return 0;
+	}
+    }
+
     if (DBV_Anon <= dbio_input_version) {
 	if (dbio_scanf("%d\n", &nprogs) != 1) {
 	    errlog("READ_DB_FILE: Bad verb count header\n");
@@ -1008,29 +988,14 @@ read_db_file(void)
 	    errlog("READ_DB_FILE: Bad program header, i = %d.\n", i);
 	    return 0;
 	}
-	if (DBV_NextGen > dbio_input_version) {
-	    if (!dbv4_valid(oid)) {
-		errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n",
-		       oid, vnum);
-		return 0;
-	    }
-	    h = dbv4_find_indexed_verb(oid, vnum + 1);	/* DB file is 0-based. */
-	    if (!h.ptr) {
-		errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
-		return 0;
-	    }
+	if (!valid(oid)) {
+	    errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n", oid, vnum);
+	    return 0;
 	}
-	else {
-	    if (!valid(oid)) {
-		errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n",
-		       oid, vnum);
-		return 0;
-	    }
-	    h = db_find_indexed_verb(new_obj(oid), vnum + 1);	/* DB file is 0-based. */
-	    if (!h.ptr) {
-		errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
-		return 0;
-	    }
+	h = db_find_indexed_verb(new_obj(oid), vnum + 1);	/* DB file is 0-based. */
+	if (!h.ptr) {
+	    errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
+	    return 0;
 	}
 	program = dbio_read_program(dbio_input_version, fmt_verb_name, &h);
 	if (!program) {
@@ -1056,13 +1021,7 @@ read_db_file(void)
 	}
     }
 
-    if (DBV_NextGen > dbio_input_version) {
-	if (!v4_upgrade_objects()) {
-	    errlog("READ_DB_FILE: Errors upgrading objects.\n");
-	    return 0;
-	}
-    }
-
+    /* see db_objects.c */
     dbpriv_after_load();
 
     return 1;
