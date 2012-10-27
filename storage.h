@@ -139,15 +139,6 @@ free_str(const char *s)
 
 #endif /* MEMO_STRLEN */
 
-static inline Var
-new_str(const char *str)
-{
-    Var r;
-    r.type = TYPE_STR;
-    r.v.str = str_ref(str);
-    return r;
-}
-
 static inline bool
 is_str(Var v)
 {
