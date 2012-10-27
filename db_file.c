@@ -843,7 +843,9 @@ fmt_verb_name(void *data)
     if (!s)
 	s = new_stream(40);
 
-    stream_printf(s, "#%d:%s", db_verb_definer(*h), db_verb_names(*h));
+    unparse_value(s, db_verb_definer(*h));
+    stream_printf(s, ":%s", db_verb_names(*h));
+
     return reset_stream(s);
 }
 
