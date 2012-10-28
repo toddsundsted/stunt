@@ -87,35 +87,35 @@ extend(unsigned int new_objects)
 {
     int size;
 
-    for (size = 128; size < new_objects; size *= 2)
+    for (size = 128; size <= new_objects; size *= 2)
 	;
 
     if (max_objects == 0) {
 	objects = mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
 	memset(objects, 0, size * sizeof(Object *));
+	max_objects = size;
     }
     if (size > max_objects) {
 	Object **new = mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
-	memcpy(new, objects, num_objects * sizeof(Object *));
-	memset(new + num_objects, 0, (size - num_objects) * sizeof(Object *));
+	memcpy(new, objects, max_objects * sizeof(Object *));
+	memset(new + max_objects, 0, (size - max_objects) * sizeof(Object *));
 	myfree(objects, M_OBJECT_TABLE);
 	objects = new;
+	max_objects = size;
     }
 
-    max_objects = size;
-
-    for (size = 4096; size < new_objects; size *= 2)
+    for (size = 4096; size <= new_objects; size *= 2)
 	;
 
     if (array_size == 0) {
 	bit_array = mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+	array_size = size;
     }
     if (size > array_size) {
 	myfree(bit_array, M_ARRAY);
 	bit_array = mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+	array_size = size;
     }
-
-    array_size = size;
 }
 
 static void
@@ -287,12 +287,16 @@ db_read_anonymous()
 	r.v.anon = objects[oid];
     }
     else {
-	/* back up the real object count */
-	int saved = num_objects;
+	/* Back up the permanent object count, temporarily store the
+	 * database id of this anonymous object as the new count, and
+	 * allocate a new object -- this will force the new anonymous
+	 * object to be allocated at that position -- restore the
+	 * count when finished.
+	 */
+	int sav_objects = num_objects;
 	num_objects = oid;
 	dbpriv_new_anonymous_object();
-	num_objects = saved;
-
+	num_objects = sav_objects;
 	r.type = TYPE_ANON;
 	r.v.anon = objects[oid];
     }
