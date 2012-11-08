@@ -451,4 +451,16 @@ class TestGarbageCollection < Test::Unit::TestCase
     end
   end
 
+  # these tests ensure that the heavily shared empty list/map are always green
+  def test_that_empty_lists_and_maps_are_green
+    run_test_as('wizard') do
+      gc = simplify(command(%Q|; o = p = create($nothing, 1); add_property(o, "list", {}, {player, ""}); run_gc(); suspend(0); o = p = 0; run_gc(); suspend(0); x = {}; return gc_stats();|))
+      assert_equal 0, gc['purple']
+    end
+    run_test_as('wizard') do
+      gc = simplify(command(%Q|; o = p = create($nothing, 1); add_property(o, "map", [], {player, ""}); run_gc(); suspend(0); o = p = 0; run_gc(); suspend(0); x = []; return gc_stats();|))
+      assert_equal 0, gc['purple']
+    end
+  end
+
 end

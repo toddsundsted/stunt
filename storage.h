@@ -34,6 +34,7 @@ typedef struct reference_overhead {
  */
 typedef enum GC_Color {
     GC_GREEN,
+    GC_YELLOW,
     GC_BLACK,
     GC_GRAY,
     GC_WHITE,
