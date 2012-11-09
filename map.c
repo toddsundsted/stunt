@@ -595,7 +595,9 @@ new_map(void)
     if (map.v.tree == NULL)
 	map = empty_map();
 
+#ifdef ENABLE_GC
     assert(gc_get_color(map.v.tree) == GC_GREEN);
+#endif
 
     addref(map.v.tree);
 
@@ -694,7 +696,9 @@ mapinsert(Var map, Var key, Var value)
     if (!rbinsert(new.v.tree, &node))
 	panic("MAPINSERT: rbinsert failed");
 
+#ifdef ENABLE_GC
     gc_set_color(new.v.tree, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -855,7 +859,9 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 
     free_var(map);
 
+#ifdef ENABLE_GC
     gc_set_color(new.v.tree, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -908,7 +914,9 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     free_var(map);
     free_var(value);
 
+#ifdef ENABLE_GC
     gc_set_color(new->v.tree, GC_YELLOW);
+#endif
 
     return e;
 }

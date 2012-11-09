@@ -61,7 +61,9 @@ new_list(int size)
 	    emptylist.v.list[0].v.num = 0;
 	}
 
+#ifdef ENABLE_GC
 	assert(gc_get_color(emptylist.v.list) == GC_GREEN);
+#endif
 
 	addref(emptylist.v.list);
 
@@ -76,7 +78,9 @@ new_list(int size)
     list.v.list[0].type = TYPE_INT;
     list.v.list[0].v.num = size;
 
+#ifdef ENABLE_GC
     gc_set_color(list.v.list, GC_YELLOW);
+#endif
 
     return list;
 }
@@ -171,7 +175,9 @@ listset(Var list, Var value, int pos)
     free_var(new.v.list[pos]);
     new.v.list[pos] = value;
 
+#ifdef ENABLE_GC
     gc_set_color(new.v.list, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -192,7 +198,9 @@ doinsert(Var list, Var value, int pos)
 	list.v.list[0].v.num = size;
 	list.v.list[pos] = value;
 
+#ifdef ENABLE_GC
 	gc_set_color(list.v.list, GC_YELLOW);
+#endif
 
 	return list;
     }
@@ -205,7 +213,9 @@ doinsert(Var list, Var value, int pos)
 
     free_var(list);
 
+#ifdef ENABLE_GC
     gc_set_color(new.v.list, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -242,8 +252,10 @@ listdelete(Var list, int pos)
 
     free_var(list);
 
+#ifdef ENABLE_GC
     if (size > 0)		/* only non-empty lists */
 	gc_set_color(new.v.list, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -265,8 +277,10 @@ listconcat(Var first, Var second)
     free_var(first);
     free_var(second);
 
+#ifdef ENABLE_GC
     if (lsecond + lfirst > 0)	/* only non-empty lists */
 	gc_set_color(new.v.list, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -295,8 +309,10 @@ listrangeset(Var base, int from, int to, Var value)
     free_var(base);
     free_var(value);
 
+#ifdef ENABLE_GC
     if (newsize > 0)	/* only non-empty lists */
 	gc_set_color(ans.v.list, GC_YELLOW);
+#endif
 
     return ans;
 }
@@ -317,7 +333,9 @@ sublist(Var list, int lower, int upper)
 
 	free_var(list);
 
+#ifdef ENABLE_GC
 	gc_set_color(r.v.list, GC_YELLOW);
+#endif
 
 	return r;
     }
