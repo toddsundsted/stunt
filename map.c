@@ -575,15 +575,16 @@ rbtprev(rbtrav *trav)
 static Var
 empty_map(void)
 {
-    Var new;
+    Var map;
     rbtree *tree;
 
     if ((tree = rbnew()) == NULL)
 	panic("EMPTY_MAP: rbnew failed");
-    new.type = TYPE_MAP;
-    new.v.tree = tree;
 
-    return new;
+    map.type = TYPE_MAP;
+    map.v.tree = tree;
+
+    return map;
 }
 
 Var
@@ -593,6 +594,10 @@ new_map(void)
 
     if (map.v.tree == NULL)
 	map = empty_map();
+
+#ifdef ENABLE_GC
+    assert(gc_get_color(map.v.tree) == GC_GREEN);
+#endif
 
     addref(map.v.tree);
 
@@ -621,6 +626,8 @@ map_dup(Var map)
 	if (!rbinsert(new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
+
+    gc_set_color(new.v.tree, gc_get_color(map.v.tree));
 
     return new;
 }
@@ -664,7 +671,12 @@ mapinsert(Var map, Var key, Var value)
 	|| is_collection(key))
 	panic("MAPINSERT: invalid key");
 
-    Var new = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
+    Var new = map;
+
+    if (var_refcount(map) > 1) {
+	new = map_dup(map);
+	free_var(map);
+    }
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
@@ -680,7 +692,9 @@ mapinsert(Var map, Var key, Var value)
     if (!rbinsert(new.v.tree, &node))
 	panic("MAPINSERT: rbinsert failed");
 
-    free_var(map);
+#ifdef ENABLE_GC
+    gc_set_color(new.v.tree, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -841,6 +855,10 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 
     free_var(map);
 
+#ifdef ENABLE_GC
+    gc_set_color(new.v.tree, GC_YELLOW);
+#endif
+
     return new;
 }
 
@@ -891,6 +909,10 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
 
     free_var(map);
     free_var(value);
+
+#ifdef ENABLE_GC
+    gc_set_color(new->v.tree, GC_YELLOW);
+#endif
 
     return e;
 }

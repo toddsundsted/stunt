@@ -102,12 +102,12 @@ gc_stats(int color[])
 static void
 gc_debug(const char *name)
 {
-    int color[6] = {0, 0, 0, 0, 0, 0};
+    int color[7] = {0, 0, 0, 0, 0, 0, 0};
 
     gc_stats(color);
 
-    oklog("GC: %s (green %d, black %d, gray %d, white %d, purple %d, pink %d)\n",
-          name, color[0], color[1], color[2], color[3], color[4], color[5]);
+    oklog("GC: %s (green %d, yellow %d, black %d, gray %d, white %d, purple %d, pink %d)\n",
+          name, color[0], color[1], color[2], color[3], color[4], color[5], color[6]);
 }
 
 static void
@@ -140,9 +140,11 @@ gc_add_root(Var v)
 void
 gc_possible_root(Var v)
 {
+    GC_Color color;
+
     assert(is_collection(v));
 
-    if (gc_get_color(VOID_PTR(v)) != GC_PURPLE && gc_get_color(VOID_PTR(v)) != GC_GREEN) {
+    if ((color = gc_get_color(VOID_PTR(v))) != GC_PURPLE && color != GC_GREEN && color != GC_YELLOW) {
 	gc_set_color(VOID_PTR(v), GC_PURPLE);
 	if (!gc_is_buffered(VOID_PTR(v))) {
 	    gc_set_buffered(VOID_PTR(v));
@@ -151,13 +153,19 @@ gc_possible_root(Var v)
     }
 }
 
+static inline int
+is_not_green(Var v)
+{
+    return gc_get_color(VOID_PTR(v)) != GC_GREEN;
+}
+
 typedef void (gc_func)(Var);
 
 static int
 do_obj(void *data, Var v)
 {
     gc_func *fp = (gc_func *)data;
-    if (is_collection(v))
+    if (is_collection(v) && is_not_green(v))
 	(*fp)(v);
     return 0;
 }
@@ -166,7 +174,7 @@ static int
 do_list(Var v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
-    if (is_collection(v))
+    if (is_collection(v) && is_not_green(v))
 	(*fp)(v);
     return 0;
 }
@@ -175,7 +183,7 @@ static int
 do_map(Var k, Var v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
-    if (is_collection(v))
+    if (is_collection(v) && is_not_green(v))
 	(*fp)(v);
     return 0;
 }
@@ -410,7 +418,7 @@ bf_gc_stats(Var arglist, Byte next, void *vdata, Objid progr)
     if (!is_wizard(progr))
         return make_error_pack(E_PERM);
 
-    int color[6] = {0, 0, 0, 0, 0, 0};
+    int color[7] = {0, 0, 0, 0, 0, 0, 0};
 
     gc_stats(color);
 
@@ -424,11 +432,12 @@ bf_gc_stats(Var arglist, Byte next, void *vdata, Objid progr)
     r = mapinsert(r, k, v)
 
     PACK_COLOR(green, 0);
-    PACK_COLOR(black, 1);
-    PACK_COLOR(gray, 2);
-    PACK_COLOR(white, 3);
-    PACK_COLOR(purple, 4);
-    PACK_COLOR(pink, 5);
+    PACK_COLOR(yellow, 1);
+    PACK_COLOR(black, 2);
+    PACK_COLOR(gray, 3);
+    PACK_COLOR(white, 4);
+    PACK_COLOR(purple, 5);
+    PACK_COLOR(pink, 6);
 
 #undef PACK_COLOR
 

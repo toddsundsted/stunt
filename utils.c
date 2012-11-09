@@ -298,7 +298,7 @@ complex_var_ref(Var v)
     case TYPE_ANON:
 	if (v.v.anon) {
 	    addref(v.v.anon);
-	    if (gc_get_color(v.v.anon) != GC_GREEN)
+	    if (gc_get_color(v.v.anon) != GC_BLACK)
 		gc_set_color(v.v.anon, GC_BLACK);
 	}
 	break;

@@ -45,29 +45,44 @@
 Var
 new_list(int size)
 {
-    Var new;
+    Var list;
+    Var *ptr;
 
     if (size == 0) {
 	static Var emptylist;
 
-	if (emptylist.v.list == 0) {
+	if (emptylist.v.list == NULL) {
+	    if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == NULL)
+		panic("EMPTY_LIST: mymalloc failed");
+
 	    emptylist.type = TYPE_LIST;
-	    emptylist.v.list = mymalloc(1 * sizeof(Var), M_LIST);
+	    emptylist.v.list = ptr;
 	    emptylist.v.list[0].type = TYPE_INT;
 	    emptylist.v.list[0].v.num = 0;
 	}
 
-	/* give the lucky winner a reference */
+#ifdef ENABLE_GC
+	assert(gc_get_color(emptylist.v.list) == GC_GREEN);
+#endif
+
 	addref(emptylist.v.list);
+
 	return emptylist;
     }
 
-    new.type = TYPE_LIST;
-    new.v.list = (Var *) mymalloc((size + 1) * sizeof(Var), M_LIST);
-    new.v.list[0].type = TYPE_INT;
-    new.v.list[0].v.num = size;
+    if ((ptr = (Var *)mymalloc((size + 1) * sizeof(Var), M_LIST)) == NULL)
+	panic("EMPTY_LIST: mymalloc failed");
 
-    return new;
+    list.type = TYPE_LIST;
+    list.v.list = ptr;
+    list.v.list[0].type = TYPE_INT;
+    list.v.list[0].v.num = size;
+
+#ifdef ENABLE_GC
+    gc_set_color(list.v.list, GC_YELLOW);
+#endif
+
+    return list;
 }
 
 /* called from utils.c */
@@ -99,6 +114,8 @@ list_dup(Var list)
     for (i = 1; i <= n; i++)
 	new.v.list[i] = var_ref(list.v.list[i]);
 
+    gc_set_color(new.v.list, gc_get_color(list.v.list));
+
     return new;
 }
 
@@ -117,7 +134,6 @@ listforeach(Var list, listfunc func, void *data)
 
     return 0;
 }
-
 
 Var
 setadd(Var list, Var value)
@@ -144,13 +160,11 @@ setremove(Var list, Var value)
 Var
 listset(Var list, Var value, int pos)
 {				/* consumes `list', `value' */
-    Var new;
+    Var new = list;
 
     if (var_refcount(list) > 1) {
 	new = var_dup(list);
 	free_var(list);
-    } else {
-	new = list;
     }
 
 #ifdef MEMO_VALUE_BYTES
@@ -160,6 +174,11 @@ listset(Var list, Var value, int pos)
 
     free_var(new.v.list[pos]);
     new.v.list[pos] = value;
+
+#ifdef ENABLE_GC
+    gc_set_color(new.v.list, GC_YELLOW);
+#endif
+
     return new;
 }
 
@@ -178,6 +197,11 @@ doinsert(Var list, Var value, int pos)
 #endif
 	list.v.list[0].v.num = size;
 	list.v.list[pos] = value;
+
+#ifdef ENABLE_GC
+	gc_set_color(list.v.list, GC_YELLOW);
+#endif
+
 	return list;
     }
     new = new_list(size);
@@ -186,7 +210,13 @@ doinsert(Var list, Var value, int pos)
     new.v.list[pos] = value;
     for (i = pos; i <= list.v.list[0].v.num; i++)
 	new.v.list[i + 1] = var_ref(list.v.list[i]);
+
     free_var(list);
+
+#ifdef ENABLE_GC
+    gc_set_color(new.v.list, GC_YELLOW);
+#endif
+
     return new;
 }
 
@@ -211,14 +241,22 @@ listdelete(Var list, int pos)
 {
     Var new;
     int i;
+    int size = list.v.list[0].v.num - 1;
 
-    new = new_list(list.v.list[0].v.num - 1);
+    new = new_list(size);
     for (i = 1; i < pos; i++) {
 	new.v.list[i] = var_ref(list.v.list[i]);
     }
     for (i = pos + 1; i <= list.v.list[0].v.num; i++)
 	new.v.list[i - 1] = var_ref(list.v.list[i]);
-    free_var(list);		/* free old list */
+
+    free_var(list);
+
+#ifdef ENABLE_GC
+    if (size > 0)		/* only non-empty lists */
+	gc_set_color(new.v.list, GC_YELLOW);
+#endif
+
     return new;
 }
 
@@ -235,8 +273,14 @@ listconcat(Var first, Var second)
 	new.v.list[i] = var_ref(first.v.list[i]);
     for (i = 1; i <= lsecond; i++)
 	new.v.list[i + lfirst] = var_ref(second.v.list[i]);
+
     free_var(first);
     free_var(second);
+
+#ifdef ENABLE_GC
+    if (lsecond + lfirst > 0)	/* only non-empty lists */
+	gc_set_color(new.v.list, GC_YELLOW);
+#endif
 
     return new;
 }
@@ -261,8 +305,15 @@ listrangeset(Var base, int from, int to, Var value)
 	ans.v.list[++offset] = var_ref(value.v.list[index]);
     for (index = 1; index <= lenright; index++)
 	ans.v.list[++offset] = var_ref(base.v.list[to + index]);
+
     free_var(base);
     free_var(value);
+
+#ifdef ENABLE_GC
+    if (newsize > 0)	/* only non-empty lists */
+	gc_set_color(ans.v.list, GC_YELLOW);
+#endif
+
     return ans;
 }
 
@@ -279,7 +330,13 @@ sublist(Var list, int lower, int upper)
 	r = new_list(upper - lower + 1);
 	for (i = lower; i <= upper; i++)
 	    r.v.list[i - lower + 1] = var_ref(list.v.list[i]);
+
 	free_var(list);
+
+#ifdef ENABLE_GC
+	gc_set_color(r.v.list, GC_YELLOW);
+#endif
+
 	return r;
     }
 }
