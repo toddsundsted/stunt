@@ -19,7 +19,9 @@
  * Routines for manipulating verbs on DB objects
  *****************************************************************************/
 
+#include <assert.h>
 #include <ctype.h>
+
 #include "my-stdlib.h"
 #include "my-string.h"
 
@@ -571,6 +573,8 @@ db_find_callable_verb(Var recv, const char *verb)
 	}
 
 	free_var(top);
+
+	assert(o != NULL);
 
 	unsigned long first_parent_with_verbs = (unsigned long)o;
 

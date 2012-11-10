@@ -559,6 +559,7 @@ free_activation(activation * ap, char data_too)
     free_rt_stack(ap);
     free_var(ap->temp);
     free_var(ap->this);
+    free_var(ap->vloc);
     free_str(ap->verb);
     free_str(ap->verbname);
 
