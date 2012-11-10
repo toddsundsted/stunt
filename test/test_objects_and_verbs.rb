@@ -1211,6 +1211,18 @@ class TestObjectsAndVerbs < Test::Unit::TestCase
     end
   end
 
+  def test_that_two_calls_that_free_the_activation_do_not_leak_memory
+    SCENARIOS.each do |args|
+      run_test_as('wizard') do
+        a = kahuna(NOTHING, 'a', args[1])
+        c = kahuna(NOTHING, 'c')
+        m = create(c, args[1])
+        call(a, 'a')
+        call(m, 'c')
+      end
+    end
+  end
+
   private
 
   def kahuna(parent, name, opt = 0)
