@@ -648,4 +648,31 @@ class TestStressObjects < Test::Unit::TestCase
     end
   end
 
+  def test_that_ownership_quota_is_changed_as_objects_are_created_and_recycled
+    SCENARIOS.each do |args|
+      run_test_as('programmer') do
+        add_property(player, 'ownership_quota', 3, [player, ''])
+        assert_equal 3, get(player, 'ownership_quota')
+
+        # create
+        a = create(*args)
+        assert_equal 2, get(player, 'ownership_quota')
+        b = create(*args)
+        assert_equal 1, get(player, 'ownership_quota')
+        c = create(*args)
+        assert_equal 0, get(player, 'ownership_quota')
+        d = create(*args)
+        assert_equal E_QUOTA, d
+
+        # recycle
+        recycle(a)
+        assert_equal 1, get(player, 'ownership_quota')
+        recycle(c)
+        assert_equal 2, get(player, 'ownership_quota')
+        recycle(b)
+        assert_equal 3, get(player, 'ownership_quota')
+      end
+    end
+  end
+
 end
