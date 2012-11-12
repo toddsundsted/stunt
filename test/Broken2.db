@@ -24,7 +24,7 @@ System Object
 0
 1
 1
-do_login_command
+server_started
 3
 173
 -1
@@ -123,7 +123,7 @@ programmer
 0
 0
 #0:0
-return #3;
+shutdown();
 .
 #2:0
 set_task_perms(player);
