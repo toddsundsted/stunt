@@ -227,6 +227,7 @@ depend: ${ALL_CSRCS}
 
 tests: 
 	for test in test/*.rb ; do \
+	  echo "\n\nRunning $$test..." ; \
 	  ruby -rubygems -Itest/lib $$test ; \
 	done
 
