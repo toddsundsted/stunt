@@ -34,7 +34,10 @@
  * involve anonymous objects.  If disabled the server may leak memory
  * because it will lose track of cyclic data structures.
  */
+
 #define ENABLE_GC
+
+#define GC_ROOTS_LIMIT 2000
 
 /******************************************************************************
  * Define LOG_GC_STATS to enabled logging of reference cycle collection

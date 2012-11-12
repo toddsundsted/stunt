@@ -152,6 +152,9 @@ extern void queue_anonymous_object(Var v);
 				 * player tasks.
 				 */
 
+extern void write_values_pending_finalization(void);
+extern int read_values_pending_finalization(void);
+
 #include "db.h"
 
 /* Some server options are cached for performance reasons.
