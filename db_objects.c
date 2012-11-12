@@ -596,7 +596,7 @@ db_object_bytes(Var obj)
 #define DEFUNC(name, field)						\
 									\
 static int								\
-db1_##name(Object *o)							\
+db1_count_##name(Object *o)						\
 {									\
     int i, c, n = 0;							\
     Var tmp, field = enlist_var(var_ref(o->field));			\
@@ -605,8 +605,11 @@ db1_##name(Object *o)							\
 									\
     FOR_EACH(tmp, field, i, c) {					\
 	if (valid(oid = tmp.v.obj)) {					\
-	    o2 = dbpriv_find_object(oid);				\
-	    n += db1_##name(o2) + 1;					\
+	    if (bit_is_false(bit_array, oid)) {				\
+		bit_true(bit_array, oid);				\
+		o2 = dbpriv_find_object(oid);				\
+		n += db1_count_##name(o2) + 1;				\
+	    }								\
 	}								\
     }									\
 									\
@@ -616,7 +619,7 @@ db1_##name(Object *o)							\
 }									\
 									\
 static void								\
-db2_##name(Object *o, Var *plist, int *px)				\
+db2_add_##name(Object *o, Var *plist, int *px)				\
 {									\
     int i, c;								\
     Var tmp, field = enlist_var(var_ref(o->field));			\
@@ -631,7 +634,7 @@ db2_##name(Object *o, Var *plist, int *px)				\
 		plist->v.list[*px].type = TYPE_OBJ;			\
 		plist->v.list[*px].v.obj = oid;				\
 		o2 = dbpriv_find_object(oid);				\
-		db2_##name(o2, plist, px);				\
+		db2_add_##name(o2, plist, px);				\
 	    }								\
 	}								\
     }									\
@@ -651,16 +654,18 @@ db_##name(Var obj, bool full)						\
 	(o->field.type == TYPE_LIST && listlength(o->field) == 0))	\
 	return full ? enlist_var(var_ref(obj)) : new_list(0);		\
 									\
-    n = db1_##name(o) + (full ? 1 : 0);					\
+    CLEAR_BIT_ARRAY();							\
+									\
+    n = db1_count_##name(o) + (full ? 1 : 0);				\
 									\
     list = new_list(n);							\
-									\
-    CLEAR_BIT_ARRAY();							\
 									\
     if (full)								\
 	list.v.list[++i] = var_ref(obj);				\
 									\
-    db2_##name(o, &list, &i);						\
+    CLEAR_BIT_ARRAY();							\
+									\
+    db2_add_##name(o, &list, &i);					\
 									\
     list.v.list[0].v.num = i; /* sketchy */				\
 									\
