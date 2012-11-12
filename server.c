@@ -103,6 +103,7 @@ struct pending_recycle {
 static struct pending_recycle *pending_free = 0;
 static struct pending_recycle *pending_head = 0;
 static struct pending_recycle *pending_tail = 0;
+static unsigned int pending_count = 0;
 
 static void
 free_shandle(shandle * h)
@@ -493,6 +494,8 @@ queue_anonymous_object(Var v)
 
     if (!pending_tail)
 	pending_tail = next;
+
+    pending_count++;
 }
 
 static void
@@ -503,9 +506,12 @@ recycle_anonymous_objects(void)
 
     struct pending_recycle *next, *head = pending_head;
     pending_head = pending_tail = NULL;
+    pending_count = 0;
 
     while (head) {
 	Var v = head->v;
+
+	assert(TYPE_ANON == v.type);
 
 	next = head->next;
 	head->next = pending_free;
@@ -533,6 +539,38 @@ recycle_anonymous_objects(void)
 
 	free_var(v);
     }
+}
+
+void
+write_values_pending_finalization(void)
+{
+    dbio_printf("%d values pending finalization\n", pending_count);
+
+    struct pending_recycle *head = pending_head;
+
+    while (head) {
+	dbio_write_var(head->v);
+	head = head->next;
+    }
+}
+
+int
+read_values_pending_finalization(void)
+{
+    int count;
+    Var v;
+
+    if (dbio_scanf("%d values pending finalization\n", &count) != 1) {
+	errlog("READ_VALUES_PENDING_FINALIZATION: Bad count.\n");
+	return 0;
+    }
+
+    for (; count > 0; count--) {
+	v = dbio_read_var();
+	queue_anonymous_object(v);
+    }
+
+    return 1;
 }
 
 static void
@@ -564,6 +602,12 @@ main_loop(void)
 	int seconds_left = task_seconds < 0 ? 2 : task_seconds;
 	shandle *h, *nexth;
 
+#ifdef ENABLE_GC
+	if (gc_run_called || gc_roots_count > GC_ROOTS_LIMIT
+	    || checkpoint_requested != CHKPT_OFF)
+	    gc_collect();
+#endif
+
 	if (checkpoint_requested != CHKPT_OFF) {
 	    if (checkpoint_requested == CHKPT_SIGNAL)
 		oklog("CHECKPOINTING due to remote request signal.\n");
@@ -584,11 +628,6 @@ main_loop(void)
 	    call_checkpoint_notifier(checkpoint_finished - 1);
 	    checkpoint_finished = 0;
 	}
-#endif
-
-#ifdef ENABLE_GC
-	if (gc_run_called || gc_roots_count > 2000)
-	    gc_collect();
 #endif
 
 	recycle_anonymous_objects();
@@ -1442,15 +1481,7 @@ main(int argc, char **argv)
 	network_shutdown();
     }
 
-    /* Repeat until there are no more pending objects waiting to be
-     * recycled and there is no more cyclic garbage.
-     */
     gc_collect();
-    while (pending_head) {
-	while (pending_head)
-	    recycle_anonymous_objects();
-	gc_collect();
-    }
 
     db_shutdown();
 

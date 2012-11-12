@@ -896,6 +896,14 @@ read_db_file(void)
     dbpriv_set_all_users(user_list);
 
     if (DBV_Anon <= dbio_input_version) {
+	oklog("LOADING: Reading values pending finalization ...\n");
+	if (!read_values_pending_finalization()) {
+	    errlog("READ_DB_FILE: Can't read values pending finalization.\n");
+	    return 0;
+	}
+    }
+
+    if (DBV_Anon <= dbio_input_version) {
 	oklog("LOADING: Reading forked and suspended tasks ...\n");
 	if (!read_task_queue()) {
 	    errlog("READ_DB_FILE: Can't read task queue.\n");
@@ -1052,6 +1060,9 @@ write_db_file(const char *reason)
 
 	for (i = 1; i <= user_list.v.list[0].v.num; i++)
 	    dbio_write_objid(user_list.v.list[i].v.obj);
+
+	oklog("%s: Writing values pending finalization ...\n", reason);
+	write_values_pending_finalization();
 
 	oklog("%s: Writing forked and suspended tasks ...\n", reason);
 	write_task_queue();
