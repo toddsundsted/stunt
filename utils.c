@@ -642,6 +642,24 @@ raw_bytes_to_binary(const char *buffer, int buflen)
     return reset_stream(s);
 }
 
+Var
+anonymizing_var_ref(Var v, Objid progr)
+{
+    Var r;
+
+    if (TYPE_ANON != v.type)
+	return var_ref(v);
+
+    if (valid(progr)
+        && (is_wizard(progr) || db_object_owner2(v) == progr))
+	return var_ref(v);
+
+    r.type = TYPE_ANON;
+    r.v.anon = NULL;
+
+    return r;
+}
+
 char rcsid_utils[] = "$Id: utils.c,v 1.9 2010/03/30 23:15:52 wrog Exp $";
 
 /* 

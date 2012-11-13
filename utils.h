@@ -87,6 +87,14 @@ extern void stream_add_raw_bytes_to_binary(Stream *, const char *buffer, int buf
 extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
 extern const char *raw_bytes_to_binary(const char *buffer, int buflen);
 
+extern Var anonymizing_var_ref(Var v, Objid progr);
+				/* To be used in places where you
+				 * need to copy (via `var_ref()') a
+				 * value and also need to ensure that
+				 * anonymous objects remain anonymous
+				 * for non-wizards/owners.
+				 */
+
 #endif
 
 /* 
