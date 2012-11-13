@@ -385,7 +385,7 @@ stream_add_tostr(Stream * s, Var v)
 	stream_add_string(s, "{list}");
 	break;
     case TYPE_ANON:
-	stream_add_string(s, "!anon!");
+	stream_add_string(s, "*anonymous*");
 	break;
     default:
 	panic("STREAM_ADD_TOSTR: Unknown Var type");
@@ -482,7 +482,7 @@ unparse_value(Stream * s, Var v)
 	}
 	break;
     case TYPE_ANON:
-	stream_add_string(s, "!anon!");
+	stream_add_string(s, "*anonymous*");
 	break;
     default:
 	errlog("UNPARSE_VALUE: Unknown Var type = %d\n", v.type);
