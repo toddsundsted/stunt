@@ -131,7 +131,7 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 	    stream_printf(str, "#%d:%s", activ_stack[t].vloc.v.obj,
 		          activ_stack[t].verbname);
 	else
-	    stream_printf(str, "!anonymous!:%s",
+	    stream_printf(str, "*anonymous*:%s",
 		          activ_stack[t].verbname);
 
 	if (equality(activ_stack[t].vloc, activ_stack[t].this, 0)) {
