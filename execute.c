@@ -402,7 +402,7 @@ find_handler_activ(Var code)
 
 static Var
 make_stack_list(activation * stack, int start, int end, int include_end,
-		int root_vector, int line_numbers_too)
+		int root_vector, int line_numbers_too, Objid progr)
 {
     Var r;
     int count = 0, i, j;
@@ -421,14 +421,11 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 
 	if (include_end || i != end) {
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
-	    v.v.list[1] = var_ref(stack[i].this);
-	    v.v.list[2].type = TYPE_STR;
-	    v.v.list[2].v.str = str_ref(stack[i].verb);
-	    v.v.list[3].type = TYPE_OBJ;
-	    v.v.list[3].v.obj = stack[i].progr;
-	    v.v.list[4] = var_ref(stack[i].vloc);
-	    v.v.list[5].type = TYPE_OBJ;
-	    v.v.list[5].v.obj = stack[i].player;
+	    v.v.list[1] = anonymizing_var_ref(stack[i].this, progr);
+	    v.v.list[2] = str_ref_to_var(stack[i].verb);
+	    v.v.list[3] = new_obj(stack[i].progr);
+	    v.v.list[4] = anonymizing_var_ref(stack[i].vloc, progr);
+	    v.v.list[5] = new_obj(stack[i].player);
 	    if (line_numbers_too) {
 		v.v.list[6].type = TYPE_INT;
 		v.v.list[6].v.num = find_line_number(stack[i].prog,
@@ -467,6 +464,13 @@ save_handler_info(const char *vname, Var args)
     handler_verb_args = args;
 }
 
+/* TODO: both `raise_error()' and `abort_task()' should create a stack
+ * list from the point of view of the programmer _catching the error_
+ * (not the point of view of the programmer who's verb generated the
+ * error) however, this is hard, so for now everyone gets invalid
+ * anonymous objects!
+ */
+
 static int
 raise_error(package p, enum outcome *outcome)
 {
@@ -490,7 +494,8 @@ raise_error(package p, enum outcome *outcome)
     value.v.list[3] = p.u.raise.value;
     value.v.list[4] = make_stack_list(activ_stack, handler_activ,
 				      top_activ_stack, 1,
-				      root_activ_vector, 1);
+				      root_activ_vector, 1,
+				      NOTHING);
 
     if (why == FIN_UNCAUGHT) {
 	save_handler_info("handle_uncaught_error", value);
@@ -525,7 +530,8 @@ abort_task(enum abort_reason reason)
 	value.v.list[1].type = TYPE_STR;
 	value.v.list[1].v.str = str_dup(htag);
 	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
-					  root_activ_vector, 1);
+					  root_activ_vector, 1,
+					  NOTHING);
 	value.v.list[3] = error_backtrace_list(msg);
 	save_handler_info("handle_task_timeout", value);
 	/* fall through */
@@ -3096,7 +3102,8 @@ bf_callers(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
 
     return make_var_pack(make_stack_list(activ_stack, 0, top_activ_stack, 0,
-				   root_activ_vector, line_numbers_too));
+				   root_activ_vector, line_numbers_too,
+				   progr));
 }
 
 static package
@@ -3117,7 +3124,8 @@ bf_task_stack(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(make_stack_list(the_vm->activ_stack, 0,
 					 the_vm->top_activ_stack, 1,
 					 the_vm->root_activ_vector,
-					 line_numbers_too));
+					 line_numbers_too,
+					 progr));
 }
 
 void
