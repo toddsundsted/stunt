@@ -3175,6 +3175,95 @@ Returns the same string as @code{string_hash(toliteral(@var{value}))}; see the
 description of @code{string_hash()} for details.
 @end deftypefun
 
+@deftypefun str generate_json (@var{value} [, @var{str mode}])
+Returns the JSON representation of the MOO value.
+
+MOO supports a richer set of values than JSON allows.  The optional @code{mode}
+specifies how this function handles the conversion of MOO values into their
+JSON representation.
+
+The @dfn{common subset} mode, specified by the literal @code{mode} string
+@code{"common-subset"}, is the default conversion mode.  In this mode, only the
+common subset of types (strings and numbers) are translated with fidelity
+between MOO types and JSON types.  All other types are treated as alternative
+representations of the string type.  This mode is useful for integration with
+non-MOO applications.
+
+The @dfn{embedded types} mode, specified by the literal @code{mode} string
+@code{"embedded-types"}, adds type information.  Specifically, values other
+than strings and numbers, which carry implicit type information, are converted
+into strings with type information appended.  The converted string consists of
+the string representation of the value (as if @code{tostr()} were applied)
+followed by the pipe (@code{|}) character and the type.  This mode is useful
+for serializing/deserializing objects and collections of MOO values.
+
+@example
+generate_json([])                                           @result{}   "@{@}"
+generate_json(["foo" -> "bar"])                             @result{}   "@{\"foo\":\"bar\"@}"
+generate_json(["foo" -> "bar"], "common-subset")            @result{}   "@{\"foo\":\"bar\"@}"
+generate_json(["foo" -> "bar"], "embedded-types")           @result{}   "@{\"foo\":\"bar\"@}"
+generate_json(["foo" -> 1.1])                               @result{}   "@{\"foo\":1.1@}"
+generate_json(["foo" -> 1.1], "common-subset")              @result{}   "@{\"foo\":1.1@}"
+generate_json(["foo" -> 1.1], "embedded-types")             @result{}   "@{\"foo\":1.1@}"
+generate_json(["foo" -> #1])                                @result{}   "@{\"foo\":\"#1\"@}"
+generate_json(["foo" -> #1], "common-subset")               @result{}   "@{\"foo\":\"#1\"@}"
+generate_json(["foo" -> #1], "embedded-types")              @result{}   "@{\"foo\":\"#1|obj\"@}"
+generate_json(["foo" -> E_PERM])                            @result{}   "@{\"foo\":\"E_PERM\"@}"
+generate_json(["foo" -> E_PERM], "common-subset")           @result{}   "@{\"foo\":\"E_PERM\"@}"
+generate_json(["foo" -> E_PERM], "embedded-types")          @result{}   "@{\"foo\":\"E_PERM|err\"@}"
+@end example
+
+JSON keys must be strings, so regardless of the mode, the key will be converted
+to a string value.
+
+@example
+generate_json([1 -> 2])                                     @result{}   "@{\"1\":2@}"
+generate_json([1 -> 2], "common-subset")                    @result{}   "@{\"1\":2@}"
+generate_json([1 -> 2], "embedded-types")                   @result{}   "@{\"1|int\":2@}"
+generate_json([#1 -> 2], "embedded-types")                  @result{}   "@{\"#1|obj\":2@}"
+@end example
+@end deftypefun
+
+@deftypefun value parse_json (@var{str json} [, @var{str mode}])
+Returns the MOO value representation of the JSON string.  If the specified
+string is not valid JSON, @code{E_INVARG} is raised.
+
+The optional @code{mode} specifies how this function handles conversion of MOO
+values into their JSON representation.  The options are the same as for
+@code{generate_json()}.
+
+@example
+parse_json("@{@}")                                            @result{}   []
+parse_json("@{\"foo\":\"bar\"@}")                             @result{}   ["foo" -> "bar"]
+parse_json("@{\"foo\":\"bar\"@}", "common-subset")            @result{}   ["foo" -> "bar"]
+parse_json("@{\"foo\":\"bar\"@}", "embedded-types")           @result{}   ["foo" -> "bar"]
+parse_json("@{\"foo\":1.1@}")                                 @result{}   ["foo" -> 1.1]
+parse_json("@{\"foo\":1.1@}", "common-subset")                @result{}   ["foo" -> 1.1]
+parse_json("@{\"foo\":1.1@}", "embedded-types")               @result{}   ["foo" -> 1.1]
+parse_json("@{\"foo\":\"#1\"@}")                              @result{}   ["foo" -> "#1"]
+parse_json("@{\"foo\":\"#1\"@}", "common-subset")             @result{}   ["foo" -> "#1"]
+parse_json("@{\"foo\":\"#1|obj\"@}", "embedded-types")        @result{}   ["foo" -> #1]
+parse_json("@{\"foo\":\"E_PERM\"@}")                          @result{}   ["foo" -> "E_PERM"]
+parse_json("@{\"foo\":\"E_PERM\"@}", "common-subset")         @result{}   ["foo" -> "E_PERM"]
+parse_json("@{\"foo\":\"E_PERM|err\"@}", "embedded-types")    @result{}   ["foo" -> E_PERM]
+@end example
+
+In @dfn{embedded types} mode, key values can be converted to MOO types by
+appending type information.  The full set of supported types are @code{obj},
+@code{str}, @code{err}, @code{float} and @code{int}.
+
+@example
+parse_json("@{\"1\":2@}")                                     @result{}   ["1" -> 2]
+parse_json("@{\"1\":2@}", "common-subset")                    @result{}   ["1" -> 2]
+parse_json("@{\"1|int\":2@}", "embedded-types")               @result{}   [1 -> 2]
+parse_json("@{\"#1|obj\":2@}", "embedded-types")              @result{}   [#1 -> 2]
+@end example
+
+JSON defines types that MOO (currently) does not support, such as boolean
+@code{true} and @code{false}, and @code{null}.  These values are always
+converted to the strings @code{"true"}, @code{"false"} and @code{"null"}.
+@end deftypefun
+
 @node Manipulating Numbers, Manipulating Strings, General Operations, Manipulating Values
 @comment  node-name,  next,  previous,  up
 @subsubsection Operations on Numbers
