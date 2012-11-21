@@ -2965,6 +2965,7 @@ on server assumptions about the database for details.
 * Passing::                  Object-Oriented Programming
 * Manipulating Values::      Manipulating MOO Values
 * Manipulating Objects::     Manipulating Objects
+* Executables and Files::    Operations on Executable and Files
 * Manipulating Connections::  Operations on Network Connections
 * Time::                     Operations Involving Times and Dates
 * Evaluation and Tasks::     MOO-Code Evaluation and Task Manipulation
@@ -4404,7 +4405,54 @@ just as if @code{boot_player(@var{object})} had been called (see the
 description of @code{boot_player()} below).
 @end deftypefun
 
-@node Manipulating Connections, Time, Manipulating Objects, Builtins
+@node Executables and Files, Manipulating Connections, Manipulating Objects, Builtins
+@comment  node-name,  next,  previous,  up
+@subsection Operations on Executable and Files
+
+@deftypefun list exec (list @var{command}[, str @var{input}])
+Asynchronously executes the specified external executable, optionally sending
+input.  Returns the process return code, output and error.  If the programmer
+is not a wizard, then @code{E_PERM} is raised.
+
+The first argument must be a list of strings, or @code{E_INVARG} is raised.
+The first string is the path to the executable and is required.  The rest are
+command line arguments passed to the executable.
+
+The path to the executable may not start with a slash (@code{/}) or dot-dot
+(@code{..}), and it may not contain slash-dot (@code{/.}) or dot-slash
+(@code{./}), or @code{E_INVARG} is raised.  If the specified executable does
+not exist or is not a regular file, @code{E_INVARG} is raised.
+
+If the string @var{input} is present, it is written to standard input of the
+executing process.
+
+When the process exits, it returns a list of the form:
+
+@example
+@{@var{code}, @var{output}, @var{error}@}
+@end example
+
+@var{code} is the integer process exit status or return code.  @var{output} and
+@var{error} are strings of data that were written to the standard output and
+error of the process.
+
+The specified command is executed asynchronously.  The function suspends the
+current task and allows other tasks to run until the command finishes.  Tasks
+suspended this way can be killed with @code{kill_task()}.
+
+The strings, @var{input}, @var{output} and @var{error} are all MOO binary
+strings.
+
+All external executables must reside in the @code{executables} directory.
+
+@example
+exec(@{"cat", "-?"@})                                   @result{}   @{1, "", "cat: illegal option -- ?~0Ausage: cat [-benstuv] [file ...]~0A"@}
+exec(@{"cat"@}, "foo")                                  @result{}   @{0, "foo", ""@}
+exec(@{"echo", "one", "two"@})                          @result{}   @{0, "one two~0A", ""@}
+@end example
+@end deftypefun
+
+@node Manipulating Connections, Time, Executables and Files, Builtins
 @comment  node-name,  next,  previous,  up
 @subsection Operations on Network Connections
 
