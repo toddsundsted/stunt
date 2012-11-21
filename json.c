@@ -454,8 +454,6 @@ generate(yajl_gen g, Var v, void *ctx)
 	    yajl_gen_array_close(g);
 	    return yajl_gen_status_ok;
 	}
-    default:
-	panic("Unsupported type in generate()");
     }
 
     return -1;
