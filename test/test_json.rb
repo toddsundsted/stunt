@@ -292,6 +292,23 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_calling_generate_json_on_anonymous_objects_does_not_crash_the_server
+    run_test_as('programmer') do
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(create($nothing, 1)); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(create($nothing, 1), "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(create($nothing, 1), "embedded-types"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json({create($nothing, 1)}); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json({create($nothing, 1)}, "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json({create($nothing, 1)}, "embedded-types"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)]); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)], "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)], "embedded-types"); |))
+      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"]); |))
+      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "common-subset"); |))
+      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "embedded-types"); |))
+    end
+  end
+
   def generate_json(value, mode = nil)
     if mode.nil?
       simplify command %Q|; return generate_json(#{value_ref(value)});|
