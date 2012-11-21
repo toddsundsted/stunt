@@ -381,7 +381,7 @@ generate_key(yajl_gen g, Var v, void *ctx)
 static yajl_gen_status
 generate(yajl_gen g, Var v, void *ctx);
 
-struct do_map_closure {
+struct do_closure {
     yajl_gen g;
     struct generate_context *gctx;
     yajl_gen_status status;
@@ -390,11 +390,23 @@ struct do_map_closure {
 static int
 do_map(Var key, Var value, void *data, int first)
 {
-    struct do_map_closure *dmc = (struct do_map_closure *)data;
+    struct do_closure *dmc = (struct do_closure *)data;
 
     dmc->status = generate_key(dmc->g, key, dmc->gctx);
     if (yajl_gen_status_ok != dmc->status)
 	return 1;
+    dmc->status = generate(dmc->g, value, dmc->gctx);
+    if (yajl_gen_status_ok != dmc->status)
+	return 1;
+
+    return 0;
+}
+
+static int
+do_list(Var value, void *data, int first)
+{
+    struct do_closure *dmc = (struct do_closure *)data;
+
     dmc->status = generate(dmc->g, value, dmc->gctx);
     if (yajl_gen_status_ok != dmc->status)
 	return 1;
@@ -431,7 +443,7 @@ generate(yajl_gen g, Var v, void *ctx)
 	}
     case TYPE_MAP:
 	{
-	    struct do_map_closure dmc;
+	    struct do_closure dmc;
 	    dmc.g = g;
 	    dmc.gctx = gctx;
 	    dmc.status = yajl_gen_status_ok;
@@ -443,14 +455,13 @@ generate(yajl_gen g, Var v, void *ctx)
 	}
     case TYPE_LIST:
 	{
-	    int i;
-	    yajl_gen_status status;
+	    struct do_closure dmc;
+	    dmc.g = g;
+	    dmc.gctx = gctx;
+	    dmc.status = yajl_gen_status_ok;
 	    yajl_gen_array_open(g);
-	    for (i = 1; i <= v.v.list[0].v.num; i++) {
-		status = generate(g, v.v.list[i], ctx);
-		if (yajl_gen_status_ok != status)
-		    return status;
-	    }
+	    if (listforeach(v, do_list, &dmc))
+		return dmc.status;
 	    yajl_gen_array_close(g);
 	    return yajl_gen_status_ok;
 	}
