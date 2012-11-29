@@ -225,7 +225,7 @@ class TestJson < Test::Unit::TestCase
       assert_equal "{\"foo\":\"bar\\tbaz\"}", generate_json({"foo" => "bar\tbaz"})
 
       # everything else is just passed, as is
-      assert_equal "{\"foo\":\"bar~00baz\"}", generate_json({"foo" => "bar~00baz"})
+      assert_equal "{\"foo\":\"bar~20baz\"}", generate_json({"foo" => "bar~20baz"})
       assert_equal "{\"foo\":\"bar~zzbaz\"}", generate_json({"foo" => "bar~zzbaz"})
       assert_equal "{\"foo\":\"bar~f\"}", generate_json({"foo" => "bar~f"})
       assert_equal "{\"foo\":\"bar~\"}", generate_json({"foo" => "bar~"})
@@ -251,6 +251,25 @@ class TestJson < Test::Unit::TestCase
       assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\abaz\"}'))
       assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\zbaz\"}'))
       assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\\"}'))
+    end
+  end
+
+  def test_that_json_with_unicode_escapes_parse_into_binary_strings
+    run_test_as('programmer') do
+      assert_equal(["~0A", "~0D", "~1B", "~7F"], parse_json('[\"\\\\u000A\",\"\\\\u000D\",\"\\\\u001b\",\"\\\\u007f\"]'))
+      assert_equal(["~C2~80", "~C3~B8", "~C8~80", "~DF~BF"], parse_json('[\"\\\\u0080\",\"\\\\u00f8\",\"\\\\u0200\",\"\\\\u07ff\"]'))
+      assert_equal(["~E0~A0~80", "~EF~BF~BF"], parse_json('[\"\\\\u0800\",\"\\\\uffff\"]'))
+      assert_equal(["~F0~90~80~80", "~F0~9D~84~9E"], parse_json('[\"\\\\ud800\\\\\udc00\",\"\\\\ud834\\\\\udd1e\"]'))
+      assert_equal(["~0A~0D~1B~7F"], parse_json('[\"\\\\u000A\\\\u000D\\\\u001b\\\\u007f\"]'))
+      assert_equal(["~C2~80~C3~B8~C8~80~DF~BF"], parse_json('[\"\\\\u0080\\\\u00f8\\\\u0200\\\\u07ff\"]'))
+      assert_equal(["~0A~C8~80~0D~F0~90~80~80"], parse_json('[\"\\\\u000A\\\\u0200\\\\u000D\\\\ud800\\\\\udc00\"]'))
+    end
+  end
+
+  def test_that_binary_strings_with_escaped_control_characters_generate_unicode_escapes
+    run_test_as('programmer') do
+      assert_equal '["\\u0000","\\u0001","\\u001B","\\u001F","~20","~7F"]', generate_json(["~00", "~01", "~1B", "~1F", "~20", "~7F"])
+      assert_equal '["\\u0000\\u0001","\\u001B\\u001F","~20~7F"]', generate_json(["~00~01", "~1B~1F", "~20~7F"])
     end
   end
 
