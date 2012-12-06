@@ -446,8 +446,6 @@ db_renumber_object(Objid old)
     Objid new;
     Object *o;
 
-    db_priv_affected_callable_verb_lookup();
-
     for (new = 0; new < old; new++) {
 	if (objects[new] == NULL) {
 	    /* Change the identity of the object. */
