@@ -836,10 +836,6 @@ db_set_verb_program(db_verb_handle vh, Program * program)
 {
     handle *h = (handle *) vh.ptr;
 
-    /* Not necessary, since this was only here to cope with nonprogrammed verbs, and that turns out to be handled properly in modern servers. */
-
-    /* db_priv_affected_callable_verb_lookup(); */
-
     if (h) {
 	if (h->verbdef->program)
 	    free_program(h->verbdef->program);
