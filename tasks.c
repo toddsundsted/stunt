@@ -1217,6 +1217,7 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
      * out why it's assigning back a ref'd copy of each field.
      */
     a.this = var_ref(a.this);
+    a.vloc = var_ref(a.vloc);
     a.verb = str_ref(a.verb);
     a.verbname = str_ref(a.verbname);
     a.prog = program_ref(a.prog);
