@@ -582,6 +582,19 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
     return make_var_pack(r);
 }
 
+static int
+all_strings(Var arglist)
+{
+    Var arg;
+    int i, c;
+
+    FOR_EACH (arg, arglist, i, c)
+	if (!is_str(arg))
+	    return 0;
+
+    return 1;
+}
+
 static package
 bf_eval(Var arglist, Byte next, void *data, Objid progr)
 {
@@ -591,11 +604,15 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 	if (!is_programmer(progr)) {
 	    free_var(arglist);
 	    p = make_error_pack(E_PERM);
+	} else if (!all_strings(arglist)) {
+	    free_var(arglist);
+	    p = make_error_pack(E_TYPE);
 	} else {
 	    Var errors;
 	    Program *program = parse_list_as_program(arglist, &errors);
 
 	    free_var(arglist);
+
 	    if (program) {
 		free_var(errors);
 		if (setup_activ_for_eval(program))
@@ -649,7 +666,7 @@ register_verbs(void)
 		      TYPE_ANY, TYPE_ANY, TYPE_LIST);
     register_function("respond_to", 2, 2, bf_respond_to,
 		      TYPE_ANY, TYPE_STR);
-    register_function("eval", 1, 1, bf_eval, TYPE_STR);
+    register_function("eval", 1, -1, bf_eval, TYPE_STR);
 }
 
 char rcsid_verbs[] = "$Id: verbs.c,v 1.7 2010/04/22 21:25:14 wrog Exp $";
