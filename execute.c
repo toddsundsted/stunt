@@ -1768,7 +1768,7 @@ do {								\
 		    db_prop_handle h;
 		    Var p;
 
-		    /* If it's an object number, we're good.
+		    /* If it's an object, we're good.
 		     * Otherwise, look for a property on the system
 		     * object that points us to the prototype/handler
 		     * for the primitive type.
@@ -1781,7 +1781,9 @@ do {								\
 			    if (h.ptr && p.type == TYPE_OBJ && valid(p.v.obj))	\
 				recv = p.v.obj;					\
 			}
-		    if (obj.type == TYPE_OBJ)
+		    if (obj.type == TYPE_ANON)
+			recv = NOTHING;
+		    else if (obj.type == TYPE_OBJ)
 			recv = obj.v.obj;
 		    MATCH_TYPE(INT, int)
 		    MATCH_TYPE(FLOAT, float)
@@ -1793,7 +1795,7 @@ do {								\
 
 		    free_var(system);
 
-		    if (recv != NOTHING || is_object(obj)) {
+		    if (is_object(obj) || recv != NOTHING) {
 			STORE_STATE_VARIABLES();
 			err = call_verb2(recv, verb.v.str, obj, args, 0);
 			/* if there is no error, RUN_ACTIV is now the CALLEE's.
