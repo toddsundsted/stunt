@@ -3072,15 +3072,19 @@ tostr(1.0/3.0)             @result{}   "0.333333333333333"
 tostr(#17)                 @result{}   "#17"
 tostr("foo")               @result{}   "foo"
 tostr(@{1, 2@})              @result{}   "@{list@}"
+tostr([1 -> 2])            @result{}   "[map]"
 tostr(E_PERM)              @result{}   "Permission denied"
 tostr("3 + 4 = ", 3 + 4)   @result{}   "3 + 4 = 7"
 @end example
 
 @noindent
-Note that @code{tostr()} does not do a good job of converting lists into
-strings; all lists, including the empty list, are converted into the string
-@code{"@{list@}"}.  The function @code{toliteral()}, below, is better for this
+
+Note that @code{tostr()} does not do a good job of converting types like lists
+and maps into strings; all lists, including the empty list, are converted into
+the string @code{"@{list@}"}, and all maps are converted into the string
+@code{"[map]"}.  The function @code{toliteral()}, below, is better for this
 purpose.
+
 @end deftypefun
 
 @deftypefun str toliteral (@var{value})
@@ -3093,6 +3097,7 @@ toliteral(1.0/3.0)    @result{}   "0.333333333333333"
 toliteral(#17)        @result{}   "#17"
 toliteral("foo")      @result{}   "\"foo\""
 toliteral(@{1, 2@})     @result{}   "@{1, 2@}"
+toliteral([1 -> 2])   @result{}   "[1 -> 2]"
 toliteral(E_PERM)     @result{}   "E_PERM"
 @end example
 @end deftypefun
