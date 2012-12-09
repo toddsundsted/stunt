@@ -373,16 +373,16 @@
 #define MIN_MAP_VALUE_BYTES_LIMIT  1021
 
 /******************************************************************************
- * In the original LambdaMOO server, last chance command processessing
+ * In the original LambdaMOO server, last chance command processing
  * occured in the `huh' verb defined on the player's location.  The
  * following option changes that behavior so that it occurs in the
- * `huh' verb defined on the player.  Given the fact that on legacy
- * cores `huh' immediatelly calls something like `$command_utils:do_huh',
- * this change should be largely backwards compatible.
+ * `huh' verb defined on the player.  If you are running a legacy core
+ * and are concerned about incompatibility, you can disable this
+ * feature.
  ******************************************************************************
  */
 
-#define PLAYER_HUH
+#define PLAYER_HUH /* */
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
