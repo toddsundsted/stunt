@@ -156,7 +156,8 @@ gc_possible_root(Var v)
 static inline int
 is_not_green(Var v)
 {
-    return gc_get_color(VOID_PTR(v)) != GC_GREEN;
+    void *p = VOID_PTR(v);
+    return p && gc_get_color(p) != GC_GREEN;
 }
 
 typedef void (gc_func)(Var);
