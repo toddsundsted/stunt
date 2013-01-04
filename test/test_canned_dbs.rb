@@ -18,6 +18,13 @@ class TestCannedDbs < Test::Unit::TestCase
 
   private
 
+  def diff(first, second)
+    _, diff, _, wait = Open3.popen3 %[diff #{first} #{second}]
+    wait.value
+
+    diff.readlines.map(&:chomp)
+  end
+
   def log_and_diff(original, backup)
     _, _, log, wait = Open3.popen3 %[./moo #{original} #{backup} 9899]
     wait.value
@@ -80,6 +87,40 @@ class TestCannedDbs < Test::Unit::TestCase
 
     assert_equal [], diff1
     assert_equal [], diff2
+  end
+
+  def test_that_chains_of_object_are_cleaned_up_correctly
+    log1, diff1 = log_and_diff('test/Anon4.db', '/tmp/Foo.db')
+    log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
+    log3, diff3 = log_and_diff('/tmp/Bar.db', '/tmp/Baz.db')
+
+    assert log1.any? { |l| l =~ /\$one is valid/ }
+    assert log1.any? { |l| l =~ /\$one\.two is valid/ }
+    assert log2.any? { |l| l =~ /\$one is valid/ }
+    assert log2.any? { |l| l =~ /\$one\.two is invalid/ }
+    assert log3.any? { |l| l =~ /\$one is invalid/ }
+    assert log3.any? { |l| l =~ /\$one\.two is invalid/ }
+
+    assert_equal [], diff('test/Anon4.db', '/tmp/Baz.db')
+
+    delta2 = [
+      '< 0 values pending finalization',
+      '---',
+      '> 1 values pending finalization',
+      '> 12',
+      '> 4'
+    ]
+
+    delta3 = [
+      '< 1 values pending finalization',
+      '< 12',
+      '< 4',
+      '---',
+      '> 0 values pending finalization'
+    ]
+
+    assert diff2.include_sequence? delta2
+    assert diff3.include_sequence? delta3
   end
 
   def test_that_check_for_invalid_objects_succeeds

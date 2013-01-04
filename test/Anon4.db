@@ -1,0 +1,126 @@
+** LambdaMOO Database, Format Version 13 **
+1
+3
+0 values pending finalization
+0 clocks
+0 queued tasks
+0 suspended tasks
+0 interrupted tasks
+0 active connections with listeners
+4
+#0
+System Object
+16
+3
+1
+-1
+4
+0
+1
+1
+4
+0
+1
+server_started
+3
+173
+-1
+0
+0
+#1
+Root Class
+16
+3
+1
+-1
+4
+0
+1
+-1
+4
+3
+1
+0
+1
+2
+1
+3
+0
+0
+0
+#2
+The First Room
+0
+3
+1
+-1
+4
+1
+1
+3
+1
+1
+4
+0
+1
+eval
+3
+88
+-2
+0
+0
+#3
+Wizard
+7
+3
+1
+2
+4
+0
+1
+1
+4
+0
+0
+0
+0
+0
+1
+#0:0
+server_log("----------------------------------------------------------------------");
+server_log("Creates an anonymous object with a reference to another anonymous");
+server_log("object, recycles the latter anonymous object (thus invalidating");
+server_log("it), and dumps the database.  On load, loses the reference to the");
+server_log("first object, runs garbage collection, and dumps the database");
+server_log("again.  On load, there should be no reference to either object.");
+server_log("----------------------------------------------------------------------");
+suspend(0);
+if (!("one" in properties(#0)))
+add_property(#0, "one", create(#-1, 1), {$owner, ""});
+add_property($one, "two", create(#-1, 1), {$one.owner, ""});
+$one.name = "One One One!";
+$one.two.name = "Two Two Two!";
+server_log(tostr("$one is ", `valid($one) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
+server_log(tostr("$one.two is ", `valid($one.two) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
+recycle($one.two);
+suspend(0);
+shutdown();
+elseif (`valid($one) ! E_TYPE')
+server_log(tostr("$one is ", `valid($one) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
+server_log(tostr("$one.two is ", `valid($one.two) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
+"the following two lines trigger a bug in the garbage collector";
+a = $one;
+b = $one;
+$one = 0;
+run_gc();
+suspend(0);
+shutdown();
+else
+server_log(tostr("$one is ", `valid($one) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
+server_log(tostr("$one.two is ", `valid($one.two) ! E_PROPNF, E_TYPE' ? "valid" | "invalid"));
+delete_property(#0, "one");
+run_gc();
+suspend(0);
+shutdown();
+endif
+.
