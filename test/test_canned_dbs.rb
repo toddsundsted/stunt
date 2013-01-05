@@ -89,7 +89,7 @@ class TestCannedDbs < Test::Unit::TestCase
     assert_equal [], diff2
   end
 
-  def test_that_chains_of_object_are_cleaned_up_correctly
+  def test_that_chains_of_objects_are_cleaned_up_correctly
     log1, diff1 = log_and_diff('test/Anon4.db', '/tmp/Foo.db')
     log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
     log3, diff3 = log_and_diff('/tmp/Bar.db', '/tmp/Baz.db')
@@ -121,6 +121,23 @@ class TestCannedDbs < Test::Unit::TestCase
 
     assert diff2.include_sequence? delta2
     assert diff3.include_sequence? delta3
+  end
+
+  def test_that_loaded_anonymous_objects_are_accounted_for_correctly
+    log1, diff1 = log_and_diff('test/Anon5.db', '/tmp/Foo.db')
+    log2, diff2 = log_and_diff('/tmp/Foo.db', '/tmp/Bar.db')
+    log3, diff3 = log_and_diff('/tmp/Bar.db', '/tmp/Baz.db')
+
+    delta1 = [
+      '10c10',
+      '< 4',
+      '---',
+      '> 5'
+    ]
+
+    assert diff1.include_sequence? delta1
+    assert_equal [], diff2
+    assert_equal [], diff3
   end
 
   def test_that_check_for_invalid_objects_succeeds
