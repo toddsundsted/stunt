@@ -312,10 +312,12 @@ ng_read_object(int anonymous)
 
     /* At the point at which we're reading anonymous objects, we know
      * we've already created all of the anonymous objects (they were
-     * created from references in tasks or other objects).
+     * created from references in tasks, other objects or the list
+     * of values pending finalization).
      */
-    if (anonymous)
+    if (anonymous) {
 	o = dbpriv_find_object(oid);
+    }
     else {
 	o = dbpriv_new_object();
 	dbpriv_assign_nonce(o);
