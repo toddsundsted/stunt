@@ -5781,6 +5781,9 @@ successfully open.
 Restrict reading of built-in @var{property} to wizards.
 @item protect_@var{function}
 Restrict use of built-in @var{function} to wizards.
+@item queued_task_limit
+The maximum number of forked or suspended tasks any player can have
+queued at a given time
 @item support_numeric_verbname_strings
 Enables use of an obsolete verb-naming mechanism.
 @end table
