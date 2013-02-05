@@ -27,6 +27,7 @@
 #define MAXINT	((int32) 2147483647L)
 #define MININT	((int32) -2147483648L)
 #define MAXOBJ	((Objid) MAXINT)
+#define MINOBJ	((Objid) MININT)
 
 typedef int32 Objid;
 
