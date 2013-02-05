@@ -292,38 +292,67 @@ compare_numbers(Var a, Var b)
 SIMPLE_BINARY(add, +)
 SIMPLE_BINARY(subtract, -)
 SIMPLE_BINARY(multiply, *)
-#define DIVISION_OP(name, iop, fexpr)				\
-		Var						\
-		do_ ## name(Var a, Var b)			\
-		{						\
-		    Var	ans;					\
-								\
-		    if (a.type != b.type) {			\
-			ans.type = TYPE_ERR;			\
-			ans.v.err = E_TYPE;			\
-		    } else if (a.type == TYPE_INT		\
-			       && b.v.num != 0) {		\
-			ans.type = TYPE_INT;			\
-			ans.v.num = a.v.num iop b.v.num;	\
-		    } else if (a.type == TYPE_FLOAT		\
-			       && *b.v.fnum != 0.0) {		\
-			double d = fexpr;			\
-								\
-			if (!IS_REAL(d)) {			\
-			    ans.type = TYPE_ERR;		\
-			    ans.v.err = E_FLOAT;		\
-			} else					\
-			    ans = new_float(d);			\
-		    } else {					\
-		        ans.type = TYPE_ERR;			\
-			ans.v.err = E_DIV;			\
-		    }						\
-								\
-		    return ans;					\
-		}
 
-DIVISION_OP(divide, /, *a.v.fnum / *b.v.fnum)
-DIVISION_OP(modulus, %, fmod(*a.v.fnum, *b.v.fnum))
+Var
+do_modulus(Var a, Var b)
+{
+    Var ans;
+
+    if (a.type != b.type) {
+	ans.type = TYPE_ERR;
+	ans.v.err = E_TYPE;
+    } else if (a.type == TYPE_INT && b.v.num == 0 ||
+               a.type == TYPE_FLOAT && *b.v.fnum == 0.0) {
+	ans.type = TYPE_ERR;
+	ans.v.err = E_DIV;
+    } else if (a.type == TYPE_INT) {
+	ans.type = TYPE_INT;
+	if (a.v.num == MININT && b.v.num == -1)
+	    ans.v.num = 0;
+	else
+	    ans.v.num = a.v.num % b.v.num;
+    } else { // must be float
+	double d = fmod(*a.v.fnum, *b.v.fnum);
+	if (!IS_REAL(d)) {
+	    ans.type = TYPE_ERR;
+	    ans.v.err = E_FLOAT;
+	} else
+	    ans = new_float(d);
+    }
+
+    return ans;
+}
+
+Var
+do_divide(Var a, Var b)
+{
+    Var ans;
+
+    if (a.type != b.type) {
+	ans.type = TYPE_ERR;
+	ans.v.err = E_TYPE;
+    } else if (a.type == TYPE_INT && b.v.num == 0 ||
+               a.type == TYPE_FLOAT && *b.v.fnum == 0.0) {
+	ans.type = TYPE_ERR;
+	ans.v.err = E_DIV;
+    } else if (a.type == TYPE_INT) {
+	ans.type = TYPE_INT;
+	if (a.v.num == MININT && b.v.num == -1)
+	    ans.v.num = MININT;
+	else
+	    ans.v.num = a.v.num / b.v.num;
+    } else { // must be float
+	double d = *a.v.fnum / *b.v.fnum;
+	if (!IS_REAL(d)) {
+	    ans.type = TYPE_ERR;
+	    ans.v.err = E_FLOAT;
+	} else
+	    ans = new_float(d);
+    }
+
+    return ans;
+}
+
 Var
 do_power(Var lhs, Var rhs)
 {				/* LHS ^ RHS */
