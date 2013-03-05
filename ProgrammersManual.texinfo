@@ -206,11 +206,13 @@ host @code{ftp.lambda.moo.mud.org} in the directory @code{pub/MOO}.
 @comment  node-name,  next,  previous,  up
 @section MOO Value Types
 
-There are only a few kinds of values that MOO programs can manipulate:
+There are a few kinds of values that MOO programs can manipulate:
 
 @itemize @bullet
 @item
-object numbers (of the objects in the database)
+object references (to the anonymous objects in the database)
+@item
+object numbers (of the permanent objects in the database)
 @item
 integers (in a specific, large range)
 @item
@@ -227,9 +229,23 @@ maps (or collections of key/value pairs)
 
 @dfn{Objects} are the backbone of the MOO database and, as such, deserve a
 great deal of discussion; the entire next section is devoted to them.  For now,
-let it suffice to say that every object has an @dfn{object number}, unique to
-that object.  In programs, we write a reference to a particular object by
-putting a hash mark (@samp{#}) followed by the number, like this:
+let it suffice to say that there are two kinds of objects, anonymous objects
+and permanent objects.  Anonymous objects are typically transient and are
+garbage collected when they are no longer needed.  Permanent objects, as their
+name implies, are typically longed lived.  Every permanent object is assigned a
+unique @dfn{object number} and must be accessed via that object number.  The
+lifecycle of a permanent object is explicitly managed by the programmer.
+
+A reference to an anonymous object is returned when the anonymous object is
+created with @code{create()}.  References can be shared but they cannot be
+forged.  That is, there is no literal representation of a reference to an
+anonymous object (that's why they are @emph{anonymous}).
+
+The @dfn{object number} of a permanent object is also returned when the
+permanent object is created with @code{create()}.  However, there is a literal
+representation of an object number.  In programs, we write a reference to a
+particular permanent object by putting a hash mark (@samp{#}) followed by the
+number, like this:
 
 @example
 #495
@@ -237,6 +253,10 @@ putting a hash mark (@samp{#}) followed by the number, like this:
 
 @noindent
 Object numbers are always integers.
+
+An object number may or may not refer to an actual, live permanent object.  If
+it does, we say that the object number is @emph{valid}.  If it does not, we say
+that the object number is @emph{invalid}.
 
 There are three special object numbers used for a variety of purposes:
 @code{#-1}, @code{#-2}, and @code{#-3}, usually referred to in the
@@ -401,27 +421,31 @@ Note that while the keys must be unique, the values are not required to be so.
 @section Objects in the MOO Database
 
 Objects are, in a sense, the whole point of the MOO programming language.
-They are used to represent objects in the virtual reality, like people, rooms,
-exits, and other concrete things.  Because of this, MOO makes a bigger deal
-out of creating objects than it does for other kinds of value, like integers.
+
+Objects encapsulate state and behavior -- as they do in other object-oriented
+programming languages.  Permanent objects are also used to represent objects in
+the virtual reality, like people, rooms, exits, and other concrete things.
+Because of this, MOO makes a bigger deal out of creating objects than it does
+for other kinds of values, like integers.
 
 Numbers always exist, in a sense; you have only to write them down in order to
-operate on them.  With objects, it is different.  The object with number
-@samp{#958} does not exist just because you write down its number.  An
+operate on them.  With objects, it is different.  The permanent object with
+number @samp{#958} does not exist just because you write down its number.  An
 explicit operation, the @samp{create()} function described later, is required
 to bring an object into existence.  Symmetrically, once created, objects
-continue to exist until they are explicitly destroyed by the @samp{recycle()}
-function (also described later).
+continue to exist until there are no more references to them (for anonymous
+objects) or they are explicitly destroyed by the @samp{recycle()} function
+(for both anonymous and permanent objects).
 
-The identifying number associated with an object is unique to that
-object.  It was assigned when the object was created and will never be
-reused, even if the object is destroyed.  Thus, if we create an object
-and it is assigned the number @samp{#1076}, the next object to be
-created will be assigned @samp{#1077}, even if @samp{#1076} is destroyed
-in the meantime.
+The identifying number associated with a permanent object is unique to that
+object.  It was assigned when the object was created and will never be reused,
+even if the object is destroyed.  Thus, if we create an object and it is
+assigned the number @samp{#1076}, the next object to be created will be
+assigned @samp{#1077}, even if @samp{#1076} is destroyed in the meantime.
 
-Every object is made up of three kinds of pieces that together define its
-behavior: @dfn{attributes}, @dfn{properties}, and @dfn{verbs}.
+Both anonymous and permanent objects are made up of three kinds of pieces that
+together define their behavior: @dfn{attributes}, @dfn{properties}, and
+@dfn{verbs}.
 
 @menu
 * Attributes::               Fundamental Object Attributes
@@ -446,9 +470,10 @@ A list of the objects that are its @dfn{children}; that is, those objects for
 which this object is one of their parents.
 @end enumerate
 
-The act of creating a character sets the player attribute of an object and
-only a wizard (using the function @code{set_player_flag()}) can change that
-setting.  Only characters have the player bit set to 1.
+The act of creating a character sets the player attribute of an object and only
+a wizard (using the function @code{set_player_flag()}) can change that setting.
+Only characters have the player bit set to 1.  Currently, only permanent
+objects can be players.
 
 The parent/child relationship is used for sharing behavior among objects.
 For example, the LambdaCore database contains an object representing a sort of
@@ -465,7 +490,7 @@ the functions @code{create()}, @code{recycle()}, @code{chparents()}, and
 @subsection Properties on Objects
 
 A @dfn{property} is a named ``slot'' in an object that can hold an arbitrary
-MOO value.  Every object has eight built-in properties whose values are
+MOO value.  Every object has nine built-in properties whose values are
 constrained to be of particular types.  In addition, an object can have any
 number of other properties, none of which have type constraints.  The built-in
 properties are as follows:
@@ -480,6 +505,7 @@ wizard       @r{a bit, does the object have wizard rights?}
 r            @r{a bit, is the object publicly readable?}
 w            @r{a bit, is the object publicly writable?}
 f            @r{a bit, is the object fertile?}
+a            @r{a bit, can this be a parent of anonymous objects?}
 @end example
 
 The @samp{name} property is used to identify the object in various printed
@@ -516,6 +542,11 @@ this one as a parent.  It also controls whether or not non-owners can use the
 @code{chparents()} built-in function to make this object a parent of an
 existing object.  The @samp{f} bit can only be set by a wizard or by the owner
 of the object.
+
+The @samp{a} bit specifies whether or not this object can be used as a parent
+of an anonymous object created by a player other than the owner of this object.
+It works similarly to the @samp{f} bit, but governs the creation of anonymous
+objects only.
 
 All of the built-in properties on any object can, by default, be read by any
 player.  It is possible, however, to override this behavior from within the
@@ -1176,8 +1207,10 @@ an integer, the type code for lists
 an integer, the type code for maps
 @item STR
 an integer, the type code for strings
+@item ANON
+an integer, the type code for anonymous objects
 @item OBJ
-an integer, the type code for objects
+an integer, the type code for permanent objects
 @item ERR
 an integer, the type code for error values
 @end table
@@ -1408,7 +1441,7 @@ the empty list (@samp{@{@}}),
 @item
 the empty map (@samp{[]}),
 @item
-all object numbers, and
+all object numbers and object references, and
 @item
 all error values.
 @end itemize
@@ -1982,13 +2015,13 @@ expression:
 @var{expression}.@var{name}
 @end example
 
-@var{Expression} must return an object number; if not, @code{E_TYPE} is
-raised.  If the object with that number does not exist, @code{E_INVIND} is
-raised.  Otherwise, if the object does not have a property with that name,
-then @code{E_PROPNF} is raised.  Otherwise, if the named property is not
-readable by the owner of the current verb, then @code{E_PERM} is raised.
-Finally, assuming that none of these terrible things happens, the value of the
-named property on the given object is returned.
+@var{Expression} must return an object; if not, @code{E_TYPE} is raised.  If
+the object does not exist, @code{E_INVIND} is raised.  Otherwise, if the object
+does not have a property with that name, then @code{E_PROPNF} is raised.
+Otherwise, if the named property is not readable by the owner of the current
+verb, then @code{E_PERM} is raised.  Finally, assuming that none of these
+terrible things happens, the value of the named property on the given object is
+returned.
 
 I said ``usually'' in the paragraph above because that simple expression only
 works if the name of the property obeys the same rules as for the names of
@@ -2002,10 +2035,10 @@ syntax is also allowed:
 @var{expression-1}.(@var{expression-2})
 @end example
 
-As before, @var{expression-1} must return an object number.  @var{Expression-2}
-must return a string, the name of the property to be read; @code{E_TYPE}
-is raised otherwise.  Using this syntax, any property can be read,
-regardless of its name.
+As before, @var{expression-1} must return an object.  @var{Expression-2} must
+return a string, the name of the property to be read; @code{E_TYPE} is raised
+otherwise.  Using this syntax, any property can be read, regardless of its
+name.
 
 Note that, as with almost everything in MOO, case is not significant in the
 names of properties.  Thus, the following expressions are all equivalent:
@@ -2089,16 +2122,15 @@ Verbs can also call other verbs, usually using this syntax:
 @end example
 
 @noindent
-@var{Expr-0} must return an object number; @code{E_TYPE} is raised otherwise.
-If the object with that number does not exist, @code{E_INVIND} is raised.  If
-this task is too deeply nested in verbs calling verbs calling verbs, then
-@code{E_MAXREC} is raised; the default limit is 50 levels, but this can be
-changed from within the database; see the chapter on server assumptions about
-the database for details.  If neither the object nor any of its ancestors
-defines a verb matching the given name, @code{E_VERBNF} is raised.
-Otherwise, if none of these nasty things happens, the named verb on the given
-object is called; the various built-in variables have the following initial
-values in the called verb:
+@var{Expr-0} must return an object; @code{E_TYPE} is raised otherwise.  If the
+object does not exist, @code{E_INVIND} is raised.  If this task is too deeply
+nested in verbs calling verbs calling verbs, then @code{E_MAXREC} is raised;
+the default limit is 50 levels, but this can be changed from within the
+database; see the chapter on server assumptions about the database for details.
+If neither the object nor any of its ancestors defines a verb matching the
+given name, @code{E_VERBNF} is raised.  Otherwise, if none of these nasty
+things happens, the named verb on the given object is called; the various
+built-in variables have the following initial values in the called verb:
 
 @table @code
 @item this
