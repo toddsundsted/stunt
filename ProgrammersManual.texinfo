@@ -3031,6 +3031,7 @@ section following this one.
 * Manipulating Numbers::     Operations on Numbers
 * Manipulating Strings::     Operations on Strings
 * Manipulating Lists::       Operations on Lists
+* Manipulating Maps::        Operations on Maps
 @end menu
 
 @node General Operations, Manipulating Numbers, Manipulating Values, Manipulating Values
@@ -3785,7 +3786,7 @@ applies @code{string_hash()} to the text and gets the same result, you can be
 quite confident that the large text has arrived unchanged.
 @end deftypefun
 
-@node Manipulating Lists,  , Manipulating Strings, Manipulating Values
+@node Manipulating Lists, Manipulating Maps, Manipulating Strings, Manipulating Values
 @comment  node-name,  next,  previous,  up
 @subsubsection Operations on Lists
 
@@ -3890,6 +3891,40 @@ setadd(@{1, 2, 3@}, 4)         @result{}   @{1, 2, 3, 4@}
 setremove(@{1, 2, 3@}, 3)      @result{}   @{1, 2@}
 setremove(@{1, 2, 3@}, 4)      @result{}   @{1, 2, 3@}
 setremove(@{1, 2, 3, 2@}, 2)   @result{}   @{1, 3, 2@}
+@end example
+@end deftypefun
+
+@node Manipulating Maps,  , Manipulating Lists, Manipulating Values
+@comment  node-name,  next,  previous,  up
+@subsubsection Operations on Maps
+
+When using the functions below, it's helpful to remember that maps are ordered.
+
+@deftypefun list mapkeys (map @var{map})
+Returns the keys of the elements of @var{map}.
+
+@example
+x = ["foo" -> 1, "bar" -> 2, "baz" -> 3];
+mapkeys(x)   @result{}   @{"bar", "baz", "foo"@}
+@end example
+@end deftypefun
+
+@deftypefun list mapvalues (map @var{map})
+Returns the values of the elements of @var{map}.
+
+@example
+x = ["foo" -> 1, "bar" -> 2, "baz" -> 3];
+mapvalues(x)   @result{}   @{2, 3, 1@}
+@end example
+@end deftypefun
+
+@deftypefun map mapdelete (map @var{map}, @var{key})
+Returns a copy of @var{map} with the value corresponding to @var{key} removed.
+If @var{key} is not a valid key, then @code{E_RANGE} is raised.
+
+@example
+x = ["foo" -> 1, "bar" -> 2, "baz" -> 3];
+mapdelete(x, "bar")   @result{}   ["baz" -> 3, "foo" -> 1]
 @end example
 @end deftypefun
 
