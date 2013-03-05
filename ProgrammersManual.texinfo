@@ -2,35 +2,33 @@
 @comment %**start of header
 @set INDEX
 @setfilename ProgrammersManual.info
-@settitle LambdaMOO Programmer's Manual
+@settitle LambdaMOO+Stunt Programmer's Manual
 @c Uncomment the following line for two-sided printing.
 @c @setchapternewpage odd
 @macro lmversion
-1.8.4
+9
 @end macro
 @macro lmdate
-March 2012
+March 2013
 @end macro
 @comment %**end of header
 
 @ifinfo
 @format
 @sp 5
-		     *************************************
-		     *** LambdaMOO Programmer's Manual ***
-		     *************************************
-				       
-                       For Stunt/LambdaMOO Version @lmversion
-                                  @lmdate
-				       
-				by Pavel Curtis
-				  aka Haakon
-				  aka Lambda
+                     *******************************************
+                     *** LambdaMOO+Stunt Programmer's Manual ***
+                     *******************************************
+
+                            For LambdaMOO+Stunt Version @lmversion
+                                    @lmdate
+
+                                by Pavel Curtis et al
 @sp 4
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
 Copyright @copyright{} 1997 by Erik Ostrom.
 Copyright @copyright{} 2004 by Roger F. Crew.
-Copyright @copyright{} 2011, 2012 by Todd Sundsted.
+Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
 @end format
 
 Permission is granted to make and distribute verbatim copies of this manual
@@ -59,8 +57,8 @@ author.
 @end ifinfo
 
 @titlepage
-@title LambdaMOO Programmer's Manual
-@subtitle For LambdaMOO Version @lmversion@*
+@title LambdaMOO+Stunt Programmer's Manual
+@subtitle For LambdaMOO+Stunt Version @lmversion@*
 @subtitle @lmdate
 @author by Pavel Curtis@*
 @author a.k.a. Haakon@*
@@ -71,7 +69,7 @@ author.
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.@*
 Copyright @copyright{} 1997 by Erik Ostrom.@*
 Copyright @copyright{} 2004 by Roger F. Crew.@*
-Copyright @copyright{} 2011, 2012 by Todd Sundsted.
+Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
 
 Copies of the electronic source for this document can be obtained using
 anonymous FTP on the Internet.  At the site @code{ftp.lambda.moo.mud.org} the
@@ -99,21 +97,19 @@ author.
 @ifnothtml
 @ifset INFO
 @format
-		     *************************************
-		     *** LambdaMOO Programmer's Manual ***
-		     *************************************
-				       
-                         For LambdaMOO Version @lmversion
-                                  @lmdate
-				       
-				by Pavel Curtis
-				  aka Haakon
-				  aka Lambda
+                     *******************************************
+                     *** LambdaMOO+Stunt Programmer's Manual ***
+                     *******************************************
+
+                            For LambdaMOO+Stunt Version @lmversion
+                                    @lmdate
+
+                                by Pavel Curtis et al
 
           Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
           Copyright @copyright{} 1997 by Erik Ostrom.
           Copyright @copyright{} 2004 by Roger F. Crew.
-          Copyright @copyright{} 2011 by Todd Sundsted.
+          Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
 @end format
 @end ifset
 @end ifnothtml
