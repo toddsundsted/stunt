@@ -647,6 +647,12 @@ module MooSupport
     end
   end
 
+  ## System Operations
+
+  def getenv(name)
+    simplify command %|; return getenv(#{value_ref(name)});|
+  end
+
   protected
 
   def obj_ref(obj_ref)
