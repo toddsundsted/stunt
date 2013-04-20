@@ -2993,7 +2993,7 @@ on server assumptions about the database for details.
 * Passing::                  Object-Oriented Programming
 * Manipulating Values::      Manipulating MOO Values
 * Manipulating Objects::     Manipulating Objects
-* Executables and Files::    Operations on Executable and Files
+* The Server Environment::   Operations on The Server Environment
 * Manipulating Connections::  Operations on Network Connections
 * Time::                     Operations Involving Times and Dates
 * Evaluation and Tasks::     MOO-Code Evaluation and Task Manipulation
@@ -4473,9 +4473,9 @@ just as if @code{boot_player(@var{object})} had been called (see the
 description of @code{boot_player()} below).
 @end deftypefun
 
-@node Executables and Files, Manipulating Connections, Manipulating Objects, Builtins
+@node The Server Environment, Manipulating Connections, Manipulating Objects, Builtins
 @comment  node-name,  next,  previous,  up
-@subsection Operations on Executable and Files
+@subsection Operations on The Server Environment
 
 @deftypefun list exec (list @var{command}[, str @var{input}])
 Asynchronously executes the specified external executable, optionally sending
@@ -4520,7 +4520,19 @@ exec(@{"echo", "one", "two"@})                          @result{}   @{0, "one tw
 @end example
 @end deftypefun
 
-@node Manipulating Connections, Time, Executables and Files, Builtins
+@deftypefun str getenv (str @var{name})
+Returns the value of the named environment variable.  If no such environment
+variable exists, @code{0} is returned.  If the programmer is not a wizard, then
+@code{E_PERM} is raised.
+
+@example
+getenv("HOME")                                          @result{}   "/home/foobar"
+getenv("XYZZY")                                         @result{}   0
+@end example
+
+@end deftypefun
+
+@node Manipulating Connections, Time, The Server Environment, Builtins
 @comment  node-name,  next,  previous,  up
 @subsection Operations on Network Connections
 
