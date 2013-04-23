@@ -40,34 +40,6 @@ typedef unsigned short umode_t;
 /* your system may define o_mode_t instead -- AAB 06/03/97 */
 /* typedef o_mode_t umode_t; */
 
-/*****************************************************
- * Utility functions
- *****************************************************/
-
-const char *raw_bytes_to_clean(const char *buffer, int buflen) {
-  static Stream *s = 0;
-  int i;
-
-  if(!s) 
-	 s = new_stream(100);
-
-  for (i = 0; i < buflen; i++) {
-	 unsigned char c = buffer[i];
-	 
-	 if (isgraph(c) || c == ' ')
-		stream_add_char(s, c);
-	 /* else drop it on the floor */
-  }
-  
-  return reset_stream(s);
-}	 
-
-const char *clean_to_raw_bytes(const char *buffer, int *buflen) {
-  *buflen = strlen(buffer);
-  return buffer;
-}	 
-
-
 /******************************************************
  * Module-internal data structures
  *****************************************************/

@@ -579,6 +579,41 @@ value_bytes(Var v)
 }
 
 void
+stream_add_raw_bytes_to_clean(Stream *s, const char *buffer, int buflen)
+{
+    int i;
+
+    for (i = 0; i < buflen; i++) {
+	unsigned char c = buffer[i];
+
+	if (isgraph(c) || c == ' ')
+	    stream_add_char(s, c);
+	/* else
+	    drop it */
+    }
+}
+
+const char *
+raw_bytes_to_clean(const char *buffer, int buflen)
+{
+    static Stream *s = 0;
+
+    if (!s)
+	s = new_stream(100);
+
+    stream_add_raw_bytes_to_clean(s, buffer, buflen);
+
+    return reset_stream(s);
+}
+
+const char *
+clean_to_raw_bytes(const char *buffer, int *buflen)
+{
+    *buflen = strlen(buffer);
+    return buffer;
+}
+
+void
 stream_add_raw_bytes_to_binary(Stream *s, const char *buffer, int buflen)
 {
     int i;
@@ -591,6 +626,19 @@ stream_add_raw_bytes_to_binary(Stream *s, const char *buffer, int buflen)
 	else
 	    stream_printf(s, "~%02x", (int) c);
     }
+}
+
+const char *
+raw_bytes_to_binary(const char *buffer, int buflen)
+{
+    static Stream *s = 0;
+
+    if (!s)
+	s = new_stream(100);
+
+    stream_add_raw_bytes_to_binary(s, buffer, buflen);
+
+    return reset_stream(s);
 }
 
 const char *
@@ -626,19 +674,6 @@ binary_to_raw_bytes(const char *binary, int *buflen)
     }
 
     *buflen = stream_length(s);
-    return reset_stream(s);
-}
-
-const char *
-raw_bytes_to_binary(const char *buffer, int buflen)
-{
-    static Stream *s = 0;
-
-    if (!s)
-	s = new_stream(100);
-
-    stream_add_raw_bytes_to_binary(s, buffer, buflen);
-
     return reset_stream(s);
 }
 
