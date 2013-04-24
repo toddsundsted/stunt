@@ -35,11 +35,6 @@
 
 #include "extension-fileio.h"
 
-/* apparently, not defined on some SysVish systems -- AAB 06/03/97 */
-typedef unsigned short umode_t;
-/* your system may define o_mode_t instead -- AAB 06/03/97 */
-/* typedef o_mode_t umode_t; */
-
 /******************************************************
  * Module-internal data structures
  *****************************************************/
@@ -1039,7 +1034,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
   return statok;
 }
 
-const char *file_type_string(umode_t st_mode) {
+const char *file_type_string(mode_t st_mode) {
   if(S_ISREG(st_mode))
 	 return "reg";
   else if (S_ISDIR(st_mode))
@@ -1054,7 +1049,7 @@ const char *file_type_string(umode_t st_mode) {
 	 return "unknown";
 }
 
-const char *file_mode_string(umode_t st_mode) {
+const char *file_mode_string(mode_t st_mode) {
   static Stream *s = 0;
   if(!s)
 	 s = new_stream(4);
