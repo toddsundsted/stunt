@@ -33,7 +33,7 @@
 #include "tasks.h"
 #include "log.h"
 
-#include "extension-fileio.h"
+#include "fileio.h"
 
 /******************************************************
  * Module-internal data structures

@@ -1,5 +1,5 @@
 /*
- * extension-fileio.h
+ * fileio.h
  *
  */
 
