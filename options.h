@@ -394,6 +394,17 @@
 #define EXEC_SUBDIR "executables/"
 #define EXEC_MAX_PROCESSES 256
 
+/******************************************************************************
+ * Configurable options for the FileIO subsystem.  FILE_SUBDIR is the
+ * directory inside the working directory in which all files must
+ * reside.
+ ******************************************************************************
+ */
+
+#define FILE_SUBDIR "files/"
+#define FILE_IO_BUFFER_LENGTH 4096
+#define FILE_IO_MAX_FILES     256
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/
