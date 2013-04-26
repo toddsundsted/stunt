@@ -384,6 +384,16 @@
 
 #define PLAYER_HUH /* */
 
+/******************************************************************************
+ * Configurable options for the Exec subsystem.  EXEC_SUBDIR is the
+ * directory inside the working directory in which all executable
+ * files must reside.
+ ******************************************************************************
+ */
+
+#define EXEC_SUBDIR "executables/"
+#define EXEC_MAX_PROCESSES 256
+
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/

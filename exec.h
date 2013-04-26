@@ -32,9 +32,6 @@
 
 #include "config.h"
 
-#define EXEC_MAX_PROCESSES 256
-#define EXEC_SUBDIR "executables/"
-
 extern void deal_with_child_exit(void);
 
 extern pid_t exec_complete(pid_t p, int code);
