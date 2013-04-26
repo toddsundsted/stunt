@@ -36,7 +36,7 @@
 #include "structures.h"
 #include "utils.h"
 
-#include "extension-system.h"
+#include "system.h"
 
 /**** built in functions ****/
 
