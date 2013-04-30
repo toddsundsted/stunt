@@ -567,7 +567,13 @@ read_values_pending_finalization(void)
 
     for (; count > 0; count--) {
 	v = dbio_read_var();
-	queue_anonymous_object(v);
+
+	/* in theory this could be any value... */
+	/* in practice this will be an anonymous object... */
+	assert(TYPE_ANON == v.type);
+
+	if (v.v.anon != NULL)
+	    queue_anonymous_object(v);
     }
 
     return 1;
