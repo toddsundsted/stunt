@@ -140,6 +140,22 @@ class TestCannedDbs < Test::Unit::TestCase
     assert_equal [], diff3
   end
 
+  def test_that_invalid_values_pending_finalization_are_removed
+    log1, diff1 = log_and_diff('test/Anon6.db', '/tmp/Foo.db')
+
+    delta1 = [
+      '< 1 values pending finalization',
+      '< 12',
+      '< -1',
+      '---',
+      '> 0 values pending finalization'
+    ]
+
+    assert diff1.include_sequence? delta1
+
+    assert log1.any? { |l| l =~ /shazam/ }
+  end
+
   def test_that_check_for_invalid_objects_succeeds
     log, _ = log_and_diff('test/Broken1.db', '/dev/null')
 
