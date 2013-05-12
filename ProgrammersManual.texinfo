@@ -6178,7 +6178,12 @@ beginning, before accepting connections or getting the value of
 @code{$dump_interval} to schedule the first checkpoint (see below for more
 information on checkpoint scheduling).
 
-First, the server calls @code{$user_disconnected()} once for each user who
+First, the server calls @code{$do_start_script()} and passes in script content
+via the @code{args} built-in variable. The script content is specified on the
+command line when the server is started. The server can call this verb multiple
+times, once each for the @code{-c} and @code{-f} command line arguments.
+
+Next, the server calls @code{$user_disconnected()} once for each user who
 was connected at the time the database file was written; this allows for any
 cleaning up that's usually done when users disconnect (e.g., moving their
 player objects back to some `home' location, etc.).
@@ -6520,11 +6525,11 @@ This specifies that, once the database is loaded, Emergency Wizard Mode will be 
 
 @item -c @var{script-line}
 (Optional)
-This specifies a script line to pass to the @code{#0:do_start_script} verb.
+This specifies a script line to pass to the @code{$do_start_script} verb.
 
 @item -f @var{script-file}
 (Optional)
-This specifies a script file to load and pass (the contents of) to the @code{#0:do_start_script} verb.
+This specifies a script file to load and pass (the contents of) to the @code{$do_start_script} verb.
 @end table
 
 For both the @code{-c} and @code{-f} arguments, the script content is passed in the @code{args} built-in variable. The server makes no assumptions about the semantics of the script; the interpretation of the script is the verb's responsibility. Like Emergency Wizard Mode, the verb is called before starting any tasks or doing the initial listen to accept connections.
