@@ -6512,16 +6512,24 @@ The arguments must occur in this order, e.g., a log file name (@code{-l}) must c
 @table @code
 @item -l @var{log-file-name}
 (Optional)
-This specifies a file name for the server log output.  
-If no log file name is specified, log output is directed to @code{stderr}.
+This specifies a file name for the server log output. If no log file name is specified, log output is directed to @code{stderr}.
 
 @item -e
-(Optional) 
-This specifies that, once the database is loaded, 
-Emergency Wizard Mode will be entered 
-before starting any tasks 
-or doing the initial listen to accept connections.
+(Optional)
+This specifies that, once the database is loaded, Emergency Wizard Mode will be entered before starting any tasks or doing the initial listen to accept connections.
+
+@item -c @var{script-line}
+(Optional)
+This specifies a script line to pass to the @code{#0:do_start_script} verb.
+
+@item -f @var{script-file}
+(Optional)
+This specifies a script file to load and pass (the contents of) to the @code{#0:do_start_script} verb.
 @end table
+
+For both the @code{-c} and @code{-f} arguments, the script content is passed in the @code{args} built-in variable. The server makes no assumptions about the semantics of the script; the interpretation of the script is the verb's responsibility. Like Emergency Wizard Mode, the verb is called before starting any tasks or doing the initial listen to accept connections.
+
+The @code{-e} argument may not be used with either @code{-c} or @code{-f}.
 
 @subsubheading Database Arguments
 @table @code
