@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <assert.h>
+#include <errno.h>
 
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
@@ -50,8 +51,6 @@
 #include "unparse.h"
 #include "utils.h"
 #include "version.h"
-
-#include "execute.h"
 
 static pid_t parent_pid;
 int in_child = 0;
@@ -1050,6 +1049,73 @@ emergency_mode()
     return start_ok;
 }
 
+static void
+run_do_start_script(Var code)
+{
+    Stream *s = new_stream(100);
+    Var result;
+
+    switch (run_server_task(NOTHING,
+			    new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
+			    &result)) {
+    case OUTCOME_DONE:
+	unparse_value(s, result);
+	oklog("SCRIPT: => %s\n", reset_stream(s));
+	free_var(result);
+	break;
+    case OUTCOME_ABORTED:
+	oklog("SCRIPT: *Aborted*\n");
+	break;
+    case OUTCOME_BLOCKED:
+	oklog("SCRIPT: *Suspended*\n");
+	break;
+    }
+
+    free_stream(s);
+}
+
+static void
+do_script_line(const char *line)
+{
+    Var str;
+    Var code = new_list(0);
+
+    str = str_dup_to_var(raw_bytes_to_clean(line, strlen(line)));
+    code = listappend(code, str);
+
+    run_do_start_script(code);
+}
+
+static void
+do_script_file(const char *path)
+{
+    FILE *f;
+    static Stream *s = 0;
+    int c;
+    Var str;
+    Var code = new_list(0);
+
+    if ((f = fopen(path, "r")) == NULL)
+	panic(strerror(errno));
+
+    if (s == 0)
+	s = new_stream(1024);
+
+    do {
+	while((c = fgetc(f)) != EOF && c != '\n')
+	    stream_add_char(s, c);
+
+	str = str_dup_to_var(raw_bytes_to_clean(stream_contents(s),
+						stream_length(s)));
+
+	code = listappend(code, str);
+
+	reset_stream(s);
+
+    } while (c != EOF);
+
+    run_do_start_script(code);
+}
 
 /*
  * Exported interface
@@ -1398,6 +1464,9 @@ main(int argc, char **argv)
 {
     char *this_program = str_dup(argv[0]);
     const char *log_file = 0;
+    const char *script_file = 0;
+    const char *script_line = 0;
+    int script_file_first = 0;
     int emergency = 0;
     Var desc;
     slistener *l;
@@ -1418,7 +1487,27 @@ main(int argc, char **argv)
 		argc--;
 		argv++;
 	    } else
-		argc = 0;	/* Provoke usage message below */
+		argc = 0;
+	    break;
+	case 'f':		/* Specified file of code */
+	    if (argc > 1) {
+		if (!script_line)
+		    script_file_first = 1;
+		script_file = argv[1];
+		argc--;
+		argv++;
+	    } else
+		argc = 0;
+	    break;
+	case 'c':		/* Specified line of code */
+	    if (argc > 1) {
+		if (!script_file)
+		    script_file_first = 0;
+		script_line = argv[1];
+		argc--;
+		argv++;
+	    } else
+		argc = 0;
 	    break;
 	default:
 	    argc = 0;		/* Provoke usage message below */
@@ -1439,10 +1528,21 @@ main(int argc, char **argv)
     } else
 	set_log_file(stderr);
 
-    if (!db_initialize(&argc, &argv)
+    if ((emergency && (script_file || script_line))
+	|| !db_initialize(&argc, &argv)
 	|| !network_initialize(argc, argv, &desc)) {
-	fprintf(stderr, "Usage: %s [-e] [-l log-file] %s %s\n",
+	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] %s %s\n",
 		this_program, db_usage_string(), network_usage_string());
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "\t-e\t\temergency wizard mode\n");
+	fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
+	fprintf(stderr, "\t-c\t\tline to pass to `#0:do_start_script()'\n");
+	fprintf(stderr, "\t-l\t\toptional log file\n\n");
+	fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
+	fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
+	fprintf(stderr, "Examples: \n");
+	fprintf(stderr, "\t%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
+	fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program);
 	exit(1);
     }
 #if NETWORK_PROTOCOL != NP_SINGLE
@@ -1452,11 +1552,13 @@ main(int argc, char **argv)
     if (log_file)
 	fclose(stderr);
 
+    parent_pid = getpid();
+
     oklog("STARTING: Version %s of the LambdaMOO server\n", server_version);
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
 	  virtual_timer_available()? "server CPU" : "wall-clock");
-    oklog("          (Process id %d)\n", getpid());
+    oklog("          (Process id %d)\n", parent_pid);
 
     register_bi_functions();
 
@@ -1474,9 +1576,21 @@ main(int argc, char **argv)
 
     SRANDOM(time(0));
 
-    parent_pid = getpid();
     setup_signals();
     reset_command_history();
+
+    if (script_file_first) {
+	if (script_file)
+	    do_script_file(script_file);
+	if (script_line)
+	    do_script_line(script_line);
+    }
+    else {
+	if (script_line)
+	    do_script_line(script_line);
+	if (script_file)
+	    do_script_file(script_file);
+    }
 
     if (!emergency || emergency_mode()) {
 	if (!start_listener(l))

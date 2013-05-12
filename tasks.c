@@ -1802,7 +1802,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
 /* for emergency mode */
 enum outcome
 run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
-		    const char *verbname, Program * program, Objid progr,
+			const char *verbname, Program * program, Objid progr,
 			int debug, Objid player, const char *argstr,
 			Var *result)
 {
