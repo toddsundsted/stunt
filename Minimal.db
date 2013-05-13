@@ -54,7 +54,7 @@ The First Room
 1
 eval
 3
-88
+89
 -2
 0
 0
@@ -73,6 +73,7 @@ Wizard
 0
 0
 #0:0
+callers() && raise(E_PERM);
 return eval(@args);
 .
 #0:1

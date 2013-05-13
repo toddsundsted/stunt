@@ -28,7 +28,7 @@ that all connections to the Minimal database are automatically logged-in to
 Wizard, the only player.
 
 The First Room has a verb named `eval' defined but not yet programmed.  It has
-arguments "any any any" and permissions "rxd".
+arguments "any any any" and permissions "rd".
 
 There are no other properties or verbs defined in the database.  There are no
 forked or suspended tasks either.
@@ -43,6 +43,7 @@ A reasonable starting point for the bootstrap script might include an improved
 
 	/* provide a stack trace on errors */
 	set_verb_code(#0, "do_start_script", {
+	  "callers() && raise(E_PERM);",
 	  "try",
 	  "  return eval(@args);",
 	  "except ex (ANY)",
@@ -51,12 +52,13 @@ A reasonable starting point for the bootstrap script might include an improved
 	  "  for line in (lines)",
 	  "    server_log(tostr(\"... called from \", line[4], \":\", line[2], (line[4] != line[1]) ? tostr(\" (this == \", line[1], \")\") | \"\", \", line \", line[6]));",
 	  "  endfor",
-	  "  server_log(\"(end)\");",
+	  "  server_log(\"(End of traceback)\");",
 	  "endtry"
 	});
 
 	/* evaluate */
 	set_verb_code(#2, "eval", {
+	  "set_task_perms(player);",
 	  "try",
 	  "  {code, result} = eval(\"return \" + argstr + \";\");",
 	  "  if (code)",
@@ -72,7 +74,7 @@ A reasonable starting point for the bootstrap script might include an improved
 	  "  for line in (lines)",
 	  "    notify(player, tostr(\"... called from \", line[4], \":\", line[2], (line[4] != line[1]) ? tostr(\" (this == \", line[1], \")\") | \"\", \", line \", line[6]));",
 	  "  endfor",
-	  "  notify(player, \"(end)\");",
+	  "  notify(player, \"(End of traceback)\");",
 	  "endtry"
 	});
 
