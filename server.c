@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
@@ -1089,13 +1090,18 @@ do_script_line(const char *line)
 static void
 do_script_file(const char *path)
 {
+    struct stat buf;
     FILE *f;
     static Stream *s = 0;
     int c;
     Var str;
     Var code = new_list(0);
 
-    if ((f = fopen(path, "r")) == NULL)
+    if (stat(path, &buf) != 0)
+	panic(strerror(errno));
+    else if (S_ISDIR(buf.st_mode))
+      panic(strerror(EISDIR));
+    else if ((f = fopen(path, "r")) == NULL)
 	panic(strerror(errno));
 
     if (s == 0)
