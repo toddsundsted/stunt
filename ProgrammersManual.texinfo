@@ -3205,9 +3205,14 @@ Returns the number of bytes of the server's memory required to store the given
 @var{value}.
 @end deftypefun
 
-@deftypefun str value_hash (@var{value})
-Returns the same string as @code{string_hash(toliteral(@var{value}))}; see the
+@deftypefun str value_hash (@var{value} [, @var{str algo}])
+Returns the same string as @code{string_hash(toliteral(@var{value}, @var{algo}))}; see the
 description of @code{string_hash()} for details.
+@end deftypefun
+
+@deftypefun str value_hmac (@var{value}, @var{str key})
+Returns the same string as @code{string_hmac(toliteral(@var{value}), @var{key})}; see the
+description of @code{string_hmac()} for details.
 @end deftypefun
 
 @deftypefun str generate_json (@var{value} [, @var{str mode}])
@@ -3796,12 +3801,19 @@ different platforms, and your password verification systems will fail.  Use a
 salt longer than two characters at your own risk.
 @end quotation
 
-@deftypefun str string_hash (str @var{text})
-@deftypefunx str binary_hash (str @var{bin-string})
-Returns a 32-character hexadecimal string encoding the result of applying the
-MD5 cryptographically secure hash function to the contents of the string
-@var{text} or the binary string @var{bin-string}.  MD5, like other such
-functions, has the property that, if
+@deftypefun str string_hash (str @var{text} [, @var{str algo}])
+@deftypefunx str binary_hash (str @var{bin-string} [, @var{str algo}])
+Returns a 64-character hexadecimal string encoding the result of applying the
+SHA256 cryptographically secure hash function to the contents of the string
+@var{text} or the binary string @var{bin-string}.  If @var{algo} is provided,
+it specifies the hashing algorithm to use.  "MD5", "SHA1" and "SHA256" are all
+supported.
+
+Note that the MD5 hash algorithm is broken from a cryptographic standpoint, as
+is SHA1.  Both are included for interoperability with existing applications
+(both are still popular).
+
+All supported hash functions have the property that, if
 @example
 string_hash(@var{x}) == string_hash(@var{y})
 @end example
@@ -3810,12 +3822,42 @@ then, almost certainly,
 @example
 equal(@var{x}, @var{y})
 @end example
+
 @noindent
 This can be useful, for example, in certain networking applications: after
 sending a large piece of text across a connection, also send the result of
 applying @code{string_hash()} to the text; if the destination site also
 applies @code{string_hash()} to the text and gets the same result, you can be
 quite confident that the large text has arrived unchanged.
+@end deftypefun
+
+@deftypefun str string_hmac (str @var{text}, @var{str key})
+@deftypefunx str binary_hmac (str @var{bin-string}, @var{str key})
+Returns a 64-character hexadecimal string encoding the result of applying the
+HMAC-SHA256 cryptographically secure HMAC function to the contents of the
+string @var{text} or the binary string @var{bin-string} with the specified
+secret @var{key}.  Currently, only HMAC-SHA256 is supported.
+
+All cryptographically secure HMACs have the property that, if
+@example
+string_hmac(@var{x}, @var{a}) == string_hmac(@var{y}, @var{b})
+@end example
+@noindent
+then, almost certainly,
+@example
+equal(@var{x}, @var{y})
+@end example
+@noindent
+and furthermore,
+@example
+equal(@var{a}, @var{b})
+@end example
+
+@noindent
+This can be useful, for example, in applications that need to verify both the
+integrity of the message (the @var{text}) and the authenticity of the sender
+(as demonstrated by the possession of the secret @var{key}).
+
 @end deftypefun
 
 @node Manipulating Lists, Manipulating Maps, Manipulating Strings, Manipulating Values
@@ -4415,7 +4457,7 @@ If @var{object} is not valid, then @code{E_INVARG} is raised.  If @var{object}
 does not define a verb as specified by @var{verb-desc}, then @code{E_VERBNF} is
 raised.  If the programmer does not have read (write) permission on the verb in
 question, then @code{verb_code()} (@code{set_verb_code()}) raises
-@code{E_PERM}.  If the programmer is not, in fact. a programmer, then
+@code{E_PERM}.  If the programmer is not, in fact, a programmer, then
 @code{E_PERM} is raised.
 
 For @code{set_verb_code()}, the result is a list of strings, the error messages
