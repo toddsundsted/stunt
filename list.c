@@ -1285,15 +1285,15 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
     const char *str = arglist.v.list[1].v.str;
     int nargs = arglist.v.list[0].v.num;
 
-    if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+    if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", arglist.v.list[2].v.str))) {
 	r.type = TYPE_STR;
 	r.v.str = sha256_hash_bytes(str, memo_strlen(str));
     }
-    else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+    else if (1 < nargs && !mystrcasecmp("sha1", arglist.v.list[2].v.str)) {
 	r.type = TYPE_STR;
 	r.v.str = sha1_hash_bytes(str, memo_strlen(str));
     }
-    else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+    else if (1 < nargs && !mystrcasecmp("md5", arglist.v.list[2].v.str)) {
 	r.type = TYPE_STR;
 	r.v.str = md5_hash_bytes(str, memo_strlen(str));
     }
@@ -1320,17 +1320,17 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 	if (!bytes) {
 	    p = make_error_pack(E_INVARG);
 	}
-	else if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	else if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", arglist.v.list[2].v.str))) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha256_hash_bytes(bytes, length);
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("sha1", arglist.v.list[2].v.str)) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha1_hash_bytes(bytes, length);
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("md5", arglist.v.list[2].v.str)) {
 	    r.type = TYPE_STR;
 	    r.v.str = md5_hash_bytes(bytes, length);
 	    p = make_var_pack(r);
@@ -1360,17 +1360,17 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 
 	unparse_value(s, arglist.v.list[1]);
 
-	if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", arglist.v.list[2].v.str))) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha256_hash_bytes(stream_contents(s), stream_length(s));
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("sha1", arglist.v.list[2].v.str)) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha1_hash_bytes(stream_contents(s), stream_length(s));
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("md5", arglist.v.list[2].v.str)) {
 	    r.type = TYPE_STR;
 	    r.v.str = md5_hash_bytes(stream_contents(s), stream_length(s));
 	    p = make_var_pack(r);
