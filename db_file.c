@@ -274,9 +274,15 @@ v4_read_object(void)
 	o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
-	for (i = 0; i < o->propdefs.cur_length; i++)
+	for (i = 0; i < o->propdefs.cur_length; i++) {
 	    o->propdefs.l[i] = read_propdef();
+#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name, #property) ||
+	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
+		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
+#undef CHECK_PROP
+	}
     }
+
     nprops = dbio_read_num();
     if (nprops)
 	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
@@ -350,8 +356,13 @@ ng_read_object(int anonymous)
 	o->propdefs.l = mymalloc(i * sizeof(Propdef), M_PROPDEF);
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
-	for (i = 0; i < o->propdefs.cur_length; i++)
+	for (i = 0; i < o->propdefs.cur_length; i++) {
 	    o->propdefs.l[i] = read_propdef();
+#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name, #property) ||
+	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
+		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
+#undef CHECK_PROP
+	}
     }
 
     o->nval = nprops = dbio_read_num();
@@ -359,6 +370,7 @@ ng_read_object(int anonymous)
 	o->propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
     else
 	o->propval = 0;
+
     for (i = 0; i < nprops; i++) {
 	read_propval(o->propval + i);
     }
