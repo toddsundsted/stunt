@@ -177,9 +177,23 @@ config.h: config.h.in config.status
 y.tab.h: parser.o
 	touch y.tab.h
 
+# The LambdaMOO server project originally shipped with a lightly
+# hacked version 2.1 of GNU gperf, renamed 'pgperf'; Pavel Curtis
+# added a new command line option, '-l', to make the generated hash
+# table case-insensitive. In 2002, the option '--ignore-case' was
+# added to GNU gperf, and by 2011 the 'pgperf' shipped with LambdaMOO
+# no longer compiled due to obsolesence (it used varargs.h, which is
+# no longer supported). Also, the '-a' command line flag was replaced
+# by '--language' and the flag '-p' was dropped (and no explanation
+# given in gperf's ChangeLog). I've expanded the short options into
+# long options here for readability. For the sake of history, this was
+# the original incantation:
+# pgperf -aCIptT -k1,3,$$ keywords.gperf
+# --sw July 2011
 keywords.c: keywords.gperf
-	pgperf/pgperf -aCIptT -k1,3,$$ keywords.gperf \
-		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/' \
+	gperf --language=C --ignore-case --readonly-tables --struct-type \
+		--omit-struct-type --key-positions=1,3,$$ keywords.gperf   \
+		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/'     \
 		> keywords.c
 
 dist.tar.Z:	$(DISTFILES)
