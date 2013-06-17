@@ -95,13 +95,13 @@ YOBJS = $(YSRCS:.y=.o)
 OBJS = $(COBJS) $(YOBJS)
 
 moo:	$(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+	$(CXX) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
 
 client_bsd: client_bsd.o
-	$(CC) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
+	$(CXX) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
 
 client_sysv: client_sysv.o
-	$(CC) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
+	$(CXX) $(CFLAGS) client_sysv.o $(LIBRARIES) -o $@
 
 doc: ${DOCS}
 
