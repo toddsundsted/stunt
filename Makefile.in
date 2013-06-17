@@ -85,7 +85,7 @@ SRCS = $(ALL_CSRCS) keywords.gperf $(YSRCS) $(HDRS) $(SYSHDRS)
 
 DISTFILES = $(SRCS) Makefile.in restart restart.sh \
 	Minimal.db README.Minimal \
-	ChangeLog.txt README configure.in configure config.h.in \
+	ChangeLog.txt README configure.ac configure config.h.in \
 	MOOCodeSequences.txt AddingNewMOOTypes.txt pgperf aclocal.m4
 
 COBJS = $(CSRCS:.c=.o)
@@ -158,7 +158,7 @@ ProgrammersManual.html: ProgrammersManual.texinfo
 restart:
 	touch restart
 
-configure: configure.in
+configure: configure.ac
 	# autoconf
 	@echo "Not running autoconf; you must do this by hand."
 	touch configure
