@@ -97,9 +97,6 @@ OBJS = $(COBJS) $(YOBJS)
 moo:	$(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
 
-pure_moo: moo
-	purify $(CC) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
-
 client_bsd: client_bsd.o
 	$(CC) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
 
@@ -196,21 +193,6 @@ keywords.c: keywords.gperf
 		| sed -e 's/#include <ctype.h>/#include "my-ctype.h"/'     \
 		> keywords.c
 
-dist.tar.Z:	$(DISTFILES)
-	rm -f version_number
-	grep "server_version = " version.c \
-		| sed -e 's/^.* = "//' -e 's/";//' > version_number
-	rm -fr MOO-`cat version_number`
-	mkdir MOO-`cat version_number`
-	chmod 755 MOO-`cat version_number`
-	cp -pr $(DISTFILES) MOO-`cat version_number`
-	chmod u+w MOO-`cat version_number`/*
-	tar cvf - MOO-`cat version_number` | compress -c > dist.tar.Z.NEW
-	mv dist.tar.Z.NEW dist.tar.Z
-	rm -f LambdaMOO-`cat version_number`.tar.Z
-	ln dist.tar.Z LambdaMOO-`cat version_number`.tar.Z
-	rm -fr MOO-`cat version_number` version_number
-
 tags:
 	etags -t $(SRCS)
 
@@ -239,7 +221,7 @@ depend: ${ALL_CSRCS}
 	ed - Makefile.in < eddep
 	rm -f eddep makedep
 
-tests: 
+tests:
 	for test in test/*.rb ; do \
 	  echo "\n\nRunning $$test..." ; \
 	  ruby -rubygems -Itest/lib $$test ; \
