@@ -344,10 +344,10 @@ free_expr(Expr * expr)
 	break;
 
     case EXPR_CATCH:
-	free_expr(expr->e.catch.try);
-	free_arg_list(expr->e.catch.codes);
-	if (expr->e.catch.except)
-	    free_expr(expr->e.catch.except);
+	free_expr(expr->e._catch._try);
+	free_arg_list(expr->e._catch.codes);
+	if (expr->e._catch.except)
+	    free_expr(expr->e._catch.except);
 	break;
 
     case EXPR_SCATTER:
@@ -413,8 +413,8 @@ free_stmt(Stmt * stmt)
 	    break;
 
 	case STMT_TRY_EXCEPT:
-	    free_stmt(stmt->s.catch.body);
-	    for (except = stmt->s.catch.excepts; except; except = next_e) {
+	    free_stmt(stmt->s._catch.body);
+	    for (except = stmt->s._catch.excepts; except; except = next_e) {
 		next_e = except->next;
 		free_arg_list(except->codes);
 		free_stmt(except->stmt);

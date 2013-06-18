@@ -413,14 +413,14 @@ unparse_stmt_fork(Stream * str, struct Stmt_Fork fork_stmt, int indent)
 }
 
 static void
-unparse_stmt_catch(Stream * str, struct Stmt_Catch catch, int indent)
+unparse_stmt_catch(Stream * str, struct Stmt_Catch _catch, int indent)
 {
     Except_Arm *ex;
 
     stream_add_string(str, "try");
     output(str);
-    unparse_stmt(catch.body, indent + 2);
-    for (ex = catch.excepts; ex; ex = ex->next) {
+    unparse_stmt(_catch.body, indent + 2);
+    for (ex = _catch.excepts; ex; ex = ex->next) {
 	indent_stmt(str, indent);
 	stream_add_string(str, "except ");
 	if (ex->id >= 0)
@@ -488,7 +488,7 @@ unparse_stmt(Stmt * stmt, int indent)
 	    output(str);
 	    break;
 	case STMT_TRY_EXCEPT:
-	    unparse_stmt_catch(str, stmt->s.catch, indent);
+	    unparse_stmt_catch(str, stmt->s._catch, indent);
 	    break;
 	case STMT_TRY_FINALLY:
 	    stream_add_string(str, "try");
@@ -707,15 +707,15 @@ unparse_expr(Stream * str, Expr * expr)
 
     case EXPR_CATCH:
 	stream_add_string(str, "`");
-	unparse_expr(str, expr->e.catch.try);
+	unparse_expr(str, expr->e._catch._try);
 	stream_add_string(str, " ! ");
-	if (expr->e.catch.codes)
-	    unparse_arglist(str, expr->e.catch.codes);
+	if (expr->e._catch.codes)
+	    unparse_arglist(str, expr->e._catch.codes);
 	else
 	    stream_add_string(str, "ANY");
-	if (expr->e.catch.except) {
+	if (expr->e._catch.except) {
 	    stream_add_string(str, " => ");
-	    unparse_expr(str, expr->e.catch.except);
+	    unparse_expr(str, expr->e._catch.except);
 	}
 	stream_add_string(str, "'");
 	break;
