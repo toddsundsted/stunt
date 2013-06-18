@@ -346,6 +346,12 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package pack;
 
+    const char *cmd = 0;
+    const char **args = 0;
+    task_waiting_on_exec *tw = 0;
+    const char *in = 0;
+    int len;
+
     /* The first argument must be a list of strings.  The first string
      * is the command (required).  The rest are command line arguments
      * to the command.
@@ -365,7 +371,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     }
 
     /* check the path */
-    const char *cmd = arglist.v.list[1].v.list[1].v.str;
+    cmd = arglist.v.list[1].v.list[1].v.str;
     if (0 == strlen(cmd)) {
 	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
 	goto free_arglist;
@@ -389,8 +395,8 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     cmd = str_dup(reset_stream(s));
 
     /* clean input */
-    const char *in = NULL;
-    int len = 0;
+    in = NULL;
+    len = 0;
     if (listlength(arglist) > 1) {
 	if ((in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len)) == NULL) {
 	    pack = make_error_pack(E_INVARG);
@@ -416,12 +422,12 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 	goto free_in;
     }
 
-    const char **args = mymalloc(sizeof(const char *) * i, M_ARRAY);
+    args = mymalloc(sizeof(const char *) * i, M_ARRAY);
     FOR_EACH(v, arglist.v.list[1], i, c)
 	args[i - 1] = str_dup(v.v.str);
     args[i - 1] = NULL;
 
-    task_waiting_on_exec *tw = malloc_task_waiting_on_exec();
+    tw = malloc_task_waiting_on_exec();
     tw->cmd = cmd;
     tw->args = args;
     tw->in = in;
