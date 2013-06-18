@@ -187,6 +187,21 @@ to_float(Var v, double *dp)
 #endif
 
 #if defined(HAVE_MATHERR) && defined(DOMAIN) && defined(SING) && defined(OVERFLOW) && defined(UNDERFLOW)
+
+/* note: for some odd reason compiling with g++ chokes on the
+   matherr() function, as "struct exception" was not defined
+   anywhere. It seems it's part of a precursor to POSIX (the mentioned
+   SVID3 below). To that end, I found the definition of "struct
+   exception" and paste it in here just to get things to compile. */
+
+// borrowed from:
+// http://docs.sun.com/app/docs/doc/805-3175/6j31emoh8?l=Ja&a=view
+struct exception {
+	int type;
+	char *name;
+	double arg1, arg2, retval;
+};
+
 /* Required in order to properly handle FP exceptions on SVID3 systems */
 int
 matherr(struct exception *x)
