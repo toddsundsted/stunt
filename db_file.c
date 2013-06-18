@@ -88,13 +88,13 @@ dbv4_ensure_new_object(void)
     }
     if (num_objects >= max_objects) {
 	int i;
-	Object4 **new;
+	Object4 **_new;
 
-	new = mymalloc(max_objects * 2 * sizeof(Object4 *), M_OBJECT_TABLE);
+	_new = mymalloc(max_objects * 2 * sizeof(Object4 *), M_OBJECT_TABLE);
 	for (i = 0; i < max_objects; i++)
-	    new[i] = objects[i];
+	    _new[i] = objects[i];
 	myfree(objects, M_OBJECT_TABLE);
-	objects = new;
+	objects = _new;
 	max_objects *= 2;
     }
 }
@@ -796,34 +796,34 @@ v4_upgrade_objects()
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-	    Object *new = dbpriv_new_object();
+	    Object *_new = dbpriv_new_object();
 
-	    dbpriv_assign_nonce(new);
+	    dbpriv_assign_nonce(_new);
 
-	    new->name = o->name;
-	    new->flags = o->flags;
+	    _new->name = o->name;
+	    _new->flags = o->flags;
 
-	    new->owner = o->owner;
+	    _new->owner = o->owner;
 
 	    Objid iter;
 
-	    new->parents = var_dup(new_obj(o->parent));
+	    _new->parents = var_dup(new_obj(o->parent));
 
-	    new->children = new_list(0);
+	    _new->children = new_list(0);
 	    for (iter = o->child; iter != NOTHING; iter = objects[iter]->sibling)
-		new->children = listappend(new->children, var_dup(new_obj(iter)));
+		_new->children = listappend(_new->children, var_dup(new_obj(iter)));
 
-	    new->location = var_dup(new_obj(o->location));
+	    _new->location = var_dup(new_obj(o->location));
 
-	    new->contents = new_list(0);
+	    _new->contents = new_list(0);
 	    for (iter = o->contents; iter != NOTHING; iter = objects[iter]->next)
-		new->contents = listappend(new->contents, var_dup(new_obj(iter)));
+		_new->contents = listappend(_new->contents, var_dup(new_obj(iter)));
 
-	    new->propval = o->propval;
-	    new->nval = dbv4_count_properties(oid);
+	    _new->propval = o->propval;
+	    _new->nval = dbv4_count_properties(oid);
 
-	    new->verbdefs = o->verbdefs;
-	    new->propdefs = o->propdefs;
+	    _new->verbdefs = o->verbdefs;
+	    _new->propdefs = o->propdefs;
 	}
 	else {
 	    dbpriv_new_recycled_object();

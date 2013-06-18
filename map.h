@@ -53,7 +53,7 @@ extern int iterget(Var iter, var_pair *pair);
 extern void iternext(Var iter);
 
 extern Var maprange(Var map, rbtrav *from, rbtrav *to);
-extern enum error maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new);
+extern enum error maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new);
 
 typedef int (*mapfunc) (Var key, Var value, void *data, int first);
 extern int mapforeach(Var map, mapfunc func, void *data);

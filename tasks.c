@@ -1385,7 +1385,7 @@ next_task_start(void)
 }
 
 static Var
-create_or_extend(Var in, const char *new, int newlen)
+create_or_extend(Var in, const char *_new, int newlen)
 {
     static Stream *s = NULL;
     if (!s)
@@ -1395,13 +1395,13 @@ create_or_extend(Var in, const char *new, int newlen)
 
     if (in.type == TYPE_STR) {
 	stream_add_string(s, in.v.str);
-	stream_add_raw_bytes_to_binary(s, new, newlen);
+	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
 	out.type = TYPE_STR;
 	out.v.str = str_dup(reset_stream(s));
     }
     else {
-	stream_add_raw_bytes_to_binary(s, new, newlen);
+	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
 	out.type = TYPE_STR;
 	out.v.str = str_dup(reset_stream(s));
@@ -2822,10 +2822,10 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Objid old_player = arglist.v.list[1].v.obj;
     Objid new_player = arglist.v.list[2].v.obj;
-    int new = 0;
+    int _new = 0;
 
     if (listlength(arglist) > 2)
-	new = is_true(arglist.v.list[3]);
+	_new = is_true(arglist.v.list[3]);
 
     free_var(arglist);
 
@@ -2873,7 +2873,7 @@ bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
 	dead_tq->num_bg_tasks = 0;
     }
 
-    player_connected_silent(old_player, new_player, new);
+    player_connected_silent(old_player, new_player, _new);
     boot_player(old_player);
 
     return no_var_pack();

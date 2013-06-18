@@ -42,14 +42,14 @@ new_names(unsigned max_size)
 static Names *
 copy_names(Names * old)
 {
-    Names *new = new_names(old->size);
+    Names *_new = new_names(old->size);
     unsigned i;
 
-    new->size = old->size;
-    for (i = 0; i < new->size; i++)
-	new->names[i] = str_ref(old->names[i]);
+    _new->size = old->size;
+    for (i = 0; i < _new->size; i++)
+	_new->names[i] = str_ref(old->names[i]);
 
-    return new;
+    return _new;
 }
 
 int
@@ -133,15 +133,15 @@ find_or_add_name(Names ** names, const char *str)
 	}
     if ((*names)->size == (*names)->max_size) {
 	unsigned old_max = (*names)->max_size;
-	Names *new = new_names(old_max * 2);
+	Names *_new = new_names(old_max * 2);
 	unsigned i;
 
 	for (i = 0; i < old_max; i++)
-	    new->names[i] = (*names)->names[i];
-	new->size = old_max;
+	    _new->names[i] = (*names)->names[i];
+	_new->size = old_max;
 	myfree((*names)->names, M_NAMES);
 	myfree(*names, M_NAMES);
-	*names = new;
+	*names = _new;
     }
     (*names)->names[(*names)->size] = str_dup(str);
     return (*names)->size++;

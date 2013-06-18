@@ -435,14 +435,14 @@ add_line(const char *line, void *data)
 
     if (d->used >= d->max) {
 	int new_max = (d->max == 0 ? 20 : d->max * 2);
-	char **new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+	char **_new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
 	int i;
 
 	for (i = 0; i < d->used; i++)
-	    new[i] = d->lines[i];
+	    _new[i] = d->lines[i];
 	if (d->lines)
 	    myfree(d->lines, M_DISASSEMBLE);
-	d->lines = new;
+	d->lines = _new;
 	d->max = new_max;
     }
     d->lines[d->used++] = str_dup(line);

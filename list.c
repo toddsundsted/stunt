@@ -109,14 +109,14 @@ Var
 list_dup(Var list)
 {
     int i, n = list.v.list[0].v.num;
-    Var new = new_list(n);
+    Var _new = new_list(n);
 
     for (i = 1; i <= n; i++)
-	new.v.list[i] = var_ref(list.v.list[i]);
+	_new.v.list[i] = var_ref(list.v.list[i]);
 
-    gc_set_color(new.v.list, gc_get_color(list.v.list));
+    gc_set_color(_new.v.list, gc_get_color(list.v.list));
 
-    return new;
+    return _new;
 }
 
 int
@@ -160,32 +160,32 @@ setremove(Var list, Var value)
 Var
 listset(Var list, Var value, int pos)
 {				/* consumes `list', `value' */
-    Var new = list;
+    Var _new = list;
 
     if (var_refcount(list) > 1) {
-	new = var_dup(list);
+	_new = var_dup(list);
 	free_var(list);
     }
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(new.v.list))[-2] = 0;
+    ((int *)(_new.v.list))[-2] = 0;
 #endif
 
-    free_var(new.v.list[pos]);
-    new.v.list[pos] = value;
+    free_var(_new.v.list[pos]);
+    _new.v.list[pos] = value;
 
 #ifdef ENABLE_GC
-    gc_set_color(new.v.list, GC_YELLOW);
+    gc_set_color(_new.v.list, GC_YELLOW);
 #endif
 
-    return new;
+    return _new;
 }
 
 static Var
 doinsert(Var list, Var value, int pos)
 {
-    Var new;
+    Var _new;
     int i;
     int size = list.v.list[0].v.num + 1;
 
@@ -204,20 +204,20 @@ doinsert(Var list, Var value, int pos)
 
 	return list;
     }
-    new = new_list(size);
+    _new = new_list(size);
     for (i = 1; i < pos; i++)
-	new.v.list[i] = var_ref(list.v.list[i]);
-    new.v.list[pos] = value;
+	_new.v.list[i] = var_ref(list.v.list[i]);
+    _new.v.list[pos] = value;
     for (i = pos; i <= list.v.list[0].v.num; i++)
-	new.v.list[i + 1] = var_ref(list.v.list[i]);
+	_new.v.list[i + 1] = var_ref(list.v.list[i]);
 
     free_var(list);
 
 #ifdef ENABLE_GC
-    gc_set_color(new.v.list, GC_YELLOW);
+    gc_set_color(_new.v.list, GC_YELLOW);
 #endif
 
-    return new;
+    return _new;
 }
 
 Var
@@ -239,25 +239,25 @@ listappend(Var list, Var value)
 Var
 listdelete(Var list, int pos)
 {
-    Var new;
+    Var _new;
     int i;
     int size = list.v.list[0].v.num - 1;
 
-    new = new_list(size);
+    _new = new_list(size);
     for (i = 1; i < pos; i++) {
-	new.v.list[i] = var_ref(list.v.list[i]);
+	_new.v.list[i] = var_ref(list.v.list[i]);
     }
     for (i = pos + 1; i <= list.v.list[0].v.num; i++)
-	new.v.list[i - 1] = var_ref(list.v.list[i]);
+	_new.v.list[i - 1] = var_ref(list.v.list[i]);
 
     free_var(list);
 
 #ifdef ENABLE_GC
     if (size > 0)		/* only non-empty lists */
-	gc_set_color(new.v.list, GC_YELLOW);
+	gc_set_color(_new.v.list, GC_YELLOW);
 #endif
 
-    return new;
+    return _new;
 }
 
 Var
@@ -265,24 +265,24 @@ listconcat(Var first, Var second)
 {
     int lsecond = second.v.list[0].v.num;
     int lfirst = first.v.list[0].v.num;
-    Var new;
+    Var _new;
     int i;
 
-    new = new_list(lsecond + lfirst);
+    _new = new_list(lsecond + lfirst);
     for (i = 1; i <= lfirst; i++)
-	new.v.list[i] = var_ref(first.v.list[i]);
+	_new.v.list[i] = var_ref(first.v.list[i]);
     for (i = 1; i <= lsecond; i++)
-	new.v.list[i + lfirst] = var_ref(second.v.list[i]);
+	_new.v.list[i + lfirst] = var_ref(second.v.list[i]);
 
     free_var(first);
     free_var(second);
 
 #ifdef ENABLE_GC
     if (lsecond + lfirst > 0)	/* only non-empty lists */
-	gc_set_color(new.v.list, GC_YELLOW);
+	gc_set_color(_new.v.list, GC_YELLOW);
 #endif
 
-    return new;
+    return _new;
 }
 
 Var

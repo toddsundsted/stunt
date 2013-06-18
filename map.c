@@ -618,18 +618,18 @@ map_dup(Var map)
     rbtrav trav;
     rbnode node;
     const rbnode *pnode;
-    Var new = empty_map();
+    Var _new = empty_map();
 
     for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(new.v.tree, &node))
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
 
-    gc_set_color(new.v.tree, gc_get_color(map.v.tree));
+    gc_set_color(_new.v.tree, gc_get_color(map.v.tree));
 
-    return new;
+    return _new;
 }
 
 /* called from utils.c */
@@ -671,32 +671,32 @@ mapinsert(Var map, Var key, Var value)
 	|| is_collection(key))
 	panic("MAPINSERT: invalid key");
 
-    Var new = map;
+    Var _new = map;
 
     if (var_refcount(map) > 1) {
-	new = map_dup(map);
+	_new = map_dup(map);
 	free_var(map);
     }
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(new.v.tree))[-2] = 0;
+    ((int *)(_new.v.tree))[-2] = 0;
 #endif
 
     rbnode node;
     node.key = key;
     node.value = value;
 
-    rberase(new.v.tree, &node);
+    rberase(_new.v.tree, &node);
 
-    if (!rbinsert(new.v.tree, &node))
+    if (!rbinsert(_new.v.tree, &node))
 	panic("MAPINSERT: rbinsert failed");
 
 #ifdef ENABLE_GC
-    gc_set_color(new.v.tree, GC_YELLOW);
+    gc_set_color(_new.v.tree, GC_YELLOW);
 #endif
 
-    return new;
+    return _new;
 }
 
 const rbnode *
@@ -842,24 +842,24 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 {				/* consumes `map' */
     rbnode node;
     const rbnode *pnode = NULL;
-    Var new = empty_map();
+    Var _new = empty_map();
 
     do {
 	pnode = pnode == NULL ? from->it : rbtnext(from);
 
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(new.v.tree, &node))
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     } while (pnode != to->it);
 
     free_var(map);
 
 #ifdef ENABLE_GC
-    gc_set_color(new.v.tree, GC_YELLOW);
+    gc_set_color(_new.v.tree, GC_YELLOW);
 #endif
 
-    return new;
+    return _new;
 }
 
 /* Replaces the specified range in the map.  `from' and `to' must be
@@ -868,7 +868,7 @@ maprange(Var map, rbtrav *from, rbtrav *to)
  * `E_NONE' if successful.
  */
 enum error
-maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
+maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 {				/* consumes `map', `value' */
     rbtrav trav;
     rbnode node;
@@ -876,34 +876,34 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     int32 len = 0;
     enum error e = E_NONE;
 
-    if (new == NULL)
+    if (_new == NULL)
 	panic("MAP_DUP: new is NULL");
 
-    free_var(*new);
-    *new = empty_map();
+    free_var(*_new);
+    *_new = empty_map();
 
     for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	if (pnode == from->it)
 	    break;
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(new->v.tree, &node))
+	if (!rbinsert(_new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
 
     for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	rberase(new->v.tree, &node);
-	if (!rbinsert(new->v.tree, &node))
+	rberase(_new->v.tree, &node);
+	if (!rbinsert(_new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
 
     while ((pnode = rbtnext(to))) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	rberase(new->v.tree, &node);
-	if (!rbinsert(new->v.tree, &node))
+	rberase(_new->v.tree, &node);
+	if (!rbinsert(_new->v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
 
@@ -911,7 +911,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
     free_var(value);
 
 #ifdef ENABLE_GC
-    gc_set_color(new->v.tree, GC_YELLOW);
+    gc_set_color(_new->v.tree, GC_YELLOW);
 #endif
 
     return e;

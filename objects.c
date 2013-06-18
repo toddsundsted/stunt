@@ -725,28 +725,28 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 		else {
 		    int i = 1;
 		    int j = 1;
-		    Var new = new_list(0);
+		    Var _new = new_list(0);
 		    while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
-			new = setadd(new, var_ref(cp.v.list[i]));
+			_new = setadd(_new, var_ref(cp.v.list[i]));
 			i++;
 		    }
 		    if (is_obj(op)) {
 			if (valid(op.v.obj))
-			    new = setadd(new, var_ref(op));
+			    _new = setadd(_new, var_ref(op));
 		    }
 		    else {
 			while (j <= op.v.list[0].v.num) {
-			    new = setadd(new, var_ref(op.v.list[j]));
+			    _new = setadd(_new, var_ref(op.v.list[j]));
 			    j++;
 			}
 		    }
 		    i++;
 		    while (i <= cp.v.list[0].v.num) {
-			new = setadd(new, var_ref(cp.v.list[i]));
+			_new = setadd(_new, var_ref(cp.v.list[i]));
 			i++;
 		    }
-		    db_change_parents(new_obj(c), new, none);
-		    free_var(new);
+		    db_change_parents(new_obj(c), _new, none);
+		    free_var(_new);
 		}
 	    }
 

@@ -330,7 +330,7 @@ extern int db_add_propdef(Var obj, const char *pname,
 				 */
 
 extern int db_rename_propdef(Var obj, const char *old,
-			     const char *new);
+			     const char *_new);
 				/* Returns true (and actually renames the
 				 * propdef on OBJ) iff (1) a propdef with the
 				 * name OLD existed on OBJ, (2) no property
