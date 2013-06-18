@@ -1152,14 +1152,14 @@ static package
 bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 {
     int template_length, subject_length;
-    const char *template, *subject;
+    const char *_template, *subject;
     Var subs, ans;
     package p;
     Stream *s;
     char c = '\0';
 
-    template = arglist.v.list[1].v.str;
-    template_length = memo_strlen(template);
+    _template = arglist.v.list[1].v.str;
+    template_length = memo_strlen(_template);
     subs = arglist.v.list[2];
 
     if (check_subs_list(subs)) {
@@ -1171,10 +1171,10 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 
     s = new_stream(template_length);
     TRY_STREAM {
-	while ((c = *(template++)) != '\0') {
+	while ((c = *(_template++)) != '\0') {
 	    if (c != '%')
 		stream_add_char(s, c);
-	    else if ((c = *(template++)) == '%')
+	    else if ((c = *(_template++)) == '%')
 		stream_add_char(s, '%');
 	    else {
 		int start = 0, end = 0;
