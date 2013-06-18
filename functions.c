@@ -90,7 +90,7 @@ struct bft_entry {
     bf_type func;
     bf_read_type read;
     bf_write_type write;
-    int protected;
+    int _protected;
 };
 
 static struct bft_entry bf_table[MAX_FUNC];
@@ -121,7 +121,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
     bf_table[top_bf_table].func = func;
     bf_table[top_bf_table].read = read;
     bf_table[top_bf_table].write = write;
-    bf_table[top_bf_table].protected = 0;
+    bf_table[top_bf_table]._protected = 0;
 
     if (num_arg_types > 0)
 	bf_table[top_bf_table].prototype =
@@ -210,7 +210,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	/*
 	 * Check permissions, if protected
 	 */
-	if ((!is_obj(caller()) || caller().v.obj != SYSTEM_OBJECT) && f->protected) {
+	if ((!is_obj(caller()) || caller().v.obj != SYSTEM_OBJECT) && f->_protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
 	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, new_obj(SYSTEM_OBJECT), arglist, 0);
 
@@ -444,7 +444,7 @@ load_server_protect_function_flags(void)
     int i;
 
     for (i = 0; i < top_bf_table; i++) {
-	bf_table[i].protected
+	bf_table[i]._protected
 	    = server_flag_option(bf_table[i].protect_str, 0);
     }
     oklog("Loaded protect cache for %d builtin functions\n", i);
