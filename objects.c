@@ -76,13 +76,13 @@ all_allowed(Var vars, Objid progr, db_object_flag f)
 }
 
 /*
- * Returns true if `this' is a descendant of `obj'.
+ * Returns true if `_this' is a descendant of `obj'.
  */
 static bool
-is_a_descendant(Var this, Var obj)
+is_a_descendant(Var _this, Var obj)
 {
     Var descendants = db_descendants(obj, true);
-    int ret = ismember(this, descendants, 1);
+    int ret = ismember(_this, descendants, 1);
     free_var(descendants);
     return ret ? true : false;
 }
@@ -93,11 +93,11 @@ is_a_descendant(Var this, Var obj)
 static bool
 any_are_descendants(Var these, Var obj)
 {
-    Var this, descendants = db_descendants(obj, true);
+    Var _this, descendants = db_descendants(obj, true);
     int i, c, ret;
-    FOR_EACH(this, these, i, c) {
-	ret = ismember(this, descendants, 1);
-	if (is_a_descendant(this, obj)) {
+    FOR_EACH(_this, these, i, c) {
+	ret = ismember(_this, descendants, 1);
+	if (is_a_descendant(_this, obj)) {
 	    free_var(descendants);
 	    return true;
 	}

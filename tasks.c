@@ -797,7 +797,7 @@ do_command_task(tqueue * tq, char *command)
 	    Objid location = (valid(tq->player)
 			      ? db_object_location(tq->player)
 			      : NOTHING);
-	    Objid this;
+	    Objid _this;
 	    db_verb_handle vh;
 	    Var result, args;
 
@@ -812,19 +812,19 @@ do_command_task(tqueue * tq, char *command)
 		!= OUTCOME_DONE
 		|| is_true(result)) {
 		/* Do nothing more; we assume :do_command handled it. */
-	    } else if (find_verb_on(this = tq->player, pc, &vh)
-		       || find_verb_on(this = location, pc, &vh)
-		       || find_verb_on(this = pc->dobj, pc, &vh)
-		       || find_verb_on(this = pc->iobj, pc, &vh)
+	    } else if (find_verb_on(_this = tq->player, pc, &vh)
+		       || find_verb_on(_this = location, pc, &vh)
+		       || find_verb_on(_this = pc->dobj, pc, &vh)
+		       || find_verb_on(_this = pc->iobj, pc, &vh)
 #ifndef PLAYER_HUH
 		       || (valid(location)
-			   && (vh = db_find_callable_verb(new_obj(this = location), "huh"),
+			   && (vh = db_find_callable_verb(new_obj(_this = location), "huh"),
 			       vh.ptr))) {
 #else
-		       || (vh = db_find_callable_verb(new_obj(this = tq->player), "huh"),
+		       || (vh = db_find_callable_verb(new_obj(_this = tq->player), "huh"),
 			   vh.ptr)) {
 #endif
-		do_input_task(tq->player, pc, this, vh);
+		do_input_task(tq->player, pc, _this, vh);
 	    } else {
 		notify(tq->player, "I couldn't understand that.");
 		tq->last_input_task_id = 0;
@@ -1216,7 +1216,7 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
      * primitive types and a few minutes of head scratching to figure
      * out why it's assigning back a ref'd copy of each field.
      */
-    a.this = var_ref(a.this);
+    a._this = var_ref(a._this);
     a.vloc = var_ref(a.vloc);
     a.verb = str_ref(a.verb);
     a.verbname = str_ref(a.verbname);
@@ -1801,7 +1801,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
 
 /* for emergency mode */
 enum outcome
-run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
+run_server_program_task(Objid _this, const char *verb, Var args, Objid vloc,
 			const char *verbname, Program * program, Objid progr,
 			int debug, Objid player, const char *argstr,
 			Var *result)
@@ -1809,7 +1809,7 @@ run_server_program_task(Objid this, const char *verb, Var args, Objid vloc,
     current_task_id = new_task_id();
     current_local = new_map();
 
-    enum outcome ret = do_server_program_task(new_obj(this), verb, args, new_obj(vloc), verbname, program,
+    enum outcome ret = do_server_program_task(new_obj(_this), verb, args, new_obj(vloc), verbname, program,
                                               progr, debug, player, argstr,
                                               result, 1/*traceback*/);
 
@@ -2255,7 +2255,7 @@ list_for_forked_task(forked_task ft, Objid progr)
     list.v.list[7].v.str = str_ref(ft.a.verbname);
     list.v.list[8].type = TYPE_INT;
     list.v.list[8].v.num = find_line_number(ft.program, ft.f_index, 0);
-    list.v.list[9] = anonymizing_var_ref(ft.a.this, progr);
+    list.v.list[9] = anonymizing_var_ref(ft.a._this, progr);
     list.v.list[10].type = TYPE_INT;
     list.v.list[10].v.num = forked_task_bytes(ft);
 
@@ -2295,7 +2295,7 @@ list_for_vm(vm the_vm, Objid progr)
     list.v.list[7].v.str = str_ref(top_activ(the_vm).verbname);
     list.v.list[8].type = TYPE_INT;
     list.v.list[8].v.num = suspended_lineno_of_vm(the_vm);
-    list.v.list[9] = anonymizing_var_ref(top_activ(the_vm).this, progr);
+    list.v.list[9] = anonymizing_var_ref(top_activ(the_vm)._this, progr);
     list.v.list[10].type = TYPE_INT;
     list.v.list[10].v.num = suspended_task_bytes(the_vm);
 

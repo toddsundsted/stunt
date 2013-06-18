@@ -44,13 +44,13 @@ dbpriv_new_propdef(const char *name)
  * Returns -1 if `target' is not an ancestor of `this'.
  */
 static int
-properties_offset(Var target, Var this)
+properties_offset(Var target, Var _this)
 {
     Var ancestor, ancestors;
     int i, c, offset = 0;
     Object *o;
 
-    ancestors = db_ancestors(this, true);
+    ancestors = db_ancestors(_this, true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	if (equality(target, ancestor, 0))

@@ -50,7 +50,7 @@ typedef struct {
      * the object number of the receiver of the verb invocation -- the
      * object number of the handler in the case of primitive values.
      */
-    Var this;
+    Var _this;
     Objid player;
     Objid progr;
     Objid recv;
@@ -82,11 +82,11 @@ typedef vmstruct *vm;
 /* call_verb will only return E_MAXREC, E_INVIND, E_VERBNF,
    or E_NONE.  the vm will only be changed if E_NONE is returned */
 extern enum error call_verb(Objid obj, const char *vname,
-			    Var this, Var args, int do_pass);
+			    Var _this, Var args, int do_pass);
 /* if your vname is already a moo str (via str_dup) then you can
    use this interface instead */
 extern enum error call_verb2(Objid obj, const char *vname,
-			     Var this, Var args, int do_pass);
+			     Var _this, Var args, int do_pass);
 
 extern int setup_activ_for_eval(Program * prog);
 
@@ -101,11 +101,11 @@ extern enum outcome do_forked_task(Program * prog, Var * rt_env,
 				   activation a, int f_id);
 extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
 				  Objid recv, db_verb_handle vh);
-extern enum outcome do_server_verb_task(Var this, const char *verb,
+extern enum outcome do_server_verb_task(Var _this, const char *verb,
 					Var args, db_verb_handle h,
 					Objid player, const char *argstr,
 					Var * result, int do_db_tracebacks);
-extern enum outcome do_server_program_task(Var this, const char *verb,
+extern enum outcome do_server_program_task(Var _this, const char *verb,
 					   Var args, Var vloc,
 					   const char *verbname,
 					   Program * program, Objid progr,

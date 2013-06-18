@@ -47,19 +47,19 @@ static Timer_Entry *
 allocate_timer(void)
 {
     if (free_timers) {
-	Timer_Entry *this = free_timers;
+	Timer_Entry *_this = free_timers;
 
-	free_timers = this->next;
-	return this;
+	free_timers = _this->next;
+	return _this;
     } else
 	return (Timer_Entry *) malloc(sizeof(Timer_Entry));
 }
 
 static void
-free_timer(Timer_Entry * this)
+free_timer(Timer_Entry *_this)
 {
-    this->next = free_timers;
-    free_timers = this;
+    _this->next = free_timers;
+    free_timers = _this;
 }
 
 static void restart_timers(void);
@@ -67,13 +67,13 @@ static void restart_timers(void);
 static void
 wakeup_call(int signo)
 {
-    Timer_Entry *this = active_timers;
-    Timer_Proc proc = this->proc;
-    Timer_ID id = this->id;
-    Timer_Data data = this->data;
+    Timer_Entry *_this = active_timers;
+    Timer_Proc proc = _this->proc;
+    Timer_ID id = _this->id;
+    Timer_Data data = _this->data;
 
     active_timers = active_timers->next;
-    free_timer(this);
+    free_timer(_this);
     restart_timers();
     if (proc)
 	(*proc) (id, data);
@@ -84,13 +84,13 @@ wakeup_call(int signo)
 static void
 virtual_wakeup_call(int signo)
 {
-    Timer_Entry *this = virtual_timer;
-    Timer_Proc proc = this->proc;
-    Timer_ID id = this->id;
-    Timer_Data data = this->data;
+    Timer_Entry *_this = virtual_timer;
+    Timer_Proc proc = _this->proc;
+    Timer_ID id = _this->id;
+    Timer_Data data = _this->data;
 
     virtual_timer = 0;
-    free_timer(this);
+    free_timer(_this);
     if (proc)
 	(*proc) (id, data);
 }
@@ -157,25 +157,25 @@ restart_timers()
 Timer_ID
 set_timer(unsigned seconds, Timer_Proc proc, Timer_Data data)
 {
-    Timer_Entry *this = allocate_timer();
+    Timer_Entry *_this = allocate_timer();
     Timer_Entry **t;
 
-    this->id = next_id++;
-    this->when = time(0) + seconds;
-    this->proc = proc;
-    this->data = data;
+    _this->id = next_id++;
+    _this->when = time(0) + seconds;
+    _this->proc = proc;
+    _this->data = data;
 
     stop_timers();
 
     t = &active_timers;
-    while (*t && this->when >= (*t)->when)
+    while (*t && _this->when >= (*t)->when)
 	t = &((*t)->next);
-    this->next = *t;
-    *t = this;
+    _this->next = *t;
+    *t = _this;
 
     restart_timers();
 
-    return this->id;
+    return _this->id;
 }
 
 Timer_ID
