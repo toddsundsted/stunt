@@ -43,10 +43,10 @@
  *  File types are either TEXT or BINARY
  */
 
-typedef struct file_type *file_type;
+typedef struct fileio_file_type *file_type;
 
-struct file_type { 
-    
+struct fileio_file_type {
+
   const char* (*in_filter)(const char *data, int buflen);
 
   const char* (*out_filter)(const char *data, int *buflen);
@@ -200,8 +200,8 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
   file_mode m = 0;
 
   if(!file_type_binary) {
-	 file_type_binary = mymalloc(sizeof(struct file_type), M_STRING);
-	 file_type_text = mymalloc(sizeof(struct file_type), M_STRING);
+	 file_type_binary = mymalloc(sizeof(struct fileio_file_type), M_STRING);
+	 file_type_text = mymalloc(sizeof(struct fileio_file_type), M_STRING);
 	 file_type_binary->in_filter = raw_bytes_to_binary;
 	 file_type_binary->out_filter = binary_to_raw_bytes;
 	 file_type_text->in_filter = raw_bytes_to_clean;
