@@ -32,7 +32,9 @@
 #include "functions.h"
 #include "garbage.h"
 #include "list.h"
+#include "log.h"
 #include "map.h"
+#include "server.h"
 #include "storage.h"
 #include "utils.h"
 
