@@ -171,7 +171,7 @@ lookup(int to_intermediary, int from_intermediary)
     for (;;) {
 	if (robust_read(from_intermediary, &req, sizeof(req)) != sizeof(req))
 	    _exit(1);
-	if (req.kind == REQ_ADDR_FROM_NAME) {
+	if (req.kind == request::REQ_ADDR_FROM_NAME) {
 	    ensure_buffer(&buffer, &buflen, req.u.length + 1);
 	    if (robust_read(from_intermediary, buffer, req.u.length)
 		!= req.u.length)
@@ -247,7 +247,7 @@ intermediary(int to_server, int from_server)
     for (;;) {
 	if (robust_read(from_server, &req, sizeof(req)) != sizeof(req))
 	    _exit(1);
-	if (req.kind == REQ_ADDR_FROM_NAME) {
+	if (req.kind == request::REQ_ADDR_FROM_NAME) {
 	    ensure_buffer(&buffer, &buflen, req.u.length);
 	    if (robust_read(from_server, buffer, req.u.length) != req.u.length)
 		_exit(1);
@@ -256,7 +256,7 @@ intermediary(int to_server, int from_server)
 	    restart_lookup();
 	if (lookup_pid) {	/* Only try to deal with lookup if alive */
 	    write(to_lookup, &req, sizeof(req));
-	    if (req.kind == REQ_ADDR_FROM_NAME) {
+	    if (req.kind == request::REQ_ADDR_FROM_NAME) {
 		write(to_lookup, buffer, req.u.length);
 		if (robust_read(from_lookup, &addr, sizeof(addr))
 		    != sizeof(addr)) {
@@ -322,7 +322,7 @@ lookup_name_from_addr(struct sockaddr_in *addr, unsigned timeout)
     int len;
 
     if (!dead_intermediary) {
-	req.kind = REQ_NAME_FROM_ADDR;
+	req.kind = request::REQ_NAME_FROM_ADDR;
 	req.timeout = timeout;
 	req.u.address = *addr;
 	if (write(to_intermediary, &req, sizeof(req)) != sizeof(req))
@@ -367,7 +367,7 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 	/* Numeric addresses should always work... */
 	addr = inet_addr((void *) name);
     } else {
-	req.kind = REQ_ADDR_FROM_NAME;
+	req.kind = request::REQ_ADDR_FROM_NAME;
 	req.timeout = timeout;
 	req.u.length = strlen(name);
 	if (write(to_intermediary, &req, sizeof(req)) != sizeof(req)
