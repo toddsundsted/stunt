@@ -971,7 +971,7 @@ iternext(Var iter)
 void
 clear_node_value(const rbnode *node)
 {
-    ((rbnode *)node)->value.type = E_NONE;
+    ((rbnode *)node)->value.type = TYPE_NONE;
 }
 
 /**** built in functions ****/

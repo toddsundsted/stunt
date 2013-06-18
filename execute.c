@@ -1451,7 +1451,7 @@ do {								\
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH(list.v.list[index.v.num]);
-			list.v.list[index.v.num].type = E_NONE;
+			list.v.list[index.v.num].type = TYPE_NONE;
 		    }
 		} else {
 		    PUSH_ERROR(E_TYPE);
