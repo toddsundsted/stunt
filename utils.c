@@ -31,6 +31,7 @@
 #include "map.h"
 #include "match.h"
 #include "numbers.h"
+#include "quota.h"
 #include "server.h"
 #include "storage.h"
 #include "streams.h"
