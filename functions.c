@@ -316,7 +316,7 @@ make_abort_pack(enum abort_reason reason)
 {
     package p;
 
-    p.kind = BI_KILL;
+    p.kind = package::BI_KILL;
     p.u.ret.type = TYPE_INT;
     p.u.ret.v.num = reason;
     return p;
@@ -333,7 +333,7 @@ make_raise_pack(enum error err, const char *msg, Var value)
 {
     package p;
 
-    p.kind = BI_RAISE;
+    p.kind = package::BI_RAISE;
     p.u.raise.code.type = TYPE_ERR;
     p.u.raise.code.v.err = err;
     p.u.raise.msg = str_dup(msg);
@@ -347,7 +347,7 @@ make_var_pack(Var v)
 {
     package p;
 
-    p.kind = BI_RETURN;
+    p.kind = package::BI_RETURN;
     p.u.ret = v;
 
     return p;
@@ -364,7 +364,7 @@ make_call_pack(Byte pc, void *data)
 {
     package p;
 
-    p.kind = BI_CALL;
+    p.kind = package::BI_CALL;
     p.u.call.pc = pc;
     p.u.call.data = data;
 
@@ -382,7 +382,7 @@ make_suspend_pack(enum error(*proc) (vm, void *), void *data)
 {
     package p;
 
-    p.kind = BI_SUSPEND;
+    p.kind = package::BI_SUSPEND;
     p.u.susp.proc = proc;
     p.u.susp.data = data;
 
