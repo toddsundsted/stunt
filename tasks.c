@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <stdlib.h>
+
 #include "my-string.h"
 #include "my-time.h"
 
