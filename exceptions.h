@@ -72,7 +72,7 @@ typedef struct {
     int junk;
 } Exception;			/* Only addr. of exception is used. */
 
-typedef volatile struct ES_CtxBlock ES_CtxBlock;
+typedef struct ES_CtxBlock ES_CtxBlock;
 struct ES_CtxBlock {
     jmp_buf jmp;
     int nx;
