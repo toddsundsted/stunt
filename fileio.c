@@ -257,7 +257,7 @@ file_make_error(const char *errtype, const char *msg) {
   value.type = TYPE_STR;
   value.v.str = str_dup(errtype);
 
-  p.kind = BI_RAISE;
+  p.kind = package::BI_RAISE;
   p.u.raise.code.type = TYPE_ERR;
   p.u.raise.code.v.err = E_FILE;
   p.u.raise.msg = str_dup(msg);
