@@ -129,7 +129,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
     else
 	bf_table[top_bf_table].prototype = 0;
     for (va_index = 0; va_index < num_arg_types; va_index++)
-	bf_table[top_bf_table].prototype[va_index] = va_arg(args, var_type);
+	bf_table[top_bf_table].prototype[va_index] = va_arg(args, int);
 
     return top_bf_table++;
 }
