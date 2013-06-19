@@ -51,7 +51,7 @@
 #include "utils.h"
 #include "server.h"
 
-static const unsigned char base64_table[64] =
+static const unsigned char base64_table[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 /**
