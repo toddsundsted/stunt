@@ -223,7 +223,7 @@ dbio_read_var(void)
 	break;
     case _TYPE_STR:
 	r.v.str = dbio_read_string_intern();
-	r.type |= TYPE_COMPLEX_FLAG;
+	r.type = TYPE_STR;
 	break;
     case TYPE_OBJ:
     case TYPE_ERR:
