@@ -100,7 +100,7 @@ extern void ES_RaiseException(Exception * exception, int value);
 	    ES_ctx.link = ES_exceptionStack;			\
 	    ES_exceptionStack = &ES_ctx;			\
 	    							\
-	    if (setjmp((void *) ES_ctx.jmp) != 0)		\
+	    if (setjmp(ES_ctx.jmp) != 0)			\
 		ES_es = ES_Exception;				\
 		    						\
 	    while (1) {						\

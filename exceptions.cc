@@ -60,7 +60,7 @@ ES_RaiseException(Exception * exception, int value)
     ES_exceptionStack = cb;
     cb->id = exception;
     cb->value = value;
-    longjmp((void *) cb->jmp, 1);
+    longjmp(cb->jmp, 1);
 }
 
 char rcsid_exceptions[] = "$Id: exceptions.c,v 1.3 1998/12/14 13:17:48 nop Exp $";
