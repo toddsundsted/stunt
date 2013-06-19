@@ -22,12 +22,6 @@
 
 #include "structures.h"
 
-typedef struct reference_overhead {
-    unsigned int count:28;
-    unsigned int buffered:1;
-    unsigned int color:3;
-} reference_overhead;
-
 /* See "Concurrent Cycle Collection in Reference Counted Systems",
  * (Bacon and Rajan, 2001) for a description of the cycle collection
  * algorithm and the colors.
@@ -41,6 +35,12 @@ typedef enum GC_Color {
     GC_PURPLE,
     GC_PINK
 } GC_Color;
+
+typedef struct reference_overhead {
+    unsigned int count:28;
+    unsigned int buffered:1;
+    GC_Color color:3;
+} reference_overhead;
 
 static inline int
 addref(const void *ptr)
