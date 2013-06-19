@@ -5497,9 +5497,7 @@ server, and @var{nfree} is the number of such fragments that have been reserved
 for use but are currently free.
 
 On servers for which such statistics are not available, @code{memory_usage()}
-returns @code{@{@}}.  The compilation option @code{USE_GNU_MALLOC} controls
-whether or not statistics are available; if the option is not provided,
-statistics are not available.
+returns @code{@{@}}.
 @end deftypefun
 
 @deftypefun int db_disk_size ()

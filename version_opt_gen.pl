@@ -50,8 +50,7 @@ my @options =
 	      )],
 
    # optimizations
-   _DDEF => [qw(USE_GNU_MALLOC
-		UNFORKED_CHECKPOINTS
+   _DDEF => [qw(UNFORKED_CHECKPOINTS
 		BYTECODE_REDUCE_REF
 		STRING_INTERNING
 		MEMO_STRLEN
