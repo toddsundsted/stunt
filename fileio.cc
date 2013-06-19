@@ -200,8 +200,8 @@ const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode
   file_mode m = 0;
 
   if(!file_type_binary) {
-	 file_type_binary = mymalloc(sizeof(struct fileio_file_type), M_STRING);
-	 file_type_text = mymalloc(sizeof(struct fileio_file_type), M_STRING);
+	 file_type_binary = (struct fileio_file_type *)mymalloc(sizeof(struct fileio_file_type), M_STRING);
+	 file_type_text = (struct fileio_file_type *)mymalloc(sizeof(struct fileio_file_type), M_STRING);
 	 file_type_binary->in_filter = raw_bytes_to_binary;
 	 file_type_binary->out_filter = binary_to_raw_bytes;
 	 file_type_text->in_filter = raw_bytes_to_clean;
@@ -611,7 +611,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
 }
     
 line_buffer *new_line_buffer(char *line) {
-  line_buffer *p = mymalloc(sizeof(line_buffer), M_STRUCT);
+  line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRUCT);
   p->line = line;
   p->next = NULL;
   return p;
