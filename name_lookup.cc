@@ -114,7 +114,7 @@ ensure_buffer(char **buffer, int *buflen, int len)
 	if (*buffer)
 	    myfree(*buffer, M_STRING);
 	*buflen = len;
-	*buffer = mymalloc(len, M_STRING);
+	*buffer = (char *)mymalloc(len, M_STRING);
     }
 }
 
@@ -178,18 +178,14 @@ lookup(int to_intermediary, int from_intermediary)
 		_exit(1);
 	    buffer[req.u.length] = 0;
 	    id = set_timer(req.timeout, timeout_proc, 0);
-	    /* This cast is to work around systems like NeXT that declare
-	     * gethostbyname() to take a non-const string pointer.
-	     */
-	    e = gethostbyname((void *) buffer);
+	    e = gethostbyname(buffer);
 	    cancel_timer(id);
 	    if (e && e->h_length == sizeof(unsigned32))
 		write(to_intermediary, e->h_addr_list[0], e->h_length);
 	    else {
 		unsigned32 addr;
 
-		/* This cast is for the same reason as the one above... */
-		addr = inet_addr((void *) buffer);
+		addr = inet_addr(buffer);
 		write(to_intermediary, &addr, sizeof(addr));
 	    }
 	} else {
@@ -365,7 +361,7 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 
     if (dead_intermediary) {
 	/* Numeric addresses should always work... */
-	addr = inet_addr((void *) name);
+	addr = inet_addr(name);
     } else {
 	req.kind = request::REQ_ADDR_FROM_NAME;
 	req.timeout = timeout;
