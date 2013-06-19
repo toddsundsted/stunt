@@ -21,9 +21,12 @@
 
 #include "config.h"
 #include "pattern.h"
-#include "regexpr.h"
 #include "storage.h"
 #include "streams.h"
+
+extern "C" {
+#include "regexpr.h"
+}
 
 static char casefold[256];
 

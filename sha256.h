@@ -19,6 +19,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   uint32_t total[2];
   uint32_t state[8];
@@ -38,5 +42,9 @@ void sha256( uint8_t *input, uint32_t length, uint8_t *digest );
 int hash_init_sha256(void * ctx);
 int hash_update_sha256(void * ctx, unsigned char *buf, uint64_t len);
 int hash_final_sha256(void * ctx, unsigned char *digest);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* sha256.h */

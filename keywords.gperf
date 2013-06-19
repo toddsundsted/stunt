@@ -70,7 +70,7 @@ E_INTRPT,	DBV_Interrupt,	tERROR,	E_INTRPT
 const struct keyword *
 find_keyword(const char *word)
 {
-    return in_word_set(word, strlen(word));
+    return Perfect_Hash::in_word_set(word, strlen(word));
 }
 
 char rcsid_keywords[] = "$Id: keywords.gperf,v 1.1 1997/03/03 03:45:02 nop Exp $";

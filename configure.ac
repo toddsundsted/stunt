@@ -17,7 +17,7 @@ dnl   Pavel@Xerox.Com
 dnl
 AC_PREREQ([2.61])
 AC_INIT([Stunt], [10], [http://groups.google.com/group/MOO-talk], [stunt], [http://stunt.io/])
-AC_CONFIG_SRCDIR([functions.c])
+AC_CONFIG_SRCDIR([server.cc])
 AC_CONFIG_HEADERS([config.h])
 
 AC_LANG([C])

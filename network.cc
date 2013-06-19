@@ -18,9 +18,9 @@
 #include "options.h"
 
 #if NETWORK_PROTOCOL == NP_SINGLE
-#  include "net_single.c"
+#  include "net_single.cc"
 #else
-#  include "net_multi.c"
+#  include "net_multi.cc"
 #endif
 
 Var

@@ -41,7 +41,7 @@
 #include "timers.h"
 #include "utils.h"
 
-#include "net_tcp.c"
+#include "net_tcp.cc"
 
 const char *
 proto_name(void)

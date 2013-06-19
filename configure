@@ -585,7 +585,7 @@ PACKAGE_STRING='Stunt 10'
 PACKAGE_BUGREPORT='http://groups.google.com/group/MOO-talk'
 PACKAGE_URL='http://stunt.io/'
 
-ac_unique_file="functions.c"
+ac_unique_file="server.cc"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
