@@ -50,10 +50,23 @@ enum error {
     E_FILE, E_EXEC, E_INTRPT
 };
 
-/* Do not reorder or otherwise modify this list, except to add new elements at
- * the end, since the order here defines the numeric equivalents of the type
- * values, and those equivalents are both DB-accessible knowledge and stored in
- * raw form in the DB.
+/* Types which have external data should be marked with the
+ * TYPE_COMPLEX_FLAG so that `free_var()'/`var_ref()'/`var_dup()' can
+ * recognize them easily.  This flag is only set in memory.  The
+ * original _TYPE_XYZ values are used in the database file and
+ * returned to verbs calling typeof().  This allows the inlines to be
+ * extremely cheap (both in space and time) for simple types like oids
+ * and ints.
+ */
+#define TYPE_COMPLEX_FLAG	0x80
+#define TYPE_DB_MASK		0x7f
+
+/* Do not reorder or otherwise modify this list, except to add new
+ * elements at the end (see THE END), since the order here defines the
+ * numeric equivalents of the type values, and those equivalents are
+ * both DB-accessible knowledge and stored in raw form in the DB.  For
+ * new complex types add both a _TYPE_XYZ definition and a TYPE_XYZ
+ * definition.
  */
 typedef enum {
     TYPE_INT, TYPE_OBJ, _TYPE_STR, TYPE_ERR, _TYPE_LIST, /* user-visible */
@@ -64,25 +77,15 @@ typedef enum {
     _TYPE_FLOAT,		/* floating-point number; user-visible */
     _TYPE_MAP,			/* map; user-visible */
     _TYPE_ITER,			/* map iterator; not visible */
-    _TYPE_ANON			/* anonymous object; user-visible */
+    _TYPE_ANON,			/* anonymous object; user-visible */
+    /* THE END - complex aliases come next */
+    TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
+    TYPE_FLOAT = (_TYPE_FLOAT | TYPE_COMPLEX_FLAG),
+    TYPE_LIST = (_TYPE_LIST | TYPE_COMPLEX_FLAG),
+    TYPE_MAP = (_TYPE_MAP | TYPE_COMPLEX_FLAG),
+    TYPE_ITER = (_TYPE_ITER | TYPE_COMPLEX_FLAG),
+    TYPE_ANON = (_TYPE_ANON | TYPE_COMPLEX_FLAG)
 } var_type;
-
-/* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
- * so that free_var/var_ref/var_dup can recognize them easily.  This flag is
- * only set in memory.  The original _TYPE values are used in the database
- * file and returned to verbs calling typeof().  This allows the inlines to
- * be extremely cheap (both in space and time) for simple types like oids
- * and ints.
- */
-#define TYPE_DB_MASK		0x7f
-#define TYPE_COMPLEX_FLAG	0x80
-
-#define TYPE_STR		(_TYPE_STR | TYPE_COMPLEX_FLAG)
-#define TYPE_FLOAT		(_TYPE_FLOAT | TYPE_COMPLEX_FLAG)
-#define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
-#define TYPE_MAP		(_TYPE_MAP | TYPE_COMPLEX_FLAG)
-#define TYPE_ITER		(_TYPE_ITER | TYPE_COMPLEX_FLAG)
-#define TYPE_ANON		(_TYPE_ANON | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
