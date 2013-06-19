@@ -83,7 +83,7 @@ struct stack_item {
 static void
 push(struct stack_item **top, Var v)
 {
-    struct stack_item *item = malloc(sizeof(struct stack_item));
+    struct stack_item *item = (struct stack_item *)malloc(sizeof(struct stack_item));
     item->prev = *top;
     item->v = v;
     *top = item;
@@ -268,7 +268,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 		temp[len] = '\0';
 		v.type = TYPE_ERR;
 		int err = parse_error(temp);
-		v.v.err = err > -1 ? err : E_NONE;
+		v.v.err = err > -1 ? (error)err : E_NONE;
 		break;
 	    }
 	case TYPE_STR:
@@ -300,9 +300,9 @@ handle_start_map(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
     Var k, v;
-    k.type = MAP_SENTINEL;
+    k.type = (var_type)MAP_SENTINEL;
     PUSH(pctx->top, k);
-    v.type = MAP_SENTINEL;
+    v.type = (var_type)MAP_SENTINEL;
     PUSH(pctx->top, v);
     return 1;
 }
@@ -327,7 +327,7 @@ handle_start_array(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
     Var v;
-    v.type = ARRAY_SENTINEL;
+    v.type = (var_type)ARRAY_SENTINEL;
     PUSH(pctx->top, v);
     return 1;
 }
@@ -467,7 +467,7 @@ generate(yajl_gen g, Var v, void *ctx)
 	}
     }
 
-    return -1;
+    return (yajl_gen_status)-1;
 }
 
 static yajl_callbacks callbacks = {

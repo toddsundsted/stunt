@@ -104,7 +104,7 @@ dbpriv_build_prep_table(void)
 	     */
 	    words = parse_into_words(cprep, &nwords);
 
-	    current_alias = mymalloc(sizeof(struct pt_entry), M_PREP);
+	    current_alias = (struct pt_entry *)mymalloc(sizeof(struct pt_entry), M_PREP);
 	    current_alias->nwords = nwords;
 	    current_alias->next = 0;
 	    for (j = 0; j < nwords; j++)
@@ -160,7 +160,7 @@ db_match_prep(const char *prepname)
     first = s[0];
     if (first == '#')
 	first = (++s)[0];
-    prep = strtol(s, &ptr, 10);
+    prep = (db_prep_spec)strtol(s, &ptr, 10);
     if (*ptr == '\0') {
 	free_str(s);
 	if (!isdigit(first) || prep >= NPREPS)
@@ -206,7 +206,7 @@ db_add_verb(Var obj, const char *vnames, Objid owner, unsigned flags,
 
     db_priv_affected_callable_verb_lookup();
 
-    newv = mymalloc(sizeof(Verbdef), M_VERBDEF);
+    newv = (Verbdef *)mymalloc(sizeof(Verbdef), M_VERBDEF);
     newv->name = vnames;
     newv->owner = owner;
     newv->perms = flags | (dobj << DOBJSHIFT) | (iobj << IOBJSHIFT);
@@ -316,8 +316,8 @@ db_find_command_verb(Objid oid, const char *verb,
     FOR_EACH(ancestor, ancestors, i, c) {
 	o = dbpriv_find_object(ancestor.v.obj);
 	for (v = o->verbdefs; v; v = v->next) {
-	    db_arg_spec vdobj = (v->perms >> DOBJSHIFT) & OBJMASK;
-	    db_arg_spec viobj = (v->perms >> IOBJSHIFT) & OBJMASK;
+	    db_arg_spec vdobj = (db_arg_spec)((v->perms >> DOBJSHIFT) & OBJMASK);
+	    db_arg_spec viobj = (db_arg_spec)((v->perms >> IOBJSHIFT) & OBJMASK);
 
 	    if (verbcasecmp(v->name, verb)
 		&& (vdobj == ASPEC_ANY || vdobj == dobj)
@@ -395,7 +395,7 @@ make_vc_table(int size)
     int i;
 
     vc_size = size;
-    vc_table = mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
+    vc_table = (vc_entry **)mymalloc(size * sizeof(vc_entry *), M_VC_TABLE);
     for (i = 0; i < size; i++) {
 	vc_table[i] = NULL;
     }
@@ -624,7 +624,7 @@ db_find_callable_verb(Var recv, const char *verb)
 	 * so that repeated failures hit the cache instead of going
 	 * through a lookup.
 	 */
-	new_vc = mymalloc(sizeof(vc_entry), M_VC_ENTRY);
+	new_vc = (vc_entry *)mymalloc(sizeof(vc_entry), M_VC_ENTRY);
 
 	new_vc->hash = hash;
 	new_vc->object = o;
@@ -851,9 +851,9 @@ db_verb_arg_specs(db_verb_handle vh,
     handle *h = (handle *) vh.ptr;
 
     if (h) {
-	*dobj = (h->verbdef->perms >> DOBJSHIFT) & OBJMASK;
-	*prep = h->verbdef->prep;
-	*iobj = (h->verbdef->perms >> IOBJSHIFT) & OBJMASK;
+	*dobj = (db_arg_spec)((h->verbdef->perms >> DOBJSHIFT) & OBJMASK);
+	*prep = (db_prep_spec)h->verbdef->prep;
+	*iobj = (db_arg_spec)((h->verbdef->perms >> IOBJSHIFT) & OBJMASK);
     } else
 	panic("DB_VERB_ARG_SPECS: Null handle!");
 }

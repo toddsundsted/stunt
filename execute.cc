@@ -96,7 +96,7 @@ alloc_rt_stack(activation * a, int size)
 	res = rt_stack_quick;
 	rt_stack_quick = rt_stack_quick[0].v.list;
     } else {
-	res = mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+	res = (Var *)mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
     }
     a->base_rt_stack = a->top_rt_stack = res;
     a->rt_stack_size = size;
@@ -330,7 +330,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 		    a->bi_func_data = p.u.call.data;
 		    return 0;
 		case package::BI_KILL:
-		    abort_task(p.u.ret.v.num);
+		    abort_task((abort_reason)p.u.ret.v.num);
 		    if (outcome)
 			*outcome = OUTCOME_ABORTED;
 		    return 1;
@@ -832,7 +832,7 @@ do {								\
     for (;;) {
       next_opcode:
 	error_bv = bv;
-	op = *bv++;
+	op = (Opcode)(*bv++);
 
 	if (COUNT_TICK(op)) {
 	    if (--ticks_remaining <= 0) {
@@ -1285,7 +1285,7 @@ do {								\
 			ans.type = TYPE_ERR;
 			ans.v.err = E_QUOTA;
 		    } else {
-			str = mymalloc(flen + 1, M_STRING);
+			str = (char *)mymalloc(flen + 1, M_STRING);
 			strcpy(str, lhs.v.str);
 			strcpy(str + llen, rhs.v.str);
 			ans.type = TYPE_STR;
@@ -1892,7 +1892,7 @@ do {								\
 			break;
 		    case package::BI_KILL:
 			STORE_STATE_VARIABLES();
-			abort_task(p.u.ret.v.num);
+			abort_task((abort_reason)p.u.ret.v.num);
 			return OUTCOME_ABORTED;
 			/* NOTREACHED */
 		    }
@@ -1902,7 +1902,7 @@ do {								\
 
 	case OP_EXTENDED:
 	    {
-		register enum Extended_Opcode eop = *bv;
+		register enum Extended_Opcode eop = (Extended_Opcode)(*bv);
 		bv++;
 		if (COUNT_EOP_TICK(eop))
 		    ticks_remaining--;
@@ -2212,7 +2212,7 @@ do {								\
 			case FIN_RETURN:
 			case FIN_UNCAUGHT:
 			    STORE_STATE_VARIABLES();
-			    if (unwind_stack(why.v.num, v, &outcome))
+			    if (unwind_stack((Finally_Reason)why.v.num, v, &outcome))
 				return outcome;
 			    LOAD_STATE_VARIABLES();
 			    break;
@@ -2630,7 +2630,7 @@ check_activ_stack_size(int max)
 	if (activ_stack)
 	    myfree(activ_stack, M_VM);
 
-	activ_stack = mymalloc(sizeof(activation) * max, M_VM);
+	activ_stack = (activation *)mymalloc(sizeof(activation) * max, M_VM);
 	max_stack_size = max;
     }
 }
@@ -2864,14 +2864,14 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
 	    p = call_bi_func(fnum, arglist, next, progr, vdata);
 	}
     } else {			/* return to function */
-	s = vdata;
+	s = (struct cf_state *)vdata;
 	fnum = s->fnum;
 	p = call_bi_func(fnum, arglist, next, progr, s->data);
 	free_data(s);
     }
 
     if (p.kind == package::BI_CALL) {
-	s = alloc_data(sizeof(struct cf_state));
+	s = (struct cf_state *)alloc_data(sizeof(struct cf_state));
 	s->fnum = fnum;
 	s->data = p.u.call.data;
 	p.u.call.data = s;
@@ -2882,7 +2882,7 @@ bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 bf_call_function_write(void *data)
 {
-    struct cf_state *s = data;
+    struct cf_state *s = (struct cf_state *)data;
 
     dbio_printf("bf_call_function data: fname = %s\n",
 		name_func_by_num(s->fnum));
@@ -2892,7 +2892,7 @@ bf_call_function_write(void *data)
 static void *
 bf_call_function_read(void)
 {
-    struct cf_state *s = alloc_data(sizeof(struct cf_state));
+    struct cf_state *s = (struct cf_state *)alloc_data(sizeof(struct cf_state));
     const char *line = dbio_read_string();
     const char *hdr = "bf_call_function data: fname = ";
     int hlen = strlen(hdr);
