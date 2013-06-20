@@ -489,6 +489,8 @@ db_find_property(Var obj, const char *name, Var *value)
 
     h.built_in = BP_NONE;
 
+    Var ancestor, ancestors = db_ancestors(obj, false);
+
     Proplist *props = &(o->propdefs);
     Propdef *defs = props->l;
     int length = props->cur_length;
@@ -504,7 +506,6 @@ db_find_property(Var obj, const char *name, Var *value)
 	}
 
     Object *t;
-    Var ancestor, ancestors = db_ancestors(obj, false);
     int ai, ac;
 
     FOR_EACH(ancestor, ancestors, ai, ac) {
@@ -521,15 +522,14 @@ db_find_property(Var obj, const char *name, Var *value)
 	    if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
 		h.definer = t;
 		h.ptr = o->propval + n;
-		free_var(ancestors);
 		goto done;
 	    }
 	}
     }
 
-    free_var(ancestors);
-
  done:
+
+    free_var(ancestors);
 
     if (!h.ptr)
 	return h;
