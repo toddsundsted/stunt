@@ -113,6 +113,9 @@ typedef struct rbtrav rbtrav;
 #pragma pointer_size short
 #endif
 
+/* defined in db_private.h */
+typedef struct Object Object;
+
 struct Var {
     union {
 	const char *str;	/* STR */
@@ -123,7 +126,7 @@ struct Var {
 	rbtree *tree;		/* MAP */
 	rbtrav *trav;		/* ITER */
 	double *fnum;		/* FLOAT */
-	void *anon;		/* ANON */
+	Object *anon;		/* ANON */
     } v;
     var_type type;
 };

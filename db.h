@@ -132,7 +132,7 @@ extern void db_destroy_anonymous_object(void *);
 				 * storage.
 				 */
 
-extern void *db_make_anonymous(Objid, Objid);
+extern Object *db_make_anonymous(Objid, Objid);
 				/* Makes the specified object anonymous by
 				 * removing it from the collection of numbered
 				 * objects.  Resets the high-water mark to the

@@ -325,7 +325,7 @@ db_write_anonymous(Var v)
     dbio_write_num(oid);
 }
 
-void *
+Object *
 db_make_anonymous(Objid oid, Objid last)
 {
     Object *o = objects[oid];
