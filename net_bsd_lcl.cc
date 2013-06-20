@@ -102,7 +102,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 	close(s);
 	return e;
     }
-    l = mymalloc(sizeof(listener), M_NETWORK);
+    l = (listener *)mymalloc(sizeof(listener), M_NETWORK);
     l->next = all_listeners;
     all_listeners = l;
     l->filename = str_dup(connect_file);
@@ -127,7 +127,7 @@ proto_accept_connection(int listener_fd, int *read_fd, int *write_fd,
 {
     int fd;
     static struct sockaddr_un address;
-    int addr_length = sizeof(address);
+    socklen_t addr_length = sizeof(address);
 
     fd = accept(listener_fd, (struct sockaddr *) &address, &addr_length);
     if (fd < 0) {
