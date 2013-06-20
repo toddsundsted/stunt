@@ -19,7 +19,7 @@ LIBRARIES = @LIBS@
 YACC = @YACC@
 
 CFLAGS = -g -O -Wall
-CXXFLAGS = -g -O -Wall -fpermissive
+CXXFLAGS = -g -O -Wall
 # If you're using GCC, you may prefer:
 # CFLAGS = -O2 -finline-functions
 #
