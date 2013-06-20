@@ -125,11 +125,11 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 
     if (num_arg_types > 0)
 	bf_table[top_bf_table].prototype =
-	    mymalloc(num_arg_types * sizeof(var_type), M_PROTOTYPE);
+	    (var_type *)mymalloc(num_arg_types * sizeof(var_type), M_PROTOTYPE);
     else
 	bf_table[top_bf_table].prototype = 0;
     for (va_index = 0; va_index < num_arg_types; va_index++)
-	bf_table[top_bf_table].prototype[va_index] = va_arg(args, int);
+	bf_table[top_bf_table].prototype[va_index] = (var_type)va_arg(args, int);
 
     return top_bf_table++;
 }
