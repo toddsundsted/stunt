@@ -422,7 +422,7 @@ find_tqueue(Objid player, int create_if_not_found)
     if (!create_if_not_found)
 	return 0;
 
-    tq = mymalloc(sizeof(tqueue), M_TASK);
+    tq = (tqueue *)mymalloc(sizeof(tqueue), M_TASK);
 
     deactivate_tqueue(tq);
 
@@ -646,7 +646,7 @@ struct state {
 static void
 my_error(void *data, const char *msg)
 {
-    struct state *s = data;
+    struct state *s = (state *)data;
 
     notify(s->player, msg);
     s->nerrors++;
@@ -655,7 +655,7 @@ my_error(void *data, const char *msg)
 static int
 my_getc(void *data)
 {
-    struct state *s = data;
+    struct state *s = (state *)data;
 
     if (*(s->input) != '\0')
 	return *(s->input++);
@@ -934,8 +934,10 @@ is_out_of_input(tqueue * tq)
 task_queue
 new_task_queue(Objid player, Objid handler)
 {
+    tqueue *tq = find_tqueue(player, 1);
     task_queue result;
-    tqueue *tq = result.ptr = find_tqueue(player, 1);
+
+    result.ptr = tq;
 
     tq->connected = 1;
     tq->handler = handler;
@@ -1023,7 +1025,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
     task *t;
 
-    t = (task *) mymalloc(sizeof(task), M_TASK);
+    t = (task *)mymalloc(sizeof(task), M_TASK);
     if (binary)
 	t->kind = TASK_BINARY;
     else if (oob_quote_prefix_length > 0
@@ -1076,7 +1078,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
 void
 task_suspend_input(task_queue q)
 {
-    tqueue *tq = q.ptr;
+    tqueue *tq = (tqueue *)q.ptr;
 
     if (!tq->input_suspended && tq->connected) {
 	server_suspend_input(tq->player);
@@ -1114,7 +1116,7 @@ flush_input(tqueue * tq, int show_messages)
 void
 new_input_task(task_queue q, const char *input, int binary)
 {
-    tqueue *tq = q.ptr;
+    tqueue *tq = (tqueue *)q.ptr;
 
     if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd) == 0) {
 	flush_input(tq, 1);
@@ -1152,7 +1154,7 @@ static void
 enqueue_forked(Program * program, activation a, Var * rt_env,
 	   int f_index, time_t start_time, int id)
 {
-    task *t = (task *) mymalloc(sizeof(task), M_TASK);
+    task *t = (task *)mymalloc(sizeof(task), M_TASK);
 
     t->kind = TASK_FORKED;
     t->t.forked.program = program;
@@ -1243,7 +1245,7 @@ enqueue_suspended_task(vm the_vm, void *data)
     task *t;
 
     if (check_user_task_limit(progr_of_cur_verb(the_vm))) {
-	t = mymalloc(sizeof(task), M_TASK);
+	t = (task *)mymalloc(sizeof(task), M_TASK);
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.the_vm = the_vm;
 	if (now + after_seconds < now)
@@ -1263,7 +1265,7 @@ enqueue_suspended_task(vm the_vm, void *data)
 void
 resume_task(vm the_vm, Var value)
 {
-    task *t = mymalloc(sizeof(task), M_TASK);
+    task *t = (task *)mymalloc(sizeof(task), M_TASK);
     Objid progr = progr_of_cur_verb(the_vm);
     tqueue *tq = find_tqueue(progr, 1);
 
@@ -1333,7 +1335,7 @@ make_http_task(vm the_vm, Objid player, int request)
 	tq->reading_vm = the_vm;
 	if (tq->parsing_state == NULL) {
 	    tq->parsing_state =
-		mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
+		(http_parsing_state *)mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
 	    init_http_parsing_state(tq->parsing_state);
 	}
 	tq->parsing_state->status = PARSING;
@@ -1513,7 +1515,7 @@ on_message_complete_callback(http_parser *parser)
     if (parser->type == HTTP_REQUEST) {
 	Var method;
 	method.type = TYPE_STR;
-	method.v.str = str_dup(http_method_str(state->parser.method));
+	method.v.str = str_dup(http_method_str((http_method)state->parser.method));
 	state->result = mapinsert(state->result, var_dup(METHOD), method);
     }
     else { /* HTTP_RESPONSE */
@@ -1648,9 +1650,9 @@ run_ready_tasks(void)
 				key.v.str = str_dup("error");
 				value = new_list(2);
 				value.v.list[1].type = TYPE_STR;
-				value.v.list[1].v.str = str_dup(http_errno_name(tq->parsing_state->parser.http_errno));
+				value.v.list[1].v.str = str_dup(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
 				value.v.list[2].type = TYPE_STR;
-				value.v.list[2].v.str = str_dup(http_errno_description(tq->parsing_state->parser.http_errno));
+				value.v.list[2].v.str = str_dup(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
 				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
 				done = 1;
 			    }
@@ -1824,7 +1826,7 @@ run_server_program_task(Objid _this, const char *verb, Var args, Objid vloc,
 void
 register_task_queue(task_enumerator enumerator)
 {
-    ext_queue *eq = mymalloc(sizeof(ext_queue), M_TASK);
+    ext_queue *eq = (ext_queue *)mymalloc(sizeof(ext_queue), M_TASK);
 
     eq->enumerator = enumerator;
     eq->next = external_queues;
@@ -2005,7 +2007,7 @@ read_task_queue(void)
 	return 0;
     }
     for (; suspended_count > 0; suspended_count--) {
-	task *t = (task *) mymalloc(sizeof(task), M_TASK);
+	task *t = (task *)mymalloc(sizeof(task), M_TASK);
 	int task_id, start_time;
 	char c;
 
@@ -2067,7 +2069,7 @@ read_task_queue(void)
 	    return 0;
 	}
 
-	task *t = (task *) mymalloc(sizeof(task), M_TASK);
+	task *t = (task *)mymalloc(sizeof(task), M_TASK);
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.start_time = 0;
 	t->t.suspended.value.type = TYPE_ERR;
@@ -2333,7 +2335,7 @@ list_for_reading_task(Objid player, vm the_vm, Objid progr)
 static task_enum_action
 counting_closure(vm the_vm, const char *status, void *data)
 {
-    struct qcl_data *qdata = data;
+    struct qcl_data *qdata = (struct qcl_data *)data;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm))
 	qdata->i++;
@@ -2344,7 +2346,7 @@ counting_closure(vm the_vm, const char *status, void *data)
 static task_enum_action
 listing_closure(vm the_vm, const char *status, void *data)
 {
-    struct qcl_data *qdata = data;
+    struct qcl_data *qdata = (struct qcl_data *)data;
     Var list;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
@@ -2360,7 +2362,7 @@ listing_closure(vm the_vm, const char *status, void *data)
 static task_enum_action
 writing_closure(vm the_vm, const char *status, void *data)
 {
-    struct qcl_data *qdata = data;
+    struct qcl_data *qdata = (struct qcl_data *)data;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
 	dbio_printf("%d %s\n", the_vm->task_id, status);
@@ -2469,7 +2471,7 @@ struct fcl_data {
 static task_enum_action
 finding_closure(vm the_vm, const char *status, void *data)
 {
-    struct fcl_data *fdata = data;
+    struct fcl_data *fdata = (struct fcl_data *)data;
 
     if (the_vm->task_id == fdata->id) {
 	fdata->the_vm = the_vm;
@@ -2528,7 +2530,7 @@ struct kcl_data {
 static task_enum_action
 killing_closure(vm the_vm, const char *status, void *data)
 {
-    struct kcl_data *kdata = data;
+    struct kcl_data *kdata = (struct kcl_data *)data;
 
     if (the_vm->task_id == kdata->id) {
 	if (is_wizard(kdata->owner)
