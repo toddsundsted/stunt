@@ -116,7 +116,7 @@ insert_prop2(Var obj, int pos, Pval pval)
     int i, nprops;
 
     nprops = ++o->nval;
-    new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+    new_propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
 
     dbpriv_assign_nonce(o);
 
@@ -188,7 +188,7 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 	int new_size = (o->propdefs.max_length == 0
 			? 8 : 2 * o->propdefs.max_length);
 
-	o->propdefs.l = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+	o->propdefs.l = (Propdef *)mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
 	for (i = 0; i < o->propdefs.max_length; i++)
 	    o->propdefs.l[i] = old_props[i];
 	o->propdefs.max_length = new_size;
@@ -256,7 +256,7 @@ remove_prop2(Var obj, int pos)
     free_var(o->propval[pos].var);	/* free deleted property */
 
     if (nprops) {
-	new_propval = mymalloc(nprops * sizeof(Pval), M_PVAL);
+	new_propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
 	for (i = 0; i < pos; i++)
 	    new_propval[i] = o->propval[i];
 	for (i = pos; i < nprops; i++)
@@ -319,7 +319,7 @@ db_delete_propdef(Var obj, const char *pname)
 		int new_size = max / 2;
 		Propdef *new_props;
 
-		new_props = mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+		new_props = (Propdef *)mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
 
 		for (j = 0; j < i; j++)
 		    new_props[j] = props->l[j];
@@ -390,7 +390,7 @@ struct contents_data {
 static int
 add_to_list(void *data, Objid c)
 {
-    struct contents_data *d = data;
+    struct contents_data *d = (struct contents_data *)data;
 
     d->i++;
     d->r.v.list[d->i].type = TYPE_OBJ;
@@ -535,7 +535,7 @@ db_find_property(Var obj, const char *name, Var *value)
 	return h;
 
     if (value) {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	while (prop->var.type == TYPE_CLEAR) {
 	    /* We take a few liberties at this point.  If a property
@@ -585,7 +585,7 @@ db_property_value(db_prop_handle h)
     if (h.built_in)
 	get_bi_value(h, &value);
     else {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	value = prop->var;
     }
@@ -597,7 +597,7 @@ void
 db_set_property_value(db_prop_handle h, Var value)
 {
     if (!h.built_in) {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	free_var(prop->var);
 	prop->var = value;
@@ -658,7 +658,7 @@ db_property_owner(db_prop_handle h)
 	panic("Built-in property in DB_PROPERTY_OWNER!");
 	return NOTHING;
     } else {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	return prop->owner;
     }
@@ -670,7 +670,7 @@ db_set_property_owner(db_prop_handle h, Objid oid)
     if (h.built_in)
 	panic("Built-in property in DB_SET_PROPERTY_OWNER!");
     else {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	prop->owner = oid;
     }
@@ -683,7 +683,7 @@ db_property_flags(db_prop_handle h)
 	panic("Built-in property in DB_PROPERTY_FLAGS!");
 	return 0;
     } else {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	return prop->perms;
     }
@@ -695,7 +695,7 @@ db_set_property_flags(db_prop_handle h, unsigned flags)
     if (h.built_in)
 	panic("Built-in property in DB_SET_PROPERTY_FLAGS!");
     else {
-	Pval *prop = h.ptr;
+	Pval *prop = (Pval *)h.ptr;
 
 	prop->perms = flags;
     }
@@ -868,8 +868,8 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
      * hold the starting point of each sub-array.
      */
     int offset;
-    int old_count, *old_offsets = mymalloc((listlength(old_ancestors) + 1) * sizeof(int), M_INT);
-    int new_count, *new_offsets = mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
+    int old_count, *old_offsets = (int *)mymalloc((listlength(old_ancestors) + 1) * sizeof(int), M_INT);
+    int new_count, *new_offsets = (int *)mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
     int i1, c1;
 
     /* C arrays start at index 0, MOO arrays start at index 1 */
@@ -902,7 +902,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
     assert(old_count == me->nval);
 
     if (new_count != 0) {
-	new_propval = mymalloc(new_count * sizeof(Pval), M_PVAL);
+	new_propval = (Pval *)mymalloc(new_count * sizeof(Pval), M_PVAL);
 	int i2, c2, i3, c3;
 	FOR_EACH(ancestor, new_ancestors, i2, c2) {
 	    int n1 = new_offsets[i2 - 1];

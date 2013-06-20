@@ -89,7 +89,7 @@ static task_waiting_on_exec *
 malloc_task_waiting_on_exec()
 {
     task_waiting_on_exec *tw =
-	mymalloc(sizeof(task_waiting_on_exec), M_TASK);
+	(task_waiting_on_exec *)mymalloc(sizeof(task_waiting_on_exec), M_TASK);
     tw->cmd = NULL;
     tw->args = NULL;
     tw->in = NULL;
@@ -169,7 +169,7 @@ write_all(int fd, const char *buffer, size_t length)
 static void
 stdout_readable(int fd, void *data)
 {
-    task_waiting_on_exec *tw = data;
+    task_waiting_on_exec *tw = (task_waiting_on_exec *)data;
     char buffer[1000];
     int n;
     while ((n = read(fd, buffer, sizeof(buffer))) > 0) {
@@ -180,7 +180,7 @@ stdout_readable(int fd, void *data)
 static void
 stderr_readable(int fd, void *data)
 {
-    task_waiting_on_exec *tw = data;
+    task_waiting_on_exec *tw = (task_waiting_on_exec *)data;
     char buffer[1000];
     int n;
     while ((n = read(fd, buffer, sizeof(buffer))) > 0) {
@@ -279,7 +279,7 @@ set_nonblocking(int fd)
 static enum error
 exec_waiter_suspender(vm the_vm, void *data)
 {
-    task_waiting_on_exec *tw = data;
+    task_waiting_on_exec *tw = (task_waiting_on_exec *)data;
     enum error error = E_QUOTA;
 
     BLOCK_SIGCHLD;
@@ -422,7 +422,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
 	goto free_in;
     }
 
-    args = mymalloc(sizeof(const char *) * i, M_ARRAY);
+    args = (const char **)mymalloc(sizeof(const char *) * i, M_ARRAY);
     FOR_EACH(v, arglist.v.list[1], i, c)
 	args[i - 1] = str_dup(v.v.str);
     args[i - 1] = NULL;

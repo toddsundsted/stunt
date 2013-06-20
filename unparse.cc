@@ -802,7 +802,7 @@ unparse_program(Program * p, Unparser_Receiver r, void *data,
 static void
 print_line(void *data, const char *line)
 {
-    FILE *fp = data;
+    FILE *fp = (FILE *)data;
 
     fprintf(fp, "%s\n", line);
 }

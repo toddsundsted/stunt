@@ -116,7 +116,7 @@ static void
 gc_add_root(Var v)
 {
     if (!pending_free) {
-	pending_free = mymalloc(sizeof(struct pending_recycle), M_STRUCT);
+	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
 	pending_free->next = NULL;
     }
 
@@ -195,11 +195,11 @@ static void
 for_all_children(Var v, gc_func *fp)
 {
     if (is_object(v))
-	db_for_all_propvals(v, do_obj, fp);
+	db_for_all_propvals(v, do_obj, (void *)fp);
     else if (TYPE_LIST == v.type)
-	listforeach(v, do_list, fp);
+	listforeach(v, do_list, (void *)fp);
     else if (TYPE_MAP == v.type)
-	mapforeach(v, do_map, fp);
+	mapforeach(v, do_map, (void *)fp);
 }
 
 /* corresponds to `MarkGray' in Bacon and Rajan */

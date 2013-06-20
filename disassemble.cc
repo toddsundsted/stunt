@@ -406,7 +406,7 @@ disassemble(Program * prog, Printer p, void *data)
 static void
 print_line(const char *line, void *data)
 {
-    FILE *f = data;
+    FILE *f = (FILE *)data;
 
     fprintf(f, "%s\n", line);
 }
@@ -431,11 +431,11 @@ struct data {
 static void
 add_line(const char *line, void *data)
 {
-    struct data *d = data;
+    struct data *d = (struct data *)data;
 
     if (d->used >= d->max) {
 	int new_max = (d->max == 0 ? 20 : d->max * 2);
-	char **_new = mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+	char **_new = (char **)mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
 	int i;
 
 	for (i = 0; i < d->used; i++)

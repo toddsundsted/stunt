@@ -51,7 +51,7 @@ struct match_data {
 static int
 match_proc(void *data, Objid oid)
 {
-    struct match_data *d = data;
+    struct match_data *d = (struct match_data *)data;
     Var *names = aliases(oid);
     int i;
     const char *name;

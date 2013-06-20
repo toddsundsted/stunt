@@ -91,12 +91,12 @@ extend(unsigned int new_objects)
 	;
 
     if (max_objects == 0) {
-	objects = mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+	objects = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
 	memset(objects, 0, size * sizeof(Object *));
 	max_objects = size;
     }
     if (size > max_objects) {
-	Object **_new = mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+	Object **_new = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
 	memcpy(_new, objects, max_objects * sizeof(Object *));
 	memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object *));
 	myfree(objects, M_OBJECT_TABLE);
@@ -108,12 +108,12 @@ extend(unsigned int new_objects)
 	;
 
     if (array_size == 0) {
-	bit_array = mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+	bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
 	array_size = size;
     }
     if (size > array_size) {
 	myfree(bit_array, M_ARRAY);
-	bit_array = mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+	bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
 	array_size = size;
     }
 }
@@ -154,7 +154,7 @@ dbpriv_new_object(void)
     Object *o;
 
     ensure_new_object();
-    o = objects[num_objects] = mymalloc(sizeof(Object), M_OBJECT);
+    o = objects[num_objects] = (Object *)mymalloc(sizeof(Object), M_OBJECT);
     o->id = num_objects;
     num_objects++;
 
@@ -167,7 +167,7 @@ dbpriv_new_anonymous_object(void)
     Object *o;
 
     ensure_new_object();
-    o = objects[num_objects] = mymalloc(sizeof(Object), M_ANON);
+    o = objects[num_objects] = (Object *)mymalloc(sizeof(Object), M_ANON);
     o->id = NOTHING;
     num_objects++;
 
@@ -354,7 +354,7 @@ db_make_anonymous(Objid oid, Objid last)
     /* Last step, reallocate the memory and copy -- anonymous objects
      * require space for reference counting.
      */
-    Object *t = mymalloc(sizeof(Object), M_ANON);
+    Object *t = (Object *)mymalloc(sizeof(Object), M_ANON);
     memcpy(t, o, sizeof(Object));
     myfree(o, M_OBJECT);
 

@@ -204,11 +204,11 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 static package
 bf_move(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    struct bf_move_data *data = vdata;
+    struct bf_move_data *data = (bf_move_data *)vdata;
     package p;
 
     if (next == 1) {
-	data = alloc_data(sizeof(*data));
+	data = (bf_move_data *)alloc_data(sizeof(*data));
 	data->what = arglist.v.list[1].v.obj;
 	data->where = arglist.v.list[2].v.obj;
     }
@@ -224,7 +224,7 @@ bf_move(Var arglist, Byte next, void *vdata, Objid progr)
 static void
 bf_move_write(void *vdata)
 {
-    struct bf_move_data *data = vdata;
+    struct bf_move_data *data = (bf_move_data *)vdata;
 
     dbio_printf("bf_move data: what = %d, where = %d\n",
 		data->what, data->where);
@@ -233,7 +233,7 @@ bf_move_write(void *vdata)
 static void *
 bf_move_read()
 {
-    struct bf_move_data *data = alloc_data(sizeof(*data));
+    struct bf_move_data *data = (bf_move_data *)alloc_data(sizeof(*data));
 
     if (dbio_scanf("bf_move data: what = %d, where = %d\n",
 		   &data->what, &data->where) == 2)
@@ -302,7 +302,7 @@ bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ|LIST parent [, OBJ owner] [, INT anonymous]) */
-    Var *data = vdata;
+    Var *data = (Var *)vdata;
     Var r;
 
     if (next == 1) {
@@ -381,7 +381,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 		r.v.obj = oid;
 	    }
 
-	    data = alloc_data(sizeof(Var));
+	    data = (Var *)alloc_data(sizeof(Var));
 	    *data = var_ref(r);
 	    args = new_list(0);
 	    e = call_verb(oid, "initialize", r, args, 0);
@@ -419,7 +419,7 @@ bf_create_write(void *vdata)
 static void *
 bf_create_read(void)
 {
-    Objid *data = alloc_data(sizeof(Objid));
+    Objid *data = (Objid *)alloc_data(sizeof(Objid));
 
     if (dbio_scanf("bf_create data: oid = %d\n", data) == 1)
 	return data;
@@ -621,7 +621,7 @@ move_to_nothing(Objid oid)
 static int
 first_proc(void *data, Objid oid)
 {
-    Objid *oidp = data;
+    Objid *oidp = (Objid *)data;
 
     *oidp = oid;
     return 1;
@@ -640,7 +640,7 @@ get_first(Objid oid, int (*for_all) (Objid, int (*)(void *, Objid), void *))
 static package
 bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 {				/* (OBJ|ANON object) */
-    Var *data = vdata;
+    Var *data = (Var *)vdata;
     enum error e;
     Var obj;
     Var args;
@@ -672,7 +672,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	 * reference to itself, at least).
 	 */
 
-	data = alloc_data(sizeof(Var));
+	data = (Var *)alloc_data(sizeof(Var));
 	*data = var_ref(obj);
 	args = new_list(0);
 	e = call_verb(is_obj(obj) ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
@@ -787,7 +787,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 static void
 bf_recycle_write(void *vdata)
 {
-    Objid *data = vdata;
+    Objid *data = (Objid *)vdata;
 
     dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
 }
@@ -795,7 +795,7 @@ bf_recycle_write(void *vdata)
 static void *
 bf_recycle_read(void)
 {
-    Objid *data = alloc_data(sizeof(*data));
+    Objid *data = (Objid *)alloc_data(sizeof(*data));
     int dummy;
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'

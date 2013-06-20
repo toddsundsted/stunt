@@ -37,10 +37,10 @@ new_intern_entry_hunk(int size)
 {
     struct intern_entry_hunk *_new;
     
-    _new = mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+    _new = (struct intern_entry_hunk *)mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
     _new->size = size;
     _new->handout = 0;
-    _new->contents = mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
+    _new->contents = (struct intern_entry *)mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
     _new->next = NULL;
     
     return _new;
@@ -103,7 +103,7 @@ make_intern_table(int size) {
     struct intern_entry **table;
     int i;
 
-    table = mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
+    table = (intern_entry **)mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
     for (i = 0; i < size; i++) {
         table[i] = NULL;
     }

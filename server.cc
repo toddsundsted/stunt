@@ -120,7 +120,7 @@ free_shandle(shandle * h)
 static slistener *
 new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
 {
-    slistener *l = mymalloc(sizeof(slistener), M_NETWORK);
+    slistener *l = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
     server_listener sl;
     enum error e;
     const char *name;
@@ -481,7 +481,7 @@ queue_anonymous_object(Var v)
     assert(!queue_includes(v));
 
     if (!pending_free) {
-	pending_free = mymalloc(sizeof(struct pending_recycle), M_STRUCT);
+	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
 	pending_free->next = NULL;
     }
 
@@ -1188,8 +1188,8 @@ static Objid next_unconnected_player = NOTHING - 1;
 server_handle
 server_new_connection(server_listener sl, network_handle nh, int outbound)
 {
-    slistener *l = sl.ptr;
-    shandle *h = (shandle *) mymalloc(sizeof(shandle), M_NETWORK);
+    slistener *l = (slistener *)sl.ptr;
+    shandle *h = (shandle *)mymalloc(sizeof(shandle), M_NETWORK);
     server_handle result;
 
     h->next = all_shandles;
@@ -1231,7 +1231,7 @@ server_new_connection(server_listener sl, network_handle nh, int outbound)
 void
 server_refuse_connection(server_listener sl, network_handle nh)
 {
-    slistener *l = sl.ptr;
+    slistener *l = (slistener *)sl.ptr;
 
     if (l->print_messages)
 	send_message(l->oid, nh, "server_full_msg",

@@ -276,7 +276,7 @@ static const char *
 program_name(struct state *s)
 {
     if (!s->fmtr)
-	return s->data;
+	return (const char *)s->data;
     else
 	return (*s->fmtr) (s->data);
 }
@@ -284,21 +284,21 @@ program_name(struct state *s)
 static void
 my_error(void *data, const char *msg)
 {
-    errlog("PARSER: Error in %s:\n", program_name(data));
+    errlog("PARSER: Error in %s:\n", program_name((state *)data));
     errlog("           %s\n", msg);
 }
 
 static void
 my_warning(void *data, const char *msg)
 {
-    oklog("PARSER: Warning in %s:\n", program_name(data));
+    oklog("PARSER: Warning in %s:\n", program_name((state *)data));
     oklog("           %s\n", msg);
 }
 
 static int
 my_getc(void *data)
 {
-    struct state *s = data;
+    struct state *s = (state *)data;
     int c;
 
     c = fgetc(input);

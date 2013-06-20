@@ -40,7 +40,7 @@ begin_code_allocation()
 {
     pool_size = 10;
     next_pool_slot = 0;
-    pool = mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
+    pool = (struct entry *)mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
 }
 
 void
@@ -65,7 +65,7 @@ allocate(int size, Memory_Type type)
 	int i;
 
 	pool_size *= 2;
-	new_pool = mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
+	new_pool = (struct entry *)mymalloc(pool_size * sizeof(struct entry), M_AST_POOL);
 	for (i = 0; i < next_pool_slot; i++) {
 	    new_pool[i] = pool[i];
 	}
@@ -95,7 +95,7 @@ deallocate(void *ptr)
 char *
 alloc_string(const char *buffer)
 {
-    char *string = allocate(strlen(buffer) + 1, M_STRING);
+    char *string = (char *)allocate(strlen(buffer) + 1, M_STRING);
 
     strcpy(string, buffer);
     return string;
@@ -110,7 +110,7 @@ dealloc_string(char *str)
 double *
 alloc_float(double value)
 {
-    double *d = allocate(sizeof(double), M_FLOAT);
+    double *d = (double *)allocate(sizeof(double), M_FLOAT);
 
     *d = value;
     return d;
@@ -125,7 +125,7 @@ dealloc_node(void *node)
 Stmt *
 alloc_stmt(enum Stmt_Kind kind)
 {
-    Stmt *result = allocate(sizeof(Stmt), M_AST);
+    Stmt *result = (Stmt *)allocate(sizeof(Stmt), M_AST);
 
     result->kind = kind;
     result->next = 0;
@@ -135,7 +135,7 @@ alloc_stmt(enum Stmt_Kind kind)
 Cond_Arm *
 alloc_cond_arm(Expr * condition, Stmt * stmt)
 {
-    Cond_Arm *result = allocate(sizeof(Cond_Arm), M_AST);
+    Cond_Arm *result = (Cond_Arm *)allocate(sizeof(Cond_Arm), M_AST);
 
     result->condition = condition;
     result->stmt = stmt;
@@ -146,7 +146,7 @@ alloc_cond_arm(Expr * condition, Stmt * stmt)
 Except_Arm *
 alloc_except(int id, Arg_List * codes, Stmt * stmt)
 {
-    Except_Arm *result = allocate(sizeof(Except_Arm), M_AST);
+    Except_Arm *result = (Except_Arm *)allocate(sizeof(Except_Arm), M_AST);
 
     result->id = id;
     result->codes = codes;
@@ -159,7 +159,7 @@ alloc_except(int id, Arg_List * codes, Stmt * stmt)
 Expr *
 alloc_expr(enum Expr_Kind kind)
 {
-    Expr *result = allocate(sizeof(Expr), M_AST);
+    Expr *result = (Expr *)allocate(sizeof(Expr), M_AST);
 
     result->kind = kind;
     return result;
@@ -168,7 +168,7 @@ alloc_expr(enum Expr_Kind kind)
 Expr *
 alloc_var(var_type type)
 {
-    Expr *result = alloc_expr(EXPR_VAR);
+    Expr *result = (Expr *)alloc_expr(EXPR_VAR);
 
     result->e.var.type = type;
     return result;
@@ -177,7 +177,7 @@ alloc_var(var_type type)
 Expr *
 alloc_binary(enum Expr_Kind kind, Expr * lhs, Expr * rhs)
 {
-    Expr *result = alloc_expr(kind);
+    Expr *result = (Expr *)alloc_expr(kind);
 
     result->e.bin.lhs = lhs;
     result->e.bin.rhs = rhs;
@@ -187,7 +187,7 @@ alloc_binary(enum Expr_Kind kind, Expr * lhs, Expr * rhs)
 Expr *
 alloc_verb(Expr * obj, Expr * verb, Arg_List * args)
 {
-    Expr *result = alloc_expr(EXPR_VERB);
+    Expr *result = (Expr *)alloc_expr(EXPR_VERB);
 
     result->e.verb.obj = obj;
     result->e.verb.verb = verb;
@@ -198,7 +198,7 @@ alloc_verb(Expr * obj, Expr * verb, Arg_List * args)
 Map_List *
 alloc_map_list(Expr * key, Expr * value)
 {
-    Map_List *result = allocate(sizeof(Map_List), M_AST);
+    Map_List *result = (Map_List *)allocate(sizeof(Map_List), M_AST);
 
     result->key = key;
     result->value = value;
@@ -209,7 +209,7 @@ alloc_map_list(Expr * key, Expr * value)
 Arg_List *
 alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 {
-    Arg_List *result = allocate(sizeof(Arg_List), M_AST);
+    Arg_List *result = (Arg_List *)allocate(sizeof(Arg_List), M_AST);
 
     result->kind = kind;
     result->expr = expr;
@@ -220,7 +220,7 @@ alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 Scatter *
 alloc_scatter(enum Scatter_Kind kind, int id, Expr * expr)
 {
-    Scatter *sc = allocate(sizeof(Scatter), M_AST);
+    Scatter *sc = (Scatter *)allocate(sizeof(Scatter), M_AST);
 
     sc->kind = kind;
     sc->id = id;

@@ -41,7 +41,7 @@ struct verb_data {
 static int
 add_to_list(void *data, const char *verb_name)
 {
-    struct verb_data *d = data;
+    struct verb_data *d = (struct verb_data *)data;
 
     d->i++;
     d->r.v.list[d->i].type = TYPE_STR;

@@ -414,7 +414,7 @@ value2str(Var value)
 static int
 print_map_to_stream(Var key, Var value, void *sptr, int first)
 {
-    Stream *s = sptr;
+    Stream *s = (Stream *)sptr;
 
     if (!first) {
 	stream_add_string(s, ", ");
@@ -532,7 +532,7 @@ strrangeset(Var base, int from, int to, Var value)
     char *s;
 
     ans.type = TYPE_STR;
-    s = mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+    s = (char *)mymalloc(sizeof(char) * (newsize + 1), M_STRING);
 
     for (index = 0; index < lenleft; index++)
 	s[offset++] = base.v.str[index];
@@ -557,7 +557,7 @@ substr(Var str, int lower, int upper)
 	r.v.str = str_dup("");
     else {
 	int loop, index = 0;
-	char *s = mymalloc(upper - lower + 2, M_STRING);
+	char *s = (char *)mymalloc(upper - lower + 2, M_STRING);
 
 	for (loop = lower - 1; loop < upper; loop++)
 	    s[index++] = str.v.str[loop];
@@ -1427,7 +1427,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char *key_new = mymalloc(key_length, M_STRING);
+	    char *key_new = (char *)mymalloc(key_length, M_STRING);
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
@@ -1464,7 +1464,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char *bytes_new = mymalloc(bytes_length, M_STRING);
+	    char *bytes_new = (char *)mymalloc(bytes_length, M_STRING);
 	    memcpy(bytes_new, bytes, bytes_length);
 	    bytes = bytes_new;
 
@@ -1476,7 +1476,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 		p = make_error_pack(E_INVARG);
 	    }
 	    else {
-	      char *key_new = mymalloc(key_length, M_STRING);
+	      char *key_new = (char *)mymalloc(key_length, M_STRING);
 	      memcpy(key_new, key, key_length);
 	      key = key_new;
 
@@ -1520,7 +1520,7 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char *key_new = mymalloc(key_length, M_STRING);
+	    char *key_new = (char *)mymalloc(key_length, M_STRING);
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 

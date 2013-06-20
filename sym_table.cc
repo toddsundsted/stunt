@@ -30,9 +30,9 @@
 static Names *
 new_names(unsigned max_size)
 {
-    Names *names = mymalloc(sizeof(Names), M_NAMES);
+    Names *names = (Names *)mymalloc(sizeof(Names), M_NAMES);
 
-    names->names = mymalloc(sizeof(char *) * max_size, M_NAMES);
+    names->names = (const char **)mymalloc(sizeof(char *) * max_size, M_NAMES);
     names->max_size = max_size;
     names->size = 0;
 

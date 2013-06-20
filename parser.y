@@ -1076,7 +1076,7 @@ static struct loop_entry *loop_stack;
 static void
 push_loop_name(const char *name)
 {
-    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (struct loop_entry *)mymalloc(sizeof(struct loop_entry), M_AST);
 
     entry->next = loop_stack;
     entry->name = (name ? str_dup(name) : 0);
@@ -1104,7 +1104,7 @@ pop_loop_name(void)
 static void
 suspend_loop_scope(void)
 {
-    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (struct loop_entry *)mymalloc(sizeof(struct loop_entry), M_AST);
 
     entry->next = loop_stack;
     entry->name = 0;

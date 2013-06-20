@@ -40,7 +40,7 @@ parse_into_words(char *input, int *nwords)
 
     if (!words) {
 	max_words = 50;
-	words = mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
+	words = (char **)mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
     }
     while (*input == ' ')
 	input++;
@@ -48,7 +48,7 @@ parse_into_words(char *input, int *nwords)
     for (*nwords = 0; *input != '\0'; (*nwords)++) {
 	if (*nwords == max_words) {
 	    int new_max = max_words * 2;
-	    char **_new = mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
+	    char **_new = (char **)mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
 	    int i;
 
 	    for (i = 0; i < max_words; i++)

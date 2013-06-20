@@ -29,7 +29,7 @@ struct prop_data {
 static int
 add_to_list(void *data, const char *prop_name)
 {
-    struct prop_data *d = data;
+    struct prop_data *d = (prop_data *)data;
 
     d->i++;
     d->r.v.list[d->i].type = TYPE_STR;
