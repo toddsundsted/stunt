@@ -114,7 +114,7 @@ network_register_fd(int fd, network_fd_callback readable,
 
     if (!reg_fds) {
 	max_reg_fds = 5;
-	reg_fds = mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
+	reg_fds = (fd_reg *)mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
 	for (i = 0; i < max_reg_fds; i++)
 	    reg_fds[i].fd = -1;
     }
@@ -124,7 +124,7 @@ network_register_fd(int fd, network_fd_callback readable,
 	    break;
     if (i >= max_reg_fds) {	/* No free slots */
 	int new_max = 2 * max_reg_fds;
-	fd_reg *_new = mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
+	fd_reg *_new = (fd_reg *)mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
 
 	for (i = 0; i < new_max; i++)
 	    if (i < max_reg_fds)
@@ -304,7 +304,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
 	|| (rfd != wfd && !network_set_nonblocking(wfd)))
 	log_perror("Setting connection non-blocking");
 
-    h = mymalloc(sizeof(nhandle), M_NETWORK);
+    h = (nhandle *)mymalloc(sizeof(nhandle), M_NETWORK);
 
     if (all_nhandles)
 	all_nhandles->prev = &(h->next);
@@ -432,7 +432,7 @@ static int
 enqueue_output(network_handle nh, const char *line, int line_length,
 	       int add_eol, int flush_ok)
 {
-    nhandle *h = nh.ptr;
+    nhandle *h = (nhandle *)nh.ptr;
     int length = line_length + (add_eol ? eol_length : 0);
     char *buffer;
     text_block *block;
@@ -512,7 +512,7 @@ network_make_listener(server_listener sl, Var desc,
     nlistener *l;
 
     if (e == E_NONE) {
-	nl->ptr = l = mymalloc(sizeof(nlistener), M_NETWORK);
+	nl->ptr = l = (nlistener *)mymalloc(sizeof(nlistener), M_NETWORK);
 	l->fd = fd;
 	l->slistener = sl;
 	l->name = str_dup(*name);
@@ -528,7 +528,7 @@ network_make_listener(server_listener sl, Var desc,
 int
 network_listen(network_listener nl)
 {
-    nlistener *l = nl.ptr;
+    nlistener *l = (nlistener *)nl.ptr;
 
     return proto_listen(l->fd);
 }
@@ -549,7 +549,7 @@ network_send_bytes(network_handle nh, const char *buffer, int buflen,
 int
 network_buffered_output_length(network_handle nh)
 {
-    nhandle *h = nh.ptr;
+    nhandle *h = (nhandle *)nh.ptr;
 
     return h->output_length;
 }
@@ -557,7 +557,7 @@ network_buffered_output_length(network_handle nh)
 void
 network_suspend_input(network_handle nh)
 {
-    nhandle *h = nh.ptr;
+    nhandle *h = (nhandle *)nh.ptr;
 
     h->input_suspended = 1;
 }
@@ -565,7 +565,7 @@ network_suspend_input(network_handle nh)
 void
 network_resume_input(network_handle nh)
 {
-    nhandle *h = nh.ptr;
+    nhandle *h = (nhandle *)nh.ptr;
 
     h->input_suspended = 0;
 }
@@ -617,7 +617,7 @@ network_connection_name(network_handle nh)
 void
 network_set_connection_binary(network_handle nh, int do_binary)
 {
-    nhandle *h = nh.ptr;
+    nhandle *h = (nhandle *)nh.ptr;
 
     h->binary = do_binary;
 }
@@ -635,7 +635,7 @@ network_set_connection_binary(network_handle nh, int do_binary)
 void
 network_set_client_echo(network_handle nh, int is_on)
 {
-    nhandle *h = nh.ptr;
+    nhandle *h = (nhandle *)nh.ptr;
 
     /* These values taken from RFC 854 and RFC 857. */
 #define TN_IAC	255		/* Interpret As Command */
@@ -682,13 +682,13 @@ network_open_connection(Var arglist, server_listener sl)
 void
 network_close(network_handle h)
 {
-    close_nhandle(h.ptr);
+    close_nhandle((nhandle *)h.ptr);
 }
 
 void
 network_close_listener(network_listener nl)
 {
-    close_nlistener(nl.ptr);
+    close_nlistener((nlistener *)nl.ptr);
 }
 
 void

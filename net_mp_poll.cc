@@ -47,7 +47,7 @@ add_common(int fd, unsigned dir)
 {
     if (fd >= num_ports) {	/* Grow ports array */
 	int new_num = (fd + 9) / 10 * 10 + 1;
-	Port *new_ports = mymalloc(new_num * sizeof(Port), M_NETWORK);
+	Port *new_ports = (Port *)mymalloc(new_num * sizeof(Port), M_NETWORK);
 	int i;
 
 	for (i = 0; i < num_ports; i++)
