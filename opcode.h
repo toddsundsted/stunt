@@ -23,6 +23,7 @@
 #define NUM_READY_VARS 32
 
 enum Extended_Opcode {
+
     EOP_RANGESET, EOP_LENGTH, /* EOP_LENGTH is retired */
     EOP_FIRST, EOP_LAST,
     EOP_PUSH_LABEL, EOP_END_CATCH, EOP_END_EXCEPT, EOP_END_FINALLY,
@@ -90,6 +91,7 @@ enum Opcode {
     OP_MAP_CREATE, OP_MAP_INSERT,
 
     OPTIM_NUM_START,
+
     /* storage optimized imm-numbers can occupy 113-255, for 143 of them */
     Last_Opcode = 255
 };
