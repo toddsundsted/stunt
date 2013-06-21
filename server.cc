@@ -302,29 +302,25 @@ child_completed_signal(int sig)
     /* Signal every child's completion to the exec subsystem and let
      * it decide if it's relevant.
      */
-
-    /* (Void *) casts to avoid warnings on systems that mis-declare the
-     * argument type.
-     */
 #if HAVE_WAITPID
-    while ((p = waitpid(-1, (void *) &status, WNOHANG)) > 0) {
+    while ((p = waitpid(-1, &status, WNOHANG)) > 0) {
 	if (!exec_complete(p, WEXITSTATUS(status)))
 	    checkpoint_child = p;
     }
 #else
 #if HAVE_WAIT3
-    while ((p = wait3((void *) &status, WNOHANG, 0)) >= 0) {
+    while ((p = wait3(&status, WNOHANG, 0)) >= 0) {
 	if (!exec_complete(p, WEXITSTATUS(status)))
 	    checkpoint_child = p;
     }
 #else
 #if HAVE_WAIT2
-    while ((p = wait2((void *) &status, WNOHANG)) >= 0) {
+    while ((p = wait2(&status, WNOHANG)) >= 0) {
 	if (!exec_complete(p, WEXITSTATUS(status)))
 	    checkpoint_child = p;
     }
 #else
-    p = wait((void *) &status);
+    p = wait(&status);
     if (!exec_complete(p, WEXITSTATUS(status)))
 	checkpoint_child = p;
 #endif

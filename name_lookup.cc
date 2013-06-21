@@ -74,10 +74,7 @@ spawn_pipe(void (*child_proc) (int to_parent, int from_parent),
 	*to_child = pipe_to_child[1];
 	*from_child = pipe_from_child[0];
 
-	/* Cast to (void *) to avoid warnings on systems that misdeclare the
-	 * argument.
-	 */
-	wait((void *) &status);	/* wait for middleman to die */
+	wait(&status);	/* wait for middleman to die */
 	if (status != 0) {
 	    errlog("SPAWNING: Middleman died with status %d!\n", status);
 	    close(pipe_to_child[1]);
@@ -192,7 +189,7 @@ lookup(int to_intermediary, int from_intermediary)
 	    const char *host_name;
 	    int length;
 	    id = set_timer(req.timeout, timeout_proc, 0);
-	    e = gethostbyaddr((void *) &req.u.address.sin_addr,
+	    e = gethostbyaddr(&req.u.address.sin_addr,
 			      sizeof(req.u.address.sin_addr),
 			      AF_INET);
 	    cancel_timer(id);
