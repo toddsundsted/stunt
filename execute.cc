@@ -612,7 +612,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
        case, else sets up the activ_stack for the verb call and then returns
        E_NONE */
 
-    db_verb_handle h = { .ptr = NULL };
+    db_verb_handle h = { };
     Program *program;
     Var *env;
     Var v;
