@@ -19,7 +19,6 @@
 
 #include "ast.h"
 #include "config.h"
-#include "exceptions.h"
 #include "log.h"
 #include "storage.h"
 #include "structures.h"

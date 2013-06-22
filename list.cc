@@ -25,7 +25,6 @@
 #include "bf_register.h"
 #include "collection.h"
 #include "config.h"
-#include "exceptions.h"
 #include "functions.h"
 #include "hmac_sha2.h"
 #include "list.h"

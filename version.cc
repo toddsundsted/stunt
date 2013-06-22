@@ -44,7 +44,6 @@
 #include "storage.h"
 #include "utils.h"
 #include "options.h"
-#include "exceptions.h"
 
 /*
  * Server executable version

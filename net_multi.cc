@@ -26,7 +26,6 @@
 #include "my-unistd.h"
 
 #include "config.h"
-#include "exceptions.h"
 #include "list.h"
 #include "log.h"
 #include "net_mplex.h"

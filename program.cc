@@ -16,7 +16,6 @@
  *****************************************************************************/
 
 #include "ast.h"
-#include "exceptions.h"
 #include "list.h"
 #include "parser.h"
 #include "program.h"

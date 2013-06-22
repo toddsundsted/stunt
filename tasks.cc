@@ -26,7 +26,6 @@
 #include "decompile.h"
 #include "eval_env.h"
 #include "eval_vm.h"
-#include "exceptions.h"
 #include "execute.h"
 #include "functions.h"
 #include "http_parser.h"

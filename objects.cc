@@ -18,7 +18,6 @@
 #include "collection.h"
 #include "db.h"
 #include "db_io.h"
-#include "exceptions.h"
 #include "execute.h"
 #include "functions.h"
 #include "list.h"

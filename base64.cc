@@ -44,7 +44,6 @@
 #include <string.h>
 
 #include "base64.h"
-#include "exceptions.h"
 #include "functions.h"
 #include "storage.h"
 #include "streams.h"

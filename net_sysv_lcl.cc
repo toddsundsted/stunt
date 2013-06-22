@@ -76,7 +76,6 @@
 #include "my-unistd.h"		/* chmod(), close(), pipe(), read(), write() */
 
 #include "config.h"
-#include "exceptions.h"
 #include "list.h"
 #include "log.h"
 #include "net_multi.h"

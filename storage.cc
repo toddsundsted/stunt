@@ -18,7 +18,6 @@
 #include "my-stdlib.h"
 
 #include "config.h"
-#include "exceptions.h"
 #include "list.h"
 #include "options.h"
 #include "storage.h"

@@ -20,7 +20,6 @@
  *****************************************************************************/
 
 #include "config.h"
-#include "exceptions.h"
 #include "program.h"
 #include "structures.h"
 

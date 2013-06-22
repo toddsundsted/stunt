@@ -32,7 +32,6 @@
 #include "my-string.h"
 #include "my-stdlib.h"
 
-#include "exceptions.h"
 #include "functions.h"
 #include "json.h"
 #include "list.h"

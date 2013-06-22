@@ -19,7 +19,6 @@
 #include "my-ctype.h"
 #include "my-string.h"
 #include "structures.h"
-#include "exceptions.h"
 #include "bf_register.h"
 #include "functions.h"
 #include "list.h"

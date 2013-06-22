@@ -21,7 +21,6 @@
 #include "ast.h"
 #include "config.h"
 #include "decompile.h"
-#include "exceptions.h"
 #include "functions.h"
 #include "keywords.h"
 #include "list.h"

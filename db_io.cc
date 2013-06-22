@@ -28,7 +28,6 @@
 #include "db.h"
 #include "db_io.h"
 #include "db_private.h"
-#include "exceptions.h"
 #include "list.h"
 #include "log.h"
 #include "map.h"

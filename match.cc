@@ -20,7 +20,6 @@
 
 #include "config.h"
 #include "db.h"
-#include "exceptions.h"
 #include "structures.h"
 #include "match.h"
 #include "parse_cmd.h"

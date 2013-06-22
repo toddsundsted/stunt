@@ -17,7 +17,6 @@
 
 #include "ast.h"
 #include "decompile.h"
-#include "exceptions.h"
 #include "opcode.h"
 #include "program.h"
 #include "storage.h"

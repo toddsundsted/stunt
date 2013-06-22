@@ -40,7 +40,6 @@
 
 #include "my-unistd.h"
 
-#include "exceptions.h"
 #include "log.h"
 #include "net_multi.h"
 #include "storage.h"

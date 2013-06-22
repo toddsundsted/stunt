@@ -19,7 +19,6 @@
 
 #include "config.h"
 #include "db.h"
-#include "exceptions.h"
 #include "execute.h"
 #include "functions.h"
 #include "list.h"

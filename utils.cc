@@ -24,7 +24,6 @@
 #include "config.h"
 #include "db.h"
 #include "db_io.h"
-#include "exceptions.h"
 #include "garbage.h"
 #include "list.h"
 #include "log.h"

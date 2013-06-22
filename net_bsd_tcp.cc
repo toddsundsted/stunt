@@ -177,7 +177,6 @@ proto_close_listener(int fd)
 
 #ifdef OUTBOUND_NETWORK
 
-#include "exceptions.h"
 #include "structures.h"
 
 static Exception timeout_exception;

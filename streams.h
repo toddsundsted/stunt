@@ -36,8 +36,6 @@ extern char *stream_contents(Stream *);
 extern char *reset_stream(Stream *);
 extern int stream_length(Stream *);
 
-#include "exceptions.h"
-
 extern void enable_stream_exceptions();
 extern void disable_stream_exceptions();
 extern size_t stream_alloc_maximum;

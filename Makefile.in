@@ -42,14 +42,14 @@ CSRCS = hmac_sha2.c http_parser.c md5.c regexpr.c sha1.c sha256.c \
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc db_file.cc \
 	db_io.cc db_objects.cc db_properties.cc db_verbs.cc \
-	decompile.cc disassemble.cc eval_env.cc eval_vm.cc \
-	exceptions.cc exec.cc execute.cc extensions.cc fileio.cc \
-	functions.cc garbage.cc json.cc keywords.cc list.cc log.cc \
-	map.cc match.cc name_lookup.cc network.cc net_mplex.cc \
-	net_proto.cc numbers.cc objects.cc parse_cmd.cc pattern.cc \
-	program.cc property.cc quota.cc server.cc storage.cc \
-	streams.cc str_intern.cc sym_table.cc system.cc tasks.cc \
-	timers.cc unparse.cc utils.cc verbs.cc version.cc
+	decompile.cc disassemble.cc eval_env.cc eval_vm.cc exec.cc \
+	execute.cc extensions.cc fileio.cc functions.cc garbage.cc \
+	json.cc keywords.cc list.cc log.cc map.cc match.cc \
+	name_lookup.cc network.cc net_mplex.cc net_proto.cc \
+	numbers.cc objects.cc parse_cmd.cc pattern.cc program.cc \
+	property.cc quota.cc server.cc storage.cc streams.cc \
+	str_intern.cc sym_table.cc system.cc tasks.cc timers.cc \
+	unparse.cc utils.cc verbs.cc version.cc
 
 OPT_NET_SRCS = net_single.cc net_multi.cc net_mp_selct.cc \
 	net_mp_poll.cc net_mp_fake.cc net_tcp.cc net_bsd_tcp.cc \
@@ -63,14 +63,14 @@ YSRCS = parser.y
 
 HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
 	db_io.h db_private.h decompile.h db_tune.h disassemble.h \
-	eval_env.h eval_vm.h exceptions.h exec.h execute.h \
-	functions.h garbage.h getpagesize.h hmac_sha2.h http_parser.h \
-	json.h keywords.h list.h log.h map.h match.h md5.h \
-	name_lookup.h network.h net_mplex.h net_multi.h net_proto.h \
-	numbers.h opcode.h options.h parse_cmd.h parser.h pattern.h \
-	program.h quota.h random.h regexpr.h server.h sha1.h sha256.h \
-	storage.h streams.h structures.h str_intern.h sym_table.h \
-	tasks.h timers.h tokens.h unparse.h utils.h verbs.h version.h \
+	eval_env.h eval_vm.h.h exec.h execute.h functions.h \
+	garbage.h getpagesize.h hmac_sha2.h http_parser.h json.h \
+	keywords.h list.h log.h map.h match.h md5.h name_lookup.h \
+	network.h net_mplex.h net_multi.h net_proto.h numbers.h \
+	opcode.h options.h parse_cmd.h parser.h pattern.h program.h \
+	quota.h random.h regexpr.h server.h sha1.h sha256.h storage.h \
+	streams.h structures.h str_intern.h sym_table.h tasks.h \
+	timers.h tokens.h unparse.h utils.h verbs.h version.h \
 	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h \
 	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h \
 	yajl_parser.h yajl_version.h fileio.h system.h
