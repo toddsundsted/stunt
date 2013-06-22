@@ -330,8 +330,6 @@ dbio_read_program(DB_Version version, const char *(*fmtr) (void *), void *data)
 
 /*********** Output ***********/
 
-Exception dbpriv_dbio_failed;
-
 static FILE *output;
 
 void
@@ -347,7 +345,7 @@ dbio_printf(const char *format,...)
 
     va_start(args, format);
     if (vfprintf(output, format, args) < 0)
-	RAISE(dbpriv_dbio_failed, 0);
+	throw dbpriv_dbio_failed();
     va_end(args);
 }
 

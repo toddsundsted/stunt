@@ -19,6 +19,8 @@
  * Private interface for internal communication in the DB implementation
  *****************************************************************************/
 
+#include <stdexcept>
+
 #include "config.h"
 #include "program.h"
 #include "structures.h"
@@ -203,7 +205,19 @@ extern void dbpriv_build_prep_table(void);
 
 /*********** DBIO ***********/
 
-extern Exception dbpriv_dbio_failed;
+class dbpriv_dbio_failed: public std::exception
+{
+public:
+
+    dbpriv_dbio_failed() throw() {}
+
+    virtual ~dbpriv_dbio_failed() throw() {}
+
+    virtual const char* what() const throw() {
+	return "dbio failed";
+    }
+};
+
 				/* Raised by DBIO in case of failure (e.g.,
 				 * running out of disk space for the dump).
 				 */

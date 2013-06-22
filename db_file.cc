@@ -1064,7 +1064,7 @@ write_db_file(const char *reason)
     int i;
     volatile int success = 1;
 
-    TRY {
+    try {
 	dbio_printf(header_format_string, current_db_version);
 
 	user_list = db_all_users();
@@ -1124,9 +1124,9 @@ write_db_file(const char *reason)
 	    }
 	}
     }
-    EXCEPT(dbpriv_dbio_failed) {
+    catch (dbpriv_dbio_failed& exception) {
 	success = 0;
-    } ENDTRY;
+    }
 
     return success;
 }
