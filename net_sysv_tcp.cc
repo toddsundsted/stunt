@@ -57,7 +57,7 @@
 #include "structures.h"
 #include "timers.h"
 
-#include "net_tcp.c"
+#include "net_tcp.cc"
 
 static struct t_call *call = 0;
 
