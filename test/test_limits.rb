@@ -304,6 +304,10 @@ class TestLimits < Test::Unit::TestCase
       assert_equal E_QUOTA, simplify(command('; x = " "; for i in [1..12]; x = strsub(x, " ", "  "); endfor; return length(x);'))
       assert_equal 3209, simplify(command('; x = "~"; for i in [1..1604]; x = encode_binary(x); endfor; return length(x);'))
       assert_equal E_QUOTA, simplify(command('; x = "~"; for i in [1..1605]; x = encode_binary(x); endfor; return length(x);'))
+      assert_equal 2048, simplify(command('; x = "%1"; for i in [1..10]; x = substitute(x, {1, 4, {{1, 4}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}}, "%1%1"}); endfor; return length(x);'))
+      assert_equal E_QUOTA, simplify(command('; x = "%1"; for i in [1..11]; x = substitute(x, {1, 4, {{1, 4}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}, {0, -1}}, "%1%1"}); endfor; return length(x);'))
+      assert_equal 2616, simplify(command('; x = "!"; for i in [1..21]; x = encode_base64(x); endfor; return length(x);'))
+      assert_equal E_QUOTA, simplify(command('; x = "!"; for i in [1..22]; x = encode_base64(x); endfor; return length(x);'))
     end
   end
 
