@@ -20,6 +20,7 @@
 #include "ast.h"
 #include "opcode.h"
 #include "program.h"
+#include "server.h"
 #include "storage.h"
 #include "structures.h"
 #include "str_intern.h"

@@ -37,6 +37,7 @@
 #include "list.h"
 #include "map.h"
 #include "numbers.h"
+#include "server.h"
 #include "storage.h"
 #include "streams.h"
 #include "unparse.h"

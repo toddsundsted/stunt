@@ -28,6 +28,7 @@
 #include "collection.h"
 #include "list.h"
 #include "program.h"
+#include "server.h"
 #include "storage.h"
 #include "utils.h"
 #include "xtrapbits.h"

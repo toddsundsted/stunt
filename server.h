@@ -340,6 +340,8 @@ extern int read_active_connections(void);
 	LIST = listappend(LIST, pair);				\
     }								\
 
+/* Called when a fatal error occurs. */
+extern void panic(const char *message);
 
 #endif				/* Server_H */
 

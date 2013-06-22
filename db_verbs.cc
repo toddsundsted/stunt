@@ -33,6 +33,7 @@
 #include "log.h"
 #include "parse_cmd.h"
 #include "program.h"
+#include "server.h"
 #include "storage.h"
 #include "utils.h"
 

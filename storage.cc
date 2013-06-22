@@ -20,6 +20,7 @@
 #include "config.h"
 #include "list.h"
 #include "options.h"
+#include "server.h"
 #include "storage.h"
 #include "structures.h"
 #include "utils.h"

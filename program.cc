@@ -19,6 +19,7 @@
 #include "list.h"
 #include "parser.h"
 #include "program.h"
+#include "server.h"
 #include "storage.h"
 #include "structures.h"
 #include "utils.h"

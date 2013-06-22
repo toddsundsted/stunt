@@ -19,6 +19,7 @@
 #include "decompile.h"
 #include "opcode.h"
 #include "program.h"
+#include "server.h"
 #include "storage.h"
 #include "utils.h"
 

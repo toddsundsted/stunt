@@ -33,6 +33,7 @@
 #include "map.h"
 #include "numbers.h"
 #include "parser.h"
+#include "server.h"
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
