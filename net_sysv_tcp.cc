@@ -31,6 +31,8 @@
  * basis for the eventual POSIX standard networking interface.
  */
 
+#include <stdexcept>
+
 #include "my-inet.h"		/* inet_addr() */
 #include <errno.h>		/* EMFILE */
 #include "my-fcntl.h"		/* O_RDWR */
@@ -241,12 +243,24 @@ proto_close_listener(int fd)
 
 #ifdef OUTBOUND_NETWORK
 
-static Exception timeout_exception;
+//static Exception timeout_exception;
+
+class timeout_exception: public std::exception
+{
+public:
+    timeout_exception() throw() {}
+
+    virtual ~timeout_exception() throw() {}
+
+    virtual const char* what() const throw() {
+	return "timeout";
+    }
+};
 
 static void
 timeout_proc(Timer_ID id, Timer_Data data)
 {
-    RAISE(timeout_exception, 0);
+    throw timeout_exception();
 }
 
 enum error
@@ -324,19 +338,18 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     call->addr.len = sizeof(addr);
     call->addr.buf = (void *) &addr;
 
-    TRY {
+    try {
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
 		       timeout_proc, 0);
 	result = t_connect(fd, call, 0);
 	cancel_timer(id);
     }
-    EXCEPT(timeout_exception) {
+    catch(timeout_exception& exception) {
 	result = -1;
 	errno = ETIMEDOUT;
 	t_errno = TSYSERR;
 	reenable_timers();
     }
-    ENDTRY;
 
     if (result < 0) {
 	t_close(fd);

@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <stdexcept>
+
 /* Multi-user networking protocol implementation for TCP/IP on BSD UNIX */
 
 #include "my-inet.h"		/* inet_addr() */
@@ -179,12 +181,22 @@ proto_close_listener(int fd)
 
 #include "structures.h"
 
-static Exception timeout_exception;
+class timeout_exception: public std::exception
+{
+public:
+    timeout_exception() throw() {}
+
+    virtual ~timeout_exception() throw() {}
+
+    virtual const char* what() const throw() {
+	return "timeout";
+    }
+};
 
 static void
 timeout_proc(Timer_ID id, Timer_Data data)
 {
-    RAISE(timeout_exception, 0);
+    throw timeout_exception();
 }
 
 enum error
@@ -251,18 +263,17 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
 	    return e;
 	}
     }	 
-    TRY {
+    try {
 	id = set_timer(server_int_option("outbound_connect_timeout", 5),
 		       timeout_proc, 0);
 	result = connect(s, (struct sockaddr *) &addr, sizeof(addr));
 	cancel_timer(id);
     }
-    EXCEPT(timeout_exception) {
+    catch (timeout_exception& exception) {
 	result = -1;
 	errno = ETIMEDOUT;
 	reenable_timers();
     }
-    ENDTRY;
 
     if (result < 0) {
 	close(s);
