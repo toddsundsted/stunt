@@ -582,42 +582,8 @@ strget(Var str, int i)
 
 /**** helpers for catching overly large allocations ****/
 
-#define TRY_STREAM     { enable_stream_exceptions(); TRY
-#define ENDTRY_STREAM  ENDTRY  disable_stream_exceptions(); }
-/*
- * Expected usage:
- *
- *   TRY_STREAM
- *     <...do stuff...>
- *   EXCEPT (stream_too_big)
- *     <...handle memory-go-boom case...>
- *   ENDTRY_STREAM
- *
- * Since TRY uses setjmp/longjmp, variables modified in the course of
- * <...do stuff...> should not be assumed to have retained any useful
- * values into the EXCEPT handler or afterwards in event that the
- * stream_too_big exception is raised.
- *
- * Implementation note:
- *
- * If we wanted to be uber-paranoid, or if there were any real
- * possibility of nested code throwing other kinds of exceptions
- * that get caught further out, then we'd want to enclose the
- * disable_stream_exceptions() call in a FINALLY clause.  However,
- *
- * (1) said clause will also certainly want to include other kinds of
- * cleanup (e.g., freeing of streams) so this is not simply a case of
- * rolling it into ENDTRY_STREAM, and
- *
- * (2) the current exception implementation cannot have EXCEPT and
- * FINALLY in the same TRY, so we then have to worry about which
- * should be on the inside, and then the additional costs of pushing a
- * second exception context and possibly having to do two longjmps
- * in the course of handle an exception, at which point we may be
- * wanting to rewrite the exception implementation anyway...,
- *
- * --wrog
- */
+#define TRY_STREAM enable_stream_exceptions()
+#define ENDTRY_STREAM disable_stream_exceptions()
 
 static package
 make_space_pack()
@@ -810,7 +776,8 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_INVARG);
     }
     s = new_stream(100);
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 	stream_add_strsub(s, arglist.v.list[1].v.str, arglist.v.list[2].v.str,
 			  arglist.v.list[3].v.str, case_matters);
@@ -818,7 +785,7 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 	r.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(r);
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -916,7 +883,8 @@ bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 	int i;
 
@@ -927,7 +895,7 @@ bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
 	r.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(r);
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -942,7 +910,8 @@ bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 
 	unparse_value(s, arglist.v.list[1]);
@@ -950,7 +919,7 @@ bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 	r.v.str = str_dup(stream_contents(s));
 	p = make_var_pack(r);
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1170,7 +1139,8 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
     subject_length = memo_strlen(subject);
 
     s = new_stream(template_length);
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	while ((c = *(_template++)) != '\0') {
 	    if (c != '%')
 		stream_add_char(s, c);
@@ -1198,7 +1168,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 	p = make_var_pack(ans);
       oops: ;
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1311,7 +1281,8 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package p;
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 	int length;
 	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
@@ -1339,7 +1310,7 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 	  p = make_error_pack(E_INVARG);
 	}
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1354,7 +1325,8 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 	int nargs = arglist.v.list[0].v.num;
 
@@ -1379,7 +1351,7 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1413,7 +1385,8 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 
 	const char *str = arglist.v.list[1].v.str;
@@ -1437,7 +1410,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    free_str(key);
 	}
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1453,7 +1426,8 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 
 	int bytes_length;
@@ -1488,7 +1462,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    }
 	}
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1504,7 +1478,8 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     package p;
     Stream *s = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	Var r;
 
 	unparse_value(s, arglist.v.list[1]);
@@ -1531,7 +1506,7 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    free_str(key);
 	}
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
@@ -1647,7 +1622,8 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
     Stream *s = new_stream(100);
     Stream *s2 = new_stream(100);
 
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	if (encode_binary(s, arglist)) {
 	    stream_add_raw_bytes_to_binary(
 		s2, stream_contents(s), stream_length(s));
@@ -1658,7 +1634,7 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	else
 	    p = make_error_pack(E_INVARG);
     }
-    EXCEPT (stream_too_big) {
+    catch (stream_too_big& exception) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;

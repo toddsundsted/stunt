@@ -175,8 +175,8 @@ base64_decode(const char *src, size_t len, size_t *out_len)
 
 /**** helpers for catching overly large allocations ****/
 
-#define TRY_STREAM     { enable_stream_exceptions(); TRY
-#define ENDTRY_STREAM  ENDTRY  disable_stream_exceptions(); }
+#define TRY_STREAM enable_stream_exceptions()
+#define ENDTRY_STREAM disable_stream_exceptions()
 
 static package
 make_space_pack()
@@ -193,6 +193,7 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     int len;
     size_t length;
     const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
+    package p;
     if (NULL == in) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
@@ -202,24 +203,24 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
+    Var ret;
     static Stream *s = 0;
     if (!s)
 	s = new_stream(100);
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	stream_add_raw_bytes_to_binary(s, out, (int)length);
+	ret = str_dup_to_var(reset_stream(s));
+	p = make_var_pack(ret);
     }
-    EXCEPT (stream_too_big) {
-	free_str(out);
-	free_var(arglist);
-	return make_space_pack();
+    catch (stream_too_big& exception) {
+	reset_stream(s);
+	p = make_space_pack();
     }
     ENDTRY_STREAM;
-    Var ret;
-    ret.type = TYPE_STR;
-    ret.v.str = str_dup(reset_stream(s));
     free_str(out);
     free_var(arglist);
-    return make_var_pack(ret);
+    return p;
 }
 
 static package
@@ -228,6 +229,7 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     int len;
     size_t length;
     const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
+    package p;
     if (NULL == in) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
@@ -237,28 +239,25 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
+    Var ret;
     static Stream *s = 0;
     if (!s)
 	s = new_stream(100);
-    TRY_STREAM {
+    TRY_STREAM;
+    try {
 	stream_add_raw_bytes_to_binary(s, out, (int)length);
+	ret = str_dup_to_var(reset_stream(s));
+	p = make_var_pack(ret);
     }
-    EXCEPT (stream_too_big) {
-	free_str(out);
-	free_var(arglist);
-	return make_space_pack();
+    catch (stream_too_big& exception) {
+	reset_stream(s);
+	p = make_space_pack();
     }
     ENDTRY_STREAM;
-    Var ret;
-    ret.type = TYPE_STR;
-    ret.v.str = str_dup(reset_stream(s));
     free_str(out);
     free_var(arglist);
-    return make_var_pack(ret);
+    return p;
 }
-
-#undef TRY_STREAM
-#undef ENDTRY_STREAM
 
 void
 register_base64(void)

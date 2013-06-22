@@ -40,7 +40,6 @@ new_stream(int size)
     return s;
 }
 
-Exception stream_too_big;
 size_t stream_alloc_maximum = 0;
 
 static int allow_stream_exceptions = 0;
@@ -67,7 +66,7 @@ grow(Stream * s, int newlen, int need)
 	    if (s->current + need < stream_alloc_maximum)
 		newlen = stream_alloc_maximum;
 	    else
-		RAISE(stream_too_big, 0);
+		throw stream_too_big();
 	}
     }
     newbuf = (char *)mymalloc(newlen, M_STREAM);
