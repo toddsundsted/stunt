@@ -187,7 +187,7 @@ static enum error
 suspend_task(package p)
 {
     vm the_vm = new_vm(current_task_id, var_ref(current_local), top_activ_stack + 1);
-    int i;
+    unsigned int i;
     enum error e;
 
     the_vm->max_stack_size = max_stack_size;
@@ -2679,7 +2679,7 @@ do_task(Program * prog, int which_vector, Var * result, int is_fg, int do_db_tra
 enum outcome
 resume_from_previous_vm(vm the_vm, Var v)
 {
-    int i;
+    unsigned int i;
 
     check_activ_stack_size(the_vm->max_stack_size);
     top_activ_stack = the_vm->top_activ_stack;
