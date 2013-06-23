@@ -93,9 +93,8 @@ static bool
 any_are_descendants(Var these, Var obj)
 {
     Var _this, descendants = db_descendants(obj, true);
-    int i, c, ret;
+    int i, c;
     FOR_EACH(_this, these, i, c) {
-	ret = ismember(_this, descendants, 1);
 	if (is_a_descendant(_this, obj)) {
 	    free_var(descendants);
 	    return true;

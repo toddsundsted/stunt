@@ -556,7 +556,7 @@ get_system_object(const char *name)
 int
 value_bytes(Var v)
 {
-    int i, len, size = sizeof(Var);
+    int size = sizeof(Var);
 
     switch (v.type) {
     case TYPE_STR:

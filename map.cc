@@ -873,7 +873,6 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
     rbtrav trav;
     rbnode node;
     const rbnode *pnode = NULL;
-    int32 len = 0;
     enum error e = E_NONE;
 
     if (_new == NULL)
