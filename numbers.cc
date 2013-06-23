@@ -316,8 +316,8 @@ do_modulus(Var a, Var b)
     if (a.type != b.type) {
 	ans.type = TYPE_ERR;
 	ans.v.err = E_TYPE;
-    } else if (a.type == TYPE_INT && b.v.num == 0 ||
-               a.type == TYPE_FLOAT && *b.v.fnum == 0.0) {
+    } else if ((a.type == TYPE_INT && b.v.num == 0) ||
+               (a.type == TYPE_FLOAT && *b.v.fnum == 0.0)) {
 	ans.type = TYPE_ERR;
 	ans.v.err = E_DIV;
     } else if (a.type == TYPE_INT) {
@@ -346,8 +346,8 @@ do_divide(Var a, Var b)
     if (a.type != b.type) {
 	ans.type = TYPE_ERR;
 	ans.v.err = E_TYPE;
-    } else if (a.type == TYPE_INT && b.v.num == 0 ||
-               a.type == TYPE_FLOAT && *b.v.fnum == 0.0) {
+    } else if ((a.type == TYPE_INT && b.v.num == 0) ||
+               (a.type == TYPE_FLOAT && *b.v.fnum == 0.0)) {
 	ans.type = TYPE_ERR;
 	ans.v.err = E_DIV;
     } else if (a.type == TYPE_INT) {
