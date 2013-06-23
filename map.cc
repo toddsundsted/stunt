@@ -293,7 +293,7 @@ rbinsert(rbtree *tree, rbnode *node)
 	if (tree->root == NULL)
 	    return 0;
     } else {
-	rbnode head = { 0 };	/* False tree root */
+	rbnode head = {};	/* False tree root */
 	rbnode *g, *t;		/* Grandparent & parent */
 	rbnode *p, *q;		/* Iterator & parent */
 	int dir = 0, last = 0;
@@ -370,7 +370,7 @@ rberase(rbtree *tree, rbnode *node)
     if (tree->root == NULL) {
 	return 0;
     } else {
-	rbnode head = { 0 };	/* False tree root */
+	rbnode head = {};	/* False tree root */
 	rbnode *q, *p, *g;	/* Helpers */
 	rbnode *f = NULL;	/* Found item */
 	int dir = 1;
