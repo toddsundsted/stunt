@@ -38,7 +38,8 @@ COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
 CSRCS = hmac_sha2.c http_parser.c md5.c regexpr.c sha1.c sha256.c \
 	yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c yajl_gen.c \
-	yajl_lex.c yajl_parser.c yajl_version.c
+	yajl_lex.c yajl_parser.c yajl_version.c \
+	lmdb/mdb.c lmdb/midl.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc db_file.cc \
 	db_io.cc db_objects.cc db_properties.cc db_verbs.cc \
@@ -73,7 +74,8 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
 	timers.h tokens.h unparse.h utils.h verbs.h version.h \
 	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h \
 	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h \
-	yajl_parser.h yajl_version.h fileio.h system.h
+	yajl_parser.h yajl_version.h fileio.h system.h \
+	lmdb/lmdb.h lmdb/midl.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
