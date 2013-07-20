@@ -21,7 +21,6 @@
 #include "exceptions.h"
 #include "list.h"
 #include "options.h"
-#include "ref_count.h"
 #include "storage.h"
 #include "structures.h"
 #include "utils.h"
@@ -50,6 +49,7 @@ refcount_overhead(Memory_Type type)
 #endif /* MEMO_STRLEN */
     case M_LIST:
     case M_TREE:
+    case M_TRAV:
 	/* for systems with picky pointer alignment */
 	return MAX(sizeof(int), sizeof(Var *));
     default:

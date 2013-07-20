@@ -58,6 +58,7 @@ typedef struct gstate GState;
 
 struct loop {
     int id;
+    int index; /* second label support for loops like `for x, y in (...) ...' */
     Fixup top_label;
     unsigned top_stack;
     int bottom_label;
@@ -449,7 +450,7 @@ restore_stack_top(unsigned old, State * state)
 }
 
 static void
-enter_loop(int id, Fixup top_label, unsigned top_stack,
+enter_loop(int id, int index, Fixup top_label, unsigned top_stack,
 	   int bottom_label, unsigned bottom_stack, State * state)
 {
     int i;
@@ -469,6 +470,7 @@ enter_loop(int id, Fixup top_label, unsigned top_stack,
     }
     loop = &(state->loops[state->num_loops++]);
     loop->id = id;
+    loop->index = index;
     loop->top_label = top_label;
     loop->top_stack = top_stack;
     loop->bottom_label = bottom_label;
@@ -739,12 +741,24 @@ generate_expr(Expr * expr, State * state)
 	    pop_stack(2, state);
 	}
 	break;
-    case EXPR_LENGTH:
+    case EXPR_FIRST:
 	{
 	    unsigned saved = saved_stack_top(state);
 
 	    if (saved != UINT_MAX) {
-		emit_extended_byte(EOP_LENGTH, state);
+		emit_extended_byte(EOP_FIRST, state);
+		add_stack_ref(saved, state);
+		push_stack(1, state);
+	    } else
+		panic("Missing saved stack for `^' in GENERATE_EXPR()");
+	}
+	break;
+    case EXPR_LAST:
+	{
+	    unsigned saved = saved_stack_top(state);
+
+	    if (saved != UINT_MAX) {
+		emit_extended_byte(EOP_LAST, state);
 		add_stack_ref(saved, state);
 		push_stack(1, state);
 	    } else
@@ -944,13 +958,21 @@ generate_stmt(Stmt * stmt, State * state)
 		int end_label;
 
 		generate_expr(stmt->s.list.expr, state);
-		emit_byte(OPTIM_NUM_TO_OPCODE(1), state);	/* loop list index */
+		emit_byte(OP_IMM, state);
+		add_literal(none, state);	/* loop index initializer */
 		push_stack(1, state);
 		loop_top = capture_label(state);
-		emit_byte(OP_FOR_LIST, state);
-		add_var_ref(stmt->s.list.id, state);
+		if (stmt->s.list.index > -1) {
+		    emit_extended_byte(EOP_FOR_LIST_2, state);
+		    add_var_ref(stmt->s.list.id, state);
+		    add_var_ref(stmt->s.list.index, state);
+		}
+		else {
+		    emit_extended_byte(EOP_FOR_LIST_1, state);
+		    add_var_ref(stmt->s.list.id, state);
+		}
 		end_label = add_label(state);
-		enter_loop(stmt->s.list.id, loop_top, state->cur_stack,
+		enter_loop(stmt->s.list.id, stmt->s.list.index, loop_top, state->cur_stack,
 			   end_label, state->cur_stack - 2, state);
 		generate_stmt(stmt->s.list.body, state);
 		end_label = exit_loop(state);
@@ -971,7 +993,7 @@ generate_stmt(Stmt * stmt, State * state)
 		emit_byte(OP_FOR_RANGE, state);
 		add_var_ref(stmt->s.range.id, state);
 		end_label = add_label(state);
-		enter_loop(stmt->s.range.id, loop_top, state->cur_stack,
+		enter_loop(stmt->s.range.id, -1, loop_top, state->cur_stack,
 			   end_label, state->cur_stack - 2, state);
 		generate_stmt(stmt->s.range.body, state);
 		end_label = exit_loop(state);
@@ -996,7 +1018,7 @@ generate_stmt(Stmt * stmt, State * state)
 		}
 		end_label = add_label(state);
 		pop_stack(1, state);
-		enter_loop(stmt->s.loop.id, loop_top, state->cur_stack,
+		enter_loop(stmt->s.loop.id, -1, loop_top, state->cur_stack,
 			   end_label, state->cur_stack, state);
 		generate_stmt(stmt->s.loop.body, state);
 		end_label = exit_loop(state);
@@ -1100,7 +1122,8 @@ generate_stmt(Stmt * stmt, State * state)
 		    emit_extended_byte(EOP_EXIT_ID, state);
 		    add_var_ref(stmt->s.exit, state);
 		    for (i = state->num_loops - 1; i >= 0; i--)
-			if (state->loops[i].id == stmt->s.exit) {
+			if (state->loops[i].id == stmt->s.exit
+			    || state->loops[i].index == stmt->s.exit) {
 			    loop = &(state->loops[i]);
 			    break;
 			}
@@ -1222,7 +1245,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     for (fixup = state.fixups, fix_i = 0; fix_i < state.num_fixups; ++fix_i, ++fixup)
 	if (fixup->kind == FIXUP_LABEL || fixup->kind == FIXUP_FORK)
 	    bbd[n_bbd++] = fixup->pc;
-    qsort(bbd, n_bbd, sizeof(*bbd), bbd_cmp);
+    qsort(bbd, n_bbd, sizeof(*bbd), (int (*)(const void *, const void *))bbd_cmp);
 
     /*
      * For every basic block, search backwards for PUT ops.  The first

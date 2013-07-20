@@ -500,7 +500,7 @@ db_find_property(Objid oid, const char *name, Var * value)
 		    while (prop->var.type == TYPE_CLEAR) {
 			if (TYPE_LIST == o->parents.type) {
 			    Var parent, parents = o->parents;
-			    int i2, c2, offset;
+			    int i2, c2, offset = 0;
 			    FOR_EACH(parent, parents, i2, c2)
 				if ((offset = properties_offset(h.definer, parent.v.obj)) > -1)
 				    break;

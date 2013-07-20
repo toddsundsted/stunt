@@ -480,7 +480,7 @@ struct verbdef_definer_data {
 static struct verbdef_definer_data
 find_callable_verbdef(Objid oid, const char *verb)
 {
-    Object *o;
+    Object *o = NULL;
     Verbdef *v = NULL;
     Var ancestor, ancestors;
     int i, c;
@@ -506,7 +506,6 @@ db_verb_handle
 db_find_callable_verb(Objid oid, const char *verb)
 {
     Object *o;
-    Verbdef *v;
 #ifdef VERB_CACHE
     vc_entry *new_vc;
 #else

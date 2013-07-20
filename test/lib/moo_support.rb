@@ -347,6 +347,40 @@ module MooSupport
     simplify command %Q|; return set_verb_code(#{object}, #{value_ref(verb)}, #{verb_code});|
   end
 
+  ## Operations on Network Connections
+
+  def read(connection = nil, non_blocking = nil)
+    if (connection && non_blocking)
+      simplify command %Q|; return read(#{value_ref(connection)}, #{value_ref(non_blocking)});|
+    elsif (connection)
+      simplify command %Q|; return read(#{value_ref(connection)});|
+    else
+      simplify command %Q|; return read();|
+    end
+  end
+
+  def read_http(connection = nil, type = nil)
+    if (connection && type)
+      simplify command %Q|; return read_http(#{value_ref(connection)}, #{value_ref(type)});|
+    elsif (connection)
+      simplify command %Q|; return read_http(#{value_ref(connection)});|
+    else
+      simplify command %Q|; return read_http();|
+    end
+  end
+
+  def set_connection_option(connection, option, value)
+    simplify command %Q|; return set_connection_option(#{value_ref(connection)}, #{value_ref(option)}, #{value_ref(value)});|
+  end
+
+  def switch_player(old_player, new_player, new)
+    simplify command %Q|; switch_player(#{value_ref(old_player)}, #{value_ref(new_player)}, #{value_ref(new)}); notify(#{value_ref(new_player)}, "{-1, 0}"); notify(#{value_ref(new_player)}, "-=!-v-!=-");|
+  end
+
+  def boot_player(player)
+    simplify command %Q|; return boot_player(#{value_ref(player)});|
+  end
+
   ## MOO-Code Evaluation and Task Manipulation
 
   def function_info(name)
@@ -365,8 +399,12 @@ module MooSupport
     simplify command %Q|; return kill_task(#{value_ref(task_id)});|
   end
 
-  def resume(task_id)
-    simplify command %Q|; return resume(#{value_ref(task_id)});|
+  def resume(task_id, value = nil)
+    if (value)
+      simplify command %Q|; return resume(#{value_ref(task_id)}, #{value_ref(value)});|
+    else
+      simplify command %Q|; return resume(#{value_ref(task_id)});|
+    end
   end
 
   def callers()
@@ -558,7 +596,7 @@ module MooSupport
   def value_ref(value)
     case value
     when String
-      "\"#{value.gsub('\\', '\\\\').gsub('"', '\"')}\""
+      "\"#{value.gsub('\\', '\\\\\\\\').gsub('"', '\"')}\""
     when Symbol
       "$#{value.to_s}"
     when MooErr

@@ -27,6 +27,7 @@
 #include "exceptions.h"
 #include "execute.h"
 #include "functions.h"
+#include "http_parser.h"
 #include "list.h"
 #include "log.h"
 #include "map.h"
@@ -103,6 +104,23 @@ enum icmd_flag {
     ICMD_ALL_CMDS = ((1<<(ICMD_PROGRAM+1))-2)
 };
 
+enum parsing_status {
+    READY = 1,
+    PARSING = 2,
+    DONE = 3
+};
+
+struct http_parsing_state {
+    struct http_parser parser;
+    enum parsing_status status;
+    Var uri;
+    Var headers;
+    Var header_field_under_constr;
+    Var header_value_under_constr;
+    Var body;
+    Var result;
+};
+
 typedef struct tqueue {
     /*
      * A task queue can be in one of four possible states, depending upon the
@@ -159,10 +177,19 @@ typedef struct tqueue {
     const char *program_verb;
 
     /* booleans */
-    char hold_input;		/* input tasks must wait for read() */
-    char disable_oob;		/* treat all input lines as inband */
-    char reading;		/* some task is blocked on read() */
-    char icmds;			/* which of .program/PREFIX/... are enabled */
+    int hold_input:1;		/* input tasks must wait for read() */
+    int disable_oob:1;		/* treat all input lines as inband */
+    int reading:1;		/* some task is blocked on read() */
+    int parsing:1;		/* some task is blocked on read_http() */
+    int icmds:8;		/* which of .program/PREFIX/... are enabled */
+
+    /* Once a `http_parsing_state' is allocated and assigned to a task
+     * queue, it is not freed until the task queue is freed -- the
+     * theory being that once a connection is used for HTTP it's
+     * likely to be reused for HTTP.
+     */
+    struct http_parsing_state *parsing_state;
+
     vm reading_vm;
 } tqueue;
 
@@ -286,6 +313,40 @@ icmd_set_flags(tqueue * tq, Var list)
     return 1;
 }
 
+static void
+init_http_parsing_state(struct http_parsing_state *state)
+{
+    state->status = READY;
+#define INIT_VAR(XX)		\
+    {				\
+	(XX).type = TYPE_NONE;	\
+    }
+    INIT_VAR(state->uri);
+    INIT_VAR(state->header_field_under_constr);
+    INIT_VAR(state->header_value_under_constr);
+    INIT_VAR(state->headers);
+    INIT_VAR(state->body);
+    INIT_VAR(state->result);
+#undef INIT_VAR
+}
+
+static void
+reset_http_parsing_state(struct http_parsing_state *state)
+{
+    state->status = READY;
+#define RESET_VAR(XX)		\
+    {				\
+	free_var(XX);		\
+	(XX).type = TYPE_NONE;	\
+    }
+    RESET_VAR(state->uri);
+    RESET_VAR(state->header_field_under_constr);
+    RESET_VAR(state->header_value_under_constr);
+    RESET_VAR(state->headers);
+    RESET_VAR(state->body);
+    RESET_VAR(state->result);
+#undef RESET_VAR
+}
 
 static void
 deactivate_tqueue(tqueue * tq)
@@ -371,11 +432,14 @@ find_tqueue(Objid player, int create_if_not_found)
     tq->program_stream = 0;
 
     tq->reading = 0;
+    tq->parsing = 0;
     tq->hold_input = 0;
     tq->disable_oob = 0;
     tq->icmds = ICMD_ALL_CMDS;
     tq->num_bg_tasks = 0;
     tq->last_input_task_id = 0;
+
+    tq->parsing_state = NULL;
 
     return tq;
 }
@@ -395,6 +459,10 @@ free_tqueue(tqueue * tq)
 	free_stream(tq->program_stream);
     if (tq->reading)
 	free_vm(tq->reading_vm, 1);
+    if (tq->parsing_state) {
+	reset_http_parsing_state(tq->parsing_state);
+	myfree(tq->parsing_state, M_STRUCT);
+    }
 
     *(tq->prev) = tq->next;
     if (tq->next)
@@ -780,7 +848,11 @@ do_login_task(tqueue * tq, char *command)
     run_server_task_setting_id(tq->player, tq->handler, "do_login_command",
 			       args, command, &result,
 			       &(tq->last_input_task_id));
-    if (tq->connected && result.type == TYPE_OBJ && is_user(result.v.obj)) {
+    /* The connected player (tq->player) may be non-negative if
+     * `do_login_command' already called the `switch_player' built-in
+     * to log the connection in to a player.
+     */
+    if (tq->connected && tq->player < 0 && result.type == TYPE_OBJ && is_user(result.v.obj)) {
 	Objid new_player = result.v.obj;
 	Objid old_player = tq->player;
 	tqueue *dead_tq = find_tqueue(new_player, 0);
@@ -798,7 +870,8 @@ do_login_task(tqueue * tq, char *command)
 		enqueue_bg_task(old_tq, t);
 	    tq->num_bg_tasks = 0;
 	}
-	if (dead_tq) {		/* Copy over tasks from old queue for player */
+	if (dead_tq) {
+	    /* Copy over tasks from old queue for player */
 	    tq->num_bg_tasks = dead_tq->num_bg_tasks;
 	    while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != 0) {
 		free_task(t, 0);
@@ -1220,11 +1293,56 @@ make_reading_task(vm the_vm, void *data)
 	return E_INVARG;
     else {
 	tq->reading = 1;
+	tq->parsing = 0;
 	tq->reading_vm = the_vm;
 	if (tq->first_input)	/* Anything to read? */
 	    ensure_usage(tq);
 	return E_NONE;
     }
+}
+
+/* A connection that's used to read/parse HTTP will probably be used
+ * to read/parse HTTP again -- so we allocate a struct for holding
+ * parsing state once and reuse it.
+ */
+static enum error
+make_http_task(vm the_vm, Objid player, int request)
+{
+    tqueue *tq = find_tqueue(player, 0);
+
+    if (!tq || tq->reading || is_out_of_input(tq))
+	return E_INVARG;
+    else {
+	tq->reading = 1;
+	tq->parsing = 1;
+	tq->reading_vm = the_vm;
+	if (tq->parsing_state == NULL) {
+	    tq->parsing_state =
+		mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
+	    init_http_parsing_state(tq->parsing_state);
+	}
+	tq->parsing_state->status = PARSING;
+	tq->parsing_state->parser.data = tq;
+	http_parser_init(&tq->parsing_state->parser,
+			 request ? HTTP_REQUEST : HTTP_RESPONSE);
+	if (tq->first_input)	/* Anything to read? */
+	    ensure_usage(tq);
+	return E_NONE;
+    }
+}
+
+enum error
+make_parsing_http_request_task(vm the_vm, void *data)
+{
+    Objid player = *((Objid *) data);
+    return make_http_task(the_vm, player, 1);
+}
+
+enum error
+make_parsing_http_response_task(vm the_vm, void *data)
+{
+    Objid player = *((Objid *) data);
+    return make_http_task(the_vm, player, 0);
 }
 
 int
@@ -1252,6 +1370,166 @@ next_task_start(void)
     }
     return -1;
 }
+
+static Var
+create_or_extend(Var in, const char *new, int newlen)
+{
+    static Stream *s = NULL;
+    if (!s)
+	s = new_stream(100);
+
+    Var out;
+
+    if (in.type == TYPE_STR) {
+	stream_add_string(s, in.v.str);
+	stream_add_raw_bytes_to_binary(s, new, newlen);
+	free_var(in);
+	out.type = TYPE_STR;
+	out.v.str = str_dup(reset_stream(s));
+    }
+    else {
+	stream_add_raw_bytes_to_binary(s, new, newlen);
+	free_var(in);
+	out.type = TYPE_STR;
+	out.v.str = str_dup(reset_stream(s));
+    }
+
+    return out;
+}
+
+static int
+on_message_begin_callback(http_parser *parser)
+{
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+    state->result = new_map();
+    return 0;
+}
+
+static int
+on_url_callback(http_parser *parser, const char *url, size_t length)
+{
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+    state->uri = create_or_extend(state->uri, url, length);
+    return 0;
+}
+
+static void
+maybe_complete_header(struct http_parsing_state *state)
+{
+    if (state->headers.type != TYPE_MAP) {
+	free_var(state->headers);
+	state->headers = new_map();
+    }
+
+    if (state->header_value_under_constr.type == TYPE_STR) {
+	state->headers = mapinsert(state->headers,
+				   state->header_field_under_constr,
+				   state->header_value_under_constr);
+	state->header_field_under_constr.type = TYPE_NONE;
+	state->header_value_under_constr.type = TYPE_NONE;
+    }
+}
+
+static int
+on_header_field_callback(http_parser *parser, const char *field, size_t length)
+{
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+
+    maybe_complete_header(state);
+
+    state->header_field_under_constr = create_or_extend(state->header_field_under_constr, field, length);
+
+    return 0;
+}
+
+static int
+on_header_value_callback(http_parser *parser, const char *value, size_t length)
+{
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+
+    state->header_value_under_constr = create_or_extend(state->header_value_under_constr, value, length);
+
+    return 0;
+}
+
+static int
+on_headers_complete_callback(http_parser *parser)
+{
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+
+    maybe_complete_header(state);
+
+    return 0;
+}
+
+static int
+on_body_callback(http_parser *parser, const char *body, size_t length)
+{
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+
+    state->body = create_or_extend(state->body, body, length);
+
+    return 0;
+}
+
+static int
+on_message_complete_callback(http_parser *parser)
+{
+    static Var URI, METHOD, HEADERS, BODY, STATUS;
+    static int init = 0;
+    if (!init) {
+	init = 1;
+
+#define INIT_KEY(var, val)		\
+    var.type = TYPE_STR;		\
+    var.v.str = str_dup(val)
+
+    INIT_KEY(URI, "uri");
+    INIT_KEY(METHOD, "method");
+    INIT_KEY(HEADERS, "headers");
+    INIT_KEY(BODY, "body");
+    INIT_KEY(STATUS, "status");
+
+#undef INIT_KEY
+    }
+
+    struct http_parsing_state *state = (struct http_parsing_state *)parser;
+
+    if (parser->type == HTTP_REQUEST) {
+	Var method;
+	method.type = TYPE_STR;
+	method.v.str = str_dup(http_method_str(state->parser.method));
+	state->result = mapinsert(state->result, var_dup(METHOD), method);
+    }
+    else { /* HTTP_RESPONSE */
+	Var status;
+	status.type = TYPE_INT;
+	status.v.num = parser->status_code;
+	state->result = mapinsert(state->result, var_dup(STATUS), status);
+    }
+
+    if (state->uri.type == TYPE_STR)
+	state->result = mapinsert(state->result, var_dup(URI), var_dup(state->uri));
+
+    if (state->headers.type == TYPE_MAP)
+	state->result = mapinsert(state->result, var_dup(HEADERS), var_dup(state->headers));
+
+    if (state->body.type == TYPE_STR)
+	state->result = mapinsert(state->result, var_dup(BODY), var_dup(state->body));
+
+    state->status = DONE;
+
+    return 0;
+}
+
+static http_parser_settings settings = {on_message_begin_callback,
+					on_url_callback,
+					on_header_field_callback,
+					on_header_value_callback,
+					on_headers_complete_callback,
+					on_body_callback,
+					on_message_complete_callback
+};
 
 /* There is surprisingness in how tasks actually get created in
  * response to player input, so I'm documenting it here.
@@ -1288,14 +1566,17 @@ run_ready_tasks(void)
 	int did_one = 0;
 	time_t start = time(0);
 
+	/* Loop over tqueues, looking for a task */
 	while (active_tqueues && !did_one) {
-	    /* Loop over tqueues, looking for a task */
 	    tq = active_tqueues;
 
 	    if (tq->reading && is_out_of_input(tq)) {
 		Var v;
 
 		tq->reading = 0;
+		tq->parsing = 0;
+		if (tq->parsing_state != NULL)
+		    reset_http_parsing_state(tq->parsing_state);
 		current_task_id = tq->reading_vm->task_id;
 		current_local = var_ref(tq->reading_vm->local);
 		v.type = TYPE_ERR;
@@ -1305,7 +1586,9 @@ run_ready_tasks(void)
 		free_var(current_local);
 		did_one = 1;
 	    }
-	    while (!did_one) {	/* Loop over tasks, looking for runnable one */
+
+	    /* Loop over tasks, looking for runnable one */
+	    while (!did_one) {
 		t = dequeue_input_task(tq, ((tq->hold_input && !tq->reading)
 					    ? DQ_OOB
 					    : DQ_FIRST));
@@ -1324,10 +1607,66 @@ run_ready_tasks(void)
 		    break;
 		case TASK_BINARY:
 		case TASK_INBAND:
-		    if (tq->reading) {
+		    if (tq->reading && tq->parsing) {
+			int done = 0;
+			int len;
+			const char *binary = binary_to_raw_bytes(t->t.input.string, &len);
+			if (binary == NULL) {
+			    /* This can happen if someone forces an
+			     * invalid binary string as input on this
+			     * connection!
+			     */
+			    /* It can happen even before the
+			     * `on_message_begin_callback()' is
+			     * called.
+			     */
+			    if (tq->parsing_state->status == PARSING)
+				free_var(tq->parsing_state->result);
+			    tq->parsing_state->result = var_ref(zero);
+			    done = 1;
+			}
+			else {
+			    http_parser_execute(&tq->parsing_state->parser, &settings, binary, len);
+			    if (tq->parsing_state->parser.http_errno != HPE_OK) {
+				Var key, value;
+				key.type = TYPE_STR;
+				key.v.str = str_dup("error");
+				value = new_list(2);
+				value.v.list[1].type = TYPE_STR;
+				value.v.list[1].v.str = str_dup(http_errno_name(tq->parsing_state->parser.http_errno));
+				value.v.list[2].type = TYPE_STR;
+				value.v.list[2].v.str = str_dup(http_errno_description(tq->parsing_state->parser.http_errno));
+				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
+				done = 1;
+			    }
+			    else if (tq->parsing_state->parser.upgrade) {
+				Var key;
+				key.type = TYPE_STR;
+				key.v.str = str_dup("upgrade");
+				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, new_int(1));
+				done = 1;
+			    }
+			    else if (tq->parsing_state->status == DONE)
+				done = 1;
+			}
+			if (done) {
+			    Var v = var_ref(tq->parsing_state->result);
+			    tq->reading = 0;
+			    tq->parsing = 0;
+			    reset_http_parsing_state(tq->parsing_state);
+			    current_task_id = tq->reading_vm->task_id;
+			    current_local = var_ref(tq->reading_vm->local);
+			    resume_from_previous_vm(tq->reading_vm, v);
+                            free_var(v);
+			    current_task_id = -1;
+			    free_var(current_local);
+			}
+			did_one = 1;
+		    }
+		    else if (tq->reading) {
 			Var v;
-
 			tq->reading = 0;
+			tq->parsing = 0;
 			current_task_id = tq->reading_vm->task_id;
 			current_local = var_ref(tq->reading_vm->local);
 			v.type = TYPE_STR;
@@ -1350,7 +1689,6 @@ run_ready_tasks(void)
 		case TASK_FORKED:
 		    {
 			forked_task ft;
-
 			ft = t->t.forked;
 			current_task_id = ft.id;
 			current_local = new_map();
@@ -1542,6 +1880,10 @@ write_task_queue(void)
 	    if (t->kind == TASK_SUSPENDED)
 		write_suspended_task(t->t.suspended);
 
+    /* All tasks held in external queues are interrupted -- this
+     * currently comprises tasks that are waiting on a fork/exec that
+     * has not completed.
+     */
     int interrupted_count = 0;
     struct qcl_data qdata;
     ext_queue *eq;
@@ -1553,10 +1895,27 @@ write_task_queue(void)
 	(*eq->enumerator) (counting_closure, &qdata);
     interrupted_count = qdata.i;
 
+    /* All tasks that are reading are interrupted -- this includes
+       tasks that called both `read()' and `read_http()'.
+     */
+    for (tq = idle_tqueues; tq; tq = tq->next)
+	if (tq->reading)
+	    interrupted_count++;
+
     dbio_printf("%d interrupted tasks\n", interrupted_count);
 
+    qdata.progr = NOTHING;
+    qdata.show_all = 1;
+    qdata.i = 0;
     for (eq = external_queues; eq; eq = eq->next)
 	(*eq->enumerator) (writing_closure, &qdata);
+
+    for (tq = idle_tqueues; tq; tq = tq->next) {
+	if (tq->reading) {
+	    dbio_printf("%d %s\n", tq->reading_vm->task_id, "interrupted reading task");
+	    write_vm(tq->reading_vm);
+	}
+    }
 }
 
 int
@@ -2196,6 +2555,9 @@ kill_task(int id, Objid owner)
 		return E_PERM;
 	    free_vm(tq->reading_vm, 1);
 	    tq->reading = 0;
+	    tq->parsing = 0;
+	    if (tq->parsing_state != NULL)
+		reset_http_parsing_state(tq->parsing_state);
 	    return E_NONE;
 	}
     }
@@ -2207,6 +2569,9 @@ kill_task(int id, Objid owner)
 		return E_PERM;
 	    free_vm(tq->reading_vm, 1);
 	    tq->reading = 0;
+	    tq->parsing = 0;
+	    if (tq->parsing_state != NULL)
+		reset_http_parsing_state(tq->parsing_state);
 	    return E_NONE;
 	}
 	for (tt = &(tq->first_bg); *tt; tt = &((*tt)->next)) {
@@ -2429,6 +2794,70 @@ bf_task_local(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(v);
 }
 
+/* Concept courtesy of Ryan Smith (http://zanosoft.net/rsgames/moo-switchcon/).
+ */
+static package
+bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Objid old_player = arglist.v.list[1].v.obj;
+    Objid new_player = arglist.v.list[2].v.obj;
+    int new = 0;
+
+    if (listlength(arglist) > 2)
+	new = is_true(arglist.v.list[3]);
+
+    free_var(arglist);
+
+    if (!is_wizard(progr))
+	return make_error_pack(E_PERM);
+
+    if (old_player == new_player)
+	return make_error_pack(E_INVARG);
+
+    if (is_player_connected(old_player) == 0)
+	return make_error_pack(E_INVARG);
+
+    if (is_user(new_player) == 0)
+	return make_error_pack(E_INVARG);
+
+    tqueue *tq = find_tqueue(old_player, 0);
+    if (!tq)
+	return make_error_pack(E_INVARG);
+
+    tqueue *dead_tq = find_tqueue(new_player, 0);
+    task *t;
+
+    tq->player = new_player;
+    if (tq->num_bg_tasks) {
+	/* Cute; this un-logged-in connection has some queued tasks!
+	 * Must copy them over to their own tqueue for accounting...
+	 */
+	tqueue *old_tq = find_tqueue(old_player, 1);
+
+	old_tq->num_bg_tasks = tq->num_bg_tasks;
+	while ((t = dequeue_bg_task(tq)) != 0)
+	    enqueue_bg_task(old_tq, t);
+	tq->num_bg_tasks = 0;
+    }
+    if (dead_tq) {
+	/* Copy over tasks from old queue for player */
+	tq->num_bg_tasks = dead_tq->num_bg_tasks;
+	while ((t = dequeue_input_task(dead_tq, DQ_FIRST)) != 0) {
+	    free_task(t, 0);
+	}
+	while ((t = dequeue_bg_task(dead_tq)) != 0) {
+	    enqueue_bg_task(tq, t);
+	}
+	dead_tq->player = NOTHING;	/* it'll be freed by run_ready_tasks */
+	dead_tq->num_bg_tasks = 0;
+    }
+
+    player_connected_silent(old_player, new_player, new);
+    boot_player(old_player);
+
+    return no_var_pack();
+}
+
 void
 register_tasks(void)
 {
@@ -2444,6 +2873,8 @@ register_tasks(void)
     register_function("flush_input", 1, 2, bf_flush_input, TYPE_OBJ, TYPE_ANY);
     register_function("set_task_local", 1, 1, bf_set_task_local, TYPE_ANY);
     register_function("task_local", 0, 0, bf_task_local);
+    register_function("switch_player", 2, 3, bf_switch_player,
+		      TYPE_OBJ, TYPE_OBJ, TYPE_ANY);
 }
 
 char rcsid_tasks[] = "$Id: tasks.c,v 1.19 2010/04/22 21:27:25 wrog Exp $";

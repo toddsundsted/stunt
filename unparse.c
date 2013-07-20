@@ -221,7 +221,8 @@ static struct prec prec_table[] =
     {EXPR_ID, 10},
     {EXPR_LIST, 10},
     {EXPR_CALL, 10},
-    {EXPR_LENGTH, 10},
+    {EXPR_FIRST, 10},
+    {EXPR_LAST, 10},
     {EXPR_CATCH, 10}
 };
 
@@ -367,7 +368,10 @@ unparse_stmt_cond(Stream * str, struct Stmt_Cond cond, int indent)
 static void
 unparse_stmt_list(Stream * str, struct Stmt_List list, int indent)
 {
-    stream_printf(str, "for %s in (", prog->var_names[list.id]);
+    if (list.index > -1)
+	stream_printf(str, "for %s, %s in (", prog->var_names[list.id], prog->var_names[list.index]);
+    else
+	stream_printf(str, "for %s in (", prog->var_names[list.id]);
     unparse_expr(str, list.expr);
     stream_add_char(str, ')');
     output(str);
@@ -716,7 +720,11 @@ unparse_expr(Stream * str, Expr * expr)
 	stream_add_string(str, "'");
 	break;
 
-    case EXPR_LENGTH:
+    case EXPR_FIRST:
+	stream_add_string(str, "^");
+	break;
+
+    case EXPR_LAST:
 	stream_add_string(str, "$");
 	break;
 

@@ -28,7 +28,6 @@
 #include "map.h"
 #include "match.h"
 #include "numbers.h"
-#include "ref_count.h"
 #include "server.h"
 #include "storage.h"
 #include "streams.h"
@@ -159,6 +158,10 @@ complex_free_var(Var v)
 	if (delref(v.v.tree) == 0)
 	    destroy_map(v);
 	break;
+    case TYPE_ITER:
+	if (delref(v.v.trav) == 0)
+	    destroy_iter(v);
+	break;
     case TYPE_FLOAT:
 	if (delref(v.v.fnum) == 0)
 	    myfree(v.v.fnum, M_FLOAT);
@@ -175,6 +178,9 @@ complex_var_ref(Var v)
 	break;
     case TYPE_MAP:
 	addref(v.v.tree);
+	break;
+    case TYPE_ITER:
+	addref(v.v.trav);
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -198,6 +204,9 @@ complex_var_dup(Var v)
 	break;
     case TYPE_MAP:
 	v = map_dup(v);
+	break;
+    case TYPE_ITER:
+	v = iter_dup(v);
 	break;
     case TYPE_LIST:
 	new = new_list(v.v.list[0].v.num);
@@ -229,6 +238,9 @@ var_refcount(Var v)
     case TYPE_MAP:
 	return refcount(v.v.tree);
 	break;
+    case TYPE_ITER:
+	return refcount(v.v.trav);
+	break;
     case TYPE_FLOAT:
 	return refcount(v.v.fnum);
 	break;
@@ -246,15 +258,50 @@ is_true(Var v)
 	    || (v.type == TYPE_MAP && !mapempty(v)));
 }
 
+/* What is the sound of the comparison:
+ *   [1 -> 2] < [2 -> 1]
+ * I don't know either; therefore, I do not compare maps
+ * (nor other collection types, for the time being).
+ */
+int
+compare(Var lhs, Var rhs, int case_matters)
+{
+    if (lhs.type == rhs.type) {
+	switch (lhs.type) {
+	case TYPE_INT:
+	    return lhs.v.num - rhs.v.num;
+	case TYPE_OBJ:
+	    return lhs.v.obj - rhs.v.obj;
+	case TYPE_ERR:
+	    return lhs.v.err - rhs.v.err;
+	case TYPE_STR:
+	    if (lhs.v.str == rhs.v.str)
+		return 0;
+	    else if (case_matters)
+		return strcmp(lhs.v.str, rhs.v.str);
+	    else
+		return mystrcasecmp(lhs.v.str, rhs.v.str);
+	case TYPE_FLOAT:
+	    if (lhs.v.fnum == rhs.v.fnum)
+		return 0;
+	    else
+		return *(lhs.v.fnum) - *(rhs.v.fnum);
+	default:
+	    panic("COMPARE: Invalid value type");
+	}
+    }
+    return lhs.type - rhs.type;
+}
+
 int
 equality(Var lhs, Var rhs, int case_matters)
 {
-    if (lhs.type == TYPE_FLOAT || rhs.type == TYPE_FLOAT)
-	return do_equals(lhs, rhs);
-    else if (lhs.type != rhs.type)
-	return 0;
-    else {
+    if (lhs.type == rhs.type) {
 	switch (lhs.type) {
+	case TYPE_CLEAR:
+	    return 1;
+	case TYPE_NONE:
+	    return 1;
 	case TYPE_INT:
 	    return lhs.v.num == rhs.v.num;
 	case TYPE_OBJ:
@@ -262,28 +309,21 @@ equality(Var lhs, Var rhs, int case_matters)
 	case TYPE_ERR:
 	    return lhs.v.err == rhs.v.err;
 	case TYPE_STR:
-	    if (case_matters)
+	    if (lhs.v.str == rhs.v.str)
+		return 1;
+	    else if (case_matters)
 		return !strcmp(lhs.v.str, rhs.v.str);
 	    else
 		return !mystrcasecmp(lhs.v.str, rhs.v.str);
+	case TYPE_FLOAT:
+	    if (lhs.v.fnum == rhs.v.fnum)
+		return 1;
+	    else
+		return *(lhs.v.fnum) == *(rhs.v.fnum);
+	case TYPE_LIST:
+	    return listequal(lhs, rhs, case_matters);
 	case TYPE_MAP:
 	    return mapequal(lhs, rhs, case_matters);
-	    break;
-	case TYPE_LIST:
-	    if (lhs.v.list[0].v.num != rhs.v.list[0].v.num)
-		return 0;
-	    else {
-		int i;
-
-		if (lhs.v.list == rhs.v.list) {
-		    return 1;
-		}
-		for (i = 1; i <= lhs.v.list[0].v.num; i++) {
-		    if (!equality(lhs.v.list[i], rhs.v.list[i], case_matters))
-			return 0;
-		}
-		return 1;
-	    }
 	default:
 	    panic("EQUALITY: Unknown value type");
 	}

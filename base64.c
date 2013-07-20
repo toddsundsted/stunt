@@ -66,21 +66,21 @@ static const unsigned char base64_table[64] =
  * buffer is null terminated to make it easier to use as a C
  * string. The null terminator is not included in out_len.
  */
-unsigned char *
-base64_encode(const unsigned char *src, size_t len, size_t *out_len)
+char *
+base64_encode(const char *src, size_t len, size_t *out_len)
 {
-    unsigned char *out, *pos;
+    char *out, *pos;
     const unsigned char *end, *in;
     size_t olen;
 
     olen = len * 4 / 3 + 4; /* 3-byte blocks to 4-byte */
-    olen++; /* nul termination */
+    olen++;                 /* nul termination */
     out = mymalloc(olen, M_STRING);
     if (out == NULL)
 	return NULL;
 
-    end = src + len;
-    in = src;
+    end = (unsigned char *)(src + len);
+    in = (unsigned char *)src;
     pos = out;
     while (end - in >= 3) {
 	*pos++ = base64_table[in[0] >> 2];
@@ -118,10 +118,11 @@ base64_encode(const unsigned char *src, size_t len, size_t *out_len)
  *
  * Caller is responsible for freeing the returned buffer.
  */
-unsigned char *
-base64_decode(const unsigned char *src, size_t len, size_t *out_len)
+char *
+base64_decode(const char *src, size_t len, size_t *out_len)
 {
-    unsigned char dtable[256], *out, *pos, in[4], block[4], tmp;
+    char *out, *pos;
+    unsigned char dtable[256], in[4], block[4], tmp;
     size_t i, count, olen;
 
     memset(dtable, 0x80, 256);
@@ -131,7 +132,7 @@ base64_decode(const unsigned char *src, size_t len, size_t *out_len)
 
     count = 0;
     for (i = 0; i < len; i++) {
-	if (dtable[src[i]] != 0x80)
+	if (dtable[(unsigned char)src[i]] != 0x80)
 	    count++;
     }
 
@@ -145,7 +146,7 @@ base64_decode(const unsigned char *src, size_t len, size_t *out_len)
 
     count = 0;
     for (i = 0; i < len; i++) {
-	tmp = dtable[src[i]];
+	tmp = dtable[(unsigned char)src[i]];
 	if (tmp == 0x80)
 	    continue;
 

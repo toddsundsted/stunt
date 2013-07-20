@@ -188,6 +188,16 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 	     stream_alloc_maximum = value + 1;			\
 	   }))							\
 								\
+  DEFINE( SVO_MAX_MAP_CONCAT, max_map_concat,			\
+								\
+	  int, DEFAULT_MAX_MAP_CONCAT,				\
+	 _STATEMENT({						\
+	     if (0 < value && value < MIN_MAP_CONCAT_LIMIT)	\
+		 value = MIN_MAP_CONCAT_LIMIT;			\
+	     else if (value <= 0 || MAX_MAP < value)		\
+		 value = MAX_MAP;				\
+	   }))							\
+								\
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
 	  flag, 0, /* already canonical */			\
 	  )
@@ -221,7 +231,7 @@ enum Server_Option {
 #define server_int_option_cached(srvopt)   (_server_int_option_cache[srvopt])
 
 
-extern int _server_int_option_cache[]; /* private */
+extern int32 _server_int_option_cache[]; /* private */
 
 
 
@@ -230,8 +240,11 @@ enum Fork_Result {
 };
 extern enum Fork_Result fork_server(const char *subtask_name);
 
+extern void player_connected_silent(Objid old_id, Objid new_id,
+				    int is_newly_created);
 extern void player_connected(Objid old_id, Objid new_id,
 			     int is_newly_created);
+extern int is_player_connected(Objid player);
 extern void notify(Objid player, const char *message);
 extern void boot_player(Objid player);
 

@@ -33,6 +33,7 @@
 #include "list.h"
 #include "log.h"
 #include "map.h"
+#include "server.h"
 #include "storage.h"
 #include "structures.h"
 #include "utils.h"
@@ -57,9 +58,6 @@
 
 #define HEIGHT_LIMIT 64		/* Tallest allowable tree */
 
-typedef struct rbnode rbnode;
-typedef struct rbtrav rbtrav;
-
 struct rbtree {
     rbnode *root;		/* Top of the tree */
     size_t size;		/* Number of items */
@@ -82,31 +80,7 @@ struct rbtrav {
 static int
 node_compare(const rbnode *node1, const rbnode *node2, int case_matters)
 {
-    if (node1->key.type == node2->key.type) {
-	switch ((int)node1->key.type) {
-	case TYPE_STR:
-	    if (node1->key.v.str == node2->key.v.str)
-		return 0;
-	    else if (case_matters)
-		return strcmp(node1->key.v.str, node2->key.v.str);
-	    else
-		return mystrcasecmp(node1->key.v.str, node2->key.v.str);
-	case TYPE_FLOAT:
-	    if (node1->key.v.fnum == node2->key.v.fnum)
-		return 0;
-	    else
-		return *(node1->key.v.fnum) - *(node2->key.v.fnum);
-	case TYPE_OBJ:
-	    return node1->key.v.obj - node2->key.v.obj;
-	case TYPE_INT:
-	    return node1->key.v.num - node2->key.v.num;
-	case TYPE_ERR:
-	    return (int)node1->key.v.err - (int)node2->key.v.err;
-	default:
-	    panic("NODE_COMPARE: Unsupported type");
-	}
-    } else
-	return node1->key.type - node2->key.type;
+    return compare(node1->key, node2->key, case_matters);
 }
 
 static void
@@ -166,7 +140,7 @@ rbdouble(rbnode *root, int dir)
 static rbnode *
 new_node(rbtree *tree, Var key, Var value)
 {
-    rbnode *rn = (rbnode *) mymalloc(sizeof *rn, M_NODE);
+    rbnode *rn = (rbnode *)mymalloc(sizeof *rn, M_NODE);
 
     if (rn == NULL)
 	return NULL;
@@ -186,7 +160,7 @@ new_node(rbtree *tree, Var key, Var value)
 static rbtree *
 rbnew(void)
 {
-    rbtree *rt = (rbtree *) mymalloc(sizeof *rt, M_TREE);
+    rbtree *rt = (rbtree *)mymalloc(sizeof *rt, M_TREE);
 
     if (rt == NULL)
 	return NULL;
@@ -253,7 +227,44 @@ rbfind(rbtree *tree, rbnode *node, int case_matters)
 	it = it->link[cmp < 0];
     }
 
-    return it == NULL ? NULL : it;
+    return it;
+}
+
+/*
+ * Searches for a copy of the specified node data in a red black tree.
+ * Returns a new traversal object initialized to start at the
+ * specified node, or a null pointer if no data could be found.  The
+ * pointer must be released with `rbtdelete'.
+ */
+static rbtrav *
+rbseek(rbtree *tree, rbnode *node, int case_matters)
+{
+    rbtrav *trav = (rbtrav *)mymalloc(sizeof(rbtrav), M_TRAV);
+
+    trav->tree = tree;
+    trav->it = tree->root;
+    trav->top = 0;
+
+    while (trav->it != NULL) {
+	int cmp = node_compare(trav->it, node, case_matters);
+
+	if (cmp == 0)
+	    break;
+
+	/*
+	   If the tree supports duplicates, they should be
+	   chained to the right subtree for this to work
+	 */
+	trav->path[trav->top++] = trav->it;
+	trav->it = trav->it->link[cmp < 0];
+    }
+
+    if (trav->it == NULL) {
+	myfree(trav, M_TRAV);
+	trav = NULL;
+    }
+
+    return trav;
 }
 
 /*
@@ -443,7 +454,7 @@ rberase(rbtree *tree, rbnode *node)
 static rbtrav *
 rbtnew(void)
 {
-    return (rbtrav *) mymalloc(sizeof(rbtrav), M_TRAV);
+    return (rbtrav *)mymalloc(sizeof(rbtrav), M_TRAV);
 }
 
 /*
@@ -591,22 +602,17 @@ destroy_map(Var map)
 Var
 map_dup(Var map)
 {
-    rbtrav *trav;
+    rbtrav trav;
     rbnode node;
     const rbnode *pnode;
     Var new = empty_map();
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAP_DUP: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
+    for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(new.v.tree, &node))
 	    panic("MAP_DUP: rbinsert failed");
     }
-
-    rbtdelete(trav);
 
     return new;
 }
@@ -615,21 +621,15 @@ map_dup(Var map)
 int
 map_sizeof(rbtree *tree)
 {
-    rbtrav *trav;
-    rbnode node;
+    rbtrav trav;
     const rbnode *pnode;
     int c = sizeof(rbtree);
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAP_SIZEOF: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, tree); pnode; pnode = rbtnext(trav)) {
+    for (pnode = rbtfirst(&trav, tree); pnode; pnode = rbtnext(&trav)) {
 	c += sizeof(rbnode) - 2 * sizeof(Var);
 	c += value_bytes(pnode->key);
 	c += value_bytes(pnode->value);
     }
-
-    rbtdelete(trav);
 
     return c;
 }
@@ -637,6 +637,15 @@ map_sizeof(rbtree *tree)
 Var
 mapinsert(Var map, Var key, Var value)
 {				/* consumes `map', `key', `value' */
+    /* Prevent the insertion of invalid values -- specifically keys
+     * that have the values `none' and `clear' (which are used as
+     * boundary conditions in the looping logic), and keys that are
+     * collections (for which `compare' does not currently work).
+     */
+    if (key.type == TYPE_NONE || key.type == TYPE_CLEAR
+	|| is_collection(key))
+	panic("MAPINSERT: invalid key");
+
     Var new = var_refcount(map) == 1 ? var_ref(map) : map_dup(map);
 
     rbnode node;
@@ -653,7 +662,7 @@ mapinsert(Var map, Var key, Var value)
     return new;
 }
 
-int
+const rbnode *
 maplookup(Var map, Var key, Var *value, int case_matters)
 {				/* does NOT consume `map' or `'key',
 				   does NOT increment the ref count on `value' */
@@ -662,44 +671,56 @@ maplookup(Var map, Var key, Var *value, int case_matters)
 
     node.key = key;
     pnode = rbfind(map.v.tree, &node, case_matters);
-    if (pnode == NULL)
-	return 0;
-    if (value)
+    if (pnode && value)
 	*value = pnode->value;
 
-    return 1;
+    return pnode;
+}
+
+/* Seeks to the item with the specified key in the specified map and
+ * returns an iterator value for the map starting at that key.
+ */
+int
+mapseek(Var map, Var key, Var *iter, int case_matters)
+{				/* does NOT consume `map' or `'key',
+				   ALWAYS returns a newly allocated value in `iter' */
+    rbnode node;
+    rbtrav *ptrav;
+
+    node.key = key;
+    ptrav = rbseek(map.v.tree, &node, case_matters);
+    if (ptrav && iter) {
+	iter->type = TYPE_ITER;
+	iter->v.trav = ptrav;
+    } else if (iter) {
+	*iter = none;
+    }
+
+    return ptrav != NULL;
 }
 
 int
 mapequal(Var lhs, Var rhs, int case_matters)
 {
-    rbtrav *trav_lhs, *trav_rhs;
+    rbtrav trav_lhs, trav_rhs;
     const rbnode *pnode_lhs = NULL, *pnode_rhs = NULL;
 
     if (lhs.v.tree == rhs.v.tree)
 	return 1;
 
-    if ((trav_lhs = rbtnew()) == NULL)
-	panic("MAPEQUAL: rbtnew failed");
-    if ((trav_rhs = rbtnew()) == NULL)
-	panic("MAPEQUAL: rbtnew failed");
-
     while (1) {
 	pnode_lhs =
-	    pnode_lhs == NULL ? rbtfirst(trav_lhs, lhs.v.tree)
-	                      : rbtnext(trav_lhs);
+	    pnode_lhs == NULL ? rbtfirst(&trav_lhs, lhs.v.tree)
+	                      : rbtnext(&trav_lhs);
 	pnode_rhs =
-	    pnode_rhs == NULL ? rbtfirst(trav_rhs, rhs.v.tree)
-	                      : rbtnext(trav_rhs);
+	    pnode_rhs == NULL ? rbtfirst(&trav_rhs, rhs.v.tree)
+	                      : rbtnext(&trav_rhs);
 	if (pnode_lhs == NULL || pnode_rhs == NULL)
 	    break;
 	if (!equality(pnode_lhs->key, pnode_rhs->key, case_matters)
 	    || !equality(pnode_lhs->value, pnode_rhs->value, case_matters))
 	    break;
     }
-
-    rbtdelete(trav_lhs);
-    rbtdelete(trav_rhs);
 
     return pnode_lhs == NULL && pnode_rhs == NULL;
 }
@@ -717,29 +738,208 @@ maplength(Var map)
 }
 
 /* Iterate over the map, calling the function `func' once per
- * key/value pair.
+ * key/value pair.  Don't dynamically allocate `rbtrav' because
+ * `mapforeach()' can be called from contexts where exception handling
+ * is in effect.
  */
 int
 mapforeach(Var map, mapfunc func, void *data)
 {				/* does NOT consume `map' */
-    rbtrav *trav;
+    rbtrav trav;
     const rbnode *pnode;
     int first = 1;
+    int ret;
 
-    if ((trav = rbtnew()) == NULL)
-	panic("MAPFOREACH: rbtnew failed");
-
-    for (pnode = rbtfirst(trav, map.v.tree); pnode; pnode = rbtnext(trav)) {
-	int ret = (*func)(pnode->key, pnode->value, data, first);
-	if (ret) {
-	    rbtdelete(trav);
+    for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
+	if ((ret = (*func)(pnode->key, pnode->value, data, first)))
 	    return ret;
-	}
 	first = 0;
     }
 
-    rbtdelete(trav);
     return 0;
+}
+
+int
+mapfirst(Var map, var_pair *pair)
+{
+    rbnode *node = map.v.tree->root;
+
+    if (node != NULL) {
+	while (node->link[0] != NULL) {
+	    node = node->link[0];
+	}
+    }
+
+    if (node != NULL && pair != NULL) {
+	pair->a = node->key;
+	pair->b = node->value;
+    }
+
+    return node != NULL;
+}
+
+int
+maplast(Var map, var_pair *pair)
+{
+    rbnode *node = map.v.tree->root;
+
+    if (node != NULL) {
+	while (node->link[1] != NULL) {
+	    node = node->link[1];
+	}
+    }
+
+    if (node != NULL && pair != NULL) {
+	pair->a = node->key;
+	pair->b = node->value;
+    }
+
+    return node != NULL;
+}
+
+/* Returns the specified range from the map.  `from' and `to' must be
+ * valid iterators for the map or the behavior is unspecified.
+ */
+Var
+maprange(Var map, rbtrav *from, rbtrav *to)
+{				/* consumes `map' */
+    rbnode node;
+    const rbnode *pnode = NULL;
+    Var new = empty_map();
+
+    do {
+	pnode = pnode == NULL ? from->it : rbtnext(from);
+
+	node.key = var_ref(pnode->key);
+	node.value = var_ref(pnode->value);
+	if (!rbinsert(new.v.tree, &node))
+	    panic("MAP_DUP: rbinsert failed");
+    } while (pnode != to->it);
+
+    free_var(map);
+
+    return new;
+}
+
+/* Replaces the specified range in the map.  `from' and `to' must be
+ * valid iterators for the map or the behavior is unspecified.  The
+ * new map is placed in `new' (`new' is first freed).  Returns
+ * `E_NONE' if successful.
+ */
+enum error
+maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *new)
+{				/* consumes `map', `value' */
+    rbtrav trav;
+    rbnode node;
+    const rbnode *pnode = NULL;
+    int32 len = 0;
+    enum error e = E_NONE;
+
+#define CHECK_LENGTH							\
+	if (server_int_option_cached(SVO_MAX_MAP_CONCAT) <= len++) {	\
+	    e = E_QUOTA;						\
+	    goto done;							\
+	}
+
+    if (new == NULL)
+	panic("MAP_DUP: new is NULL");
+
+    free_var(*new);
+    *new = empty_map();
+
+    for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
+	if (pnode == from->it)
+	    break;
+	node.key = var_ref(pnode->key);
+	node.value = var_ref(pnode->value);
+	if (!rbinsert(new->v.tree, &node))
+	    panic("MAP_DUP: rbinsert failed");
+	CHECK_LENGTH;
+    }
+
+    for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
+	node.key = var_ref(pnode->key);
+	node.value = var_ref(pnode->value);
+	rberase(new->v.tree, &node);
+	if (!rbinsert(new->v.tree, &node))
+	    panic("MAP_DUP: rbinsert failed");
+	CHECK_LENGTH;
+    }
+
+    while ((pnode = rbtnext(to))) {
+	node.key = var_ref(pnode->key);
+	node.value = var_ref(pnode->value);
+	rberase(new->v.tree, &node);
+	if (!rbinsert(new->v.tree, &node))
+	    panic("MAP_DUP: rbinsert failed");
+	CHECK_LENGTH;
+    }
+
+#undef CHECK_LENGTH
+
+ done:
+
+    free_var(map);
+    free_var(value);
+
+    return e;
+}
+
+Var
+new_iter(Var map)
+{
+    Var iter;
+
+    iter.type = TYPE_ITER;
+    if ((iter.v.trav = rbtnew()) == NULL)
+	panic("NEW_ITER: rbtnew failed");
+
+    rbtfirst(iter.v.trav, map.v.tree);
+
+    return iter;
+}
+
+/* called from utils.c */
+void
+destroy_iter(Var iter)
+{
+    rbtdelete(iter.v.trav);
+}
+
+/* called from utils.c */
+Var
+iter_dup(Var iter)
+{
+    panic("ITER_DUP: don't do this");
+
+    return none;
+}
+
+int
+iterget(Var iter, var_pair *pair)
+{
+    if (iter.v.trav->it) {
+	pair->a = iter.v.trav->it->key;
+	pair->b = iter.v.trav->it->value;
+
+	return 1;
+    }
+
+    return 0;
+}
+
+void
+iternext(Var iter)
+{
+    rbtnext(iter.v.trav);
+}
+
+/* called from execute.c */
+
+void
+clear_node_value(const rbnode *node)
+{
+    ((rbnode *)node)->value.type = E_NONE;
 }
 
 /**** built in functions ****/

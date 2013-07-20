@@ -205,7 +205,6 @@ dbio_read_string_intern(void)
     return r;
 }
 
-
 Var
 dbio_read_var(void)
 {
@@ -232,6 +231,9 @@ dbio_read_var(void)
     case TYPE_FINALLY:
 	r.v.num = dbio_read_num();
 	break;
+    case _TYPE_FLOAT:
+	r = new_float(dbio_read_float());
+	break;
     case _TYPE_MAP:
 	l = dbio_read_num();
 	r = new_map();
@@ -242,14 +244,14 @@ dbio_read_var(void)
 	    r = mapinsert(r, key, value);
 	}
 	break;
-    case _TYPE_FLOAT:
-	r = new_float(dbio_read_float());
-	break;
     case _TYPE_LIST:
 	l = dbio_read_num();
 	r = new_list(l);
 	for (i = 0; i < l; i++)
 	    r.v.list[i + 1] = dbio_read_var();
+	break;
+    case _TYPE_ITER:
+	r = dbio_read_var();
 	break;
     default:
 	errlog("DBIO_READ_VAR: Unknown type (%d) at DB file pos. %ld\n",
@@ -388,6 +390,15 @@ void
 dbio_write_var(Var v)
 {
     int i;
+
+    /* don't write out the iterator */
+    if (v.type == TYPE_ITER) {
+	var_pair pair;
+	iterget(v, &pair)
+	    ? dbio_write_var(pair.a)
+	    : dbio_write_var(clear);
+	return;
+    }
 
     dbio_write_num((int) v.type & TYPE_DB_MASK);
     switch ((int) v.type) {

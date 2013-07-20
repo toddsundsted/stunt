@@ -60,7 +60,8 @@ typedef enum {
     TYPE_CATCH,			/* on-stack marker for an exception handler */
     TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
     _TYPE_FLOAT,		/* floating-point number; user-visible */
-    _TYPE_MAP			/* map; user-visible */
+    _TYPE_MAP,			/* map; user-visible */
+    _TYPE_ITER			/* map iterator; not visible */
 } var_type;
 
 /* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
@@ -77,12 +78,17 @@ typedef enum {
 #define TYPE_FLOAT		(_TYPE_FLOAT | TYPE_COMPLEX_FLAG)
 #define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
 #define TYPE_MAP		(_TYPE_MAP | TYPE_COMPLEX_FLAG)
+#define TYPE_ITER		(_TYPE_ITER | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
 
 typedef struct Var Var;
+
+/* see map.c */
 typedef struct rbtree rbtree;
+typedef struct rbnode rbnode;
+typedef struct rbtrav rbtrav;
 
 /* Experimental.  On the Alpha, DEC cc allows us to specify certain
  * pointers to be 32 bits, but only if we compile and link with "-taso
@@ -108,10 +114,17 @@ struct Var {
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
         rbtree *tree;		/* MAP */
+        rbtrav *trav;		/* ITER */
 	double *fnum;		/* FLOAT */
     } v;
     var_type type;
 };
+
+/* generic tuples */
+typedef struct var_pair {
+    Var a;
+    Var b;
+} var_pair;
 
 #ifdef SHORT_ALPHA_VAR_POINTERS
 #pragma pointer_size restore
@@ -120,6 +133,7 @@ struct Var {
 extern Var zero;		/* see numbers.c */
 extern Var nothing;		/* see objects.c */
 extern Var clear;		/* see objects.c */
+extern Var none;		/* see objects.c */
 
 /*
  * Hard limits on string and list sizes are imposed mainly to keep
@@ -130,8 +144,19 @@ extern Var clear;		/* see objects.c */
  * (see DEFAULT_MAX_LIST_CONCAT and DEFAULT_MAX_STRING_CONCAT
  *  in options.h)
  */
-#define MAX_LIST   (INT32_MAX/sizeof(Var) - 2)
-#define MAX_STRING (INT32_MAX - 9)
+#define MAX_LIST	(INT32_MAX/sizeof(Var) - 2)
+#define MAX_STRING	(INT32_MAX - 9)
+
+/*
+ * Maps are not allocated in chunks so set the max to the default.
+ */
+#define MAX_MAP		DEFAULT_MAX_MAP_CONCAT
+
+static inline bool
+is_none(Var v)
+{
+    return TYPE_NONE == v.type;
+}
 
 static inline bool
 is_collection(Var v)

@@ -281,7 +281,8 @@ free_expr(Expr * expr)
 	break;
 
     case EXPR_ID:
-    case EXPR_LENGTH:
+    case EXPR_FIRST:
+    case EXPR_LAST:
 	/* Do nothing. */
 	break;
 

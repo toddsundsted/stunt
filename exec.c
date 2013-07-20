@@ -323,7 +323,7 @@ exec_waiter_suspender(vm the_vm, void *data)
 
     tw->the_vm = the_vm;
 
- success:
+ /* success */
     UNBLOCK_SIGCHLD;
     return E_NONE;
 
@@ -336,7 +336,7 @@ exec_waiter_suspender(vm the_vm, void *data)
  free_task_waiting_on_exec:
     free_task_waiting_on_exec(tw);
 
- fail:
+ /* fail */
     UNBLOCK_SIGCHLD;
     return error;
 }
@@ -441,7 +441,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
  free_arglist:
     free_var(arglist);
 
- fail:
+ /* fail */
     return pack;
 }
 

@@ -31,7 +31,6 @@
 #include "options.h"
 #include "pattern.h"
 #include "random.h"
-#include "ref_count.h"
 #include "sha1.h"
 #include "sha256.h"
 #include "streams.h"
@@ -213,6 +212,24 @@ sublist(Var list, int lower, int upper)
     }
 }
 
+int
+listequal(Var lhs, Var rhs, int case_matters)
+{
+    if (lhs.v.list == rhs.v.list)
+	return 1;
+
+    if (lhs.v.list[0].v.num != rhs.v.list[0].v.num)
+	return 0;
+
+    int i, c = lhs.v.list[0].v.num;
+    for (i = 1; i <= c; i++) {
+	if (!equality(lhs.v.list[i], rhs.v.list[i], case_matters))
+	    return 0;
+    }
+
+    return 1;
+}
+
 static void
 stream_add_tostr(Stream * s, Var v)
 {
@@ -391,14 +408,14 @@ substr(Var str, int lower, int upper)
 }
 
 Var
-strget(Var str, Var i)
+strget(Var str, int i)
 {
     Var r;
     char *s;
 
     r.type = TYPE_STR;
     s = str_dup(" ");
-    s[0] = str.v.str[i.v.num - 1];
+    s[0] = str.v.str[i - 1];
     r.v.str = s;
     return r;
 }

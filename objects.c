@@ -780,7 +780,14 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (what, parent) */
-    Var ancestors = db_ancestors(arglist.v.list[1].v.obj, true);
+    Objid oid = arglist.v.list[1].v.obj;
+
+    if (!valid(oid)) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
+    Var ancestors = db_ancestors(oid, true);
 
     if (ismember(arglist.v.list[2], ancestors, 1)) {
 	free_var(arglist);
@@ -796,6 +803,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
 
 Var nothing;			/* useful constant */
 Var clear;			/* useful constant */
+Var none;			/* useful constant */
 
 void
 register_objects(void)
@@ -803,7 +811,7 @@ register_objects(void)
     nothing.type = TYPE_OBJ;
     nothing.v.obj = NOTHING;
     clear.type = TYPE_CLEAR;
-    clear.v.num = 0;
+    none.type = TYPE_NONE;
 
     register_function("toobj", 1, 1, bf_toobj, TYPE_ANY);
     register_function("typeof", 1, 1, bf_typeof, TYPE_ANY);

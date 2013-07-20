@@ -23,7 +23,8 @@
 #define NUM_READY_VARS 32
 
 enum Extended_Opcode {
-    EOP_RANGESET, EOP_LENGTH,
+    EOP_RANGESET, EOP_LENGTH, /* EOP_LENGTH is retired */
+    EOP_FIRST, EOP_LAST,
     EOP_PUSH_LABEL, EOP_END_CATCH, EOP_END_EXCEPT, EOP_END_FINALLY,
     EOP_CONTINUE,
 
@@ -32,13 +33,16 @@ enum Extended_Opcode {
     EOP_WHILE_ID, EOP_EXIT, EOP_EXIT_ID,
     EOP_SCATTER, EOP_EXP,
 
+    EOP_FOR_LIST_1, EOP_FOR_LIST_2,
+
     Last_Extended_Opcode = 255
 };
 
 enum Opcode {
 
     /* control/statement constructs with 1 tick: */
-    OP_IF, OP_WHILE, OP_EIF, OP_FORK, OP_FORK_WITH_ID, OP_FOR_LIST,
+    OP_IF, OP_WHILE, OP_EIF, OP_FORK, OP_FORK_WITH_ID,
+    OP_FOR_LIST, /* retired */
     OP_FOR_RANGE,
 
     /* expr-related opcodes with 1 tick: */

@@ -21,6 +21,7 @@
 #include "eval_vm.h"
 #include "execute.h"
 #include "log.h"
+#include "map.h"
 #include "options.h"
 #include "storage.h"
 #include "structures.h"
@@ -104,7 +105,11 @@ read_vm(int task_id)
     char c;
     vm the_vm;
 
-    Var local = dbio_read_var();
+    Var local;
+    if (dbio_input_version >= DBV_TaskLocal)
+	local = dbio_read_var();
+    else
+	local = new_map();
 
     if (dbio_scanf("%u %d %u%c", &top, &vector, &func_id, &c) != 4
 	|| (c == ' '

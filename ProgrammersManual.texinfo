@@ -1,17 +1,17 @@
 \input texinfo   @c -*-texinfo-*-
-@comment %**start of header (This is for running Texinfo on a region.)
+@comment %**start of header
 @set INDEX
 @setfilename ProgrammersManual.info
 @settitle LambdaMOO Programmer's Manual
 @c Uncomment the following line for two-sided printing.
 @c @setchapternewpage odd
 @macro lmversion
-1.8.3
+1.8.4
 @end macro
 @macro lmdate
-August 2006
+December 2011
 @end macro
-@comment %**end of header (This is for running Texinfo on a region.)
+@comment %**end of header
 
 @ifinfo
 @format
@@ -30,6 +30,7 @@ August 2006
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
 Copyright @copyright{} 1997 by Erik Ostrom.
 Copyright @copyright{} 2004 by Roger F. Crew.
+Copyright @copyright{} 2011 by Todd Sundsted.
 @end format
 
 Permission is granted to make and distribute verbatim copies of this manual
@@ -69,7 +70,8 @@ author.
 @vskip 0pt plus 1filll
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.@*
 Copyright @copyright{} 1997 by Erik Ostrom.@*
-Copyright @copyright{} 2004 by Roger F. Crew.
+Copyright @copyright{} 2004 by Roger F. Crew.@*
+Copyright @copyright{} 2011 by Todd Sundsted.
 
 Copies of the electronic source for this document can be obtained using
 anonymous FTP on the Internet.  At the site @code{ftp.lambda.moo.mud.org} the
@@ -111,6 +113,7 @@ author.
           Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
           Copyright @copyright{} 1997 by Erik Ostrom.
           Copyright @copyright{} 2004 by Roger F. Crew.
+          Copyright @copyright{} 2011 by Todd Sundsted.
 @end format
 @end ifset
 @end ifnothtml
@@ -211,18 +214,38 @@ There are only a few kinds of values that MOO programs can manipulate:
 
 @itemize @bullet
 @item
+object numbers (of the objects in the database)
+@item
 integers (in a specific, large range)
 @item
 real numbers (represented with floating-point numbers)
 @item
 strings (of characters)
 @item
-objects (in the virtual reality)
-@item
 errors (arising during program execution)
 @item
 lists (of all of the above, including lists)
+@item
+maps (or collections of key/value pairs)
 @end itemize
+
+@dfn{Objects} are the backbone of the MOO database and, as such, deserve a
+great deal of discussion; the entire next section is devoted to them.  For now,
+let it suffice to say that every object has an @dfn{object number}, unique to
+that object.  In programs, we write a reference to a particular object by
+putting a hash mark (@samp{#}) followed by the number, like this:
+
+@example
+#495
+@end example
+
+@noindent
+Object numbers are always integers.
+
+There are three special object numbers used for a variety of purposes:
+@code{#-1}, @code{#-2}, and @code{#-3}, usually referred to in the
+LambdaCore database as @code{$nothing}, @code{$ambiguous_match}, and
+@code{$failed_match}, respectively.
 
 MOO supports the integers from @minus{}2^31 (that is, negative two to the power
 of 31) up to 2^31 @minus{} 1 (one less than two to the power of 31); that's
@@ -304,24 +327,6 @@ in binary mode.  See the descriptions of the @code{set_connection_option()},
 @code{encode_binary()}, and @code{decode_binary()} functions for more details.
 @end quotation
 
-@dfn{Objects} are the backbone of the MOO database and, as such, deserve a
-great deal of discussion; the entire next section is devoted to them.  For now,
-let it suffice to say that every object has a number, unique to that object.
-In programs, we write a reference to a particular object by putting a hash mark
-(@samp{#}) followed by the number, like this:
-
-@example
-#495
-@end example
-
-@noindent
-Object numbers are always integers.
-
-There are three special object numbers used for a variety of purposes:
-@code{#-1}, @code{#-2}, and @code{#-3}, usually referred to in the
-LambdaCore database as @code{$nothing}, @code{$ambiguous_match}, and
-@code{$failed_match}, respectively.
-
 @dfn{Errors} are, by far, the least frequently used values in MOO.  In the
 normal case, when a program attempts an operation that is erroneous for some
 reason (for example, trying to add a number to a character string), the server
@@ -350,14 +355,20 @@ E_NACC      @r{Move refused by destination}
 E_INVARG    @r{Invalid argument}
 E_QUOTA     @r{Resource limit exceeded}
 E_FLOAT     @r{Floating-point arithmetic error}
+E_FILE      @r{File error}
+E_EXEC      @r{Exec error}
+E_INTRPT    @r{Interrupted}
 @end example
 
-The final kind of value in MOO programs is @dfn{lists}.  A list is a sequence
-of arbitrary MOO values, possibly including other lists.  In programs,
+MOO supports two kinds of collections.  Collections hold zero or more related
+MOO values, including other collections.
+
+The first kind of collection in MOO programs is a @dfn{list}.  A list is a
+sequence of arbitrary MOO values, possibly including other lists.  In programs,
 lists are written in mathematical set notation with each of the elements
-written out in order, separated by commas, the whole enclosed in curly
-braces (@samp{@{} and @samp{@}}).  For example, a list of the names of
-the days of the week is written like this:
+written out in order, separated by commas, the whole enclosed in curly braces
+(@samp{@{} and @samp{@}}).  For example, a list of the names of the days of the
+week is written like this:
 
 @example
 @{"Sunday", "Monday", "Tuesday", "Wednesday",
@@ -369,6 +380,25 @@ Note that it doesn't matter that we put a line-break in the middle of
 the list.  This is true in general in MOO: anywhere that a space can go,
 a line-break can go, with the same meaning.  The only exception is
 inside character strings, where line-breaks are not allowed.
+
+The other kind of collection is a @dfn{map}.  A map, which is sometimes called
+a ``dictionary'', implements an ordered associative relationship between pairs
+of MOO values.  The first value in the pair is typically called the ``key'' and
+the second value is typically called the ``value''.  The value can hold any MOO
+value, including lists and other maps.  The key can hold any non-collection
+value (that is, it cannot hold a list or map) and each key in a map must be
+unique.  In programs, maps are written as a sequence of key/value pairs,
+separated by commas, enclosed in brackets (@samp{[} and @samp{]}).  In each
+pair, the key and value are separated by an arrow (@samp{->}).  A map of names
+to ages is written like this:
+
+@example
+["Bob" -> 23, "Sally" -> 13, "Dave" -> 19,
+ "Peter" -> 27, "Karen" -> 27]
+@end example
+
+@noindent
+Note that while the keys must be unique, the values are not required to be so.
 
 @node Objects,  , Values, Database
 @comment  node-name,  next,  previous,  up
@@ -414,26 +444,25 @@ There are three fundamental @dfn{attributes} to every object:
 A flag (either true or false) specifying whether or not the object represents
 a player,
 @item
-The object that is its @dfn{parent}, and
+A list of object that are its @dfn{parents}, and
 @item
 A list of the objects that are its @dfn{children}; that is, those objects for
-which this object is their parent.
+which this object is one of their parents.
 @end enumerate
 
 The act of creating a character sets the player attribute of an object and
 only a wizard (using the function @code{set_player_flag()}) can change that
 setting.  Only characters have the player bit set to 1.
 
-The parent/child hierarchy is used for classifying objects into general classes
-and then sharing behavior among all members of that class.  For example, the
-LambdaCore database contains an object representing a sort of ``generic'' room.
-All other rooms are @dfn{descendants} (i.e., children or children's children,
-or @dots{}) of that one.  The generic room defines those pieces of behavior
-that are common to all rooms; other rooms specialize that behavior for their
-own purposes.  The notion of classes and specialization is the very essence of
-what is meant by @dfn{object-oriented} programming.  Only the functions
-@code{create()}, @code{recycle()}, @code{chparent()}, and @code{renumber()} can
-change the parent and children attributes.
+The parent/child relationship is used for sharing behavior among objects.
+For example, the LambdaCore database contains an object representing a sort of
+``generic'' room.  All other rooms are @dfn{descendants} (i.e., children or
+children's children, or @dots{}) of that one.  The generic room defines those
+pieces of behavior that are common to all rooms; other rooms specialize that
+behavior for their own purposes.  The notion of objects and specialization is
+the very essence of what is meant by @dfn{object-oriented} programming.  Only
+the functions @code{create()}, @code{recycle()}, @code{chparents()}, and
+@code{renumber()} can change the parents and children attributes.
 
 @node Properties, Verbs, Attributes, Objects
 @comment  node-name,  next,  previous,  up
@@ -487,8 +516,8 @@ can only be set by a wizard or by the owner of the object.
 
 The @samp{f} bit specifies whether or not this object is @dfn{fertile}, whether
 or not players other than the owner of this object can create new objects with
-this one as the parent.  It also controls whether or not non-owners can use the
-@code{chparent()} built-in function to make this object the parent of an
+this one as a parent.  It also controls whether or not non-owners can use the
+@code{chparents()} built-in function to make this object a parent of an
 existing object.  The @samp{f} bit can only be set by a wizard or by the owner
 of the object.
 
@@ -501,7 +530,7 @@ As mentioned above, it is possible, and very useful, for objects to have other
 properties aside from the built-in ones.  These can come from two sources.
 
 First, an object has a property corresponding to every property in its parent
-object.  To use the jargon of object-oriented programming, this is a kind of
+objects.  To use the jargon of object-oriented programming, this is a kind of
 @dfn{inheritance}.  If some object has a property named @samp{foo}, then so
 will all of its children and thus its children's children, and so on.
 
@@ -528,9 +557,9 @@ permission lets non-owners get the value of the property and, of course, write
 permission lets them set that value.  The @samp{c} permission bit is a little
 more complicated.
 
-Recall that every object has all of the properties that its parent does and
+Recall that every object has all of the properties that its parents do and
 perhaps some more.  Ordinarily, when a child object inherits a property from
-its parent, the owner of the child becomes the owner of that property.  This
+its parents, the owner of the child becomes the owner of that property.  This
 is because the @samp{c} permission bit is ``on'' by default.  If the @samp{c}
 bit is not on, then the inherited property has the same owner in the child as
 it does in the parent.
@@ -1008,7 +1037,7 @@ There are many kinds of expressions in MOO, all of them discussed below.
 * Arithmetic::               Arithmetic Operators
 * Comparisons::              Comparing Values
 * Truth Values::             Values as True and False
-* Indexing::                 Indexing into Lists and Strings
+* Indexing::                 Indexing into Lists, Maps and Strings
 * More On Lists::            Other Operations on Lists
 * Scattering::               Spreading List Elements Among Variables
 * Property Values::          Getting and Setting the Values of Properties
@@ -1126,12 +1155,13 @@ which one must `declare' each variable before using it; MOO has no such
 declarations.)  The following variables always have values:
 
 @example
-INT         FLOAT        OBJ
-STR         LIST         ERR
-player      this         caller
-verb        args         argstr
-dobj        dobjstr      prepstr
-iobj        iobjstr      NUM
+INT         FLOAT       OBJ
+STR         LIST        MAP
+ERR         player      this
+caller      verb        args
+argstr      dobj        dobjstr
+prepstr     iobj        iobjstr
+NUM
 @end example
 
 The values of some of these variables always start out the same:
@@ -1146,6 +1176,8 @@ the same as @code{INT} (for historical reasons)
 an integer, the type code for floating-point numbers
 @item LIST
 an integer, the type code for lists
+@item MAP
+an integer, the type code for maps
 @item STR
 an integer, the type code for strings
 @item OBJ
@@ -1361,6 +1393,8 @@ all floating-point numbers not equal to @code{0.0},
 all non-empty strings (i.e., other than @samp{""}), and
 @item
 all non-empty lists (i.e., other than @samp{@{@}}).
+@item
+all non-empty maps (i.e., other than @samp{[]}).
 @end itemize
 
 @noindent
@@ -1375,6 +1409,8 @@ the floating-point numbers @code{0.0} and @code{-0.0},
 the empty string (@samp{""}),
 @item
 the empty list (@samp{@{@}}),
+@item
+the empty map (@samp{[]}),
 @item
 all object numbers, and
 @item
@@ -1475,69 +1511,76 @@ These two operators behave very much like ``and'' and ``or'' in English:
 
 @node Indexing, More On Lists, Truth Values, Expressions
 @comment  node-name,  next,  previous,  up
-@subsection Indexing into Lists and Strings
+@subsection Indexing into Lists, Maps and Strings
 
-Both strings and lists can be seen as ordered sequences of MOO values.  In the
+Lists, maps and strings can be seen as ordered sequences of MOO values.  In the
 case of strings, each is a sequence of single-character strings; that is, one
 can view the string @code{"bar"} as a sequence of the strings @code{"b"},
 @code{"a"}, and @code{"r"}.  MOO allows you to refer to the elements of lists
 and strings by number, by the @dfn{index} of that element in the list or
 string.  The first element in a list or string has index 1, the second has
-index 2, and so on.
+index 2, and so on.  MOO allows you to refer to the values of maps by the
+@dfn{key} associated with each @dfn{value}.
 
 @menu
-* Extracting::               Extracting an Element from a List or String
-* Replacing::                Replacing an Element of a List or String
-* Subsequences::             Extracting a Subsequence of a List or String
-* Subsequence Replacement::  Replacing a Subsequence of a List or String
+* Extracting::               Extracting an Element from a List, Map or String
+* Replacing::                Replacing an Element of a List, Map or String
+* Subsequences::             Extracting a Subsequence of a List, Map or String
+* Subsequence Replacement::  Replacing a Subsequence of a List, Map or String
 @end menu
 
 @node Extracting, Replacing, Indexing, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Extracting an Element from a List or String
+@subsubsection Extracting an Element from a List, Map or String
 
-The indexing expression in MOO extracts a specified element from a list or
+The indexing expression in MOO extracts a specified element from a list, map or
 string:
 
 @example
 @var{expression-1}[@var{expression-2}]
 @end example
 
-First, @var{expression-1} is evaluated; it must return a list or a string (the
-@dfn{sequence}).  Then, @var{expression-2} is evaluated and must return an
-integer (the @dfn{index}).  If either of the expressions returns some other type
-of value, @code{E_TYPE} is returned.  The index must be between 1 and the
-length of the sequence, inclusive; if it is not, then @code{E_RANGE} is raised.
-The value of the indexing expression is the index'th element in the sequence.
-Anywhere within @var{expression-2}, you can use the symbol @code{$} as an
-expression returning the length of the value of @var{expression-1}.
+First, @var{expression-1} is evaluated; it must return a list, map or a string
+(the @dfn{sequence}).  Then, @var{expression-2} is evaluated and must return an
+integer (the @dfn{index}) for lists and strings, or a non-collection value (the
+@dfn{key}) for maps.  If either of the expressions returns some other type of
+value, @code{E_TYPE} is returned.  For lists and strings, the index must be
+between 1 and the length of the sequence, inclusive; if it is not, then
+@code{E_RANGE} is raised.  The value of the indexing expression is the index'th
+element in the sequence.  For maps, the key must be present; if it is not, then
+@code{E_RANGE} is raised.  The value of the indexing expression is the value
+associated with the given key.  Anywhere within @var{expression-2}, you can use
+the symbol @code{^} as an expression returning the index or key of the first
+element in the sequence.  Likewise, you can use the symbol @code{$} as an
+expression returning the index or key of the last element in
+@var{expression-1}.
 
 @example
-"fob"[2]                @result{}  "o"
-"fob"[1]                @result{}  "f"
-@{#12, #23, #34@}[$ - 1]  @result{}  #23
+"fob"[2]                     @result{}  "o"
+"fob"[1]                     @result{}  "f"
+@{#12, #23, #34@}[$ - 1]       @result{}  #23
+["foo" -> 1, "bar" -> 2][^]  @result{}  1
 @end example
 
 @noindent
-Note that there are no legal indices for the empty string or list, since
-there are no integers between 1 and 0 (the length of the empty string or
-list).
+Note that there are no legal indices/keys for the empty string, list or map.
 
 @quotation
-@emph{Fine point:} The @code{$} expression actually returns the length of the
-value of the expression just before the nearest enclosing @code{[@dots{}]}
-indexing or subranging brackets.  For example:
+@emph{Fine point:} The @code{^} and @code{$} expressions actually return the
+first/last index/key of the expression just before the nearest enclosing
+@code{[@dots{}]} indexing or subranging brackets.  For example:
 @example
+"frob"[@{3, 2, 4@}[^]]     @result{}  "o"
 "frob"[@{3, 2, 4@}[$]]     @result{}  "b"
 @end example
 @end quotation
 
 @node Replacing, Subsequences, Extracting, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Replacing an Element of a List or String
+@subsubsection Replacing an Element of a List, Map or String
 
-It often happens that one wants to change just one particular slot of a list or
-string, which is stored in a variable or a property.  This can be done
+It often happens that one wants to change just one particular slot of a list,
+map or string, which is stored in a variable or a property.  This can be done
 conveniently using an @dfn{indexed assignment} having one of the following
 forms:
 
@@ -1557,31 +1600,39 @@ discussion of object property expressions below for details.  Correspondingly,
 if @var{variable} does not yet have a value (i.e., it has never been assigned
 to), @code{E_VARNF} will be raised.
 
-If @var{index-expr} is not an integer, or if the value of @var{variable} or the
-property is not a list or string, @code{E_TYPE} is raised.  If
-@var{result-expr} is a string, but not of length 1, @code{E_INVARG} is
-raised.  Now suppose @var{index-expr} evaluates to an integer @var{k}.  If
-@var{k} is outside the range of the list or string (i.e.  smaller than 1 or
-greater than the length of the list or string), @code{E_RANGE} is raised.
-Otherwise, the actual assignment takes place.  For lists, the variable or the
-property is assigned a new list that is identical to the original one except at
-the @var{k}-th position, where the new list contains the result of
-@var{result-expr} instead.  For strings, the variable or the property is
-assigned a new string that is identical to the original one, except the
-@var{k}-th character is changed to be @var{result-expr}.
+If @var{index-expr} is not an integer (for lists and strings) or is a
+collection value (for maps), or if the value of @var{variable} or the property
+is not a list, map or string, @code{E_TYPE} is raised.  If @var{result-expr} is
+a string, but not of length 1, @code{E_INVARG} is raised.  Suppose
+@var{index-expr} evaluates to a value @var{k}.  If @var{k} is an integer and is
+outside the range of the list or string (i.e.  smaller than 1 or greater than
+the length of the list or string), @code{E_RANGE} is raised.  If @var{k} is not
+a valid key of the map, @code{E_RANGE} is raised.  Otherwise, the actual
+assignment takes place.  For lists, the variable or the property is assigned a
+new list that is identical to the original one except at the @var{k}-th
+position, where the new list contains the result of @var{result-expr} instead.
+Likewise for maps, the variable or the property is assigned a new map that is
+identical to the original one except for the @var{k} key, where the new map
+contains the result of @var{result-expr} instead.  For strings, the variable or
+the property is assigned a new string that is identical to the original one,
+except the @var{k}-th character is changed to be @var{result-expr}.
 
 The assignment expression itself returns the value of @var{result-expr}.  For
 the following examples, assume that @code{l} initially contains the list
-@code{@{1, 2, 3@}} and that @code{s} initially contains the string "foobar":
+@code{@{1, 2, 3@}}, that @code{m} initially contains the map @code{["one" ->
+1, "two" -> 2]} and that @code{s} initially contains the string "foobar":
 
 @example
 l[5] = 3          @error{}   E_RANGE
 l["first"] = 4    @error{}   E_TYPE
+m[@{@}] = 5         @error{}   E_TYPE
 s[3] = "baz"      @error{}   E_INVARG
 l[2] = l[2] + 3   @result{}   5
 l                 @result{}   @{1, 5, 3@}
 l[2] = "foo"      @result{}   "foo"
 l                 @result{}   @{1, "foo", 3@}
+m["five"] = "bar" @result{}   "bar"
+m                 @result{}   ["one" -> 1, "two" -> 2, "five" -> 5]
 s[2] = "u"        @result{}   "u"
 s                 @result{}   "fuobar"
 s[$] = "z"        @result{}   "z"
@@ -1589,22 +1640,23 @@ s                 @result{}   "fuobaz"
 @end example
 
 @noindent
-Note that the @code{$} expression may also be used in indexed assignments with
-the same meaning as before.
+Note that the @code{^} and @code{$} expressions may also be used in indexed
+assignments with the same meaning as before.
 
 @quotation
 @emph{Fine point:} After an indexed assignment, the variable or property
-contains a @emph{new} list or string, a copy of the original list in all but
+contains a @emph{new} list, map or string, a copy of the original in all but
 the @var{k}-th place, where it contains a new value.  In programming-language
-jargon, the original list is not mutated, and there is no aliasing.  (Indeed,
-no MOO value is mutable and no aliasing ever occurs.)
+jargon, the original sequence is not mutated, and there is no aliasing.
+(Indeed, no MOO value is mutable and no aliasing ever occurs.)
 @end quotation
 
-In the list case, indexed assignment can be nested to many levels, to work on
-nested lists.  Assume that @code{l} initially contains the list
+In the list and map case, indexed assignment can be nested to many levels, to
+work on nested lists and maps.  Assume that @code{l} initially contains the
+following
 
 @example
-@{@{1, 2, 3@}, @{4, 5, 6@}, "foo"@}
+@{@{1, 2, 3@}, @{4, 5, 6@}, "foo", ["bar" -> "baz"]@}
 @end example
 
 @noindent
@@ -1616,11 +1668,13 @@ l[1][8] = 35         @error{}   E_RANGE
 l[3][2] = 7          @error{}   E_TYPE
 l[1][1][1] = 3       @error{}   E_TYPE
 l[2][2] = -l[2][2]   @result{}   -5
-l                    @result{}   @{@{1, 2, 3@}, @{4, -5, 6@}, "foo"@}
+l                    @result{}   @{@{1, 2, 3@}, @{4, -5, 6@}, "foo", ["bar" -> "baz"]@}
 l[2] = "bar"         @result{}   "bar"
-l                    @result{}   @{@{1, 2, 3@}, "bar", "foo"@}
+l                    @result{}   @{@{1, 2, 3@}, "bar", "foo", ["bar" -> "baz"]@}
 l[2][$] = "z"        @result{}   "z"
-l                    @result{}   @{@{1, 2, 3@}, "baz", "foo"@}
+l                    @result{}   @{@{1, 2, 3@}, "baz", "foo", ["bar" -> "baz"]@}
+l[$][^] = #3         @result{}   #3
+l                    @result{}   @{@{1, 2, 3@}, "baz", "foo", ["bar" -> #3]@}
 @end example
 
 @noindent
@@ -1630,27 +1684,30 @@ raise @code{E_TYPE} because @code{l[3]} and @code{l[1][1]} are not lists.
 
 @node Subsequences, Subsequence Replacement, Replacing, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Extracting a Subsequence of a List or String
+@subsubsection Extracting a Subsequence of a List, Map or String
 
-The range expression extracts a specified subsequence from a list or string:
+The range expression extracts a specified subsequence from a list, map or
+string:
 
 @example
 @var{expression-1}[@var{expression-2}..@var{expression-3}]
 @end example
 
 The three expressions are evaluated in order.  @var{Expression-1} must return a
-list or string (the @dfn{sequence}) and the other two expressions must return
-integers (the @dfn{low} and @dfn{high} indices, respectively); otherwise,
-@code{E_TYPE} is raised.  The @code{$} expression can be used in either or both
-of @var{expression-2} and @var{expression-3} just as before, meaning the length
-of the value of @var{expression-1}.
+list, map or string (the @dfn{sequence}) and the other two expressions must
+return integers (the @dfn{low} and @dfn{high} indices, respectively) for lists
+and strings, or non-collection values (the @dfn{begin} and @dfn{end} keys in
+the ordered map, respectively) for maps; otherwise, @code{E_TYPE} is raised.
+The @code{^} and @code{$} expressions can be used in either or both of
+@var{expression-2} and @var{expression-3} just as before.
 
-If the low index is greater than the high index, then the empty string or list
-is returned, depending on whether the sequence is a string or a list.
-Otherwise, both indices must be between 1 and the length of the sequence;
-@code{E_RANGE} is raised if they are not.  A new list or string is returned
-that contains just the elements of the sequence with indices between the low
-and high bounds.
+If the low/begin index/key is greater than/after the high/end index, then the
+empty string, list or map is returned, depending on whether the sequence is a
+string, list or map.  Otherwise, both indices must be between 1 and the length
+of the sequence (for lists or strings) or valid keys (for maps); @code{E_RANGE}
+is raised if they are not.  A new list, map or string is returned that contains
+just the elements of the sequence with indices between the low/begin and
+high/end bounds.
 
 @example
 "foobar"[2..$]                       @result{}  "oobar"
@@ -1659,14 +1716,15 @@ and high bounds.
 @{"one", "two", "three"@}[$ - 1..$]    @result{}  @{"two", "three"@}
 @{"one", "two", "three"@}[3..3]        @result{}  @{"three"@}
 @{"one", "two", "three"@}[17..12]      @result{}  @{@}
+[1 -> "one", 2 -> "two"][1..1]       @result{}  [1 -> "one"]
 @end example
 
 @node Subsequence Replacement,  , Subsequences, Indexing
 @comment  node-name,  next,  previous,  up
-@subsubsection Replacing a Subsequence of a List or String
+@subsubsection Replacing a Subsequence of a List, Map or String
 
-  The subrange assigment replaces a specified subsequence of a list or string
-with a supplied subsequence.  The allowed forms are:
+The subrange assignment replaces a specified subsequence of a list, map or
+string with a supplied subsequence.  The allowed forms are:
 
 @example
 @var{variable}[@var{start-index-expr}..@var{end-index-expr}] = @var{result-expr}
@@ -1675,24 +1733,26 @@ with a supplied subsequence.  The allowed forms are:
 $@var{name}[@var{start-index-expr}..@var{end-index-expr}] = @var{result-expr}
 @end example
 
-As with indexed assigments, the first form writes into a variable, and the last
+As with indexed assignments, the first form writes into a variable, and the last
 three forms write into a property.  The same errors (@code{E_TYPE},
 @code{E_INVIND}, @code{E_PROPNF} and @code{E_PERM} for lack of read/write
 permission on the property) may be raised.  If @var{variable} does not yet have
 a value (i.e., it has never been assigned to), @code{E_VARNF} will be raised.
-As before, the @code{$} expression can be used in either @var{start-index-expr}
-or @var{end-index-expr}, meaning the length of the original value of the
-expression just before the @code{[@dots{}]} part.
+As before, the @code{^} and @code{$} expressions can be used in either
+@var{start-index-expr} or @var{end-index-expr}.
 
-If @var{start-index-expr} or @var{end-index-expr} is not an integer, if the value
-of @var{variable} or the property is not a list or string, or @var{result-expr}
-is not the same type as @var{variable} or the property, @code{E_TYPE} is
-raised.  @code{E_RANGE} is raised if @var{end-index-expr} is less than zero
-or if @var{start-index-expr} is greater than the length of the list or string
-plus one.  Note: the length of @var{result-expr} does not need to be the same
-as the length of the specified range.
+If @var{start-index-expr} or @var{end-index-expr} is not an integer (for lists
+and strings) or is a collection value (for maps), if the value of
+@var{variable} or the property is not a list, map or string, or
+@var{result-expr} is not the same type as @var{variable} or the property,
+@code{E_TYPE} is raised.  For lists and strings, @code{E_RANGE} is raised if
+@var{end-index-expr} is less than zero or if @var{start-index-expr} is greater
+than the length of the list or string plus one.  Note: the length of
+@var{result-expr} does not need to be the same as the length of the specified
+range.  For maps, @code{E_RANGE} is raised if @var{start-index-expr} or
+@var{end-index-expr} are not keys in the map.
 
-In precise terms, the subrange assigment
+In precise terms, the subrange assignment
 @example
 @var{v}[@var{start}..@var{end}] = @var{value}
 @end example
@@ -1706,27 +1766,35 @@ if @var{v} is a list and to
 @end example
 if @var{v} is a string.
 
-The assigment expression itself returns the value of @var{result-expr}.  For
+There is no literal representation of the operation if @var{v} is a map.  In
+this case the range given by @var{start-index-expr} and @var{end-index-expr} is
+removed, and the the values in @var{result-expr} are added.
+
+The assignment expression itself returns the value of @var{result-expr}.  For
 the following examples, assume that @code{l} initially contains the list
-@code{@{1, 2, 3@}} and that @code{s} initially contains the string "foobar":
+@code{@{1, 2, 3@}}, that @code{m} initially contains the map @code{[1 -> "one",
+2 -> "two", 3 -> "three"]} and that @code{s} initially contains the string
+"foobar":
 
 @example
-l[5..6] = @{7, 8@}       @error{}   E_RANGE
-l[2..3] = 4            @error{}   E_TYPE
-l[#2..3] = @{7@}         @error{}   E_TYPE
-s[2..3] = @{6@}          @error{}   E_TYPE
-l[2..3] = @{6, 7, 8, 9@} @result{}   @{6, 7, 8, 9@}
-l                      @result{}   @{1, 6, 7, 8, 9@}
-l[2..1] = @{10, "foo"@}  @result{}   @{10, "foo"@}
-l                      @result{}   @{1, 10, "foo", 6, 7, 8, 9@}
-l[3][2..$] = "u"       @result{}   "u"
-l                      @result{}   @{1, 10, "fu", 6, 7, 8, 9@}
-s[7..12] = "baz"       @result{}   "baz"
-s                      @result{}   "foobarbaz"
-s[1..3] = "fu"         @result{}   "fu"
-s                      @result{}   "fubarbaz"
-s[1..0] = "test"       @result{}   "test"
-s                      @result{}   "testfubarbaz"
+l[5..6] = @{7, 8@}          @error{}   E_RANGE
+l[2..3] = 4               @error{}   E_TYPE
+l[#2..3] = @{7@}            @error{}   E_TYPE
+s[2..3] = @{6@}             @error{}   E_TYPE
+l[2..3] = @{6, 7, 8, 9@}    @result{}   @{6, 7, 8, 9@}
+l                         @result{}   @{1, 6, 7, 8, 9@}
+l[2..1] = @{10, "foo"@}     @result{}   @{10, "foo"@}
+l                         @result{}   @{1, 10, "foo", 6, 7, 8, 9@}
+l[3][2..$] = "u"          @result{}   "u"
+l                         @result{}   @{1, 10, "fu", 6, 7, 8, 9@}
+s[7..12] = "baz"          @result{}   "baz"
+s                         @result{}   "foobarbaz"
+s[1..3] = "fu"            @result{}   "fu"
+s                         @result{}   "fubarbaz"
+s[1..0] = "test"          @result{}   "test"
+s                         @result{}   "testfubarbaz"
+m[1..2] = ["abc" -> #1]   @result{}   ["abc" -> #1]
+m                         @result{}   [3 -> "three", "abc" -> #1]
 @end example
 
 @node More On Lists, Scattering, Indexing, Expressions
@@ -2388,25 +2456,27 @@ endif
 @subsection Statements for Looping
 
 MOO provides three different kinds of looping statements, allowing you to have
-a set of statements executed (1) once for each element of a given list, (2)
-once for each integer or object number in a given range, and (3) over and over
-until a given condition stops being true.
+a set of statements executed (1) once for each element of a given sequence
+(list, map or string); (2) once for each integer or object number in a given
+range; and (3) over and over until a given condition stops being true.
 
-To perform some statements once for each element of a given list, use this
+To perform some statements once for each element of a given sequence, use this
 syntax:
 
 @example
-for @var{variable} in (@var{expression})
+for @var{value}, @var{key-or-index} in (@var{expression})
   @var{statements}
 endfor
 @end example
 
 @noindent
-The expression is evaluated and should return a list; if it does not,
-@code{E_TYPE} is raised.  The @var{statements} are then executed once for
-each element of that list in turn; each time, the given @var{variable} is
-assigned the value of the element in question.  For example, consider
-the following statements:
+The expression is evaluated and should return a list, map or string; if it does
+not, @code{E_TYPE} is raised.  The @var{statements} are then executed once for
+each element of that sequence in turn; each time, the given @var{value} is
+assigned the value of the element in question, and @var{key-or-index} is
+assigned the index of @var{value} in the list or string, or its key if the
+sequence is a map.  @var{key-or-index} is optional.  For example, consider the
+following statements:
 
 @example
 odds = @{1, 3, 5, 7, 9@};
@@ -2422,6 +2492,25 @@ is the list
 
 @example
 @{2, 4, 6, 8, 10@}
+@end example
+
+@noindent
+If the example were modified:
+
+@example
+odds = @{1, 3, 5, 7, 9@};
+pairs = [];
+for n, i in (odds)
+  pairs[i] = n + 1;
+endfor
+@end example
+
+@noindent
+The value of the variable @samp{pairs} after executing these statements
+is the map
+
+@example
+[1 -> 2, 2 -> 4, 3 -> 6, 4 -> 8, 5 -> 10]
 @end example
 
 To perform a set of statements once for each integer or object number in a given
@@ -2888,13 +2977,13 @@ on server assumptions about the database for details.
 @subsection Object-Oriented Programming
 
 One of the most important facilities in an object-oriented programming language
-is ability for a child object to make use of a parent's implementation of some
+is ability for a child object to make use of a parents' implementation of some
 operation, even when the child provides its own definition for that operation.
 The @code{pass()} function provides this facility in MOO.
 
 @deftypefun value pass (@var{arg}, @dots{})
 Often, it is useful for a child object to define a verb that @emph{augments}
-the behavior of a verb on its parent object.  For example, in the LambdaCore
+the behavior of a verb on a parent object.  For example, in the LambdaCore
 database, the root object (which is an ancestor of every other object) defines
 a verb called @samp{description} that simply returns the value of
 @code{this.description}; this verb is used by the implementation of the
@@ -2907,11 +2996,10 @@ the sentence onto the end of that description.  The function @samp{pass()} is
 for exactly such situations.
 
 @code{pass} calls the verb with the same name as the current verb but as
-defined on the parent of the object that defines the current verb.  The
-arguments given to @code{pass} are the ones given to the called verb and the
-returned value of the called verb is returned from the call to @code{pass}.
-The initial value of @code{this} in the called verb is the same as in the
-calling verb.
+defined on a parent of the object that defines the current verb.  The arguments
+given to @code{pass} are the ones given to the called verb and the returned
+value of the called verb is returned from the call to @code{pass}.  The initial
+value of @code{this} in the called verb is the same as in the calling verb.
 
 Thus, in the example above, the child-object's @code{description} verb might
 have the following implementation:
@@ -2955,8 +3043,8 @@ section following this one.
 @deftypefun int typeof (@var{value})
 Takes any MOO value and returns an integer representing the type of @var{value}.
 The result is the same as the initial value of one of these built-in variables:
-@code{INT}, @code{FLOAT}, @code{STR}, @code{LIST}, @code{OBJ}, or @code{ERR}.
-Thus, one usually writes code like this:
+@code{INT}, @code{FLOAT}, @code{STR}, @code{LIST}, @code{MAP}, @code{OBJ}, or
+@code{ERR}.  Thus, one usually writes code like this:
 
 @example
 if (typeof(x) == LIST) @dots{}
@@ -3247,7 +3335,6 @@ byte represented in @var{bin_string}.  Raises @code{E_INVARG} if
 
 @example
 decode_binary("foo")            @result{}   @{"foo"@}
-decode_binary("~~foo")          @result{}   @{"~foo"@}
 decode_binary("foo~0D~0A")      @result{}   @{"foo", 13, 10@}
 decode_binary("foo~0Abar~0A")   @result{}   @{"foo", 10, "bar", 10@}
 decode_binary("foo~0D~0A", 1)   @result{}   @{102, 111, 111, 13, 10@}
@@ -3734,16 +3821,17 @@ to that, there are a lot of built-in functions for manipulating them.
 @comment  node-name,  next,  previous,  up
 @subsubsection Fundamental Operations on Objects
 
-@deftypefun obj create (obj @var{parent} [, obj @var{owner}])
-Creates and returns a new object whose parent is @var{parent} and whose owner
-is as described below.  If the given @var{parent} object is neither valid nor
-@code{#-1} then @code{E_INVARG} is raised.  The given @var{parent} object must
-be valid and fertile (i.e., its @samp{f} bit must be set) or else the
-programmer must own @var{parent} or be a wizard; otherwise @code{E_PERM} is
-raised.  @code{E_PERM} is also raised if @var{owner} is provided and not the
-same as the programmer, unless the programmer is a wizard.  After the new
-object is created, its @code{initialize} verb, if any, is called with no
-arguments.
+@deftypefun obj create (list @var{parents} [, obj @var{owner}])
+@deftypefunx obj create (obj @var{parent} [, obj @var{owner}])
+Creates and returns a new object whose parents are @var{parents} (or whose
+parent is @var{parent}) and whose owner is as described below.  If any of the
+given @var{parents} objects are neither valid nor @code{#-1} then
+@code{E_INVARG} is raised.  The given @var{parents} objects must be valid and
+fertile (i.e., their @samp{f} bit must be set) or else the programmer must own
+@var{parents} or be a wizard; otherwise @code{E_PERM} is raised.  @code{E_PERM}
+is also raised if @var{owner} is provided and not the same as the programmer,
+unless the programmer is a wizard.  After the new object is created, its
+@code{initialize} verb, if any, is called with no arguments.
 
 The new object is assigned the least non-negative object number that has not
 yet been used for a created object.  Note that no object number is ever reused,
@@ -3766,14 +3854,14 @@ f            0
 @end example
 The function @samp{is_player()} returns false for newly created objects.
 
-In addition, the new object inherits all of the other properties on
-@var{parent}.  These properties have the same permission bits as on
-@var{parent}.  If the @samp{c} permissions bit is set, then the owner of the
+In addition, the new object inherits all of the other properties on its
+@var{parents}.  These properties have the same permission bits as on the
+@var{parents}.  If the @samp{c} permissions bit is set, then the owner of the
 property on the new object is the same as the owner of the new object itself;
 otherwise, the owner of the property on the new object is the same as that on
-@var{parent}.  The initial value of every inherited property is @dfn{clear};
-see the description of the built-in function @code{clear_property()} for
-details.
+the @var{parent}.  The initial value of every inherited property is
+@dfn{clear}; see the description of the built-in function
+@code{clear_property()} for details.
 
 If the intended owner of the new object has a property named
 @samp{ownership_quota} and the value of that property is an integer, then
@@ -3784,17 +3872,18 @@ Otherwise, the quota is decremented and stored back into the
 @samp{ownership_quota} property as a part of the creation of the new object.
 @end deftypefun
 
-@deftypefun none chparent (obj @var{object}, obj @var{new-parent})
-Changes the parent of @var{object} to be @var{new-parent}.  If @var{object} is
-not valid, or if @var{new-parent} is neither valid nor equal to @code{#-1},
-then @code{E_INVARG} is raised.  If the programmer is neither a wizard or the
-owner of @var{object}, or if @var{new-parent} is not fertile (i.e., its
-@samp{f} bit is not set) and the programmer is neither the owner of
-@var{new-parent} nor a wizard, then @code{E_PERM} is raised.  If
-@var{new-parent} is equal to @var{object} or one of its current descendants,
+@deftypefun none chparents (obj @var{object}, list @var{new-parents})
+@deftypefunx none chparent (obj @var{object}, obj @var{new-parent})
+Changes the parents of @var{object} to be @var{new-parents}.  If @var{object}
+is not valid, or if any of the @var{new-parents} are neither valid nor equal to
+@code{#-1}, then @code{E_INVARG} is raised.  If the programmer is neither a
+wizard or the owner of @var{object}, or if any of the @var{new-parents} are not
+fertile (i.e., the @samp{f} bit is not set) and the programmer is neither the
+owner of the object nor a wizard, then @code{E_PERM} is raised.  If
+@var{new-parents} contains @var{object} or one of its current descendants,
 @code{E_RECMOVE} is raised.  If @var{object} or one of its descendants defines
-a property with the same name as one defined either on @var{new-parent} or on
-one of its ancestors, then @code{E_INVARG} is raised.
+a property with the same name as one defined on @var{new-parents} or on one of
+their ancestors, then @code{E_INVARG} is raised.
 
 Changing an object's parent can have the effect of removing some properties
 from and adding some other properties to that object and all of its descendants
@@ -3814,7 +3903,7 @@ description of the built-in function @code{clear_property()} for details.  All
 properties that are not removed or added in the reparenting process are
 completely unchanged.
 
-If @var{new-parent} is equal to @code{#-1}, then @var{object} is given no
+If @var{new-parents} is equal to @code{@{@}}, then @var{object} is given no
 parent at all; it becomes a new root of the parent/child hierarchy.  In this
 case, all formerly inherited properties on @var{object} are simply removed.
 @end deftypefun
@@ -3830,20 +3919,25 @@ valid(#-1)   @result{}   0
 @end example
 @end deftypefun
 
-@deftypefun obj parent (obj @var{object})
-@deftypefunx list children (obj @var{object})
-These functions return the parent and a list of the children of @var{object},
-respectively.  If @var{object} is not valid, then @code{E_INVARG} is raised.
+@deftypefun list parents (obj @var{object})
+@deftypefunx obj parent (obj @var{object})
+These functions return the parents of @var{object}.  If @var{object} is not
+valid, then @code{E_INVARG} is raised.
+@end deftypefun
+
+@deftypefun list children (obj @var{object})
+This function returns a list of the children of @var{object}.  If @var{object}
+is not valid, then @code{E_INVARG} is raised.
 @end deftypefun
 
 @deftypefun none recycle (obj @var{object})
 The given @var{object} is destroyed, irrevocably.  The programmer must either
 own @var{object} or be a wizard; otherwise, @code{E_PERM} is raised.  If
 @var{object} is not valid, then @code{E_INVARG} is raised.  The children of
-@var{object} are reparented to the parent of @var{object}.  Before @var{object}
-is recycled, each object in its contents is moved to @code{#-1} (implying a
-call to @var{object}'s @code{exitfunc} verb, if any) and then @var{object}'s
-@samp{recycle} verb, if any, is called with no arguments.
+@var{object} are reparented to the parents of @var{object}.  Before
+@var{object} is recycled, each object in its contents is moved to @code{#-1}
+(implying a call to @var{object}'s @code{exitfunc} verb, if any) and then
+@var{object}'s @samp{recycle} verb, if any, is called with no arguments.
 
 After @var{object} is recycled, if the owner of the former object has a
 property named @samp{ownership_quota} and the value of that property is a
@@ -3927,7 +4021,7 @@ is performed and its result is ignored; again, it is not an error if
 
 @deftypefun list properties (obj @var{object})
 Returns a list of the names of the properties defined directly on the given
-@var{object}, not inherited from its parent.  If @var{object} is not valid,
+@var{object}, not inherited from its parents.  If @var{object} is not valid,
 then @code{E_INVARG} is raised.  If the programmer does not have read
 permission on @var{object}, then @code{E_PERM} is raised.
 @end deftypefun
@@ -3978,7 +4072,7 @@ Removes the property named @var{prop-name} from the given @var{object} and all
 of its descendants.  If @var{object} is not valid, then @code{E_INVARG} is
 raised.  If the programmer does not have write permission on @var{object},
 then @code{E_PERM} is raised.  If @var{object} does not directly define a
-property named @var{prop-name} (as opposed to inheriting one from its parent),
+property named @var{prop-name} (as opposed to inheriting one from its parents),
 then @code{E_PROPNF} is raised.
 @end deftypefun
 
@@ -3991,7 +4085,7 @@ named @var{prop-name}, then @code{E_PROPNF} is raised.  If the programmer
 does not have read (write) permission on the property in question, then
 @code{is_clear_property()} (@code{clear_property()}) raises @code{E_PERM}.
 If a property is clear, then when the value of that property is queried the
-value of the parent's property of the same name is returned.  If the parent's
+value of the parents' property of the same name is returned.  If the parents'
 property is clear, then the parent's parent's value is examined, and so on.
 If @var{object} is the definer of the property @var{prop-name}, as opposed to
 an inheritor of the property, then @code{clear_property()} raises
@@ -4004,7 +4098,7 @@ an inheritor of the property, then @code{clear_property()} raises
 
 @deftypefun list verbs (obj @var{object})
 Returns a list of the names of the verbs defined directly on the given
-@var{object}, not inherited from its parent.  If @var{object} is not valid,
+@var{object}, not inherited from its parents.  If @var{object} is not valid,
 then @code{E_INVARG} is raised.  If the programmer does not have read
 permission on @var{object}, then @code{E_PERM} is raised.
 @end deftypefun
@@ -5029,7 +5123,7 @@ raised.  If the programmer is not a wizard, then @code{E_PERM} is raised.
 If there are no unused nonnegative object numbers less than @var{object}, then
 @var{object} is returned and no changes take place.
 
-The references to @var{object} in the parent/children and location/contents
+The references to @var{object} in the parents/children and location/contents
 hierarchies are updated to use the new object number, and any verbs, properties
 and/or objects owned by @var{object} are also changed to be owned by the new
 object number.  The latter operation can be quite time consuming if the

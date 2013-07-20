@@ -98,8 +98,9 @@ enum Expr_Kind {
     EXPR_AND, EXPR_OR, EXPR_NOT,
     EXPR_EQ, EXPR_NE, EXPR_LT, EXPR_LE, EXPR_GT, EXPR_GE,
     EXPR_IN, EXPR_LIST, EXPR_COND,
-    EXPR_CATCH, EXPR_LENGTH, EXPR_SCATTER,
+    EXPR_CATCH, EXPR_LENGTH, EXPR_SCATTER, /* EXPR_LENGTH is retired */
     EXPR_MAP,
+    EXPR_FIRST, EXPR_LAST,
     SizeOf_Expr_Kind		/* The last element is also the number of elements... */
 };
 
@@ -145,6 +146,7 @@ struct Stmt_Cond {
 
 struct Stmt_List {
     int id;
+    int index;
     Expr *expr;
     Stmt *body;
 };
