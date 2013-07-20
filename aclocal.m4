@@ -1,32 +1,15 @@
-dnl LambdaMOO-specific version of AC_FUNC_CHECK, uses <assert.h> instead of
-dnl <ctype.h>, since OSF/1's <ctype.h> includes <sys/types.h> which includes
-dnl <sys/select.h> which declares select() correctly in conflict with the
-dnl bogus `extern char foo();' declaration below.  This change is adapted
-dnl from autoconf-2.4, which we ought to start using at some point.
-dnl
-undefine([AC_FUNC_CHECK])dnl
-define(AC_FUNC_CHECK,
-[ifelse([$3], , [AC_COMPILE_CHECK($1, [#include <assert.h>], [
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_$1) || defined (__stub___$1)
-choke me
-#else
-/* Override any gcc2 internal prototype to avoid an error.  */
-extern char $1(); $1();
-#endif
-],
-$2)], [AC_COMPILE_CHECK($1, [#include <assert.h>], [
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_$1) || defined (__stub___$1)
-choke me
-#else
-/* Override any gcc2 internal prototype to avoid an error.  */
-extern char $1(); $1();
-#endif
-],
-$2, $3)])dnl
-])dnl
+# generated automatically by aclocal 1.11.6 -*- Autoconf -*-
+
+# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
+# 2005, 2006, 2007, 2008, 2009, 2010, 2011 Free Software Foundation,
+# Inc.
+# This file is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+m4_include([acinclude.m4])

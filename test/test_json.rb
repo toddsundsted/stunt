@@ -210,6 +210,124 @@ class TestJson < Test::Unit::TestCase
     end
   end
 
+  def test_that_generate_json_turns_moo_binary_string_encoded_values_into_escaped_strings
+    run_test_as('wizard') do
+      assert_equal "{\"foo\":\"bar\\\"baz\"}", generate_json({"foo" => "bar\\\"baz"})
+      assert_equal "{\"foo\":\"bar\\\\baz\"}", generate_json({"foo" => "bar\\\\baz"})
+      assert_equal "{\"foo\":\"bar/baz\"}", generate_json({"foo" => "bar\\\/baz"})
+      assert_equal "{\"foo\":\"bar/baz\"}", generate_json({"foo" => "bar\/baz"})
+      assert_equal "{\"foo\":\"bar/baz\"}", generate_json({"foo" => "bar/baz"})
+
+      assert_equal "{\"foo\":\"bar\\bbaz\"}", generate_json({"foo" => "bar~08baz"})
+      assert_equal "{\"foo\":\"bar\\fbaz\"}", generate_json({"foo" => "bar~0Cbaz"})
+      assert_equal "{\"foo\":\"bar\\nbaz\"}", generate_json({"foo" => "bar~0Abaz"})
+      assert_equal "{\"foo\":\"bar\\rbaz\"}", generate_json({"foo" => "bar~0Dbaz"})
+      assert_equal "{\"foo\":\"bar\\tbaz\"}", generate_json({"foo" => "bar\tbaz"})
+
+      # everything else is just passed, as is
+      assert_equal "{\"foo\":\"bar~20baz\"}", generate_json({"foo" => "bar~20baz"})
+      assert_equal "{\"foo\":\"bar~zzbaz\"}", generate_json({"foo" => "bar~zzbaz"})
+      assert_equal "{\"foo\":\"bar~f\"}", generate_json({"foo" => "bar~f"})
+      assert_equal "{\"foo\":\"bar~\"}", generate_json({"foo" => "bar~"})
+    end
+  end
+
+  def test_that_parse_json_turns_escaped_strings_into_moo_binary_string_encoded_values
+    run_test_as('wizard') do
+      assert_equal({"foo" => "bar\"baz"}, parse_json('{\"foo\":\"bar\\\\\\"baz\"}'))
+      assert_equal({"foo" => "bar\\baz"}, parse_json('{\"foo\":\"bar\\\\\\\\baz\"}'))
+      assert_equal({"foo" => "bar/baz"}, parse_json('{\"foo\":\"bar\\\\/baz\"}'))
+      assert_equal({"foo" => "bar/baz"}, parse_json('{\"foo\":\"bar\\/baz\"}'))
+      assert_equal({"foo" => "bar/baz"}, parse_json('{\"foo\":\"bar/baz\"}'))
+
+      assert_equal({"foo" => "bar~08baz"}, parse_json('{\"foo\":\"bar\\\\bbaz\"}'))
+      assert_equal({"foo" => "bar~0Cbaz"}, parse_json('{\"foo\":\"bar\\\\fbaz\"}'))
+      assert_equal({"foo" => "bar~0Abaz"}, parse_json('{\"foo\":\"bar\\\\nbaz\"}'))
+      assert_equal({"foo" => "bar~0Dbaz"}, parse_json('{\"foo\":\"bar\\\\rbaz\"}'))
+      assert_equal({"foo" => "bar\tbaz"}, parse_json('{\"foo\":\"bar\\\\tbaz\"}'))
+
+      # ignore other escapes... this includes \u (Unicode) for the time being
+      assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\ubaz\"}'))
+      assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\abaz\"}'))
+      assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\zbaz\"}'))
+      assert_equal(E_INVARG, parse_json('{\"foo\":\"bar\\\\\"}'))
+    end
+  end
+
+  def test_that_json_with_unicode_escapes_parse_into_binary_strings
+    run_test_as('programmer') do
+      assert_equal(["~0A", "~0D", "~1B", "~7F"], parse_json('[\"\\\\u000A\",\"\\\\u000D\",\"\\\\u001b\",\"\\\\u007f\"]'))
+      assert_equal(["~C2~80", "~C3~B8", "~C8~80", "~DF~BF"], parse_json('[\"\\\\u0080\",\"\\\\u00f8\",\"\\\\u0200\",\"\\\\u07ff\"]'))
+      assert_equal(["~E0~A0~80", "~EF~BF~BF"], parse_json('[\"\\\\u0800\",\"\\\\uffff\"]'))
+      assert_equal(["~F0~90~80~80", "~F0~9D~84~9E"], parse_json('[\"\\\\ud800\\\\\udc00\",\"\\\\ud834\\\\\udd1e\"]'))
+      assert_equal(["~0A~0D~1B~7F"], parse_json('[\"\\\\u000A\\\\u000D\\\\u001b\\\\u007f\"]'))
+      assert_equal(["~C2~80~C3~B8~C8~80~DF~BF"], parse_json('[\"\\\\u0080\\\\u00f8\\\\u0200\\\\u07ff\"]'))
+      assert_equal(["~0A~C8~80~0D~F0~90~80~80"], parse_json('[\"\\\\u000A\\\\u0200\\\\u000D\\\\ud800\\\\\udc00\"]'))
+    end
+  end
+
+  def test_that_binary_strings_with_escaped_control_characters_generate_unicode_escapes
+    run_test_as('programmer') do
+      assert_equal '["\\u0000","\\u0001","\\u001B","\\u001F","~20","~7F"]', generate_json(["~00", "~01", "~1B", "~1F", "~20", "~7F"])
+      assert_equal '["\\u0000\\u0001","\\u001B\\u001F","~20~7F"]', generate_json(["~00~01", "~1B~1F", "~20~7F"])
+    end
+  end
+
+  def test_that_round_tripping_works
+    run_test_as('wizard') do
+      assert(simplify(command(%Q|; x = ["foo" -> "bar\\\"baz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar\\\\baz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar\\\/baz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar\/baz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar/baz"]; return x == parse_json(generate_json(x)); |)))
+
+      assert(simplify(command(%Q|; x = ["foo" -> "bar~08baz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar~0Cbaz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar~0Abaz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar~0Dbaz"]; return x == parse_json(generate_json(x)); |)))
+      assert(simplify(command(%Q|; x = ["foo" -> "bar~09baz"]; return x == parse_json(generate_json(x)); |)))
+
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\"baz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\\baz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\/baz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\/baz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar/baz\\"}"; return x == generate_json(parse_json(x)); |)))
+
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\bbaz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\fbaz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\nbaz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\rbaz\\"}"; return x == generate_json(parse_json(x)); |)))
+      assert(simplify(command(%q|; x = "{\\"foo\\": \\"bar\\\\\\tbaz\\"}"; return x == generate_json(parse_json(x)); |)))
+    end
+  end
+
+  def test_that_round_tripping_works_on_fuzzy_inputs
+    run_test_as('wizard') do
+      with_mutating_binary_string("~A7~CED~8E~D2L~16a~F6~F2~01UZ2~BC~B0)~EC~02~86v~CD~9B~05~E66~F3.vx<~F0") do |g|
+        100.times do
+          assert(simplify(command(%Q|; x = "#{g.next}"; return x == parse_json(generate_json(x)); |)))
+        end
+      end
+    end
+  end
+
+  def test_that_calling_generate_json_on_anonymous_objects_does_not_crash_the_server
+    run_test_as('programmer') do
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(create($nothing, 1)); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(create($nothing, 1), "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(create($nothing, 1), "embedded-types"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json({create($nothing, 1)}); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json({create($nothing, 1)}, "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json({create($nothing, 1)}, "embedded-types"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)]); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)], "common-subset"); |))
+      assert_equal E_INVARG, simplify(command(%q|; return generate_json(["one" -> create($nothing, 1)], "embedded-types"); |))
+      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"]); |))
+      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "common-subset"); |))
+      assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "embedded-types"); |))
+    end
+  end
+
   def generate_json(value, mode = nil)
     if mode.nil?
       simplify command %Q|; return generate_json(#{value_ref(value)});|

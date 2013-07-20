@@ -28,6 +28,25 @@
 /* #define LOG_COMMANDS */
 
 /******************************************************************************
+ * Define ENABLE_GC to enable automatic garbage collection of cyclic data
+ * structures.  This is safe but adds overhead to the reference counting
+ * mechanism -- currently about a 5% penalty, even for operations that do not
+ * involve anonymous objects.  If disabled the server may leak memory
+ * because it will lose track of cyclic data structures.
+ */
+
+#define ENABLE_GC
+
+#define GC_ROOTS_LIMIT 2000
+
+/******************************************************************************
+ * Define LOG_GC_STATS to enabled logging of reference cycle collection
+ * stats and debugging information while the server is running.
+ */
+
+#define LOG_GC_STATS
+
+/******************************************************************************
  * The server normally forks a separate process to make database checkpoints;
  * the original process continues to service user commands as usual while the
  * new process writes out the contents of its copy of memory to a disk file.
@@ -292,37 +311,25 @@
 /* #define MEMO_STRLEN */
 
 /******************************************************************************
- * This package comes with a copy of the implementation of malloc() from GNU
- * Emacs.  This is a very nice and reasonably portable implementation, but some
- * systems, notably the NeXT machine, won't allow programs to provide their own
- * implementations of standard C functions.  Also, the GNU malloc()
- * implementation uses a fair amount more memory than some system-supplied
- * ones, though it does allow for better debugging support.  Define
- * USE_GNU_MALLOC to enable the use of the GNU malloc() implementation.
- ******************************************************************************
- * NOTE: This switch is now officially deprecated; it is recommended that you
- *	 avoid its use.  The GNU code is no longer as portable as once it might
- *	 have been, and it causes compilation errors on many systems.  If you
- *	 do enable it, and then experience compilation problems in the file
- *	 `gnu_malloc.c', your first step should be to re-disable its use.  This
- *	 option may be completely removed in a later release of the server.
+ * Store the number of bytes of storage used by lists/maps WITH the list/map
+ * rather than recomputing it each time it is needed.
  ******************************************************************************
  */
 
-/* #define USE_GNU_MALLOC */
+#define MEMO_VALUE_BYTES /* */
 
 /******************************************************************************
- * DEFAULT_MAX_LIST_CONCAT,   if set to a postive value, is the length
- *                            of the largest constructible list.
- * DEFAULT_MAX_STRING_CONCAT, if set to a postive value, is the length
- *                            of the largest constructible string.
- * DEFAULT_MAX_MAP_CONCAT,    if set to a postive value, is the length
- *                            of the largest constructible map.
+ * DEFAULT_MAX_STRING_CONCAT,      if set to a postive value, is the length
+ *                                 of the largest constructible string.
+ * DEFAULT_MAX_LIST_VALUE_BYTES,   if set to a postive value, is the number of
+ *                                 bytes in the largest constructible list.
+ * DEFAULT_MAX_MAP_VALUE_BYTES,    if set to a postive value, is the number of
+ *                                 bytes in the largest constructible map.
  * Limits on "constructible" values apply to values built by concatenation,
- * splicing, subrange assignment and various builtin functions.
+ * splicing, index/subrange assignment and various builtin functions.
  *
- * If defined in the database, $server_options.max_list_concat,
- * $server_options.max_string_concat and $server_options.max_map_concat
+ * If defined in the database, $server_options.max_string_concat,
+ * $server_options.max_list_value_bytes and $server_options.max_map_value_bytes
  * override these defaults.  A zero value disables limit checking.
  *
  * $server_options.max_concat_catchable, if defined, causes an E_QUOTA error
@@ -333,31 +340,53 @@
  ******************************************************************************
  */
 
-#define DEFAULT_MAX_LIST_CONCAT    4194302
-#define DEFAULT_MAX_STRING_CONCAT 33554423
-#define DEFAULT_MAX_MAP_CONCAT     2097151
+#define DEFAULT_MAX_STRING_CONCAT    64537861
+#define DEFAULT_MAX_LIST_VALUE_BYTES 64537861
+#define DEFAULT_MAX_MAP_VALUE_BYTES  64537861
 
 /* In order to avoid weirdness from these limits being set too small,
  * we impose the following (arbitrary) respective minimum values.
- * That is, a positive value for $server_options.max_list_concat that
- * is less than MIN_LIST_CONCAT_LIMIT will be silently increased, and
- * likewise for the string limit.
+ * That is, a positive value for $server_options.max_string_concat that
+ * is less than MIN_STRING_CONCAT_LIMIT will be silently increased, and
+ * likewise for the list and map limits.
  */
-#define MIN_LIST_CONCAT_LIMIT   1022
-#define MIN_STRING_CONCAT_LIMIT 1015
-#define MIN_MAP_CONCAT_LIMIT    1022
+
+#define MIN_STRING_CONCAT_LIMIT    1021
+#define MIN_LIST_VALUE_BYTES_LIMIT 1021
+#define MIN_MAP_VALUE_BYTES_LIMIT  1021
 
 /******************************************************************************
- * In the original LambdaMOO server, last chance command processessing
+ * In the original LambdaMOO server, last chance command processing
  * occured in the `huh' verb defined on the player's location.  The
  * following option changes that behavior so that it occurs in the
- * `huh' verb defined on the player.  Given the fact that on legacy
- * cores `huh' immediatelly calls something like `$command_utils:do_huh',
- * this change should be largely backwards compatible.
+ * `huh' verb defined on the player.  If you are running a legacy core
+ * and are concerned about incompatibility, you can disable this
+ * feature.
  ******************************************************************************
  */
 
 /* #define PLAYER_HUH */
+
+/******************************************************************************
+ * Configurable options for the Exec subsystem.  EXEC_SUBDIR is the
+ * directory inside the working directory in which all executable
+ * files must reside.
+ ******************************************************************************
+ */
+
+#define EXEC_SUBDIR "executables/"
+#define EXEC_MAX_PROCESSES 256
+
+/******************************************************************************
+ * Configurable options for the FileIO subsystem.  FILE_SUBDIR is the
+ * directory inside the working directory in which all files must
+ * reside.
+ ******************************************************************************
+ */
+
+#define FILE_SUBDIR "files/"
+#define FILE_IO_BUFFER_LENGTH 4096
+#define FILE_IO_MAX_FILES     256
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
@@ -370,14 +399,14 @@
 #define OUT_OF_BAND_QUOTE_PREFIX ""
 #endif
 
-#if DEFAULT_MAX_LIST_CONCAT < MIN_LIST_CONCAT_LIMIT
-#error DEFAULT_MAX_LIST_CONCAT < MIN_LIST_CONCAT_LIMIT ??
-#endif
 #if DEFAULT_MAX_STRING_CONCAT < MIN_STRING_CONCAT_LIMIT
 #error DEFAULT_MAX_STRING_CONCAT < MIN_STRING_CONCAT_LIMIT ??
 #endif
-#if DEFAULT_MAX_MAP_CONCAT < MIN_MAP_CONCAT_LIMIT
-#error DEFAULT_MAX_MAP_CONCAT < MIN_MAP_CONCAT_LIMIT ??
+#if DEFAULT_MAX_LIST_VALUE_BYTES < MIN_LIST_VALUE_BYTES_LIMIT
+#error DEFAULT_MAX_LIST_VALUE_BYTES < MIN_LIST_VALUE_BYTES_LIMIT ??
+#endif
+#if DEFAULT_MAX_MAP_VALUE_BYTES < MIN_MAP_VALUE_BYTES_LIMIT
+#error DEFAULT_MAX_MAP_VALUE_BYTES < MIN_MAP_VALUE_BYTES_LIMIT ??
 #endif
 
 #if PATTERN_CACHE_SIZE < 1

@@ -18,6 +18,10 @@
 #include "structures.h"
 #include "streams.h"
 
+extern Var new_list(int size);
+extern void destroy_list(Var list);
+extern Var list_dup(Var list);
+
 extern Var listappend(Var list, Var value);
 extern Var listinsert(Var list, Var value, int pos);
 extern Var listdelete(Var list, int pos);
@@ -28,10 +32,16 @@ extern Var setadd(Var list, Var value);
 extern Var setremove(Var list, Var value);
 extern Var sublist(Var list, int lower, int upper);
 extern int listequal(Var lhs, Var rhs, int case_matters);
+
+extern int list_sizeof(Var *list);
+
+typedef int (*listfunc) (Var value, void *data, int first);
+extern int listforeach(Var list, listfunc func, void *data);
+
 extern Var strrangeset(Var list, int from, int to, Var value);
 extern Var substr(Var str, int lower, int upper);
 extern Var strget(Var str, int i);
-extern Var new_list(int size);
+
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);
 

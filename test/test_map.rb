@@ -158,6 +158,14 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
+  def test_that_anonymous_objects_cannot_be_keys
+    run_test_as('programmer') do
+      assert_equal E_TYPE, simplify(command(%Q(; [create($anonymous, 1) -> 1];)))
+      assert_equal E_TYPE, simplify(command(%Q(; x = []; x[create($anonymous, 1)] = 1;)))
+      assert_equal E_TYPE, simplify(command(%Q(; mapdelete([1 -> 2, 3 -> 4], create($anonymous, 1));)))
+    end
+  end
+
   def test_that_first_and_last_indexes_work_on_maps
     run_test_as('programmer') do
       o = create(:nothing)

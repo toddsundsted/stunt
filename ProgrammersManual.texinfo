@@ -2,35 +2,33 @@
 @comment %**start of header
 @set INDEX
 @setfilename ProgrammersManual.info
-@settitle LambdaMOO Programmer's Manual
+@settitle LambdaMOO+Stunt Programmer's Manual
 @c Uncomment the following line for two-sided printing.
 @c @setchapternewpage odd
 @macro lmversion
-1.8.4
+9
 @end macro
 @macro lmdate
-December 2011
+March 2013
 @end macro
 @comment %**end of header
 
 @ifinfo
 @format
 @sp 5
-		     *************************************
-		     *** LambdaMOO Programmer's Manual ***
-		     *************************************
-				       
-                         For LambdaMOO Version @lmversion
-                                  @lmdate
-				       
-				by Pavel Curtis
-				  aka Haakon
-				  aka Lambda
+                     *******************************************
+                     *** LambdaMOO+Stunt Programmer's Manual ***
+                     *******************************************
+
+                            For LambdaMOO+Stunt Version @lmversion
+                                    @lmdate
+
+                                by Pavel Curtis et al
 @sp 4
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
 Copyright @copyright{} 1997 by Erik Ostrom.
 Copyright @copyright{} 2004 by Roger F. Crew.
-Copyright @copyright{} 2011 by Todd Sundsted.
+Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
 @end format
 
 Permission is granted to make and distribute verbatim copies of this manual
@@ -59,8 +57,8 @@ author.
 @end ifinfo
 
 @titlepage
-@title LambdaMOO Programmer's Manual
-@subtitle For LambdaMOO Version @lmversion@*
+@title LambdaMOO+Stunt Programmer's Manual
+@subtitle For LambdaMOO+Stunt Version @lmversion@*
 @subtitle @lmdate
 @author by Pavel Curtis@*
 @author a.k.a. Haakon@*
@@ -71,7 +69,7 @@ author.
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.@*
 Copyright @copyright{} 1997 by Erik Ostrom.@*
 Copyright @copyright{} 2004 by Roger F. Crew.@*
-Copyright @copyright{} 2011 by Todd Sundsted.
+Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
 
 Copies of the electronic source for this document can be obtained using
 anonymous FTP on the Internet.  At the site @code{ftp.lambda.moo.mud.org} the
@@ -99,21 +97,19 @@ author.
 @ifnothtml
 @ifset INFO
 @format
-		     *************************************
-		     *** LambdaMOO Programmer's Manual ***
-		     *************************************
-				       
-                         For LambdaMOO Version @lmversion
-                                  @lmdate
-				       
-				by Pavel Curtis
-				  aka Haakon
-				  aka Lambda
+                     *******************************************
+                     *** LambdaMOO+Stunt Programmer's Manual ***
+                     *******************************************
+
+                            For LambdaMOO+Stunt Version @lmversion
+                                    @lmdate
+
+                                by Pavel Curtis et al
 
           Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
           Copyright @copyright{} 1997 by Erik Ostrom.
           Copyright @copyright{} 2004 by Roger F. Crew.
-          Copyright @copyright{} 2011 by Todd Sundsted.
+          Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
 @end format
 @end ifset
 @end ifnothtml
@@ -210,11 +206,13 @@ host @code{ftp.lambda.moo.mud.org} in the directory @code{pub/MOO}.
 @comment  node-name,  next,  previous,  up
 @section MOO Value Types
 
-There are only a few kinds of values that MOO programs can manipulate:
+There are a few kinds of values that MOO programs can manipulate:
 
 @itemize @bullet
 @item
-object numbers (of the objects in the database)
+object references (to the anonymous objects in the database)
+@item
+object numbers (of the permanent objects in the database)
 @item
 integers (in a specific, large range)
 @item
@@ -231,9 +229,23 @@ maps (or collections of key/value pairs)
 
 @dfn{Objects} are the backbone of the MOO database and, as such, deserve a
 great deal of discussion; the entire next section is devoted to them.  For now,
-let it suffice to say that every object has an @dfn{object number}, unique to
-that object.  In programs, we write a reference to a particular object by
-putting a hash mark (@samp{#}) followed by the number, like this:
+let it suffice to say that there are two kinds of objects, anonymous objects
+and permanent objects.  Anonymous objects are typically transient and are
+garbage collected when they are no longer needed.  Permanent objects, as their
+name implies, are typically longed lived.  Every permanent object is assigned a
+unique @dfn{object number} and must be accessed via that object number.  The
+lifecycle of a permanent object is explicitly managed by the programmer.
+
+A reference to an anonymous object is returned when the anonymous object is
+created with @code{create()}.  References can be shared but they cannot be
+forged.  That is, there is no literal representation of a reference to an
+anonymous object (that's why they are @emph{anonymous}).
+
+The @dfn{object number} of a permanent object is also returned when the
+permanent object is created with @code{create()}.  However, there is a literal
+representation of an object number.  In programs, we write a reference to a
+particular permanent object by putting a hash mark (@samp{#}) followed by the
+number, like this:
 
 @example
 #495
@@ -241,6 +253,10 @@ putting a hash mark (@samp{#}) followed by the number, like this:
 
 @noindent
 Object numbers are always integers.
+
+An object number may or may not refer to an actual, live permanent object.  If
+it does, we say that the object number is @emph{valid}.  If it does not, we say
+that the object number is @emph{invalid}.
 
 There are three special object numbers used for a variety of purposes:
 @code{#-1}, @code{#-2}, and @code{#-3}, usually referred to in the
@@ -405,27 +421,31 @@ Note that while the keys must be unique, the values are not required to be so.
 @section Objects in the MOO Database
 
 Objects are, in a sense, the whole point of the MOO programming language.
-They are used to represent objects in the virtual reality, like people, rooms,
-exits, and other concrete things.  Because of this, MOO makes a bigger deal
-out of creating objects than it does for other kinds of value, like integers.
+
+Objects encapsulate state and behavior -- as they do in other object-oriented
+programming languages.  Permanent objects are also used to represent objects in
+the virtual reality, like people, rooms, exits, and other concrete things.
+Because of this, MOO makes a bigger deal out of creating objects than it does
+for other kinds of values, like integers.
 
 Numbers always exist, in a sense; you have only to write them down in order to
-operate on them.  With objects, it is different.  The object with number
-@samp{#958} does not exist just because you write down its number.  An
+operate on them.  With objects, it is different.  The permanent object with
+number @samp{#958} does not exist just because you write down its number.  An
 explicit operation, the @samp{create()} function described later, is required
 to bring an object into existence.  Symmetrically, once created, objects
-continue to exist until they are explicitly destroyed by the @samp{recycle()}
-function (also described later).
+continue to exist until there are no more references to them (for anonymous
+objects) or they are explicitly destroyed by the @samp{recycle()} function
+(for both anonymous and permanent objects).
 
-The identifying number associated with an object is unique to that
-object.  It was assigned when the object was created and will never be
-reused, even if the object is destroyed.  Thus, if we create an object
-and it is assigned the number @samp{#1076}, the next object to be
-created will be assigned @samp{#1077}, even if @samp{#1076} is destroyed
-in the meantime.
+The identifying number associated with a permanent object is unique to that
+object.  It was assigned when the object was created and will never be reused,
+even if the object is destroyed.  Thus, if we create an object and it is
+assigned the number @samp{#1076}, the next object to be created will be
+assigned @samp{#1077}, even if @samp{#1076} is destroyed in the meantime.
 
-Every object is made up of three kinds of pieces that together define its
-behavior: @dfn{attributes}, @dfn{properties}, and @dfn{verbs}.
+Both anonymous and permanent objects are made up of three kinds of pieces that
+together define their behavior: @dfn{attributes}, @dfn{properties}, and
+@dfn{verbs}.
 
 @menu
 * Attributes::               Fundamental Object Attributes
@@ -450,9 +470,10 @@ A list of the objects that are its @dfn{children}; that is, those objects for
 which this object is one of their parents.
 @end enumerate
 
-The act of creating a character sets the player attribute of an object and
-only a wizard (using the function @code{set_player_flag()}) can change that
-setting.  Only characters have the player bit set to 1.
+The act of creating a character sets the player attribute of an object and only
+a wizard (using the function @code{set_player_flag()}) can change that setting.
+Only characters have the player bit set to 1.  Currently, only permanent
+objects can be players.
 
 The parent/child relationship is used for sharing behavior among objects.
 For example, the LambdaCore database contains an object representing a sort of
@@ -469,7 +490,7 @@ the functions @code{create()}, @code{recycle()}, @code{chparents()}, and
 @subsection Properties on Objects
 
 A @dfn{property} is a named ``slot'' in an object that can hold an arbitrary
-MOO value.  Every object has eight built-in properties whose values are
+MOO value.  Every object has nine built-in properties whose values are
 constrained to be of particular types.  In addition, an object can have any
 number of other properties, none of which have type constraints.  The built-in
 properties are as follows:
@@ -484,6 +505,7 @@ wizard       @r{a bit, does the object have wizard rights?}
 r            @r{a bit, is the object publicly readable?}
 w            @r{a bit, is the object publicly writable?}
 f            @r{a bit, is the object fertile?}
+a            @r{a bit, can this be a parent of anonymous objects?}
 @end example
 
 The @samp{name} property is used to identify the object in various printed
@@ -520,6 +542,11 @@ this one as a parent.  It also controls whether or not non-owners can use the
 @code{chparents()} built-in function to make this object a parent of an
 existing object.  The @samp{f} bit can only be set by a wizard or by the owner
 of the object.
+
+The @samp{a} bit specifies whether or not this object can be used as a parent
+of an anonymous object created by a player other than the owner of this object.
+It works similarly to the @samp{f} bit, but governs the creation of anonymous
+objects only.
 
 All of the built-in properties on any object can, by default, be read by any
 player.  It is possible, however, to override this behavior from within the
@@ -1180,8 +1207,10 @@ an integer, the type code for lists
 an integer, the type code for maps
 @item STR
 an integer, the type code for strings
+@item ANON
+an integer, the type code for anonymous objects
 @item OBJ
-an integer, the type code for objects
+an integer, the type code for permanent objects
 @item ERR
 an integer, the type code for error values
 @end table
@@ -1412,7 +1441,7 @@ the empty list (@samp{@{@}}),
 @item
 the empty map (@samp{[]}),
 @item
-all object numbers, and
+all object numbers and object references, and
 @item
 all error values.
 @end itemize
@@ -1986,13 +2015,13 @@ expression:
 @var{expression}.@var{name}
 @end example
 
-@var{Expression} must return an object number; if not, @code{E_TYPE} is
-raised.  If the object with that number does not exist, @code{E_INVIND} is
-raised.  Otherwise, if the object does not have a property with that name,
-then @code{E_PROPNF} is raised.  Otherwise, if the named property is not
-readable by the owner of the current verb, then @code{E_PERM} is raised.
-Finally, assuming that none of these terrible things happens, the value of the
-named property on the given object is returned.
+@var{Expression} must return an object; if not, @code{E_TYPE} is raised.  If
+the object does not exist, @code{E_INVIND} is raised.  Otherwise, if the object
+does not have a property with that name, then @code{E_PROPNF} is raised.
+Otherwise, if the named property is not readable by the owner of the current
+verb, then @code{E_PERM} is raised.  Finally, assuming that none of these
+terrible things happens, the value of the named property on the given object is
+returned.
 
 I said ``usually'' in the paragraph above because that simple expression only
 works if the name of the property obeys the same rules as for the names of
@@ -2006,10 +2035,10 @@ syntax is also allowed:
 @var{expression-1}.(@var{expression-2})
 @end example
 
-As before, @var{expression-1} must return an object number.  @var{Expression-2}
-must return a string, the name of the property to be read; @code{E_TYPE}
-is raised otherwise.  Using this syntax, any property can be read,
-regardless of its name.
+As before, @var{expression-1} must return an object.  @var{Expression-2} must
+return a string, the name of the property to be read; @code{E_TYPE} is raised
+otherwise.  Using this syntax, any property can be read, regardless of its
+name.
 
 Note that, as with almost everything in MOO, case is not significant in the
 names of properties.  Thus, the following expressions are all equivalent:
@@ -2093,16 +2122,15 @@ Verbs can also call other verbs, usually using this syntax:
 @end example
 
 @noindent
-@var{Expr-0} must return an object number; @code{E_TYPE} is raised otherwise.
-If the object with that number does not exist, @code{E_INVIND} is raised.  If
-this task is too deeply nested in verbs calling verbs calling verbs, then
-@code{E_MAXREC} is raised; the default limit is 50 levels, but this can be
-changed from within the database; see the chapter on server assumptions about
-the database for details.  If neither the object nor any of its ancestors
-defines a verb matching the given name, @code{E_VERBNF} is raised.
-Otherwise, if none of these nasty things happens, the named verb on the given
-object is called; the various built-in variables have the following initial
-values in the called verb:
+@var{Expr-0} must return an object; @code{E_TYPE} is raised otherwise.  If the
+object does not exist, @code{E_INVIND} is raised.  If this task is too deeply
+nested in verbs calling verbs calling verbs, then @code{E_MAXREC} is raised;
+the default limit is 50 levels, but this can be changed from within the
+database; see the chapter on server assumptions about the database for details.
+If neither the object nor any of its ancestors defines a verb matching the
+given name, @code{E_VERBNF} is raised.  Otherwise, if none of these nasty
+things happens, the named verb on the given object is called; the various
+built-in variables have the following initial values in the called verb:
 
 @table @code
 @item this
@@ -2914,9 +2942,9 @@ counts one tick for every expression evaluation (other than variables and
 literals), one for every @samp{if}, @samp{fork} or @samp{return} statement, and
 one for every iteration of a loop.  If the count gets all the way down to zero,
 the task is immediately and unceremoniously aborted.  By default, command and
-server tasks begin with an store of 30,000 ticks; this is enough for almost all
-normal uses.  Forked, suspended, and reading tasks are allotted 15,000 ticks
-each.  
+server tasks begin with an store of 60,000 ticks; this is enough for almost all
+normal uses.  Forked, suspended, and reading tasks are allotted 30,000 ticks
+each.
 
 These limits on seconds and ticks may be changed from within the database, as
 can the behavior of the server after it aborts a task for running out; see the
@@ -2965,6 +2993,7 @@ on server assumptions about the database for details.
 * Passing::                  Object-Oriented Programming
 * Manipulating Values::      Manipulating MOO Values
 * Manipulating Objects::     Manipulating Objects
+* The Server Environment::   Operations on The Server Environment
 * Manipulating Connections::  Operations on Network Connections
 * Time::                     Operations Involving Times and Dates
 * Evaluation and Tasks::     MOO-Code Evaluation and Task Manipulation
@@ -3034,6 +3063,7 @@ section following this one.
 * Manipulating Numbers::     Operations on Numbers
 * Manipulating Strings::     Operations on Strings
 * Manipulating Lists::       Operations on Lists
+* Manipulating Maps::        Operations on Maps
 @end menu
 
 @node General Operations, Manipulating Numbers, Manipulating Values, Manipulating Values
@@ -3071,15 +3101,19 @@ tostr(1.0/3.0)             @result{}   "0.333333333333333"
 tostr(#17)                 @result{}   "#17"
 tostr("foo")               @result{}   "foo"
 tostr(@{1, 2@})              @result{}   "@{list@}"
+tostr([1 -> 2])            @result{}   "[map]"
 tostr(E_PERM)              @result{}   "Permission denied"
 tostr("3 + 4 = ", 3 + 4)   @result{}   "3 + 4 = 7"
 @end example
 
 @noindent
-Note that @code{tostr()} does not do a good job of converting lists into
-strings; all lists, including the empty list, are converted into the string
-@code{"@{list@}"}.  The function @code{toliteral()}, below, is better for this
+
+Note that @code{tostr()} does not do a good job of converting types like lists
+and maps into strings; all lists, including the empty list, are converted into
+the string @code{"@{list@}"}, and all maps are converted into the string
+@code{"[map]"}.  The function @code{toliteral()}, below, is better for this
 purpose.
+
 @end deftypefun
 
 @deftypefun str toliteral (@var{value})
@@ -3092,6 +3126,7 @@ toliteral(1.0/3.0)    @result{}   "0.333333333333333"
 toliteral(#17)        @result{}   "#17"
 toliteral("foo")      @result{}   "\"foo\""
 toliteral(@{1, 2@})     @result{}   "@{1, 2@}"
+toliteral([1 -> 2])   @result{}   "[1 -> 2]"
 toliteral(E_PERM)     @result{}   "E_PERM"
 @end example
 @end deftypefun
@@ -3170,9 +3205,103 @@ Returns the number of bytes of the server's memory required to store the given
 @var{value}.
 @end deftypefun
 
-@deftypefun str value_hash (@var{value})
-Returns the same string as @code{string_hash(toliteral(@var{value}))}; see the
+@deftypefun str value_hash (@var{value} [, @var{str algo}])
+Returns the same string as @code{string_hash(toliteral(@var{value}, @var{algo}))}; see the
 description of @code{string_hash()} for details.
+@end deftypefun
+
+@deftypefun str value_hmac (@var{value}, @var{str key})
+Returns the same string as @code{string_hmac(toliteral(@var{value}), @var{key})}; see the
+description of @code{string_hmac()} for details.
+@end deftypefun
+
+@deftypefun str generate_json (@var{value} [, @var{str mode}])
+Returns the JSON representation of the MOO value.
+
+MOO supports a richer set of values than JSON allows.  The optional @code{mode}
+specifies how this function handles the conversion of MOO values into their
+JSON representation.
+
+The @dfn{common subset} mode, specified by the literal @code{mode} string
+@code{"common-subset"}, is the default conversion mode.  In this mode, only the
+common subset of types (strings and numbers) are translated with fidelity
+between MOO types and JSON types.  All other types are treated as alternative
+representations of the string type.  This mode is useful for integration with
+non-MOO applications.
+
+The @dfn{embedded types} mode, specified by the literal @code{mode} string
+@code{"embedded-types"}, adds type information.  Specifically, values other
+than strings and numbers, which carry implicit type information, are converted
+into strings with type information appended.  The converted string consists of
+the string representation of the value (as if @code{tostr()} were applied)
+followed by the pipe (@code{|}) character and the type.  This mode is useful
+for serializing/deserializing objects and collections of MOO values.
+
+@example
+generate_json([])                                           @result{}   "@{@}"
+generate_json(["foo" -> "bar"])                             @result{}   "@{\"foo\":\"bar\"@}"
+generate_json(["foo" -> "bar"], "common-subset")            @result{}   "@{\"foo\":\"bar\"@}"
+generate_json(["foo" -> "bar"], "embedded-types")           @result{}   "@{\"foo\":\"bar\"@}"
+generate_json(["foo" -> 1.1])                               @result{}   "@{\"foo\":1.1@}"
+generate_json(["foo" -> 1.1], "common-subset")              @result{}   "@{\"foo\":1.1@}"
+generate_json(["foo" -> 1.1], "embedded-types")             @result{}   "@{\"foo\":1.1@}"
+generate_json(["foo" -> #1])                                @result{}   "@{\"foo\":\"#1\"@}"
+generate_json(["foo" -> #1], "common-subset")               @result{}   "@{\"foo\":\"#1\"@}"
+generate_json(["foo" -> #1], "embedded-types")              @result{}   "@{\"foo\":\"#1|obj\"@}"
+generate_json(["foo" -> E_PERM])                            @result{}   "@{\"foo\":\"E_PERM\"@}"
+generate_json(["foo" -> E_PERM], "common-subset")           @result{}   "@{\"foo\":\"E_PERM\"@}"
+generate_json(["foo" -> E_PERM], "embedded-types")          @result{}   "@{\"foo\":\"E_PERM|err\"@}"
+@end example
+
+JSON keys must be strings, so regardless of the mode, the key will be converted
+to a string value.
+
+@example
+generate_json([1 -> 2])                                     @result{}   "@{\"1\":2@}"
+generate_json([1 -> 2], "common-subset")                    @result{}   "@{\"1\":2@}"
+generate_json([1 -> 2], "embedded-types")                   @result{}   "@{\"1|int\":2@}"
+generate_json([#1 -> 2], "embedded-types")                  @result{}   "@{\"#1|obj\":2@}"
+@end example
+@end deftypefun
+
+@deftypefun value parse_json (@var{str json} [, @var{str mode}])
+Returns the MOO value representation of the JSON string.  If the specified
+string is not valid JSON, @code{E_INVARG} is raised.
+
+The optional @code{mode} specifies how this function handles conversion of MOO
+values into their JSON representation.  The options are the same as for
+@code{generate_json()}.
+
+@example
+parse_json("@{@}")                                            @result{}   []
+parse_json("@{\"foo\":\"bar\"@}")                             @result{}   ["foo" -> "bar"]
+parse_json("@{\"foo\":\"bar\"@}", "common-subset")            @result{}   ["foo" -> "bar"]
+parse_json("@{\"foo\":\"bar\"@}", "embedded-types")           @result{}   ["foo" -> "bar"]
+parse_json("@{\"foo\":1.1@}")                                 @result{}   ["foo" -> 1.1]
+parse_json("@{\"foo\":1.1@}", "common-subset")                @result{}   ["foo" -> 1.1]
+parse_json("@{\"foo\":1.1@}", "embedded-types")               @result{}   ["foo" -> 1.1]
+parse_json("@{\"foo\":\"#1\"@}")                              @result{}   ["foo" -> "#1"]
+parse_json("@{\"foo\":\"#1\"@}", "common-subset")             @result{}   ["foo" -> "#1"]
+parse_json("@{\"foo\":\"#1|obj\"@}", "embedded-types")        @result{}   ["foo" -> #1]
+parse_json("@{\"foo\":\"E_PERM\"@}")                          @result{}   ["foo" -> "E_PERM"]
+parse_json("@{\"foo\":\"E_PERM\"@}", "common-subset")         @result{}   ["foo" -> "E_PERM"]
+parse_json("@{\"foo\":\"E_PERM|err\"@}", "embedded-types")    @result{}   ["foo" -> E_PERM]
+@end example
+
+In @dfn{embedded types} mode, key values can be converted to MOO types by
+appending type information.  The full set of supported types are @code{obj},
+@code{str}, @code{err}, @code{float} and @code{int}.
+
+@example
+parse_json("@{\"1\":2@}")                                     @result{}   ["1" -> 2]
+parse_json("@{\"1\":2@}", "common-subset")                    @result{}   ["1" -> 2]
+parse_json("@{\"1|int\":2@}", "embedded-types")               @result{}   [1 -> 2]
+parse_json("@{\"#1|obj\":2@}", "embedded-types")              @result{}   [#1 -> 2]
+@end example
+
+JSON defines types that MOO (currently) does not support, such as boolean
+@code{true} and @code{false}, and @code{null}.  These values are always
+converted to the strings @code{"true"}, @code{"false"} and @code{"null"}.
 @end deftypefun
 
 @node Manipulating Numbers, Manipulating Strings, General Operations, Manipulating Values
@@ -3672,12 +3801,19 @@ different platforms, and your password verification systems will fail.  Use a
 salt longer than two characters at your own risk.
 @end quotation
 
-@deftypefun str string_hash (str @var{text})
-@deftypefunx str binary_hash (str @var{bin-string})
-Returns a 32-character hexadecimal string encoding the result of applying the
-MD5 cryptographically secure hash function to the contents of the string
-@var{text} or the binary string @var{bin-string}.  MD5, like other such
-functions, has the property that, if
+@deftypefun str string_hash (str @var{text} [, @var{str algo}])
+@deftypefunx str binary_hash (str @var{bin-string} [, @var{str algo}])
+Returns a 64-character hexadecimal string encoding the result of applying the
+SHA256 cryptographically secure hash function to the contents of the string
+@var{text} or the binary string @var{bin-string}.  If @var{algo} is provided,
+it specifies the hashing algorithm to use.  "MD5", "SHA1" and "SHA256" are all
+supported.
+
+Note that the MD5 hash algorithm is broken from a cryptographic standpoint, as
+is SHA1.  Both are included for interoperability with existing applications
+(both are still popular).
+
+All supported hash functions have the property that, if
 @example
 string_hash(@var{x}) == string_hash(@var{y})
 @end example
@@ -3686,6 +3822,7 @@ then, almost certainly,
 @example
 equal(@var{x}, @var{y})
 @end example
+
 @noindent
 This can be useful, for example, in certain networking applications: after
 sending a large piece of text across a connection, also send the result of
@@ -3694,7 +3831,36 @@ applies @code{string_hash()} to the text and gets the same result, you can be
 quite confident that the large text has arrived unchanged.
 @end deftypefun
 
-@node Manipulating Lists,  , Manipulating Strings, Manipulating Values
+@deftypefun str string_hmac (str @var{text}, @var{str key})
+@deftypefunx str binary_hmac (str @var{bin-string}, @var{str key})
+Returns a 64-character hexadecimal string encoding the result of applying the
+HMAC-SHA256 cryptographically secure HMAC function to the contents of the
+string @var{text} or the binary string @var{bin-string} with the specified
+secret @var{key}.  Currently, only HMAC-SHA256 is supported.
+
+All cryptographically secure HMACs have the property that, if
+@example
+string_hmac(@var{x}, @var{a}) == string_hmac(@var{y}, @var{b})
+@end example
+@noindent
+then, almost certainly,
+@example
+equal(@var{x}, @var{y})
+@end example
+@noindent
+and furthermore,
+@example
+equal(@var{a}, @var{b})
+@end example
+
+@noindent
+This can be useful, for example, in applications that need to verify both the
+integrity of the message (the @var{text}) and the authenticity of the sender
+(as demonstrated by the possession of the secret @var{key}).
+
+@end deftypefun
+
+@node Manipulating Lists, Manipulating Maps, Manipulating Strings, Manipulating Values
 @comment  node-name,  next,  previous,  up
 @subsubsection Operations on Lists
 
@@ -3799,6 +3965,40 @@ setadd(@{1, 2, 3@}, 4)         @result{}   @{1, 2, 3, 4@}
 setremove(@{1, 2, 3@}, 3)      @result{}   @{1, 2@}
 setremove(@{1, 2, 3@}, 4)      @result{}   @{1, 2, 3@}
 setremove(@{1, 2, 3, 2@}, 2)   @result{}   @{1, 3, 2@}
+@end example
+@end deftypefun
+
+@node Manipulating Maps,  , Manipulating Lists, Manipulating Values
+@comment  node-name,  next,  previous,  up
+@subsubsection Operations on Maps
+
+When using the functions below, it's helpful to remember that maps are ordered.
+
+@deftypefun list mapkeys (map @var{map})
+Returns the keys of the elements of @var{map}.
+
+@example
+x = ["foo" -> 1, "bar" -> 2, "baz" -> 3];
+mapkeys(x)   @result{}   @{"bar", "baz", "foo"@}
+@end example
+@end deftypefun
+
+@deftypefun list mapvalues (map @var{map})
+Returns the values of the elements of @var{map}.
+
+@example
+x = ["foo" -> 1, "bar" -> 2, "baz" -> 3];
+mapvalues(x)   @result{}   @{2, 3, 1@}
+@end example
+@end deftypefun
+
+@deftypefun map mapdelete (map @var{map}, @var{key})
+Returns a copy of @var{map} with the value corresponding to @var{key} removed.
+If @var{key} is not a valid key, then @code{E_RANGE} is raised.
+
+@example
+x = ["foo" -> 1, "bar" -> 2, "baz" -> 3];
+mapdelete(x, "bar")   @result{}   ["baz" -> 3, "foo" -> 1]
 @end example
 @end deftypefun
 
@@ -4257,7 +4457,7 @@ If @var{object} is not valid, then @code{E_INVARG} is raised.  If @var{object}
 does not define a verb as specified by @var{verb-desc}, then @code{E_VERBNF} is
 raised.  If the programmer does not have read (write) permission on the verb in
 question, then @code{verb_code()} (@code{set_verb_code()}) raises
-@code{E_PERM}.  If the programmer is not, in fact. a programmer, then
+@code{E_PERM}.  If the programmer is not, in fact, a programmer, then
 @code{E_PERM} is raised.
 
 For @code{set_verb_code()}, the result is a list of strings, the error messages
@@ -4315,7 +4515,66 @@ just as if @code{boot_player(@var{object})} had been called (see the
 description of @code{boot_player()} below).
 @end deftypefun
 
-@node Manipulating Connections, Time, Manipulating Objects, Builtins
+@node The Server Environment, Manipulating Connections, Manipulating Objects, Builtins
+@comment  node-name,  next,  previous,  up
+@subsection Operations on The Server Environment
+
+@deftypefun list exec (list @var{command}[, str @var{input}])
+Asynchronously executes the specified external executable, optionally sending
+input.  Returns the process return code, output and error.  If the programmer
+is not a wizard, then @code{E_PERM} is raised.
+
+The first argument must be a list of strings, or @code{E_INVARG} is raised.
+The first string is the path to the executable and is required.  The rest are
+command line arguments passed to the executable.
+
+The path to the executable may not start with a slash (@code{/}) or dot-dot
+(@code{..}), and it may not contain slash-dot (@code{/.}) or dot-slash
+(@code{./}), or @code{E_INVARG} is raised.  If the specified executable does
+not exist or is not a regular file, @code{E_INVARG} is raised.
+
+If the string @var{input} is present, it is written to standard input of the
+executing process.
+
+When the process exits, it returns a list of the form:
+
+@example
+@{@var{code}, @var{output}, @var{error}@}
+@end example
+
+@var{code} is the integer process exit status or return code.  @var{output} and
+@var{error} are strings of data that were written to the standard output and
+error of the process.
+
+The specified command is executed asynchronously.  The function suspends the
+current task and allows other tasks to run until the command finishes.  Tasks
+suspended this way can be killed with @code{kill_task()}.
+
+The strings, @var{input}, @var{output} and @var{error} are all MOO binary
+strings.
+
+All external executables must reside in the @code{executables} directory.
+
+@example
+exec(@{"cat", "-?"@})                                   @result{}   @{1, "", "cat: illegal option -- ?~0Ausage: cat [-benstuv] [file ...]~0A"@}
+exec(@{"cat"@}, "foo")                                  @result{}   @{0, "foo", ""@}
+exec(@{"echo", "one", "two"@})                          @result{}   @{0, "one two~0A", ""@}
+@end example
+@end deftypefun
+
+@deftypefun str getenv (str @var{name})
+Returns the value of the named environment variable.  If no such environment
+variable exists, @code{0} is returned.  If the programmer is not a wizard, then
+@code{E_PERM} is raised.
+
+@example
+getenv("HOME")                                          @result{}   "/home/foobar"
+getenv("XYZZY")                                         @result{}   0
+@end example
+
+@end deftypefun
+
+@node Manipulating Connections, Time, The Server Environment, Builtins
 @comment  node-name,  next,  previous,  up
 @subsection Operations on Network Connections
 
@@ -4399,6 +4658,73 @@ set_connection_option(player, "hold-input", 0)
 @end example
 @noindent
 to allow commands once again to be read and interpreted normally.
+@end deftypefun
+
+@deftypefun map read_http (@var{request-or-response} [, obj @var{conn}])
+Reads lines from the connection @var{conn} (or, if not provided, from the
+player that typed the command that initiated the current task) and attempts to
+parse the lines as if they are an HTTP request or response.
+@var{request-or-response} must be either the string @code{"request"} or
+@code{"response"}.  It dictates the type of parsing that will be done.
+
+Just like @code{read()}, if @var{conn} is provided, then the programmer must
+either be a wizard or the owner of @var{conn}; if @var{conn} is not provided,
+then @code{read_http()} may only be called by a wizard and only in the task
+that was last spawned by a command from the connection in question.  Otherwise,
+@code{E_PERM} is raised.  Likewise, if @var{conn} is not currently connected
+and has no pending lines of input, or if the connection is closed while a task
+is waiting for input but before any lines of input are received, then
+@code{read_http()} raises @code{E_INVARG}.
+
+If parsing fails because the request or response is syntactically incorrect,
+@code{read_http()} will return a map with the single key @code{"error"} and a
+list of values describing the reason for the error.  If parsing succeeds,
+@code{read_http()} will return a map with an appropriate subset of the
+following keys, with values parsed from the HTTP request or response:
+@code{"method"}, @code{"uri"}, @code{"headers"}, @code{"body"}, @code{"status"}
+and @code{"upgrade"}.
+
+@quotation
+@emph{Fine point:}
+@code{read_http()} assumes the input strings are binary strings.  When called
+interactively, as in the example below, the programmer must insert the literal
+line terminators or parsing will fail.
+@end quotation
+
+The following example interactively reads an HTTP request from the player's
+connection.
+
+@example
+read_http("request", player)
+GET /path HTTP/1.1~0D~0A
+Host: example.com~0D~0A
+~0D~0A
+@end example
+
+In this example, the string @code{~0D~0A} ends the request.  The call returns
+the following (the request has no body):
+
+@example
+["headers" -> ["Host" -> "example.com"], "method" -> "GET", "uri" -> "/path"]
+@end example
+
+The following example interactively reads an HTTP response from the player's
+connection.
+
+@example
+read_http("response", player)
+HTTP/1.1 200 Ok~0D~0A
+Content-Length: 10~0D~0A
+~0D~0A
+1234567890
+@end example
+
+The call returns the following:
+
+@example
+["body" -> "1234567890", "headers" -> ["Content-Length" -> "10"], "status" -> 200]
+@end example
+
 @end deftypefun
 
 @deftypefun none force_input (obj @var{conn}, str @var{line} [, @var{at-front}])
@@ -5171,9 +5497,7 @@ server, and @var{nfree} is the number of such fragments that have been reserved
 for use but are currently free.
 
 On servers for which such statistics are not available, @code{memory_usage()}
-returns @code{@{@}}.  The compilation option @code{USE_GNU_MALLOC} controls
-whether or not statistics are available; if the option is not provided,
-statistics are not available.
+returns @code{@{@}}.
 @end deftypefun
 
 @deftypefun int db_disk_size ()
@@ -5572,6 +5896,9 @@ successfully open.
 Restrict reading of built-in @var{property} to wizards.
 @item protect_@var{function}
 Restrict use of built-in @var{function} to wizards.
+@item queued_task_limit
+The maximum number of forked or suspended tasks any player can have
+queued at a given time
 @item support_numeric_verbname_strings
 Enables use of an obsolete verb-naming mechanism.
 @end table
@@ -5891,7 +6218,12 @@ beginning, before accepting connections or getting the value of
 @code{$dump_interval} to schedule the first checkpoint (see below for more
 information on checkpoint scheduling).
 
-First, the server calls @code{$user_disconnected()} once for each user who
+First, the server calls @code{$do_start_script()} and passes in script content
+via the @code{args} built-in variable. The script content is specified on the
+command line when the server is started. The server can call this verb multiple
+times, once each for the @code{-c} and @code{-f} command line arguments.
+
+Next, the server calls @code{$user_disconnected()} once for each user who
 was connected at the time the database file was written; this allows for any
 cleaning up that's usually done when users disconnect (e.g., moving their
 player objects back to some `home' location, etc.).
@@ -5910,8 +6242,8 @@ network connections, clearing out certain tables, etc.).
 As described earlier, in the section describing MOO tasks, the server places
 limits on the number of seconds for which any task may run continuously and the
 number of ``ticks,'' or low-level operations, any task may execute in one
-unbroken period.  By default, foreground tasks may use 30,000 ticks and five
-seconds, and background tasks may use 15,000 ticks and three seconds.  These
+unbroken period.  By default, foreground tasks may use 60,000 ticks and five
+seconds, and background tasks may use 30,000 ticks and three seconds.  These
 defaults can be overridden from within the database by defining any or all of
 the following properties on @code{$server_options} and giving them integer
 values:
@@ -6225,16 +6557,24 @@ The arguments must occur in this order, e.g., a log file name (@code{-l}) must c
 @table @code
 @item -l @var{log-file-name}
 (Optional)
-This specifies a file name for the server log output.  
-If no log file name is specified, log output is directed to @code{stderr}.
+This specifies a file name for the server log output. If no log file name is specified, log output is directed to @code{stderr}.
 
 @item -e
-(Optional) 
-This specifies that, once the database is loaded, 
-Emergency Wizard Mode will be entered 
-before starting any tasks 
-or doing the initial listen to accept connections.
+(Optional)
+This specifies that, once the database is loaded, Emergency Wizard Mode will be entered before starting any tasks or doing the initial listen to accept connections.
+
+@item -c @var{script-line}
+(Optional)
+This specifies a script line to pass to the @code{$do_start_script} verb.
+
+@item -f @var{script-file}
+(Optional)
+This specifies a script file to load and pass (the contents of) to the @code{$do_start_script} verb.
 @end table
+
+For both the @code{-c} and @code{-f} arguments, the script content is passed in the @code{args} built-in variable. The server makes no assumptions about the semantics of the script; the interpretation of the script is the verb's responsibility. Like Emergency Wizard Mode, the verb is called before starting any tasks or doing the initial listen to accept connections.
+
+The @code{-e} argument may not be used with either @code{-c} or @code{-f}.
 
 @subsubheading Database Arguments
 @table @code

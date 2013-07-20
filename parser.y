@@ -275,8 +275,8 @@ statement:
     	| tTRY statements excepts tENDTRY
 		{
 		    $$ = alloc_stmt(STMT_TRY_EXCEPT);
-		    $$->s.catch.body = $2;
-		    $$->s.catch.excepts = $3;
+		    $$->s._catch.body = $2;
+		    $$->s._catch.excepts = $3;
 		}
     	| tTRY statements tFINALLY statements tENDTRY
 		{
@@ -614,9 +614,9 @@ expr:
 	| '`' expr '!' codes default '\''
 		{
 		    $$ = alloc_expr(EXPR_CATCH);
-		    $$->e.catch.try = $2;
-		    $$->e.catch.codes = $4;
-		    $$->e.catch.except = $5;
+		    $$->e._catch._try = $2;
+		    $$->e._catch.codes = $4;
+		    $$->e._catch.except = $5;
 		}
 	;
 
@@ -1076,7 +1076,7 @@ static struct loop_entry *loop_stack;
 static void
 push_loop_name(const char *name)
 {
-    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (struct loop_entry *)mymalloc(sizeof(struct loop_entry), M_AST);
 
     entry->next = loop_stack;
     entry->name = (name ? str_dup(name) : 0);
@@ -1104,7 +1104,7 @@ pop_loop_name(void)
 static void
 suspend_loop_scope(void)
 {
-    struct loop_entry  *entry = mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (struct loop_entry *)mymalloc(sizeof(struct loop_entry), M_AST);
 
     entry->next = loop_stack;
     entry->name = 0;

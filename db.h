@@ -99,6 +99,9 @@ extern void db_shutdown(void);
 
 /**** objects ****/
 
+extern int valid(Objid);
+extern int is_valid(Var);
+
 extern Objid db_create_object(void);
 				/* Creates a new object with parent & location
 				 * == #-1.  Returns new object's id number.
@@ -124,21 +127,32 @@ extern void db_destroy_object(Objid);
 				 * must == #-1.
 				 */
 
+extern void db_destroy_anonymous_object(void *);
+				/* Destroys object, freeing all associated
+				 * storage.
+				 */
+
+extern Object *db_make_anonymous(Objid, Objid);
+				/* Makes the specified object anonymous by
+				 * removing it from the collection of numbered
+				 * objects.  Resets the high-water mark to the
+				 * last high-water mark.  Returns an opaque
+				 * pointer to the object.
+				 */
+
 extern Objid db_renumber_object(Objid);
 				/* Renumbers object to have the lowest free
 				 * object number.  Returns its new number.
 				 */
 
-extern int valid(Objid);
-
-extern int db_object_bytes(Objid);
+extern int db_object_bytes(Var);
 				/* Returns the number of bytes of memory
 				 * currently required in order to represent the
 				 * given object and all of its verbs and
 				 * properties.
 				 */
 
-extern Var db_ancestors(Objid, bool);
+extern Var db_ancestors(Var, bool);
 				/* Returns a list of the ancestors of the
 				 * given object.  db_ancestors() does not/
 				 * can not free the returned list.  The caller
@@ -146,7 +160,7 @@ extern Var db_ancestors(Objid, bool);
 				 * operating on it.
 				 */
 
-extern Var db_descendants(Objid, bool);
+extern Var db_descendants(Var, bool);
 				/* Returns a list of the descendants of the
 				 * given object.  db_descendants() does not/
 				 * can not free the returned list.  The caller
@@ -154,7 +168,7 @@ extern Var db_descendants(Objid, bool);
 				 * operating on it.
 				 */
 
-extern Var db_all_locations(Objid, bool);
+extern Var db_all_locations(Var, bool);
 				/* Returns a list of all objects that
 				 * contain the given object.
 				 * db_all_locations() does not/can not free the
@@ -162,7 +176,7 @@ extern Var db_all_locations(Objid, bool);
 				 * free it once it has finished operating on it.
 				 */
 
-extern Var db_all_contents(Objid, bool);
+extern Var db_all_contents(Var, bool);
 				/* Returns a list of all objects that are
 				 * contained by the given object.
 				 * db_all_contents() does not/can not free the
@@ -171,6 +185,11 @@ extern Var db_all_contents(Objid, bool);
 				 */
 
 /**** object attributes ****/
+
+extern Objid db_object_owner2(Var);
+
+extern Var db_object_parents2(Var);
+extern Var db_object_children2(Var);
 
 extern Objid db_object_owner(Objid);
 extern void db_set_object_owner(Objid oid, Objid owner);
@@ -183,7 +202,15 @@ extern void db_set_object_name(Objid oid, const char *name);
 				 * reference is to be persistent.
 				 */
 
-extern Var db_object_parent(Objid);
+extern Var db_object_parents(Objid);
+extern Var db_object_children(Objid);
+				/* Returns a list of the parents/children of the
+				 * given object.  These functions do not change
+				 * the reference count of the value they return.
+				 * Thus, the caller should var_ref() the value
+				 * if the reference is to be persistent.
+				 */
+
 extern int db_count_children(Objid);
 extern int db_for_all_children(Objid,
 			       int (*)(void *, Objid),
@@ -196,12 +223,12 @@ extern int db_for_all_children(Objid,
 				 *      db_renumber_object()
 				 *      db_change_parent()
 				 */
-extern int db_change_parent(Objid oid, Var parents);
-				/* db_change_parent() returns true (and
-				 * actually changes the parent of OID) iff
-				 * neither OID nor any of its descendents
+extern int db_change_parents(Var obj, Var parents, Var anon_kids);
+				/* db_change_parents() returns true (and
+				 * actually changes the parent of OBJ) iff
+				 * neither OBJ nor any of its descendents
 				 * defines any properties with the same names
-				 * as properties defined on PARENT or any of
+				 * as properties defined on PARENTS or any of
 				 * its ancestors.
 				 */
 
@@ -228,30 +255,41 @@ typedef enum {
     FLAG_READ,
     FLAG_WRITE,
     FLAG_OBSOLETE_2,
-    FLAG_FERTILE
+    FLAG_FERTILE,
+    FLAG_ANONYMOUS,
+    FLAG_INVALID,	/* `FLAG_INVALID' indicates the anonymous
+			 * object is invalid due to parent/ancestor
+			 * changes, recycling, etc.  The object may
+			 * still be maintaining storage.
+			 */
+    FLAG_RECYCLED	/* `FLAG_RECYCLED' indicates the anonymous
+			 * object has been recycled (the `recycle'
+			 * verb has been called on the object, if
+			 * defined) and the object is scheduled
+			 * to have its internal storage freed.
+			 */
     /* NOTE: New permanent flags must always be added here, rather
      *	     than replacing one of the obsolete ones, since old
      *	     databases might have old objects around that still have
      *	     that flag set.
      */
-
-    /* Temporary flags.
-     * (not saved; can be renumbered with impunity)
-     * make sure FLAG_FIRST_TEMP > last permanent flag
-     */
 } db_object_flag;
+
+extern int db_object_has_flag2(Var, db_object_flag);
+extern void db_set_object_flag2(Var, db_object_flag);
+extern void db_clear_object_flag2(Var, db_object_flag);
 
 extern int db_object_has_flag(Objid, db_object_flag);
 extern void db_set_object_flag(Objid, db_object_flag);
 extern void db_clear_object_flag(Objid, db_object_flag);
 
-extern int db_object_allows(Objid oid, Objid progr,
+extern int db_object_allows(Var obj, Objid progr,
 			    db_object_flag flag);
-				/* Returns true iff either OID has FLAG or
-				 * PROGR either is a wizard or owns OID; that
+				/* Returns true iff either OBJ has FLAG or
+				 * PROGR either is a wizard or owns OBJ; that
 				 * is, iff PROGR's authority is sufficient to
 				 * be allowed to do the indicated operation on
-				 * OID.
+				 * OBJ.
 				 */
 
 extern int is_wizard(Objid oid);
@@ -264,6 +302,8 @@ extern Var db_all_users(void);
 				 * module.  The caller should thus var_ref() it
 				 * to make it persistent.
 				 */
+
+extern int db_object_isa(Var, Var);
 
 
 /**** properties *****/
@@ -274,12 +314,12 @@ typedef enum {
     PF_CHOWN = 04
 } db_prop_flag;
 
-extern int db_add_propdef(Objid oid, const char *pname,
+extern int db_add_propdef(Var obj, const char *pname,
 			  Var value, Objid owner,
 			  unsigned flags);
 				/* Returns true (and actually adds the property
-				 * to OID) iff (1) no property named PNAME
-				 * already exists on OID or one of its
+				 * to OBJ) iff (1) no property named PNAME
+				 * already exists on OBJ or one of its
 				 * ancestors or descendants, and (2) PNAME does
 				 * not name any built-in property.  This
 				 * function does not change the reference count
@@ -289,26 +329,26 @@ extern int db_add_propdef(Objid oid, const char *pname,
 				 * zero or more elements of `db_prop_flag'.
 				 */
 
-extern int db_rename_propdef(Objid oid, const char *old,
-			     const char *new);
+extern int db_rename_propdef(Var obj, const char *old,
+			     const char *_new);
 				/* Returns true (and actually renames the
-				 * propdef on OID) iff (1) a propdef with the
-				 * name OLD existed on OID, (2) no property
-				 * named NEW already exists on OID or one of
+				 * propdef on OBJ) iff (1) a propdef with the
+				 * name OLD existed on OBJ, (2) no property
+				 * named NEW already exists on OBJ or one of
 				 * its ancestors or descendants, and (3) NEW
 				 * does not name any built-in property.  If
 				 * condition (1) holds and OLD == NEW, then
 				 * this is a no-op that returns true.
 				 */
 
-extern int db_delete_propdef(Objid, const char *);
+extern int db_delete_propdef(Var, const char *);
 				/* Returns true iff a propdef with the given
 				 * name existed on the object (i.e., was there
 				 * to be deleted).
 				 */
 
-extern int db_count_propdefs(Objid);
-extern int db_for_all_propdefs(Objid,
+extern int db_count_propdefs(Var);
+extern int db_for_all_propdefs(Var,
 			       int (*)(void *, const char *),
 			       void *);
 				/* db_for_all_propdefs() does not change the
@@ -316,6 +356,16 @@ extern int db_for_all_propdefs(Objid,
 				 * passed to the given callback function.
 				 * Thus, the caller should str_ref() the names
 				 * if the references are to be persistent.
+				 */
+
+extern int db_for_all_propvals(Var,
+			       int (*)(void *, Var),
+			       void *);
+				/* db_for_all_propvals() does not change the
+				 * reference counts of the values passed to
+				 * the given callback function.  Thus, the
+				 * caller should var_ref() the values if the
+				 * references are to be persistent.
 				 */
 
 #define BUILTIN_PROPERTIES(DEFINE)		\
@@ -326,6 +376,7 @@ extern int db_for_all_propdefs(Objid,
     DEFINE(R,r)					\
     DEFINE(W,w)					\
     DEFINE(F,f)					\
+    DEFINE(A,a)					\
     DEFINE(LOCATION,location)			\
     DEFINE(CONTENTS,contents)
 
@@ -336,13 +387,16 @@ enum bi_prop {
 #undef _BP_DO
 };
 
+/* Use the accessors `db_is_property_built_in' and `db_is_property_defined_on'
+ * to read the fields `built_in' and `definer'.
+ */
 typedef struct {
     enum bi_prop built_in;	/* true iff property is a built-in one */
-    Objid definer;		/* if !built_in, the object defining prop */
+    void *definer;		/* null iff property is a built-in one */
     void *ptr;			/* null iff property not found */
 } db_prop_handle;
 
-extern db_prop_handle db_find_property(Objid oid, const char *name,
+extern db_prop_handle db_find_property(Var obj, const char *name,
 				       Var * value);
 				/* Returns a handle on the named property of
 				 * the given object.  If `value' is non-null,
@@ -409,6 +463,18 @@ extern int db_property_allows(db_prop_handle, Objid,
 				 * This function may not be called for built-in
 				 * properties.
 				 */
+
+extern int db_is_property_defined_on(db_prop_handle, Var);
+				/* Returns true iff the property is defined on
+				 * the specified object.  The object value must
+				 * be either an object number or an anonymous
+				 * object.
+				 */
+
+extern int db_is_property_built_in(db_prop_handle);
+				/* Returns true iff the property is a built-in
+				 * property.
+				 */
 
 
 /**** verbs ****/
@@ -466,7 +532,7 @@ extern const char *db_unparse_prep(db_prep_spec);
 				 * persistent.
 				 */
 
-extern int  db_add_verb(Objid oid, const char *vnames,
+extern int  db_add_verb(Var obj, const char *vnames,
 			Objid owner, unsigned flags,
 			db_arg_spec dobj, db_prep_spec prep,
 			db_arg_spec iobj);
@@ -476,8 +542,8 @@ extern int  db_add_verb(Objid oid, const char *vnames,
 				 * be persistent.
 				 */
 
-extern int db_count_verbs(Objid);
-extern int db_for_all_verbs(Objid,
+extern int db_count_verbs(Var);
+extern int db_for_all_verbs(Var,
 			    int (*)(void *, const char *),
 			    void *);
 				/* db_for_all_verbs() does not change the
@@ -508,7 +574,7 @@ extern db_verb_handle db_find_command_verb(Objid oid, const char *verb,
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_callable_verb(Objid oid, const char *verb);
+extern db_verb_handle db_find_callable_verb(Var recv, const char *verb);
 				/* Returns a handle on the first verb found
 				 * defined on OID or one of its ancestors with
 				 * a name matching VERB (and, for now, the
@@ -520,13 +586,13 @@ extern db_verb_handle db_find_callable_verb(Objid oid, const char *verb);
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_defined_verb(Objid oid, const char *verb,
+extern db_verb_handle db_find_defined_verb(Var obj, const char *verb,
 					   int allow_numbers);
 				/* Returns a handle on the first verb found
-				 * defined on OID with a name matching VERB
+				 * defined on OBJ with a name matching VERB
 				 * (or, if ALLOW_NUMBERS is true and VERB has
 				 * the form of a decimal natural number, the
-				 * zero-based VERB'th verb defined on OID,
+				 * zero-based VERB'th verb defined on OBJ,
 				 * whichever comes first).  The `ptr' in the
 				 * result is null iff there is no such verb.
 				 * The returned handle is very volatile; only
@@ -535,9 +601,9 @@ extern db_verb_handle db_find_defined_verb(Objid oid, const char *verb,
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_indexed_verb(Objid oid, unsigned index);
+extern db_verb_handle db_find_indexed_verb(Var obj, unsigned index);
 				/* Returns a handle on the 1-based INDEX'th
-				 * verb defined on OID.  The `ptr' in the
+				 * verb defined on OBJ.  The `ptr' in the
 				 * result is null iff there is no such verb.
 				 * The returned handle is very volatile; only
 				 * the routines declared below as taking a
@@ -545,9 +611,11 @@ extern db_verb_handle db_find_indexed_verb(Objid oid, unsigned index);
 				 * leave the handle intact.
 				 */
 
-extern Objid db_verb_definer(db_verb_handle);
+extern Var db_verb_definer(db_verb_handle);
 				/* Returns the object on which the given verb
-				 * is defined.
+				 * is defined.  The caller must var_ref(),
+				 * var_dup() the value if it is to be
+				 * persistent.
 				 */
 
 extern const char *db_verb_names(db_verb_handle);

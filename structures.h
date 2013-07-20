@@ -25,7 +25,9 @@
 #include "config.h"
 
 #define MAXINT	((int32) 2147483647L)
+#define MININT	((int32) -2147483648L)
 #define MAXOBJ	((Objid) MAXINT)
+#define MINOBJ	((Objid) MININT)
 
 typedef int32 Objid;
 
@@ -48,10 +50,23 @@ enum error {
     E_FILE, E_EXEC, E_INTRPT
 };
 
-/* Do not reorder or otherwise modify this list, except to add new elements at
- * the end, since the order here defines the numeric equivalents of the type
- * values, and those equivalents are both DB-accessible knowledge and stored in
- * raw form in the DB.
+/* Types which have external data should be marked with the
+ * TYPE_COMPLEX_FLAG so that `free_var()'/`var_ref()'/`var_dup()' can
+ * recognize them easily.  This flag is only set in memory.  The
+ * original _TYPE_XYZ values are used in the database file and
+ * returned to verbs calling typeof().  This allows the inlines to be
+ * extremely cheap (both in space and time) for simple types like oids
+ * and ints.
+ */
+#define TYPE_COMPLEX_FLAG	0x80
+#define TYPE_DB_MASK		0x7f
+
+/* Do not reorder or otherwise modify this list, except to add new
+ * elements at the end (see THE END), since the order here defines the
+ * numeric equivalents of the type values, and those equivalents are
+ * both DB-accessible knowledge and stored in raw form in the DB.  For
+ * new complex types add both a _TYPE_XYZ definition and a TYPE_XYZ
+ * definition.
  */
 typedef enum {
     TYPE_INT, TYPE_OBJ, _TYPE_STR, TYPE_ERR, _TYPE_LIST, /* user-visible */
@@ -61,24 +76,16 @@ typedef enum {
     TYPE_FINALLY,		/* on-stack marker for a TRY-FINALLY clause */
     _TYPE_FLOAT,		/* floating-point number; user-visible */
     _TYPE_MAP,			/* map; user-visible */
-    _TYPE_ITER			/* map iterator; not visible */
+    _TYPE_ITER,			/* map iterator; not visible */
+    _TYPE_ANON,			/* anonymous object; user-visible */
+    /* THE END - complex aliases come next */
+    TYPE_STR = (_TYPE_STR | TYPE_COMPLEX_FLAG),
+    TYPE_FLOAT = (_TYPE_FLOAT | TYPE_COMPLEX_FLAG),
+    TYPE_LIST = (_TYPE_LIST | TYPE_COMPLEX_FLAG),
+    TYPE_MAP = (_TYPE_MAP | TYPE_COMPLEX_FLAG),
+    TYPE_ITER = (_TYPE_ITER | TYPE_COMPLEX_FLAG),
+    TYPE_ANON = (_TYPE_ANON | TYPE_COMPLEX_FLAG)
 } var_type;
-
-/* Types which have external data should be marked with the TYPE_COMPLEX_FLAG
- * so that free_var/var_ref/var_dup can recognize them easily.  This flag is
- * only set in memory.  The original _TYPE values are used in the database
- * file and returned to verbs calling typeof().  This allows the inlines to
- * be extremely cheap (both in space and time) for simple types like oids
- * and ints.
- */
-#define TYPE_DB_MASK		0x7f
-#define TYPE_COMPLEX_FLAG	0x80
-
-#define TYPE_STR		(_TYPE_STR | TYPE_COMPLEX_FLAG)
-#define TYPE_FLOAT		(_TYPE_FLOAT | TYPE_COMPLEX_FLAG)
-#define TYPE_LIST		(_TYPE_LIST | TYPE_COMPLEX_FLAG)
-#define TYPE_MAP		(_TYPE_MAP | TYPE_COMPLEX_FLAG)
-#define TYPE_ITER		(_TYPE_ITER | TYPE_COMPLEX_FLAG)
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
@@ -106,6 +113,9 @@ typedef struct rbtrav rbtrav;
 #pragma pointer_size short
 #endif
 
+/* defined in db_private.h */
+typedef struct Object Object;
+
 struct Var {
     union {
 	const char *str;	/* STR */
@@ -113,9 +123,10 @@ struct Var {
 	Objid obj;		/* OBJ */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
-        rbtree *tree;		/* MAP */
-        rbtrav *trav;		/* ITER */
+	rbtree *tree;		/* MAP */
+	rbtrav *trav;		/* ITER */
 	double *fnum;		/* FLOAT */
+	Object *anon;		/* ANON */
     } v;
     var_type type;
 };
@@ -135,22 +146,16 @@ extern Var nothing;		/* see objects.c */
 extern Var clear;		/* see objects.c */
 extern Var none;		/* see objects.c */
 
-/*
- * Hard limits on string and list sizes are imposed mainly to keep
- * malloc calculations from rolling over, and thus preventing the
- * ensuing buffer overruns.  Sizes allow space for reference counts
- * and cached length values.  Actual limits imposed on
- * user-constructed lists and strings should generally be smaller
- * (see DEFAULT_MAX_LIST_CONCAT and DEFAULT_MAX_STRING_CONCAT
- *  in options.h)
+/* Hard limits on string, list and map sizes are imposed mainly to
+ * keep malloc calculations from rolling over, and thus preventing the
+ * ensuing buffer overruns.  Sizes allow extra space for reference
+ * counts and cached length values.  Actual limits imposed on
+ * user-constructed maps, lists and strings should generally be
+ * smaller (see options.h)
  */
-#define MAX_LIST	(INT32_MAX/sizeof(Var) - 2)
-#define MAX_STRING	(INT32_MAX - 9)
-
-/*
- * Maps are not allocated in chunks so set the max to the default.
- */
-#define MAX_MAP		DEFAULT_MAX_MAP_CONCAT
+#define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
+#define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
+#define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
 
 static inline bool
 is_none(Var v)
@@ -161,7 +166,13 @@ is_none(Var v)
 static inline bool
 is_collection(Var v)
 {
-    return TYPE_LIST == v.type || TYPE_MAP == v.type;
+    return TYPE_LIST == v.type || TYPE_MAP == v.type || TYPE_ANON == v.type;
+}
+
+static inline bool
+is_object(Var v)
+{
+    return TYPE_OBJ == v.type || TYPE_ANON == v.type;
 }
 
 static inline Var

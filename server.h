@@ -146,6 +146,15 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 				 * OPT.NAME and return 1; else return 0.
 				 */
 
+extern void queue_anonymous_object(Var v);
+				/* Adds the specified value to the queue of
+				 * values to be recycled in between running
+				 * player tasks.
+				 */
+
+extern void write_values_pending_finalization(void);
+extern int read_values_pending_finalization(void);
+
 #include "db.h"
 
 /* Some server options are cached for performance reasons.
@@ -167,15 +176,25 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
  */
 #define SERVER_OPTIONS_CACHED_MISC(DEFINE, value)		\
 								\
-  DEFINE( SVO_MAX_LIST_CONCAT, max_list_concat,			\
+  DEFINE( SVO_MAX_LIST_VALUE_BYTES, max_list_value_bytes,		\
+									\
+	  int, DEFAULT_MAX_LIST_VALUE_BYTES,				\
+	 _STATEMENT({							\
+	     if (0 < value && value < MIN_LIST_VALUE_BYTES_LIMIT)	\
+		 value = MIN_LIST_VALUE_BYTES_LIMIT;			\
+	     else if (0 >= value || MAX_LIST_VALUE_BYTES_LIMIT < value)	\
+		 value = MAX_LIST_VALUE_BYTES_LIMIT;			\
+	   }))								\
 								\
-	  int, DEFAULT_MAX_LIST_CONCAT,				\
-	 _STATEMENT({						\
-	     if (0 < value && value < MIN_LIST_CONCAT_LIMIT)	\
-		 value = MIN_LIST_CONCAT_LIMIT;			\
-	     else if (value <= 0 || MAX_LIST < value)		\
-		 value = MAX_LIST;				\
-	   }))							\
+  DEFINE( SVO_MAX_MAP_VALUE_BYTES, max_list_value_bytes,		\
+									\
+	  int, DEFAULT_MAX_MAP_VALUE_BYTES,				\
+	 _STATEMENT({							\
+	     if (0 < value && value < MIN_MAP_VALUE_BYTES_LIMIT)	\
+		 value = MIN_MAP_VALUE_BYTES_LIMIT;			\
+	     else if (0 >= value || MAX_MAP_VALUE_BYTES_LIMIT < value)	\
+		 value = MAX_MAP_VALUE_BYTES_LIMIT;			\
+	   }))								\
 								\
   DEFINE( SVO_MAX_STRING_CONCAT, max_string_concat,		\
 								\
@@ -186,16 +205,6 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 	     else if (value <= 0 || MAX_STRING < value)		\
 		 value = MAX_STRING;				\
 	     stream_alloc_maximum = value + 1;			\
-	   }))							\
-								\
-  DEFINE( SVO_MAX_MAP_CONCAT, max_map_concat,			\
-								\
-	  int, DEFAULT_MAX_MAP_CONCAT,				\
-	 _STATEMENT({						\
-	     if (0 < value && value < MIN_MAP_CONCAT_LIMIT)	\
-		 value = MIN_MAP_CONCAT_LIMIT;			\
-	     else if (value <= 0 || MAX_MAP < value)		\
-		 value = MAX_MAP;				\
 	   }))							\
 								\
   DEFINE( SVO_MAX_CONCAT_CATCHABLE, max_concat_catchable,	\
@@ -331,6 +340,8 @@ extern int read_active_connections(void);
 	LIST = listappend(LIST, pair);				\
     }								\
 
+/* Called when a fatal error occurs. */
+extern void panic(const char *message);
 
 #endif				/* Server_H */
 

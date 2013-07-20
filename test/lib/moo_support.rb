@@ -11,6 +11,9 @@ module MooSupport
   NOTHING = MooObj.new('#-1')
   AMBIGUOUS_MATCH = MooObj.new('#-2')
   FAILED_MATCH = MooObj.new('#-3')
+  SYSTEM = MooObj.new('#0')
+  OBJECT = MooObj.new('#1')
+  ANONYMOUS = MooObj.new('#5')
 
   E_NONE = MooErr.new('E_NONE')
   E_TYPE = MooErr.new('E_TYPE')
@@ -31,6 +34,10 @@ module MooSupport
   E_FILE = MooErr.new('E_FILE')
   E_EXEC = MooErr.new('E_EXEC')
   E_INTRPT = MooErr.new('E_INTRPT')
+
+  TYPE_OBJ = 0
+  TYPE_INT = 1
+  TYPE_ANON = 12
 
   raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
 
@@ -120,6 +127,10 @@ module MooSupport
     simplify command "; return #{expression};"
   end
 
+  def _(wrapped)
+    simplify(command(%Q|; return #{wrapped};|))
+  end
+
   ## Support
 
   def nothing
@@ -169,6 +180,10 @@ module MooSupport
   end
 
   ### General Operations Applicable to all Values
+
+  def typeof(value)
+    simplify command %Q|; return typeof(#{value_ref(value)});|
+  end
 
   def tostr(value)
     simplify command %Q|; return tostr(#{value_ref(value)});|
@@ -249,32 +264,52 @@ module MooSupport
     true_or_false simplify command %Q|; return valid(#{obj_ref(object)});|
   end
 
-  def chparent(*args)
-    simplify command %Q|; return chparent(#{args.map{|a| value_ref(a)}.join(', ')});|
+  def chparent(object, parent, anons = [])
+    unless anons.empty?
+      simplify command %Q|; return chparent(#{obj_ref(object)}, #{obj_ref(parent)}, {#{anons.map{|a| obj_ref(a)}.join(', ')}});|
+    else
+      simplify command %Q|; return chparent(#{obj_ref(object)}, #{obj_ref(parent)});|
+    end
   end
 
-  def chparents(*args)
-    simplify command %Q|; return chparents(#{args.map{|a| value_ref(a)}.join(', ')});|
+  def chparents(object, parents, anons = [])
+    unless anons.empty?
+      simplify command %Q|; return chparents(#{obj_ref(object)}, {#{parents.map{|a| obj_ref(a)}.join(', ')}}, {#{anons.map{|a| obj_ref(a)}.join(', ')}});|
+    else
+      simplify command %Q|; return chparents(#{obj_ref(object)}, {#{parents.map{|a| obj_ref(a)}.join(', ')}});|
+    end
   end
 
   def parent(*args)
-    simplify command %Q|; return parent(#{args.map{|a| value_ref(a)}.join(', ')});|
+    simplify command %Q|; return parent(#{args.map{|a| obj_ref(a)}.join(', ')});|
   end
 
   def parents(*args)
-    simplify command %Q|; return parents(#{args.map{|a| value_ref(a)}.join(', ')});|
+    simplify command %Q|; return parents(#{args.map{|a| obj_ref(a)}.join(', ')});|
   end
 
   def children(object)
     simplify command %Q|; return children(#{obj_ref(object)});|
   end
 
-  def ancestors(object)
-    simplify command %Q|; return ancestors(#{obj_ref(object)});|
+  def ancestors(object, *args)
+    unless args.empty?
+      simplify command %Q|; return ancestors(#{obj_ref(object)}, #{args.map{|a| value_ref(a)}.join(', ')});|
+    else
+      simplify command %Q|; return ancestors(#{obj_ref(object)});|
+    end
   end
 
-  def descendants(object)
-    simplify command %Q|; return descendants(#{obj_ref(object)});|
+  def descendants(object, *args)
+    unless args.empty?
+      simplify command %Q|; return descendants(#{obj_ref(object)}, #{args.map{|a| value_ref(a)}.join(', ')});|
+    else
+      simplify command %Q|; return descendants(#{obj_ref(object)});|
+    end
+  end
+
+  def isa(object, parent)
+    simplify command %Q|; return isa(#{obj_ref(object)}, #{obj_ref(parent)});|
   end
 
   def recycle(object)
@@ -293,6 +328,10 @@ module MooSupport
 
   ### Operations on Properties
 
+  def properties(object)
+    simplify command %Q|; return properties(#{obj_ref(object)});|
+  end
+
   def add_property(object, property, value, property_info)
     property_info = property_info_to_s(property_info)
     simplify command %Q|; return add_property(#{obj_ref(object)}, #{value_ref(property)}, #{value_ref(value)}, #{property_info});|
@@ -307,6 +346,10 @@ module MooSupport
     simplify command %Q|; return set_property_info(#{obj_ref(object)}, #{value_ref(property)}, #{property_info});|
   end
 
+  def is_clear_property(object, property)
+    simplify command %Q|; return is_clear_property(#{obj_ref(object)}, #{value_ref(property)});|
+  end
+
   def clear_property(object, property)
     simplify command %Q|; return clear_property(#{obj_ref(object)}, #{value_ref(property)});|
   end
@@ -317,14 +360,22 @@ module MooSupport
 
   ### Operations on Verbs
 
+  def verbs(object)
+    simplify command %Q|; return verbs(#{obj_ref(object)});|
+  end
+
   def add_verb(object, verb_info, verb_args)
     verb_info = verb_info_to_s(verb_info)
     verb_args = verb_args_to_s(verb_args)
     simplify command %Q|; return add_verb(#{obj_ref(object)}, #{verb_info}, #{verb_args});|
   end
 
-  def delete_verb(object, verb)
-    simplify command %Q|; return delete_verb(#{obj_ref(object)}, #{value_ref(verb)});|
+  def verb_info(object, verb)
+    simplify command %Q|; return verb_info(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def verb_args(object, verb)
+    simplify command %Q|; return verb_args(#{obj_ref(object)}, #{value_ref(verb)});|
   end
 
   def set_verb_info(object, verb, verb_info)
@@ -337,14 +388,31 @@ module MooSupport
     simplify command %Q|; return set_verb_args(#{obj_ref(object)}, #{value_ref(verb)}, #{verb_args});|
   end
 
-  def set_verb_code(object, verb, &verb_code)
-    vc = []
-    yield vc
-    verb_code = ''
-    vc.each { |v| verb_code << v.inspect << ',' }
-    verb_code = verb_code.empty? ? '{,' : '{' + verb_code
-    verb_code[-1] = '}'
-    simplify command %Q|; return set_verb_code(#{object}, #{value_ref(verb)}, #{verb_code});|
+  def verb_code(object, verb)
+    simplify command %Q|; return verb_code(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def set_verb_code(object, verb, vc = [])
+    if block_given?
+      yield vc
+    end
+    code = ''
+    vc.each { |v| code << v.inspect << ',' }
+    code = code.empty? ? '{,' : '{' + code
+    code[-1] = '}'
+    simplify command %Q|; return set_verb_code(#{object}, #{value_ref(verb)}, #{code});|
+  end
+
+  def delete_verb(object, verb)
+    simplify command %Q|; return delete_verb(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def respond_to(object, verb)
+    simplify command %Q|; return respond_to(#{obj_ref(object)}, #{value_ref(verb)});|
+  end
+
+  def disassemble(object, verb)
+    simplify command %Q|; return disassemble(#{obj_ref(object)}, #{value_ref(verb)});|
   end
 
   ## Operations on Network Connections
@@ -439,6 +507,14 @@ module MooSupport
 
   def shutdown
     simplify command %|; shutdown();|
+  end
+
+  def run_gc
+    simplify command %|; return run_gc();|
+  end
+
+  def gc_stats
+    simplify command %|; return gc_stats();|
   end
 
   ## Server Statistics and Miscellaneous Information
@@ -571,7 +647,13 @@ module MooSupport
     end
   end
 
-  private
+  ## System Operations
+
+  def getenv(name)
+    simplify command %|; return getenv(#{value_ref(name)});|
+  end
+
+  protected
 
   def obj_ref(obj_ref)
     case obj_ref
@@ -611,6 +693,8 @@ module MooSupport
       value
     end
   end
+
+  private
 
   def property_info_to_s(property_info)
     unless property_info.class == String

@@ -1,0 +1,117 @@
+** LambdaMOO Database, Format Version 13 **
+1
+3
+0 values pending finalization
+0 clocks
+0 queued tasks
+0 suspended tasks
+0 interrupted tasks
+0 active connections with listeners
+4
+#0
+System Object
+16
+3
+1
+-1
+4
+0
+1
+1
+4
+0
+1
+server_started
+3
+173
+-1
+0
+0
+#1
+Root Class
+16
+3
+1
+-1
+4
+0
+1
+-1
+4
+3
+1
+0
+1
+2
+1
+3
+0
+0
+0
+#2
+The First Room
+0
+3
+1
+-1
+4
+1
+1
+3
+1
+1
+4
+0
+1
+eval
+3
+88
+-2
+0
+0
+#3
+Wizard
+7
+3
+1
+2
+4
+0
+1
+1
+4
+0
+0
+0
+0
+0
+1
+#0:0
+server_log("----------------------------------------------------------------------");
+server_log("Creates cyclic garbage and shuts down.  The garbage will be in the    ");
+server_log("pending anonymous objects as #4 and #5.  There will also be objects #4");
+server_log("and #5.  When the server restarts from the dumped database, the       ");
+server_log("pending objects will be recycled.");
+server_log("----------------------------------------------------------------------");
+suspend(0);
+try
+try
+a = create(#-1, 1);
+add_property(a, "next", 0, {task_perms(), ""});
+add_verb(a, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
+set_verb_code(a, "recycle", {"server_log(\"recycle called on A\");"});
+b = create(#-1, 1);
+add_property(b, "next", 0, {task_perms(), ""});
+add_verb(b, {task_perms(), "xd", "recycle"}, {"this", "none", "this"});
+set_verb_code(b, "recycle", {"server_log(\"recycle called on B\");"});
+a.name = "A";
+b.name = "B";
+a.next = b;
+b.next = a;
+except ex (ANY)
+server_log(toliteral(ex));
+endtry
+finally
+shutdown();
+endtry
+.

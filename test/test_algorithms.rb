@@ -186,4 +186,28 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_value_hash_is_not_case_sensitive
+    run_test_as('programmer') do
+      assert_equal "99914B932BD37A50B983C5E7C90AE93B", value_hash([], "MD5")
+      assert_equal "BF21A9E8FBC5A3846FB05B4FA0859E0917B2202F", value_hash([], "SHA1")
+      assert_equal "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A", value_hash([], "SHA256")
+    end
+  end
+
+  def test_that_string_hash_is_not_case_sensitive
+    run_test_as('programmer') do
+      assert_equal "900150983CD24FB0D6963F7D28E17F72", string_hash("abc", "MD5")
+      assert_equal "A9993E364706816ABA3E25717850C26C9CD0D89D", string_hash("abc", "SHA1")
+      assert_equal "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD", string_hash("abc", "SHA256")
+    end
+  end
+
+  def test_that_binary_hash_is_not_case_sensitive
+    run_test_as('programmer') do
+      assert_equal "900150983CD24FB0D6963F7D28E17F72", binary_hash("abc", "MD5")
+      assert_equal "A9993E364706816ABA3E25717850C26C9CD0D89D", binary_hash("abc", "SHA1")
+      assert_equal "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD", binary_hash("abc", "SHA256")
+    end
+  end
+
 end

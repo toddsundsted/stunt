@@ -83,7 +83,7 @@ struct Expr_Cond {
 };
 
 struct Expr_Catch {
-    Expr *try;
+    Expr *_try;
     Arg_List *codes;
     Expr *except;
 };
@@ -112,7 +112,7 @@ union Expr_Data {
     struct Expr_Verb verb;
     struct Expr_Range range;
     struct Expr_Cond cond;
-    struct Expr_Catch catch;
+    struct Expr_Catch _catch;
     Expr *expr;
     Map_List *map;
     Arg_List *list;
@@ -190,7 +190,7 @@ union Stmt_Data {
     struct Stmt_Range range;
     struct Stmt_Loop loop;
     struct Stmt_Fork fork;
-    struct Stmt_Catch catch;
+    struct Stmt_Catch _catch;
     struct Stmt_Finally finally;
     Expr *expr;
     int exit;

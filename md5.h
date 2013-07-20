@@ -19,6 +19,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // -------------------------------------------------------------- 
 // After this is the algorithm itself. You shouldn't change these
 
@@ -39,5 +43,9 @@ void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 int hash_init_md5(void * ctx);
 int hash_update_md5(void *ctx, unsigned char *buf, uint64_t len);
 int hash_final_md5(void *ctx, unsigned char *digest);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ifndef __MD5_H */

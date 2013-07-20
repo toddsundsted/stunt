@@ -22,9 +22,73 @@
 
 #include "structures.h"
 
-#define addref(X) (++((int *)(X))[-1])
-#define delref(X) (--((int *)(X))[-1])
-#define refcount(X) (((int *)(X))[-1])
+/* See "Concurrent Cycle Collection in Reference Counted Systems",
+ * (Bacon and Rajan, 2001) for a description of the cycle collection
+ * algorithm and the colors.
+ */
+typedef enum GC_Color {
+    GC_GREEN,
+    GC_YELLOW,
+    GC_BLACK,
+    GC_GRAY,
+    GC_WHITE,
+    GC_PURPLE,
+    GC_PINK
+} GC_Color;
+
+typedef struct reference_overhead {
+    unsigned int count:28;
+    unsigned int buffered:1;
+    GC_Color color:3;
+} reference_overhead;
+
+static inline int
+addref(const void *ptr)
+{
+    return ++((reference_overhead *)ptr)[-1].count;
+}
+
+static inline int
+delref(const void *ptr)
+{
+    return --((reference_overhead *)ptr)[-1].count;
+}
+
+static inline int
+refcount(const void *ptr)
+{
+    return ((reference_overhead *)ptr)[-1].count;
+}
+
+static inline void
+gc_set_buffered(const void *ptr)
+{
+    ((reference_overhead *)ptr)[-1].buffered = 1;
+}
+
+static inline void
+gc_clear_buffered(const void *ptr)
+{
+    ((reference_overhead *)ptr)[-1].buffered = 0;
+}
+
+static inline int
+gc_is_buffered(const void *ptr)
+{
+    return ((reference_overhead *)ptr)[-1].buffered;
+}
+
+static inline void
+gc_set_color(const void *ptr, GC_Color color)
+{
+    ((reference_overhead *)ptr)[-1].color = color;
+}
+
+static inline GC_Color
+gc_get_color(const void *ptr)
+{
+    return ((reference_overhead *)ptr)[-1].color;
+}
 
 typedef enum Memory_Type {
     M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,
@@ -41,7 +105,9 @@ typedef enum Memory_Type {
 
     M_TREE, M_NODE, M_TRAV,
 
-    /* where no more specific type applies */
+    M_ANON, /* anonymous object */
+
+    /* to be used when no more specific type applies */
     M_STRUCT, M_ARRAY,
 
     Sizeof_Memory_Type
@@ -50,6 +116,29 @@ typedef enum Memory_Type {
 
 extern char *str_dup(const char *);
 extern const char *str_ref(const char *);
+
+static inline Var
+str_dup_to_var(const char *s)
+{
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = str_dup(s);
+
+    return r;
+}
+
+static inline Var
+str_ref_to_var(const char *s)
+{
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = str_ref(s);
+
+    return r;
+}
+
 extern Var memory_usage(void);
 
 extern void myfree(void *where, Memory_Type type);
@@ -73,6 +162,12 @@ free_str(const char *s)
 #define memo_strlen(X)		strlen(X)
 
 #endif /* MEMO_STRLEN */
+
+static inline bool
+is_str(Var v)
+{
+    return TYPE_STR == v.type;
+}
 
 #endif				/* Storage_h */
 

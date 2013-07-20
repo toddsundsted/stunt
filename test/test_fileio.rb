@@ -38,7 +38,7 @@ class TestFileio < Test::Unit::TestCase
       assert_equal E_PERM, file_mode('')
       assert_equal E_PERM, file_chmod('', '')
       # ...well, except for file_version()
-      assert_equal 'FIO/1.5p3', file_version()
+      assert_not_equal E_PERM, file_version()
     end
   end
 

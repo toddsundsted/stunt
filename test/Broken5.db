@@ -17,7 +17,7 @@ System Object
 4
 0
 1
-do_login_command
+server_started
 3
 173
 -1
@@ -83,9 +83,8 @@ Wizard
 0
 0
 #0:0
-return #3;
+shutdown();
 .
 0 clocks
 0 queued tasks
 0 suspended tasks
-0 active connections with listeners

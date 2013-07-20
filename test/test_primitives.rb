@@ -2,6 +2,12 @@ require 'test_helper'
 
 class TestPrimitives < Test::Unit::TestCase
 
+  def setup
+    run_test_as('wizard') do
+      simplify command %Q|; for task in (queued_tasks()); kill_task(task[1]); endfor |
+    end
+  end
+
   def test_that_server_behavior_is_unchanged_when_no_prototypes_exist
     run_test_as('programmer') do
       assert_equal E_TYPE, simplify(command(%Q|; return 123:foo();|))
