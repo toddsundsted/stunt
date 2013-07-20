@@ -289,8 +289,7 @@
  * it each time it is needed.
  ******************************************************************************
  */
-
-#define MEMO_STRLEN /* */
+/* #define MEMO_STRLEN */
 
 /******************************************************************************
  * This package comes with a copy of the implementation of malloc() from GNU
