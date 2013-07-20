@@ -177,7 +177,8 @@
 /* #define OUTBOUND_NETWORK 0 */
 
 /* enable by default, -O disables: */
-#define OUTBOUND_NETWORK 1
+/* #define OUTBOUND_NETWORK 1 */
+
 
 /******************************************************************************
  * The following constants define certain aspects of the server's network
