@@ -342,6 +342,17 @@
 #define MIN_LIST_CONCAT_LIMIT   1022
 #define MIN_STRING_CONCAT_LIMIT 1015
 
+/******************************************************************************
+ * In the original LambdaMOO server, last chance command processessing
+ * occured in the `huh' verb defined on the player's location.  The
+ * following option changes that behavior so that it occurs in the
+ * `huh' verb defined on the player.  Given the fact that on legacy
+ * cores `huh' immediatelly calls something like `$command_utils:do_huh',
+ * this change should be largely backwards compatible.
+ ******************************************************************************
+ */
+
+#define PLAYER_HUH
 
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********

@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include "collection.h"
 #include "db.h"
 #include "db_io.h"
 #include "exceptions.h"
@@ -122,7 +123,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	    accepts = 1;
 	else {
 	    args = make_arglist(what);
-	    e = call_verb(where, "accept", args, 0);
+	    e = call_verb(where, "accept", new_obj(where), args, 0);
 	    /* e will not be E_INVIND */
 
 	    if (e == E_NONE)
@@ -158,7 +159,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	db_change_location(what, where);
 
 	args = make_arglist(what);
-	e = call_verb(oldloc, "exitfunc", args, 0);
+	e = call_verb(oldloc, "exitfunc", new_obj(oldloc), args, 0);
 
 	if (e == E_NONE)
 	    return make_call_pack(3, data);
@@ -173,7 +174,7 @@ do_move(Var arglist, Byte next, struct bf_move_data *data, Objid progr)
 	if (valid(where) && valid(what)
 	    && db_object_location(what) == where) {
 	    args = make_arglist(what);
-	    e = call_verb(where, "enterfunc", args, 0);
+	    e = call_verb(where, "enterfunc", new_obj(where), args, 0);
 	    /* e != E_INVIND */
 
 	    if (e == E_NONE)
@@ -346,7 +347,7 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    data = alloc_data(sizeof(*data));
 	    *data = oid;
 	    args = new_list(0);
-	    e = call_verb(oid, "initialize", args, 0);
+	    e = call_verb(oid, "initialize", new_obj(oid), args, 0);
 	    /* e will not be E_INVIND */
 
 	    if (e == E_NONE)
@@ -554,7 +555,7 @@ move_to_nothing(Objid oid)
     db_change_location(oid, NOTHING);
 
     args = make_arglist(oid);
-    e = call_verb(oldloc, "exitfunc", args, 0);
+    e = call_verb(oldloc, "exitfunc", new_obj(oldloc), args, 0);
 
     if (e == E_NONE)
 	return 1;
@@ -603,7 +604,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	data = alloc_data(sizeof(*data));
 	*data = oid;
 	args = new_list(0);
-	e = call_verb(oid, "recycle", args, 0);
+	e = call_verb(oid, "recycle", new_obj(oid), args, 0);
 	/* e != E_INVIND */
 
 	if (e == E_NONE)
@@ -633,9 +634,40 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 
 	/* We can now be confident that OID has no contents and no location */
 
-	/* Do the same thing for the inheritance hierarchy (much easier!) */
-	while ((c = get_first(oid, db_for_all_children)) != NOTHING)
-	    db_change_parent(c, db_object_parent(oid));
+	/* Do the same thing for the inheritance hierarchy */
+	while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
+	    Var cp = db_object_parent(c);
+	    Var op = db_object_parent(oid);
+	    if (is_obj(cp)) {
+		db_change_parent(c, op);
+	    }
+	    else {
+		int i = 1;
+		int j = 1;
+		Var new = new_list(0);
+		while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
+		    new = setadd(new, var_ref(cp.v.list[i]));
+		    i++;
+		}
+		if (is_obj(op)) {
+		    if (valid(op.v.obj))
+			new = setadd(new, var_ref(op));
+		}
+		else {
+		    while (j <= op.v.list[0].v.num) {
+			new = setadd(new, var_ref(op.v.list[j]));
+			j++;
+		    }
+		}
+		i++;
+		while (i <= cp.v.list[0].v.num) {
+		    new = setadd(new, var_ref(cp.v.list[i]));
+		    i++;
+		}
+		db_change_parent(c, new);
+		free_var(new);
+	    }
+	}
 
 	db_change_parent(oid, nothing);
 

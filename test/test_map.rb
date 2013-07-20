@@ -51,17 +51,22 @@ class TestMap < Test::Unit::TestCase
     end
   end
 
-  def test_that_is_member_and_in_return_true_if_key_is_in_a_map
+  def test_that_is_member_and_in_return_true_if_value_is_in_a_map
     run_test_as('programmer') do
       x = simplify(command(%Q|; return ["3" -> "3", "1" -> "1", "4" -> "4", "5" -> "5", "9" -> "9", "2" -> "2"];|))
-      assert_equal 1, is_member("5", x)
+      assert_equal 5, is_member("5", x)
       assert_equal 0, is_member(5, x)
-      assert_equal(1, simplify(command %|; return "2" in #{value_ref(x)};|))
+      assert_equal(2, simplify(command %|; return "2" in #{value_ref(x)};|))
       assert_equal(0, simplify(command %|; return 2 in #{value_ref(x)};|))
       # however, `is_member' is case-sensitive
       y = simplify(command(%Q|; return ["FOO" -> "BAR"];|))
+      assert_equal 0, is_member("bar", y)
+      assert_equal(1, simplify(command %|; return "bar" in #{value_ref(y)};|))
+      # "foo" doesn't work (in any case)
       assert_equal 0, is_member("foo", y)
-      assert_equal(1, simplify(command %|; return "foo" in #{value_ref(y)};|))
+      assert_equal(0, simplify(command %|; return "foo" in #{value_ref(y)};|))
+      assert_equal 0, is_member("FOO", y)
+      assert_equal(0, simplify(command %|; return "FOO" in #{value_ref(y)};|))
     end
   end
 

@@ -44,6 +44,7 @@ typedef void (*registry) ();
 
 static registry bi_function_registries[] =
 {
+    register_collection,
     register_disassemble,
     register_extensions,
     register_execute,
@@ -57,7 +58,10 @@ static registry bi_function_registries[] =
     register_server,
     register_tasks,
     register_verbs,
-    register_yajl
+    register_yajl,
+    register_base64,
+    register_fileio,
+    register_exec
 };
 
 void
@@ -202,10 +206,9 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	/*
 	 * Check permissions, if protected
 	 */
-	/* if (caller() != SYSTEM_OBJECT && server_flag_option(f->protect_str, 0)) { */
-	if (caller() != SYSTEM_OBJECT && f->protected) {
+	if ((!is_obj(caller()) || caller().v.obj != SYSTEM_OBJECT) && f->protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
-	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, arglist, 0);
+	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, new_obj(SYSTEM_OBJECT), arglist, 0);
 
 	    if (e == E_NONE)
 		return tail_call_pack();

@@ -44,7 +44,8 @@ typedef int32 Objid;
  */
 enum error {
     E_NONE, E_TYPE, E_DIV, E_PERM, E_PROPNF, E_VERBNF, E_VARNF, E_INVIND,
-    E_RECMOVE, E_MAXREC, E_RANGE, E_ARGS, E_NACC, E_INVARG, E_QUOTA, E_FLOAT
+    E_RECMOVE, E_MAXREC, E_RANGE, E_ARGS, E_NACC, E_INVARG, E_QUOTA, E_FLOAT,
+    E_FILE, E_EXEC, E_INTRPT
 };
 
 /* Do not reorder or otherwise modify this list, except to add new elements at

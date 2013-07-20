@@ -517,6 +517,42 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
+bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
+{
+    Objid object = arglist.v.list[1].v.obj;
+    const char *verb = arglist.v.list[2].v.str;
+
+    if (!valid(object)) {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+    if (!db_object_allows(object, progr, FLAG_READ)) {
+	free_var(arglist);
+	return make_error_pack(E_PERM);
+    }
+
+    db_verb_handle h = db_find_callable_verb(object, verb);
+
+    free_var(arglist);
+
+    Var r;
+
+    if (h.ptr) {
+      r = new_list(2);
+      r.v.list[1].type = TYPE_OBJ;
+      r.v.list[1].v.obj = db_verb_definer(h);
+      r.v.list[2].type = TYPE_STR;
+      r.v.list[2].v.str = str_ref(db_verb_names(h));
+    }
+    else {
+	r.type = TYPE_INT;
+	r.v.num = 0;
+    }
+
+    return make_var_pack(r);
+}
+
+static package
 bf_eval(Var arglist, Byte next, void *data, Objid progr)
 {
     package p;
@@ -577,6 +613,7 @@ register_verbs(void)
 		      TYPE_OBJ, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function("set_verb_code", 3, 3, bf_set_verb_code,
 		      TYPE_OBJ, TYPE_ANY, TYPE_LIST);
+    register_function("respond_to", 2, 2, bf_respond_to, TYPE_OBJ, TYPE_STR);
     register_function("eval", 1, 1, bf_eval, TYPE_STR);
 }
 

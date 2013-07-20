@@ -422,17 +422,18 @@ class TestObject < Test::Unit::TestCase
 
   def test_that_parent_maps_parents_to_parent
     run_test_as('programmer') do
+
+      # Test that `parent()' performs the following mapping:
+      #   [x, y, z] -> x
+      #   [x] -> x
+      #   [] -> #-1
+
       x = create(:nothing)
       y = create(:nothing)
       z = create(:nothing)
       a = create([x, y, z])
       b = create([x])
       c = create([])
-
-      # Test that `parent()' performs the following mapping:
-      #   [x, y, z] -> x
-      #   [x] -> x
-      #   [] -> #-1
 
       assert_equal [x, y, z], parents(a)
       assert_equal [x], parents(b)
@@ -572,6 +573,51 @@ class TestObject < Test::Unit::TestCase
       assert_equal 'x', get(n, 'x')
       assert_equal 'm', get(m, 'm')
       assert_equal 'n', get(n, 'n')
+    end
+  end
+
+  def test_that_recycling_a_parent_does_not_blow_away_all_parents
+    run_test_as('programmer') do
+      a = create([])
+      b = create([])
+      c = create([])
+
+      m = create([a, b, c])
+
+      assert_equal [a, b, c], parents(m)
+
+      recycle(b)
+
+      assert_equal [a, c], parents(m)
+    end
+  end
+
+  def test_that_recycling_a_parent_merges_remaining_parents_correctly
+    run_test_as('programmer') do
+      a = create(:object)
+      b = create([a])
+      c = create([])
+
+      d = create([])
+      e = create(NOTHING)
+
+      m = create([d, e])
+
+      x = create([a, b, c, m])
+
+      assert_equal [a, b, c, m], parents(x)
+
+      recycle(b)
+
+      assert_equal [a, c, m], parents(x)
+
+      recycle(m)
+
+      assert_equal [a, c, d, e], parents(x)
+
+      recycle(e)
+
+      assert_equal [a, c, d], parents(x)
     end
   end
 
@@ -975,7 +1021,7 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_command_verbs_and_inheritance
-    run_test_as('wizard') do
+    run_test_with_prefix_and_suffix_as('wizard') do
       a = create(NOTHING)
       b = create(a)
       c = create(b)
@@ -1477,6 +1523,100 @@ class TestObject < Test::Unit::TestCase
       assert_equal E_PROPNF, get(n, 'rrrr')
       assert_equal E_PROPNF, get(m, 'c')
       assert_equal E_PROPNF, get(n, 'c')
+    end
+  end
+
+  def test_that_adding_and_deleting_properties_works_with_multiple_inheritance
+    run_test_as('programmer') do
+      a = create(NOTHING)
+      add_property(a, 'x', 1, [player, ''])
+      add_property(a, 'y', 2, [player, ''])
+      add_property(a, 'z', 3, [player, ''])
+
+      b = create(a)
+      add_property(b, 'm', 4, [player, ''])
+      add_property(b, 'n', 5, [player, ''])
+
+      c = create(b)
+      add_property(c, 'c', 6, [player, ''])
+
+      d = create([a, c])
+
+      assert_equal 1, get(d, 'x')
+      assert_equal 2, get(d, 'y')
+      assert_equal 3, get(d, 'z')
+      assert_equal 4, get(d, 'm')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal 2, get(c, 'y')
+      assert_equal 3, get(c, 'z')
+      assert_equal 4, get(c, 'm')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+
+      delete_property(a, 'y')
+
+      assert_equal 1, get(d, 'x')
+      assert_equal E_PROPNF, get(d, 'y')
+      assert_equal 3, get(d, 'z')
+      assert_equal 4, get(d, 'm')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal E_PROPNF, get(c, 'y')
+      assert_equal 3, get(c, 'z')
+      assert_equal 4, get(c, 'm')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+
+      delete_property(b, 'm')
+
+      assert_equal 1, get(d, 'x')
+      assert_equal E_PROPNF, get(d, 'y')
+      assert_equal 3, get(d, 'z')
+      assert_equal E_PROPNF, get(d, 'm')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal E_PROPNF, get(c, 'y')
+      assert_equal 3, get(c, 'z')
+      assert_equal E_PROPNF, get(c, 'm')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+
+      add_property(a, 's', 7, [player, ''])
+
+      assert_equal 1, get(d, 'x')
+      assert_equal 3, get(d, 'z')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+      assert_equal 7, get(d, 's')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal 3, get(c, 'z')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+      assert_equal 7, get(c, 's')
+
+      add_property(b, 't', 8, [player, ''])
+
+      assert_equal 1, get(d, 'x')
+      assert_equal 3, get(d, 'z')
+      assert_equal 5, get(d, 'n')
+      assert_equal 6, get(d, 'c')
+      assert_equal 7, get(d, 's')
+      assert_equal 8, get(d, 't')
+
+      assert_equal 1, get(c, 'x')
+      assert_equal 3, get(c, 'z')
+      assert_equal 5, get(c, 'n')
+      assert_equal 6, get(c, 'c')
+      assert_equal 7, get(c, 's')
+      assert_equal 8, get(c, 't')
     end
   end
 

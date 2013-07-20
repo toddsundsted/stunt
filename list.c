@@ -19,9 +19,11 @@
 #include "my-string.h"
 
 #include "bf_register.h"
+#include "collection.h"
 #include "config.h"
 #include "exceptions.h"
 #include "functions.h"
+#include "hmac_sha2.h"
 #include "list.h"
 #include "log.h"
 #include "map.h"
@@ -30,6 +32,8 @@
 #include "pattern.h"
 #include "random.h"
 #include "ref_count.h"
+#include "sha1.h"
+#include "sha256.h"
 #include "streams.h"
 #include "storage.h"
 #include "structures.h"
@@ -81,26 +85,6 @@ setremove(Var list, Var value)
 	return listdelete(list, i);
     } else {
 	return list;
-    }
-}
-
-int
-ismember(Var lhs, Var rhs, int case_matters)
-{
-    if (rhs.type == TYPE_LIST) {
-	int i;
-
-	for (i = 1; i <= rhs.v.list[0].v.num; i++) {
-	    if (equality(lhs, rhs.v.list[i], case_matters)) {
-	      return i;
-	    }
-	}
-
-	return 0;
-    } else if (rhs.type == TYPE_MAP) {
-	return maplookup(rhs, lhs, NULL, case_matters);
-    } else {
-	return 0;
     }
 }
 
@@ -611,23 +595,6 @@ bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    Var r;
-    Var rhs = arglist.v.list[2];
-
-    if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
-	free_var(arglist);
-	return make_error_pack(E_INVARG);
-    }
-
-    r.type = TYPE_INT;
-    r.v.num = ismember(arglist.v.list[1], rhs, 1);
-    free_var(arglist);
-    return make_var_pack(r);
-}
-
-static package
 bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (source, what, with [, case-matters]) */
     int case_matters = 0;
@@ -1051,18 +1018,18 @@ bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static const char *
-hash_bytes(const char *input, int length)
+md5_hash_bytes(const char *input, int length)
 {
-    md5ctx_t context;
-    uint8 result[16];
+    context_md5_t context;
+    unsigned char result[16];
     int i;
     const char digits[] = "0123456789ABCDEF";
     char *hex = str_dup("12345678901234567890123456789012");
     const char *answer = hex;
 
-    md5_Init(&context);
-    md5_Update(&context, (uint8 *) input, length);
-    md5_Final(&context, result);
+    MD5Init(&context);
+    MD5Update(&context, (unsigned char *) input, length);
+    MD5Final(result, &context);
     for (i = 0; i < 16; i++) {
 	*hex++ = digits[result[i] >> 4];
 	*hex++ = digits[result[i] & 0xF];
@@ -1070,19 +1037,44 @@ hash_bytes(const char *input, int length)
     return answer;
 }
 
-static package
-bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
+static const char *
+sha1_hash_bytes(const char *input, int length)
 {
-    Var r;
-    int length;
-    const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
+    context_sha1_t context;
+    unsigned char result[20];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890");
+    const char *answer = hex;
 
-    free_var(arglist);
-    if (!bytes)
-	return make_error_pack(E_INVARG);
-    r.type = TYPE_STR;
-    r.v.str = hash_bytes(bytes, length);
-    return make_var_pack(r);
+    SHA1Init(&context);
+    SHA1Update(&context, (unsigned char *) input, length);
+    SHA1Final(result, &context);
+    for (i = 0; i < 20; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static const char *
+sha256_hash_bytes(const char *input, int length)
+{
+    context_sha256_t context;
+    unsigned char result[32];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
+    const char *answer = hex;
+
+    sha256_starts(&context);
+    sha256_update(&context, (unsigned char *) input, length);
+    sha256_finish(&context, result);
+    for (i = 0; i < 32; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
 }
 
 static package
@@ -1090,11 +1082,69 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
     const char *str = arglist.v.list[1].v.str;
+    int nargs = arglist.v.list[0].v.num;
 
-    r.type = TYPE_STR;
-    r.v.str = hash_bytes(str, memo_strlen(str));
+    if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	r.type = TYPE_STR;
+	r.v.str = sha256_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	r.type = TYPE_STR;
+	r.v.str = sha1_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	r.type = TYPE_STR;
+	r.v.str = md5_hash_bytes(str, memo_strlen(str));
+    }
+    else {
+	free_var(arglist);
+	return make_error_pack(E_INVARG);
+    }
+
     free_var(arglist);
     return make_var_pack(r);
+}
+
+static package
+bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    package p;
+
+    TRY_STREAM {
+	Var r;
+	int length;
+	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
+	int nargs = arglist.v.list[0].v.num;
+
+	if (!bytes) {
+	    p = make_error_pack(E_INVARG);
+	}
+	else if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha256_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha1_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	    r.type = TYPE_STR;
+	    r.v.str = md5_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else {
+	  p = make_error_pack(E_INVARG);
+	}
+    }
+    EXCEPT (stream_too_big) {
+	p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+
+    free_var(arglist);
+    return p;
 }
 
 static package
@@ -1105,16 +1155,186 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 
     TRY_STREAM {
 	Var r;
+	int nargs = arglist.v.list[0].v.num;
 
 	unparse_value(s, arglist.v.list[1]);
-	r.type = TYPE_STR;
-	r.v.str = hash_bytes(stream_contents(s), stream_length(s));
-	p = make_var_pack(r);
+
+	if (1 == nargs || (1 < nargs && !strcmp("sha256", arglist.v.list[2].v.str))) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha256_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !strcmp("sha1", arglist.v.list[2].v.str)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha1_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !strcmp("md5", arglist.v.list[2].v.str)) {
+	    r.type = TYPE_STR;
+	    r.v.str = md5_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else {
+	    p = make_error_pack(E_INVARG);
+	}
     }
     EXCEPT (stream_too_big) {
 	p = make_space_pack();
     }
     ENDTRY_STREAM;
+
+    free_stream(s);
+    free_var(arglist);
+    return p;
+}
+
+static const char *
+hmac_sha256_bytes(const char *message, int message_length, const char *key, int key_length)
+{
+    int i;
+    unsigned char result[32];
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
+    const char *answer = hex;
+
+    hmac_sha256((unsigned char *)key, key_length, (unsigned char *)message, message_length, result, 32);
+
+    for (i = 0; i < 32; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static package
+bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    package p;
+    Stream *s = new_stream(100);
+
+    TRY_STREAM {
+	Var r;
+
+	const char *str = arglist.v.list[1].v.str;
+	int str_length = strlen(str);
+
+	int key_length;
+	const char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
+
+	if (!key) {
+	    p = make_error_pack(E_INVARG);
+	}
+	else {
+	    char *key_new = mymalloc(key_length, M_STRING);
+	    memcpy(key_new, key, key_length);
+	    key = key_new;
+
+	    r.type = TYPE_STR;
+	    r.v.str = hmac_sha256_bytes(str, str_length, key, key_length);
+	    p = make_var_pack(r);
+
+	    free_str(key);
+	}
+    }
+    EXCEPT (stream_too_big) {
+	p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+
+    free_stream(s);
+    free_var(arglist);
+    return p;
+}
+
+static package
+bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    package p;
+    Stream *s = new_stream(100);
+
+    TRY_STREAM {
+	Var r;
+
+	int bytes_length;
+	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &bytes_length);
+
+	if (!bytes) {
+	    p = make_error_pack(E_INVARG);
+	}
+	else {
+	    char *bytes_new = mymalloc(bytes_length, M_STRING);
+	    memcpy(bytes_new, bytes, bytes_length);
+	    bytes = bytes_new;
+
+	    int key_length;
+	    const char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
+
+	    if (!key) {
+		free_str(bytes);
+		p = make_error_pack(E_INVARG);
+	    }
+	    else {
+	      char *key_new = mymalloc(key_length, M_STRING);
+	      memcpy(key_new, key, key_length);
+	      key = key_new;
+
+	      r.type = TYPE_STR;
+	      r.v.str = hmac_sha256_bytes(bytes, bytes_length, key, key_length);
+	      p = make_var_pack(r);
+
+	      free_str(bytes);
+	      free_str(key);
+	    }
+	}
+    }
+    EXCEPT (stream_too_big) {
+	p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+
+    free_stream(s);
+    free_var(arglist);
+    return p;
+}
+
+static package
+bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    package p;
+    Stream *s = new_stream(100);
+
+    TRY_STREAM {
+	Var r;
+
+	unparse_value(s, arglist.v.list[1]);
+	const char *lit = str_dup(stream_contents(s));
+	int lit_length = stream_length(s);
+
+	int key_length;
+	const char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
+
+	if (!key) {
+	    free_str(lit);
+	    p = make_error_pack(E_INVARG);
+	}
+	else {
+	    char *key_new = mymalloc(key_length, M_STRING);
+	    memcpy(key_new, key, key_length);
+	    key = key_new;
+
+	    r.type = TYPE_STR;
+	    r.v.str = hmac_sha256_bytes(lit, lit_length, key, key_length);
+	    p = make_var_pack(r);
+
+	    free_str(lit);
+	    free_str(key);
+	}
+    }
+    EXCEPT (stream_too_big) {
+	p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+
     free_stream(s);
     free_var(arglist);
     return p;
@@ -1253,9 +1473,15 @@ void
 register_list(void)
 {
     register_function("value_bytes", 1, 1, bf_value_bytes, TYPE_ANY);
-    register_function("value_hash", 1, 1, bf_value_hash, TYPE_ANY);
-    register_function("string_hash", 1, 1, bf_string_hash, TYPE_STR);
-    register_function("binary_hash", 1, 1, bf_binary_hash, TYPE_STR);
+
+    register_function("string_hash", 1, 2, bf_string_hash, TYPE_STR, TYPE_STR);
+    register_function("binary_hash", 1, 2, bf_binary_hash, TYPE_STR, TYPE_STR);
+    register_function("value_hash", 1, 2, bf_value_hash, TYPE_ANY, TYPE_STR);
+
+    register_function("string_hmac", 2, 2, bf_string_hmac, TYPE_STR, TYPE_STR);
+    register_function("binary_hmac", 2, 2, bf_binary_hmac, TYPE_STR, TYPE_STR);
+    register_function("value_hmac", 2, 2, bf_value_hmac, TYPE_ANY, TYPE_STR);
+
     register_function("decode_binary", 1, 2, bf_decode_binary,
 		      TYPE_STR, TYPE_ANY);
     register_function("encode_binary", 0, -1, bf_encode_binary);
@@ -1271,7 +1497,6 @@ register_list(void)
     register_function("listset", 3, 3, bf_listset,
 		      TYPE_LIST, TYPE_ANY, TYPE_INT);
     register_function("equal", 2, 2, bf_equal, TYPE_ANY, TYPE_ANY);
-    register_function("is_member", 2, 2, bf_is_member, TYPE_ANY, TYPE_ANY);
 
     /* string */
     register_function("tostr", 0, -1, bf_tostr);

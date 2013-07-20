@@ -448,6 +448,19 @@ binary_to_raw_bytes(const char *binary, int *buflen)
     return reset_stream(s);
 }
 
+const char *
+raw_bytes_to_binary(const char *buffer, int buflen)
+{
+    static Stream *s = 0;
+
+    if (!s)
+	s = new_stream(100);
+
+    stream_add_raw_bytes_to_binary(s, buffer, buflen);
+
+    return reset_stream(s);
+}
+
 char rcsid_utils[] = "$Id: utils.c,v 1.9 2010/03/30 23:15:52 wrog Exp $";
 
 /* 

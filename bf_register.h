@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+extern void register_collection(void);
 extern void register_disassemble(void);
 extern void register_extensions(void);
 extern void register_execute(void);
@@ -29,6 +30,9 @@ extern void register_server(void);
 extern void register_tasks(void);
 extern void register_verbs(void);
 extern void register_yajl(void);
+extern void register_base64(void);
+extern void register_fileio(void);
+extern void register_exec(void);
 
 /* 
  * $Log: bf_register.h,v $

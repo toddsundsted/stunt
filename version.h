@@ -64,6 +64,14 @@ typedef enum {
 				 */
     DBV_Map,			/* Addition of `MAP' variables
 				 */
+    DBV_FileIO,			/* Includes addition of the 'E_FILE' keyword.
+				 */
+    DBV_Exec,			/* Includes addition of the 'E_EXEC' keyword.
+				 */
+    DBV_Interrupt,		/* Includes addition of the 'E_INTRPT' keyword.
+				 */
+    DBV_This,			/* Varification of `this'.
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 

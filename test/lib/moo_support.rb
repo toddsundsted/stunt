@@ -28,6 +28,9 @@ module MooSupport
   E_INVARG = MooErr.new('E_INVARG')
   E_QUOTA = MooErr.new('E_QUOTA')
   E_FLOAT = MooErr.new('E_FLOAT')
+  E_FILE = MooErr.new('E_FILE')
+  E_EXEC = MooErr.new('E_EXEC')
+  E_INTRPT = MooErr.new('E_INTRPT')
 
   raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
 
@@ -47,18 +50,26 @@ module MooSupport
     @sock.puts string
   end
 
-  def run_test_as(*params)
+  def reset
     # The helpers below are unchanged during a test run.
     # Reset them before running a new test.
     @me = nil
     @here = nil
+  end
 
+  def run_test_with_prefix_and_suffix_as(*params)
+    reset
     @host = options['host']
     @port = options['port']
     @sock = TCPSocket.open @host, @port
     send_string "connect #{params.join(' ')}"
-    send_string "PREFIX -+-+-"
-    send_string "SUFFIX =+=+="
+    # I haven't found a better solution than both run_test_as/
+    # run_test_with_prefix_and_suffix_as.  I need to handle both
+    # commands and the evaluation of moocode (by far the most
+    # common case) which suspends (not a common, but still more
+    # common than commands).
+    send_string "PREFIX -=!-^-!=-"
+    send_string "SUFFIX -=!-v-!=-"
     begin
       yield
     rescue
@@ -67,27 +78,38 @@ module MooSupport
     end
   end
 
-  alias run_as run_test_as
+  def run_test_as(*params)
+    reset
+    @host = options['host']
+    @port = options['port']
+    @sock = TCPSocket.open @host, @port
+    send_string "connect #{params.join(' ')}"
+    begin
+      yield
+    rescue
+      @sock.close
+      raise $!
+    end
+  end
 
   def command(command)
-    raise 'failed to enclose test in "run_test_as/run_as" block' unless @sock
+    raise 'failed to enclose test in "run_test_as" block' unless @sock
     send_string command
-    while (true)
-      line = @sock.gets.chomp
-      break if line == '-+-+-'
-    end
+
     acc = []
-    while (true)
+    state = :looking
+    while (state != :done)
       line = @sock.gets.chomp
-      break if line == '=+=+='
-      acc << line
+      state = :found and next if line == '-=!-^-!=-' and (state == :looking or state == :found)
+      state = :done and next if line == '-=!-v-!=-' and state == :found
+      acc << line and next if state == :found
     end
     acc.each { |a| puts "< " + a } if options['verbose']
-    acc.length > 0 ? acc.length > 1 ? acc : acc[0] : 0
+    acc.length > 0 ? acc.length > 1 ? acc : acc[0] : nil
   end
 
   def simplify(result)
-    result ? (result[1] == 50 ? fast_error_parse(result) : general_expression_parse(result)) : false
+    result ? (result[1] == ?2 ? fast_error_parse(result) : general_expression_parse(result)) : false
   end
 
   def true_or_false(result)
@@ -154,6 +176,52 @@ module MooSupport
 
   def toliteral(value)
     simplify command %Q|; return toliteral(#{value_ref(value)});|
+  end
+
+  def value_hash(str, algo = nil)
+    if algo
+      simplify command %Q|; return value_hash(#{value_ref(str)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return value_hash(#{value_ref(str)});|
+    end
+  end
+
+  def value_hmac(str, key)
+    simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  end
+
+  ### Operations on Strings
+
+  def encode_base64(str)
+    simplify command %Q|; return encode_base64(#{value_ref(str)});|
+  end
+
+  def decode_base64(str)
+    simplify command %Q|; return decode_base64(#{value_ref(str)});|
+  end
+
+  def string_hash(str, algo = nil)
+    if algo
+      simplify command %Q|; return string_hash(#{value_ref(str)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return string_hash(#{value_ref(str)});|
+    end
+  end
+
+  def binary_hash(str, algo = nil)
+    if algo
+      simplify command %Q|; return binary_hash(#{value_ref(str)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return binary_hash(#{value_ref(str)});|
+    end
+  end
+
+  def string_hmac(str, key)
+    simplify command %Q|; return string_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  end
+
+  def binary_hmac(str, key)
+    simplify command %Q|; return binary_hmac(#{value_ref(str)}, #{value_ref(key)});|
   end
 
   ### Operations on Maps
@@ -289,6 +357,26 @@ module MooSupport
     true_or_false simplify command %Q|; return `function_info("#{name}") ! E_INVARG => {}';|
   end
 
+  def queued_tasks()
+    simplify command %Q|; return queued_tasks();|
+  end
+
+  def kill_task(task_id)
+    simplify command %Q|; return kill_task(#{value_ref(task_id)});|
+  end
+
+  def resume(task_id)
+    simplify command %Q|; return resume(#{value_ref(task_id)});|
+  end
+
+  def callers()
+    simplify command %Q|; return callers();|
+  end
+
+  def task_stack(task_id)
+    simplify command %Q|; return task_stack(#{value_ref(task_id)});|
+  end
+
   def set_task_local(value)
     simplify command %Q|; return set_task_local(#{value_ref(value)});|
   end
@@ -307,6 +395,10 @@ module MooSupport
     simplify command %|; return renumber(#{obj_ref(object)});|
   end
 
+  def server_log(message)
+    simplify command %|; return server_log(#{value_ref(message)});|
+  end
+
   def shutdown
     simplify command %|; shutdown();|
   end
@@ -315,6 +407,130 @@ module MooSupport
 
   def verb_cache_stats
     simplify command %|; return verb_cache_stats();|
+  end
+
+  ## FileIO Operations
+
+  def file_version
+    simplify command %|; return file_version();|
+  end
+
+  def file_open(pathname, mode)
+    simplify command %|; return file_open(#{value_ref(pathname)}, #{value_ref(mode)});|
+  end
+
+  def file_close(fh)
+    simplify command %|; return file_close(#{value_ref(fh)});|
+  end
+
+  def file_name(fh)
+    simplify command %|; return file_name(#{value_ref(fh)});|
+  end
+
+  def file_openmode(fh)
+    simplify command %|; return file_openmode(#{value_ref(fh)});|
+  end
+
+  def file_readline(fh)
+    simplify command %|; return file_readline(#{value_ref(fh)});|
+  end
+
+  def file_readlines(fh, s, e)
+    simplify command %|; return file_readlines(#{value_ref(fh)}, #{value_ref(s)}, #{value_ref(e)});|
+  end
+
+  def file_writeline(fh, line)
+    simplify command %|; return file_writeline(#{value_ref(fh)}, #{value_ref(line)});|
+  end
+
+  def file_read(fh, bytes)
+    simplify command %|; return file_read(#{value_ref(fh)}, #{value_ref(bytes)});|
+  end
+
+  def file_write(fh, data)
+    simplify command %|; return file_write(#{value_ref(fh)}, #{value_ref(data)});|
+  end
+
+  def file_tell(fh)
+    simplify command %|; return file_tell(#{value_ref(fh)});|
+  end
+
+  def file_seek(fh, loc, whence)
+    simplify command %|; return file_seek(#{value_ref(fh)}, #{value_ref(loc)}, #{value_ref(whence)});|
+  end
+
+  def file_eof(fh)
+    simplify command %|; return file_eof(#{value_ref(fh)});|
+  end
+
+  def file_size(value)
+    simplify command %|; return file_size(#{value_ref(value)});|
+  end
+
+  def file_mode(value)
+    simplify command %|; return file_mode(#{value_ref(value)});|
+  end
+
+  def file_last_access(value)
+    simplify command %|; return file_last_access(#{value_ref(value)});|
+  end
+
+  def file_last_modify(value)
+    simplify command %|; return file_last_modify(#{value_ref(value)});|
+  end
+
+  def file_last_change(value)
+    simplify command %|; return file_last_change(#{value_ref(value)});|
+  end
+
+  def file_stat(value)
+    simplify command %|; return file_stat(#{value_ref(value)});|
+  end
+
+  def file_rename(oldpath, newpath)
+    simplify command %|; return file_rename(#{value_ref(oldpath)}, #{value_ref(newpath)});|
+  end
+
+  def file_remove(pathname)
+    simplify command %|; return file_remove(#{value_ref(pathname)});|
+  end
+
+  def file_mkdir(pathname)
+    simplify command %|; return file_mkdir(#{value_ref(pathname)});|
+  end
+
+  def file_rmdir(pathname)
+    simplify command %|; return file_rmdir(#{value_ref(pathname)});|
+  end
+
+  def file_list(pathname, detailed = nil)
+    if detailed
+      simplify command %|; return file_list(#{value_ref(pathname)}, #{value_ref(detailed)});|
+    else
+      simplify command %|; return file_list(#{value_ref(pathname)});|
+    end
+  end
+
+  def file_type(pathname)
+    simplify command %|; return file_type(#{value_ref(pathname)});|
+  end
+
+  def file_mode(filename)
+    simplify command %|; return file_mode(#{value_ref(filename)});|
+  end
+
+  def file_chmod(filename, mode)
+    simplify command %|; return file_chmod(#{value_ref(filename)}, #{value_ref(mode)});|
+  end
+
+  ## Exec Operations
+
+  def exec(args, input = nil)
+    if input
+      simplify command %|; return exec(#{value_ref(args)}, #{value_ref(input)});|
+    else
+      simplify command %|; return exec(#{value_ref(args)});|
+    end
   end
 
   private
@@ -342,7 +558,7 @@ module MooSupport
   def value_ref(value)
     case value
     when String
-      "\"#{value}\""
+      "\"#{value.gsub('\\', '\\\\').gsub('"', '\"')}\""
     when Symbol
       "$#{value.to_s}"
     when MooErr
