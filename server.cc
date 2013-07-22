@@ -1556,7 +1556,7 @@ main(int argc, char **argv)
 
     parent_pid = getpid();
 
-    oklog("STARTING: Version %s of the LambdaMOO server\n", server_version);
+    oklog("STARTING: Version %s of the Stunt/LambdaMOO server\n", server_version);
     oklog("          (Using %s protocol)\n", network_protocol_name());
     oklog("          (Task timeouts measured in %s seconds.)\n",
 	  virtual_timer_available()? "server CPU" : "wall-clock");
