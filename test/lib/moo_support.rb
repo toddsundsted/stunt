@@ -35,8 +35,8 @@ module MooSupport
   E_EXEC = MooErr.new('E_EXEC')
   E_INTRPT = MooErr.new('E_INTRPT')
 
-  TYPE_OBJ = 0
-  TYPE_INT = 1
+  TYPE_INT = 0
+  TYPE_OBJ = 1
   TYPE_ANON = 12
 
   raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')

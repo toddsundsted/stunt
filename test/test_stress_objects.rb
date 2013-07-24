@@ -130,7 +130,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal _(c), parent(b)
         assert_equal NOTHING, parent(c)
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal [], children(a)
           assert_equal [_(a)], children(b)
           assert_equal [_(b)], children(c)
@@ -146,7 +146,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal _(c), parent(b)
         assert_equal NOTHING, parent(c)
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal [], children(a)
           assert_equal [], children(b)
           assert_equal [_(b), _(a)], children(c)
@@ -168,7 +168,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal [_(c)], parents(b)
         assert_equal [], parents(c)
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal [], children(a)
           assert_equal [_(a)], children(b)
           assert_equal [_(b), _(a)], children(c)
@@ -182,7 +182,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal [_(c)], ancestors(b)
         assert_equal [], ancestors(c)
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal [], descendants(a)
           assert_equal [_(a)], descendants(b)
           assert_equal [_(b), _(a)], descendants(c)
@@ -198,7 +198,7 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal [_(c)], ancestors(b)
         assert_equal [], ancestors(c)
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal [], descendants(a)
           assert_equal [], descendants(b)
           assert_equal [_(b), _(a)], descendants(c)
@@ -290,7 +290,7 @@ class TestStressObjects < Test::Unit::TestCase
         chparent b, m
         assert_equal E_INVARG, chparent(m, n)
 
-        if typeof(c) == TYPE_INT
+        if typeof(c) == TYPE_OBJ
           assert_equal E_INVARG, chparents(m, [n])
           assert_equal E_INVARG, chparents(m, [n, c])
           assert_equal E_INVARG, chparents(m, [c, n])
@@ -395,13 +395,13 @@ class TestStressObjects < Test::Unit::TestCase
         chparent b, c
         chparent a, b
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal E_RECMOVE, chparent(c, a)
         else
           assert_equal E_TYPE, chparent(c, a)
         end
 
-        if typeof(a) == TYPE_INT
+        if typeof(a) == TYPE_OBJ
           assert_equal E_RECMOVE, chparents(c, [a, b])
         else
           assert_equal E_TYPE, chparent(c, a)
@@ -567,7 +567,7 @@ class TestStressObjects < Test::Unit::TestCase
 
         recycle(b)
 
-        if typeof(m) == TYPE_INT
+        if typeof(m) == TYPE_OBJ
           assert_equal [_(a), _(c)], parents(m)
         else
           assert_equal false, valid(m)
@@ -593,21 +593,21 @@ class TestStressObjects < Test::Unit::TestCase
         assert_equal [_(a), _(b), _(c), _(m)], parents(x)
 
         recycle(b)
-        if typeof(x) == TYPE_INT
+        if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(m)], parents(x)
         else
           assert_equal false, valid(x)
         end
 
         recycle(m)
-        if typeof(x) == TYPE_INT
+        if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(d), _(e)], parents(x)
         else
           assert_equal false, valid(x)
         end
 
         recycle(e)
-        if typeof(x) == TYPE_INT
+        if typeof(x) == TYPE_OBJ
           assert_equal [_(a), _(c), _(d)], parents(x)
         else
           assert_equal false, valid(x)
