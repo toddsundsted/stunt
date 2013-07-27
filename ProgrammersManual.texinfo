@@ -4021,21 +4021,33 @@ to that, there are a lot of built-in functions for manipulating them.
 @comment  node-name,  next,  previous,  up
 @subsubsection Fundamental Operations on Objects
 
-@deftypefun obj create (list @var{parents} [, obj @var{owner}])
-@deftypefunx obj create (obj @var{parent} [, obj @var{owner}])
+@deftypefun obj create (list @var{parents} [, obj @var{owner}] [, int @var{anon-flag}] [, list @var{init-args}])
+@deftypefunx obj create (obj @var{parent} [, obj @var{owner}] [, int @var{anon-flag}] [, list @var{init-args}])
 Creates and returns a new object whose parents are @var{parents} (or whose
 parent is @var{parent}) and whose owner is as described below.  If any of the
-given @var{parents} objects are neither valid nor @code{#-1} then
-@code{E_INVARG} is raised.  The given @var{parents} objects must be valid and
-fertile (i.e., their @samp{f} bit must be set) or else the programmer must own
-@var{parents} or be a wizard; otherwise @code{E_PERM} is raised.  @code{E_PERM}
-is also raised if @var{owner} is provided and not the same as the programmer,
-unless the programmer is a wizard.  After the new object is created, its
-@code{initialize} verb, if any, is called with no arguments.
+given @var{parents} are not valid, or if the given @var{parent} is neither
+valid nor @code{#-1}, then @code{E_INVARG} is raised.  The given @var{parents}
+objects must be valid and must be usable as a parent (i.e., their @samp{a} or
+@samp{f} bits must be true) or else the programmer must own @var{parents} or be
+a wizard; otherwise @code{E_PERM} is raised.  Futhermore, if @var{anon-flag} is
+true then @samp{a} must be true; and, if @var{anon-flag} is false or not
+present, then @samp{f} must be true.  Otherwise, @code{E_PERM} is raised unless
+the programmer owns @var{parents} or is a wizard.  @code{E_PERM} is also raised
+if @var{owner} is provided and not the same as the programmer, unless the
+programmer is a wizard.
 
-The new object is assigned the least non-negative object number that has not
-yet been used for a created object.  Note that no object number is ever reused,
-even if the object with that number is recycled.
+After the new object is created, its @code{initialize} verb, if any, is called.
+If @var{init-args} were given, they are passed as @var{args} to
+@code{initialize}.
+
+If @var{anon-flag} is false or not present, the new object is a
+@emph{permanent} object and is assigned the least non-negative object number
+that has not yet been used for a created object.  Note that no object number is
+ever reused, even if the object with that number is recycled.
+
+If @var{anon-flag} is true, the new object is an @emph{anonymous} object and is
+not assigned an object number.  Anonymous objects are automatically recycled
+when they are no longer used.
 
 The owner of the new object is either the programmer (if @var{owner} is not
 provided), the new object itself (if @var{owner} was given and is invalid,
