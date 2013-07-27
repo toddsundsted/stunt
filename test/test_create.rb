@@ -2,13 +2,22 @@ require 'test_helper'
 
 class TestCreate < Test::Unit::TestCase
 
-  def test_that_the_first_argument_is_required
+  def setup
+    run_test_as('wizard') do
+      @o = create(:nothing)
+      add_property(@o, 'args', 0, [me, ''])
+      add_verb(@o, [me, 'x', 'initialize'], ['this', 'none', 'this'])
+      set_verb_code(@o, 'initialize', ['this.args = args;'])
+    end
+  end
+
+  def test_that_an_argument_is_required
     run_test_as('programmer') do
       assert_equal E_ARGS, simplify(command("; create();"))
     end
   end
 
-  def test_that_the_first_argument_can_be_an_object_or_a_list_of_objects
+  def test_that_the_first_argument_must_be_an_object_number_or_a_list_of_object_numbers
     run_test_as('wizard') do
       assert_equal E_TYPE, simplify(command("; create(1);"))
       assert_equal E_TYPE, simplify(command("; create({1});"))
@@ -18,7 +27,7 @@ class TestCreate < Test::Unit::TestCase
     end
   end
 
-  def test_that_the_next_argument_is_the_owner_if_it_is_an_object_number
+  def test_that_the_second_argument_is_the_owner_if_it_is_an_object_number
     run_test_as('wizard') do
       assert_not_equal E_TYPE, simplify(command("; return create($nothing, #1);"))
       x = simplify(command("; return create($nothing, $nothing);"))
@@ -28,11 +37,63 @@ class TestCreate < Test::Unit::TestCase
     end
   end
 
-  def test_that_the_next_argument_is_the_anonymous_flag_if_it_is_an_integer
+  def test_that_the_second_argument_is_the_anonymous_flag_if_it_is_an_integer
     run_test_as('wizard') do
       assert_not_equal E_TYPE, simplify(command("; create($nothing, 1);"))
-      assert_not_equal E_TYPE, simplify(command("; create($nothing, 0);"))
-      assert_not_equal E_TYPE, simplify(command("; create($object, 0);"))
+      x = simplify(command("; return typeof(create($nothing, 1));"))
+      assert_equal TYPE_ANON, x
+      y = simplify(command("; return typeof(create($nothing, 0));"))
+      assert_equal TYPE_OBJ, y
+    end
+  end
+
+  def test_that_the_second_argument_is_the_initialize_args_if_it_is_a_list
+    run_test_as('wizard') do
+      assert_not_equal E_TYPE, simplify(command("; create(#{@o}, {});"))
+      x = simplify(command("; return create(#{@o}, {1, 2, 3});"))
+      assert_equal [1, 2, 3], get(x, 'args')
+      y = simplify(command("; return create(#{@o});"))
+      assert_equal [], get(y, 'args')
+    end
+  end
+
+  def test_that_the_third_argument_is_the_anonymous_flag_if_it_is_an_integer
+    run_test_as('wizard') do
+      assert_not_equal E_TYPE, simplify(command("; create($nothing, #1, 1);"))
+      x = simplify(command("; return typeof(create($nothing, #1, 1));"))
+      assert_equal TYPE_ANON, x
+      y = simplify(command("; return typeof(create($nothing, #1, 0));"))
+      assert_equal TYPE_OBJ, y
+    end
+  end
+
+  def test_that_the_third_argument_is_the_initialize_args_if_it_is_a_list
+    run_test_as('wizard') do
+      assert_not_equal E_TYPE, simplify(command("; create(#{@o}, #1, {});"))
+      x = simplify(command("; return create(#{@o}, #1, {1.1, 2.0, 3});"))
+      assert_equal [1.1, 2.0, 3], get(x, 'args')
+      y = simplify(command("; return create(#{@o}, #1, {});"))
+      assert_equal [], get(y, 'args')
+    end
+  end
+
+  def test_that_the_fourth_argument_is_the_anonymous_flag_if_it_is_an_integer
+    run_test_as('wizard') do
+      assert_not_equal E_TYPE, simplify(command("; create($nothing, #1, {}, 1);"))
+      x = simplify(command("; return typeof(create($nothing, #1, {}, 1));"))
+      assert_equal TYPE_ANON, x
+      y = simplify(command("; return typeof(create($nothing, #1, {}, 0));"))
+      assert_equal TYPE_OBJ, y
+    end
+  end
+
+  def test_that_the_fourth_argument_is_the_initialize_args_if_it_is_a_list
+    run_test_as('wizard') do
+      assert_not_equal E_TYPE, simplify(command("; create(#{@o}, #1, 0, {});"))
+      x = simplify(command("; return create(#{@o}, #1, 0, {1.1, 2.0, 3});"))
+      assert_equal [1.1, 2.0, 3], get(x, 'args')
+      y = simplify(command("; return create(#{@o}, #1, 0, {});"))
+      assert_equal [], get(y, 'args')
     end
   end
 
@@ -46,12 +107,16 @@ class TestCreate < Test::Unit::TestCase
   def test_a_variety_of_argument_errors
     run_test_as('wizard') do
       assert_equal E_TYPE, simplify(command("; create($nothing, 1, $nothing);"))
+      assert_equal E_TYPE, simplify(command("; create($nothing, {}, $nothing);"))
       assert_equal E_TYPE, simplify(command("; create($nothing, $nothing, $nothing);"))
+      assert_equal E_TYPE, simplify(command("; create($nothing, $nothing, 1, 1);"))
+      assert_equal E_TYPE, simplify(command("; create($nothing, $nothing, {}, {});"))
       assert_equal E_TYPE, simplify(command("; create($nothing, 1, 1);"))
+      assert_equal E_TYPE, simplify(command("; create($nothing, {}, {});"))
       assert_equal E_TYPE, simplify(command("; create($nothing, $object, 1.0);"))
       assert_equal E_TYPE, simplify(command("; create($nothing, 1.0, 1);"))
       assert_equal E_TYPE, simplify(command("; create($nothing, []);"))
-      assert_equal E_TYPE, simplify(command("; create($nothing, {});"))
+      assert_equal E_TYPE, simplify(command("; create($nothing, 1.0);"))
     end
   end
 
