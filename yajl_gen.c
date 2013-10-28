@@ -220,8 +220,8 @@ yajl_gen_integer(yajl_gen g, long int number)
 #define isinf !_finite
 #endif
 
-/* Pulled from streams.c for consistent formatting of floating point
- * numbers. */
+/* Imported `dbl_fmt()' and the "make it look floating" hack from
+ * streams.cc for consistent formatting of floating point numbers. */
 static const char *
 dbl_fmt(void)
 {
@@ -243,6 +243,8 @@ yajl_gen_double(yajl_gen g, double number)
     if (isnan(number) || isinf(number)) return yajl_gen_invalid_number;
     INSERT_SEP; INSERT_WHITESPACE;
     sprintf(i, dbl_fmt(), number);
+    if (!strchr(i, '.') && !strchr(i, 'e'))
+	strcat(i, ".0");	/* make it look floating */
     g->print(g->ctx, i, (unsigned int)strlen(i));
     APPENDED_ATOM;
     FINAL_NEWLINE;
