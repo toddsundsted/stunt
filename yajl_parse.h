@@ -91,12 +91,14 @@ extern "C" {
         int (* yajl_integer)(void * ctx, long integerVal);
         int (* yajl_double)(void * ctx, double doubleVal);
         /** A callback which passes the string representation of the number
-         *  back to the client.  Will be used for all numbers when present */
+         *  back to the client.  Will be used for all numbers when present.
+         *  `tok' is a format (int/float) hint from the lexer */
         int (* yajl_number)(void * ctx, const char * numberVal,
-                            unsigned int numberLen);
+                            unsigned int numberLen,
+                            yajl_tok tok);
 
         /** strings are returned as pointers into the JSON text when,
-         * possible, as a result, they are _not_ null padded */
+         *  possible, as a result, they are _not_ null padded */
         int (* yajl_string)(void * ctx, const unsigned char * stringVal,
                             unsigned int stringLen);
 

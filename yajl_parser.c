@@ -229,7 +229,7 @@ yajl_do_parse(yajl_handle hand, const unsigned char * jsonText,
                     if (hand->callbacks) {
                         if (hand->callbacks->yajl_number) {
                             _CC_CHK(hand->callbacks->yajl_number(
-                                        hand->ctx,(const char *) buf, bufLen));
+                                        hand->ctx,(const char *) buf, bufLen, tok));
                         } else if (hand->callbacks->yajl_integer) {
                             long int i = 0;
                             yajl_buf_clear(hand->decodeBuf);
@@ -256,7 +256,7 @@ yajl_do_parse(yajl_handle hand, const unsigned char * jsonText,
                     if (hand->callbacks) {
                         if (hand->callbacks->yajl_number) {
                             _CC_CHK(hand->callbacks->yajl_number(
-                                        hand->ctx, (const char *) buf, bufLen));
+                                        hand->ctx, (const char *) buf, bufLen, tok));
                         } else if (hand->callbacks->yajl_double) {
                             double d = 0.0;
                             yajl_buf_clear(hand->decodeBuf);
