@@ -169,6 +169,42 @@ class TestJson < Test::Unit::TestCase
   def test_for_things_I_hate_that_work
     run_test_as('wizard') do
       assert_equal 12, parse_json('12abc')
+      assert_equal 1.2, parse_json('1.2abc')
+    end
+  end
+
+  def test_that_small_numbers_parse_to_integers
+    run_test_as('programmer') do
+      assert_equal 1234567890, parse_json("1234567890")
+      assert_equal 123456789, parse_json("123456789")
+    end
+  end
+
+  def test_that_large_numbers_parse_to_floats
+    run_test_as('programmer') do
+      assert_equal 123456789012.0, parse_json("123456789012")
+      assert_equal 12345678901.0, parse_json("12345678901")
+    end
+  end
+
+  def test_that_even_larger_numbers_parse_to_floats_with_exponents
+    run_test_as('programmer') do
+      assert_equal 1.23456789012346e+29, parse_json("123456789012345678901234567890")
+      assert_equal 1.23456789012346e+19, parse_json("12345678901234567890")
+    end
+  end
+
+  def test_that_max_int_is_a_boundary
+    run_test_as('programmer') do
+      assert_equal 2147483647, parse_json("2147483647")
+      assert_equal 2147483648.0, parse_json("2147483648")
+    end
+  end
+
+  def test_that_min_int_is_a_boundary
+    run_test_as('programmer') do
+      assert_equal -2147483648, parse_json("-2147483648")
+      assert_equal -2147483649.0, parse_json("-2147483649")
     end
   end
 
@@ -325,6 +361,12 @@ class TestJson < Test::Unit::TestCase
       assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"]); |))
       assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "common-subset"); |))
       assert_equal E_TYPE, simplify(command(%q|; return generate_json([create($nothing, 1) -> "one"], "embedded-types"); |))
+    end
+  end
+
+  def test_that_json_generated_from_a_float_is_represented_as_a_float
+    run_test_as('programmer') do
+      assert_equal "1.0", generate_json(1.0)
     end
   end
 
