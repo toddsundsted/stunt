@@ -28,6 +28,7 @@
  *****************************************************************************/
 
 #include <stdio.h>
+#include <errno.h>
 
 #include "my-string.h"
 #include "my-stdlib.h"
@@ -42,8 +43,9 @@
 #include "streams.h"
 #include "unparse.h"
 #include "utils.h"
-#include "yajl_parse.h"
 #include "yajl_gen.h"
+#include "yajl_lex.h"
+#include "yajl_parse.h"
 
 /*
   Handle many modes of mapping between JSON and internal MOO types.
@@ -208,23 +210,37 @@ handle_boolean(void *ctx, int boolean)
 }
 
 static int
-handle_integer(void *ctx, long integerVal)
+handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok tok)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
     Var v;
-    v = new_int((int)integerVal);
-    PUSH(pctx->top, v);
-    return 1;
-}
 
-static int
-handle_float(void *ctx, double doubleVal)
-{
-    struct parse_context *pctx = (struct parse_context *)ctx;
-    Var v;
-    v = new_float(doubleVal);
-    PUSH(pctx->top, v);
-    return 1;
+    if (yajl_tok_integer == tok) {
+
+	long int i = 0;
+
+	errno = 0;
+	i = strtol(numberVal, NULL, 10);
+
+	if (0 == errno && (i >= MININT && i <= MAXINT)) {
+	    v = new_int(i);
+	    PUSH(pctx->top, v);
+	    return 1;
+        }
+    }
+
+    double d = 0.0;
+
+    errno = 0;
+    d = strtod(numberVal, NULL);
+
+    if (0 == errno) {
+	v = new_float(d);
+	PUSH(pctx->top, v);
+	return 1;
+    }
+
+    return 0;
 }
 
 static int
@@ -473,9 +489,9 @@ generate(yajl_gen g, Var v, void *ctx)
 static yajl_callbacks callbacks = {
     handle_null,
     handle_boolean,
-    handle_integer,
-    handle_float,
     NULL,
+    NULL,
+    handle_number,
     handle_string,
     handle_start_map,
     handle_string,
