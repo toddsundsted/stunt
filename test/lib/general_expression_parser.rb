@@ -10,17 +10,19 @@ class GeneralExpressionParser < Parslet::Parser
 
   rule(:digit)      { match('[0-9]') }
   rule(:digits)     { digit.repeat(1) }
-  rule(:digits?)    { digit.repeat }
+  rule(:digits?)    { digit.repeat(0) }
 
-  rule(:sign)       { match('[-+]').maybe }
+  rule(:sign?)      { match('[-+]').maybe }
 
-  rule(:float)      { ((sign >> digits? >> str('.') >> digits) | (sign >> digits >> str('.') >> digits?)).as(:float) >> space? }
+  rule(:exp?)       { (match('[eE]') >> match('[-+]') >> digits).maybe }
 
-  rule(:integer)    { (sign >> digits).as(:integer) >> space? }
+  rule(:float)      { ((sign? >> digits? >> str('.') >> digits >> exp?) | (sign? >> digits >> str('.') >> digits? >> exp?)).as(:float) >> space? }
+
+  rule(:integer)    { (sign? >> digits).as(:integer) >> space? }
 
   rule(:number)     { float | integer }
 
-  rule(:obj)        { (str('#') >> sign >> digits).as(:obj) >> space? }
+  rule(:obj)        { (str('#') >> sign? >> digits).as(:obj) >> space? }
 
   rule(:err)        { (str('E_') >> match('[A-Z]').repeat(1)).as(:err) >> space? }
 
