@@ -1502,6 +1502,26 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static const char *
+hmac_sha1_bytes(const char *message, int message_length, const char *key, int key_length)
+{
+    hmac_sha1_ctx context;
+    unsigned char result[20];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890");
+    const char *answer = hex;
+
+    hmac_sha1_set_key(&context, key_length, (unsigned char *)key);
+    hmac_sha1_update(&context, message_length, (unsigned char *)message);
+    hmac_sha1_digest(&context, 20, result);
+    for (i = 0; i < 20; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static const char *
 hmac_sha256_bytes(const char *message, int message_length, const char *key, int key_length)
 {
     hmac_sha256_ctx context;
@@ -1531,8 +1551,11 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     try {
 	Var r;
 
+	int nargs = arglist.v.list[0].v.num;
+	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : NULL;
+
 	const char *str = arglist.v.list[1].v.str;
-	int str_length = strlen(str);
+	int str_length = memo_strlen(str);
 
 	int key_length;
 	const char *key = binary_to_raw_bytes(arglist.v.list[2].v.str, &key_length);
@@ -1545,9 +1568,19 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
-	    r.type = TYPE_STR;
-	    r.v.str = hmac_sha256_bytes(str, str_length, key, key_length);
-	    p = make_var_pack(r);
+	    if (2 == nargs || (2 < nargs && !mystrcasecmp("sha256", algo))) {
+		r.type = TYPE_STR;
+		r.v.str = hmac_sha256_bytes(str, str_length, key, key_length);
+		p = make_var_pack(r);
+	    }
+	    else if (2 < nargs && !mystrcasecmp("sha1", algo)) {
+		r.type = TYPE_STR;
+		r.v.str = hmac_sha1_bytes(str, str_length, key, key_length);
+		p = make_var_pack(r);
+	    }
+	    else {
+		p = make_error_pack(E_INVARG);
+	    }
 
 	    free_str(key);
 	}
@@ -1572,6 +1605,9 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     try {
 	Var r;
 
+	int nargs = arglist.v.list[0].v.num;
+	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : NULL;
+
 	int bytes_length;
 	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &bytes_length);
 
@@ -1591,16 +1627,26 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 		p = make_error_pack(E_INVARG);
 	    }
 	    else {
-	      char *key_new = (char *)mymalloc(key_length, M_STRING);
-	      memcpy(key_new, key, key_length);
-	      key = key_new;
+		char *key_new = (char *)mymalloc(key_length, M_STRING);
+		memcpy(key_new, key, key_length);
+		key = key_new;
 
-	      r.type = TYPE_STR;
-	      r.v.str = hmac_sha256_bytes(bytes, bytes_length, key, key_length);
-	      p = make_var_pack(r);
+		if (2 == nargs || (2 < nargs && !mystrcasecmp("sha256", algo))) {
+		    r.type = TYPE_STR;
+		    r.v.str = hmac_sha256_bytes(bytes, bytes_length, key, key_length);
+		    p = make_var_pack(r);
+		}
+		else if (2 < nargs && !mystrcasecmp("sha1", algo)) {
+		    r.type = TYPE_STR;
+		    r.v.str = hmac_sha1_bytes(bytes, bytes_length, key, key_length);
+		    p = make_var_pack(r);
+		}
+		else {
+		    p = make_error_pack(E_INVARG);
+		}
 
-	      free_str(bytes);
-	      free_str(key);
+		free_str(bytes);
+		free_str(key);
 	    }
 	}
     }
@@ -1624,6 +1670,9 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
     try {
 	Var r;
 
+	int nargs = arglist.v.list[0].v.num;
+	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : NULL;
+
 	unparse_value(s, arglist.v.list[1]);
 	const char *lit = str_dup(stream_contents(s));
 	int lit_length = stream_length(s);
@@ -1640,9 +1689,19 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
-	    r.type = TYPE_STR;
-	    r.v.str = hmac_sha256_bytes(lit, lit_length, key, key_length);
-	    p = make_var_pack(r);
+	    if (2 == nargs || (2 < nargs && !mystrcasecmp("sha256", algo))) {
+		r.type = TYPE_STR;
+		r.v.str = hmac_sha256_bytes(lit, lit_length, key, key_length);
+		p = make_var_pack(r);
+	    }
+	    else if (2 < nargs && !mystrcasecmp("sha1", algo)) {
+		r.type = TYPE_STR;
+		r.v.str = hmac_sha1_bytes(lit, lit_length, key, key_length);
+		p = make_var_pack(r);
+	    }
+	    else {
+		p = make_error_pack(E_INVARG);
+	    }
 
 	    free_str(lit);
 	    free_str(key);
@@ -1795,9 +1854,9 @@ register_list(void)
     register_function("binary_hash", 1, 2, bf_binary_hash, TYPE_STR, TYPE_STR);
     register_function("value_hash", 1, 2, bf_value_hash, TYPE_ANY, TYPE_STR);
 
-    register_function("string_hmac", 2, 2, bf_string_hmac, TYPE_STR, TYPE_STR);
-    register_function("binary_hmac", 2, 2, bf_binary_hmac, TYPE_STR, TYPE_STR);
-    register_function("value_hmac", 2, 2, bf_value_hmac, TYPE_ANY, TYPE_STR);
+    register_function("string_hmac", 2, 3, bf_string_hmac, TYPE_STR, TYPE_STR, TYPE_STR);
+    register_function("binary_hmac", 2, 3, bf_binary_hmac, TYPE_STR, TYPE_STR, TYPE_STR);
+    register_function("value_hmac", 2, 3, bf_value_hmac, TYPE_ANY, TYPE_STR, TYPE_STR);
 
     register_function("decode_binary", 1, 2, bf_decode_binary,
 		      TYPE_STR, TYPE_ANY);
