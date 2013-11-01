@@ -3206,12 +3206,12 @@ Returns the number of bytes of the server's memory required to store the given
 @end deftypefun
 
 @deftypefun str value_hash (@var{value} [, @var{str algo}])
-Returns the same string as @code{string_hash(toliteral(@var{value}, @var{algo}))}; see the
+Returns the same string as @code{string_hash(toliteral(@var{value}), @var{algo})}; see the
 description of @code{string_hash()} for details.
 @end deftypefun
 
-@deftypefun str value_hmac (@var{value}, @var{str key})
-Returns the same string as @code{string_hmac(toliteral(@var{value}), @var{key})}; see the
+@deftypefun str value_hmac (@var{value}, @var{str key} [, @var{str algo}])
+Returns the same string as @code{string_hmac(toliteral(@var{value}), @var{key}, @var{algo})}; see the
 description of @code{string_hmac()} for details.
 @end deftypefun
 
@@ -3803,11 +3803,11 @@ salt longer than two characters at your own risk.
 
 @deftypefun str string_hash (str @var{text} [, @var{str algo}])
 @deftypefunx str binary_hash (str @var{bin-string} [, @var{str algo}])
-Returns a 64-character hexadecimal string encoding the result of applying the
+Returns a hexadecimal string hash encoding the result of applying the
 SHA256 cryptographically secure hash function to the contents of the string
 @var{text} or the binary string @var{bin-string}.  If @var{algo} is provided,
-it specifies the hashing algorithm to use.  "MD5", "SHA1" and "SHA256" are all
-supported.
+it specifies the hashing algorithm to use.  "MD5", "SHA1", "SHA224",
+"SHA256", "SHA384", "SHA512" and "RIPEMD160" are all supported.
 
 Note that the MD5 hash algorithm is broken from a cryptographic standpoint, as
 is SHA1.  Both are included for interoperability with existing applications
@@ -3831,12 +3831,13 @@ applies @code{string_hash()} to the text and gets the same result, you can be
 quite confident that the large text has arrived unchanged.
 @end deftypefun
 
-@deftypefun str string_hmac (str @var{text}, @var{str key})
-@deftypefunx str binary_hmac (str @var{bin-string}, @var{str key})
-Returns a 64-character hexadecimal string encoding the result of applying the
+@deftypefun str string_hmac (str @var{text}, @var{str key} [, @var{str algo}])
+@deftypefunx str binary_hmac (str @var{bin-string}, @var{str key} [, @var{str algo}])
+Returns a hexadecimal string MAC encoding the result of applying the
 HMAC-SHA256 cryptographically secure HMAC function to the contents of the
 string @var{text} or the binary string @var{bin-string} with the specified
-secret @var{key}.  Currently, only HMAC-SHA256 is supported.
+secret @var{key}.  If @var{algo} is provided, it specifies the hashing
+algorithm to use.  Currently, only "SHA1" and "SHA256" are supported.
 
 All cryptographically secure HMACs have the property that, if
 @example
