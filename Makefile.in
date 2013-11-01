@@ -36,9 +36,20 @@ DOCS = ProgrammersManual.txt ProgrammersManual.html ProgrammersManual.info \
 YFLAGS = -d
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
-CSRCS = hmac_sha2.c http_parser.c md5.c regexpr.c sha1.c sha256.c \
-	yajl.c yajl_alloc.c yajl_buf.c yajl_encode.c yajl_gen.c \
-	yajl_lex.c yajl_parser.c yajl_version.c
+CSRCS = http_parser.c regexpr.c yajl.c yajl_alloc.c yajl_buf.c \
+	yajl_encode.c yajl_gen.c yajl_lex.c yajl_parser.c \
+	yajl_version.c nettle/hmac.c nettle/hmac-md5.c \
+	nettle/hmac-ripemd160.c nettle/hmac-sha1.c \
+	nettle/hmac-sha224.c nettle/hmac-sha256.c \
+	nettle/hmac-sha384.c nettle/hmac-sha512.c nettle/md5.c \
+	nettle/md5-compress.c nettle/md5-meta.c nettle/memxor.c \
+	nettle/ripemd160.c nettle/ripemd160-compress.c \
+	nettle/ripemd160-meta.c nettle/sha1.c nettle/sha1-compress.c \
+	nettle/sha1-meta.c nettle/sha224-meta.c nettle/sha256.c \
+	nettle/sha256-compress.c nettle/sha256-meta.c \
+	nettle/sha384-meta.c nettle/sha512.c \
+	nettle/sha512-compress.c nettle/sha512-meta.c \
+	nettle/write-be32.c nettle/write-le32.c nettle/write-le64.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc db_file.cc \
 	db_io.cc db_objects.cc db_properties.cc db_verbs.cc \
@@ -64,16 +75,20 @@ YSRCS = parser.y
 HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
 	db_io.h db_private.h decompile.h db_tune.h disassemble.h \
 	eval_env.h eval_vm.h.h exec.h execute.h functions.h \
-	garbage.h getpagesize.h hmac_sha2.h http_parser.h json.h \
-	keywords.h list.h log.h map.h match.h md5.h name_lookup.h \
+	garbage.h getpagesize.h http_parser.h json.h \
+	keywords.h list.h log.h map.h match.h name_lookup.h \
 	network.h net_mplex.h net_multi.h net_proto.h numbers.h \
 	opcode.h options.h parse_cmd.h parser.h pattern.h program.h \
-	quota.h random.h regexpr.h server.h sha1.h sha256.h storage.h \
+	quota.h random.h regexpr.h server.h storage.h \
 	streams.h structures.h str_intern.h sym_table.h tasks.h \
 	timers.h tokens.h unparse.h utils.h verbs.h version.h \
 	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h \
 	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h \
-	yajl_parser.h yajl_version.h fileio.h system.h
+	yajl_parser.h yajl_version.h fileio.h system.h \
+	nettle/hmac.h nettle/macros.h nettle/md5.h nettle/memxor.h \
+	nettle/nettle-meta.h nettle/nettle-types.h \
+	nettle/nettle-write.h nettle/ripemd160.h nettle/sha1.h \
+	nettle/sha2.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
@@ -238,161 +253,6 @@ tests:
 	  ruby -rubygems -Itest/lib $$test ; \
 	done
 
-###############################################################################
-# $Log: Makefile.in,v $
-# Revision 1.11  2010/04/22 21:18:43  wrog
-# Support for version_hook and version_src.h
-#
-# Revision 1.10  2006/12/06 23:44:24  wrog
-# Add parser.c to clean target
-#
-# Revision 1.9  2004/05/22 01:25:43  wrog
-# merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
-#
-# Revision 1.8.10.1  2003/06/01 12:33:07  wrog
-# added net_tcp.c; (put db_tune.h in HDRS); ran makedepend
-#
-# Revision 1.8  2000/05/11 06:32:27  xythian
-# fixed bloody "suspicious line 293" emacs warning when saving Makefile.in
-# by tweaking quotes
-#
-# Revision 1.7  2000/01/11 01:54:05  nop
-# CFLAGS line for poor users without inline keyword.
-#
-# Revision 1.6  2000/01/11 01:39:14  nop
-# Long overdue make depend
-#
-# Revision 1.5  1998/02/19 07:36:16  nop
-# Initial string interning during db load.
-#
-# Revision 1.4  1997/03/03 06:36:23  nop
-# clean target doesn't force reconfiguration; distclean now does.
-#
-# Revision 1.3  1997/03/03 05:55:14  nop
-# Changed to ed for make depend, since ex is a cheap plastic imitation of ed
-# on many Linux systems.  Added better optimization suggestion.
-#
-# Revision 1.2  1997/03/03 04:40:46  nop
-# Avoid running autoconf automatically
-#
-# Revision 1.1.1.1  1997/03/03 03:45:05  nop
-# LambdaMOO 1.8.0p5
-#
-# Revision 2.10  1996/04/19  01:28:40  pavel
-# Ran a new `make depend'.  Release 1.8.0p4.
-#
-# Revision 2.9  1996/03/10  01:31:24  pavel
-# Added pgperf directory and aclocal.m4 file to the distribution.
-# Release 1.8.0.
-#
-# Revision 2.8  1996/02/18  23:18:02  pavel
-# Added md5.[ch].  Release 1.8.0beta3.
-#
-# Revision 2.7  1996/02/08  07:26:19  pavel
-# Updated copyright notice for 1996.  Release 1.8.0beta1 (again).
-#
-# Revision 2.6  1996/02/08  05:46:27  pavel
-# Added numbers.h, AddingNewMOOTypes.txt.  Updated dependencies.  Made pure_moo
-# depend on moo.  Release 1.8.0beta1.
-#
-# Revision 2.5  1996/01/16  07:35:55  pavel
-# Fixed dependencies.  Release 1.8.0alpha6.
-#
-# Revision 2.4  1996/01/11  07:58:54  pavel
-# Fixed dependencies for parser.o.  Release 1.8.0alpha5.
-#
-# Revision 2.3  1995/12/31  03:29:29  pavel
-# Fixed dependencies for parser.y and the networking modules.
-# Release 1.8.0alpha4.
-#
-# Revision 2.2  1995/12/28  00:32:32  pavel
-# Added verbs.h.  Release 1.8.0alpha3.
-#
-# Revision 2.1  1995/12/11  08:07:47  pavel
-# Added a few more derived files to `make clean'.  Release 1.8.0alpha2.
-#
-# Revision 2.0  1995/11/30  05:45:03  pavel
-# New baseline version, corresponding to release 1.8.0alpha1.
-#
-# Revision 1.26  1992/10/23  23:10:29  pavel
-# Updated dependency information for release 1.7.0 and added copyright notice.
-#
-# Revision 1.25  1992/10/23  19:12:08  pavel
-# A few last portability changes for release 1.7.0.
-#
-# Revision 1.24  1992/10/21  03:02:35  pavel
-# Converted to use new automatic configuration system.
-#
-# Revision 1.23  1992/10/17  20:14:17  pavel
-# Numerous changes in response to beta-testing portability problems.
-#
-# Revision 1.22  1992/10/06  01:32:41  pavel
-# Dyked out useless XNS network support.
-# Added sources for clients and a few new my-*.h files.
-# Fixed nasty bug in `make depend' code.
-#
-# Revision 1.21  1992/09/23  17:23:08  pavel
-# Added support for the whole family of networking protocol and multiplexing
-# wait implementations; it should now be easy to add new `optional' sources,
-# only used if certain combinations of preprocessor flags are set.
-#
-# Revision 1.20  1992/09/14  18:42:47  pjames
-# Updated.
-#
-# Revision 1.19  1992/09/14  17:46:39  pjames
-# Updated.
-#
-# Revision 1.18  1992/09/08  22:49:59  pjames
-# Took out bf_move.c
-#
-# Revision 1.17  1992/09/08  22:09:23  pjames
-# Updated for new bf_ filenames
-#
-# Revision 1.16  1992/09/03  23:49:13  pavel
-# Added support for multiple complete network implementations.
-#
-# Revision 1.15  1992/09/03  16:32:40  pjames
-# Updated.
-#
-# Revision 1.14  1992/08/31  23:43:57  pavel
-# Added math library to the LIBRARIES line for A/UX.
-#
-# Revision 1.13  1992/08/28  16:32:18  pjames
-# Added ref_count modules.
-#
-# Revision 1.12  1992/08/21  01:09:56  pavel
-# Minor fix.
-#
-# Revision 1.11  1992/08/21  00:56:39  pavel
-# Shortened the names of several files to fit within the 14-character limit
-# imposed on certain systems.
-# Moved the specification of all configuration options other than those
-# directly related to the compiler command line into config.h.  Also
-# reorganized the ones that are left to make it easier for folks to see what's
-# necessary.
-#
-# Revision 1.10  1992/08/14  00:35:21  pavel
-# Fixed rule for dist.tar.Z to be idempotent.
-#
-# Revision 1.9  1992/08/13  23:35:42  pavel
-# Cleaned up CFLAGS organization.
-#
-# Revision 1.8  1992/08/13  23:24:34  pavel
-# Did a more recent `make depend'...
-#
-# Revision 1.7  1992/08/13  22:48:20  pjames
-# Added my-math.h
-#
-# Revision 1.6  1992/08/13  21:29:58  pjames
-# Added -DMOO to COMPILE.c
-#
-# Revision 1.5  1992/08/11  17:06:45  pjames
-# Updated with new source files, removed old source files, fixed dependencies.
-#
-# Revision 1.3  1992/07/27  18:30:21  pjames
-# Update what vector.o and vector.po depend on.
-###############################################################################
-
 # Have to do this one manually, since make depend cannot hack yacc files.
 parser.o: my-ctype.h my-math.h my-stdlib.h my-string.h ast.h \
 		code_gen.h config.h functions.h keywords.h list.h \
@@ -411,13 +271,9 @@ $(OPT_NET_OBJS):
 	touch $@
 
 # DO NOT DELETE THIS LINE -- 'make depend' replaces everything below it.
-hmac_sha2.o: hmac_sha2.c hmac_sha2.h sha256.h
 http_parser.o: http_parser.c http_parser.h
-md5.o: md5.c md5.h
 regexpr.o: regexpr.c my-stdio.h config.h regexpr.h my-stdlib.h \
  my-string.h
-sha1.o: sha1.c sha1.h
-sha256.o: sha256.c sha256.h
 yajl.o: yajl.c yajl_lex.h yajl_common.h yajl_parse.h yajl_parser.h \
  yajl_bytestack.h yajl_buf.h yajl_alloc.h
 yajl_alloc.o: yajl_alloc.c yajl_alloc.h yajl_common.h
@@ -431,6 +287,68 @@ yajl_parser.o: yajl_parser.c yajl_lex.h yajl_common.h yajl_parser.h \
  yajl_bytestack.h yajl_buf.h yajl_alloc.h yajl_parse.h yajl_encode.h \
  yajl_gen.h
 yajl_version.o: yajl_version.c yajl_version.h yajl_common.h
+hmac.o: nettle/hmac.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h nettle/memxor.h
+hmac-md5.o: nettle/hmac-md5.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h
+hmac-ripemd160.o: nettle/hmac-ripemd160.c nettle/hmac.h \
+ nettle/nettle-meta.h nettle/nettle-types.h nettle/md5.h \
+ nettle/ripemd160.h nettle/sha1.h nettle/sha2.h
+hmac-sha1.o: nettle/hmac-sha1.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h
+hmac-sha224.o: nettle/hmac-sha224.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h
+hmac-sha256.o: nettle/hmac-sha256.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h
+hmac-sha384.o: nettle/hmac-sha384.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h
+hmac-sha512.o: nettle/hmac-sha512.c nettle/hmac.h nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/md5.h nettle/ripemd160.h nettle/sha1.h \
+ nettle/sha2.h
+md5.o: nettle/md5.c nettle/md5.h nettle/nettle-types.h nettle/macros.h \
+ nettle/nettle-write.h
+md5-compress.o: nettle/md5-compress.c nettle/md5.h nettle/nettle-types.h \
+ nettle/macros.h
+md5-meta.o: nettle/md5-meta.c nettle/nettle-meta.h nettle/nettle-types.h \
+ nettle/md5.h
+memxor.o: nettle/memxor.c nettle/memxor.h nettle/nettle-types.h
+ripemd160.o: nettle/ripemd160.c nettle/ripemd160.h nettle/nettle-types.h \
+ nettle/macros.h nettle/nettle-write.h
+ripemd160-compress.o: nettle/ripemd160-compress.c nettle/ripemd160.h \
+ nettle/nettle-types.h nettle/macros.h
+ripemd160-meta.o: nettle/ripemd160-meta.c nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/ripemd160.h
+sha1.o: nettle/sha1.c nettle/sha1.h nettle/nettle-types.h nettle/macros.h \
+ nettle/nettle-write.h
+sha1-compress.o: nettle/sha1-compress.c nettle/sha1.h \
+ nettle/nettle-types.h nettle/macros.h
+sha1-meta.o: nettle/sha1-meta.c nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/sha1.h
+sha224-meta.o: nettle/sha224-meta.c nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/sha2.h
+sha256.o: nettle/sha256.c nettle/sha2.h nettle/nettle-types.h \
+ nettle/macros.h nettle/nettle-write.h
+sha256-compress.o: nettle/sha256-compress.c nettle/sha2.h \
+ nettle/nettle-types.h nettle/macros.h
+sha256-meta.o: nettle/sha256-meta.c nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/sha2.h
+sha384-meta.o: nettle/sha384-meta.c nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/sha2.h
+sha512.o: nettle/sha512.c nettle/sha2.h nettle/nettle-types.h \
+ nettle/macros.h
+sha512-compress.o: nettle/sha512-compress.c nettle/sha2.h \
+ nettle/nettle-types.h nettle/macros.h
+sha512-meta.o: nettle/sha512-meta.c nettle/nettle-meta.h \
+ nettle/nettle-types.h nettle/sha2.h
+write-be32.o: nettle/write-be32.c nettle/nettle-write.h nettle/macros.h
+write-le32.o: nettle/write-le32.c nettle/nettle-write.h nettle/macros.h
+write-le64.o: nettle/write-le64.c nettle/nettle-write.h nettle/macros.h
 ast.o: ast.cc my-string.h config.h ast.h parser.h program.h structures.h \
  my-stdio.h version.h sym_table.h list.h streams.h log.h storage.h \
  utils.h execute.h db.h opcode.h options.h parse_cmd.h
@@ -507,15 +425,18 @@ garbage.o: garbage.cc functions.h my-stdio.h config.h execute.h db.h \
 json.o: json.cc my-string.h config.h my-stdlib.h functions.h my-stdio.h \
  execute.h db.h program.h structures.h version.h opcode.h options.h \
  parse_cmd.h json.h list.h streams.h map.h numbers.h server.h network.h \
- storage.h unparse.h utils.h yajl_parse.h yajl_common.h yajl_gen.h
+ storage.h unparse.h utils.h yajl_gen.h yajl_common.h yajl_lex.h \
+ yajl_parse.h
 keywords.o: keywords.cc my-string.h config.h keywords.h structures.h \
  my-stdio.h version.h tokens.h ast.h parser.h program.h sym_table.h \
  y.tab.h utils.h execute.h db.h opcode.h options.h parse_cmd.h streams.h
 list.o: list.cc my-ctype.h config.h my-string.h bf_register.h \
  collection.h structures.h my-stdio.h functions.h execute.h db.h \
- program.h version.h opcode.h options.h parse_cmd.h hmac_sha2.h sha256.h \
- list.h streams.h log.h map.h md5.h pattern.h random.h sha1.h storage.h \
- unparse.h utils.h server.h network.h
+ program.h version.h opcode.h options.h parse_cmd.h list.h streams.h \
+ log.h map.h nettle/hmac.h nettle/nettle-meta.h nettle/nettle-types.h \
+ nettle/md5.h nettle/ripemd160.h nettle/sha1.h nettle/sha2.h nettle/md5.h \
+ nettle/ripemd160.h nettle/sha1.h nettle/sha2.h pattern.h random.h \
+ storage.h unparse.h utils.h server.h network.h
 log.o: log.cc my-stdarg.h config.h my-stdio.h my-string.h my-time.h \
  bf_register.h functions.h execute.h db.h program.h structures.h \
  version.h opcode.h options.h parse_cmd.h log.h storage.h streams.h \

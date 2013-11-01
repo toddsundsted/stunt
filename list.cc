@@ -26,16 +26,17 @@
 #include "collection.h"
 #include "config.h"
 #include "functions.h"
-#include "hmac_sha2.h"
 #include "list.h"
 #include "log.h"
 #include "map.h"
-#include "md5.h"
+#include "nettle/hmac.h"
+#include "nettle/md5.h"
+#include "nettle/ripemd160.h"
+#include "nettle/sha1.h"
+#include "nettle/sha2.h"
 #include "options.h"
 #include "pattern.h"
 #include "random.h"
-#include "sha1.h"
-#include "sha256.h"
 #include "streams.h"
 #include "storage.h"
 #include "structures.h"
@@ -1191,16 +1192,16 @@ bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 static const char *
 md5_hash_bytes(const char *input, int length)
 {
-    context_md5_t context;
+    md5_ctx context;
     unsigned char result[16];
     int i;
     const char digits[] = "0123456789ABCDEF";
     char *hex = str_dup("12345678901234567890123456789012");
     const char *answer = hex;
 
-    MD5Init(&context);
-    MD5Update(&context, (unsigned char *) input, length);
-    MD5Final(result, &context);
+    md5_init(&context);
+    md5_update(&context, length, (unsigned char *)input);
+    md5_digest(&context, 16, result);
     for (i = 0; i < 16; i++) {
 	*hex++ = digits[result[i] >> 4];
 	*hex++ = digits[result[i] & 0xF];
@@ -1211,16 +1212,16 @@ md5_hash_bytes(const char *input, int length)
 static const char *
 sha1_hash_bytes(const char *input, int length)
 {
-    context_sha1_t context;
+    sha1_ctx context;
     unsigned char result[20];
     int i;
     const char digits[] = "0123456789ABCDEF";
     char *hex = str_dup("1234567890123456789012345678901234567890");
     const char *answer = hex;
 
-    SHA1Init(&context);
-    SHA1Update(&context, (unsigned char *) input, length);
-    SHA1Final(result, &context);
+    sha1_init(&context);
+    sha1_update(&context, length, (unsigned char *)input);
+    sha1_digest(&context, 20, result);
     for (i = 0; i < 20; i++) {
 	*hex++ = digits[result[i] >> 4];
 	*hex++ = digits[result[i] & 0xF];
@@ -1231,16 +1232,16 @@ sha1_hash_bytes(const char *input, int length)
 static const char *
 sha256_hash_bytes(const char *input, int length)
 {
-    context_sha256_t context;
+    sha256_ctx context;
     unsigned char result[32];
     int i;
     const char digits[] = "0123456789ABCDEF";
     char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
     const char *answer = hex;
 
-    sha256_starts(&context);
-    sha256_update(&context, (unsigned char *) input, length);
-    sha256_finish(&context, result);
+    sha256_init(&context);
+    sha256_update(&context, length, (unsigned char *)input);
+    sha256_digest(&context, 32, result);
     for (i = 0; i < 32; i++) {
 	*hex++ = digits[result[i] >> 4];
 	*hex++ = digits[result[i] & 0xF];
@@ -1364,14 +1365,16 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 static const char *
 hmac_sha256_bytes(const char *message, int message_length, const char *key, int key_length)
 {
-    int i;
+    hmac_sha256_ctx context;
     unsigned char result[32];
+    int i;
     const char digits[] = "0123456789ABCDEF";
     char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
     const char *answer = hex;
 
-    hmac_sha256((unsigned char *)key, key_length, (unsigned char *)message, message_length, result, 32);
-
+    hmac_sha256_set_key(&context, key_length, (unsigned char *)key);
+    hmac_sha256_update(&context, message_length, (unsigned char *)message);
+    hmac_sha256_digest(&context, 32, result);
     for (i = 0; i < 32; i++) {
 	*hex++ = digits[result[i] >> 4];
 	*hex++ = digits[result[i] & 0xF];
