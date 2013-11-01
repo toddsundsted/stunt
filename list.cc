@@ -1230,6 +1230,26 @@ sha1_hash_bytes(const char *input, int length)
 }
 
 static const char *
+sha224_hash_bytes(const char *input, int length)
+{
+    sha224_ctx context;
+    unsigned char result[28];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("12345678901234567890123456789012345678901234567890123456");
+    const char *answer = hex;
+
+    sha224_init(&context);
+    sha224_update(&context, length, (unsigned char *)input);
+    sha224_digest(&context, 28, result);
+    for (i = 0; i < 28; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static const char *
 sha256_hash_bytes(const char *input, int length)
 {
     sha256_ctx context;
@@ -1249,22 +1269,99 @@ sha256_hash_bytes(const char *input, int length)
     return answer;
 }
 
+static const char *
+sha384_hash_bytes(const char *input, int length)
+{
+    sha384_ctx context;
+    unsigned char result[48];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456");
+    const char *answer = hex;
+
+    sha384_init(&context);
+    sha384_update(&context, length, (unsigned char *)input);
+    sha384_digest(&context, 48, result);
+    for (i = 0; i < 48; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static const char *
+sha512_hash_bytes(const char *input, int length)
+{
+    sha512_ctx context;
+    unsigned char result[64];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678");
+    const char *answer = hex;
+
+    sha512_init(&context);
+    sha512_update(&context, length, (unsigned char *)input);
+    sha512_digest(&context, 64, result);
+    for (i = 0; i < 64; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
+static const char *
+ripemd160_hash_bytes(const char *input, int length)
+{
+    ripemd160_ctx context;
+    unsigned char result[20];
+    int i;
+    const char digits[] = "0123456789ABCDEF";
+    char *hex = str_dup("1234567890123456789012345678901234567890");
+    const char *answer = hex;
+
+    ripemd160_init(&context);
+    ripemd160_update(&context, length, (unsigned char *)input);
+    ripemd160_digest(&context, 20, result);
+    for (i = 0; i < 20; i++) {
+	*hex++ = digits[result[i] >> 4];
+	*hex++ = digits[result[i] & 0xF];
+    }
+    return answer;
+}
+
 static package
 bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
-    const char *str = arglist.v.list[1].v.str;
     int nargs = arglist.v.list[0].v.num;
+    const char *str = arglist.v.list[1].v.str;
+    const char *algo = 1 < nargs ? arglist.v.list[2].v.str : NULL;
 
-    if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", arglist.v.list[2].v.str))) {
+    if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", algo))) {
 	r.type = TYPE_STR;
 	r.v.str = sha256_hash_bytes(str, memo_strlen(str));
     }
-    else if (1 < nargs && !mystrcasecmp("sha1", arglist.v.list[2].v.str)) {
+    else if (1 < nargs && !mystrcasecmp("sha224", algo)) {
+	r.type = TYPE_STR;
+	r.v.str = sha224_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !mystrcasecmp("sha384", algo)) {
+	r.type = TYPE_STR;
+	r.v.str = sha384_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !mystrcasecmp("sha512", algo)) {
+	r.type = TYPE_STR;
+	r.v.str = sha512_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !mystrcasecmp("sha1", algo)) {
 	r.type = TYPE_STR;
 	r.v.str = sha1_hash_bytes(str, memo_strlen(str));
     }
-    else if (1 < nargs && !mystrcasecmp("md5", arglist.v.list[2].v.str)) {
+    else if (1 < nargs && !mystrcasecmp("ripemd160", algo)) {
+	r.type = TYPE_STR;
+	r.v.str = ripemd160_hash_bytes(str, memo_strlen(str));
+    }
+    else if (1 < nargs && !mystrcasecmp("md5", algo)) {
 	r.type = TYPE_STR;
 	r.v.str = md5_hash_bytes(str, memo_strlen(str));
     }
@@ -1286,23 +1383,44 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
     try {
 	Var r;
 	int length;
-	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
 	int nargs = arglist.v.list[0].v.num;
+	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
+	const char *algo = 1 < nargs ? arglist.v.list[2].v.str : NULL;
 
 	if (!bytes) {
 	    p = make_error_pack(E_INVARG);
 	}
-	else if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", arglist.v.list[2].v.str))) {
+	else if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", algo))) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha256_hash_bytes(bytes, length);
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !mystrcasecmp("sha1", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("sha224", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha224_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("sha384", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha384_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("sha512", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha512_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("sha1", algo)) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha1_hash_bytes(bytes, length);
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !mystrcasecmp("md5", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("ripemd160", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = ripemd160_hash_bytes(bytes, length);
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("md5", algo)) {
 	    r.type = TYPE_STR;
 	    r.v.str = md5_hash_bytes(bytes, length);
 	    p = make_var_pack(r);
@@ -1330,20 +1448,41 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
     try {
 	Var r;
 	int nargs = arglist.v.list[0].v.num;
+	const char *algo = 1 < nargs ? arglist.v.list[2].v.str : NULL;
 
 	unparse_value(s, arglist.v.list[1]);
 
-	if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", arglist.v.list[2].v.str))) {
+	if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", algo))) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha256_hash_bytes(stream_contents(s), stream_length(s));
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !mystrcasecmp("sha1", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("sha224", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha224_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("sha384", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha384_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("sha512", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = sha512_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("sha1", algo)) {
 	    r.type = TYPE_STR;
 	    r.v.str = sha1_hash_bytes(stream_contents(s), stream_length(s));
 	    p = make_var_pack(r);
 	}
-	else if (1 < nargs && !mystrcasecmp("md5", arglist.v.list[2].v.str)) {
+	else if (1 < nargs && !mystrcasecmp("ripemd160", algo)) {
+	    r.type = TYPE_STR;
+	    r.v.str = ripemd160_hash_bytes(stream_contents(s), stream_length(s));
+	    p = make_var_pack(r);
+	}
+	else if (1 < nargs && !mystrcasecmp("md5", algo)) {
 	    r.type = TYPE_STR;
 	    r.v.str = md5_hash_bytes(stream_contents(s), stream_length(s));
 	    p = make_var_pack(r);
