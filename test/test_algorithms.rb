@@ -240,26 +240,96 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_hmac_builtins_take_a_third_parameter
+    run_test_as('programmer') do
+      assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", string_hmac("", "", "sha256")
+      assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", binary_hmac("", "", "sha256")
+      assert_equal "140B47411F10521CC48851F43C9ABE73016E1D45627C8523D25CBF7FE64F8B03", value_hmac("", "", "sha256")
+    end
+  end
+
   def test_that_hmacing_works
     run_test_as('programmer') do
+      assert_equal "EFFCDF6AE5EB2FA2D27416D5F184DF9C259A7C79", string_hmac("what do ya want for nothing?", "Jefe", "sha1")
+      assert_equal "B617318655057264E28BC0B6FB378C8EF146BE00", string_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha1")
+      assert_equal "217E44BB08B6E06A2D6C30F3CB9F537F97C63356", string_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "90D0DACE1C1BDC957339307803160335BDE6DF2B", string_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "999D63DE9594FB320FA1B1D7CC6D3662FEC60AB1", string_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00", "sha1")
+      assert_equal "FBDB1D1B18AA6C08324B7D64B71FB76370690E1D", string_hmac("", "", "sha1")
+      assert_equal "5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", string_hmac("what do ya want for nothing?", "Jefe", "sha256")
+      assert_equal "B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7", string_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha256")
+      assert_equal "9B09FFA71B942FCB27635FBCD5B0E944BFDC63644F0713938A7F51535C3A35E2", string_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "60E431591EE0B67F0D8A26AACBF5B77F8E0BC6213728C5140546040F0EE37F54", string_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "44D1527E6295BF1055924DEBECC4499776903B9C37FF7D6519452230A7C30AF8", string_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00", "sha256")
+      assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", string_hmac("", "", "sha256")
       assert_equal "5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", string_hmac("what do ya want for nothing?", "Jefe")
-      assert_equal "5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", binary_hmac("what do ya want for nothing?", "Jefe")
-      assert_equal "6E5C2A18FEBCCACA669AC5F4415342714850E76BA86824A3371270E6DD69956F", value_hmac("what do ya want for nothing?", "Jefe")
       assert_equal "B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7", string_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b")
-      assert_equal "B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7", binary_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b")
-      assert_equal "69AB6C68D61A3B85453AB106B356640D2D3F8D4945C67781423B7A8D48565A02", value_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b")
       assert_equal "9B09FFA71B942FCB27635FBCD5B0E944BFDC63644F0713938A7F51535C3A35E2", string_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
-      assert_equal "9B09FFA71B942FCB27635FBCD5B0E944BFDC63644F0713938A7F51535C3A35E2", binary_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
-      assert_equal "951A56011AB193C6C74E68CFB855D25ADFF63C488FDE458039AE3F4108EE37F0", value_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
       assert_equal "60E431591EE0B67F0D8A26AACBF5B77F8E0BC6213728C5140546040F0EE37F54", string_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
-      assert_equal "60E431591EE0B67F0D8A26AACBF5B77F8E0BC6213728C5140546040F0EE37F54", binary_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
-      assert_equal "EC69C60BE95151FEF7E303AD7231C7165E4120683F7F218CE0661F7B8317534C", value_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
       assert_equal "44D1527E6295BF1055924DEBECC4499776903B9C37FF7D6519452230A7C30AF8", string_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00")
-      assert_equal "44D1527E6295BF1055924DEBECC4499776903B9C37FF7D6519452230A7C30AF8", binary_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00")
-      assert_equal "415BD3379F2E94D6F38ED2D54BEFB367912B7043FE033D3B6C66A78EA51A153C", value_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00")
       assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", string_hmac("", "")
+
+      assert_equal "EFFCDF6AE5EB2FA2D27416D5F184DF9C259A7C79", binary_hmac("what do ya want for nothing?", "Jefe", "sha1")
+      assert_equal "B617318655057264E28BC0B6FB378C8EF146BE00", binary_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha1")
+      assert_equal "217E44BB08B6E06A2D6C30F3CB9F537F97C63356", binary_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "90D0DACE1C1BDC957339307803160335BDE6DF2B", binary_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "999D63DE9594FB320FA1B1D7CC6D3662FEC60AB1", binary_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00", "sha1")
+      assert_equal "FBDB1D1B18AA6C08324B7D64B71FB76370690E1D", binary_hmac("", "", "sha1")
+      assert_equal "5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", binary_hmac("what do ya want for nothing?", "Jefe", "sha256")
+      assert_equal "B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7", binary_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha256")
+      assert_equal "9B09FFA71B942FCB27635FBCD5B0E944BFDC63644F0713938A7F51535C3A35E2", binary_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "60E431591EE0B67F0D8A26AACBF5B77F8E0BC6213728C5140546040F0EE37F54", binary_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "44D1527E6295BF1055924DEBECC4499776903B9C37FF7D6519452230A7C30AF8", binary_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00", "sha256")
+      assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", binary_hmac("", "", "sha256")
+      assert_equal "5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", binary_hmac("what do ya want for nothing?", "Jefe")
+      assert_equal "B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7", binary_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b")
+      assert_equal "9B09FFA71B942FCB27635FBCD5B0E944BFDC63644F0713938A7F51535C3A35E2", binary_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
+      assert_equal "60E431591EE0B67F0D8A26AACBF5B77F8E0BC6213728C5140546040F0EE37F54", binary_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
+      assert_equal "44D1527E6295BF1055924DEBECC4499776903B9C37FF7D6519452230A7C30AF8", binary_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00")
       assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", binary_hmac("", "")
+
+      assert_equal "28809E3D8CEA48FABEBA399A4AF2942AEBD89DE4", value_hmac("what do ya want for nothing?", "Jefe", "sha1")
+      assert_equal "7A9169174AC124FF114F53A03744AB22BF840C7D", value_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha1")
+      assert_equal "2311301999BCC3D7A95344E44527E8EB2FDAE39B", value_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "171DBF033CFCA50A2DC1A0182D5E37D2453CED5D", value_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "EA1A09993CA7F0848D1085A67D84AA6348093004", value_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00", "sha1")
+      assert_equal "1F871CCD9A7164051BF779C8483677424E9C77F5", value_hmac("", "", "sha1")
+      assert_equal "6E5C2A18FEBCCACA669AC5F4415342714850E76BA86824A3371270E6DD69956F", value_hmac("what do ya want for nothing?", "Jefe", "sha256")
+      assert_equal "69AB6C68D61A3B85453AB106B356640D2D3F8D4945C67781423B7A8D48565A02", value_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha256")
+      assert_equal "951A56011AB193C6C74E68CFB855D25ADFF63C488FDE458039AE3F4108EE37F0", value_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "EC69C60BE95151FEF7E303AD7231C7165E4120683F7F218CE0661F7B8317534C", value_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "415BD3379F2E94D6F38ED2D54BEFB367912B7043FE033D3B6C66A78EA51A153C", value_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00", "sha256")
+      assert_equal "140B47411F10521CC48851F43C9ABE73016E1D45627C8523D25CBF7FE64F8B03", value_hmac("", "", "sha256")
+      assert_equal "6E5C2A18FEBCCACA669AC5F4415342714850E76BA86824A3371270E6DD69956F", value_hmac("what do ya want for nothing?", "Jefe")
+      assert_equal "69AB6C68D61A3B85453AB106B356640D2D3F8D4945C67781423B7A8D48565A02", value_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b")
+      assert_equal "951A56011AB193C6C74E68CFB855D25ADFF63C488FDE458039AE3F4108EE37F0", value_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
+      assert_equal "EC69C60BE95151FEF7E303AD7231C7165E4120683F7F218CE0661F7B8317534C", value_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa")
+      assert_equal "415BD3379F2E94D6F38ED2D54BEFB367912B7043FE033D3B6C66A78EA51A153C", value_hmac("Test Using Key with nulls", "123456789~00123456789~00123456789~00")
       assert_equal "140B47411F10521CC48851F43C9ABE73016E1D45627C8523D25CBF7FE64F8B03", value_hmac("", "")
+    end
+  end
+
+  def test_hmac_sha1_test_vectors_from_nettle
+    run_test_as('programmer') do
+      assert_equal "EFFCDF6AE5EB2FA2D27416D5F184DF9C259A7C79", string_hmac("what do ya want for nothing?", "Jefe", "sha1")
+      assert_equal "B617318655057264E28BC0B6FB378C8EF146BE00", string_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha1")
+      assert_equal "4C1A03424B55E07FE7F27BE1D58BB9324A9A5A04", string_hmac("Test With Truncation", "~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c", "sha1")
+      assert_equal "AA4AE5E15272D00E95705637CE8A3B55ED402112", string_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "E8E99D0F45237D786D6BBAA7965C7808BBFF1A91", string_hmac("Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "125D7342B9AC11CD91A39AF48AA17B4F63F175D3", binary_hmac("~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha1")
+      assert_equal "4C9007F4026250C6BC8414F9BF50C86C2D7235DA", binary_hmac("~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd", "~01~02~03~04~05~06~07~08~09~0a~0b~0c~0d~0e~0f~10~11~12~13~14~15~16~17~18~19", "sha1")
+    end
+  end
+
+  def test_hmac_sha256_test_vectors_from_nettle
+    run_test_as('programmer') do
+      assert_equal "5BDCC146BF60754E6A042426089575C75A003F089D2739839DEC58B964EC3843", string_hmac("what do ya want for nothing?", "Jefe", "sha256")
+      assert_equal "B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7", string_hmac("Hi There", "~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b~0b", "sha256")
+      assert_equal "A3B6167473100EE06E0C796C2955552BFA6F7C0A6A8AEF8B93F860AAB0CD20C5", string_hmac("Test With Truncation", "~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c~0c", "sha256")
+      assert_equal "60E431591EE0B67F0D8A26AACBF5B77F8E0BC6213728C5140546040F0EE37F54", string_hmac("Test Using Larger Than Block-Size Key - Hash Key First", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "9B09FFA71B942FCB27635FBCD5B0E944BFDC63644F0713938A7F51535C3A35E2", string_hmac("This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "773EA91E36800E46854DB8EBD09181A72959098B3EF8C122D9635514CED565FE", binary_hmac("~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd~dd", "~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa~aa", "sha256")
+      assert_equal "82558A389A443C0EA4CC819899F2083A85F0FAA3E578F8077A2E3FF46729665B", binary_hmac("~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd~cd", "~01~02~03~04~05~06~07~08~09~0a~0b~0c~0d~0e~0f~10~11~12~13~14~15~16~17~18~19", "sha256")
     end
   end
 
@@ -285,9 +355,23 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_specifying_fake_hmac_algorithms_fails
+    run_test_as('programmer') do
+      assert_equal E_INVARG, string_hmac("abc", "abc", "bozo")
+      assert_equal E_INVARG, binary_hmac("abc", "abc", "con")
+      assert_equal E_INVARG, value_hmac("abc", "abc", "carne")
+    end
+  end
+
   def test_that_hashing_bad_binary_strings_does_not_crash_the_server
     run_test_as('programmer') do
       assert_equal E_INVARG, binary_hash('~00~#!~00')
+    end
+  end
+
+  def test_that_hmacing_bad_binary_strings_does_not_crash_the_server
+    run_test_as('programmer') do
+      assert_equal E_INVARG, binary_hmac('~00~#!~00', 'key')
     end
   end
 
@@ -296,12 +380,6 @@ class TestAlgorithms < Test::Unit::TestCase
       assert_equal E_INVARG, string_hmac('', '~00~#!~00')
       assert_equal E_INVARG, binary_hmac('', '~00~#!~00')
       assert_equal E_INVARG, value_hmac('','~00~#!~00')
-    end
-  end
-
-  def test_that_hmacing_bad_binary_strings_does_not_crash_the_server
-    run_test_as('programmer') do
-      assert_equal E_INVARG, binary_hmac('~00~#!~00', 'key')
     end
   end
 

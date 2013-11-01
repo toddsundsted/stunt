@@ -201,8 +201,12 @@ module MooSupport
     end
   end
 
-  def value_hmac(str, key)
-    simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  def value_hmac(str, key, algo = nil)
+    if algo
+      simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)});|
+    end
   end
 
   ### Operations on Strings
@@ -231,12 +235,20 @@ module MooSupport
     end
   end
 
-  def string_hmac(str, key)
-    simplify command %Q|; return string_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  def string_hmac(str, key, algo = nil)
+    if algo
+      simplify command %Q|; return string_hmac(#{value_ref(str)}, #{value_ref(key)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return string_hmac(#{value_ref(str)}, #{value_ref(key)});|
+    end
   end
 
-  def binary_hmac(str, key)
-    simplify command %Q|; return binary_hmac(#{value_ref(str)}, #{value_ref(key)});|
+  def binary_hmac(str, key, algo = nil)
+    if algo
+      simplify command %Q|; return binary_hmac(#{value_ref(str)}, #{value_ref(key)}, #{value_ref(algo)});|
+    else
+      simplify command %Q|; return binary_hmac(#{value_ref(str)}, #{value_ref(key)});|
+    end
   end
 
   ### Operations on Maps
