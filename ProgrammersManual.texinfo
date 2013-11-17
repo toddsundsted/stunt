@@ -3769,36 +3769,69 @@ substitute("I thank you for your %1 here in %2.", subs)
 @end example
 @end deftypefun
 
-@deftypefun str crypt (str @var{text} [, str @var{salt}])
-Encrypts the given @var{text} using the standard UNIX encryption method.  If
-provided, @var{salt} should be a string at least two characters long, the first
-two characters of which will be used as the extra encryption ``salt'' in the
-algorithm.  If @var{salt} is not provided, a random pair of characters is used.
-In any case, the salt used is also returned as the first two characters of the
-resulting encrypted string.
-
-Aside from the possibly-random selection of the salt, the encryption algorithm
-is entirely deterministic.  In particular, you can test whether or not a given
-string is the same as the one used to produce a given piece of encrypted text;
-simply extract the first two characters of the encrypted text and pass the
-candidate string and those two characters to @code{crypt()}.  If the result is
-identical to the given encrypted text, then you've got a match.
+@deftypefun str salt (str @var{format}, str @var{input})
+Generate a @code{crypt()} compatible salt string for the specified
+salt @var{format} using the specified binary random @var{input}.  The
+specific set of formats supported depends on the libraries used to
+build the server, but will always include the standard salt format,
+indicated by the format string "" (the empty string), and the BCrypt
+salt format, indicated by the format string "$2a$NN$" (where "NN" is
+the work factor).  Other possible formats include MD5 ("$1$"), SHA256
+("$5$") and SHA512 ("$6$").  Both the SHA256 and SHA512 formats
+support optional rounds.
 
 @example
-crypt("foobar")         @result{}   "J3fSFQfgkp26w"
-crypt("foobar", "J3")   @result{}   "J3fSFQfgkp26w"
-crypt("mumble", "J3")   @result{}   "J3D0.dh.jjmWQ"
-crypt("foobar", "J4")   @result{}   "J4AcPxOJ4ncq2"
+salt("", ".M")                                           @result{}    "iB"
+salt("$1$", "~183~1E~C6/~D1")                            @result{}    "$1$MAX54zGo"
+salt("$5$", "x~F2~1Fv~ADj~92Y~9E~D4l~C3")                @result{}    "$5$s7z5qpeOGaZb"
+salt("$5$rounds=2000$", "G~7E~A7~F5Q5~B7~0Aa~80T")       @result{}    "$5$rounds=2000$5trdp5JBreEM"
+salt("$6$", "U7~EC!~E8~85~AB~CD~B5+~E1?")                @result{}    "$6$JR1vVUSVfqQhf2yD"
+salt("$6$rounds=5000$", "~ED'~B0~BD~B9~DB^,\\~BD~E7")    @result{}    "$6$rounds=5000$hT0gxavqSl0L"
+salt("$2a$08$", "|~99~86~DEq~94_~F3-~1A~D2#~8C~B5sx")    @result{}    "$2a$08$dHkE1lESV9KrErGhhJTxc."
 @end example
 @end deftypefun
 
 @quotation Note
-As of version 1.8.3, the entire salt (of any length) is passed to the operating
-system's low-level crypt function.  It is unlikely, however, that all operating
-systems will return the same string when presented with a longer salt.
-Therefore, identical calls to @code{crypt()} may generate different results on
-different platforms, and your password verification systems will fail.  Use a
-salt longer than two characters at your own risk.
+To ensure proper security, the random @var{input} must be from a
+sufficiently random source.
+@end quotation
+
+@deftypefun str crypt (str @var{text} [, str @var{salt}])
+Encrypts (@emph{hashes}) the given @var{text} using the standard
+UNIX encryption method.  If provided, @var{salt} should be a string at
+least two characters long, and it may dictate a specific algorithm to
+use.  By default, @code{crypt} uses the original, now insecure, DES
+algorithm.  Stunt specifically includes the BCrypt algorithm
+(identified by salts that start with "$2a$"), and may include MD5,
+SHA256, and SHA512 algorithms depending on the libraries used to build
+the server.  The @var{salt} used is returned as the first part of the
+resulting encrypted string.
+
+Aside from the possibly-random input in the salt, the encryption
+algorithms are entirely deterministic.  In particular, you can test
+whether or not a given string is the same as the one used to produce a
+given piece of encrypted text; simply extract the salt from the front
+of the encrypted text and pass the candidate string and the salt to
+@code{crypt()}.  If the result is identical to the given encrypted
+text, then you've got a match.
+
+@example
+crypt("foobar", "iB")                               @result{}    "iBhNpg2tYbVjw"
+crypt("foobar", "$1$MAX54zGo")                      @result{}    "$1$MAX54zGo$UKU7XRUEEiKlB.qScC1SX0"
+crypt("foobar", "$5$s7z5qpeOGaZb")                  @result{}    "$5$s7z5qpeOGaZb$xkxjnDdRGlPaP7Z ... .pgk/pXcdLpeVCYh0uL9"
+crypt("foobar", "$5$rounds=2000$5trdp5JBreEM")      @result{}    "$5$rounds=2000$5trdp5JBreEM$Imi ... ckZPoh7APC0Mo6nPeCZ3"
+crypt("foobar", "$6$JR1vVUSVfqQhf2yD")              @result{}    "$6$JR1vVUSVfqQhf2yD$/4vyLFcuPTz ... qI0w8m8az076yMTdl0h."
+crypt("foobar", "$6$rounds=5000$hT0gxavqSl0L")      @result{}    "$6$rounds=5000$hT0gxavqSl0L$9/Y ... zpCATppeiBaDxqIbAN7/"
+crypt("foobar", "$2a$08$dHkE1lESV9KrErGhhJTxc.")    @result{}    "$2a$08$dHkE1lESV9KrErGhhJTxc.QnrW/bHp8mmBl5vxGVUcsbjo3gcKlf6"
+@end example
+@end deftypefun
+
+@quotation Note
+The specific set of supported algorithms depends on the libraries used
+to build the server.  Only the BCrypt algorithm, which is distributed
+with the server source code, is guaranteed to exist.  BCrypt is
+currently mature and well tested, and is recommended for new
+development.
 @end quotation
 
 @deftypefun str string_hash (str @var{text} [, @var{str algo}])
