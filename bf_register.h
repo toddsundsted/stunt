@@ -35,6 +35,7 @@ extern void register_base64(void);
 extern void register_fileio(void);
 extern void register_system(void);
 extern void register_exec(void);
+extern void register_crypto(void);
 
 /* 
  * $Log: bf_register.h,v $

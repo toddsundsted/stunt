@@ -29,6 +29,7 @@ dnl ***************************************************************************
 AC_PROG_YACC
 AC_PROG_CC
 AC_PROG_CXX
+AM_PROG_AS
 AC_PROG_INSTALL
 AC_GCC_TRADITIONAL
 AC_EGREP_CPP(yes, [

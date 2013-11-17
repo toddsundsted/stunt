@@ -15,6 +15,7 @@
 
 CC = @CC@
 CXX = @CXX@
+CCAS = @CCAS@
 LIBRARIES = @LIBS@
 YACC = @YACC@
 
@@ -34,6 +35,8 @@ DOCS = ProgrammersManual.txt ProgrammersManual.html ProgrammersManual.info \
 	ProgrammersManual.dvi ProgrammersManual.pdf ProgrammersManual.ps
 
 YFLAGS = -d
+ASFLAGS = -c
+
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
 CSRCS = http_parser.c regexpr.c yajl.c yajl_alloc.c yajl_buf.c \
@@ -49,18 +52,19 @@ CSRCS = http_parser.c regexpr.c yajl.c yajl_alloc.c yajl_buf.c \
 	nettle/sha256-compress.c nettle/sha256-meta.c \
 	nettle/sha384-meta.c nettle/sha512.c \
 	nettle/sha512-compress.c nettle/sha512-meta.c \
-	nettle/write-be32.c nettle/write-le32.c nettle/write-le64.c
+	nettle/write-be32.c nettle/write-le32.c nettle/write-le64.c \
+	crypt_blowfish.c crypt_gensalt.c
 
-CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc db_file.cc \
-	db_io.cc db_objects.cc db_properties.cc db_verbs.cc \
-	decompile.cc disassemble.cc eval_env.cc eval_vm.cc exec.cc \
-	execute.cc extensions.cc fileio.cc functions.cc garbage.cc \
-	json.cc keywords.cc list.cc log.cc map.cc match.cc \
-	name_lookup.cc network.cc net_mplex.cc net_proto.cc \
-	numbers.cc objects.cc parse_cmd.cc pattern.cc program.cc \
-	property.cc quota.cc server.cc storage.cc streams.cc \
-	str_intern.cc sym_table.cc system.cc tasks.cc timers.cc \
-	unparse.cc utils.cc verbs.cc version.cc
+CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
+	db_file.cc db_io.cc db_objects.cc db_properties.cc \
+	db_verbs.cc decompile.cc disassemble.cc eval_env.cc \
+	eval_vm.cc exec.cc execute.cc extensions.cc fileio.cc \
+	functions.cc garbage.cc json.cc keywords.cc list.cc log.cc \
+	map.cc match.cc name_lookup.cc network.cc net_mplex.cc \
+	net_proto.cc numbers.cc objects.cc parse_cmd.cc pattern.cc \
+	program.cc property.cc quota.cc server.cc storage.cc \
+	streams.cc str_intern.cc sym_table.cc system.cc tasks.cc \
+	timers.cc unparse.cc utils.cc verbs.cc version.cc
 
 OPT_NET_SRCS = net_single.cc net_multi.cc net_mp_selct.cc \
 	net_mp_poll.cc net_mp_fake.cc net_tcp.cc net_bsd_tcp.cc \
@@ -72,21 +76,20 @@ OPT_CSRCS = $(OPT_NET_SRCS)
 
 YSRCS = parser.y
 
-HDRS = ast.h base64.h bf_register.h code_gen.h collection.h db.h \
-	db_io.h db_private.h decompile.h db_tune.h disassemble.h \
+HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
+	db.h db_io.h db_private.h decompile.h db_tune.h disassemble.h \
 	eval_env.h eval_vm.h.h exec.h execute.h functions.h \
-	garbage.h getpagesize.h http_parser.h json.h \
-	keywords.h list.h log.h map.h match.h name_lookup.h \
-	network.h net_mplex.h net_multi.h net_proto.h numbers.h \
-	opcode.h options.h parse_cmd.h parser.h pattern.h program.h \
-	quota.h random.h regexpr.h server.h storage.h \
-	streams.h structures.h str_intern.h sym_table.h tasks.h \
-	timers.h tokens.h unparse.h utils.h verbs.h version.h \
-	yajl_alloc.h yajl_buf.h yajl_bytestack.h yajl_common.h \
-	yajl_encode.h yajl_gen.h yajl_lex.h yajl_parse.h \
-	yajl_parser.h yajl_version.h fileio.h system.h \
-	nettle/hmac.h nettle/macros.h nettle/md5.h nettle/memxor.h \
-	nettle/nettle-meta.h nettle/nettle-types.h \
+	garbage.h getpagesize.h http_parser.h json.h keywords.h \
+	list.h log.h map.h match.h name_lookup.h network.h \
+	net_mplex.h net_multi.h net_proto.h numbers.h opcode.h \
+	options.h parse_cmd.h parser.h pattern.h program.h quota.h \
+	random.h regexpr.h server.h storage.h streams.h structures.h \
+	str_intern.h sym_table.h tasks.h timers.h tokens.h unparse.h \
+	utils.h verbs.h version.h yajl_alloc.h yajl_buf.h \
+	yajl_bytestack.h yajl_common.h yajl_encode.h yajl_gen.h \
+	yajl_lex.h yajl_parse.h yajl_parser.h yajl_version.h fileio.h \
+	system.h nettle/hmac.h nettle/macros.h nettle/md5.h \
+	nettle/memxor.h nettle/nettle-meta.h nettle/nettle-types.h \
 	nettle/nettle-write.h nettle/ripemd160.h nettle/sha1.h \
 	nettle/sha2.h
 
@@ -112,10 +115,13 @@ CXXOBJS = $(CXXSRCS:.cc=.o)
 
 YOBJS = $(YSRCS:.y=.o)
 
-OBJS = $(COBJS) $(CXXOBJS) $(YOBJS)
+OBJS = $(COBJS) $(CXXOBJS) $(YOBJS) x86.o
 
 moo:	$(OBJS)
 	$(CXX) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
+
+x86.o: x86.S
+	$(CCAS) $(ASFLAGS) x86.S
 
 parser.o: parser.y
 	$(YACC) -y -d parser.y
@@ -349,6 +355,8 @@ sha512-meta.o: nettle/sha512-meta.c nettle/nettle-meta.h \
 write-be32.o: nettle/write-be32.c nettle/nettle-write.h nettle/macros.h
 write-le32.o: nettle/write-le32.c nettle/nettle-write.h nettle/macros.h
 write-le64.o: nettle/write-le64.c nettle/nettle-write.h nettle/macros.h
+crypt_blowfish.o: crypt_blowfish.c
+crypt_gensalt.o: crypt_gensalt.c
 ast.o: ast.cc my-string.h config.h ast.h parser.h program.h structures.h \
  my-stdio.h version.h sym_table.h list.h streams.h log.h storage.h \
  utils.h execute.h db.h opcode.h options.h parse_cmd.h
@@ -362,6 +370,9 @@ code_gen.o: code_gen.cc ast.h config.h parser.h program.h structures.h \
 collection.o: collection.cc bf_register.h collection.h structures.h \
  my-stdio.h config.h functions.h execute.h db.h program.h version.h \
  opcode.h options.h parse_cmd.h list.h streams.h map.h utils.h
+crypto.o: crypto.cc functions.h my-stdio.h config.h execute.h db.h \
+ program.h structures.h version.h opcode.h options.h parse_cmd.h crypto.h \
+ random.h storage.h my-string.h utils.h streams.h
 db_file.o: db_file.cc my-stat.h config.h my-unistd.h my-stdio.h \
  my-stdlib.h collection.h structures.h db.h program.h version.h db_io.h \
  db_private.h list.h streams.h log.h options.h server.h network.h \
@@ -563,3 +574,4 @@ client_bsd.o: client_bsd.c my-socket.h config.h my-stdio.h my-stdlib.h \
  my-string.h my-sys-time.h options.h my-types.h my-unistd.h
 client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h my-stdio.h \
  my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h options.h
+crypto.o: crypto.cc crypto.h

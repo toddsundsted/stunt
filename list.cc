@@ -17,7 +17,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "my-ctype.h"
 #include "my-string.h"
@@ -36,7 +35,6 @@
 #include "nettle/sha2.h"
 #include "options.h"
 #include "pattern.h"
-#include "random.h"
 #include "streams.h"
 #include "storage.h"
 #include "structures.h"
@@ -793,39 +791,6 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
     free_stream(s);
     free_var(arglist);
     return p;
-}
-
-static package
-bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (string, [salt]) */
-    Var r;
-
-#if HAVE_CRYPT
-    char salt[3];
-    const char *saltp;
-    static char saltstuff[] =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./";
-
-    if (arglist.v.list[0].v.num == 1 || memo_strlen(arglist.v.list[2].v.str) < 2) {
-	/* provide a random 2-letter salt, works with old and new crypts */
-	salt[0] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
-	salt[1] = saltstuff[RANDOM() % (int) strlen(saltstuff)];
-	salt[2] = '\0';
-	saltp = salt;
-    } else {
-	/* return the entire crypted password in the salt, this works
-	 * for all crypt versions */
-	saltp = arglist.v.list[2].v.str;
-    }
-    r.type = TYPE_STR;
-    r.v.str = str_dup(crypt(arglist.v.list[1].v.str, saltp));
-#else				/* !HAVE_CRYPT */
-    r.type = TYPE_STR;
-    r.v.str = str_ref(arglist.v.list[1].v.str);
-#endif
-
-    free_var(arglist);
-    return make_var_pack(r);
 }
 
 static int
@@ -1881,7 +1846,6 @@ register_list(void)
     register_function("match", 2, 3, bf_match, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("rmatch", 2, 3, bf_rmatch, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("substitute", 2, 2, bf_substitute, TYPE_STR, TYPE_LIST);
-    register_function("crypt", 1, 2, bf_crypt, TYPE_STR, TYPE_STR);
     register_function("index", 2, 3, bf_index, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("rindex", 2, 3, bf_rindex, TYPE_STR, TYPE_STR, TYPE_ANY);
     register_function("strcmp", 2, 2, bf_strcmp, TYPE_STR, TYPE_STR);
