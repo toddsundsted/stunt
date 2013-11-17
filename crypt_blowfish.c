@@ -31,7 +31,7 @@
  * "$2a$") by Niels Provos <provos at citi.umich.edu>, and uses some of his
  * ideas.  The password hashing algorithm was designed by David Mazieres
  * <dm at lcs.mit.edu>.  For more information on the level of compatibility,
- * prefer refer to the comments in BF_set_key() below and to the included
+ * please refer to the comments in BF_set_key() below and to the included
  * crypt(3) man page.
  *
  * There's a paper on the algorithm that explains its design decisions:
