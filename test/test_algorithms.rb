@@ -442,4 +442,327 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  class << self
+    def supports_md5
+      ''.crypt('$1$')[0..2] == '$1$'
+    end
+    def supports_sha256
+      ''.crypt('$5$')[0..2] == '$5$'
+    end
+    def supports_sha512
+      ''.crypt('$6$')[0..2] == '$6$'
+    end
+  end
+
+  if !supports_md5
+    puts 'WARNING: MD5 crypt() is not supported on this system'
+  end
+  if !supports_sha256
+    puts 'WARNING: SHA256 crypt() is not supported on this system'
+  end
+  if !supports_sha512
+    puts 'WARNING: SHA512 crypt() is not supported on this system'
+  end
+
+  def test_that_salt_generates_standard_two_character_salt
+    run_test_as('programmer') do
+      assert_equal "..", salt("", "~00~00")
+    end
+  end
+
+  def test_that_standard_two_character_salt_requires_two_characters_of_random_input
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("", "")
+    end
+  end
+
+  def test_that_salt_generates_md5_salts
+    run_test_as('programmer') do
+      if self.class.supports_md5
+        assert_equal "$1$........", salt("$1$", "~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_md5_salt_requires_at_least_three_characters_of_random_input
+    run_test_as('programmer') do
+      if self.class.supports_md5
+        assert_equal E_INVARG, salt("$1$", "12")
+      end
+    end
+  end
+
+  def test_that_salt_generates_sha256_salts
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal "$5$................", salt("$5$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha256_salt_requires_at_least_three_characters_of_random_input
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal E_INVARG, salt("$5$", "~00~00")
+      end
+    end
+  end
+
+  def test_that_sha256_salt_prefix_may_specify_rounds
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal "$5$rounds=1000$................", salt("$5$rounds=1000$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal "$5$rounds=10000000$................", salt("$5$rounds=10000000$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha256_salt_prefix_rounds_may_not_be_below_1000
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal E_INVARG, salt("$5$rounds=999$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=1$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha256_salt_prefix_rounds_may_not_be_above_999999999
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal E_INVARG, salt("$5$rounds=1000000000$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=1231231230$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha256_salt_prefix_rounds_may_not_be_garbage
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal E_INVARG, salt("$5$rounds=$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=foobar$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=123foobar$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$foobar=$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_salt_generates_sha512_salts
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal "$5$................", salt("$5$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha512_salt_requires_at_least_three_characters_of_random_input
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal E_INVARG, salt("$5$", "~00~00")
+      end
+    end
+  end
+
+  def test_that_sha512_salt_prefix_may_specify_rounds
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal "$5$rounds=1000$................", salt("$5$rounds=1000$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal "$5$rounds=10000000$................", salt("$5$rounds=10000000$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha512_salt_prefix_rounds_may_not_be_below_1000
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal E_INVARG, salt("$5$rounds=999$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=1$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha512_salt_prefix_rounds_may_not_be_above_999999999
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal E_INVARG, salt("$5$rounds=1000000000$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=1231231230$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_sha512_salt_prefix_rounds_may_not_be_garbage
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal E_INVARG, salt("$5$rounds=$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=foobar$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$rounds=123foobar$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+        assert_equal E_INVARG, salt("$5$foobar=$", "~00~00~00~00~00~00~00~00~00~00~00~00")
+      end
+    end
+  end
+
+  def test_that_salt_generates_bcrypt_compatible_salt
+    run_test_as('programmer') do
+      assert_equal "$2a$05$......................", salt("$2a$", "~00~00~00~00~00~00~00~00~00~00~00~00~00~00~00~00")
+    end
+  end
+
+  def test_that_bcrypt_compatible_salt_requires_sixteen_characters_of_random_input
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("$2a$", "1234567890")
+    end
+  end
+
+  def test_that_bcrypt_compatible_salt_prefix_may_specify_cost_factor
+    run_test_as('programmer') do
+      assert_equal "$2a$04$KRGxLBS0Lxe3KBCwKxOzLe", salt("$2a$04$", "1234567890123456")
+      assert_equal "$2a$16$KRGxLBS0Lxe3KBCwKxOzLe", salt("$2a$16$", "1234567890123456")
+    end
+  end
+
+  def test_that_bcrypt_prefix_cost_factor_may_not_be_below_four
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("$2a$03$", "1234567890123456")
+      assert_equal E_INVARG, salt("$2a$01$", "1234567890123456")
+    end
+  end
+
+  def test_that_bcrypt_prefix_cost_factor_may_not_be_above_thirty_one
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("$2a$32$", "1234567890123456")
+      assert_equal E_INVARG, salt("$2a$41$", "1234567890123456")
+    end
+  end
+
+  def test_that_bcrypt_prefix_cost_factor_may_not_be_garbage
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("$2a$$", "1234567890123456")
+      assert_equal E_INVARG, salt("$2a$mm$", "1234567890123456")
+    end
+  end
+
+  def test_that_salt_may_be_a_binary_string
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("", "~00")
+      assert_equal E_INVARG, salt("$2a$", "~00~01~02~03~04~05~06~07~08~09")
+      assert_equal "..", salt("", "~00~00")
+      assert_equal "$2a$05$......................", salt("$2a$", "~00~00~00~00~00~00~00~00~00~00~00~00~00~00~00~00")
+    end
+  end
+
+  def test_that_salting_with_bad_binary_strings_does_not_crash_the_server
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("", "~00~#!")
+      assert_equal E_INVARG, salt("$2a$", "~00~00~00~00~00~00~00~00~00~00~00~00~00~00~00~zz")
+    end
+  end
+
+  def test_that_invalid_prefixes_are_rejected
+    run_test_as('programmer') do
+      assert_equal E_INVARG, salt("foo", "")
+    end
+  end
+
+  def test_that_crypt_with_one_argument_defaults_to_unix_crypt
+    run_test_as('programmer') do
+      hash = simplify(command %Q|; return crypt("foobar");|)
+      assert_equal hash, 'foobar'.crypt(hash[0..1])
+    end
+  end
+
+  def test_that_crypt_falls_through_to_unix_crypt
+    run_test_as('programmer') do
+      assert_equal "12Ce3aDvyIkJ2", crypt("foobar", "12")
+      assert_equal "foobar".crypt("$1$12"), crypt("foobar", "$1$12") if self.class.supports_md5
+      assert_equal "foobar".crypt("$5$12"), crypt("foobar", "$5$12") if self.class.supports_sha256
+      assert_equal "foobar".crypt("$6$12"), crypt("foobar", "$6$12") if self.class.supports_sha512
+    end
+  end
+
+  def test_that_crypt_with_sha256_salt_accepts_rounds
+    run_test_as('wizard') do
+      if self.class.supports_sha256
+        assert_equal "foobar".crypt("$5$rounds=100000$12"), crypt("foobar", "$5$rounds=100000$12")
+      end
+    end
+  end
+
+  def test_that_only_wizards_can_specify_rounds_for_crypt_with_sha256_salt
+    run_test_as('programmer') do
+      if self.class.supports_sha256
+        assert_equal E_PERM, crypt("foobar", "$5$rounds=100000$12")
+      end
+    end
+  end
+
+  def test_that_crypt_with_sha512_salt_accepts_rounds
+    run_test_as('wizard') do
+      if self.class.supports_sha512
+        assert_equal "foobar".crypt("$6$rounds=100000$12"), crypt("foobar", "$6$rounds=100000$12")
+      end
+    end
+  end
+
+  def test_that_only_wizards_can_specify_rounds_for_crypt_with_sha512_salt
+    run_test_as('programmer') do
+      if self.class.supports_sha512
+        assert_equal E_PERM, crypt("foobar", "$6$rounds=100000$12")
+      end
+    end
+  end
+
+  def test_that_crypt_supports_bcrypt_compatible_salt_and_uses_bcrypt
+    run_test_as('programmer') do
+      assert_equal "$2a$05$KRGxLBS0Lxe3KBCwKxOzLeMe5OhXhsCBVMLq7IYo9z2kiiCZMSmz6", crypt("foobar", "$2a$05$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+  end
+
+  def test_that_bcrypt_compatible_salt_requires_sixteen_characters_of_seed_input
+    run_test_as('programmer') do
+      assert_equal E_INVARG, crypt("foobar", "$2a$05$KRGxLBS0Lxe3KBCwKxOzL")
+    end
+  end
+
+  def test_that_bcrypt_compatible_salt_prefix_may_specify_cost_factor
+    run_test_as('programmer') do
+      assert_equal "$2a$05$KRGxLBS0Lxe3KBCwKxOzLeMe5OhXhsCBVMLq7IYo9z2kiiCZMSmz6", crypt("foobar", "$2a$05$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+    run_test_as('wizard') do
+      assert_equal "$2a$14$KRGxLBS0Lxe3KBCwKxOzLe7p.ddns6iDfgZCpWHCQ4hN.RUaeF9Rq", crypt("foobar", "$2a$14$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+  end
+
+  def test_that_bcrypt_cost_factor_may_not_be_below_four
+    run_test_as('wizard') do
+      assert_equal E_INVARG, crypt("foobar", "$2a$03$KRGxLBS0Lxe3KBCwKxOzLe")
+      assert_equal E_INVARG, crypt("foobar", "$2a$01$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+  end
+
+  def test_that_bcrypt_cost_factor_may_not_be_above_thirty_one
+    run_test_as('wizard') do
+      assert_equal E_INVARG, crypt("foobar", "$2a$32$KRGxLBS0Lxe3KBCwKxOzLe")
+      assert_equal E_INVARG, crypt("foobar", "$2a$41$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+  end
+
+  def test_that_bcrypt_cost_factor_other_than_five_requires_wiz_perms
+    run_test_as('programmer') do
+      assert_equal E_PERM, crypt("foobar", "$2a$10$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+    run_test_as('wizard') do
+      assert_equal "$2a$10$KRGxLBS0Lxe3KBCwKxOzLeAgxB7LpTJ36c2o2iVIDdBSv3rB.GHhW", crypt("foobar", "$2a$10$KRGxLBS0Lxe3KBCwKxOzLe")
+    end
+  end
+
+  def test_that_invalid_salts_are_rejected
+    run_test_as('wizard') do
+      assert_equal E_INVARG, crypt("foobar", "$2a$ab$KRGxLBS0Lxe3KBCwKxOzLe")
+      assert_equal E_INVARG, crypt("foobar", "$2a$!!$KRGxLBS0Lxe3KBCwKxOzLe")
+      assert_equal E_INVARG, crypt("foobar", "$5$roundz=10001$..")
+      assert_equal E_INVARG, crypt("foobar", "$5$rounds=abacab$..")
+      assert_equal E_INVARG, crypt("foobar", "$6$roundz=10001$..")
+      assert_equal E_INVARG, crypt("foobar", "$6$rounds=abacab$..")
+    end
+  end
+
 end

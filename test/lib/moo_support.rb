@@ -251,6 +251,14 @@ module MooSupport
     end
   end
 
+  def salt(prefix, input)
+    simplify command %Q|; return salt(#{value_ref(prefix)}, #{value_ref(input)});|
+  end
+
+  def crypt(key, setting)
+    simplify command %Q|; return crypt(#{value_ref(key)}, #{value_ref(setting)});|
+  end
+
   ### Operations on Maps
 
   def mapkeys(map)
