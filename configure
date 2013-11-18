@@ -623,6 +623,7 @@ ac_includes_default="\
 #endif"
 
 ac_subst_vars='LTLIBOBJS
+RANDOM_DEVICE
 LN_S
 POW_LIB
 LIBOBJS
@@ -702,6 +703,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
+with_random
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1330,6 +1332,11 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-random=FILE      Use FILE as random number seed [auto-detected]
 
 Some influential environment variables:
   YACC        The `Yet Another Compiler Compiler' implementation to use.
@@ -7289,6 +7296,48 @@ _ACEOF
 
 fi
 done
+
+
+
+
+# Check whether --with-random was given.
+if test "${with_random+set}" = set; then :
+  withval=$with_random; RANDOM_DEVICE="$withval"
+else
+  as_ac_File=`$as_echo "ac_cv_file_"/dev/random"" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"/dev/random\"" >&5
+$as_echo_n "checking for \"/dev/random\"... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r ""/dev/random""; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  RANDOM_DEVICE="/dev/random";
+fi
+
+fi
+
+  if test "x$RANDOM_DEVICE" != "x" ; then
+
+$as_echo "#define HAVE_RANDOM_DEVICE 1" >>confdefs.h
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define RANDOM_DEVICE "$RANDOM_DEVICE"
+_ACEOF
+
+  fi
 
 
 echo "----------------------------------------------------------------------"

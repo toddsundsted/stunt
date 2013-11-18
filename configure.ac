@@ -280,6 +280,8 @@ AC_PROG_LN_S
 AC_TYPE_SSIZE_T
 AC_CHECK_FUNCS([alarm bzero crypt floor gethostbyaddr gethostbyname getpagesize gettimeofday inet_ntoa memmove memset mkdir mkfifo modf pow re_comp rmdir select socket sqrt strchr strcspn strerror strrchr strstr strtol strtoul])
 
+AX_RANDOM_DEVICE
+
 echo "----------------------------------------------------------------------"
 echo "| The following networking configurations will probably work on your"
 echo "| system; any configuration *not* listed here almost certainly will"

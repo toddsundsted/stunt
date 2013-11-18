@@ -183,6 +183,14 @@
 #undef HAVE_SIGSETMASK
 #undef HAVE_SIGRELSE
 
+/* A good source of randomness is a prerequisite for many things,
+ * including secure crypto.  The following two symbols are defined if
+ * your system provides a random device.
+ */
+
+#undef HAVE_RANDOM_DEVICE
+#undef RANDOM_DEVICE
+
 /* It used to be very much the fashion in UNIX programming to make use of
  * certain standard header files depend on the programmer having #include'd
  * other standard header files first.  This is obviously losing and, amazingly,
