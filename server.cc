@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 
 #include "my-types.h"		/* must be first on some systems */
@@ -1576,7 +1577,24 @@ main(int argc, char **argv)
 
     load_server_options();
 
+#ifdef HAVE_RANDOM_DEVICE
+    int fd;
+    long seed;
+
+    if ((fd = open(RANDOM_DEVICE, O_RDONLY)) == -1) {
+	errlog("Can't open " RANDOM_DEVICE "!\n");
+	exit(1);
+    }
+    if (read(fd, &seed, sizeof(seed)) == -1) {
+	errlog("Can't read " RANDOM_DEVICE "!\n");
+	exit(1);
+    }
+    close(fd);
+
+    SRANDOM(seed);
+#else
     SRANDOM(time(0));
+#endif
 
     setup_signals();
     reset_command_history();
