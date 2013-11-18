@@ -456,14 +456,14 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
     if (!success) {
 	r.type = TYPE_STR;
 	r.v.str = str_dup(salt);
-	package p = make_raise_pack(E_INVARG, "Invalid salt", r);
+	p = make_raise_pack(E_INVARG, "Invalid salt", r);
 	free_var(arglist);
 	return p;
     }
     if (!is_wizard(progr) &&
         ((BCRYPT == format && count != 5) ||
          (BCRYPT != format && count))) {
-	package p = make_raise_pack(E_PERM, "Cannot specify non-default strength", new_int(count));
+	p = make_raise_pack(E_PERM, "Cannot specify non-default strength", new_int(count));
 	free_var(arglist);
 	return p;
     }
@@ -623,8 +623,6 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
-
-    alter_ticks_remaining(-1000);
 
     TRY_STREAM;
     try {
