@@ -6,6 +6,16 @@ require 'moo_err'
 require 'general_expression_parser'
 require 'fast_error_parser'
 
+class String
+
+  def binary_string_to_binary
+    self.gsub(/~([a-fA-F0-9]{2})/) do
+      [$1].pack('H*')
+    end
+  end
+
+end
+
 module MooSupport
 
   NOTHING = MooObj.new('#-1')
@@ -206,6 +216,20 @@ module MooSupport
       simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)}, #{value_ref(algo)});|
     else
       simplify command %Q|; return value_hmac(#{value_ref(str)}, #{value_ref(key)});|
+    end
+  end
+
+  ### Operations on Numbers
+
+  def random_bytes(count)
+    simplify command %Q|; return random_bytes(#{value_ref(count)});|
+  end
+
+  def random(max = nil)
+    if max
+      simplify command %Q|; return random(#{value_ref(max)});|
+    else
+      simplify command %Q|; return random();|
     end
   end
 

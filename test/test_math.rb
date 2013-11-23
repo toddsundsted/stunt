@@ -4,22 +4,58 @@ class TestMath < Test::Unit::TestCase
 
   def test_that_random_0_is_invalid
     run_test_as('programmer') do
-      assert_equal E_INVARG, simplify(command(%Q|; return random(0); |))
+      assert_equal E_INVARG, random(0)
     end
   end
 
   def test_that_random_1_returns_1
     run_test_as('programmer') do
-      assert_equal 1, simplify(command(%Q|; return random(1); |))
+      assert_equal 1, random(1)
     end
   end
 
   def test_that_random_returns_a_number_between_1_and_2147483647
     run_test_as('programmer') do
       1000.times do
-        r = simplify command %Q|; return random(); |
+        r = random
         assert r > 0 && r <= 2147483647
       end
+    end
+  end
+
+  def test_that_random_requires_a_positive_integer
+    run_test_as('programmer') do
+      assert_equal E_INVARG, random(-1)
+    end
+  end
+
+  def test_that_random_bytes_requires_a_non_negative_integer
+    run_test_as('programmer') do
+      assert_equal E_INVARG, random_bytes(-1)
+    end
+  end
+
+  def test_that_random_bytes_0_is_the_empty_string
+    run_test_as('programmer') do
+      assert_equal '', random_bytes(0)
+    end
+  end
+
+  def test_that_random_bytes_1_returns_one_byte
+    run_test_as('programmer') do
+      assert_equal 1, random_bytes(1).binary_string_to_binary.length
+    end
+  end
+
+  def test_that_random_bytes_2_returns_two_bytes
+    run_test_as('programmer') do
+      assert_equal 2, random_bytes(2).binary_string_to_binary.length
+    end
+  end
+
+  def test_that_random_bytes_returns_no_more_than_1000_bytes
+    run_test_as('programmer') do
+      assert_equal E_INVARG, random_bytes(1001)
     end
   end
 
