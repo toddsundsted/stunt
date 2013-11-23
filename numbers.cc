@@ -27,7 +27,9 @@
 #include "functions.h"
 #include "log.h"
 #include "random.h"
+#include "server.h"
 #include "storage.h"
+#include "streams.h"
 #include "structures.h"
 #include "utils.h"
 
@@ -893,6 +895,61 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
 #undef OR_ZERO
 }
 
+#define TRY_STREAM enable_stream_exceptions()
+#define ENDTRY_STREAM disable_stream_exceptions()
+
+static package
+make_space_pack()
+{
+    if (server_flag_option_cached(SVO_MAX_CONCAT_CATCHABLE))
+	return make_error_pack(E_QUOTA);
+    else
+	return make_abort_pack(ABORT_SECONDS);
+}
+
+static package
+bf_random_bytes(Var arglist, Byte next, void *vdata, Objid progr)
+{				/* (count) */
+    Var r;
+    package p;
+
+    int len = arglist.v.list[1].v.num;
+
+    if (len < 0 || len > 1000) {
+	p = make_raise_pack(E_INVARG, "Invalid count", var_ref(arglist.v.list[1]));
+	free_var(arglist);
+	return p;
+    }
+
+    Stream *s = new_stream(32);
+
+    TRY_STREAM;
+    try {
+	int i;
+	for (i = 0; i < len; i += 4) {
+	    int pos = len - i;
+	    int random = RANDOM();
+	    stream_add_raw_bytes_to_binary(s, (char *)(&random), pos < 4 ? pos : 4);
+	}
+
+	r.type = TYPE_STR;
+	r.v.str = str_dup(stream_contents(s));
+	p = make_var_pack(r);
+    }
+    catch (stream_too_big& exception) {
+	p = make_space_pack();
+    }
+    ENDTRY_STREAM;
+
+    free_stream(s);
+    free_var(arglist);
+
+    return p;
+}
+
+#undef TRY_STREAM
+#undef ENDTRY_STREAM
+
 static package
 bf_floatstr(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (float, precision [, sci-notation]) */
@@ -931,6 +988,7 @@ register_numbers(void)
     register_function("max", 1, -1, bf_max, TYPE_NUMERIC);
     register_function("abs", 1, 1, bf_abs, TYPE_NUMERIC);
     register_function("random", 0, 1, bf_random, TYPE_INT);
+    register_function("random_bytes", 1, 1, bf_random_bytes, TYPE_INT);
     register_function("time", 0, 0, bf_time);
     register_function("ctime", 0, 1, bf_ctime, TYPE_INT);
     register_function("floatstr", 2, 3, bf_floatstr,
