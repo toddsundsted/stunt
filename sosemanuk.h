@@ -25,7 +25,7 @@
  * This macro enables the ECRYPT API, and disables the local API.
  * It is defined by default, for ECRYPT processing.
  */
-#define SOSEMANUK_ECRYPT
+#undef SOSEMANUK_ECRYPT
 
 #ifdef SOSEMANUK_ECRYPT
 
@@ -117,6 +117,10 @@ typedef unsigned long unum32;
  * reentrant.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
 	/*
 	 * Sub-keys for Serpent24.
@@ -170,6 +174,10 @@ void sosemanuk_prng(sosemanuk_run_context *rc,
  */
 void sosemanuk_encrypt(sosemanuk_run_context *rc,
 	unsigned char *in, unsigned char *out, size_t data_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

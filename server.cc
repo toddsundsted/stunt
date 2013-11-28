@@ -39,7 +39,9 @@
 #include "garbage.h"
 #include "list.h"
 #include "log.h"
+#include "nettle/sha2.h"
 #include "network.h"
+#include "numbers.h"
 #include "options.h"
 #include "parser.h"
 #include "quota.h"
@@ -1120,6 +1122,76 @@ do_script_file(const char *path)
     run_do_start_script(code);
 }
 
+static void
+init_random(void)
+{
+    long seed;
+
+    sha256_ctx context;
+    unsigned char input[32];
+    unsigned char output[32];
+
+    memset(input, 0, sizeof(input));
+    memset(output, 0, sizeof(output));
+
+    sha256_init(&context);
+
+#ifndef TEST
+#ifdef HAVE_RANDOM_DEVICE
+
+    oklog("RANDOM: seeding from " RANDOM_DEVICE "\n");
+
+    int fd;
+
+    if ((fd = open(RANDOM_DEVICE, O_RDONLY)) == -1) {
+	errlog("Can't open " RANDOM_DEVICE "!\n");
+	exit(1);
+    }
+
+    ssize_t count = 0, total = 0;
+    ssize_t required = MIN(MINIMUM_SEED_ENTROPY, sizeof(input));
+
+    while (total < required) {
+	if (total)
+	    oklog("RANDOM: seeding ... (more bytes required)\n");
+	if ((count = read(fd, input + total, sizeof(input) - total)) == -1) {
+	    errlog("Can't read " RANDOM_DEVICE "!\n");
+	    exit(1);
+	}
+        total += count;
+    }
+
+    sha256_update(&context, sizeof(input), input);
+
+    close(fd);
+
+#else
+
+    oklog("RANDOM: seeding from internal sources\n");
+
+    time_t time_now = time(0);
+
+    sha256_update(&context, sizeof(time_now), (const unsigned char *)&time_now);
+    sha256_update(&context, sizeof(parent_pid), (const unsigned char *)&parent_pid);
+
+#endif
+#else /* #ifndef TEST */
+
+    oklog("RANDOM: (-DTEST) not seeding!\n");
+
+#endif
+
+    sha256_digest(&context, sizeof(output), output);
+
+    sosemanuk_schedule(&key_context, output, sizeof(output));
+
+    sosemanuk_init(&run_context, &key_context, NULL, 0);
+
+    sosemanuk_prng(&run_context, (unsigned char *)&seed, sizeof(seed));
+
+    SRANDOM(seed);
+}
+
 /*
  * Exported interface
  */
@@ -1577,24 +1649,7 @@ main(int argc, char **argv)
 
     load_server_options();
 
-#ifdef HAVE_RANDOM_DEVICE
-    int fd;
-    long seed;
-
-    if ((fd = open(RANDOM_DEVICE, O_RDONLY)) == -1) {
-	errlog("Can't open " RANDOM_DEVICE "!\n");
-	exit(1);
-    }
-    if (read(fd, &seed, sizeof(seed)) == -1) {
-	errlog("Can't read " RANDOM_DEVICE "!\n");
-	exit(1);
-    }
-    close(fd);
-
-    SRANDOM(seed);
-#else
-    SRANDOM(time(0));
-#endif
+    init_random();
 
     setup_signals();
     reset_command_history();

@@ -53,7 +53,7 @@ CSRCS = http_parser.c regexpr.c yajl.c yajl_alloc.c yajl_buf.c \
 	nettle/sha384-meta.c nettle/sha512.c \
 	nettle/sha512-compress.c nettle/sha512-meta.c \
 	nettle/write-be32.c nettle/write-le32.c nettle/write-le64.c \
-	crypt_blowfish.c crypt_gensalt.c
+	crypt_blowfish.c crypt_gensalt.c sosemanuk.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \
@@ -91,7 +91,7 @@ HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	system.h nettle/hmac.h nettle/macros.h nettle/md5.h \
 	nettle/memxor.h nettle/nettle-meta.h nettle/nettle-types.h \
 	nettle/nettle-write.h nettle/ripemd160.h nettle/sha1.h \
-	nettle/sha2.h
+	nettle/sha2.h sosemanuk.h
 
 SYSHDRS = my-ctype.h my-fcntl.h my-in.h my-inet.h my-ioctl.h my-math.h \
 	my-poll.h my-signal.h my-socket.h my-stat.h my-stdarg.h my-stdio.h \
@@ -477,7 +477,7 @@ net_proto.o: net_proto.cc options.h config.h net_bsd_tcp.cc my-inet.h \
 numbers.o: numbers.cc my-math.h my-stdlib.h config.h my-string.h \
  my-time.h functions.h my-stdio.h execute.h db.h program.h structures.h \
  version.h opcode.h options.h parse_cmd.h log.h random.h storage.h \
- utils.h streams.h
+ utils.h streams.h sosemanuk.h
 objects.o: objects.cc collection.h structures.h my-stdio.h config.h db.h \
  program.h version.h db_io.h execute.h opcode.h options.h parse_cmd.h \
  functions.h list.h streams.h numbers.h quota.h server.h network.h \
@@ -575,3 +575,4 @@ client_bsd.o: client_bsd.c my-socket.h config.h my-stdio.h my-stdlib.h \
 client_sysv.o: client_sysv.c my-fcntl.h config.h my-signal.h my-stdio.h \
  my-stdlib.h my-string.h my-types.h my-stat.h my-unistd.h options.h
 crypto.o: crypto.cc crypto.h
+sosemanuk.o: sosemanuk.c sosemanuk.h

@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include "sosemanuk.h"
 #include "structures.h"
 
 extern Var new_float(double);
@@ -30,6 +31,9 @@ extern Var do_multiply(Var, Var);
 extern Var do_divide(Var, Var);
 extern Var do_modulus(Var, Var);
 extern Var do_power(Var, Var);
+
+extern sosemanuk_key_context key_context;
+extern sosemanuk_run_context run_context;
 
 /* 
  * $Log: numbers.h,v $

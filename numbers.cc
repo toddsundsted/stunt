@@ -28,10 +28,14 @@
 #include "log.h"
 #include "random.h"
 #include "server.h"
+#include "sosemanuk.h"
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
 #include "utils.h"
+
+sosemanuk_key_context key_context;
+sosemanuk_run_context run_context;
 
 static int
 parse_number(const char *str, int *result, int try_floating_point)
@@ -921,16 +925,15 @@ bf_random_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 	return p;
     }
 
-    Stream *s = new_stream(32);
+    unsigned char out[len];
+
+    sosemanuk_prng(&run_context, out, len);
+
+    Stream *s = new_stream(32 * 3);
 
     TRY_STREAM;
     try {
-	int i;
-	for (i = 0; i < len; i += 4) {
-	    int pos = len - i;
-	    int random = RANDOM();
-	    stream_add_raw_bytes_to_binary(s, (char *)(&random), pos < 4 ? pos : 4);
-	}
+	stream_add_raw_bytes_to_binary(s, (char *)out, len);
 
 	r.type = TYPE_STR;
 	r.v.str = str_dup(stream_contents(s));
@@ -981,6 +984,7 @@ register_numbers(void)
 {
     zero.type = TYPE_INT;
     zero.v.num = 0;
+
     register_function("toint", 1, 1, bf_toint, TYPE_ANY);
     register_function("tonum", 1, 1, bf_toint, TYPE_ANY);
     register_function("tofloat", 1, 1, bf_tofloat, TYPE_ANY);
