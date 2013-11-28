@@ -919,7 +919,7 @@ bf_random_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 
     int len = arglist.v.list[1].v.num;
 
-    if (len < 0 || len > 1000) {
+    if (len < 0 || len > 10000) {
 	p = make_raise_pack(E_INVARG, "Invalid count", var_ref(arglist.v.list[1]));
 	free_var(arglist);
 	return p;

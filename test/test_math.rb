@@ -53,9 +53,9 @@ class TestMath < Test::Unit::TestCase
     end
   end
 
-  def test_that_random_bytes_returns_no_more_than_1000_bytes
+  def test_that_random_bytes_returns_no_more_than_10000_bytes
     run_test_as('programmer') do
-      assert_equal E_INVARG, random_bytes(1001)
+      assert_equal E_INVARG, random_bytes(10001)
     end
   end
 

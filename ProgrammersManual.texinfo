@@ -3316,7 +3316,7 @@ If @var{mod} is not provided, it defaults to the largest MOO integer,
 @end deftypefun
 
 @deftypefun int random_bytes (int @var{count})
-Returns a binary string composed of between one and 1000 random bytes.
+Returns a binary string composed of between one and 10000 random bytes.
 @var{count} specifies the number of bytes and must be a positive
 integer; otherwise, @code{E_INVARG} is raised.
 @end deftypefun
