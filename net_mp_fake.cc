@@ -157,34 +157,3 @@ mplex_is_writable(int fd)
 {
     return (fd < rw_size) ? writable[fd] : 0;
 }
-
-char rcsid_net_mp_fake[] = "$Id: net_mp_fake.c,v 1.2 1997/03/03 04:19:03 nop Exp $";
-
-/* $Log: net_mp_fake.c,v $
-/* Revision 1.2  1997/03/03 04:19:03  nop
-/* GNU Indent normalization
-/*
- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:36:06  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:46:24  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.5  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.4  1992/10/23  19:38:16  pavel
- * #includes "my-stat.h" instead of <sys/stat.h>.
- *
- * Revision 1.3  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.2  1992/10/02  18:50:25  pavel
- * Removed useless #include of log.h.
- *
- * Revision 1.1  1992/10/02  17:54:10  pavel
- * Initial RCS-controlled version.
- */

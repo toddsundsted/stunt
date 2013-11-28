@@ -281,23 +281,3 @@ find_keyword(const char *word)
 {
     return Perfect_Hash::in_word_set(word, strlen(word));
 }
-
-char rcsid_keywords[] = "$Id: keywords.gperf,v 1.1 1997/03/03 03:45:02 nop Exp $";
-
-/* $Log: keywords.gperf,v $
-/* Revision 1.1  1997/03/03 03:45:02  nop
-/* Initial revision
-/*
- * Revision 2.2  1996/02/08  06:33:21  pavel
- * Added `break', `continue', and E_FLOAT.  Updated copyright notice for 1996.
- * Release 1.8.0beta1.
- *
- * Revision 2.1  1995/12/11  08:15:42  pavel
- * Added #include "tokens.h" removed from keywords.h.  Release 1.8.0alpha2.
- *
- * Revision 2.0  1995/11/30  05:02:56  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.1  1995/11/30  05:01:47  pavel
- * Initial revision
- */

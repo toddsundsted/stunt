@@ -23,27 +23,3 @@
 #endif
 
 #include <arpa/inet.h>
-
-/* 
- * $Log: my-inet.h,v $
- * Revision 1.2  1998/12/14 13:18:10  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:04:48  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:57:31  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.3  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.2  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.1  1992/10/09  00:04:28  pavel
- * Initial RCS-controlled version.
- */

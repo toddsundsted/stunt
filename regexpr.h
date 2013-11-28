@@ -113,17 +113,3 @@ int re_exec(char *s);
    anywhere in the string). */
 
 #endif				/* REGEXPR_H */
-
-/* RCS stuff added for LambdaMOO
-
- * $Log: regexpr.h,v $
- * Revision 1.2  1997/03/03 04:19:23  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.0  1995/11/30  05:39:25  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- */

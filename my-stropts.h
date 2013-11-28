@@ -23,23 +23,3 @@
 #endif
 
 #include <stropts.h>
-
-/* $Log: my-stropts.h,v $
-/* Revision 1.1  1997/03/03 03:45:05  nop
-/* Initial revision
-/*
- * Revision 2.1  1996/02/08  06:01:12  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:59:12  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.3  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.2  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.1  1992/10/06  01:38:46  pavel
- * Initial RCS-controlled version.
- */

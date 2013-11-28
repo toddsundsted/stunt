@@ -95,34 +95,4 @@ for (idx = 1, cnt = lst.v.list[0].v.num;			\
  */
 #define POP_TOP(tp, stck)					\
 tp = var_ref(stck.v.list[1]);					\
-stck = listdelete(stck, 1);					\
-
-/*
- * $Log: list.h,v $
- * Revision 1.4  2010/03/30 23:06:51  wrog
- * value_to_literal() replaced by unparse_value()
- *
- * Revision 1.3  1998/12/14 13:17:58  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:18:47  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:23:44  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:51:57  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.3  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.2  1992/08/28  23:20:04  pjames
- * Added `listrangeset()' and `strrangeset()'.
- *
- * Revision 1.1  1992/07/20  23:23:12  pavel
- * Initial RCS-controlled version.
- */
+stck = listdelete(stck, 1);

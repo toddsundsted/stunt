@@ -24,24 +24,3 @@
 #define IS_REAL(x)	(-DBL_MAX <= (x) && (x) <= DBL_MAX)
 
 #endif
-
-/* 
- * $Log: my-math.h,v $
- * Revision 1.2  1998/12/14 13:18:12  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.2  1996/03/10  01:06:01  pavel
- * Replaced HUGE_VAL with DBL_MAX, since some systems (e.g., BSDi 1.1)
- * mis-define the former as positive infinity.  Release 1.8.0.
- *
- * Revision 2.1  1996/02/08  06:04:22  pavel
- * Updated copyright notice for 1996.  Added inclusion of <math.h> for all of
- * the standard math functions.  Added IS_REAL() check for NaNs and
- * infinities.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  05:15:40  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- */

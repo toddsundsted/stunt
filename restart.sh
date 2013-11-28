@@ -39,21 +39,3 @@ fi
 
 echo `date`: RESTARTED >> $1.log
 nohup ./moo $1.db $1.db.new $2 >> $1.log 2>&1 &
-
-###############################################################################
-# $Log: restart.sh,v $
-# Revision 1.1  1997/03/03 03:45:05  nop
-# Initial revision
-#
-# Revision 2.1  1996/02/08  07:25:45  pavel
-# Updated copyright notice for 1996.  Release 1.8.0beta1.
-#
-# Revision 2.0  1995/11/30  05:14:43  pavel
-# New baseline version, corresponding to release 1.8.0alpha1.
-#
-# Revision 1.2  1994/05/26  16:43:13  pavel
-# Fixed up copyright, RCS info; removed debugging switch.
-#
-# Revision 1.1  1994/05/26  16:41:32  pavel
-# Initial revision
-###############################################################################

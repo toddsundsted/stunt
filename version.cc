@@ -240,5 +240,3 @@ check_db_version(DB_Version version)
 {
     return version < Num_DB_Versions;
 }
-
-char rcsid_version[] = "$Id: version.c,v 1.13 2010/04/22 21:39:52 wrog Exp $";

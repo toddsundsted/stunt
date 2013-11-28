@@ -375,30 +375,3 @@ lookup_addr_from_name(const char *name, unsigned timeout)
 }
 
 #endif				/* NETWORK_PROTOCOL == NP_TCP */
-
-char rcsid_name_lookup[] = "$Id: name_lookup.c,v 1.3 1998/12/14 13:18:25 nop Exp $";
-
-/* 
- * $Log: name_lookup.c,v $
- * Revision 1.3  1998/12/14 13:18:25  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:19:00  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.2  1996/02/08  06:59:04  pavel
- * Renamed err/logf() to errlog/oklog().  Updated copyright notice for 1996.
- * Release 1.8.0beta1.
- *
- * Revision 2.1  1995/12/11  08:11:45  pavel
- * Added missing #include of "my-stdlib.h".  Release 1.8.0alpha2.
- *
- * Revision 2.0  1995/11/30  04:28:09  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.1  1995/11/30  04:27:56  pavel
- * Initial revision
- */

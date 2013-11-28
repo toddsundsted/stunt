@@ -50,38 +50,3 @@ extern char *tzname;
 #endif
 
 #endif				/* !My_Time_H */
-
-/* 
- * $Log: my-time.h,v $
- * Revision 1.3  1998/12/14 13:18:21  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:18:58  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:00:41  pavel
- * *** empty log message ***
- *
- * Revision 2.0  1995/11/30  04:59:30  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.5  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.4  1992/10/23  19:35:14  pavel
- * Added check for avoiding strftime() on CMU MACH systems, since they declare
- * it wrong (though they implement it right).
- * Added missing #include "my-types.h" for strftime() declaration.
- *
- * Revision 1.3  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.2  1992/07/30  00:38:08  pavel
- * Add support for compiling on RISC/os 4.52 and NonStop-UX A22.
- *
- * Revision 1.1  1992/07/20  23:23:12  pavel
- * Initial RCS-controlled version.
- */

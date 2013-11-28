@@ -34,23 +34,3 @@
 #      include "net_sysv_lcl.cc"
 #    endif
 #  endif
-
-char rcsid_net_proto[] = "$Id: net_proto.c,v 1.2 1998/12/14 13:18:33 nop Exp $";
-
-/* 
- * $Log: net_proto.c,v $
- * Revision 1.2  1998/12/14 13:18:33  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.1.1.1  1997/03/03 03:45:00  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:58:12  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:28:43  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.1  1995/11/30  04:28:36  pavel
- * Initial revision
- */

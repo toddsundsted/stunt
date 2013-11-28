@@ -71,19 +71,3 @@ tcp_arguments(int argc, char **argv, int *pport)
 #endif
     return 1;
 }
-
-char rcsid_net_tcp[] = "$Id: net_tcp.c,v 1.2 2004/05/22 01:25:44 wrog Exp $";
-
-/* 
- * $Log: net_tcp.c,v $
- * Revision 1.2  2004/05/22 01:25:44  wrog
- * merging in WROGUE changes (W_SRCIP, W_STARTUP, W_OOB)
- *
- * Revision 1.1.2.2  2003/06/10 00:14:52  wrog
- * fixed printf warning
- *
- * Revision 1.1.2.1  2003/06/01 12:42:30  wrog
- * added cmdline options -a (source address) +O/-O (enable/disable outbound network)
- *
- *
- */

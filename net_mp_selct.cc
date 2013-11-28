@@ -82,32 +82,3 @@ mplex_is_writable(int fd)
 {
     return FD_ISSET(fd, &output);
 }
-
-char rcsid_net_mp_selct[] = "$Id: net_mp_selct.c,v 1.3 1998/12/14 13:18:28 nop Exp $";
-
-/* 
- * $Log: net_mp_selct.c,v $
- * Revision 1.3  1998/12/14 13:18:28  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:19:04  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:36:22  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:45:48  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.3  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.2  1992/10/23  19:38:51  pavel
- * Added missing #include of my-string.h.
- *
- * Revision 1.1  1992/09/23  17:14:17  pavel
- * Initial RCS-controlled version.
- */

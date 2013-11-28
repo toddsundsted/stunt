@@ -23,18 +23,3 @@
 #include "y.tab.h"
 
 #endif
-
-/* 
- * $Log: tokens.h,v $
- * Revision 1.2  1998/12/14 13:19:11  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.0  1995/11/30  05:08:14  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.1  1995/11/30  05:08:05  pavel
- * Initial revision
- */

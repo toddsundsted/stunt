@@ -65,36 +65,3 @@ extern void disable_stream_exceptions();
 extern size_t stream_alloc_maximum;
 
 #endif
-
-/* 
- * $Log: streams.h,v $
- * Revision 1.7  2010/04/23 05:10:55  wrog
- * remove max=0 meaning no limit
- *
- * Revision 1.4  2006/12/06 23:57:51  wrog
- * New INPUT_APPLY_BACKSPACE option to process backspace/delete characters on nonbinary connections (patch 1571939)
- *
- * Revision 1.3  1998/12/14 13:19:02  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:19:28  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:04  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:12:33  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:55:31  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.3  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.2  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.1  1992/07/20  23:23:12  pavel
- * Initial RCS-controlled version.
- */

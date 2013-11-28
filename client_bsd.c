@@ -83,37 +83,3 @@ main(int argc, char **argv)
 
     exit(0);
 }
-
-char rcsid_client_bsd[] = "$Id: client_bsd.c,v 1.2 1997/03/03 04:18:23 nop Exp $";
-
-/* $Log: client_bsd.c,v $
-/* Revision 1.2  1997/03/03 04:18:23  nop
-/* GNU Indent normalization
-/*
- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.2  1996/03/10  01:11:49  pavel
- * Moved definition of DEFAULT_CONNECT_FILE to options.h.  Release 1.8.0.
- *
- * Revision 2.1  1996/02/08  06:33:46  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:47:38  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.5  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.4  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.3  1992/10/17  20:17:13  pavel
- * Fix up connect_file defaulting, to eliminate warnings from naive compilers.
- *
- * Revision 1.2  1992/10/06  18:15:34  pavel
- * Added missing #include of my-stdlib.h, for exit().
- *
- * Revision 1.1  1992/09/23  22:35:05  pavel
- * Initial RCS-controlled version.
- */

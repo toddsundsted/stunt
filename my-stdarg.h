@@ -54,33 +54,3 @@ typedef void *va_list;
 #include <stdarg.h>
 
 #endif				/* BUGGY_STDARG */
-
-/* 
- * $Log: my-stdarg.h,v $
- * Revision 1.3  1998/12/14 13:18:16  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:18:55  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:05  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.1  1996/02/08  06:02:14  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.0  1995/11/30  04:58:36  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.4  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.3  1992/10/21  03:02:35  pavel
- * Converted to use new automatic configuration system.
- *
- * Revision 1.2  1992/09/22  22:47:15  pavel
- * Added missing #include of "config.h".
- *
- * Revision 1.1  1992/07/20  23:23:12  pavel
- * Initial RCS-controlled version.
- */

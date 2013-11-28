@@ -29,28 +29,3 @@ struct keyword {
 typedef const struct keyword Keyword;
 
 extern Keyword *find_keyword(const char *);
-
-/* 
- * $Log: keywords.h,v $
- * Revision 1.3  1998/12/14 13:17:56  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.2  1997/03/03 04:18:46  nop
- * GNU Indent normalization
- *
- * Revision 1.1.1.1  1997/03/03 03:45:03  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.2  1996/02/08  06:24:47  pavel
- * Fixed type of version number.  Updated copyright notice for 1996.
- * Release 1.8.0beta1.
- *
- * Revision 2.1  1995/12/11  08:15:02  pavel
- * Removed useless #include "tokens.h".  Release 1.8.0alpha2.
- *
- * Revision 2.0  1995/11/30  05:06:50  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.1  1995/11/30  05:06:40  pavel
- * Initial revision
- */

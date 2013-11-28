@@ -36,33 +36,3 @@ extern void register_fileio(void);
 extern void register_system(void);
 extern void register_exec(void);
 extern void register_crypto(void);
-
-/* 
- * $Log: bf_register.h,v $
- * Revision 1.2  1998/12/14 13:17:29  nop
- * Merge UNSAFE_OPTS (ref fixups); fix Log tag placement to fit CVS whims
- *
- * Revision 1.1.1.1  1997/03/03 03:45:02  nop
- * LambdaMOO 1.8.0p5
- *
- * Revision 2.2  1996/02/08  06:29:12  pavel
- * Updated copyright notice for 1996.  Release 1.8.0beta1.
- *
- * Revision 2.1  1996/01/16  07:28:09  pavel
- * Added `register_functions()'.  Release 1.8.0alpha6.
- *
- * Revision 2.0  1995/11/30  04:50:30  pavel
- * New baseline version, corresponding to release 1.8.0alpha1.
- *
- * Revision 1.4  1992/10/23  23:03:47  pavel
- * Added copyright notice.
- *
- * Revision 1.3  1992/09/08  22:04:15  pjames
- * Updated to have new procedure names.
- *
- * Revision 1.2  1992/08/10  17:22:22  pjames
- * Added register_bf_log(void);
- *
- * Revision 1.1  1992/07/20  23:23:12  pavel
- * Initial RCS-controlled version.
- */
