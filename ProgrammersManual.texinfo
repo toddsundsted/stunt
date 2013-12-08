@@ -3480,13 +3480,33 @@ decode_binary("foo~0D~0A", 1)   @result{}   @{102, 111, 111, 13, 10@}
 Each argument must be an integer between 0 and 255, a string, or a list
 containing only legal arguments for this function.  This function translates
 each integer and string in turn into its binary string equivalent, returning the
-concatenation of all these substrings into a single binary string.  
+concatenation of all these substrings into a single binary string.
 (@xref{note-Binary Strings,,fine point on binary strings}, for a full description of binary strings.)
 
 @example
 encode_binary("~foo")                     @result{}   "~7Efoo"
 encode_binary(@{"foo", 10@}, @{"bar", 13@})   @result{}   "foo~0Abar~0D"
 encode_binary("foo", 10, "bar", 13)       @result{}   "foo~0Abar~0D"
+@end example
+@end deftypefun
+
+@deftypefun str decode_base64 (str @var{base64})
+Returns the binary string representation of the supplied Base64
+encoded string argument.  Raises @code{E_INVARG} if @var{base64}
+is not a properly-formed Base64 string.
+
+@example
+decode_base64("AAEC")    @result{}    "~00~01~02"
+@end example
+@end deftypefun
+
+@deftypefun str encode_base64 (str @var{binary})
+Returns the Base64 encoded string representation of the supplied
+binary string argument.  Raises @code{E_INVARG} if @var{binary}
+is not a properly-formed binary string.
+
+@example
+encode_base64("~00~01~02")    @result{}    "AAEC"
 @end example
 @end deftypefun
 
