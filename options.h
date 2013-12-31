@@ -362,7 +362,7 @@
  ******************************************************************************
  */
 
-#define PLAYER_HUH /* */
+/* #define PLAYER_HUH 1 */
 
 /******************************************************************************
  * Configurable options for the Exec subsystem.  EXEC_SUBDIR is the
@@ -405,6 +405,10 @@
 /*****************************************************************************
  ********** You shouldn't need to change anything below this point. **********
  *****************************************************************************/
+
+#ifndef PLAYER_HUH
+#define PLAYER_HUH 0
+#endif
 
 #ifndef OUT_OF_BAND_PREFIX
 #define OUT_OF_BAND_PREFIX ""
