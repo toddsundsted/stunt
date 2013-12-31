@@ -49,6 +49,10 @@ my @options =
 		MAX_QUEUED_INPUT
 	      )],
 
+   # compatibility
+   _DDEF => [qw(PLAYER_HUH
+	      )],
+
    # optimizations
    _DDEF => [qw(UNFORKED_CHECKPOINTS
 		BYTECODE_REDUCE_REF
