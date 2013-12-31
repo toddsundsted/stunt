@@ -44,7 +44,7 @@
  * stats and debugging information while the server is running.
  */
 
-#define LOG_GC_STATS
+/* #define LOG_GC_STATS */
 
 /******************************************************************************
  * The server normally forks a separate process to make database checkpoints;
