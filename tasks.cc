@@ -817,14 +817,14 @@ do_command_task(tqueue * tq, char *command)
 		       || find_verb_on(_this = location, pc, &vh)
 		       || find_verb_on(_this = pc->dobj, pc, &vh)
 		       || find_verb_on(_this = pc->iobj, pc, &vh)
-#ifndef PLAYER_HUH
 		       || (valid(location)
+			   && !server_int_option("player_huh", PLAYER_HUH)
 			   && (vh = db_find_callable_verb(new_obj(_this = location), "huh"),
+			       vh.ptr))
+		       || (valid(tq->player)
+			   && server_int_option("player_huh", PLAYER_HUH)
+			   && (vh = db_find_callable_verb(new_obj(_this = tq->player), "huh"),
 			       vh.ptr))) {
-#else
-		       || (vh = db_find_callable_verb(new_obj(_this = tq->player), "huh"),
-			   vh.ptr)) {
-#endif
 		do_input_task(tq->player, pc, _this, vh);
 	    } else {
 		notify(tq->player, "I couldn't understand that.");
