@@ -5548,8 +5548,10 @@ situations.  Its use requires great care.
 @comment  node-name,  next,  previous,  up
 @subsection Server Statistics and Miscellaneous Information
 
-@deftypefun str server_version ()
-Returns a string giving the version number of the running MOO server.
+@deftypefun str server_version ([@var{with-details}])
+Returns a string giving the version number of the running MOO server.  If
+@var{with-details} is provided and true, returns a detailed list including
+version number as well as compilation options.
 @end deftypefun
 
 @need 1500 
