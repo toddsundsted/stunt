@@ -108,6 +108,9 @@ static struct pending_recycle *pending_head = 0;
 static struct pending_recycle *pending_tail = 0;
 static unsigned int pending_count = 0;
 
+/* used once when the server loads the database */
+static Var pending_list = var_ref(none);
+
 static void
 free_shandle(shandle * h)
 {
@@ -540,6 +543,13 @@ recycle_anonymous_objects(void)
     }
 }
 
+/* When the server checkpoints, all of the objects pending recycling
+ * are written to the database.  It is not safe to simply forget about
+ * these objects because recycling them will call their `recycle()'
+ * verb (if defined) which may have the effect of making them non-lost
+ * again.
+ */
+
 void
 write_values_pending_finalization(void)
 {
@@ -553,26 +563,29 @@ write_values_pending_finalization(void)
     }
 }
 
+/* When the server loads the database, the objects pending recycling
+ * are read in as well.  However, at the point that this function is
+ * called, these objects are empty slots that will hold to-be-built
+ * anonymous objects.  By the time `main_loop()' is called and they
+ * are to be recycled, they are proper anonymous objects.  In between,
+ * just track them.
+ */
+
 int
 read_values_pending_finalization(void)
 {
-    int count;
-    Var v;
+    int i, count;
 
     if (dbio_scanf("%d values pending finalization\n", &count) != 1) {
 	errlog("READ_VALUES_PENDING_FINALIZATION: Bad count.\n");
 	return 0;
     }
 
-    for (; count > 0; count--) {
-	v = dbio_read_var();
+    free_var(pending_list);
+    pending_list = new_list(count);
 
-	/* in theory this could be any value... */
-	/* in practice this will be an anonymous object... */
-	assert(TYPE_ANON == v.type);
-
-	if (v.v.anon != NULL)
-	    queue_anonymous_object(v);
+    for (i = 1; i <= count; i++) {
+	pending_list.v.list[i] = dbio_read_var();
     }
 
     return 1;
@@ -583,7 +596,22 @@ main_loop(void)
 {
     int i;
 
-    /* First, notify DB of disconnections for all checkpointed connections */
+    /* First, queue anonymous objects */
+    for (i = 1; i <= pending_list.v.list[0].v.num; i++) {
+	Var v;
+
+	v = pending_list.v.list[i];
+
+	/* in theory this could be any value... */
+	/* in practice this will be an anonymous object... */
+	assert(TYPE_ANON == v.type);
+
+	if (v.v.anon != NULL)
+	    queue_anonymous_object(var_ref(v));
+    }
+    free_var(pending_list);
+
+    /* Second, notify DB of disconnections for all checkpointed connections */
     for (i = 1; i <= checkpointed_connections.v.list[0].v.num; i++) {
 	Var v;
 
@@ -593,7 +621,7 @@ main_loop(void)
     }
     free_var(checkpointed_connections);
 
-    /* Second, run #0:server_started() */
+    /* Third, run #0:server_started() */
     run_server_task(-1, new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
     set_checkpoint_timer(1);
 
