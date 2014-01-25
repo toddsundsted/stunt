@@ -42,13 +42,14 @@
  * (Bacon and Rajan, 2001) for a description of the cycle collection
  * algorithm and the colors.  This implementation differs from the
  * algorithm described because it has to deal with objects that
- * may/must be finalized -- anonymous objects aren't immediately
+ * may/must be recycled -- anonymous objects aren't immediately
  * deleted when cyclic references are found.  Instead they are queued
  * up to have their `recycle()' verb called (if defined), which can
- * have the consequence of adding a reference and reinstating them.
- * The implementation below still identifies cyclic garbage, and
- * colors the values white.  However, instead of deleting the values,
- * it restores their refcounts and adds them to the same pending queue
+ * have the consequence of adding a reference to the object (albeit in
+ * an invalid state).  This is called "finalization".  The
+ * implementation below still identifies cyclic garbage, and colors
+ * the values white.  However, instead of deleting the values, it
+ * restores their refcounts and adds them to the same pending queue
  * that recycles anonymous objects that have no more references.
  */
 
