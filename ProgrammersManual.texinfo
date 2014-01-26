@@ -3431,21 +3431,29 @@ strsub("foobar", "OB", "b", 1)          @result{}   "foobar"
 @end example
 @end deftypefun
 
-@deftypefun int index (str @var{str1}, str @var{str2} [, @var{case-matters}])
-@deftypefunx int rindex (str @var{str1}, str @var{str2} [, @var{case-matters}])
+@deftypefun int index (str @var{str1}, str @var{str2} [, @var{case-matters} [, @var{offset}]])
+@deftypefunx int rindex (str @var{str1}, str @var{str2} [, @var{case-matters} [, @var{offset}]])
 The function @code{index()} (@code{rindex()}) returns the index of the first
 character of the first (last) occurrence of @var{str2} in @var{str1}, or zero
 if @var{str2} does not occur in @var{str1} at all.  By default the search for
 an occurrence of @var{str2} is done while ignoring the upper/lower case
 distinction.  If @var{case-matters} is provided and true, then case is treated
-as significant in all comparisons.
+as significant in all comparisons.  By default the search starts at the
+beginning (end) of @var{str1}.  If @var{offset} is provided, the search
+starts at an offset from the beginning (end) of @var{str1}.  The @var{offset}
+must be a positive integer for @code{index()} and a negative integer for
+@code{rindex()}.
 
 @example
-index("foobar", "o")        @result{}   2
-rindex("foobar", "o")       @result{}   3
-index("foobar", "x")        @result{}   0
-index("foobar", "oba")      @result{}   3
-index("Foobar", "foo", 1)   @result{}   0
+index("foobar", "o")            @result{}   2
+index("foobar", "o", 0, 0)      @result{}   2
+index("foobar", "o", 0, 2)      @result{}   1
+rindex("foobar", "o")           @result{}   3
+rindex("foobar", "o", 0, 0)     @result{}   3
+rindex("foobar", "o", 0, -4)    @result{}   2
+index("foobar", "x")            @result{}   0
+index("foobar", "oba")          @result{}   3
+index("Foobar", "foo", 1)       @result{}   0
 @end example
 @end deftypefun
 
