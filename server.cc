@@ -109,7 +109,7 @@ static struct pending_recycle *pending_tail = 0;
 static unsigned int pending_count = 0;
 
 /* used once when the server loads the database */
-static Var pending_list = var_ref(none);
+static Var pending_list = new_list(0);
 
 static void
 free_shandle(shandle * h)
