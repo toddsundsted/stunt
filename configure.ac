@@ -62,7 +62,7 @@ AC_SEARCH_LIBS([t_open], [nsl nsl_s])
 AC_SEARCH_LIBS([crypt], [crypt crypt_d])
 AC_HAVE_HEADERS(unistd.h sys/cdefs.h stdlib.h tiuser.h machine/endian.h)
 AC_HAVE_FUNCS(remove rename poll select strerror strftime strtoul matherr)
-AC_HAVE_FUNCS(random lrand48 wait3 wait2 sigsetmask sigprocmask sigrelse)
+AC_HAVE_FUNCS(random lrand48 waitpid wait3 wait2 sigsetmask sigprocmask sigrelse)
 MOO_NDECL_FUNCS(ctype.h, tolower)
 MOO_NDECL_FUNCS(fcntl.h, fcntl)
 MOO_NDECL_FUNCS(netinet/in.h, htonl)
@@ -273,7 +273,6 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
-AC_FUNC_WAIT3
 AC_HEADER_STDBOOL
 
 AC_PROG_LN_S
