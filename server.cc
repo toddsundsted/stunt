@@ -315,13 +315,13 @@ child_completed_signal(int sig)
     }
 #else
 #if HAVE_WAIT3
-    while ((p = wait3(&status, WNOHANG, 0)) >= 0) {
+    while ((p = wait3(&status, WNOHANG, 0)) > 0) {
 	if (!exec_complete(p, WEXITSTATUS(status)))
 	    checkpoint_child = p;
     }
 #else
 #if HAVE_WAIT2
-    while ((p = wait2(&status, WNOHANG)) >= 0) {
+    while ((p = wait2(&status, WNOHANG)) > 0) {
 	if (!exec_complete(p, WEXITSTATUS(status)))
 	    checkpoint_child = p;
     }
