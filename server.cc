@@ -1675,6 +1675,8 @@ main(int argc, char **argv)
     if (!db_load())
 	exit(1);
 
+    free_reordered_rt_env_values();
+
     load_server_options();
 
     init_random();

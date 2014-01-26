@@ -63,6 +63,10 @@ static Timer_ID task_alarm_id;
 static const char *handler_verb_name;	/* For in-DB traceback handling */
 static Var handler_verb_args;
 
+/* used when loading the database to hold values that may reference yet
+   unloaded anonymous objects */
+static Var temp_vars = new_list(0);
+
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
@@ -3264,9 +3268,12 @@ Var *
 reorder_rt_env(Var * old_rt_env, const char **old_names,
 	       int old_size, Program * prog)
 {
-    /* reorder old_rt_env, which is aligned according to old_names, 
+    /* reorder old_rt_env, which is aligned according to old_names,
        to align to prog->var_names -- return the new rt_env
        after freeing old_rt_env and old_names */
+    /* while the database is being loaded, a rt_env may directly or indirectly
+       reference yet unloaded anonymous objects.  defer freeing these until
+       loading is complete. see `free_reordered_rt_env_values()' */
 
     unsigned size = prog->num_var_names;
     Var *rt_env = new_rt_env(size);
@@ -3285,12 +3292,23 @@ reorder_rt_env(Var * old_rt_env, const char **old_names,
 	    rt_env[i] = var_ref(old_rt_env[slot]);
     }
 
+    for (i = 0; i < old_size; i++) {
+	temp_vars = listappend(temp_vars, old_rt_env[i]);
+	old_rt_env[i] = var_ref(none);
+    }
+
     free_rt_env(old_rt_env, old_size);
     for (i = 0; i < old_size; i++)
 	free_str(old_names[i]);
     myfree((void *) old_names, M_NAMES);
 
     return rt_env;
+}
+
+void
+free_reordered_rt_env_values(void)
+{
+    free_var(temp_vars);
 }
 
 void
