@@ -235,6 +235,26 @@ module MooSupport
 
   ### Operations on Strings
 
+  def index(source, what, case_matters = nil, offset = nil)
+    if offset
+      simplify command %Q|; return index(#{value_ref(source)}, #{value_ref(what)}, #{value_ref(case_matters)}, #{value_ref(offset)});|
+    elsif case_matters
+      simplify command %Q|; return index(#{value_ref(source)}, #{value_ref(what)}, #{value_ref(case_matters)});|
+    else
+      simplify command %Q|; return index(#{value_ref(source)}, #{value_ref(what)});|
+    end
+  end
+
+  def rindex(source, what, case_matters = nil, offset = nil)
+    if offset
+      simplify command %Q|; return rindex(#{value_ref(source)}, #{value_ref(what)}, #{value_ref(case_matters)}, #{value_ref(offset)});|
+    elsif case_matters
+      simplify command %Q|; return rindex(#{value_ref(source)}, #{value_ref(what)}, #{value_ref(case_matters)});|
+    else
+      simplify command %Q|; return rindex(#{value_ref(source)}, #{value_ref(what)});|
+    end
+  end
+
   def encode_base64(str)
     simplify command %Q|; return encode_base64(#{value_ref(str)});|
   end
