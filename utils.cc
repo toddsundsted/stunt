@@ -491,14 +491,14 @@ stream_add_strsub(Stream *str, const char *source, const char *what, const char 
 }
 
 int
-strindex(const char *source, const char *what, int case_counts)
+strindex(const char *source, int source_len,
+         const char *what, int what_len, int case_counts)
 {
     const char *s, *e;
-    int lwhat = strlen(what);
 
-    for (s = source, e = source + strlen(source) - lwhat; s <= e; s++) {
-	if (!(case_counts ? strncmp(s, what, lwhat)
-	      : mystrncasecmp(s, what, lwhat))) {
+    for (s = source, e = source + source_len - what_len; s <= e; s++) {
+	if (!(case_counts ? strncmp(s, what, what_len)
+	      : mystrncasecmp(s, what, what_len))) {
 	    return s - source + 1;
 	}
     }
@@ -506,14 +506,14 @@ strindex(const char *source, const char *what, int case_counts)
 }
 
 int
-strrindex(const char *source, const char *what, int case_counts)
+strrindex(const char *source, int source_len,
+          const char *what, int what_len, int case_counts)
 {
     const char *s;
-    int lwhat = strlen(what);
 
-    for (s = source + strlen(source) - lwhat; s >= source; s--) {
-	if (!(case_counts ? strncmp(s, what, lwhat)
-	      : mystrncasecmp(s, what, lwhat))) {
+    for (s = source + source_len - what_len; s >= source; s--) {
+	if (!(case_counts ? strncmp(s, what, what_len)
+	      : mystrncasecmp(s, what, what_len))) {
 	    return s - source + 1;
 	}
     }

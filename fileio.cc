@@ -309,7 +309,7 @@ int file_verify_path(const char *pathname) {
   if((strlen(pathname) > 1) && (pathname[0] == '.') && (pathname[1] == '.'))
 		return 0;
 
-  if(strindex(pathname, "/.", 0))
+  if(strindex(pathname, strlen(pathname), "/.", 2, 0))
 		return 0;
   
   return 1;
