@@ -235,6 +235,14 @@ module MooSupport
 
   ### Operations on Strings
 
+  def strtr(source, from, to, case_matters = nil)
+    if case_matters
+      simplify command %Q|; return strtr(#{value_ref(source)}, #{value_ref(from)}, #{value_ref(to)}, #{value_ref(case_matters)});|
+    else
+      simplify command %Q|; return strtr(#{value_ref(source)}, #{value_ref(from)}, #{value_ref(to)});|
+    end
+  end
+
   def index(source, what, case_matters = nil, offset = nil)
     if offset
       simplify command %Q|; return index(#{value_ref(source)}, #{value_ref(what)}, #{value_ref(case_matters)}, #{value_ref(offset)});|
