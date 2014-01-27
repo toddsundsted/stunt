@@ -78,6 +78,8 @@ extern void stream_add_strsub(Stream *, const char *, const char *, const char *
 extern int strindex(const char *, int, const char *, int, int);
 extern int strrindex(const char *, int, const char *, int, int);
 
+extern const char *strtr(const char *, int, const char *, int, const char *, int, int);
+
 extern Var get_system_property(const char *);
 extern Objid get_system_object(const char *);
 
