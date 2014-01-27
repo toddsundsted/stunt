@@ -3457,6 +3457,27 @@ index("Foobar", "foo", 1)       @result{}   0
 @end example
 @end deftypefun
 
+@deftypefun int strtr (str @var{source}, str @var{str1}, str @var{str2} [, @var{case-matters}])
+Transforms the string @var{source} by replacing the characters specified by
+@var{str1} with the corresponding characters specified by @var{str2}.  All
+other characters are not transformed.  If @var{str2} has fewer characters
+than @var{str1} the unmatched characters are simply removed from @var{source}.
+By default the transformation is done on both upper and lower case characters
+no matter the case.  If @var{case-matters} is provided and true, then case is
+treated as significant.
+
+@example
+strtr("foobar", "o", "i")           @result{}    "fiibar"
+strtr("foobar", "ob", "bo")         @result{}    "fbboar"
+strtr("foobar", "", "")             @result{}    "foobar"
+strtr("foobar", "foba", "")         @result{}    "r"
+strtr("5xX", "135x", "0aBB", 0)     @result{}    "BbB"
+strtr("5xX", "135x", "0aBB", 1)     @result{}    "BBX"
+strtr("xXxX", "xXxX", "1234", 0)    @result{}    "4444"
+strtr("xXxX", "xXxX", "1234", 1)    @result{}    "3434"
+@end example
+@end deftypefun
+
 @deftypefun int strcmp (str @var{str1}, str @var{str2})
 Performs a case-sensitive comparison of the two argument strings.  If
 @var{str1} is lexicographically less than @var{str2}, the
