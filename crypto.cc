@@ -166,185 +166,60 @@ parse_prefix(const char *prefix, size_t prefix_length,
     return 1;
 }
 
-static const char *
-md5_hash_bytes(const char *input, int length)
-{
-    md5_ctx context;
-    unsigned char result[16];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("12345678901234567890123456789012");
-    const char *answer = hex;
+static char digits[] = "0123456789ABCDEF";
 
-    md5_init(&context);
-    md5_update(&context, length, (unsigned char *)input);
-    md5_digest(&context, 16, result);
-    for (i = 0; i < 16; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
+#define DEF_HASH(algo, size)					\
+static const char *						\
+algo##_hash_bytes(const char *input, int length)		\
+{								\
+    algo##_ctx context;						\
+    unsigned char result[size];					\
+    char *hex = (char *)mymalloc(size * 2 + 1, M_STRING);	\
+    const char *answer = hex;					\
+    algo##_init(&context);					\
+    algo##_update(&context, length, (unsigned char *)input);	\
+    algo##_digest(&context, size, result);			\
+    for (int i = 0; i < size; i++) {				\
+	*hex++ = digits[result[i] >> 4];			\
+	*hex++ = digits[result[i] & 0xF];			\
+    }								\
+    *hex = 0;							\
+    return answer;						\
 }
 
-static const char *
-sha1_hash_bytes(const char *input, int length)
-{
-    sha1_ctx context;
-    unsigned char result[20];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("1234567890123456789012345678901234567890");
-    const char *answer = hex;
+DEF_HASH(md5, 16)
+DEF_HASH(sha1, 20)
+DEF_HASH(sha224, 28)
+DEF_HASH(sha256, 32)
+DEF_HASH(sha384, 48)
+DEF_HASH(sha512, 64)
+DEF_HASH(ripemd160, 20)
 
-    sha1_init(&context);
-    sha1_update(&context, length, (unsigned char *)input);
-    sha1_digest(&context, 20, result);
-    for (i = 0; i < 20; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
+#undef DEF_HASH
+
+#define DEF_HMAC(algo, size)								\
+static const char *									\
+algo##_bytes(const char *message, int message_length, const char *key, int key_length)	\
+{											\
+    algo##_ctx context;									\
+    unsigned char result[size];								\
+    char *hex = (char *)mymalloc(size * 2 + 1, M_STRING);				\
+    const char *answer = hex;								\
+    algo##_set_key(&context, key_length, (unsigned char *)key);				\
+    algo##_update(&context, message_length, (unsigned char *)message);			\
+    algo##_digest(&context, size, result);						\
+    for (int i = 0; i < size; i++) {							\
+	*hex++ = digits[result[i] >> 4];						\
+	*hex++ = digits[result[i] & 0xF];						\
+    }											\
+    *hex = 0;										\
+    return answer;									\
 }
 
-static const char *
-sha224_hash_bytes(const char *input, int length)
-{
-    sha224_ctx context;
-    unsigned char result[28];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("12345678901234567890123456789012345678901234567890123456");
-    const char *answer = hex;
+DEF_HMAC(hmac_sha1, 20)
+DEF_HMAC(hmac_sha256, 32)
 
-    sha224_init(&context);
-    sha224_update(&context, length, (unsigned char *)input);
-    sha224_digest(&context, 28, result);
-    for (i = 0; i < 28; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
-
-static const char *
-sha256_hash_bytes(const char *input, int length)
-{
-    sha256_ctx context;
-    unsigned char result[32];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
-    const char *answer = hex;
-
-    sha256_init(&context);
-    sha256_update(&context, length, (unsigned char *)input);
-    sha256_digest(&context, 32, result);
-    for (i = 0; i < 32; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
-
-static const char *
-sha384_hash_bytes(const char *input, int length)
-{
-    sha384_ctx context;
-    unsigned char result[48];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456");
-    const char *answer = hex;
-
-    sha384_init(&context);
-    sha384_update(&context, length, (unsigned char *)input);
-    sha384_digest(&context, 48, result);
-    for (i = 0; i < 48; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
-
-static const char *
-sha512_hash_bytes(const char *input, int length)
-{
-    sha512_ctx context;
-    unsigned char result[64];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678");
-    const char *answer = hex;
-
-    sha512_init(&context);
-    sha512_update(&context, length, (unsigned char *)input);
-    sha512_digest(&context, 64, result);
-    for (i = 0; i < 64; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
-
-static const char *
-ripemd160_hash_bytes(const char *input, int length)
-{
-    ripemd160_ctx context;
-    unsigned char result[20];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("1234567890123456789012345678901234567890");
-    const char *answer = hex;
-
-    ripemd160_init(&context);
-    ripemd160_update(&context, length, (unsigned char *)input);
-    ripemd160_digest(&context, 20, result);
-    for (i = 0; i < 20; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
-
-static const char *
-hmac_sha1_bytes(const char *message, int message_length, const char *key, int key_length)
-{
-    hmac_sha1_ctx context;
-    unsigned char result[20];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("1234567890123456789012345678901234567890");
-    const char *answer = hex;
-
-    hmac_sha1_set_key(&context, key_length, (unsigned char *)key);
-    hmac_sha1_update(&context, message_length, (unsigned char *)message);
-    hmac_sha1_digest(&context, 20, result);
-    for (i = 0; i < 20; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
-
-static const char *
-hmac_sha256_bytes(const char *message, int message_length, const char *key, int key_length)
-{
-    hmac_sha256_ctx context;
-    unsigned char result[32];
-    int i;
-    const char digits[] = "0123456789ABCDEF";
-    char *hex = str_dup("1234567890123456789012345678901234567890123456789012345678901234");
-    const char *answer = hex;
-
-    hmac_sha256_set_key(&context, key_length, (unsigned char *)key);
-    hmac_sha256_update(&context, message_length, (unsigned char *)message);
-    hmac_sha256_digest(&context, 32, result);
-    for (i = 0; i < 32; i++) {
-	*hex++ = digits[result[i] >> 4];
-	*hex++ = digits[result[i] & 0xF];
-    }
-    return answer;
-}
+#undef DEF_HMAC
 
 /**** built in functions ****/
 
@@ -515,40 +390,27 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     int nargs = arglist.v.list[0].v.num;
     const char *str = arglist.v.list[1].v.str;
-    const char *algo = 1 < nargs ? arglist.v.list[2].v.str : NULL;
+    const char *algo = (1 < nargs) ? arglist.v.list[2].v.str : "sha256";
 
-    if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", algo))) {
-	r.type = TYPE_STR;
-	r.v.str = sha256_hash_bytes(str, memo_strlen(str));
+#define CASE(op, temp)						\
+    op (!mystrcasecmp(#temp, algo)) {				\
+        r.type = TYPE_STR;					\
+        r.v.str = temp##_hash_bytes(str, memo_strlen(str));	\
     }
-    else if (1 < nargs && !mystrcasecmp("sha224", algo)) {
-	r.type = TYPE_STR;
-	r.v.str = sha224_hash_bytes(str, memo_strlen(str));
-    }
-    else if (1 < nargs && !mystrcasecmp("sha384", algo)) {
-	r.type = TYPE_STR;
-	r.v.str = sha384_hash_bytes(str, memo_strlen(str));
-    }
-    else if (1 < nargs && !mystrcasecmp("sha512", algo)) {
-	r.type = TYPE_STR;
-	r.v.str = sha512_hash_bytes(str, memo_strlen(str));
-    }
-    else if (1 < nargs && !mystrcasecmp("sha1", algo)) {
-	r.type = TYPE_STR;
-	r.v.str = sha1_hash_bytes(str, memo_strlen(str));
-    }
-    else if (1 < nargs && !mystrcasecmp("ripemd160", algo)) {
-	r.type = TYPE_STR;
-	r.v.str = ripemd160_hash_bytes(str, memo_strlen(str));
-    }
-    else if (1 < nargs && !mystrcasecmp("md5", algo)) {
-	r.type = TYPE_STR;
-	r.v.str = md5_hash_bytes(str, memo_strlen(str));
-    }
+
+    CASE(if, md5)
+    CASE(else if, sha1)
+    CASE(else if, sha224)
+    CASE(else if, sha256)
+    CASE(else if, sha384)
+    CASE(else if, sha512)
+    CASE(else if, ripemd160)
     else {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
+
+#undef CASE
 
     free_var(arglist);
     return make_var_pack(r);
@@ -565,49 +427,31 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 	int length;
 	int nargs = arglist.v.list[0].v.num;
 	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
-	const char *algo = 1 < nargs ? arglist.v.list[2].v.str : NULL;
+	const char *algo = (1 < nargs) ? arglist.v.list[2].v.str : "sha256";
+
+#define CASE(op, temp)						\
+	op (!mystrcasecmp(#temp, algo)) {			\
+	    r.type = TYPE_STR;					\
+	    r.v.str = temp##_hash_bytes(bytes, length);		\
+	    p = make_var_pack(r);				\
+	}
 
 	if (!bytes) {
 	    p = make_error_pack(E_INVARG);
 	}
-	else if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", algo))) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha256_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha224", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha224_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha384", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha384_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha512", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha512_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha1", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha1_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("ripemd160", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = ripemd160_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("md5", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = md5_hash_bytes(bytes, length);
-	    p = make_var_pack(r);
-	}
+	CASE(else if, md5)
+	CASE(else if, sha1)
+	CASE(else if, sha224)
+	CASE(else if, sha256)
+	CASE(else if, sha384)
+	CASE(else if, sha512)
+	CASE(else if, ripemd160)
 	else {
 	  p = make_error_pack(E_INVARG);
 	}
+
+#undef CASE
+
     }
     catch (stream_too_big& exception) {
 	p = make_space_pack();
@@ -628,48 +472,30 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
     try {
 	Var r;
 	int nargs = arglist.v.list[0].v.num;
-	const char *algo = 1 < nargs ? arglist.v.list[2].v.str : NULL;
+	const char *algo = 1 < nargs ? arglist.v.list[2].v.str : "sha256";
 
 	unparse_value(s, arglist.v.list[1]);
 
-	if (1 == nargs || (1 < nargs && !mystrcasecmp("sha256", algo))) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha256_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
+#define CASE(op, temp)								\
+	op (!mystrcasecmp(#temp, algo)) {					\
+	    r.type = TYPE_STR;							\
+	    r.v.str = temp##_hash_bytes(stream_contents(s), stream_length(s));	\
+	    p = make_var_pack(r);						\
 	}
-	else if (1 < nargs && !mystrcasecmp("sha224", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha224_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha384", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha384_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha512", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha512_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("sha1", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = sha1_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("ripemd160", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = ripemd160_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
-	}
-	else if (1 < nargs && !mystrcasecmp("md5", algo)) {
-	    r.type = TYPE_STR;
-	    r.v.str = md5_hash_bytes(stream_contents(s), stream_length(s));
-	    p = make_var_pack(r);
-	}
+
+	CASE(if, md5)
+	CASE(else if, sha1)
+	CASE(else if, sha224)
+	CASE(else if, sha256)
+	CASE(else if, sha384)
+	CASE(else if, sha512)
+	CASE(else if, ripemd160)
 	else {
 	    p = make_error_pack(E_INVARG);
 	}
+
+#undef CASE
+
     }
     catch (stream_too_big& exception) {
 	p = make_space_pack();
@@ -692,7 +518,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	Var r;
 
 	int nargs = arglist.v.list[0].v.num;
-	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : NULL;
+	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : "sha256";
 
 	const char *str = arglist.v.list[1].v.str;
 	int str_length = memo_strlen(str);
@@ -708,19 +534,20 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
-	    if (2 == nargs || (2 < nargs && !mystrcasecmp("sha256", algo))) {
-		r.type = TYPE_STR;
-		r.v.str = hmac_sha256_bytes(str, str_length, key, key_length);
-		p = make_var_pack(r);
+#define CASE(op, temp)									\
+	    op (!mystrcasecmp(#temp, algo)) {						\
+		r.type = TYPE_STR;							\
+		r.v.str = hmac_##temp##_bytes(str, str_length, key, key_length);	\
+		p = make_var_pack(r);							\
 	    }
-	    else if (2 < nargs && !mystrcasecmp("sha1", algo)) {
-		r.type = TYPE_STR;
-		r.v.str = hmac_sha1_bytes(str, str_length, key, key_length);
-		p = make_var_pack(r);
-	    }
+
+	    CASE(if, sha1)
+	    CASE(else if, sha256)
 	    else {
 		p = make_error_pack(E_INVARG);
 	    }
+
+#undef CASE
 
 	    free_str(key);
 	}
@@ -746,7 +573,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	Var r;
 
 	int nargs = arglist.v.list[0].v.num;
-	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : NULL;
+	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : "sha256";
 
 	int bytes_length;
 	const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &bytes_length);
@@ -771,19 +598,20 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 		memcpy(key_new, key, key_length);
 		key = key_new;
 
-		if (2 == nargs || (2 < nargs && !mystrcasecmp("sha256", algo))) {
-		    r.type = TYPE_STR;
-		    r.v.str = hmac_sha256_bytes(bytes, bytes_length, key, key_length);
-		    p = make_var_pack(r);
+#define CASE(op, temp)										\
+		op (!mystrcasecmp(#temp, algo)) {						\
+		    r.type = TYPE_STR;								\
+		    r.v.str = hmac_##temp##_bytes(bytes, bytes_length, key, key_length);	\
+		    p = make_var_pack(r);							\
 		}
-		else if (2 < nargs && !mystrcasecmp("sha1", algo)) {
-		    r.type = TYPE_STR;
-		    r.v.str = hmac_sha1_bytes(bytes, bytes_length, key, key_length);
-		    p = make_var_pack(r);
-		}
+
+		CASE(if, sha1)
+		CASE(else if, sha256)
 		else {
 		    p = make_error_pack(E_INVARG);
 		}
+
+#undef CASE
 
 		free_str(bytes);
 		free_str(key);
@@ -811,7 +639,7 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	Var r;
 
 	int nargs = arglist.v.list[0].v.num;
-	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : NULL;
+	const char *algo = 2 < nargs ? arglist.v.list[3].v.str : "sha256";
 
 	unparse_value(s, arglist.v.list[1]);
 	const char *lit = str_dup(stream_contents(s));
@@ -829,19 +657,20 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
-	    if (2 == nargs || (2 < nargs && !mystrcasecmp("sha256", algo))) {
-		r.type = TYPE_STR;
-		r.v.str = hmac_sha256_bytes(lit, lit_length, key, key_length);
-		p = make_var_pack(r);
+#define CASE(op, temp)									\
+	    op (!mystrcasecmp(#temp, algo)) {						\
+		r.type = TYPE_STR;							\
+		r.v.str = hmac_##temp##_bytes(lit, lit_length, key, key_length);	\
+		p = make_var_pack(r);							\
 	    }
-	    else if (2 < nargs && !mystrcasecmp("sha1", algo)) {
-		r.type = TYPE_STR;
-		r.v.str = hmac_sha1_bytes(lit, lit_length, key, key_length);
-		p = make_var_pack(r);
-	    }
+
+	    CASE(if, sha1)
+	    CASE(else if, sha256)
 	    else {
 		p = make_error_pack(E_INVARG);
 	    }
+
+#undef CASE
 
 	    free_str(lit);
 	    free_str(key);
