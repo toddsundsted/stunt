@@ -3205,13 +3205,13 @@ Returns the number of bytes of the server's memory required to store the given
 @var{value}.
 @end deftypefun
 
-@deftypefun str value_hash (@var{value} [, @var{str algo}])
-Returns the same string as @code{string_hash(toliteral(@var{value}), @var{algo})}; see the
+@deftypefun str value_hash (@var{value} [, @var{str algo} [, @var{binary}]])
+Returns the same string as @code{string_hash(toliteral(@var{value}), ...)}; see the
 description of @code{string_hash()} for details.
 @end deftypefun
 
-@deftypefun str value_hmac (@var{value}, @var{str key} [, @var{str algo}])
-Returns the same string as @code{string_hmac(toliteral(@var{value}), @var{key}, @var{algo})}; see the
+@deftypefun str value_hmac (@var{value}, @var{str key} [, @var{str algo} [, @var{binary}]])
+Returns the same string as @code{string_hmac(toliteral(@var{value}), @var{key}, ...)}; see the
 description of @code{string_hmac()} for details.
 @end deftypefun
 
@@ -3889,13 +3889,15 @@ currently mature and well tested, and is recommended for new
 development.
 @end quotation
 
-@deftypefun str string_hash (str @var{text} [, @var{str algo}])
-@deftypefunx str binary_hash (str @var{bin-string} [, @var{str algo}])
-Returns a hexadecimal string hash encoding the result of applying the
-SHA256 cryptographically secure hash function to the contents of the string
-@var{text} or the binary string @var{bin-string}.  If @var{algo} is provided,
-it specifies the hashing algorithm to use.  "MD5", "SHA1", "SHA224",
-"SHA256", "SHA384", "SHA512" and "RIPEMD160" are all supported.
+@deftypefun str string_hash (str @var{text} [, @var{str algo} [, @var{binary}]])
+@deftypefunx str binary_hash (str @var{bin-string} [, @var{str algo} [, @var{binary}]])
+Returns a string encoding the result of applying the SHA256
+cryptographically secure hash function to the contents of the string
+@var{text} or the binary string @var{bin-string}.  If @var{algo} is
+provided, it specifies the hashing algorithm to use.  "MD5", "SHA1",
+"SHA224", "SHA256", "SHA384", "SHA512" and "RIPEMD160" are all
+supported.  If @var{binary} is provided and true, the result is in MOO
+binary string format; by default the result is a hexidecimal string.
 
 Note that the MD5 hash algorithm is broken from a cryptographic standpoint, as
 is SHA1.  Both are included for interoperability with existing applications
@@ -3919,13 +3921,15 @@ applies @code{string_hash()} to the text and gets the same result, you can be
 quite confident that the large text has arrived unchanged.
 @end deftypefun
 
-@deftypefun str string_hmac (str @var{text}, @var{str key} [, @var{str algo}])
-@deftypefunx str binary_hmac (str @var{bin-string}, @var{str key} [, @var{str algo}])
-Returns a hexadecimal string MAC encoding the result of applying the
-HMAC-SHA256 cryptographically secure HMAC function to the contents of the
-string @var{text} or the binary string @var{bin-string} with the specified
+@deftypefun str string_hmac (str @var{text}, @var{str key} [, @var{str algo} [, @var{binary}]])
+@deftypefunx str binary_hmac (str @var{bin-string}, @var{str key} [, @var{str algo} [, @var{binary}]])
+Returns a string encoding the result of applying the HMAC-SHA256
+cryptographically secure HMAC function to the contents of the string
+@var{text} or the binary string @var{bin-string} with the specified
 secret @var{key}.  If @var{algo} is provided, it specifies the hashing
 algorithm to use.  Currently, only "SHA1" and "SHA256" are supported.
+If @var{binary} is provided and true, the result is in MOO binary string
+format; by default the result is a hexidecimal string.
 
 All cryptographically secure HMACs have the property that, if
 @example
