@@ -9,7 +9,7 @@
 9
 @end macro
 @macro lmdate
-March 2013
+January 2014
 @end macro
 @comment %**end of header
 
@@ -28,7 +28,7 @@ March 2013
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
 Copyright @copyright{} 1997 by Erik Ostrom.
 Copyright @copyright{} 2004 by Roger F. Crew.
-Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
+Copyright @copyright{} 2011, 2012, 2013, 2014 by Todd Sundsted.
 @end format
 
 Permission is granted to make and distribute verbatim copies of this manual
@@ -69,7 +69,7 @@ author.
 Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.@*
 Copyright @copyright{} 1997 by Erik Ostrom.@*
 Copyright @copyright{} 2004 by Roger F. Crew.@*
-Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
+Copyright @copyright{} 2011, 2012, 2013, 2014 by Todd Sundsted.
 
 Copies of the electronic source for this document can be obtained using
 anonymous FTP on the Internet.  At the site @code{ftp.lambda.moo.mud.org} the
@@ -109,7 +109,7 @@ author.
           Copyright @copyright{} 1991, 1992, 1993, 1995, 1996 by Pavel Curtis.
           Copyright @copyright{} 1997 by Erik Ostrom.
           Copyright @copyright{} 2004 by Roger F. Crew.
-          Copyright @copyright{} 2011, 2012, 2013 by Todd Sundsted.
+          Copyright @copyright{} 2011, 2012, 2013, 2014 by Todd Sundsted.
 @end format
 @end ifset
 @end ifnothtml
