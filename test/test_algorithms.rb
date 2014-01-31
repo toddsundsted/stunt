@@ -442,6 +442,48 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_value_hash_can_return_a_binary_string
+    run_test_as('programmer') do
+      assert_equal "99914B932BD37A50B983C5E7C90AE93B", value_hash([], "MD5", 0)
+      assert_equal "~99~91~4B~93~2B~D3~7A~50~B9~83~C5~E7~C9~0A~E9~3B", value_hash([], "MD5", 1)
+    end
+  end
+
+  def test_that_string_hash_can_return_a_binary_string
+    run_test_as('programmer') do
+      assert_equal "D41D8CD98F00B204E9800998ECF8427E", string_hash("", "MD5", 0)
+      assert_equal "~D4~1D~8C~D9~8F~00~B2~04~E9~80~09~98~EC~F8~42~7E", string_hash("", "MD5", 1)
+    end
+  end
+
+  def test_that_binary_hash_can_return_a_binary_string
+    run_test_as('programmer') do
+      assert_equal "CA9C491AC66B2C62500882E93F3719A8", binary_hash("~00~00~00~00~00", "MD5", 0)
+      assert_equal "~CA~9C~49~1A~C6~6B~2C~62~50~08~82~E9~3F~37~19~A8", binary_hash("~00~00~00~00~00", "MD5", 1)
+    end
+  end
+
+  def test_that_value_hmac_can_return_a_binary_string
+    run_test_as('programmer') do
+      assert_equal "140B47411F10521CC48851F43C9ABE73016E1D45627C8523D25CBF7FE64F8B03", value_hmac("", "", "sha256", 0)
+      assert_equal "~14~0B~47~41~1F~10~52~1C~C4~88~51~F4~3C~9A~BE~73~01~6E~1D~45~62~7C~85~23~D2~5C~BF~7F~E6~4F~8B~03", value_hmac("", "", "sha256", 1)
+    end
+  end
+
+  def test_that_string_hmac_can_return_a_binary_string
+    run_test_as('programmer') do
+      assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", string_hmac("", "", "sha256", 0)
+      assert_equal "~B6~13~67~9A~08~14~D9~EC~77~2F~95~D7~78~C3~5F~C5~FF~16~97~C4~93~71~56~53~C6~C7~12~14~42~92~C5~AD", string_hmac("", "", "sha256", 1)
+    end
+  end
+
+  def test_that_binary_hmac_can_return_a_binary_string
+    run_test_as('programmer') do
+      assert_equal "B613679A0814D9EC772F95D778C35FC5FF1697C493715653C6C712144292C5AD", binary_hmac("", "", "sha256", 0)
+      assert_equal "~B6~13~67~9A~08~14~D9~EC~77~2F~95~D7~78~C3~5F~C5~FF~16~97~C4~93~71~56~53~C6~C7~12~14~42~92~C5~AD", binary_hmac("", "", "sha256", 1)
+    end
+  end
+
   class << self
     def supports_md5
       ''.crypt('$1$')[0..2] == '$1$'
