@@ -56,6 +56,10 @@
 #include "utils.h"
 #include "version.h"
 
+extern "C" {
+#include "linenoise.h"
+}
+
 static pid_t parent_pid;
 int in_child = 0;
 
@@ -792,33 +796,26 @@ server_connection_options(shandle * h, Var list)
 
 #undef SERVER_CO_TABLE
 
-static char *
-read_stdin_line()
+static const char *
+read_stdin_line(const char *prompt)
 {
     static Stream *s = 0;
-    char *line, buffer[1000];
-    int buflen;
 
-    fflush(stdout);
     if (!s)
 	s = new_stream(100);
 
-    do {			/* Read even a very long line of input */
-	fgets(buffer, sizeof(buffer), stdin);
-	buflen = strlen(buffer);
-	if (buflen == 0)
-	    return 0;
-	if (buffer[buflen - 1] == '\n') {
-	    buffer[buflen - 1] = '\0';
-	    buflen--;
-	}
-	stream_add_string(s, buffer);
-    } while (buflen == sizeof(buffer) - 1);
-    line = reset_stream(s);
-    while (*line == ' ')
-	line++;
+    fflush(stdout);
 
-    return line;
+    char *line;
+
+    if ((line = linenoise(prompt)) && *line) {
+	linenoiseHistoryAdd(line);
+	stream_add_string(s, line);
+	free(line);
+	return reset_stream(s);
+    }
+
+    return (char *)"";
 }
 
 static void
@@ -830,7 +827,7 @@ emergency_notify(Objid player, const char *line)
 static int
 emergency_mode()
 {
-    char *line;
+    const char *line;
     Var words;
     int nargs;
     const char *command;
@@ -872,10 +869,11 @@ emergency_mode()
 		db_set_object_flag(wizard, FLAG_WIZARD);
 		printf("** No wizards in database; wizzed #%d.\n", wizard);
 	    }
-	    printf("** Now running emergency commands as #%d ...\n", wizard);
+	    printf("** Now running emergency commands as #%d ...\n\n", wizard);
 	}
-	printf("\nMOO (#%d)%s: ", wizard, debug ? "" : "[!d]");
-	line = read_stdin_line();
+        char prompt[100];
+        sprintf(prompt, "(#%d)%s: ", wizard, debug ? "" : "[!d]");
+	line = read_stdin_line(prompt);
 
 	if (!line)
 	    start_ok = 0;	/* treat EOF as "quit" */
@@ -901,7 +899,7 @@ emergency_mode()
 		printf("Type one or more lines of code, ending with `.' ");
 		printf("alone on a line.\n");
 		for (;;) {
-		    line = read_stdin_line();
+		    line = read_stdin_line(" ");
 		    if (!strcmp(line, "."))
 			break;
 		    else {
@@ -967,13 +965,13 @@ emergency_mode()
 		printf("%s\n", message);
 		if (h.ptr) {
 		    Var code, str, errors;
-		    char *line;
+		    const char *line;
 		    Program *program;
 
 		    code = new_list(0);
 		    str.type = TYPE_STR;
 
-		    while (strcmp(line = read_stdin_line(), ".")) {
+		    while (strcmp(line = read_stdin_line(" "), ".")) {
 			str.v.str = str_dup(line);
 			code = listappend(code, str);
 		    }
@@ -1030,14 +1028,10 @@ emergency_mode()
 	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
 		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
 		printf("** Switching to wizard #%d...\n", wizard);
-	    } else {
-		if (mystrcasecmp(command, "help")
-		    && mystrcasecmp(command, "?"))
-		    printf("** Unknown or malformed command.\n");
-
+	    } else if (!mystrcasecmp(command, "help") || !mystrcasecmp(command, "?")) {
 		printf(";EXPR                 "
 		       "Evaluate MOO expression, print result.\n");
-		printf(";;CODE	              "
+		printf(";;CODE                "
 		       "Execute whole MOO verb, print result.\n");
 		printf("    (For above, omitting EXPR or CODE lets you "
 		       "enter several lines\n");
@@ -1061,10 +1055,10 @@ emergency_mode()
 		       "Exit server *without* saving database.\n");
 		printf("help, ?               "
 		       "Print this text.\n\n");
-
 		printf("NOTE: *NO* forked or suspended tasks will run "
 		       "until you exit this mode.\n\n");
-		printf("\"Please remember to turn me off when you go...\"\n");
+	    } else {
+		printf("** Unknown or malformed command.\n");
 	    }
 
 	    free_var(words);
