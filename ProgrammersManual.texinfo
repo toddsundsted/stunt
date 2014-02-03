@@ -5538,12 +5538,14 @@ This causes the server to consult the current values of properties on
 If the programmer is not a wizard, then @code{E_PERM} is raised.
 @end deftypefun
 
-@deftypefun none server_log (str @var{message} [, @var{is-error}])
+@deftypefun none server_log (str @var{message} [, @var{level}])
 The text in @var{message} is sent to the server log with a distinctive prefix
 (so that it can be distinguished from server-generated messages).  If the
-programmer is not a wizard, then @code{E_PERM} is raised.  If @var{is-error}
-is provided and true, then @var{message} is marked in the server log as an
-error.
+programmer is not a wizard, then @code{E_PERM} is raised.  If @var{level}
+is provided and is an integer between 0 and 7 inclusive, then @var{message}
+is marked in the server log as one of eight predefined types, from simple log
+message to error message.  Otherwise, if @var{level} is provided and true,
+then @var{message} is marked in the server log as an error.
 @end deftypefun
 
 @deftypefun obj renumber (obj @var{object})
