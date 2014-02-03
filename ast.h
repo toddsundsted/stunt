@@ -101,6 +101,8 @@ enum Expr_Kind {
     EXPR_CATCH, EXPR_LENGTH, EXPR_SCATTER, /* EXPR_LENGTH is retired */
     EXPR_MAP,
     EXPR_FIRST, EXPR_LAST,
+    EXPR_BITOR, EXPR_BITAND, EXPR_BITXOR,
+    EXPR_BITSHL, EXPR_BITSHR, EXPR_COMPLEMENT,
     SizeOf_Expr_Kind		/* The last element is also the number of elements... */
 };
 

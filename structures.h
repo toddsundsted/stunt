@@ -19,6 +19,7 @@
 #define Structures_h 1
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "my-stdio.h"
 
@@ -29,7 +30,9 @@
 #define MAXOBJ	((Objid) MAXINT)
 #define MINOBJ	((Objid) MININT)
 
-typedef int32 Objid;
+typedef int32_t Num;
+typedef uint32_t UNum;
+typedef Num Objid;
 
 /*
  * Special Objid's

@@ -199,30 +199,38 @@ static struct prec prec_table[] =
     {EXPR_GE, 4},
     {EXPR_IN, 4},
 
-    {EXPR_PLUS, 5},
-    {EXPR_MINUS, 5},
+    {EXPR_BITOR, 5},
+    {EXPR_BITAND, 5},
+    {EXPR_BITXOR, 5},
 
-    {EXPR_TIMES, 6},
-    {EXPR_DIVIDE, 6},
-    {EXPR_MOD, 6},
+    {EXPR_BITSHL, 6},
+    {EXPR_BITSHR, 6},
 
-    {EXPR_EXP, 7},
+    {EXPR_PLUS, 7},
+    {EXPR_MINUS, 7},
 
-    {EXPR_NEGATE, 8},
-    {EXPR_NOT, 8},
+    {EXPR_TIMES, 8},
+    {EXPR_DIVIDE, 8},
+    {EXPR_MOD, 8},
 
-    {EXPR_PROP, 9},
-    {EXPR_VERB, 9},
-    {EXPR_INDEX, 9},
-    {EXPR_RANGE, 9},
+    {EXPR_EXP, 9},
 
-    {EXPR_VAR, 10},
-    {EXPR_ID, 10},
-    {EXPR_LIST, 10},
-    {EXPR_CALL, 10},
-    {EXPR_FIRST, 10},
-    {EXPR_LAST, 10},
-    {EXPR_CATCH, 10}
+    {EXPR_NEGATE, 10},
+    {EXPR_COMPLEMENT, 10},
+    {EXPR_NOT, 10},
+
+    {EXPR_PROP, 11},
+    {EXPR_VERB, 11},
+    {EXPR_INDEX, 11},
+    {EXPR_RANGE, 11},
+
+    {EXPR_VAR, 12},
+    {EXPR_ID, 12},
+    {EXPR_LIST, 12},
+    {EXPR_CALL, 12},
+    {EXPR_FIRST, 12},
+    {EXPR_LAST, 12},
+    {EXPR_CATCH, 12}
 };
 
 static int expr_prec[SizeOf_Expr_Kind];
@@ -249,6 +257,11 @@ static struct binop binop_table[] =
     {EXPR_DIVIDE, " / "},
     {EXPR_MOD, " % "},
     {EXPR_EXP, " ^ "},
+    {EXPR_BITOR, " |. "},
+    {EXPR_BITAND, " &. "},
+    {EXPR_BITXOR, " ^. "},
+    {EXPR_BITSHL, " << "},
+    {EXPR_BITSHR, " >> "}
 };
 
 static const char *binop_string[SizeOf_Expr_Kind];
@@ -635,6 +648,11 @@ unparse_expr(Stream * str, Expr * expr)
     case EXPR_LE:
     case EXPR_GE:
     case EXPR_IN:
+    case EXPR_BITOR:
+    case EXPR_BITAND:
+    case EXPR_BITXOR:
+    case EXPR_BITSHL:
+    case EXPR_BITSHR:
 	bracket_lt(str, expr->kind, expr->e.bin.lhs);
 	stream_add_string(str, binop_string[expr->kind]);
 	bracket_le(str, expr->kind, expr->e.bin.rhs);
@@ -663,6 +681,11 @@ unparse_expr(Stream * str, Expr * expr)
     case EXPR_NOT:
 	stream_add_char(str, '!');
 	bracket_lt(str, EXPR_NOT, expr->e.expr);
+	break;
+
+    case EXPR_COMPLEMENT:
+	stream_add_char(str, '~');
+	bracket_lt(str, EXPR_COMPLEMENT, expr->e.expr);
 	break;
 
     case EXPR_VAR:

@@ -645,6 +645,10 @@ generate_expr(Expr * expr, State * state)
 	generate_expr(expr->e.expr, state);
 	emit_byte(expr->kind == EXPR_NOT ? OP_NOT : OP_UNARY_MINUS, state);
 	break;
+    case EXPR_COMPLEMENT:
+	generate_expr(expr->e.expr, state);
+	emit_extended_byte(EOP_COMPLEMENT, state);
+	break;
     case EXPR_EQ:
     case EXPR_NE:
     case EXPR_GE:
@@ -711,10 +715,41 @@ generate_expr(Expr * expr, State * state)
 	}
 	break;
     case EXPR_EXP:
-	generate_expr(expr->e.bin.lhs, state);
-	generate_expr(expr->e.bin.rhs, state);
-	emit_extended_byte(EOP_EXP, state);
-	pop_stack(1, state);
+    case EXPR_BITOR:
+    case EXPR_BITAND:
+    case EXPR_BITXOR:
+    case EXPR_BITSHL:
+    case EXPR_BITSHR:
+	{
+	    Extended_Opcode op = EOP_EXP; /* init to silence warning */
+
+	    generate_expr(expr->e.bin.lhs, state);
+	    generate_expr(expr->e.bin.rhs, state);
+	    switch (expr->kind) {
+	    case EXPR_EXP:
+		op = EOP_EXP;
+		break;
+	    case EXPR_BITOR:
+		op = EOP_BITOR;
+		break;
+	    case EXPR_BITAND:
+		op = EOP_BITAND;
+		break;
+	    case EXPR_BITXOR:
+		op = EOP_BITXOR;
+		break;
+	    case EXPR_BITSHL:
+		op = EOP_BITSHL;
+		break;
+	    case EXPR_BITSHR:
+		op = EOP_BITSHR;
+		break;
+	    default:
+		panic("Not a binary operator in GENERATE_EXPR()");
+	    }
+	    emit_extended_byte(op, state);
+	    pop_stack(1, state);
+	}
 	break;
     case EXPR_INDEX:
 	{

@@ -2376,6 +2376,101 @@ do {								\
 		    }
 		    break;
 
+		case EOP_BITOR:
+		case EOP_BITAND:
+		case EOP_BITXOR:
+		    {
+			Var rhs, lhs, ans;
+
+			rhs = POP();
+			lhs = POP();
+			if (lhs.type == TYPE_INT && rhs.type == TYPE_INT) {
+			    ans.type = TYPE_INT;
+			    if (eop == EOP_BITXOR)
+				ans.v.num = lhs.v.num ^ rhs.v.num;
+			    else if (eop == EOP_BITAND)
+				ans.v.num = lhs.v.num & rhs.v.num;
+			    else if (eop == EOP_BITOR)
+				ans.v.num = lhs.v.num | rhs.v.num;
+			    else
+				errlog("RUN: Impossible opcode in bitwise ops: %d\n", eop);
+			} else {
+			    ans.type = TYPE_ERR;
+			    ans.v.err = E_TYPE;
+			}
+
+			free_var(lhs);
+			free_var(rhs);
+			if (ans.type == TYPE_ERR)
+			    PUSH_ERROR(ans.v.err);
+			else
+			    PUSH(ans);
+		    }
+		    break;
+
+		case EOP_BITSHL:
+		case EOP_BITSHR:
+		    {
+			Var rhs, lhs, ans;
+
+			rhs = POP();
+			lhs = POP();
+			if (lhs.type != TYPE_INT || rhs.type != TYPE_INT) {
+			    ans.type = TYPE_ERR;
+			    ans.v.err = E_TYPE;
+			} else if (rhs.v.num > sizeof(Num) * CHAR_BIT || rhs.v.num < 0) {
+			    ans.type = TYPE_ERR;
+			    ans.v.err = E_INVARG;
+			} else if (rhs.v.num == sizeof(Num) * CHAR_BIT) {
+			    ans.type = TYPE_INT;
+			    ans.v.num = 0;
+			} else if (rhs.v.num == 0) {
+			    ans.type = TYPE_INT;
+			    ans.v.num = lhs.v.num;
+			} else {
+
+#define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * CHAR_BIT - (n)))
+#define SHIFTR(n, m) ((Num)((UNum)n >> m) & MASK(m))
+
+			    ans.type = TYPE_INT;
+			    if (eop == EOP_BITSHL)
+				ans.v.num = lhs.v.num << rhs.v.num;
+			    else if (eop == EOP_BITSHR)
+				ans.v.num = SHIFTR(lhs.v.num, rhs.v.num);
+			    else
+				errlog("RUN: Impossible opcode in bitwise ops: %d\n", eop);
+			}
+
+			free_var(lhs);
+			free_var(rhs);
+			if (ans.type == TYPE_ERR)
+			    PUSH_ERROR(ans.v.err);
+			else
+			    PUSH(ans);
+		    }
+		    break;
+
+		case EOP_COMPLEMENT:
+		    {
+			Var arg, ans;
+
+			arg = POP();
+			if (arg.type == TYPE_INT) {
+			    ans.type = TYPE_INT;
+			    ans.v.num = ~arg.v.num;
+			} else {
+			    ans.type = TYPE_ERR;
+			    ans.v.err = E_TYPE;
+			}
+
+			free_var(arg);
+			if (ans.type == TYPE_ERR)
+			    PUSH_ERROR(ans.v.err);
+			else
+			    PUSH(ans);
+		    }
+		    break;
+
 		default:
 		    panic("Unknown extended opcode!");
 		}

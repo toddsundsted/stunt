@@ -36,6 +36,10 @@ enum Extended_Opcode {
 
     EOP_FOR_LIST_1, EOP_FOR_LIST_2,
 
+    /* bitwise operators */
+    EOP_BITOR, EOP_BITAND, EOP_BITXOR,
+    EOP_BITSHL, EOP_BITSHR, EOP_COMPLEMENT,
+
     Last_Extended_Opcode = 255
 };
 

@@ -113,7 +113,13 @@ struct mapping ext_mappings[] =
     {EOP_EXIT, "EXIT"},
     {EOP_FOR_LIST_1, "FOR_LIST_1"},
     {EOP_FOR_LIST_2, "FOR_LIST_2"},
-    {EOP_EXIT_ID, "EXIT_ID"}
+    {EOP_EXIT_ID, "EXIT_ID"},
+    {EOP_BITOR, "BITOR"},
+    {EOP_BITAND, "BITAND"},
+    {EOP_BITXOR, "BITXOR"},
+    {EOP_BITSHL, "BITSHL"},
+    {EOP_BITSHR, "BITSHR"},
+    {EOP_COMPLEMENT, "COMPLEMENT"}
 };
 
 static void

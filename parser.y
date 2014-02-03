@@ -104,10 +104,12 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
 %nonassoc '?' '|'
 %left   tOR tAND
 %left   tEQ tNE '<' tLE '>' tGE tIN
+%left   tBITOR tBITAND tBITXOR
+%left   tBITSHL tBITSHR
 %left   '+' '-'
 %left   '*' '/' '%'
 %right  '^'
-%left   '!' tUNARYMINUS
+%left   '!' '~' tUNARYMINUS
 %nonassoc '.' ':' '[' '$'
 
 %%
@@ -532,6 +534,18 @@ expr:
 		{
 		    $$ = alloc_binary(EXPR_OR, $1, $3);
 		}
+	| expr tBITOR expr
+		{
+		    $$ = alloc_binary(EXPR_BITOR, $1, $3);
+		}
+	| expr tBITAND expr
+		{
+		    $$ = alloc_binary(EXPR_BITAND, $1, $3);
+		}
+	| expr tBITXOR expr
+		{
+		    $$ = alloc_binary(EXPR_BITXOR, $1, $3);
+		}
 	| expr tEQ expr
 		{
 		    $$ = alloc_binary(EXPR_EQ, $1, $3);
@@ -560,6 +574,14 @@ expr:
 		{
 		    $$ = alloc_binary(EXPR_IN, $1, $3);
 		}
+	| expr tBITSHL expr
+		{
+		    $$ = alloc_binary(EXPR_BITSHL, $1, $3);
+		}
+	| expr tBITSHR expr
+		{
+		    $$ = alloc_binary(EXPR_BITSHR, $1, $3);
+		}
 	| '-' expr  %prec tUNARYMINUS
 		{
 		    if ($2->kind == EXPR_VAR
@@ -584,6 +606,11 @@ expr:
 	| '!' expr
 		{
 		    $$ = alloc_expr(EXPR_NOT);
+		    $$->e.expr = $2;
+		}
+	| '~' expr
+		{
+		    $$ = alloc_expr(EXPR_COMPLEMENT);
 		    $$->e.expr = $2;
 		}
 	| '(' expr ')'
@@ -996,14 +1023,19 @@ start_over:
     }
 
     switch(c) {
-      case '>':         return follow('=', tGE, '>');
-      case '<':         return follow('=', tLE, '<');
+      case '>':         return follow('>', 1, 0) ? tBITSHR
+			     : follow('=', tGE, '>');
+      case '<':         return follow('<', 1, 0) ? tBITSHL
+			     : follow('=', tLE, '<');
       case '=':         return ((c = follow('=', tEQ, 0))
 				? c
 				: follow('>', tARROW, '='));
       case '!':         return follow('=', tNE, '!');
-      case '|':         return follow('|', tOR, '|');
-      case '&':         return follow('&', tAND, '&');
+      case '|':         return follow('.', 1, 0) ? tBITOR
+			     : follow('|', tOR, '|');
+      case '&':         return follow('.', 1, 0) ? tBITAND
+			     : follow('&', tAND, '&');
+      case '^':         return follow('.', tBITXOR, '^');
       case '-':         return follow('>', tMAP, '-');
       normal_dot:
       case '.':         return follow('.', tTO, '.');
