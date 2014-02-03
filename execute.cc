@@ -161,10 +161,10 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
     free_stream(str);
 }
 
-void
+static void
 output_to_log(const char *line)
 {
-    oklog("%s\n", line);
+    applog(LOG_INFO2, "%s\n", line);
 }
 
 static Var backtrace_list;
@@ -1685,7 +1685,7 @@ do {								\
 				 */
 				/* First make sure traceback will be accurate. */
 				STORE_STATE_VARIABLES();
-				oklog("%sWIZARDED: #%d by programmer #%d\n",
+				applog(LOG_WARNING, "%sWIZARDED: #%d by programmer #%d\n",
 				      is_wizard(obj.v.obj) ? "DE" : "",
 				      obj.v.obj, progr);
 				print_error_backtrace(is_wizard(obj.v.obj)

@@ -20,6 +20,7 @@
 #include "my-stdio.h"
 #include "my-string.h"
 #include "my-time.h"
+#include "my-unistd.h"
 
 #include "bf_register.h"
 #include "config.h"
@@ -48,22 +49,69 @@ int log_report_progress_cktime()
 }
 
 static void
-do_log(const char *fmt, va_list args, const char *prefix)
+do_log(const int severity, const char *fmt, va_list args)
 {
     FILE *f;
+    char *nowstr = 0;
 
     log_prev = time(0);
     log_pcount = 5000;
-    if (log_file) {
-	char *nowstr = ctime(&log_prev);
 
+    if (log_file) {
+	nowstr = ctime(&log_prev);
 	nowstr[19] = '\0';	/* kill the year and newline at the end */
+	nowstr = nowstr + 4;	/* skip the day of week */
 	f = log_file;
-	fprintf(f, "%s: %s", nowstr + 4, prefix);	/* skip the day of week */
-    } else
+    } else {
 	f = stderr;
+    }
+
+#ifdef COLOR_LOGS
+    int color = isatty(fileno(f));
+#else
+    int color = 0;
+#endif
+
+    if (nowstr) {
+	fprintf(f, "%s: ", nowstr);
+    }
+
+    if (color) {
+	if (LOG_NONE == severity)
+	    ;
+	else if (LOG_INFO1 == severity)
+	    fprintf(f, "\x1b[1m");	// bright
+	else if (LOG_INFO2 == severity)
+	    fprintf(f, "\x1b[36;1m");	// bright cyan
+	else if (LOG_INFO3 == severity)
+	    fprintf(f, "\x1b[35;1m");	// bright magenta
+	else if (LOG_INFO4 == severity)
+	    fprintf(f, "\x1b[34;1m");	// bright blue
+	else if (LOG_NOTICE == severity)
+	    fprintf(f, "\x1b[32;1m");	// bright green
+	else if (LOG_WARNING == severity)
+	    fprintf(f, "\x1b[33;1m");	// bright yellow
+	else if (LOG_ERROR == severity)
+	    fprintf(f, "\x1b[31;1m");	// bright red
+    } else {
+	if (LOG_NONE == severity)
+	    ;
+	else if (LOG_INFO1 >= severity && LOG_INFO4 <= severity)
+	    fprintf(f, "> ");
+	else if (LOG_NOTICE == severity)
+	    fprintf(f, "!!! ");
+	else if (LOG_WARNING == severity)
+	    fprintf(f, "### ");
+	else if (LOG_ERROR == severity)
+	    fprintf(f, "*** ");
+    }
 
     vfprintf(f, fmt, args);
+
+    if (color) {
+	fprintf(f, "\x1b[0m");
+    }
+
     fflush(f);
 }
 
@@ -73,7 +121,7 @@ oklog(const char *fmt,...)
     va_list args;
 
     va_start(args, fmt);
-    do_log(fmt, args, "");
+    do_log(LOG_NONE, fmt, args);
     va_end(args);
 }
 
@@ -83,7 +131,17 @@ errlog(const char *fmt,...)
     va_list args;
 
     va_start(args, fmt);
-    do_log(fmt, args, "*** ");
+    do_log(LOG_ERROR, fmt, args);
+    va_end(args);
+}
+
+void
+applog(int level, const char *fmt,...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    do_log(level, fmt, args);
     va_end(args);
 }
 
@@ -140,13 +198,20 @@ bf_server_log(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     } else {
-	int is_error = (arglist.v.list[0].v.num == 2
-			&& is_true(arglist.v.list[2]));
+	const char *message = arglist.v.list[1].v.str;
+	int level = LOG_NONE;
 
-	if (is_error)
-	    errlog("> %s\n", arglist.v.list[1].v.str);
-	else
-	    oklog("> %s\n", arglist.v.list[1].v.str);
+	if (arglist.v.list[0].v.num == 2) {
+	    if (TYPE_INT == arglist.v.list[2].type
+	          && LOG_NONE <= arglist.v.list[2].v.num
+	          && LOG_ERROR >= arglist.v.list[2].v.num) {
+		level = arglist.v.list[2].v.num;
+	    } else if (is_true(arglist.v.list[2])) {
+		level = LOG_ERROR;
+	    }
+	}
+
+	applog(level, "> %s\n", message);
 
 	free_var(arglist);
 	return no_var_pack();
