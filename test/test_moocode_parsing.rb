@@ -2,6 +2,64 @@ require 'test_helper'
 
 class TestMoocodeParsing < Test::Unit::TestCase
 
+  def test_that_expression_exception_syntax_works
+    run_test_as('programmer') do
+      assert_equal [], simplify(command("; return `args ! ANY => 0';"))
+    end
+  end
+
+  def test_that_greater_than_syntax_works
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return 3 > 2;"))
+    end
+  end
+
+  def test_that_greater_than_or_equal_to_syntax_works
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return 3 >= 2;"))
+    end
+  end
+
+  def test_that_less_than_syntax_works
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return 2 < 3;"))
+    end
+  end
+
+  def test_that_less_than_or_equal_to_syntax_works
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return 2 <= 3;"))
+    end
+  end
+
+  def test_that_and_syntax_works
+    run_test_as('programmer') do
+      assert_equal 3, simplify(command("; return 2 && 3;"))
+    end
+  end
+
+  def test_that_or_syntax_works
+    run_test_as('programmer') do
+      assert_equal 2, simplify(command("; return 2 || 3;"))
+    end
+  end
+
+  def test_that_caret_collection_syntax_works
+    run_test_as('programmer') do
+      assert_equal 1, simplify(command("; return {1, 2, 3}[^];"))
+      assert_equal [1, 2], simplify(command("; return {1, 2, 3}[^ .. ^ + 1];"))
+      assert_equal [1, 2], simplify(command("; return {1, 2, 3}[^..^ + 1];"))
+    end
+  end
+
+  def test_that_dollar_sign_collection_syntax_works
+    run_test_as('programmer') do
+      assert_equal 3, simplify(command("; return {1, 2, 3}[$];"))
+      assert_equal [2, 3], simplify(command("; return {1, 2, 3}[-1 + $ .. $];"))
+      assert_equal [2, 3], simplify(command("; return {1, 2, 3}[-1 + $..$];"))
+    end
+  end
+
   def test_that_bitwise_and_works
     run_test_as('programmer') do
       assert_equal 0, simplify(command('; return 1 &. 2;'))
