@@ -846,6 +846,18 @@ follow(int expect, int ifyes, int ifno)     /* look ahead for >=, etc. */
     return ifno;
 }
 
+static int
+check_two_dots(void)     /* look ahead for .. but don't consume */
+{
+    int c1 = lex_getc();
+    int c2 = lex_getc();
+
+    lex_ungetc(c2);
+    lex_ungetc(c1);
+
+    return c1 == '.' && c2 == '.';
+}
+
 static Stream  *token_stream = 0;
 
 static int
@@ -928,11 +940,11 @@ start_over:
 		    stream_add_char(token_stream, c);
 		    c = lex_getc();
 		} while (isdigit(c));
-	    } else if (stream_length(token_stream) == 0)
+	    } else if (stream_length(token_stream) == 0) {
 		/* no digits before or after `.'; not a number at all */
 		goto normal_dot;
-	    else if (cc != '.') {
-		/* Some digits before dot, not `..' */
+	    } else if (cc != '.') {
+		/* some digits before dot, not `..' */
 		type = tFLOAT;
 		stream_add_char(token_stream, c);
 		c = lex_getc();
@@ -1023,20 +1035,20 @@ start_over:
     }
 
     switch(c) {
+      case '^':         return check_two_dots() ? '^'
+			     : follow('.', tBITXOR, '^');
       case '>':         return follow('>', 1, 0) ? tBITSHR
 			     : follow('=', tGE, '>');
       case '<':         return follow('<', 1, 0) ? tBITSHL
 			     : follow('=', tLE, '<');
-      case '=':         return ((c = follow('=', tEQ, 0))
-				? c
-				: follow('>', tARROW, '='));
-      case '!':         return follow('=', tNE, '!');
+      case '=':         return follow('=', 1, 0) ? tEQ
+			     : follow('>', tARROW, '=');
       case '|':         return follow('.', 1, 0) ? tBITOR
 			     : follow('|', tOR, '|');
       case '&':         return follow('.', 1, 0) ? tBITAND
 			     : follow('&', tAND, '&');
-      case '^':         return follow('.', tBITXOR, '^');
       case '-':         return follow('>', tMAP, '-');
+      case '!':         return follow('=', tNE, '!');
       normal_dot:
       case '.':         return follow('.', tTO, '.');
       default:          return c;
