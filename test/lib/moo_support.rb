@@ -267,12 +267,28 @@ module MooSupport
     end
   end
 
-  def encode_base64(str)
-    simplify command %Q|; return encode_base64(#{value_ref(str)});|
+  def encode_binary(str)
+    simplify command %Q|; return encode_binary(#{value_ref(str)});|
   end
 
-  def decode_base64(str)
-    simplify command %Q|; return decode_base64(#{value_ref(str)});|
+  def decode_binary(str)
+    simplify command %Q|; return decode_binary(#{value_ref(str)});|
+  end
+
+  def encode_base64(str, safe = nil)
+    if safe
+      simplify command %Q|; return encode_base64(#{value_ref(str)}, #{value_ref(safe)});|
+    else
+      simplify command %Q|; return encode_base64(#{value_ref(str)});|
+    end
+  end
+
+  def decode_base64(str, safe = nil)
+    if safe
+      simplify command %Q|; return decode_base64(#{value_ref(str)}, #{value_ref(safe)});|
+    else
+      simplify command %Q|; return decode_base64(#{value_ref(str)});|
+    end
   end
 
   def string_hash(str, algo = nil, binary = nil)
