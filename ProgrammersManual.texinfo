@@ -3538,23 +3538,27 @@ encode_binary("foo", 10, "bar", 13)       @result{}   "foo~0Abar~0D"
 @end example
 @end deftypefun
 
-@deftypefun str decode_base64 (str @var{base64})
+@deftypefun str decode_base64 (str @var{base64} [, @var{safe}])
 Returns the binary string representation of the supplied Base64
-encoded string argument.  Raises @code{E_INVARG} if @var{base64}
-is not a properly-formed Base64 string.
+encoded string argument.  Raises @code{E_INVARG} if @var{base64} is
+not a properly-formed Base64 string.  If @var{safe} is provide and is
+true, a URL-safe version of Base64 is used (see RFC4648).
 
 @example
-decode_base64("AAEC")    @result{}    "~00~01~02"
+decode_base64("AAEC")      @result{}    "~00~01~02"
+decode_base64("AAE", 1)    @result{}    "~00~01"
 @end example
 @end deftypefun
 
-@deftypefun str encode_base64 (str @var{binary})
+@deftypefun str encode_base64 (str @var{binary} [, @var{safe}])
 Returns the Base64 encoded string representation of the supplied
-binary string argument.  Raises @code{E_INVARG} if @var{binary}
-is not a properly-formed binary string.
+binary string argument.  Raises @code{E_INVARG} if @var{binary} is not
+a properly-formed binary string.  If @var{safe} is provide and is
+true, a URL-safe version of Base64 is used (see RFC4648).
 
 @example
 encode_base64("~00~01~02")    @result{}    "AAEC"
+encode_base64("~00~01", 1)    @result{}    "AAE"
 @end example
 @end deftypefun
 
