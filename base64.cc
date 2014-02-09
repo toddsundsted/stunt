@@ -1,18 +1,5 @@
-/*
- * Base64 encoding/decoding (RFC1341)
- * Copyright (c) 2005, Jouni Malinen <jkmaline@cc.hut.fi>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * Alternatively, this software may be distributed under the terms of BSD
- * license.
- *
- * See README and COPYING for more details.
- */
 /******************************************************************************
-  Copyright 2010 Todd Sundsted. All rights reserved.
+  Copyright 2010, 2011, 2012, 2013, 2014 Todd Sundsted. All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions are met:
@@ -41,10 +28,10 @@
  *****************************************************************************/
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "base64.h"
 #include "functions.h"
+#include "log.h"
 #include "storage.h"
 #include "streams.h"
 #include "utils.h"
@@ -53,125 +40,8 @@
 static const unsigned char base64_table[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-/**
- * base64_encode - Base64 encode
- * @src: Data to be encoded
- * @len: Length of the data to be encoded
- * @out_len: Pointer to output length variable; %NULL if not used
- * Returns: Allocated buffer of out_len bytes of encoded data,
- * or %NULL on failure
- *
- * Caller is responsible for freeing the returned buffer. Returned
- * buffer is null terminated to make it easier to use as a C
- * string. The null terminator is not included in out_len.
- */
-char *
-base64_encode(const char *src, size_t len, size_t *out_len)
-{
-    char *out, *pos;
-    const unsigned char *end, *in;
-    size_t olen;
-
-    olen = len * 4 / 3 + 4; /* 3-byte blocks to 4-byte */
-    olen++;                 /* nul termination */
-    out = (char *)mymalloc(olen, M_STRING);
-    if (out == NULL)
-	return NULL;
-
-    end = (unsigned char *)(src + len);
-    in = (unsigned char *)src;
-    pos = out;
-    while (end - in >= 3) {
-	*pos++ = base64_table[in[0] >> 2];
-	*pos++ = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-	*pos++ = base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
-	*pos++ = base64_table[in[2] & 0x3f];
-	in += 3;
-    }
-
-    if (end - in) {
-	*pos++ = base64_table[in[0] >> 2];
-	if (end - in == 1) {
-	    *pos++ = base64_table[(in[0] & 0x03) << 4];
-	    *pos++ = '=';
-	} else {
-	    *pos++ = base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-	    *pos++ = base64_table[(in[1] & 0x0f) << 2];
-	}
-	*pos++ = '=';
-    }
-
-    *pos = '\0';
-    if (out_len)
-	*out_len = pos - out;
-    return out;
-}
-
-/**
- * base64_decode - Base64 decode
- * @src: Data to be decoded
- * @len: Length of the data to be decoded
- * @out_len: Pointer to output length variable
- * Returns: Allocated buffer of out_len bytes of decoded data,
- * or %NULL on failure
- *
- * Caller is responsible for freeing the returned buffer.
- */
-char *
-base64_decode(const char *src, size_t len, size_t *out_len)
-{
-    char *out, *pos;
-    unsigned char dtable[256], in[4], block[4], tmp;
-    size_t i, count, olen;
-
-    memset(dtable, 0x80, 256);
-    for (i = 0; i < sizeof(base64_table); i++)
-	dtable[base64_table[i]] = i;
-    dtable['='] = 0;
-
-    count = 0;
-    for (i = 0; i < len; i++) {
-	if (dtable[(unsigned char)src[i]] != 0x80)
-	    count++;
-    }
-
-    if (count % 4)
-	return NULL;
-
-    olen = count / 4 * 3;
-    pos = out = (char *)mymalloc(olen + 1, M_STRING);
-    if (out == NULL)
-	return NULL;
-
-    count = 0;
-    for (i = 0; i < len; i++) {
-	tmp = dtable[(unsigned char)src[i]];
-	if (tmp == 0x80)
-	    continue;
-
-	in[count] = src[i];
-	block[count] = tmp;
-	count++;
-	if (count == 4) {
-	    *pos++ = (block[0] << 2) | (block[1] >> 4);
-	    *pos++ = (block[1] << 4) | (block[2] >> 2);
-	    *pos++ = (block[2] << 6) | block[3];
-	    count = 0;
-	}
-    }
-
-    if (pos > out) {
-	if (in[2] == '=')
-	    pos -= 2;
-	else if (in[3] == '=')
-	    pos--;
-    }
-
-    *out_len = pos - out;
-    return out;
-}
-
-/**** built in functions ****/
+static const unsigned char base64_url_safe_table[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /**** helpers for catching overly large allocations ****/
 
@@ -190,78 +60,198 @@ make_space_pack()
 static package
 bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    package pack;
+
+    int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
+
+    const unsigned char *table = safe ? base64_url_safe_table : base64_table;
+
+    /* check input */
+
     int len;
-    size_t length;
-    const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
-    package p;
-    if (NULL == in) {
+    const char *in;
+
+    in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
+
+    if (!in) {
+	pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist.v.list[1]));
 	free_var(arglist);
-	return make_error_pack(E_INVARG);
+	return pack;
     }
-    char *out = base64_encode(in, (size_t)len, &length);
-    if (NULL == out) { /* only happens if the encoder can't malloc */
+
+    /* encode */
+
+    char *p, *str;
+
+    p = str = (char *)mymalloc(len * 4 / 3 + 4 + 1, M_STRING);
+
+    if (!str) {
 	free_var(arglist);
-	return make_error_pack(E_INVARG);
+	panic("BF_ENCODE_BASE64: failed to malloc\n");
+	return no_var_pack();
     }
+
+    const unsigned char *endp, *inp;
+
+    endp = (unsigned char *)(in + len);
+    inp = (unsigned char *)in;
+
+    while (endp - inp >= 3) {
+	*p++ = table[inp[0] >> 2];
+	*p++ = table[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
+	*p++ = table[((inp[1] & 0x0f) << 2) | (inp[2] >> 6)];
+	*p++ = table[inp[2] & 0x3f];
+	inp += 3;
+    }
+
+    if (endp - inp) {
+	*p++ = table[inp[0] >> 2];
+	if (endp - inp == 2) {
+	    *p++ = table[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
+	    *p++ = table[(inp[1] & 0x0f) << 2];
+	} else {
+	    *p++ = table[(inp[0] & 0x03) << 4];
+	    if (!safe)
+		*p++ = '=';
+	}
+	if (!safe)
+	    *p++ = '=';
+    }
+
+    *p = '\0';
+
+    /* return */
+
     Var ret;
-    static Stream *s = 0;
-    if (!s)
-	s = new_stream(100);
-    TRY_STREAM;
-    try {
-	stream_add_raw_bytes_to_binary(s, out, (int)length);
-	ret = str_dup_to_var(reset_stream(s));
-	p = make_var_pack(ret);
-    }
-    catch (stream_too_big& exception) {
-	reset_stream(s);
-	p = make_space_pack();
-    }
-    ENDTRY_STREAM;
-    free_str(out);
+
+    ret.type = TYPE_STR;
+    ret.v.str = str;
+
     free_var(arglist);
-    return p;
+
+    return make_var_pack(ret);
 }
 
 static package
 bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int len;
-    size_t length;
-    const char *in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
-    package p;
-    if (NULL == in) {
-	free_var(arglist);
-	return make_error_pack(E_INVARG);
+    package pack;
+
+    int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
+
+    const unsigned char *table = safe ? base64_url_safe_table : base64_table;
+
+    /* check input */
+
+    unsigned int len;
+    const char *in;
+
+    unsigned char dict[256], tmp;
+    size_t i, cnt = 0, pad = 0;
+
+    in = arglist.v.list[1].v.str;
+    len = memo_strlen(in);
+
+    memset(dict, 0x80, 256);
+    for (i = 0; i < 64; i++)
+	dict[table[i]] = i;
+    dict['='] = 0;
+
+    for (i = 0; i < len; i++) {
+	tmp = (unsigned char)in[i];
+	if (dict[tmp] == 0x80) {
+	    pack = make_raise_pack(E_INVARG, "Invalid character in encoded data", var_ref(arglist.v.list[1]));
+	    free_var(arglist);
+	    return pack;
+	}
+	if (pad && tmp != '=') {
+	    pack = make_raise_pack(E_INVARG, "Pad character in encoded data", var_ref(arglist.v.list[1]));
+	    free_var(arglist);
+	    return pack;
+	}
+	if (dict[tmp] != 0x80)
+	    cnt++;
+	if (tmp == '=')
+	    pad++;
     }
-    char *out = base64_decode(in, (size_t)len, &length);
-    if (NULL == out) { /* there are problems with the input string or the decoder can't malloc */
+
+    if (!safe && cnt % 4) {
+	pack = make_raise_pack(E_INVARG, "Invalid length", var_ref(arglist.v.list[1]));
 	free_var(arglist);
-	return make_error_pack(E_INVARG);
+	return pack;
     }
-    Var ret;
+    if (pad > 2) {
+	pack = make_raise_pack(E_INVARG, "Too many pad characters", var_ref(arglist.v.list[1]));
+	free_var(arglist);
+	return pack;
+    }
+
+    /* decode */
+
+    char *p, *str;
+
+    p = str = (char *)mymalloc((cnt + 3) / 4 * 3 + 1, M_STRING);
+    if (!str) {
+	free_var(arglist);
+	panic("BF_DECODE_BASE64: failed to malloc\n");
+	return no_var_pack();
+    }
+
+    unsigned char ar[4], block[4];
+
+    cnt = 0;
+    for (i = 0; i < len + len % 4; i++) {
+	if (i < len) {
+	    tmp = dict[(unsigned char)in[i]];
+	    ar[cnt] = in[i];
+	} else {
+	    tmp = '\0';
+	    ar[cnt] = '=';
+	}
+	block[cnt++] = tmp;
+	if (cnt == 4) {
+	    *p++ = (block[0] << 2) | (block[1] >> 4);
+	    *p++ = (block[1] << 4) | (block[2] >> 2);
+	    *p++ = (block[2] << 6) | block[3];
+	    cnt = 0;
+	}
+    }
+
+    *p = '\0';
+
+    if (p > str) {
+	if (ar[2] == '=')
+	    p -= 2;
+	else if (ar[3] == '=')
+	    p -= 1;
+    }
+
+    /* return */
+
     static Stream *s = 0;
     if (!s)
 	s = new_stream(100);
+
     TRY_STREAM;
     try {
-	stream_add_raw_bytes_to_binary(s, out, (int)length);
-	ret = str_dup_to_var(reset_stream(s));
-	p = make_var_pack(ret);
+	stream_add_raw_bytes_to_binary(s, str, (int)(p - str));
+	pack = make_var_pack(str_dup_to_var(reset_stream(s)));
     }
     catch (stream_too_big& exception) {
 	reset_stream(s);
-	p = make_space_pack();
+	pack = make_space_pack();
     }
     ENDTRY_STREAM;
-    free_str(out);
+
+    free_str(str);
     free_var(arglist);
-    return p;
+
+    return pack;
 }
 
 void
 register_base64(void)
 {
-    register_function("encode_base64", 1, 1, bf_encode_base64, TYPE_STR);
-    register_function("decode_base64", 1, 1, bf_decode_base64, TYPE_STR);
+    register_function("encode_base64", 1, 2, bf_encode_base64, TYPE_STR, TYPE_ANY);
+    register_function("decode_base64", 1, 2, bf_decode_base64, TYPE_STR, TYPE_ANY);
 }
