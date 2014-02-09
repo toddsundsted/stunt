@@ -139,6 +139,12 @@ str_ref_to_var(const char *s)
     return r;
 }
 
+static inline bool
+is_str(Var v)
+{
+    return TYPE_STR == v.type;
+}
+
 extern Var memory_usage(void);
 
 extern void myfree(void *where, Memory_Type type);
@@ -162,11 +168,5 @@ free_str(const char *s)
 #define memo_strlen(X)		strlen(X)
 
 #endif /* MEMO_STRLEN */
-
-static inline bool
-is_str(Var v)
-{
-    return TYPE_STR == v.type;
-}
 
 #endif				/* Storage_h */
