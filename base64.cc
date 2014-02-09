@@ -81,9 +81,17 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* encode */
 
+    size_t newlen = len * 4 / 3 + 4 + 1;
+
+    if (newlen > stream_alloc_maximum) {
+	pack = make_space_pack();
+	free_var(arglist);
+	return pack;
+    }
+
     char *p, *str;
 
-    p = str = (char *)mymalloc(len * 4 / 3 + 4 + 1, M_STRING);
+    p = str = (char *)mymalloc(newlen, M_STRING);
 
     if (!str) {
 	free_var(arglist);
@@ -188,9 +196,17 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* decode */
 
+    size_t newlen = (cnt + 3) / 4 * 3 + 1;
+
+    if (newlen > stream_alloc_maximum) {
+	pack = make_space_pack();
+	free_var(arglist);
+	return pack;
+    }
+
     char *p, *str;
 
-    p = str = (char *)mymalloc((cnt + 3) / 4 * 3 + 1, M_STRING);
+    p = str = (char *)mymalloc(newlen, M_STRING);
     if (!str) {
 	free_var(arglist);
 	panic("BF_DECODE_BASE64: failed to malloc\n");
