@@ -3450,18 +3450,19 @@ strsub("foobar", "OB", "b", 1)          @result{}   "foobar"
 @end example
 @end deftypefun
 
-@deftypefun int index (str @var{str1}, str @var{str2} [, @var{case-matters} [, @var{offset}]])
-@deftypefunx int rindex (str @var{str1}, str @var{str2} [, @var{case-matters} [, @var{offset}]])
+@deftypefun int index (str @var{str1}, str @var{str2} [, @var{case-matters} [, @var{skip}]])
+@deftypefunx int rindex (str @var{str1}, str @var{str2} [, @var{case-matters} [, @var{skip}]])
 The function @code{index()} (@code{rindex()}) returns the index of the first
 character of the first (last) occurrence of @var{str2} in @var{str1}, or zero
 if @var{str2} does not occur in @var{str1} at all.  By default the search for
 an occurrence of @var{str2} is done while ignoring the upper/lower case
 distinction.  If @var{case-matters} is provided and true, then case is treated
 as significant in all comparisons.  By default the search starts at the
-beginning (end) of @var{str1}.  If @var{offset} is provided, the search
-starts at an offset from the beginning (end) of @var{str1}.  The @var{offset}
-must be a positive integer for @code{index()} and a negative integer for
-@code{rindex()}.
+beginning (end) of @var{str1}.  If @var{skip} is provided, the search skips
+the first (last) @var{skip} characters and starts at an offset from the
+beginning (end) of @var{str1}.  The @var{skip} must be a positive integer for
+@code{index()} and a negative integer for @code{rindex()}.  The default value
+of @var{skip} is 0 (skip no characters).
 
 @example
 index("foobar", "o")            @result{}   2
