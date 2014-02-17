@@ -4119,7 +4119,7 @@ mapdelete(x, "bar")   @result{}   ["baz" -> 3, "foo" -> 1]
 @end example
 @end deftypefun
 
-@node Manipulating Objects, Manipulating Connections, Manipulating Values, Builtins
+@node Manipulating Objects, The Server Environment, Manipulating Values, Builtins
 @comment  node-name,  next,  previous,  up
 @subsection Manipulating Objects
 
