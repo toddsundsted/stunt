@@ -6,7 +6,7 @@
 @c Uncomment the following line for two-sided printing.
 @c @setchapternewpage odd
 @macro lmversion
-9
+10-wip
 @end macro
 @macro lmdate
 January 2014
