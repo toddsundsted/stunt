@@ -553,6 +553,20 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
+  def test_that_hash_lengths_are_correct
+    run_test_as('programmer') do
+      assert_equal 96, simplify(command(%Q|; return length(string_hash("", "sha256", 1));|))
+      assert_equal 64, simplify(command(%Q|; return length(string_hash("", "sha256", 0));|))
+    end
+  end
+
+  def test_that_hmac_lengths_are_correct
+    run_test_as('programmer') do
+      assert_equal 96, simplify(command(%Q|; return length(string_hmac("", "", "sha256", 1));|))
+      assert_equal 64, simplify(command(%Q|; return length(string_hmac("", "", "sha256", 0));|))
+    end
+  end
+
   class << self
     def supports_md5
       ''.crypt('$1$')[0..2] == '$1$'
