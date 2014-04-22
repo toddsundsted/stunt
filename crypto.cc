@@ -168,24 +168,24 @@ parse_prefix(const char *prefix, size_t prefix_length,
 
 static char digits[] = "0123456789ABCDEF";
 
-#define DEF_HASH(algo, size)					\
-static const char *						\
-algo##_hash_bytes(const char *input, int length, int binary)	\
-{								\
-    algo##_ctx context;						\
-    unsigned char result[size];					\
-    char *hex = (char *)mymalloc(size * 3 + 1, M_STRING);	\
-    const char *answer = hex;					\
-    algo##_init(&context);					\
-    algo##_update(&context, length, (unsigned char *)input);	\
-    algo##_digest(&context, size, result);			\
-    for (int i = 0; i < size; i++) {				\
-	if (binary) *hex++ = '~';				\
-	*hex++ = digits[result[i] >> 4];			\
-	*hex++ = digits[result[i] & 0xF];			\
-    }								\
-    *hex = 0;							\
-    return answer;						\
+#define DEF_HASH(algo, size)							\
+static const char *								\
+algo##_hash_bytes(const char *input, int length, int binary)			\
+{										\
+    algo##_ctx context;								\
+    unsigned char result[size];							\
+    char *hex = (char *)mymalloc(size * (binary ? 3 : 2) + 1, M_STRING);	\
+    const char *answer = hex;							\
+    algo##_init(&context);							\
+    algo##_update(&context, length, (unsigned char *)input);			\
+    algo##_digest(&context, size, result);					\
+    for (int i = 0; i < size; i++) {						\
+	if (binary) *hex++ = '~';						\
+	*hex++ = digits[result[i] >> 4];					\
+	*hex++ = digits[result[i] & 0xF];					\
+    }										\
+    *hex = 0;									\
+    return answer;								\
 }
 
 DEF_HASH(md5, 16)
@@ -204,7 +204,7 @@ algo##_bytes(const char *message, int message_length, const char *key, int key_l
 {													\
     algo##_ctx context;											\
     unsigned char result[size];										\
-    char *hex = (char *)mymalloc(size * 3 + 1, M_STRING);						\
+    char *hex = (char *)mymalloc(size * (binary ? 3 : 2) + 1, M_STRING);				\
     const char *answer = hex;										\
     algo##_set_key(&context, key_length, (unsigned char *)key);						\
     algo##_update(&context, message_length, (unsigned char *)message);					\
