@@ -1021,7 +1021,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
   } else {
 	 FILE *f;
 	 if((f = file_handle_file_safe(filespec)) == NULL)
-		*r = make_raise_pack(E_INVARG, "Invalid FHANDLE", filespec);
+		*r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(filespec));
 	 else {
 		if(fstat(fileno(f), buf) != 0)
 		  *r = file_raise_errno(file_handle_name(filespec));
