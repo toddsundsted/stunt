@@ -207,7 +207,7 @@ dump_taskid(void) {
 
     taskid.type = TYPE_INT;
     taskid.v.num = getpid();
-    prop = db_find_property(SYSTEM_OBJECT, "unix_taskid", 0);
+    prop = db_find_property(new_obj(SYSTEM_OBJECT), "unix_taskid", 0);
     if (prop.ptr)
         db_set_property_value(prop, var_dup(taskid));
     free_var(taskid);
