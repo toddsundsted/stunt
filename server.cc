@@ -201,6 +201,19 @@ send_shutdown_message(const char *msg)
 }
 
 static void
+dump_taskid(void) {
+    Var taskid;
+    db_prop_handle prop;
+
+    taskid.type = TYPE_INT;
+    taskid.v.num = getpid();
+    prop = db_find_property(SYSTEM_OBJECT, "unix_taskid", 0);
+    if (prop.ptr)
+        db_set_property_value(prop, var_dup(taskid));
+    free_var(taskid);
+}
+
+static void
 abort_server(void)
 {
     signal(SIGINT, SIG_DFL);
@@ -605,6 +618,9 @@ static void
 main_loop(void)
 {
     int i;
+
+    /* Write the current taskid to a property on SYSOBJ */
+    dump_taskid();
 
     /* First, queue anonymous objects */
     for (i = 1; i <= pending_list.v.list[0].v.num; i++) {
