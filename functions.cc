@@ -394,11 +394,11 @@ static Var
 function_description(int i)
 {
     struct bft_entry entry;
-    Var v, vv;
+    Var v, *vv;
     int j, nargs;
 
     entry = bf_table[i];
-    v = new_list(4);
+    v = new_list(5);
     v.v.list[1].type = TYPE_STR;
     v.v.list[1].v.str = str_ref(entry.name);
     v.v.list[2].type = TYPE_INT;
@@ -406,12 +406,15 @@ function_description(int i)
     v.v.list[3].type = TYPE_INT;
     v.v.list[3].v.num = entry.maxargs;
     nargs = entry.maxargs == -1 ? entry.minargs : entry.maxargs;
-    vv = v.v.list[4] = new_list(nargs);
+    v.v.list[4] = new_list(nargs);
+    vv = &v.v.list[4];
     for (j = 0; j < nargs; j++) {
 	int proto = entry.prototype[j];
-	vv.v.list[j + 1].type = TYPE_INT;
-	vv.v.list[j + 1].v.num = proto < 0 ? proto : (proto & TYPE_DB_MASK);
+	vv->v.list[j + 1].type = TYPE_INT;
+	vv->v.list[j + 1].v.num = proto < 0 ? proto : (proto & TYPE_DB_MASK);
     }
+    v.v.list[5].type = TYPE_INT;
+    v.v.list[5].v.num = entry.protected;
 
     return v;
 }
