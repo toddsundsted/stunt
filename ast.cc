@@ -402,6 +402,14 @@ free_stmt(Stmt * stmt)
 	    free_stmt(stmt->s.range.body);
 	    break;
 
+	case STMT_SCATFOR:
+ 	    if (stmt->s.scatfor.scat)	
+ 		/* = NULL when arglist couldn't be converted to scatter */
+ 		free_scatter(stmt->s.scatfor.scat);
+ 	    free_expr(stmt->s.scatfor.expr);
+ 	    free_stmt(stmt->s.scatfor.body);
+ 	    break;
+
 	case STMT_WHILE:
 	    free_expr(stmt->s.loop.condition);
 	    free_stmt(stmt->s.loop.body);
