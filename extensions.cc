@@ -35,6 +35,7 @@
 
 #include "functions.h"
 #include "numbers.h"
+#include "server.h"
 #include "storage.h"
 #include "utils.h"
 
