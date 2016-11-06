@@ -1,0 +1,23 @@
+Tests are written in the Ruby programming language using the
+Test::Unit framework. The Parslet library is used to parse responses
+from the Stunt server under test.
+
+To run the tests:
+
+1) Ensure you have Ruby 1.9.3 or later installed.
+
+2) Ensure you have Bundler installed.
+
+3) Install dependencies.
+    bundle install
+
+4) Create the following symlinks in the executables/ directory:
+    ln -s `which echo` echo
+    ln -s `which sleep` sleep
+    ln -s `which true` true
+
+5) In one console/terminal/window, run the Stunt server:
+    ./moo Test.db /dev/null 9898
+
+6) In another console/terminal/window, run the tests:
+    make tests
