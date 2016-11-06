@@ -51,6 +51,7 @@ static DB_Version       language_version;
 static void     error(const char *, const char *);
 static void     warning(const char *, const char *);
 static int      find_id(char *name);
+static const char* get_name_from_id(int);
 static void     yyerror(const char *s);
 static int      yylex(void);
 static Scatter *scatter_from_arglist(Arg_List *);
@@ -144,6 +145,44 @@ statement:
 		    $$->s.cond.arms->next = $6;
 		    $$->s.cond.otherwise = $7;
 		}
+	| tFOR '{' scatter '}' tIN '(' expr ')'
+		{
+		    vet_scatter($3);
+		    push_loop_name(get_name_from_id($3->id));
+		}
+	  statements tENDFOR
+		{
+                    $$ = alloc_stmt(STMT_SCATFOR);
+		    $$->s.scatfor.scat = $3;
+		    $$->s.scatfor.expr = $7;
+		    $$->s.scatfor.body = $10;
+
+		    pop_loop_name();
+               }
+	| tFOR '{' arglist '}' tIN '(' expr ')'
+		{
+		    if (!$3) {
+			yyerror("Empty list in scattering assignment.");
+			break;
+		    } else {
+			Scatter* sc = scatter_from_arglist($3);
+			if (sc) {
+			    vet_scatter(sc);
+			    push_loop_name(get_name_from_id(sc->id));
+			} else
+			    push_loop_name(0);
+ 			$<scatter>$ = sc;
+		    }
+		}
+	  statements tENDFOR
+		{
+		    $$ = alloc_stmt(STMT_SCATFOR);
+		    $$->s.scatfor.scat = $<scatter>9;
+		    $$->s.scatfor.expr = $7;
+		    $$->s.scatfor.body = $10;
+
+		    pop_loop_name();
+               }
 	| tFOR tID tIN '(' expr ')'
 		{
 		    push_loop_name($2);
@@ -780,6 +819,13 @@ find_id(char *name)
 
     dealloc_string(name);
     return slot;
+}
+
+/* Get name of variable for setting loopname  (Loopname could be optimized as id instead) */
+static const char* 
+get_name_from_id(int id)
+{
+   return local_names->names[id];
 }
 
 static void
