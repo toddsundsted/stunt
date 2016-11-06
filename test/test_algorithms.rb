@@ -847,7 +847,7 @@ class TestAlgorithms < Test::Unit::TestCase
     end
   end
 
-  def test_that_bcrypt_compatible_salt_prefix_may_specify_cost_factor
+  def test_that_bcrypt_compatible_salt_may_specify_cost_factor
     run_test_as('programmer') do
       assert_equal "$2a$05$KRGxLBS0Lxe3KBCwKxOzLeMe5OhXhsCBVMLq7IYo9z2kiiCZMSmz6", crypt("foobar", "$2a$05$KRGxLBS0Lxe3KBCwKxOzLe")
     end
