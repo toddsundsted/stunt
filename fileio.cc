@@ -86,7 +86,7 @@ struct line_buffer {
  ***************************************************************/
 
 char file_package_name[]    = "FIO";
-char file_package_version[] = "1.5p4";
+char file_package_version[] = "1.5p5";
 
 
 /***************************************************************
