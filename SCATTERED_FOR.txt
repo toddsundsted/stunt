@@ -1,0 +1,74 @@
+                        Scattered FOR statement patch
+                 (c) Bert Huijben - March 2000 - bert@vmoo.com
+ 
+ ------------------------------------------------------------------------------
+ ******              Usage of this code is AT YOUR OWN RISK              ******
+                       (As is all my non commercial code)
+ ------------------------------------------------------------------------------
+                      For the latest updates, please visit 
+                  http://www.vmoo.com/~bert/moo/server-patches/
+ ------------------------------------------------------------------------------
+                      (Fixed a traceback bug, 6 may 2000)
+ 
+ I have only tested this patch with LambdaMOO 1.8.1 but I assume it can
+ be used with other versions of the server code with minor modifications.
+ (These files haven't changed much in the last versions)
+ 
+ 
+ For adding the scattered FOR I needed to make changes to the following files:
+ * parser.y         Add syntax
+ * ast.c            Add statement type
+ * ast.h
+ * opcode.h         Added a new (Extended) opcode 
+       (Extended -> No upwards incompatibilities with previous server versions)
+ 
+ * code_gen.c       Generate code for this statement
+ * unparse.c
+ * decompile.c
+ * execute.c
+ 
+ * disassemble.c   Add update for EOP_FOR_SCATTER to bf_disassemble()
+ 
+ * version.h       Updated database format number (Incompatible statements)
+ 
+ ------------------------------------------------------
+ The scattered for behaves just like an for with an ordinary scatter inside
+ 
+ for {a, b} in (list)
+ endfor
+ 
+ Represented as:
+ for current_member in (list)
+   {a,b} = current_member;
+ endfor
+ 
+ Raises
+ * E_TYPE when typeof(list) != list
+ * E_TYPE when typeof(current_member) != list
+ * E_ARGS when current_member doesn't 'fit' {a, b}
+ 
+ 
+ Just like oridinary scatters the scatter may contain imtems with the ? and @ 
+ operators.
+ 
+ ?a  a is filled in when there is an item available and isn't accessed when
+     there is no fitting item
+     (
+       An verb:
+         for {a, ?b} in ({{1}})
+           player:Tell(b);
+         endfor
+       will raise E_VARNF if b isn't defined before the loop.
+ 
+       (The verb;{a,?b}={1};player:tell(b); has the same problem)
+     )
+ ?a=expr a is filled in when an item is available. When this isn't the case,
+     expr is evaluated and assigned to a. (expr isn't evaluated in the other
+     case (just like the ordinary scatter)
+ 
+ @rest This type eats all elements which are left over after the other 
+     variables are filled. (Only one @ is allowed per scatter)
+ 
+ --------
+      Bert Huijben,
+      Eemnes, The Netherlands, 16-3-2000
