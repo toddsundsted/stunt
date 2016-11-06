@@ -32,7 +32,7 @@ enum Extended_Opcode {
     /* ops after this point cost one tick */
     EOP_CATCH, EOP_TRY_EXCEPT, EOP_TRY_FINALLY,
     EOP_WHILE_ID, EOP_EXIT, EOP_EXIT_ID,
-    EOP_SCATTER, EOP_EXP,
+    EOP_SCATTER, EOP_EXP, EOP_FOR_SCATTER,
 
     EOP_FOR_LIST_1, EOP_FOR_LIST_2,
 

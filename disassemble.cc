@@ -111,6 +111,7 @@ struct mapping ext_mappings[] =
     {EOP_CONTINUE, "CONTINUE"},
     {EOP_WHILE_ID, "WHILE_ID"},
     {EOP_EXIT, "EXIT"},
+    {EOP_FOR_SCATTER, "FOR_SCATTER"},
     {EOP_FOR_LIST_1, "FOR_LIST_1"},
     {EOP_FOR_LIST_2, "FOR_LIST_2"},
     {EOP_EXIT_ID, "EXIT_ID"},
@@ -299,6 +300,11 @@ disassemble(Program * prog, Printer p, void *data)
 		case EOP_LAST:
 		    stream_printf(insn, " %d", ADD_BYTES(bc.numbytes_stack));
 		    break;
+		case EOP_FOR_SCATTER:
+		    a2 = ADD_BYTES(bc.numbytes_label);
+		    stream_printf(insn, " %d ", a2);
+
+		    /* Fall thru */
 		case EOP_SCATTER:
 		    {
 			int i, nargs = ADD_BYTES(1);
