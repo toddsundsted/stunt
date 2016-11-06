@@ -414,7 +414,7 @@ function_description(int i)
 	vv->v.list[j + 1].v.num = proto < 0 ? proto : (proto & TYPE_DB_MASK);
     }
     v.v.list[5].type = TYPE_INT;
-    v.v.list[5].v.num = entry.protected;
+    v.v.list[5].v.num = entry._protected;
 
     return v;
 }
