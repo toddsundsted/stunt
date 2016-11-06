@@ -60,6 +60,7 @@ extern "C" {
 #include "linenoise.h"
 }
 
+static int prev_time = 0;
 static pid_t parent_pid;
 int in_child = 0;
 
@@ -694,6 +695,64 @@ main_loop(void)
 	res = network_process_io(useconds_left);
 
 	run_ready_tasks();
+
+	{
+		int current_time = time(0), i;
+		db_prop_handle prop;
+
+		if (current_time > prev_time) {
+			Var scheduler_tasks = get_system_property("scheduler_tasks");
+			prev_time = time(0);
+
+			if (scheduler_tasks.type == TYPE_LIST) {
+				Var new_scheduled_tasks = new_list(0);
+
+				for (i = 1; i <= scheduler_tasks.v.list[0].v.num; i++) {
+					if (scheduler_tasks.v.list[i].type == TYPE_LIST
+						&& scheduler_tasks.v.list[i].v.list[0].v.num == 8
+						&& scheduler_tasks.v.list[i].v.list[1].type == TYPE_INT
+						&& scheduler_tasks.v.list[i].v.list[2].type == TYPE_INT
+						&& scheduler_tasks.v.list[i].v.list[3].type == TYPE_OBJ
+						&& scheduler_tasks.v.list[i].v.list[4].type == TYPE_STR
+						&& scheduler_tasks.v.list[i].v.list[5].type == TYPE_LIST
+						&& scheduler_tasks.v.list[i].v.list[6].type == TYPE_OBJ
+						&& scheduler_tasks.v.list[i].v.list[7].type == TYPE_INT
+						&& scheduler_tasks.v.list[i].v.list[8].type == TYPE_INT) {
+
+						if (current_time >= scheduler_tasks.v.list[i].v.list[2].v.num) {
+							run_server_task(scheduler_tasks.v.list[i].v.list[6].v.obj, 
+								scheduler_tasks.v.list[i].v.list[3],
+								scheduler_tasks.v.list[i].v.list[4].v.str,
+								var_dup(scheduler_tasks.v.list[i].v.list[5]),
+								"", 0);
+
+							if (scheduler_tasks.v.list[i].v.list[7].v.num != 0) {
+								if (scheduler_tasks.v.list[i].v.list[8].v.num) {
+									scheduler_tasks.v.list[i].v.list[2].v.num = current_time +
+									(scheduler_tasks.v.list[i].v.list[7].v.num - current_time %
+								 	scheduler_tasks.v.list[i].v.list[7].v.num);
+								}
+								else {
+									scheduler_tasks.v.list[i].v.list[2].v.num = current_time +
+									scheduler_tasks.v.list[i].v.list[7].v.num;
+								}
+								new_scheduled_tasks = listappend(new_scheduled_tasks, var_dup(scheduler_tasks.v.list[i]));
+							}
+						}
+						else if (current_time < scheduler_tasks.v.list[i].v.list[2].v.num) {
+							new_scheduled_tasks = listappend(new_scheduled_tasks, var_dup(scheduler_tasks.v.list[i]));
+						}
+					}
+				}
+
+				prop = db_find_property(new_obj(SYSTEM_OBJECT), "scheduler_tasks", 0);
+				if (prop.ptr)
+					db_set_property_value(prop, var_dup(new_scheduled_tasks));
+				free_var(new_scheduled_tasks);
+			}
+			free_var(scheduler_tasks);
+		}
+	}
 
 	/* If a exec'd child process exited, deal with it here */
 	deal_with_child_exit();
