@@ -76,6 +76,8 @@ typedef enum {
 				 */
     DBV_Anon,			/* Addition of anonymous objects
 				 */
+    DBV_ScatterFor,		/* Scattered FOR notation added
+				 */
     Num_DB_Versions		/* Special: the current version is this - 1. */
 } DB_Version;
 
