@@ -2075,6 +2075,88 @@ do {								\
 		    }
 		    break;
 
+		case EOP_FOR_SCATTER:
+		    {
+			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
+			Var count, list;
+			count = TOP_RT_VALUE;	/* will be a integer */
+			list = NEXT_TOP_RT_VALUE;	/* should be a list */
+			if (list.type != TYPE_LIST) {
+			    RAISE_ERROR(E_TYPE);
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			    break;
+			} else if (count.v.num > list.v.list[0].v.num /* size */ ) {
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			    break;
+			}
+
+			{
+			    int nargs = READ_BYTES(bv, 1);
+			    int nreq = READ_BYTES(bv, 1);
+			    int rest = READ_BYTES(bv, 1);
+			    int have_rest = (rest > nargs ? 0 : 1);
+			    Var list;
+			    int len = 0, nopt_avail, nrest, i, offset;
+			    int done, where = 0;
+			    enum error e = E_NONE;
+
+			    /* Get list item AND increment index */
+
+			    list = NEXT_TOP_RT_VALUE.v.list[TOP_RT_VALUE.v.num++];
+
+			    if (list.type != TYPE_LIST)
+				e = E_TYPE;
+			    else if ((len = list.v.list[0].v.num) < nreq || (!have_rest && len > nargs))
+				e = E_ARGS;
+
+			    if (e != E_NONE) {	/* skip rest of operands */
+				free_var(POP());	/* replace list with error code */
+				PUSH_ERROR(e);
+				for (i = 1; i <= nargs; i++) {
+				    READ_BYTES(bv, bc.numbytes_var_name);
+				    READ_BYTES(bv, bc.numbytes_label);
+				}
+			    } else {
+				nopt_avail = len - nreq;
+				nrest = (have_rest && len >= nargs ? len - nargs + 1 : 0);
+				for (offset = 0, i = 1; i <= nargs; i++) {
+				    int id = READ_BYTES(bv, bc.numbytes_var_name);
+				    int label = READ_BYTES(bv, bc.numbytes_label);
+
+				    if (i == rest) {	/* rest */
+					free_var(RUN_ACTIV.rt_env[id]);
+					RUN_ACTIV.rt_env[id] = sublist(var_ref(list), i, i + nrest - 1);
+					offset += nrest - 1;
+				    } else if (label == 0) {	/* required */
+					free_var(RUN_ACTIV.rt_env[id]);
+					RUN_ACTIV.rt_env[id] = var_ref(list.v.list[i + offset]);
+				    } else {	/* optional */
+					if (nopt_avail > 0) {
+					    nopt_avail--;
+					    free_var(RUN_ACTIV.rt_env[id]);
+					    RUN_ACTIV.rt_env[id] = var_ref(list.v.list[i + offset]);
+					} else {
+					    offset--;
+					    if (where == 0 && label != 1)
+						where = label;
+					}
+				    }
+				}
+			    }
+
+			    done = READ_BYTES(bv, bc.numbytes_label);
+			    if (where == 0)
+				JUMP(done);
+			    else
+				JUMP(where);
+			}
+		    }
+		    break;
+
 		case EOP_SCATTER:
 		    {
 			int nargs = READ_BYTES(bv, 1);
