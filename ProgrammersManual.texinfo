@@ -5548,6 +5548,10 @@ assumptions about the database for details.  If the programmer is not a wizard,
 then @code{E_PERM} is raised.
 @end deftypefun
 
+@deftypefun int process_id ()
+Returns the process id of the server.
+@end deftypefun
+
 @deftypefun none shutdown ([str @var{message}])
 Requests that the server shut itself down at its next opportunity.  Before
 doing so, a notice (incorporating @var{message}, if provided) is printed to all
