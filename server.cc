@@ -201,19 +201,6 @@ send_shutdown_message(const char *msg)
 }
 
 static void
-dump_taskid(void) {
-    Var taskid;
-    db_prop_handle prop;
-
-    taskid.type = TYPE_INT;
-    taskid.v.num = getpid();
-    prop = db_find_property(new_obj(SYSTEM_OBJECT), "unix_taskid", 0);
-    if (prop.ptr)
-        db_set_property_value(prop, var_dup(taskid));
-    free_var(taskid);
-}
-
-static void
 abort_server(void)
 {
     signal(SIGINT, SIG_DFL);
@@ -618,9 +605,6 @@ static void
 main_loop(void)
 {
     int i;
-
-    /* Write the current taskid to a property on SYSOBJ */
-    dump_taskid();
 
     /* First, queue anonymous objects */
     for (i = 1; i <= pending_list.v.list[0].v.num; i++) {
@@ -2231,6 +2215,18 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static package
+bf_process_id(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    Var taskid;
+    taskid.type = TYPE_INT;
+    taskid.v.num = getpid();
+
+    return make_var_pack(taskid);
+}
+
 void
 register_server(void)
 {
@@ -2238,6 +2234,7 @@ register_server(void)
     register_function("renumber", 1, 1, bf_renumber, TYPE_OBJ);
     register_function("reset_max_object", 0, 0, bf_reset_max_object);
     register_function("memory_usage", 0, 0, bf_memory_usage);
+    register_function("process_id", 0, 0, bf_process_id);
     register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);
     register_function("dump_database", 0, 0, bf_dump_database);
     register_function("db_disk_size", 0, 0, bf_db_disk_size);
