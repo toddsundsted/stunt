@@ -2215,6 +2215,18 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static package
+bf_process_id(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    Var taskid;
+    taskid.type = TYPE_INT;
+    taskid.v.num = getpid();
+
+    return make_var_pack(taskid);
+}
+
 void
 register_server(void)
 {
@@ -2222,6 +2234,7 @@ register_server(void)
     register_function("renumber", 1, 1, bf_renumber, TYPE_OBJ);
     register_function("reset_max_object", 0, 0, bf_reset_max_object);
     register_function("memory_usage", 0, 0, bf_memory_usage);
+    register_function("process_id", 0, 0, bf_process_id);
     register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);
     register_function("dump_database", 0, 0, bf_dump_database);
     register_function("db_disk_size", 0, 0, bf_db_disk_size);
