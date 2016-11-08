@@ -1,5 +1,5 @@
 #!/bin/sh
 ZONE="$1"
 TIME="$2"
-COMMAND="TZ=${ZONE} date --date='@${TIME}'"
+COMMAND="TZ=${ZONE} date --date='@${TIME}' +'%a %e %b %T %Y %Z'"
 echo $(eval $COMMAND)
