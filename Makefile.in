@@ -53,7 +53,8 @@ CSRCS = http_parser.c regexpr.c yajl.c yajl_alloc.c yajl_buf.c \
 	nettle/sha384-meta.c nettle/sha512.c \
 	nettle/sha512-compress.c nettle/sha512-meta.c \
 	nettle/write-be32.c nettle/write-le32.c nettle/write-le64.c \
-	crypt_blowfish.c crypt_gensalt.c sosemanuk.c linenoise.c
+	crypt/crypt_blowfish.c crypt/crypt_gensalt.c sosemanuk.c \
+	linenoise.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \
@@ -115,13 +116,13 @@ CXXOBJS = $(CXXSRCS:.cc=.o)
 
 YOBJS = $(YSRCS:.y=.o)
 
-OBJS = $(COBJS) $(CXXOBJS) $(YOBJS) x86.o
+OBJS = $(COBJS) $(CXXOBJS) $(YOBJS) crypt/x86.o
 
 moo:	$(OBJS)
 	$(CXX) $(CFLAGS) $(OBJS) $(LIBRARIES) -o $@
 
-x86.o: x86.S
-	$(CCAS) $(ASFLAGS) x86.S
+crypt/x86.o: crypt/x86.S
+	$(CCAS) $(ASFLAGS) $< -o $@
 
 parser.o: parser.y
 	$(YACC) -y -d parser.y
@@ -355,8 +356,8 @@ sha512-meta.o: nettle/sha512-meta.c nettle/nettle-meta.h \
 write-be32.o: nettle/write-be32.c nettle/nettle-write.h nettle/macros.h
 write-le32.o: nettle/write-le32.c nettle/nettle-write.h nettle/macros.h
 write-le64.o: nettle/write-le64.c nettle/nettle-write.h nettle/macros.h
-crypt_blowfish.o: crypt_blowfish.c
-crypt_gensalt.o: crypt_gensalt.c
+crypt/crypt_blowfish.o: crypt/crypt_blowfish.c
+crypt/crypt_gensalt.o: crypt/crypt_gensalt.c
 ast.o: ast.cc my-string.h config.h ast.h parser.h program.h structures.h \
  my-stdio.h version.h sym_table.h list.h streams.h log.h storage.h \
  utils.h execute.h db.h opcode.h options.h parse_cmd.h
