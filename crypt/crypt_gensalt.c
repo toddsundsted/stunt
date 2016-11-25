@@ -26,6 +26,9 @@
 #define __set_errno(val) errno = (val)
 #endif
 
+/* Just to make sure the prototypes match the actual definitions */
+#include "crypt_gensalt.h"
+
 unsigned char _crypt_itoa64[64 + 1] =
 	"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
