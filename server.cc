@@ -20,6 +20,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <sstream>
+
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
 #include "my-stdarg.h"
@@ -63,9 +65,11 @@ extern "C" {
 static pid_t parent_pid;
 static bool in_child = false;
 
+static std::stringstream shutdown_message;
+static bool shutdown_triggered = false;
+
 static bool in_emergency_mode = false;
 
-static const char *shutdown_message = 0;	/* shut down if non-zero */
 static Var checkpointed_connections;
 
 typedef enum {
@@ -287,7 +291,8 @@ panic_signal(int sig)
 static void
 shutdown_signal(int sig)
 {
-    shutdown_message = "shutdown signal received";
+    shutdown_triggered = true;
+    shutdown_message << "shutdown signal received";
 }
 
 static void
@@ -637,7 +642,7 @@ main_loop(void)
     set_checkpoint_timer(1);
 
     /* Now, we enter the main server loop */
-    while (shutdown_message == 0) {
+    while (!shutdown_triggered) {
 	/* Check how long we have until the next task will be ready to run.
 	 * We only care about three cases (== 0, == 1, and > 1), so we can
 	 * map a `never' result from the task subsystem into 2.
@@ -735,8 +740,8 @@ main_loop(void)
 	}
     }
 
-    applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message);
-    send_shutdown_message(shutdown_message);
+    applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message.str().c_str());
+    send_shutdown_message(shutdown_message.str().c_str());
 }
 
 static shandle *
@@ -1786,24 +1791,18 @@ bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_shutdown(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    /*
-     * The stream 's' and its contents will leak, but we're shutting down,
-     * so it doesn't really matter.
-     */
-
-    Stream *s;
     int nargs = arglist.v.list[0].v.num;
-    const char *msg = (nargs >= 1 ? arglist.v.list[1].v.str : 0);
+    const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : 0);
 
     if (!is_wizard(progr)) {
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
-    s = new_stream(100);
-    stream_printf(s, "shutdown() called by %s", object_name(progr));
-    if (msg)
-	stream_printf(s, ": %s", msg);
-    shutdown_message = stream_contents(s);
+
+    shutdown_triggered = true;
+    shutdown_message << "shutdown() called by " << object_name(progr);
+    if (message)
+	shutdown_message << ": " << message;
 
     free_var(arglist);
     return no_var_pack();
