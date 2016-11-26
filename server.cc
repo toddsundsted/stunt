@@ -1127,7 +1127,7 @@ do_script_file(const char *path)
     if (stat(path, &buf) != 0)
 	panic(strerror(errno));
     else if (S_ISDIR(buf.st_mode))
-      panic(strerror(EISDIR));
+	panic(strerror(EISDIR));
     else if ((f = fopen(path, "r")) == NULL)
 	panic(strerror(errno));
 
