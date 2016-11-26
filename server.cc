@@ -20,7 +20,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <string>
 #include <sstream>
+#include <fstream>
 
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
@@ -192,17 +194,15 @@ free_slistener(slistener * l)
 }
 
 static void
-send_shutdown_message(const char *msg)
+send_shutdown_message(const char *message)
 {
     shandle *h;
-    Stream *s = new_stream(100);
-    char *message;
+    std::stringstream s;
 
-    stream_printf(s, "*** Shutting down: %s ***", msg);
-    message = stream_contents(s);
+    s << "*** Shutting down: " << message << " ***";
+
     for (h = all_shandles; h; h = h->next)
-	network_send_line(h->nhandle, message, 1);
-    free_stream(s);
+	network_send_line(h->nhandle, s.str().c_str(), 1);
 }
 
 static void
@@ -262,21 +262,20 @@ enum Fork_Result
 fork_server(const char *subtask_name)
 {
     pid_t pid;
-    Stream *s = new_stream(100);
+    std::stringstream s;
 
-    stream_printf(s, "Forking %s", subtask_name);
+    s << "Forking " << subtask_name;
+
     pid = fork();
     if (pid < 0) {
-	log_perror(stream_contents(s));
-	free_stream(s);
+	log_perror(s.str().c_str());
 	return FORK_ERROR;
-    }
-    free_stream(s);
-    if (pid == 0) {
+    } else if (pid == 0) {
 	in_child = true;
 	return FORK_CHILD;
-    } else
+    } else {
 	return FORK_PARENT;
+    }
 }
 
 static void
@@ -1123,35 +1122,21 @@ do_script_line(const char *line)
 static void
 do_script_file(const char *path)
 {
-    struct stat buf;
-    FILE *f = NULL;
-    static Stream *s = 0;
-    int c;
     Var str;
     Var code = new_list(0);
+    std::ifstream file(path);
+    std::string line;
 
-    if (stat(path, &buf) != 0)
+    if (!file.is_open()) {
 	panic(strerror(errno));
-    else if (S_ISDIR(buf.st_mode))
-	panic(strerror(EISDIR));
-    else if ((f = fopen(path, "r")) == NULL)
-	panic(strerror(errno));
-
-    if (s == 0)
-	s = new_stream(1024);
-
-    do {
-	while((c = fgetc(f)) != EOF && c != '\n')
-	    stream_add_char(s, c);
-
-	str = str_dup_to_var(raw_bytes_to_clean(stream_contents(s),
-						stream_length(s)));
-
+    }
+    while (std::getline(file, line)) {
+	str = str_dup_to_var(raw_bytes_to_clean(line.c_str(), line.size()));
 	code = listappend(code, str);
-
-	reset_stream(s);
-
-    } while (c != EOF);
+    }
+    if (errno) {
+	panic(strerror(errno));
+    }
 
     run_do_start_script(code);
 }
