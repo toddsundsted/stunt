@@ -1118,7 +1118,7 @@ static void
 do_script_file(const char *path)
 {
     struct stat buf;
-    FILE *f;
+    FILE *f = NULL;
     static Stream *s = 0;
     int c;
     Var str;
