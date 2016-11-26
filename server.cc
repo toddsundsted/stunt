@@ -61,7 +61,7 @@ extern "C" {
 }
 
 static pid_t parent_pid;
-int in_child = 0;
+static int in_child = 0;
 
 static const char *shutdown_message = 0;	/* shut down if non-zero */
 static int in_emergency_mode = 0;
