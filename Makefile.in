@@ -39,22 +39,21 @@ ASFLAGS = -c
 
 COMPILE.c = $(CC) $(CFLAGS) $(CPPFLAGS) -c
 
-CSRCS = http_parser.c regexpr.c yajl.c yajl_alloc.c yajl_buf.c \
-	yajl_encode.c yajl_gen.c yajl_lex.c yajl_parser.c \
-	yajl_version.c nettle/hmac.c nettle/hmac-md5.c \
-	nettle/hmac-ripemd160.c nettle/hmac-sha1.c \
-	nettle/hmac-sha224.c nettle/hmac-sha256.c \
+CSRCS = http_parser.c regexpr.c yajl/yajl.c yajl/yajl_alloc.c \
+	yajl/yajl_buf.c yajl/yajl_encode.c yajl/yajl_gen.c \
+	yajl/yajl_lex.c yajl/yajl_parser.c yajl/yajl_version.c \
+	nettle/hmac.c nettle/hmac-md5.c nettle/hmac-ripemd160.c \
+	nettle/hmac-sha1.c nettle/hmac-sha224.c nettle/hmac-sha256.c \
 	nettle/hmac-sha384.c nettle/hmac-sha512.c nettle/md5.c \
 	nettle/md5-compress.c nettle/md5-meta.c nettle/memxor.c \
 	nettle/ripemd160.c nettle/ripemd160-compress.c \
 	nettle/ripemd160-meta.c nettle/sha1.c nettle/sha1-compress.c \
 	nettle/sha1-meta.c nettle/sha224-meta.c nettle/sha256.c \
 	nettle/sha256-compress.c nettle/sha256-meta.c \
-	nettle/sha384-meta.c nettle/sha512.c \
-	nettle/sha512-compress.c nettle/sha512-meta.c \
-	nettle/write-be32.c nettle/write-le32.c nettle/write-le64.c \
-	crypt/crypt_blowfish.c crypt/crypt_gensalt.c sosemanuk.c \
-	linenoise.c
+	nettle/sha384-meta.c nettle/sha512.c nettle/sha512-compress.c \
+	nettle/sha512-meta.c nettle/write-be32.c nettle/write-le32.c \
+	nettle/write-le64.c crypt/crypt_blowfish.c \
+	crypt/crypt_gensalt.c sosemanuk.c linenoise.c
 
 CXXSRCS = ast.cc base64.cc code_gen.cc collection.cc crypto.cc \
 	db_file.cc db_io.cc db_objects.cc db_properties.cc \
@@ -79,18 +78,19 @@ YSRCS = parser.y
 
 HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	db.h db_io.h db_private.h decompile.h db_tune.h disassemble.h \
-	eval_env.h eval_vm.h.h exec.h execute.h functions.h \
-	garbage.h getpagesize.h http_parser.h json.h keywords.h \
-	list.h log.h map.h match.h name_lookup.h network.h \
-	net_mplex.h net_multi.h net_proto.h numbers.h opcode.h \
-	options.h parse_cmd.h parser.h pattern.h program.h quota.h \
-	random.h regexpr.h server.h storage.h streams.h structures.h \
-	str_intern.h sym_table.h tasks.h timers.h tokens.h unparse.h \
-	utils.h verbs.h version.h yajl_alloc.h yajl_buf.h \
-	yajl_bytestack.h yajl_common.h yajl_encode.h yajl_gen.h \
-	yajl_lex.h yajl_parse.h yajl_parser.h yajl_version.h fileio.h \
-	system.h nettle/hmac.h nettle/macros.h nettle/md5.h \
-	nettle/memxor.h nettle/nettle-meta.h nettle/nettle-types.h \
+	eval_env.h eval_vm.h.h exec.h execute.h functions.h garbage.h \
+	getpagesize.h http_parser.h json.h keywords.h list.h log.h \
+	map.h match.h name_lookup.h network.h net_mplex.h net_multi.h \
+	net_proto.h numbers.h opcode.h options.h parse_cmd.h parser.h \
+	pattern.h program.h quota.h random.h regexpr.h server.h \
+	storage.h streams.h structures.h str_intern.h sym_table.h \
+	tasks.h timers.h tokens.h unparse.h utils.h verbs.h version.h \
+	yajl/yajl_alloc.h yajl/yajl_buf.h yajl/yajl_bytestack.h \
+	yajl/yajl_common.h yajl/yajl_encode.h yajl/yajl_gen.h \
+	yajl/yajl_lex.h yajl/yajl_parse.h yajl/yajl_parser.h \
+	yajl/yajl_version.h fileio.h system.h nettle/hmac.h \
+	nettle/macros.h nettle/md5.h nettle/memxor.h \
+	nettle/nettle-meta.h nettle/nettle-types.h \
 	nettle/nettle-write.h nettle/ripemd160.h nettle/sha1.h \
 	nettle/sha2.h sosemanuk.h linenoise.h
 
