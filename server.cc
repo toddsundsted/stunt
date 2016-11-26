@@ -61,10 +61,11 @@ extern "C" {
 }
 
 static pid_t parent_pid;
-static int in_child = 0;
+static bool in_child = false;
+
+static bool in_emergency_mode = false;
 
 static const char *shutdown_message = 0;	/* shut down if non-zero */
-static int in_emergency_mode = 0;
 static Var checkpointed_connections;
 
 typedef enum {
@@ -268,7 +269,7 @@ fork_server(const char *subtask_name)
     }
     free_stream(s);
     if (pid == 0) {
-	in_child = 1;
+	in_child = true;
 	return FORK_CHILD;
     } else
 	return FORK_PARENT;
@@ -837,7 +838,7 @@ emergency_mode()
     int start_ok = -1;
 
     oklog("EMERGENCY_MODE: Entering mode...\n");
-    in_emergency_mode = 1;
+    in_emergency_mode = true;
 
     printf("\nLambdaMOO Emergency Holographic Wizard Mode\n");
     printf("-------------------------------------------\n");
@@ -1071,7 +1072,7 @@ emergency_mode()
 #endif
 
     free_stream(s);
-    in_emergency_mode = 0;
+    in_emergency_mode = false;
     oklog("EMERGENCY_MODE: Leaving mode; %s continue...\n",
 	  start_ok ? "will" : "won't");
     return start_ok;
