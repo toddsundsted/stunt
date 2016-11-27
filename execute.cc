@@ -1562,7 +1562,7 @@ do {								\
 
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!is_object(obj) || propname.type != TYPE_STR) {
+		if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
@@ -1600,7 +1600,7 @@ do {								\
 
 		propname = TOP_RT_VALUE;	/* should be string */
 		obj = NEXT_TOP_RT_VALUE;	/* should be an object */
-		if (!is_object(obj) || propname.type != TYPE_STR)
+		if (!obj.is_object() || propname.type != TYPE_STR)
 		    PUSH_ERROR(E_TYPE);
 		else if (!is_valid(obj))
 		    PUSH_ERROR(E_INVIND);
@@ -1631,7 +1631,7 @@ do {								\
 		rhs = POP();		/* any type */
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!is_object(obj) || propname.type != TYPE_STR) {
+		if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
@@ -1764,7 +1764,7 @@ do {								\
 
 		if (args.type != TYPE_LIST || verb.type != TYPE_STR)
 		    err = E_TYPE;
-		else if (is_object(obj) && !is_valid(obj))
+		else if (obj.is_object() && !is_valid(obj))
 		    err = E_INVIND;
 		else {
 		    Objid recv = NOTHING;
@@ -1798,7 +1798,7 @@ do {								\
 
 		    free_var(system);
 
-		    if (is_object(obj) || recv != NOTHING) {
+		    if (obj.is_object() || recv != NOTHING) {
 			STORE_STATE_VARIABLES();
 			err = call_verb2(recv, verb.v.str, obj, args, 0);
 			/* if there is no error, RUN_ACTIV is now the CALLEE's.

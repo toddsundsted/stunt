@@ -195,7 +195,7 @@ do_map(Var k, Var v, void *data, int first)
 static void
 for_all_children(Var v, gc_func *fp)
 {
-    if (is_object(v))
+    if (v.is_object())
 	db_for_all_propvals(v, do_obj, (void *)fp);
     else if (TYPE_LIST == v.type)
 	listforeach(v, do_list, (void *)fp);
