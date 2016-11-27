@@ -134,6 +134,11 @@ struct Var {
     var_type type;
 
     bool
+    is_complex() {
+	return TYPE_COMPLEX_FLAG & type;
+    }
+
+    bool
     is_none() {
 	return TYPE_NONE == type;
     }
