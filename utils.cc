@@ -576,7 +576,7 @@ get_system_property(const char *name)
 	value.v.err = E_INVIND;
 	return value;
     }
-    h = db_find_property(new_obj(SYSTEM_OBJECT), name, &value);
+    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), name, &value);
     if (!h.ptr) {
 	value.type = TYPE_ERR;
 	value.v.err = E_PROPNF;
