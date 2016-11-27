@@ -137,6 +137,11 @@ struct Var {
     is_none() {
 	return TYPE_NONE == type;
     }
+
+    bool
+    is_collection() {
+	return TYPE_LIST == type || TYPE_MAP == type || TYPE_ANON == type;
+    }
 };
 
 /* generic tuples */
@@ -164,12 +169,6 @@ extern Var none;		/* see objects.c */
 #define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
 #define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
 #define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
-
-static inline bool
-is_collection(Var v)
-{
-    return TYPE_LIST == v.type || TYPE_MAP == v.type || TYPE_ANON == v.type;
-}
 
 static inline bool
 is_object(Var v)

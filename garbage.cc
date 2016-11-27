@@ -145,7 +145,7 @@ gc_possible_root(Var v)
 {
     GC_Color color;
 
-    assert(is_collection(v));
+    assert(v.is_collection());
 
     if ((color = gc_get_color(VOID_PTR(v))) != GC_PURPLE && color != GC_GREEN && color != GC_YELLOW) {
 	gc_set_color(VOID_PTR(v), GC_PURPLE);
@@ -169,7 +169,7 @@ static int
 do_obj(void *data, Var v)
 {
     gc_func *fp = (gc_func *)data;
-    if (is_collection(v) && is_not_green(v))
+    if (v.is_collection() && is_not_green(v))
 	(*fp)(v);
     return 0;
 }
@@ -178,7 +178,7 @@ static int
 do_list(Var v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
-    if (is_collection(v) && is_not_green(v))
+    if (v.is_collection() && is_not_green(v))
 	(*fp)(v);
     return 0;
 }
@@ -187,7 +187,7 @@ static int
 do_map(Var k, Var v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
-    if (is_collection(v) && is_not_green(v))
+    if (v.is_collection() && is_not_green(v))
 	(*fp)(v);
     return 0;
 }
