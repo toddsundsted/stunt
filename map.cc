@@ -668,7 +668,7 @@ mapinsert(Var map, Var key, Var value)
      * collections (for which `compare' does not currently work).
      */
     if (key.type == TYPE_NONE || key.type == TYPE_CLEAR
-	|| is_collection(key))
+	|| key.is_collection())
 	panic("MAPINSERT: invalid key");
 
     Var _new = map;
@@ -982,7 +982,7 @@ bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
     Var map = arglist.v.list[1];
     Var key = arglist.v.list[2];
 
-    if (is_collection(key)) {
+    if (key.is_collection()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
