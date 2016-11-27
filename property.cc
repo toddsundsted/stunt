@@ -45,7 +45,7 @@ bf_properties(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
-    if (!is_object(obj))
+    if (!obj.is_object())
 	return make_error_pack(E_TYPE);
     else if (!is_valid(obj))
 	return make_error_pack(E_INVARG);
@@ -71,7 +71,7 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
     unsigned flags;
     char perms[4], *s;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
@@ -157,7 +157,7 @@ set_prop_info(Var obj, const char *pname, Var info, Objid progr)
     enum error e;
     db_prop_handle h;
 
-    if (!is_object(obj))
+    if (!obj.is_object())
 	e = E_TYPE;
     else if (!is_valid(obj))
 	e = E_INVARG;
@@ -217,7 +217,7 @@ bf_add_prop(Var arglist, Byte next, void *vdata, Objid progr)
 
     if ((e = validate_prop_info(info, &owner, &flags, &new_name)) != E_NONE)
 	; /* already failed */
-    else if (new_name || !is_object(obj))
+    else if (new_name || !obj.is_object())
 	e = E_TYPE;
     else if (!is_valid(obj))
 	e = E_INVARG;
@@ -242,7 +242,7 @@ bf_delete_prop(Var arglist, Byte next, void *vdata, Objid progr)
     const char *pname = arglist.v.list[2].v.str;
     enum error e = E_NONE;
 
-    if (!is_object(obj))
+    if (!obj.is_object())
 	e = E_TYPE;
     if (!is_valid(obj))
 	e = E_INVARG;
@@ -268,7 +268,7 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     Var value;
     enum error e;
 
-    if (!is_object(obj))
+    if (!obj.is_object())
 	e = E_TYPE;
     else if (!is_valid(obj))
 	e = E_INVARG;
@@ -304,7 +304,7 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     enum error e;
 
-    if (!is_object(obj))
+    if (!obj.is_object())
 	e = E_INVARG;
     else if (!is_valid(obj))
 	e = E_INVARG;

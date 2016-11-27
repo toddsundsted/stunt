@@ -56,7 +56,7 @@ bf_verbs(Var arglist, Byte next, void *vdata, Objid progr)
 
     free_var(arglist);
 
-    if (!is_object(obj))
+    if (!obj.is_object())
 	return make_error_pack(E_TYPE);
     else if (!is_valid(obj))
 	return make_error_pack(E_INVARG);
@@ -188,7 +188,7 @@ bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
 	; /* already failed */
     else if ((e = validate_verb_args(args, &dobj, &prep, &iobj)) != E_NONE)
 	free_str(names);
-    else if (!is_object(obj)) {
+    else if (!obj.is_object()) {
 	free_str(names);
 	e = E_INVARG;
     } else if (!is_valid(obj)) {
@@ -245,7 +245,7 @@ bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE)
 	; /* e is already set */
-    else if (!is_object(obj))
+    else if (!obj.is_object())
 	e = E_TYPE;
     else if (!is_valid(obj))
 	e = E_INVARG;
@@ -278,7 +278,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     char perms[5], *s;
     enum error e;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if ((e = validate_verb_descriptor(desc)) != E_NONE
@@ -330,7 +330,7 @@ bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE)
 	; /* e is already set */
-    else if (!is_object(obj))
+    else if (!obj.is_object())
 	e = E_TYPE;
     else if (!is_valid(obj))
 	e = E_INVARG;
@@ -388,7 +388,7 @@ bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     enum error e;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } if ((e = validate_verb_descriptor(desc)) != E_NONE
@@ -429,7 +429,7 @@ bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 
     if ((e = validate_verb_descriptor(desc)) != E_NONE)
 	; /* e is already set */
-    else if (!is_object(obj))
+    else if (!obj.is_object())
 	e = E_TYPE;
     else if (!is_valid(obj))
 	e = E_INVARG;
@@ -476,7 +476,7 @@ bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
     Var code;
     enum error e;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if ((e = validate_verb_descriptor(desc)) != E_NONE
@@ -516,7 +516,7 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 	    free_var(arglist);
 	    return make_error_pack(E_TYPE);
 	}
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if ((e = validate_verb_descriptor(desc)) != E_NONE
@@ -549,7 +549,7 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
     Var object = arglist.v.list[1];
     const char *verb = arglist.v.list[2].v.str;
 
-    if (!is_object(object)) {
+    if (!object.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if (!is_valid(object)) {

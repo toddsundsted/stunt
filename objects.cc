@@ -273,7 +273,7 @@ bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
     Var r;
 
-    if (is_object(arglist.v.list[1])) {
+    if (arglist.v.list[1].is_object()) {
 	r.type = TYPE_INT;
 	r.v.num = is_valid(arglist.v.list[1]);
     }
@@ -459,7 +459,7 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
     int n = listlength(arglist);
     Var anon_kids = nothing;
 
-    if (!is_object(obj) || !is_obj_or_list_of_objs(what)) {
+    if (!obj.is_object() || !is_obj_or_list_of_objs(what)) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
@@ -513,7 +513,7 @@ bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (!is_object(arglist.v.list[1])) {
+    if (!arglist.v.list[1].is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if (!is_valid(arglist.v.list[1])) {
@@ -542,7 +542,7 @@ bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (!is_object(arglist.v.list[1])) {
+    if (!arglist.v.list[1].is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }  else if (!is_valid(arglist.v.list[1])) {
@@ -571,7 +571,7 @@ bf_children(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
     Var obj = arglist.v.list[1];
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if (!is_valid(obj)) {
@@ -590,7 +590,7 @@ bf_ancestors(Var arglist, Byte next, void *vdata, Objid progr)
     Var obj = arglist.v.list[1];
     bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if (!is_valid(obj)) {
@@ -609,7 +609,7 @@ bf_descendants(Var arglist, Byte next, void *vdata, Objid progr)
     Var obj = arglist.v.list[1];
     bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if (!is_valid(obj)) {
@@ -674,7 +674,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	obj = var_ref(arglist.v.list[1]);
 	free_var(arglist);
 
-	if (!is_object(obj)) {
+	if (!obj.is_object()) {
 	    free_var(obj);
 	    return make_error_pack(E_TYPE);
 	} else if (!is_valid(obj) || db_object_has_flag2(obj, FLAG_RECYCLED)) {
@@ -888,7 +888,7 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var obj = arglist.v.list[1];
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if (!is_valid(obj)) {
@@ -915,7 +915,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     Var object = arglist.v.list[1];
     Var parent = arglist.v.list[2];
 
-    if (!is_object(object) || !is_object(parent)) {
+    if (!object.is_object() || !parent.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
