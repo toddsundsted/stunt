@@ -312,7 +312,7 @@ db_find_command_verb(Objid oid, const char *verb,
     Var ancestor;
     int i, c;
 
-    ancestors = db_ancestors(new_obj(oid), true);
+    ancestors = db_ancestors(Var::new_obj(oid), true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	o = dbpriv_find_object(ancestor.v.obj);

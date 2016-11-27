@@ -33,7 +33,7 @@ aliases(Objid oid)
     Var value;
     db_prop_handle h;
 
-    h = db_find_property(new_obj(oid), "aliases", &value);
+    h = db_find_property(Var::new_obj(oid), "aliases", &value);
     if (!h.ptr || value.type != TYPE_LIST) {
 	/* Simulate a pointer to an empty list */
 	return &zero;

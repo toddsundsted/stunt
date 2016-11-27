@@ -571,11 +571,11 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
 	    r.v.list[2].v.str = str_ref(db_verb_names(h));
 	}
 	else {
-	    r = new_int(1);
+	    r = Var::new_int(1);
 	}
     }
     else {
-	r = new_int(0);
+	r = Var::new_int(0);
     }
 
     return make_var_pack(r);

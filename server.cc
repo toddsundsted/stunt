@@ -310,7 +310,7 @@ call_checkpoint_notifier(int successful)
     args = new_list(1);
     args.v.list[1].type = TYPE_INT;
     args.v.list[1].v.num = successful;
-    run_server_task(-1, new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
+    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
 }
 
 static void
@@ -424,16 +424,16 @@ call_notifier(Objid player, Objid handler, const char *verb_name)
     args = new_list(1);
     args.v.list[1].type = TYPE_OBJ;
     args.v.list[1].v.obj = player;
-    run_server_task(player, new_obj(handler), verb_name, args, "", 0);
+    run_server_task(player, Var::new_obj(handler), verb_name, args, "", 0);
 }
 
 int
 get_server_option(Objid oid, const char *name, Var * r)
 {
     if (((valid(oid) &&
-	  db_find_property(new_obj(oid), "server_options", r).ptr)
+	  db_find_property(Var::new_obj(oid), "server_options", r).ptr)
 	 || (valid(SYSTEM_OBJECT) &&
-	     db_find_property(new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
+	     db_find_property(Var::new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
 	&& r->type == TYPE_OBJ
 	&& valid(r->v.obj)
 	&& db_find_property(*r, name, r).ptr)
@@ -637,7 +637,7 @@ main_loop(void)
     free_var(checkpointed_connections);
 
     /* Third, run #0:server_started() */
-    run_server_task(-1, new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
+    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
     set_checkpoint_timer(1);
 
     /* Now, we enter the main server loop */
@@ -660,7 +660,7 @@ main_loop(void)
 	    if (checkpoint_requested == CHKPT_SIGNAL)
 		oklog("CHECKPOINTING due to remote request signal.\n");
 	    checkpoint_requested = CHKPT_OFF;
-	    run_server_task(-1, new_obj(SYSTEM_OBJECT), "checkpoint_started",
+	    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_started",
 			    new_list(0), "", 0);
 	    network_process_io(0);
 #ifdef UNFORKED_CHECKPOINTS
@@ -866,7 +866,7 @@ emergency_mode()
 	    if (!is_wizard(wizard)) {
 		if (first_valid < 0) {
 		    first_valid = db_create_object();
-		    db_change_parents(new_obj(first_valid), new_list(0), none);
+		    db_change_parents(Var::new_obj(first_valid), new_list(0), none);
 		    printf("** No objects in database; created #%d.\n",
 			   first_valid);
 		}
@@ -1089,7 +1089,7 @@ run_do_start_script(Var code)
     Var result;
 
     switch (run_server_task(NOTHING,
-			    new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
+			    Var::new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
 			    &result)) {
     case OUTCOME_DONE:
 	unparse_value(s, result);

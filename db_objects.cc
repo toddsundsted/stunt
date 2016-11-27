@@ -331,7 +331,7 @@ db_make_anonymous(Objid oid, Objid last)
 {
     Object *o = objects[oid];
     Var old_parents = o->parents;
-    Var me = new_obj(oid);
+    Var me = Var::new_obj(oid);
 
     Var parent;
     int i, c;
@@ -972,7 +972,7 @@ db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
 void
 db_change_location(Objid oid, Objid new_location)
 {
-    Var me = new_obj(oid);
+    Var me = Var::new_obj(oid);
 
     Objid old_location = objects[oid]->location.v.obj;
 
@@ -984,7 +984,7 @@ db_change_location(Objid oid, Objid new_location)
 
     free_var(objects[oid]->location);
 
-    objects[oid]->location = new_obj(new_location);
+    objects[oid]->location = Var::new_obj(new_location);
 }
 
 int
@@ -1017,7 +1017,7 @@ db_set_object_flag(Objid oid, db_object_flag f)
     dbpriv_set_object_flag(objects[oid], f);
 
     if (f == FLAG_USER)
-	all_users = setadd(all_users, new_obj(oid));
+	all_users = setadd(all_users, Var::new_obj(oid));
 }
 
 void
@@ -1025,7 +1025,7 @@ db_clear_object_flag(Objid oid, db_object_flag f)
 {
     dbpriv_clear_object_flag(objects[oid], f);
     if (f == FLAG_USER)
-	all_users = setremove(all_users, new_obj(oid));
+	all_users = setremove(all_users, Var::new_obj(oid));
 }
 
 int

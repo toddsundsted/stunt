@@ -147,6 +147,32 @@ struct Var {
     is_object() {
 	return TYPE_OBJ == type || TYPE_ANON == type;
     }
+
+    bool
+    is_int() {
+	return TYPE_INT == type;
+    }
+
+    static Var
+    new_int(int32 num) {
+	Var v;
+	v.type = TYPE_INT;
+	v.v.num = num;
+	return v;
+    }
+
+    bool
+    is_obj() {
+	return TYPE_OBJ == type;
+    }
+
+    static Var
+    new_obj(Objid obj) {
+	Var v;
+	v.type = TYPE_OBJ;
+	v.v.obj = obj;
+	return v;
+    }
 };
 
 /* generic tuples */
@@ -174,35 +200,5 @@ extern Var none;		/* see objects.c */
 #define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
 #define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
 #define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
-
-static inline Var
-new_int(int32 num)
-{
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = num;
-    return r;
-}
-
-static inline bool
-is_int(Var v)
-{
-    return TYPE_INT == v.type;
-}
-
-static inline Var
-new_obj(Objid obj)
-{
-    Var r;
-    r.type = TYPE_OBJ;
-    r.v.obj = obj;
-    return r;
-}
-
-static inline bool
-is_obj(Var v)
-{
-    return TYPE_OBJ == v.type;
-}
 
 #endif				/* !Structures_h */

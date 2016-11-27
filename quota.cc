@@ -31,7 +31,7 @@ decr_quota(Objid player)
     if (!valid(player))
 	return 1;
 
-    h = db_find_property(new_obj(player), quota_name, &v);
+    h = db_find_property(Var::new_obj(player), quota_name, &v);
     if (!h.ptr)
 	return 1;
 
@@ -55,7 +55,7 @@ incr_quota(Objid player)
     if (!valid(player))
 	return;
 
-    h = db_find_property(new_obj(player), quota_name, &v);
+    h = db_find_property(Var::new_obj(player), quota_name, &v);
     if (!h.ptr)
 	return;
 
