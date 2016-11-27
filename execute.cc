@@ -1493,7 +1493,7 @@ do {								\
 		    int rel = compare(from, to, 0);
 		    mapseek(base, from, &iterfrom, 0);
 		    mapseek(base, to, &iterto, 0);
-		    if ((rel <= 0) && (is_none(iterfrom) || is_none(iterto))) {
+		    if ((rel <= 0) && (iterfrom.is_none() || iterto.is_none())) {
 			free_var(to);
 			free_var(from);
 			free_var(iterto);
@@ -1947,7 +1947,7 @@ do {								\
 			    Var iterfrom, iterto;
 			    mapseek(base, from, &iterfrom, 0);
 			    mapseek(base, to, &iterto, 0);
-			    if (is_none(iterfrom) || is_none(iterto)) {
+			    if (iterfrom.is_none() || iterto.is_none()) {
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
