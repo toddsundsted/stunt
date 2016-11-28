@@ -25,6 +25,8 @@
 
 #include "config.h"
 
+#include "storage.h"
+
 #define MAXINT	((int32) 2147483647L)
 #define MININT	((int32) -2147483648L)
 #define MAXOBJ	((Objid) MAXINT)
@@ -133,6 +135,9 @@ struct Var {
     } v;
     var_type type;
 
+    friend Var str_dup_to_var(const char *s);
+    friend Var str_ref_to_var(const char *s);
+
     bool
     is_complex() {
 	return TYPE_COMPLEX_FLAG & type;
@@ -178,7 +183,34 @@ struct Var {
 	v.v.obj = obj;
 	return v;
     }
+
+    bool
+    is_str() {
+	return TYPE_STR == type;
+    }
 };
+
+inline Var
+str_dup_to_var(const char *s)
+{
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = str_dup(s);
+
+    return r;
+}
+
+inline Var
+str_ref_to_var(const char *s)
+{
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = str_ref(s);
+
+    return r;
+}
 
 /* generic tuples */
 typedef struct var_pair {
