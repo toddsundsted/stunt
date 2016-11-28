@@ -28,6 +28,7 @@
 #include "parser.h"
 #include "server.h"
 #include "storage.h"
+#include "structures.h"
 #include "unparse.h"
 #include "utils.h"
 #include "verbs.h"
@@ -588,7 +589,7 @@ all_strings(Var arglist)
     int i, c;
 
     FOR_EACH (arg, arglist, i, c)
-	if (!is_str(arg))
+	if (!arg.is_str())
 	    return 0;
 
     return 1;
