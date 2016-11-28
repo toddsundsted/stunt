@@ -5619,22 +5619,7 @@ version number as well as compilation options.
 
 @need 1500 
 @deftypefun list memory_usage ()
-On some versions of the server, this returns statistics concerning the server
-consumption of system memory.  The result is a list of lists, each in the
-following format:
-
-@example
-@{@var{block-size}, @var{nused}, @var{nfree}@}
-@end example
-
-@noindent
-where @var{block-size} is the size in bytes of a particular class of memory
-fragments, @var{nused} is the number of such fragments currently in use in the
-server, and @var{nfree} is the number of such fragments that have been reserved
-for use but are currently free.
-
-On servers for which such statistics are not available, @code{memory_usage()}
-returns @code{@{@}}.
+Exists for backwards compatibility with old databases.  Returns an empty list.
 @end deftypefun
 
 @deftypefun int db_disk_size ()

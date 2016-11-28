@@ -1767,9 +1767,10 @@ bf_reset_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r = memory_usage();
+    Var r = new_list(0);
+
     free_var(arglist);
+
     return make_var_pack(r);
 }
 
