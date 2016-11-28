@@ -20,6 +20,8 @@
 
 #include "my-string.h"
 
+#include "options.h"
+
 /* See "Concurrent Cycle Collection in Reference Counted Systems",
  * (Bacon and Rajan, 2001) for a description of the cycle collection
  * algorithm and the colors.
