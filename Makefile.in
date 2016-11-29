@@ -78,13 +78,13 @@ YSRCS = parser.y
 
 HDRS = ast.h base64.h bf_register.h code_gen.h collection.h crypto.h \
 	db.h db_io.h db_private.h decompile.h db_tune.h disassemble.h \
-	eval_env.h eval_vm.h.h exec.h execute.h functions.h garbage.h \
-	getpagesize.h http_parser.h json.h keywords.h list.h log.h \
-	map.h match.h name_lookup.h network.h net_mplex.h net_multi.h \
-	net_proto.h numbers.h opcode.h options.h parse_cmd.h parser.h \
-	pattern.h program.h quota.h random.h regexpr.h server.h \
-	storage.h streams.h structures.h str_intern.h sym_table.h \
-	tasks.h timers.h tokens.h unparse.h utils.h verbs.h version.h \
+	eval_env.h eval_vm.h exec.h execute.h functions.h garbage.h \
+	http_parser.h json.h keywords.h list.h log.h map.h match.h \
+	name_lookup.h network.h net_mplex.h net_multi.h net_proto.h \
+	numbers.h opcode.h options.h parse_cmd.h parser.h pattern.h \
+	program.h quota.h random.h regexpr.h server.h storage.h \
+	streams.h structures.h str_intern.h sym_table.h tasks.h \
+	timers.h tokens.h unparse.h utils.h verbs.h version.h \
 	yajl/yajl_alloc.h yajl/yajl_buf.h yajl/yajl_bytestack.h \
 	yajl/yajl_common.h yajl/yajl_encode.h yajl/yajl_gen.h \
 	yajl/yajl_lex.h yajl/yajl_parse.h yajl/yajl_parser.h \
