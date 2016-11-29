@@ -227,7 +227,7 @@ keywords.cc: keywords.gperf
 		> keywords.cc
 
 tags:
-	etags -t $(SRCS)
+	gtags .
 
 clean:
 	rm -f $(OBJS) $(OPT_NET_OBJS) core parser.cc y.tab.c y.tab.h y.output makedep eddep
