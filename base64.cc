@@ -27,26 +27,15 @@
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
 
-#include <stdlib.h>
+#include <sstream>
+#include <string>
 
 #include "base64.h"
 #include "functions.h"
 #include "log.h"
 #include "storage.h"
-#include "streams.h"
 #include "utils.h"
 #include "server.h"
-
-static const unsigned char base64_table[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static const unsigned char base64_url_safe_table[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-
-/**** helpers for catching overly large allocations ****/
-
-#define TRY_STREAM enable_stream_exceptions()
-#define ENDTRY_STREAM disable_stream_exceptions()
 
 static package
 make_space_pack()
@@ -57,14 +46,17 @@ make_space_pack()
 	return make_abort_pack(ABORT_SECONDS);
 }
 
+static const unsigned char base64_chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+static const unsigned char url_safe_base64_chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
 static package
 bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    package pack;
-
-    int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
-
-    const unsigned char *table = safe ? base64_url_safe_table : base64_table;
+    const int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
+    const unsigned char *chars = safe ? url_safe_base64_chars : base64_chars;
 
     /* check input */
 
@@ -74,195 +66,185 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
 
     if (!in) {
-	pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist.v.list[1]));
+	const package pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist.v.list[1]));
+	free_var(arglist);
+	return pack;
+    }
+
+    if ((len / 3) * 4 > stream_alloc_maximum) {
+	const package pack = make_space_pack();
 	free_var(arglist);
 	return pack;
     }
 
     /* encode */
 
-    size_t newlen = len * 4 / 3 + 4 + 1;
-
-    if (newlen > stream_alloc_maximum) {
-	pack = make_space_pack();
-	free_var(arglist);
-	return pack;
-    }
-
-    char *p, *str;
-
-    p = str = (char *)mymalloc(newlen, M_STRING);
-
-    if (!str) {
-	free_var(arglist);
-	panic("BF_ENCODE_BASE64: failed to malloc\n");
-	return no_var_pack();
-    }
-
-    const unsigned char *endp, *inp;
-
-    endp = (unsigned char *)(in + len);
-    inp = (unsigned char *)in;
+    std::stringstream buffer;
+    const unsigned char *endp = (unsigned char *)(in + len);
+    const unsigned char *inp = (unsigned char *)in;
 
     while (endp - inp >= 3) {
-	*p++ = table[inp[0] >> 2];
-	*p++ = table[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
-	*p++ = table[((inp[1] & 0x0f) << 2) | (inp[2] >> 6)];
-	*p++ = table[inp[2] & 0x3f];
+	buffer << chars[inp[0] >> 2];
+	buffer << chars[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
+	buffer << chars[((inp[1] & 0x0f) << 2) | (inp[2] >> 6)];
+	buffer << chars[inp[2] & 0x3f];
 	inp += 3;
     }
 
     if (endp - inp) {
-	*p++ = table[inp[0] >> 2];
+	buffer << chars[inp[0] >> 2];
 	if (endp - inp == 2) {
-	    *p++ = table[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
-	    *p++ = table[(inp[1] & 0x0f) << 2];
+	    buffer << chars[((inp[0] & 0x03) << 4) | (inp[1] >> 4)];
+	    buffer << chars[(inp[1] & 0x0f) << 2];
 	} else {
-	    *p++ = table[(inp[0] & 0x03) << 4];
+	    buffer << chars[(inp[0] & 0x03) << 4];
 	    if (!safe)
-		*p++ = '=';
+		buffer << '=';
 	}
 	if (!safe)
-	    *p++ = '=';
+	    buffer << '=';
     }
-
-    *p = '\0';
 
     /* return */
 
     Var ret;
 
     ret.type = TYPE_STR;
-    ret.v.str = str;
+    ret.v.str = str_dup(buffer.str().c_str());
 
     free_var(arglist);
 
     return make_var_pack(ret);
 }
 
+static const unsigned char base64_table[] = {
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 62, 80, 80, 80, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 80, 80, 80, 90, 80, 80,
+    80,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 80, 80, 80, 80, 80,
+    80, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80
+};
+
+static const unsigned char url_safe_base64_table[] = {
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 62, 80, 80,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 80, 80, 80, 90, 80, 80,
+    80,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 80, 80, 80, 80, 63,
+    80, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80,
+    80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80
+};
+
 static package
 bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    package pack;
-
-    int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
-
-    const unsigned char *table = safe ? base64_url_safe_table : base64_table;
+    const int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
+    const unsigned char *table = safe ? url_safe_base64_table : base64_table;
 
     /* check input */
 
     unsigned int len;
     const char *in;
 
-    unsigned char dict[256], tmp;
-    size_t i, cnt = 0, pad = 0;
-
     in = arglist.v.list[1].v.str;
     len = memo_strlen(in);
 
-    memset(dict, 0x80, 256);
-    for (i = 0; i < 64; i++)
-	dict[table[i]] = i;
-    dict['='] = 0;
+    int i, pad = 0;
 
     for (i = 0; i < len; i++) {
-	tmp = (unsigned char)in[i];
-	if (dict[tmp] == 0x80) {
-	    pack = make_raise_pack(E_INVARG, "Invalid character in encoded data", var_ref(arglist.v.list[1]));
+	const unsigned char tmp = (unsigned char)in[i];
+	if (table[tmp] == 80) {
+	    const package pack = make_raise_pack(E_INVARG, "Invalid character in encoded data", var_ref(arglist.v.list[1]));
 	    free_var(arglist);
 	    return pack;
 	}
 	if (pad && tmp != '=') {
-	    pack = make_raise_pack(E_INVARG, "Pad character in encoded data", var_ref(arglist.v.list[1]));
+	    const package pack = make_raise_pack(E_INVARG, "Pad character in encoded data", var_ref(arglist.v.list[1]));
 	    free_var(arglist);
 	    return pack;
 	}
-	if (dict[tmp] != 0x80)
-	    cnt++;
 	if (tmp == '=')
 	    pad++;
     }
 
-    if (!safe && cnt % 4) {
-	pack = make_raise_pack(E_INVARG, "Invalid length", var_ref(arglist.v.list[1]));
+    if (pad > 2) {
+	const package pack = make_raise_pack(E_INVARG, "Too many pad characters", var_ref(arglist.v.list[1]));
 	free_var(arglist);
 	return pack;
     }
-    if (pad > 2) {
-	pack = make_raise_pack(E_INVARG, "Too many pad characters", var_ref(arglist.v.list[1]));
+    if ((len - pad == 1) || (!safe && len % 4)) {
+	const package pack = make_raise_pack(E_INVARG, "Invalid length", var_ref(arglist.v.list[1]));
+	free_var(arglist);
+	return pack;
+    }
+
+    if ((len / 4) * 3 > stream_alloc_maximum) {
+	const package pack = make_space_pack();
 	free_var(arglist);
 	return pack;
     }
 
     /* decode */
 
-    size_t newlen = (cnt + 3) / 4 * 3 + 1;
-
-    if (newlen > stream_alloc_maximum) {
-	pack = make_space_pack();
-	free_var(arglist);
-	return pack;
-    }
-
-    char *p, *str;
-
-    p = str = (char *)mymalloc(newlen, M_STRING);
-    if (!str) {
-	free_var(arglist);
-	panic("BF_DECODE_BASE64: failed to malloc\n");
-	return no_var_pack();
-    }
-
+    std::stringstream buffer;
     unsigned char ar[4], block[4];
 
-    cnt = 0;
     for (i = 0; i < len + len % 4; i++) {
 	if (i < len) {
-	    tmp = dict[(unsigned char)in[i]];
-	    ar[cnt] = in[i];
+	    block[i % 4] = table[(unsigned char)in[i]];
+	    ar[i % 4] = in[i];
 	} else {
-	    tmp = '\0';
-	    ar[cnt] = '=';
+	    block[i % 4] = '\0';
+	    ar[i % 4] = '=';
 	}
-	block[cnt++] = tmp;
-	if (cnt == 4) {
-	    *p++ = (block[0] << 2) | (block[1] >> 4);
-	    *p++ = (block[1] << 4) | (block[2] >> 2);
-	    *p++ = (block[2] << 6) | block[3];
-	    cnt = 0;
+	if (i % 4 == 3) {
+	    buffer << (char)((block[0] << 2) | (block[1] >> 4));
+	    buffer << (char)((block[1] << 4) | (block[2] >> 2));
+	    buffer << (char)((block[2] << 6) | block[3]);
 	}
     }
 
-    *p = '\0';
+    const std::string& tmp = buffer.str();
+    const char* out = tmp.c_str();
+    int size = tmp.size();
 
-    if (p > str) {
+    if (size) {
 	if (ar[2] == '=')
-	    p -= 2;
+	    size -= 2;
 	else if (ar[3] == '=')
-	    p -= 1;
+	    size -= 1;
     }
 
     /* return */
 
-    static Stream *s = 0;
-    if (!s)
-	s = new_stream(100);
+    Var ret;
 
-    TRY_STREAM;
-    try {
-	stream_add_raw_bytes_to_binary(s, str, (int)(p - str));
-	pack = make_var_pack(str_dup_to_var(reset_stream(s)));
-    }
-    catch (stream_too_big& exception) {
-	reset_stream(s);
-	pack = make_space_pack();
-    }
-    ENDTRY_STREAM;
+    ret.type = TYPE_STR;
+    ret.v.str = str_dup(raw_bytes_to_binary(out, size));
 
-    free_str(str);
     free_var(arglist);
 
-    return pack;
+    return make_var_pack(ret);
 }
 
 void
