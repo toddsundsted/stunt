@@ -139,32 +139,32 @@ struct Var {
     friend Var str_ref_to_var(const char *s);
 
     bool
-    is_complex() {
+    is_complex() const {
 	return TYPE_COMPLEX_FLAG & type;
     }
 
     bool
-    is_none() {
+    is_none() const {
 	return TYPE_NONE == type;
     }
 
     bool
-    is_collection() {
+    is_collection() const {
 	return TYPE_LIST == type || TYPE_MAP == type || TYPE_ANON == type;
     }
 
     bool
-    is_object() {
+    is_object() const {
 	return TYPE_OBJ == type || TYPE_ANON == type;
     }
 
     bool
-    is_int() {
+    is_int() const {
 	return TYPE_INT == type;
     }
 
     static Var
-    new_int(int32 num) {
+    new_int(const int32 num) {
 	Var v;
 	v.type = TYPE_INT;
 	v.v.num = num;
@@ -172,12 +172,12 @@ struct Var {
     }
 
     bool
-    is_obj() {
+    is_obj() const {
 	return TYPE_OBJ == type;
     }
 
     static Var
-    new_obj(Objid obj) {
+    new_obj(const Objid obj) {
 	Var v;
 	v.type = TYPE_OBJ;
 	v.v.obj = obj;
@@ -185,7 +185,7 @@ struct Var {
     }
 
     bool
-    is_str() {
+    is_str() const {
 	return TYPE_STR == type;
     }
 };
