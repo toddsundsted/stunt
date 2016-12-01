@@ -563,7 +563,7 @@ unparse_name_expr(Stream * str, Expr * expr)
      * expression normally.
      */
 
-    if (expr->kind == EXPR_VAR && expr->e.var.type == TYPE_STR
+    if (expr->kind == EXPR_VAR && expr->e.var.is_str()
 	&& ok_identifier(expr->e.var.v.str)) {
 	stream_add_string(str, expr->e.var.v.str);
 	return;

@@ -266,7 +266,7 @@ compare_numbers(Var a, Var b)
 
     if (a.type != b.type) {
 	ans = Var::new_err(E_TYPE);
-    } else if (a.type == TYPE_INT) {
+    } else if (a.is_int()) {
 	ans = Var::new_int(compare_integers(a.v.num, b.v.num));
     } else {
 	double aa = *a.v.fnum, bb = *b.v.fnum;
@@ -374,7 +374,7 @@ do_power(Var lhs, Var rhs)
     if (lhs.type == TYPE_INT) {	/* integer exponentiation */
 	int a = lhs.v.num, b, r;
 
-	if (rhs.type != TYPE_INT)
+	if (!rhs.is_int())
 	    goto type_error;
 
 	b = rhs.v.num;
@@ -535,7 +535,7 @@ bf_abs(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
 
     r = var_dup(arglist.v.list[1]);
-    if (r.type == TYPE_INT) {
+    if (r.is_int()) {
 	if (r.v.num < 0)
 	    r.v.num = -r.v.num;
     } else

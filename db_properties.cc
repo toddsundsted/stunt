@@ -600,12 +600,12 @@ db_set_property_value(db_prop_handle h, Var value)
 
 	switch (h.built_in) {
 	case BP_NAME:
-	    if (value.type != TYPE_STR)
+	    if (!value.is_str())
 		goto complain;
 	    dbpriv_set_object_name(o, value.v.str);
 	    break;
 	case BP_OWNER:
-	    if (value.type != TYPE_OBJ)
+	    if (!value.is_obj())
 		goto complain;
 	    dbpriv_set_object_owner(o, value.v.obj);
 	    break;

@@ -388,7 +388,7 @@ set_checkpoint_timer(int first_time)
     static Timer_ID last_checkpoint_timer;
 
     v = get_system_property("dump_interval");
-    if (v.type != TYPE_INT || v.v.num < 60 || now + v.v.num < now) {
+    if (!v.is_int() || v.v.num < 60 || now + v.v.num < now) {
 	free_var(v);
 	interval = 3600;	/* Once per hour */
     } else
@@ -432,7 +432,7 @@ get_server_option(Objid oid, const char *name, Var * r)
 	  db_find_property(Var::new_obj(oid), "server_options", r).ptr)
 	 || (valid(SYSTEM_OBJECT) &&
 	     db_find_property(Var::new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
-	&& r->type == TYPE_OBJ
+	&& r->is_obj()
 	&& valid(r->v.obj)
 	&& db_find_property(*r, name, r).ptr)
 	return 1;
@@ -449,13 +449,12 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
 
     va_start(args, msg_name);
     if (get_server_option(listener, msg_name, &msg)) {
-	if (msg.type == TYPE_STR)
+	if (msg.is_str())
 	    network_send_line(nh, msg.v.str, 1);
-	else if (msg.type == TYPE_LIST) {
+	else if (msg.is_list()) {
 	    int i;
-
 	    for (i = 1; i <= msg.v.list[0].v.num; i++)
-		if (msg.v.list[i].type == TYPE_STR)
+		if (msg.v.list[i].is_str())
 		    network_send_line(nh, msg.v.list[i].v.str, 1);
 	}
     } else			/* Use default message */
@@ -1253,7 +1252,7 @@ server_int_option(const char *name, int defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return (v.type == TYPE_INT ? v.v.num : defallt);
+	return v.is_int() ? v.v.num : defallt;
     else
 	return defallt;
 }
@@ -1264,7 +1263,7 @@ server_string_option(const char *name, const char *defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return (v.type == TYPE_STR ? v.v.str : 0);
+	return v.is_str() ? v.v.str : defallt;
     else
 	return defallt;
 }
@@ -1845,7 +1844,7 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
     if (arglist.v.list[0].v.num == 3) {
 	Objid oid;
 
-	if (arglist.v.list[3].type != TYPE_OBJ) {
+	if (!arglist.v.list[3].is_obj()) {
 	    return make_error_pack(E_TYPE);
 	}
 	oid = arglist.v.list[3].v.obj;

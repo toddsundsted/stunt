@@ -388,7 +388,7 @@ stream_add_tostr(Stream * s, Var v)
 const char *
 value2str(Var value)
 {
-    if (value.type == TYPE_STR) {
+    if (value.is_str()) {
 	/* do this case separately to avoid two copies
 	 * and to ensure that the stream never grows */
 	return str_ref(value.v.str);

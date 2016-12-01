@@ -142,7 +142,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
     int fifo, pseudo_client;
     listener *l;
 
-    if (desc.type != TYPE_STR)
+    if (!desc.is_str())
 	return E_TYPE;
 
     connect_file = desc.v.str;

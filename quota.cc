@@ -35,7 +35,7 @@ decr_quota(Objid player)
     if (!h.ptr)
 	return 1;
 
-    if (v.type != TYPE_INT)
+    if (!v.is_int())
 	return 1;
 
     if (v.v.num <= 0)
@@ -59,7 +59,7 @@ incr_quota(Objid player)
     if (!h.ptr)
 	return;
 
-    if (v.type != TYPE_INT)
+    if (!v.is_int())
 	return;
 
     v.v.num++;

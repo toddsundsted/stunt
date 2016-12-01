@@ -209,6 +209,16 @@ struct Var {
 	v.v.err = err;
 	return v;
     }
+
+    bool
+    is_list() const {
+	return TYPE_LIST == type;
+    }
+
+    bool
+    is_map() const {
+	return TYPE_MAP == type;
+    }
 };
 
 inline Var

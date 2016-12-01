@@ -270,7 +270,7 @@ add_literal(Var v, State * state)
 	    gstate->literals = new_literals;
 	    gstate->max_literals = new_max;
 	}
-	if (v.type == TYPE_STR) {
+	if (v.is_str()) {
 	    /* intern string if we can */
 	    Var nv;
 
@@ -614,7 +614,7 @@ generate_expr(Expr * expr, State * state)
 	    Var v;
 
 	    v = expr->e.var;
-	    if (v.type == TYPE_INT && IN_OPTIM_NUM_RANGE(v.v.num))
+	    if (v.is_int() && IN_OPTIM_NUM_RANGE(v.v.num))
 		emit_byte(OPTIM_NUM_TO_OPCODE(v.v.num), state);
 	    else {
 		emit_byte(OP_IMM, state);

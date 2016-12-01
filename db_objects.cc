@@ -229,8 +229,8 @@ db_destroy_object(Objid oid)
 
     if (o->location.v.obj != NOTHING ||
 	o->contents.v.list[0].v.num != 0 ||
-	(o->parents.type == TYPE_OBJ && o->parents.v.obj != NOTHING) ||
-	(o->parents.type == TYPE_LIST && o->parents.v.list[0].v.num != 0) ||
+	(o->parents.is_obj() && o->parents.v.obj != NOTHING) ||
+	(o->parents.is_list() && o->parents.v.list[0].v.num != 0) ||
 	o->children.v.list[0].v.num != 0)
 	panic("DB_DESTROY_OBJECT: Not a barren orphan!");
 
@@ -334,9 +334,9 @@ db_make_anonymous(Objid oid, Objid last)
     int i, c;
 
     /* remove me from my old parents' children */
-    if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
+    if (old_parents.is_obj() && old_parents.v.obj != NOTHING)
 	objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, me);
-    else if (old_parents.type == TYPE_LIST)
+    else if (old_parents.is_list())
 	FOR_EACH(parent, old_parents, i, c)
 	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
 
@@ -467,14 +467,14 @@ db_renumber_object(Objid old)
 		    objects[obj1.v.obj]->down.v.list[i2].v.obj = _new;		\
 		}								\
 	    }									\
-	    else if (TYPE_OBJ == o->up.type && NOTHING != o->up.v.obj) {	\
+	    else if (o->up.is_obj() && NOTHING != o->up.v.obj) {		\
 		FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)		\
 		if (obj1.v.obj == old)						\
 		    break;							\
 		objects[o->up.v.obj]->down.v.list[i2].v.obj = _new;		\
 	    }									\
 	    FOR_EACH(obj1, o->down, i1, c1) {					\
-		if (TYPE_LIST == objects[obj1.v.obj]->up.type) {		\
+		if (objects[obj1.v.obj]->up.is_list()) {			\
 		    FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)		\
 			if (obj2.v.obj == old)					\
 			    break;						\
@@ -646,8 +646,8 @@ db_##name(Var obj, bool full)						\
     Var list;								\
 									\
     o = dbpriv_dereference(obj);					\
-    if ((o->field.type == TYPE_OBJ && o->field.v.obj == NOTHING) ||	\
-	(o->field.type == TYPE_LIST && listlength(o->field) == 0))	\
+    if ((o->field.is_obj() && o->field.v.obj == NOTHING) ||		\
+	(o->field.is_list() && listlength(o->field) == 0))		\
 	return full ? enlist_var(var_ref(obj)) : new_list(0);		\
 									\
     CLEAR_BIT_ARRAY();							\
@@ -842,7 +842,7 @@ check_children_of_object(Var obj, Var anon_kids)
     Var kid;
     int i, c;
 
-    if (TYPE_LIST != anon_kids.type || listlength(anon_kids) < 1)
+    if (!anon_kids.is_list() || listlength(anon_kids) < 1)
 	return 1;
 
     FOR_EACH (kid, anon_kids, i, c) {
@@ -872,7 +872,7 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
 
     if (o->verbdefs == NULL
         && listlength(o->children) == 0
-        && (TYPE_LIST != anon_kids.type || listlength(anon_kids) == 0)) {
+        && (!anon_kids.is_list() || listlength(anon_kids) == 0)) {
 	/* Since this object has no children and no verbs, we know that it
 	   can't have had any part in affecting verb lookup, since we use first
 	   parent with verbs as a key in the verb lookup cache. */
@@ -891,21 +891,21 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
     Var old_ancestors = db_ancestors(obj, true);
 
     /* only adjust the parent's children for permanent objects */
-    if (TYPE_OBJ == obj.type) {
+    if (obj.is_obj()) {
 	Var parent;
 	int i, c;
 
 	/* remove me/obj from my old parents' children */
-	if (old_parents.type == TYPE_OBJ && old_parents.v.obj != NOTHING)
+	if (old_parents.is_obj() && old_parents.v.obj != NOTHING)
 	    objects[old_parents.v.obj]->children = setremove(objects[old_parents.v.obj]->children, obj);
-	else if (old_parents.type == TYPE_LIST)
+	else if (old_parents.is_list())
 	    FOR_EACH(parent, old_parents, i, c)
 		objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, obj);
 
 	/* add me/obj to my new parents' children */
-	if (new_parents.type == TYPE_OBJ && new_parents.v.obj != NOTHING)
+	if (new_parents.is_obj() && new_parents.v.obj != NOTHING)
 	    objects[new_parents.v.obj]->children = setadd(objects[new_parents.v.obj]->children, obj);
-	else if (new_parents.type == TYPE_LIST)
+	else if (new_parents.is_list())
 	    FOR_EACH(parent, new_parents, i, c)
 		objects[parent.v.obj]->children = setadd(objects[parent.v.obj]->children, obj);
     }

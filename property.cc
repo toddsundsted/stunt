@@ -107,12 +107,12 @@ static enum error
 validate_prop_info(Var v, Objid * owner, unsigned *flags, const char **name)
 {
     const char *s;
-    int len = (v.type == TYPE_LIST ? v.v.list[0].v.num : 0);
+    int len = v.is_list() ? v.v.list[0].v.num : 0;
 
     if (!((len == 2 || len == 3)
-	  && v.v.list[1].type == TYPE_OBJ
-	  && v.v.list[2].type == TYPE_STR
-	  && (len == 2 || v.v.list[3].type == TYPE_STR)))
+	  && v.v.list[1].is_obj()
+	  && v.v.list[2].is_str()
+	  && (len == 2 || v.v.list[3].is_str())))
 	return E_TYPE;
 
     *owner = v.v.list[1].v.obj;

@@ -78,11 +78,11 @@ validate_verb_info(Var v, Objid * owner, unsigned *flags, const char **names)
 {
     const char *s;
 
-    if (!(v.type == TYPE_LIST
-	  && v.v.list[0].v.num == 3
-	  && v.v.list[1].type == TYPE_OBJ
-	  && v.v.list[2].type == TYPE_STR
-	  && v.v.list[3].type == TYPE_STR))
+    if (!(v.is_list()
+	  && listlength(v) == 3
+	  && v.v.list[1].is_obj()
+	  && v.v.list[2].is_str()
+	  && v.v.list[3].is_str()))
 	return E_TYPE;
 
     *owner = v.v.list[1].v.obj;
@@ -156,11 +156,11 @@ static enum error
 validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
 		   db_arg_spec * iobj)
 {
-    if (!(v.type == TYPE_LIST
-	  && v.v.list[0].v.num == 3
-	  && v.v.list[1].type == TYPE_STR
-	  && v.v.list[2].type == TYPE_STR
-	  && v.v.list[3].type == TYPE_STR))
+    if (!(v.is_list()
+	  && listlength(v) == 3
+	  && v.v.list[1].is_str()
+	  && v.v.list[2].is_str()
+	  && v.v.list[3].is_str()))
 	return E_TYPE;
 
     if (!match_arg_spec(v.v.list[1].v.str, dobj)
@@ -215,9 +215,9 @@ bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
 enum error
 validate_verb_descriptor(Var desc)
 {
-    if (desc.type == TYPE_STR)
+    if (desc.is_str())
 	return E_NONE;
-    else if (desc.type != TYPE_INT)
+    else if (!desc.is_int())
 	return E_TYPE;
     else if (desc.v.num <= 0)
 	return E_INVARG;
@@ -228,7 +228,7 @@ validate_verb_descriptor(Var desc)
 db_verb_handle
 find_described_verb(Var obj, Var desc)
 {
-    if (desc.type == TYPE_INT)
+    if (desc.is_int())
 	return db_find_indexed_verb(obj, desc.v.num);
     else {
 	int flag = server_flag_option("support_numeric_verbname_strings", 0);
@@ -507,7 +507,7 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
     enum error e;
 
     for (i = 1; i <= code.v.list[0].v.num; i++)
-	if (code.v.list[i].type != TYPE_STR) {
+	if (!code.v.list[i].is_str()) {
 	    free_var(arglist);
 	    return make_error_pack(E_TYPE);
 	}

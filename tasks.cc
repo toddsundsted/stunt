@@ -300,16 +300,16 @@ icmd_set_flags(tqueue * tq, Var list)
 {
     int i;
     int newflags;
-    if (list.type == TYPE_INT) {
+    if (list.is_int()) {
 	newflags = is_true(list) ? ICMD_ALL_CMDS : 0;
     }
-    else if(list.type != TYPE_LIST)
+    else if (!list.is_list())
 	return 0;
     else {
 	newflags = 0;
 	for (i = 1; i <= list.v.list[0].v.num; ++i) {
 	    int icmd;
-	    if (list.v.list[i].type != TYPE_STR)
+	    if (!list.v.list[i].is_str())
 		return 0;
 	    icmd = icmd_index(list.v.list[i].v.str);
 	    if (!icmd)
@@ -865,7 +865,7 @@ do_login_task(tqueue * tq, char *command)
      * `do_login_command' already called the `switch_player' built-in
      * to log the connection in to a player.
      */
-    if (tq->connected && tq->player < 0 && result.type == TYPE_OBJ && is_user(result.v.obj)) {
+    if (tq->connected && tq->player < 0 && result.is_obj() && is_user(result.v.obj)) {
 	Objid new_player = result.v.obj;
 	Objid old_player = tq->player;
 	tqueue *dead_tq = find_tqueue(new_player, 0);
@@ -1185,7 +1185,7 @@ check_user_task_limit(Objid user)
 
     if (valid(user)
 	&& db_find_property(Var::new_obj(user), "queued_task_limit", &v).ptr
-	&& v.type == TYPE_INT)
+	&& v.is_int())
 	limit = v.v.num;
 
     if (limit < 0)
@@ -1393,7 +1393,7 @@ create_or_extend(Var in, const char *_new, int newlen)
 
     Var out;
 
-    if (in.type == TYPE_STR) {
+    if (in.is_str()) {
 	stream_add_string(s, in.v.str);
 	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
@@ -1427,12 +1427,12 @@ on_url_callback(http_parser *parser, const char *url, size_t length)
 static void
 maybe_complete_header(struct http_parsing_state *state)
 {
-    if (state->headers.type != TYPE_MAP) {
+    if (!state->headers.is_map()) {
 	free_var(state->headers);
 	state->headers = new_map();
     }
 
-    if (state->header_value_under_constr.type == TYPE_STR) {
+    if (state->header_value_under_constr.is_str()) {
 	state->headers = mapinsert(state->headers,
 				   state->header_field_under_constr,
 				   state->header_value_under_constr);
@@ -1514,13 +1514,13 @@ on_message_complete_callback(http_parser *parser)
 	state->result = mapinsert(state->result, var_dup(STATUS), status);
     }
 
-    if (state->uri.type == TYPE_STR)
+    if (state->uri.is_str())
 	state->result = mapinsert(state->result, var_dup(URI), var_dup(state->uri));
 
-    if (state->headers.type == TYPE_MAP)
+    if (state->headers.is_map())
 	state->result = mapinsert(state->result, var_dup(HEADERS), var_dup(state->headers));
 
-    if (state->body.type == TYPE_STR)
+    if (state->body.is_str())
 	state->result = mapinsert(state->result, var_dup(BODY), var_dup(state->body));
 
     state->status = DONE;

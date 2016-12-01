@@ -79,7 +79,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
     if (!st)
 	st = new_stream(20);
 
-    if (desc.type != TYPE_INT)
+    if (!desc.is_int())
 	return E_TYPE;
 
     port = desc.v.num;
@@ -223,8 +223,8 @@ proto_open_connection(Var arglist, int *read_fd, int *write_fd,
     }
     if (arglist.v.list[0].v.num != 2)
 	return E_ARGS;
-    else if (arglist.v.list[1].type != TYPE_STR ||
-	     arglist.v.list[2].type != TYPE_INT)
+    else if (!arglist.v.list[1].is_str() ||
+	     !arglist.v.list[2].is_int())
 	return E_TYPE;
 
     host_name = arglist.v.list[1].v.str;

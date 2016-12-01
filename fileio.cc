@@ -98,7 +98,7 @@ file_handle file_table[FILE_IO_MAX_FILES];
 
 char file_handle_valid(Var fhandle) {
   int32 i = fhandle.v.num;
-  if(fhandle.type != TYPE_INT)
+  if(!fhandle.is_int())
 	 return 0;
   if((i < 0) || (i >= FILE_IO_MAX_FILES))
 	 return 0;
@@ -991,7 +991,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
   
   if(!file_verify_caller(progr)) {
 	 *r = file_raise_notokcall("file_stat", progr);
-  } else if (filespec.type == TYPE_STR) {
+  } else if (filespec.is_str()) {
 	 const char *filename = filespec.v.str;
 	 const char *real_filename;
 

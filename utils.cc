@@ -589,7 +589,7 @@ get_system_object(const char *name)
     Var value;
 
     value = get_system_property(name);
-    if (value.type != TYPE_OBJ) {
+    if (!value.is_obj()) {
 	free_var(value);
 	return NOTHING;
     } else

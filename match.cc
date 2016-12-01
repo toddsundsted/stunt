@@ -34,7 +34,7 @@ aliases(Objid oid)
     db_prop_handle h;
 
     h = db_find_property(Var::new_obj(oid), "aliases", &value);
-    if (!h.ptr || value.type != TYPE_LIST) {
+    if (!h.ptr || !value.is_list()) {
 	/* Simulate a pointer to an empty list */
 	return &zero;
     } else
@@ -58,7 +58,7 @@ match_proc(void *data, Objid oid)
     for (i = 0; i <= names[0].v.num; i++) {
 	if (i == 0)
 	    name = db_object_name(oid);
-	else if (names[i].type != TYPE_STR)
+	else if (!names[i].is_str())
 	    continue;
 	else
 	    name = names[i].v.str;

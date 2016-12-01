@@ -173,7 +173,7 @@ server_version_full(Var arg)
     if (!version_structure) {
 	init_version_structure();
     }
-    if (arg.type != TYPE_STR || arg.v.str[0] == '\0' ) {
+    if (!arg.is_str() || arg.v.str[0] == '\0' ) {
 	r.type   = TYPE_LIST;
 	r.v.list = version_structure;
 	return var_ref(r);
@@ -218,12 +218,10 @@ server_version_full(Var arg)
 	s = (*e != '\0' ? e+1 : e); /* skip trailing slash */
 	if (*s == '\0')
 	    return var_ref(tree[0]);
-	if (tree[0].type != TYPE_LIST)
+	if (!tree[0].is_list())
 	    break;
 	tree = tree[0].v.list;
-	if (tree[0].v.num <= 0 ||
-	    (tree[1].type != TYPE_STR &&
-	     tree[1].type != TYPE_LIST))
+	if (tree[0].v.num <= 0 || (!tree[1].is_str() && !tree[1].is_list()))
 	    break;
     }
     r = Var::new_err(E_INVARG);

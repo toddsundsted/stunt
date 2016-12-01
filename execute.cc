@@ -247,11 +247,10 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 		int found = 0;
 
 		for (vv = new_top; vv < a->top_rt_stack; vv += 2) {
-		    if (!found && (vv->type != TYPE_LIST
-				   || ismember(code, *vv, 0))) {
+		    if (!found && (!vv->is_list() || ismember(code, *vv, 0))) {
 			found = 1;
 			v = *(vv + 1);
-			if (v.type != TYPE_INT)
+			if (!v.is_int())
 			    panic("Non-numeric PC value on stack!");
 			a->pc = v.v.num;
 		    }
@@ -389,7 +388,7 @@ find_handler_activ(Var code)
 	for (v = a->top_rt_stack - 1; v >= a->base_rt_stack; v--)
 	    if (v->type == TYPE_CATCH) {
 		for (vv = v - 2 * v->v.num; vv < v; vv += 2)
-		    if (vv->type != TYPE_LIST || ismember(code, *vv, 0))
+		    if (!vv->is_list() || ismember(code, *vv, 0))
 			return frame;
 		v -= 2 * v->v.num;
 	    }
@@ -690,7 +689,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
     ENV_COPY(SLOT_IOBJSTR);
 
     if (is_wizard(CALLER_ACTIV.progr) &&
-	(CALLER_ACTIV.rt_env[SLOT_PLAYER].type == TYPE_OBJ))
+	(CALLER_ACTIV.rt_env[SLOT_PLAYER].is_obj()))
 	ENV_COPY(SLOT_PLAYER);
     else
 	set_rt_env_obj(env, SLOT_PLAYER, CALLER_ACTIV.player);
@@ -871,13 +870,13 @@ do {								\
 
 		to = TOP_RT_VALUE;
 		from = NEXT_TOP_RT_VALUE;
-		if ((to.type != TYPE_INT && to.type != TYPE_OBJ)
+		if ((!to.is_int() && !to.is_obj())
 		    || to.type != from.type) {
 		    RAISE_ERROR(E_TYPE);
 		    free_var(POP());
 		    free_var(POP());
 		    JUMP(lab);
-		} else if (to.type == TYPE_INT
+		} else if (to.is_int()
 			   ? from.v.num > to.v.num
 			   : from.v.obj > to.v.obj) {
 		    free_var(POP());
@@ -886,7 +885,7 @@ do {								\
 		} else {
 		    free_var(RUN_ACTIV.rt_env[id]);
 		    RUN_ACTIV.rt_env[id] = var_ref(from);
-		    if (to.type == TYPE_INT) {
+		    if (to.is_int()) {
 			if (from.v.num < MAXINT) {
 			    from.v.num++;
 			    NEXT_TOP_RT_VALUE = from;
@@ -944,7 +943,7 @@ do {								\
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
-		if (map.type != TYPE_MAP || key.is_collection()) {
+		if (!map.is_map() || key.is_collection()) {
 		    free_var(key);
 		    free_var(value);
 		    free_var(map);
@@ -976,7 +975,7 @@ do {								\
 
 		tail = POP();	/* whatever */
 		list = POP();	/* should be list */
-		if (list.type != TYPE_LIST) {
+		if (!list.is_list()) {
 		    free_var(list);
 		    free_var(tail);
 		    PUSH_ERROR(E_TYPE);
@@ -998,7 +997,7 @@ do {								\
 
 		tail = POP();	/* second, should be list */
 		list = POP();	/* first, should be list */
-		if (tail.type != TYPE_LIST || list.type != TYPE_LIST) {
+		if (!tail.is_list() || !list.is_list()) {
 		    free_var(list);
 		    free_var(tail);
 		    PUSH_ERROR(E_TYPE);
@@ -1027,31 +1026,29 @@ do {								\
 		list = POP();	/* lhs except last index, should be list or str */
 		/* whole thing should mean list[index] = value OR
 		 * map[key] = value */
-		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
-		     list.type != TYPE_MAP)
-		    || ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
-			index.type != TYPE_INT)
-		    || (list.type == TYPE_MAP && index.is_collection())
-		    || (list.type == TYPE_STR && value.type != TYPE_STR)) {
+		if ((!list.is_list() && !list.is_str() && !list.is_map())
+		    || ((list.is_list() || list.is_str()) && !index.is_int())
+		    || (list.is_map() && index.is_collection())
+		    || (list.is_str() && !value.is_str())) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
-		} else if ((list.type == TYPE_LIST
+		} else if ((list.is_list()
 		       && (index.v.num < 1 || index.v.num > list.v.list[0].v.num /* size */))
-			|| (list.type == TYPE_STR
+			|| (list.is_str()
 		       && (index.v.num < 1 || index.v.num > (int) memo_strlen(list.v.str)))) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_RANGE);
-		} else if (list.type == TYPE_STR
+		} else if (list.is_str()
 			   && memo_strlen(value.v.str) != 1) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_INVARG);
-		} else if (list.type == TYPE_LIST) {
+		} else if (list.is_list()) {
 		    Var res = listset(list, value, index.v.num);
 		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 			PUSH(res);
@@ -1059,7 +1056,7 @@ do {								\
 			free_var(res);
 			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
 		    }
-		} else if (list.type == TYPE_MAP) {
+		} else if (list.is_map()) {
 		    Var res = mapinsert(list, index, value);
 		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
 			PUSH(res);
@@ -1089,7 +1086,7 @@ do {								\
 	    break;
 
 	case OP_CHECK_LIST_FOR_SPLICE:
-	    if (TOP_RT_VALUE.type != TYPE_LIST) {
+	    if (!TOP_RT_VALUE.is_list()) {
 		free_var(POP());
 		PUSH_ERROR(E_TYPE);
 	    }
@@ -1143,7 +1140,7 @@ do {								\
 			comparison = ans.v.num;
 			goto finish_comparison;
 		    }
-		} else if (rhs.type != lhs.type || rhs.type == TYPE_LIST || rhs.type == TYPE_MAP) {
+		} else if (rhs.type != lhs.type || rhs.is_list() || rhs.is_map()) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
@@ -1199,7 +1196,7 @@ do {								\
 
 		rhs = POP();	/* should be list or map */
 		lhs = POP();	/* lhs, any type */
-		if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
+		if (!rhs.is_list() && !rhs.is_map()) {
 		    free_var(rhs);
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
@@ -1261,7 +1258,7 @@ do {								\
 		if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
 		    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
 		    ans = do_add(lhs, rhs);
-		else if (lhs.type == TYPE_STR && rhs.type == TYPE_STR) {
+		else if (lhs.is_str() && rhs.is_str()) {
 		    char *str;
 		    int llen = memo_strlen(lhs.v.str);
 		    int flen = llen + memo_strlen(rhs.v.str);
@@ -1343,15 +1340,13 @@ do {								\
 		index = POP();
 		list = POP();	/* should be list, string, or map */
 
-		if ((list.type != TYPE_LIST && list.type != TYPE_STR &&
-		     list.type != TYPE_MAP) ||
-		    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
-		     index.type != TYPE_INT) ||
-		    (list.type == TYPE_MAP && index.is_collection())) {
+		if ((!list.is_list() && !list.is_str() && !list.is_map()) ||
+		    ((list.is_list() || list.is_str()) && !index.is_int()) ||
+		    (list.is_map() && index.is_collection())) {
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
-		} else if (list.type == TYPE_MAP) {
+		} else if (list.is_map()) {
 		    Var value;
 		    if (maplookup(list, index, &value, 0) == NULL) {
 			free_var(index);
@@ -1362,7 +1357,7 @@ do {								\
 			free_var(index);
 			free_var(list);
 		    }
-		} else if (list.type == TYPE_LIST) {
+		} else if (list.is_list()) {
 		    if (index.v.num <= 0 || index.v.num > list.v.list[0].v.num) {
 			free_var(index);
 			free_var(list);
@@ -1414,7 +1409,7 @@ do {								\
 		index = TOP_RT_VALUE;
 		list = NEXT_TOP_RT_VALUE;
 
-		if (list.type == TYPE_MAP) {
+		if (list.is_map()) {
 		    Var value;
 		    const rbnode *node;
 		    if (index.is_collection()) {
@@ -1425,8 +1420,8 @@ do {								\
 			PUSH(value);
 			clear_node_value(node);
 		    }
-		} else if (list.type == TYPE_LIST) {
-		    if (index.type != TYPE_INT) {
+		} else if (list.is_list()) {
+		    if (!index.is_int()) {
 			PUSH_ERROR(E_TYPE);
 		    } else if (index.v.num <= 0 ||
 			       index.v.num > list.v.list[0].v.num) {
@@ -1449,25 +1444,22 @@ do {								\
 		from = POP();
 		base = POP();	/* should be map, list or string */
 
-		if (base.type != TYPE_MAP && base.type != TYPE_LIST
-		    && base.type != TYPE_STR) {
+		if (!base.is_map() && !base.is_list() && !base.is_str()) {
 		    free_var(to);
 		    free_var(from);
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
-		} else if (base.type == TYPE_MAP
-			   && (to.is_collection() || from.is_collection())) {
+		} else if (base.is_map() && (to.is_collection() || from.is_collection())) {
 		    free_var(to);
 		    free_var(from);
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
-		} else if ((base.type == TYPE_LIST || base.type == TYPE_STR)
-			   && (to.type != TYPE_INT || from.type != TYPE_INT)) {
+		} else if ((base.is_list() || base.is_str()) && (!to.is_int() || !from.is_int())) {
 		    free_var(to);
 		    free_var(from);
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
-		} else if (base.type == TYPE_MAP) {
+		} else if (base.is_map()) {
 		    Var iterfrom, iterto;
 		    int rel = compare(from, to, 0);
 		    mapseek(base, from, &iterfrom, 0);
@@ -1494,7 +1486,8 @@ do {								\
 			free_var(iterfrom);
 		    }
 		} else {
-		    int len = (base.type == TYPE_STR ? memo_strlen(base.v.str)
+		    int len = (base.is_str()
+			       ? memo_strlen(base.v.str)
 			       : base.v.list[0].v.num);
 		    if (from.v.num <= to.v.num
 			&& (from.v.num <= 0 || from.v.num > len
@@ -1504,7 +1497,7 @@ do {								\
 			free_var(base);
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH((base.type == TYPE_STR
+			PUSH((base.is_str()
 			      ? substr(base, from.v.num, to.v.num)
 			      : sublist(base, from.v.num, to.v.num)));
 			/* base freed by substr/sublist */
@@ -1541,7 +1534,7 @@ do {								\
 
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!obj.is_object() || propname.type != TYPE_STR) {
+		if (!obj.is_object() || !propname.is_str()) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
@@ -1579,7 +1572,7 @@ do {								\
 
 		propname = TOP_RT_VALUE;	/* should be string */
 		obj = NEXT_TOP_RT_VALUE;	/* should be an object */
-		if (!obj.is_object() || propname.type != TYPE_STR)
+		if (!obj.is_object() || !propname.is_str())
 		    PUSH_ERROR(E_TYPE);
 		else if (!is_valid(obj))
 		    PUSH_ERROR(E_INVIND);
@@ -1610,7 +1603,7 @@ do {								\
 		rhs = POP();		/* any type */
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!obj.is_object() || propname.type != TYPE_STR) {
+		if (!obj.is_object() || !propname.is_str()) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
@@ -1637,7 +1630,7 @@ do {								\
 				err = E_PERM;
 			    break;
 			case BP_NAME:
-			    if (rhs.type != TYPE_STR)
+			    if (!rhs.is_str())
 				err = E_TYPE;
 			    else if (!is_wizard(progr) &&
 				     ((obj.is_obj() && is_user(obj.v.obj)) ||
@@ -1646,7 +1639,7 @@ do {								\
 				err = E_PERM;
 			    break;
 			case BP_OWNER:
-			    if (rhs.type != TYPE_OBJ)
+			    if (!rhs.is_obj())
 				err = E_TYPE;
 			    else if (!is_wizard(progr))
 				err = E_PERM;
@@ -1715,7 +1708,7 @@ do {								\
 		f_index = READ_BYTES(bv, bc.numbytes_fork);
 		if (op == OP_FORK_WITH_ID)
 		    id = READ_BYTES(bv, bc.numbytes_var_name);
-		if (time.type != TYPE_INT) {
+		if (!time.is_int()) {
 		    free_var(time);
 		    RAISE_ERROR(E_TYPE);
 		} else if (time.v.num < 0) {
@@ -1741,7 +1734,7 @@ do {								\
 		verb = POP();	/* verbname, should be string */
 		obj = POP();	/* could be anything */
 
-		if (args.type != TYPE_LIST || verb.type != TYPE_STR)
+		if (!args.is_list() || !verb.is_str())
 		    err = E_TYPE;
 		else if (obj.is_object() && !is_valid(obj))
 		    err = E_INVIND;
@@ -1830,7 +1823,7 @@ do {								\
 
 		func_id = READ_BYTES(bv, 1);	/* 1 == numbytes of func_id */
 		args = POP();	/* should be list */
-		if (args.type != TYPE_LIST) {
+		if (!args.is_list()) {
 		    free_var(args);
 		    PUSH_ERROR(E_TYPE);
 		} else {
@@ -1899,29 +1892,26 @@ do {								\
 			from = POP();
 			base = POP();	/* map, list or string */
 
-			if ((base.type != TYPE_MAP && base.type != TYPE_LIST
-			     && base.type != TYPE_STR)
+			if ((!base.is_map() && !base.is_list() && !base.is_str())
 			    || (base.type != value.type)) {
 			    free_var(to);
 			    free_var(from);
 			    free_var(base);
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
-			} else if (base.type == TYPE_MAP
-				   && (to.is_collection() || from.is_collection())) {
+			} else if (base.is_map() && (to.is_collection() || from.is_collection())) {
 			    free_var(to);
 			    free_var(from);
 			    free_var(base);
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
-			} else if ((base.type == TYPE_LIST || base.type == TYPE_STR)
-				   && (to.type != TYPE_INT || from.type != TYPE_INT)) {
+			} else if ((base.is_list() || base.is_str()) && (!to.is_int() || !from.is_int())) {
 			    free_var(to);
 			    free_var(from);
 			    free_var(base);
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
-			} else if (base.type == TYPE_MAP) {
+			} else if (base.is_map()) {
 			    Var res = none;
 			    Var iterfrom, iterto;
 			    mapseek(base, from, &iterfrom, 0);
@@ -1947,7 +1937,7 @@ do {								\
 				    PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
 				}
 			    }
-			} else if (base.type == TYPE_LIST) {
+			} else if (base.is_list()) {
 			    Var res;
 			    if (from.v.num > base.v.list[0].v.num + 1 || to.v.num < 0) {
 				free_var(to);
@@ -1991,13 +1981,13 @@ do {								\
 			Var item, v;
 
 			item = RUN_ACTIV.base_rt_stack[i];
-			if (item.type == TYPE_STR) {
+			if (item.is_str()) {
 			    v = Var::new_int(memo_strlen(item.v.str) > 0 ? 1 : 0);
 			    PUSH(v);
-			} else if (item.type == TYPE_LIST) {
+			} else if (item.is_list()) {
 			    v = Var::new_int(item.v.list[0].v.num > 0 ? 1 : 0);
 			    PUSH(v);
-			} else if (item.type == TYPE_MAP) {
+			} else if (item.is_map()) {
 			    var_pair pair;
 			    v = mapfirst(item, &pair)
 				? var_ref(pair.a)
@@ -2014,13 +2004,13 @@ do {								\
 			Var item, v;
 
 			item = RUN_ACTIV.base_rt_stack[i];
-			if (item.type == TYPE_STR) {
+			if (item.is_str()) {
 			    v = Var::new_int(memo_strlen(item.v.str));
 			    PUSH(v);
-			} else if (item.type == TYPE_LIST) {
+			} else if (item.is_list()) {
 			    v = Var::new_int(item.v.list[0].v.num);
 			    PUSH(v);
-			} else if (item.type == TYPE_MAP) {
+			} else if (item.is_map()) {
 			    var_pair pair;
 			    v = maplast(item, &pair)
 				? var_ref(pair.a)
@@ -2059,7 +2049,7 @@ do {								\
 			enum error e = E_NONE;
 
 			list = TOP_RT_VALUE;
-			if (list.type != TYPE_LIST)
+			if (!list.is_list())
 			    e = E_TYPE;
 			else if ((len = list.v.list[0].v.num) < nreq
 				 || (!have_rest && len > nargs))
@@ -2231,16 +2221,15 @@ do {								\
 			unsigned id = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
 
-			if (BASE.type != TYPE_STR && BASE.type != TYPE_LIST
-			    && BASE.type != TYPE_MAP) {
+			if (!BASE.is_str() && !BASE.is_list() && !BASE.is_map()) {
 			    RAISE_ERROR(E_TYPE);
 			    free_var(POP());
 			    free_var(POP());
 			    JUMP(lab);
-			} else if (BASE.type == TYPE_STR || BASE.type == TYPE_LIST) {
-			    int len = (BASE.type == TYPE_STR
+			} else if (BASE.is_str() || BASE.is_list()) {
+			    int len = BASE.is_str()
 				       ? memo_strlen(BASE.v.str)
-				       : BASE.v.list[0].v.num);
+				       : BASE.v.list[0].v.num;
 			    if (ITER.type == TYPE_NONE) {
 				free_var(ITER);
 				ITER = Var::new_int(1);
@@ -2251,12 +2240,12 @@ do {								\
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = (BASE.type == TYPE_STR)
+				RUN_ACTIV.rt_env[id] = BASE.is_str()
 				  ? strget(BASE, ITER.v.num)
 				  : var_ref(BASE.v.list[ITER.v.num]);
 				ITER.v.num++;	/* increment iter */
 			    }
-			} else if (BASE.type == TYPE_MAP) {
+			} else if (BASE.is_map()) {
 			    if (ITER.type == TYPE_NONE) {
 				/* starting iteration */
 				free_var(ITER);
@@ -2293,16 +2282,15 @@ do {								\
 			unsigned index = READ_BYTES(bv, bc.numbytes_var_name);
 			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
 
-			if (BASE.type != TYPE_STR && BASE.type != TYPE_LIST
-			    && BASE.type != TYPE_MAP) {
+			if (!BASE.is_str() && !BASE.is_list() && !BASE.is_map()) {
 			    RAISE_ERROR(E_TYPE);
 			    free_var(POP());
 			    free_var(POP());
 			    JUMP(lab);
-			} else if (BASE.type == TYPE_STR || BASE.type == TYPE_LIST) {
-			    int len = (BASE.type == TYPE_STR
+			} else if (BASE.is_str() || BASE.is_list()) {
+			    int len = BASE.is_str()
 				       ? memo_strlen(BASE.v.str)
-				       : BASE.v.list[0].v.num);
+				       : BASE.v.list[0].v.num;
 			    if (ITER.type == TYPE_NONE) {
 				free_var(ITER);
 				ITER = Var::new_int(1);
@@ -2313,14 +2301,14 @@ do {								\
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
-				RUN_ACTIV.rt_env[id] = (BASE.type == TYPE_STR)
+				RUN_ACTIV.rt_env[id] = BASE.is_str()
 				  ? strget(BASE, ITER.v.num)
 				  : var_ref(BASE.v.list[ITER.v.num]);
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(ITER);
 				ITER.v.num++;	/* increment iter */
 			    }
-			} else if (BASE.type == TYPE_MAP) {
+			} else if (BASE.is_map()) {
 			    if (ITER.type == TYPE_NONE) {
 				free_var(ITER);
 				ITER = new_iter(BASE);
@@ -2356,7 +2344,7 @@ do {								\
 
 			rhs = POP();
 			lhs = POP();
-			if (lhs.type == TYPE_INT && rhs.type == TYPE_INT) {
+			if (lhs.is_int() && rhs.is_int()) {
 			    ans.type = TYPE_INT;
 			    if (eop == EOP_BITXOR)
 				ans.v.num = lhs.v.num ^ rhs.v.num;
@@ -2386,7 +2374,7 @@ do {								\
 
 			rhs = POP();
 			lhs = POP();
-			if (lhs.type != TYPE_INT || rhs.type != TYPE_INT) {
+			if (!lhs.is_int() || !rhs.is_int()) {
 			    ans = Var::new_err(E_TYPE);
 			} else if (rhs.v.num > sizeof(Num) * CHAR_BIT || rhs.v.num < 0) {
 			    ans = Var::new_err(E_INVARG);
@@ -2422,7 +2410,7 @@ do {								\
 			Var arg, ans;
 
 			arg = POP();
-			if (arg.type == TYPE_INT) {
+			if (arg.is_int()) {
 			    ans = Var::new_int(~arg.v.num);
 			} else {
 			    ans = Var::new_err(E_TYPE);
