@@ -87,10 +87,6 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!db_property_allows(h, progr, PF_READ))
 	return make_error_pack(E_PERM);
 
-    r = new_list(2);
-    r.v.list[1].type = TYPE_OBJ;
-    r.v.list[1].v.obj = db_property_owner(h);
-    r.v.list[2].type = TYPE_STR;
     s = perms;
     flags = db_property_flags(h);
     if (flags & PF_READ)
@@ -100,7 +96,9 @@ bf_prop_info(Var arglist, Byte next, void *vdata, Objid progr)
     if (flags & PF_CHOWN)
 	*s++ = 'c';
     *s = '\0';
-    r.v.list[2].v.str = str_dup(perms);
+    r = new_list(2);
+    r.v.list[1] = Var::new_obj(db_property_owner(h));
+    r.v.list[2] = Var::new_str(perms);
 
     return make_var_pack(r);
 }

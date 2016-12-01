@@ -163,9 +163,8 @@ int32 file_allocate_next_handle(void) {
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
   Var r;
   int32 handle = file_allocate_next_handle();
-  
-  r.type = TYPE_INT;
-  r.v.num = handle;
+
+  r = Var::new_int(handle);
 
   if(handle >= 0) {
 	 file_table[handle].valid = 1;
@@ -253,8 +252,7 @@ file_make_error(const char *errtype, const char *msg) {
   package p;
   Var value;
 
-  value.type = TYPE_STR;
-  value.v.str = str_dup(errtype);
+  value = Var::new_str(errtype);
 
   p.kind = package::BI_RAISE;
   p.u.raise.code.type = TYPE_ERR;
@@ -282,10 +280,7 @@ package file_raise_notokcall(const char *funcid, Objid progr) {
 }
 
 package file_raise_notokfilename(const char *funcid, const char *pathname) {
-  Var p;   
-
-  p.type = TYPE_STR;
-  p.v.str = str_dup(pathname);
+  Var p = Var::new_str(pathname);
   return make_raise_pack(E_INVARG, "Invalid pathname", p);
 }
 
@@ -369,8 +364,7 @@ bf_file_version(Var arglist, Byte next, void *vdata, Objid progr)
   
   sprintf(tmpbuffer, "%s/%s", file_package_name, file_package_version);
   
-  rv.type = TYPE_STR;
-  rv.v.str = str_dup(tmpbuffer);
+  rv = Var::new_str(tmpbuffer);
 
   return make_var_pack(rv);
 
@@ -464,8 +458,7 @@ bf_file_name(Var arglist, Byte next, void *vdata, Objid progr)
   } else if ((name = file_handle_name_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
-	 rv.type = TYPE_STR;
-	 rv.v.str = str_dup(name);
+	 rv = Var::new_str(name);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -510,8 +503,7 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
 		buffer[3] = 'n';
 	 
 
-	 rv.type = TYPE_STR;
-	 rv.v.str = str_dup(buffer);
+	 rv = Var::new_str(buffer);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -580,8 +572,7 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
 	 if((line = file_read_line(fhandle, &len)) == NULL)
 		r = file_raise_errno("readline");
 	 else {		
-		rv.type = TYPE_STR;
-		rv.v.str = str_dup((type->in_filter)(line, len));
+		rv = Var::new_str((type->in_filter)(line, len));
 		r = make_var_pack(rv);
 	 }
   }
@@ -808,9 +799,7 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
 		
 		stream_add_string(str, (type->in_filter)(buffer, read));
 
-		rv.type = TYPE_STR;
-		rv.v.str = str_dup(reset_stream(str));					 
-
+		rv = Var::new_str(reset_stream(str));
 		r = make_var_pack(rv);
 	 }
   }
@@ -880,8 +869,7 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
 	 else {
 		if(mode & FILE_O_FLUSH)
 		  fflush(f);
-		rv.type = TYPE_INT;
-		rv.v.num = written;
+		rv = Var::new_int(written);
 		r = make_var_pack(rv);
 	 }
   }
@@ -984,8 +972,7 @@ bf_file_eof(Var arglist, Byte next, void *vdata, Objid progr)
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
-	 rv.type = TYPE_INT;
-	 rv.v.num = feof(f);	 
+	 rv = Var::new_int(feof(f));
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1070,8 +1057,7 @@ bf_file_size(Var arglist, Byte next, void *vdata, Objid progr)
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
-	 rv.type = TYPE_INT;
-	 rv.v.num = buf.st_size;
+	 rv = Var::new_int(buf.st_size);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1092,8 +1078,7 @@ bf_file_mode(Var arglist, Byte next, void *vdata, Objid progr)
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
-	 rv.type = TYPE_STR;
-	 rv.v.str = str_dup(file_mode_string(buf.st_mode));
+	 rv = Var::new_str(file_mode_string(buf.st_mode));
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1114,8 +1099,7 @@ bf_file_type(Var arglist, Byte next, void *vdata, Objid progr)
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
-	 rv.type = TYPE_STR;
-	 rv.v.str = str_dup(file_type_string(buf.st_mode));
+	 rv = Var::new_str(file_type_string(buf.st_mode));
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1136,8 +1120,7 @@ bf_file_last_access(Var arglist, Byte next, void *vdata, Objid progr)
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
-	 rv.type = TYPE_INT;
-	 rv.v.num = buf.st_atime;
+	 rv = Var::new_int(buf.st_atime);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1158,8 +1141,7 @@ bf_file_last_modify(Var arglist, Byte next, void *vdata, Objid progr)
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
-	 rv.type = TYPE_INT;
-	 rv.v.num = buf.st_mtime;
+	 rv = Var::new_int(buf.st_mtime);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1180,8 +1162,7 @@ bf_file_last_change(Var arglist, Byte next, void *vdata, Objid progr)
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
-	 rv.type = TYPE_INT;
-	 rv.v.num = buf.st_ctime;
+	 rv = Var::new_int(buf.st_ctime);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1203,22 +1184,14 @@ bf_file_stat(Var arglist, Byte next, void *vdata, Objid progr)
 
   if (file_stat(progr, filespec, &r, &buf)) {
 	 rv = new_list(8);
-	 rv.v.list[1].type = TYPE_INT;
-	 rv.v.list[1].v.num = buf.st_size;
-	 rv.v.list[2].type = TYPE_STR;
-	 rv.v.list[2].v.str = str_dup(file_type_string(buf.st_mode));
-	 rv.v.list[3].type = TYPE_STR;
-	 rv.v.list[3].v.str = str_dup(file_mode_string(buf.st_mode));
-	 rv.v.list[4].type = TYPE_STR;
-	 rv.v.list[4].v.str = str_dup("");
-	 rv.v.list[5].type = TYPE_STR;
-	 rv.v.list[5].v.str = str_dup("");
-	 rv.v.list[6].type = TYPE_INT;
-	 rv.v.list[6].v.num = buf.st_atime;
-	 rv.v.list[7].type = TYPE_INT;
-	 rv.v.list[7].v.num = buf.st_mtime;
-	 rv.v.list[8].type = TYPE_INT;
-	 rv.v.list[8].v.num = buf.st_ctime;
+	 rv.v.list[1] = Var::new_int(buf.st_size);
+	 rv.v.list[2] = Var::new_str(file_type_string(buf.st_mode));
+	 rv.v.list[3] = Var::new_str(file_mode_string(buf.st_mode));
+	 rv.v.list[4] = Var::new_str("");
+	 rv.v.list[5] = Var::new_str("");
+	 rv.v.list[6] = Var::new_int(buf.st_atime);
+	 rv.v.list[7] = Var::new_int(buf.st_mtime);
+	 rv.v.list[8] = Var::new_int(buf.st_ctime);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1284,18 +1257,13 @@ bf_file_list(Var arglist, Byte next, void *vdata, Objid progr)
 					break;
 				} else {
 					detail = new_list(4);
-					detail.v.list[1].type = TYPE_STR;
-					detail.v.list[1].v.str = str_dup(curfile->d_name);
-					detail.v.list[2].type = TYPE_STR;
-					detail.v.list[2].v.str = str_dup(file_type_string(buf.st_mode));
-					detail.v.list[3].type = TYPE_STR;
-					detail.v.list[3].v.str = str_dup(file_mode_string(buf.st_mode));
-					detail.v.list[4].type = TYPE_INT;
-					detail.v.list[4].v.num = buf.st_size;
+					detail.v.list[1] = Var::new_str(curfile->d_name);
+					detail.v.list[2] = Var::new_str(file_type_string(buf.st_mode));
+					detail.v.list[3] = Var::new_str(file_mode_string(buf.st_mode));
+					detail.v.list[4] = Var::new_int(buf.st_size);
 				}
 			} else {
-				detail.type = TYPE_STR;
-				detail.v.str = str_dup(curfile->d_name);
+				detail = Var::new_str(curfile->d_name);
 			}
 			rv = listappend(rv, detail);
 		    }

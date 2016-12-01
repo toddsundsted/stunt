@@ -46,8 +46,7 @@ make_arglist(Objid what)
     Var r;
 
     r = new_list(1);
-    r.v.list[1].type = TYPE_OBJ;
-    r.v.list[1].v.obj = what;
+    r.v.list[1] = Var::new_obj(what);
 
     return r;
 }
@@ -261,9 +260,7 @@ bf_toobj(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_typeof(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = (int) arglist.v.list[1].type & TYPE_DB_MASK;
+    Var r = Var::new_int((int)arglist.v.list[1].type & TYPE_DB_MASK);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -274,8 +271,7 @@ bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
 
     if (arglist.v.list[1].is_object()) {
-	r.type = TYPE_INT;
-	r.v.num = is_valid(arglist.v.list[1]);
+	r = Var::new_int(is_valid(arglist.v.list[1]));
     }
     else {
 	free_var(arglist);
@@ -289,11 +285,8 @@ bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* () */
-    Var r;
-
+    Var r = Var::new_obj(db_last_used_objid());
     free_var(arglist);
-    r.type = TYPE_OBJ;
-    r.v.obj = db_last_used_objid();
     return make_var_pack(r);
 }
 
@@ -853,8 +846,7 @@ bf_is_player(Var arglist, Byte next, void *vdata, Objid progr)
     if (!valid(oid))
 	return make_error_pack(E_INVARG);
 
-    r.type = TYPE_INT;
-    r.v.num = is_user(oid);
+    r = Var::new_int(is_user(oid));
     return make_var_pack(r);
 }
 
@@ -898,10 +890,7 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     } else {
-	Var v;
-
-	v.type = TYPE_INT;
-	v.v.num = db_object_bytes(obj);
+	Var v = Var::new_int(db_object_bytes(obj));
 
 	free_var(arglist);
 
@@ -940,8 +929,7 @@ Var none;			/* useful constant */
 void
 register_objects(void)
 {
-    nothing.type = TYPE_OBJ;
-    nothing.v.obj = NOTHING;
+    nothing = Var::new_obj(NOTHING);
     clear.type = TYPE_CLEAR;
     none.type = TYPE_NONE;
 

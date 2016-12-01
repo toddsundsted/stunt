@@ -191,9 +191,7 @@ static int
 handle_null(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
-    Var v;
-    v.type = TYPE_STR;
-    v.v.str = str_dup("null");
+    Var v = Var::new_str("null");
     PUSH(pctx->top, v);
     return 1;
 }
@@ -202,9 +200,7 @@ static int
 handle_boolean(void *ctx, int boolean)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
-    Var v;
-    v.type = TYPE_STR;
-    v.v.str = str_dup(boolean ? "true" : "false");
+    Var v = Var::new_str(boolean ? "true" : "false");
     PUSH(pctx->top, v);
     return 1;
 }
@@ -261,8 +257,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 		char *p;
 		if (*val == '#')
 		    val++;
-		v.type = TYPE_OBJ;
-		v.v.num = strtol(val, &p, 10);
+		v = Var::new_obj(strtol(val, &p, 10));
 		break;
 	    }
 	case TYPE_INT:
@@ -292,8 +287,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 		char temp[len + 1];
 		strncpy(temp, val, len);
 		temp[len] = '\0';
-		v.type = TYPE_STR;
-		v.v.str = str_dup(temp);
+		v = Var::new_str(temp);
 		break;
 	    }
 	default:
@@ -303,8 +297,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 	char temp[len + 1];
 	strncpy(temp, val, len);
 	temp[len] = '\0';
-	v.type = TYPE_STR;
-	v.v.str = str_dup(temp);
+	v = Var::new_str(temp);
     }
 
     PUSH(pctx->top, v);
@@ -511,8 +504,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 
     struct parse_context pctx;
     pctx.top = &pctx.stack;
-    pctx.stack.v.type = TYPE_INT;
-    pctx.stack.v.v.num = 0;
+    pctx.stack.v = Var::new_int(0);
     pctx.mode = MODE_COMMON_SUBSET;
 
     const char *str = arglist.v.list[1].v.str;
@@ -598,10 +590,7 @@ bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
 	yajl_gen_get_buf(g, (const unsigned char **)&buf, &len);
-
-	json.type = TYPE_STR;
-	json.v.str = str_dup(buf);
-
+	json = Var::new_str(buf);
 	pack = make_var_pack(json);
     } else {
 	pack = make_error_pack(E_INVARG);

@@ -629,9 +629,7 @@ bf_atan(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_time(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = time(0);
+    Var r = Var::new_int(time(0));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -671,8 +669,7 @@ bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
 
     if (buffer[8] == '0')
 	buffer[8] = ' ';
-    r.type = TYPE_STR;
-    r.v.str = str_dup(buffer);
+    r = Var::new_str(buffer);
 
     free_var(arglist);
     return make_var_pack(r);
@@ -934,9 +931,7 @@ bf_random_bytes(Var arglist, Byte next, void *vdata, Objid progr)
     TRY_STREAM;
     try {
 	stream_add_raw_bytes_to_binary(s, (char *)out, len);
-
-	r.type = TYPE_STR;
-	r.v.str = str_dup(stream_contents(s));
+	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
     catch (stream_too_big& exception) {
@@ -971,8 +966,7 @@ bf_floatstr(Var arglist, Byte next, void *vdata, Objid progr)
     sprintf(fmt, "%%.%d%c", prec, use_sci ? 'e' : 'f');
     sprintf(output, fmt, d);
 
-    r.type = TYPE_STR;
-    r.v.str = str_dup(output);
+    r = Var::new_str(output);
 
     return make_var_pack(r);
 }
@@ -982,8 +976,7 @@ Var zero;			/* useful constant */
 void
 register_numbers(void)
 {
-    zero.type = TYPE_INT;
-    zero.v.num = 0;
+    zero = Var::new_int(0);
 
     register_function("toint", 1, 1, bf_toint, TYPE_ANY);
     register_function("tonum", 1, 1, bf_toint, TYPE_ANY);

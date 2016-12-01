@@ -107,10 +107,7 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* return */
 
-    Var ret;
-
-    ret.type = TYPE_STR;
-    ret.v.str = str_dup(buffer.str().c_str());
+    Var ret = Var::new_str(buffer.str().c_str());
 
     free_var(arglist);
 
@@ -237,10 +234,7 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* return */
 
-    Var ret;
-
-    ret.type = TYPE_STR;
-    ret.v.str = str_dup(raw_bytes_to_binary(out, size));
+    Var ret = Var::new_str(raw_bytes_to_binary(out, size));
 
     free_var(arglist);
 

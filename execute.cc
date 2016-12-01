@@ -172,10 +172,7 @@ static Var backtrace_list;
 static void
 output_to_list(const char *line)
 {
-    Var str;
-
-    str.type = TYPE_STR;
-    str.v.str = str_dup(line);
+    Var str = Var::new_str(line);
     backtrace_list = listappend(backtrace_list, str);
 }
 
@@ -239,8 +236,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 	    if (why != FIN_ABORT && v.type == TYPE_FINALLY) {
 		/* FINALLY handler */
 		a->pc = v.v.num;
-		v.type = TYPE_INT;
-		v.v.num = why;
+		v = Var::new_int(why);
 		*(a->top_rt_stack++) = v;
 		*(a->top_rt_stack++) = value;
 		return 0;
@@ -430,28 +426,20 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 	    v.v.list[4] = anonymizing_var_ref(stack[i].vloc, progr);
 	    v.v.list[5] = Var::new_obj(stack[i].player);
 	    if (line_numbers_too) {
-		v.v.list[6].type = TYPE_INT;
-		v.v.list[6].v.num = find_line_number(stack[i].prog,
-						     (i == 0 ? root_vector
-						      : MAIN_VECTOR),
-						     stack[i].error_pc);
+		v.v.list[6] = Var::new_int(find_line_number(stack[i].prog,
+						(i == 0 ? root_vector : MAIN_VECTOR),
+						stack[i].error_pc));
 	    }
 	}
 	if (i != start && stack[i].bi_func_pc) {
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
-	    v.v.list[1].type = TYPE_OBJ;
-	    v.v.list[1].v.obj = NOTHING;
-	    v.v.list[2].type = TYPE_STR;
-	    v.v.list[2].v.str = str_dup(name_func_by_num(stack[i].bi_func_id));
-	    v.v.list[3].type = TYPE_OBJ;
-	    v.v.list[3].v.obj = NOTHING;
-	    v.v.list[4].type = TYPE_OBJ;
-	    v.v.list[4].v.obj = NOTHING;
-	    v.v.list[5].type = TYPE_OBJ;
-	    v.v.list[5].v.obj = stack[i].player;
+	    v.v.list[1] = Var::new_obj(NOTHING);
+	    v.v.list[2] = Var::new_str(name_func_by_num(stack[i].bi_func_id));
+	    v.v.list[3] = Var::new_obj(NOTHING);
+	    v.v.list[4] = Var::new_obj(NOTHING);
+	    v.v.list[5] = Var::new_obj(stack[i].player);
 	    if (line_numbers_too) {
-		v.v.list[6].type = TYPE_INT;
-		v.v.list[6].v.num = stack[i].bi_func_pc;
+		v.v.list[6] = Var::new_int(stack[i].bi_func_pc);
 	    }
 	}
     }
@@ -530,8 +518,7 @@ abort_task(enum abort_reason reason)
 
     save_hinfo:
 	value = new_list(3);
-	value.v.list[1].type = TYPE_STR;
-	value.v.list[1].v.str = str_dup(htag);
+	value.v.list[1] = Var::new_str(htag);
 	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
 					  root_activ_vector, 1,
 					  NOTHING);
@@ -1219,8 +1206,7 @@ do {								\
 		    free_var(lhs);
 		    PUSH_ERROR(E_TYPE);
 		} else {
-		    ans.type = TYPE_INT;
-		    ans.v.num = ismember(lhs, rhs, 0);
+		    ans = Var::new_int(ismember(lhs, rhs, 0));
 		    PUSH(ans);
 		    free_var(rhs);
 		    free_var(lhs);
@@ -1329,8 +1315,7 @@ do {								\
 		Var arg, ans;
 
 		arg = POP();
-		ans.type = TYPE_INT;
-		ans.v.num = !is_true(arg);
+		ans = Var::new_int(!is_true(arg));
 		PUSH(ans);
 		free_var(arg);
 	    }
@@ -1342,8 +1327,7 @@ do {								\
 
 		arg = POP();
 		if (arg.type == TYPE_INT) {
-		    ans.type = TYPE_INT;
-		    ans.v.num = -arg.v.num;
+		    ans = Var::new_int(-arg.v.num);
 		} else if (arg.type == TYPE_FLOAT)
 		    ans = new_float(-*arg.v.fnum);
 		else {
@@ -2013,12 +1997,10 @@ do {								\
 
 			item = RUN_ACTIV.base_rt_stack[i];
 			if (item.type == TYPE_STR) {
-			    v.type = TYPE_INT;
-			    v.v.num = memo_strlen(item.v.str) > 0 ? 1 : 0;
+			    v = Var::new_int(memo_strlen(item.v.str) > 0 ? 1 : 0);
 			    PUSH(v);
 			} else if (item.type == TYPE_LIST) {
-			    v.type = TYPE_INT;
-			    v.v.num = item.v.list[0].v.num > 0 ? 1 : 0;
+			    v = Var::new_int(item.v.list[0].v.num > 0 ? 1 : 0);
 			    PUSH(v);
 			} else if (item.type == TYPE_MAP) {
 			    var_pair pair;
@@ -2038,12 +2020,10 @@ do {								\
 
 			item = RUN_ACTIV.base_rt_stack[i];
 			if (item.type == TYPE_STR) {
-			    v.type = TYPE_INT;
-			    v.v.num = memo_strlen(item.v.str);
+			    v = Var::new_int(memo_strlen(item.v.str));
 			    PUSH(v);
 			} else if (item.type == TYPE_LIST) {
-			    v.type = TYPE_INT;
-			    v.v.num = item.v.list[0].v.num;
+			    v = Var::new_int(item.v.list[0].v.num);
 			    PUSH(v);
 			} else if (item.type == TYPE_MAP) {
 			    var_pair pair;
@@ -2193,8 +2173,7 @@ do {								\
 			v = POP();
 			if (v.type != TYPE_FINALLY)
 			    panic("Stack marker is not TYPE_FINALLY!");
-			why.type = TYPE_INT;
-			why.v.num = FIN_FALL_THRU;
+			why = Var::new_int(FIN_FALL_THRU);
 			PUSH(why);
 			PUSH(zero);
 		    }
@@ -2241,10 +2220,8 @@ do {								\
 			Var v;
 
 			v = new_list(2);
-			v.v.list[1].type = TYPE_INT;
-			v.v.list[1].v.num = READ_BYTES(bv, bc.numbytes_stack);
-			v.v.list[2].type = TYPE_INT;
-			v.v.list[2].v.num = READ_BYTES(bv, bc.numbytes_label);
+			v.v.list[1] = Var::new_int(READ_BYTES(bv, bc.numbytes_stack));
+			v.v.list[2] = Var::new_int(READ_BYTES(bv, bc.numbytes_label));
 			STORE_STATE_VARIABLES();
 			(void) unwind_stack(FIN_EXIT, v, 0);
 			LOAD_STATE_VARIABLES();
@@ -2422,11 +2399,9 @@ do {								\
 			    ans.type = TYPE_ERR;
 			    ans.v.err = E_INVARG;
 			} else if (rhs.v.num == sizeof(Num) * CHAR_BIT) {
-			    ans.type = TYPE_INT;
-			    ans.v.num = 0;
+			    ans = Var::new_int(0);
 			} else if (rhs.v.num == 0) {
-			    ans.type = TYPE_INT;
-			    ans.v.num = lhs.v.num;
+			    ans = Var::new_int(lhs.v.num);
 			} else {
 
 #define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * CHAR_BIT - (n)))
@@ -2456,8 +2431,7 @@ do {								\
 
 			arg = POP();
 			if (arg.type == TYPE_INT) {
-			    ans.type = TYPE_INT;
-			    ans.v.num = ~arg.v.num;
+			    ans = Var::new_int(~arg.v.num);
 			} else {
 			    ans.type = TYPE_ERR;
 			    ans.v.err = E_TYPE;
@@ -2620,9 +2594,7 @@ do {								\
 
 	default:
 	    if (IS_OPTIM_NUM_OPCODE(op)) {
-		Var value;
-		value.type = TYPE_INT;
-		value.v.num = OPCODE_TO_OPTIM_NUM(op);
+		Var value = Var::new_int(OPCODE_TO_OPTIM_NUM(op));
 		PUSH(value);
 	    } else
 		panic("Unknown opcode!");
@@ -3125,9 +3097,7 @@ bf_read_http(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_seconds_left(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = timer_wakeup_interval(task_alarm_id);
+    Var r = Var::new_int(timer_wakeup_interval(task_alarm_id));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -3135,9 +3105,7 @@ bf_seconds_left(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = ticks_remaining;
+    Var r = Var::new_int(ticks_remaining);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -3172,9 +3140,7 @@ bf_set_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* () */
-    Var r;
-    r.type = TYPE_OBJ;
-    r.v.obj = RUN_ACTIV.progr;
+    Var r = Var::new_obj(RUN_ACTIV.progr);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -3256,10 +3222,7 @@ register_execute(void)
 void
 write_activ_as_pi(activation a)
 {
-    Var dummy;
-
-    dummy.type = TYPE_INT;
-    dummy.v.num = -111;
+    Var dummy = Var::new_int(-111);
     dbio_write_var(dummy);
 
     dbio_write_var(a._this);

@@ -102,8 +102,7 @@ stdin_readable(int fd, void *data)
 	v.type = TYPE_ERR;
 	v.v.err = E_NACC;
     } else {
-	v.type = TYPE_STR;
-	v.v.str = str_dup(buffer);
+	v = Var::new_str(buffer);
     }
 
     resume_task(waiters->the_vm, v);

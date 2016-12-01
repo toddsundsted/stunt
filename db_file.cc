@@ -665,7 +665,7 @@ ng_validate_hierarchies()
 	    }
 #	    define CHECK(field, name)					\
 	    {								\
-		if (TYPE_LIST == o->field.type) {			\
+		if (o->field.is_list()) {				\
 		    Var tmp;						\
 		    FOR_EACH(tmp, o->field, i, c) {			\
 			if (tmp.v.obj != NOTHING			\
@@ -734,8 +734,7 @@ ng_validate_hierarchies()
 #	    define CHECK(up, up_name, down, down_name)			\
 	    {								\
 		Var tmp, t1, t2, obj;					\
-		obj.type = TYPE_OBJ;					\
-		obj.v.obj = oid;					\
+		obj = Var::new_obj(oid);				\
 		t1 = enlist_var(var_ref(o->up));			\
 		FOR_EACH(tmp, t1, i, c) {				\
 		    if (tmp.v.obj != NOTHING) {				\
@@ -903,8 +902,7 @@ read_db_file(void)
 
     user_list = new_list(nusers);
     for (i = 1; i <= nusers; i++) {
-	user_list.v.list[i].type = TYPE_OBJ;
-	user_list.v.list[i].v.obj = dbio_read_objid();
+	user_list.v.list[i] = Var::new_obj(dbio_read_objid());
     }
     dbpriv_set_all_users(user_list);
 

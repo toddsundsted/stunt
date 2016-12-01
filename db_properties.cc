@@ -204,7 +204,7 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
     pval.perms = flags;
 
     /* anonymous objects can't have children */
-    if (TYPE_OBJ == obj.type)
+    if (obj.is_obj())
 	insert_prop_recursively(obj.v.obj, o->propdefs.cur_length - 1, pval);
     else
 	insert_prop2(obj, o->propdefs.cur_length - 1, pval);
@@ -337,7 +337,7 @@ db_delete_propdef(Var obj, const char *pname)
 	    props->cur_length--;
 
 	    /* anonymous objects can't have children */
-	    if (TYPE_OBJ == obj.type)
+	    if (obj.is_obj())
 		remove_prop_recursively(obj.v.obj, i);
 	    else
               remove_prop2(obj, i);
@@ -394,8 +394,7 @@ add_to_list(void *data, Objid c)
     struct contents_data *d = (struct contents_data *)data;
 
     d->i++;
-    d->r.v.list[d->i].type = TYPE_OBJ;
-    d->r.v.list[d->i].v.obj = c;
+    d->r.v.list[d->i] = Var::new_obj(c);
 
     return 0;
 }
@@ -411,32 +410,25 @@ get_bi_value(db_prop_handle h, Var * value)
 	value->v.str = str_ref(dbpriv_object_name(o));
 	break;
     case BP_OWNER:
-	value->type = TYPE_OBJ;
-	value->v.obj = dbpriv_object_owner(o);
+	*value = Var::new_obj(dbpriv_object_owner(o));
 	break;
     case BP_PROGRAMMER:
-	value->type = TYPE_INT;
-	value->v.num = dbpriv_object_has_flag(o, FLAG_PROGRAMMER);
+	*value = Var::new_int(dbpriv_object_has_flag(o, FLAG_PROGRAMMER));
 	break;
     case BP_WIZARD:
-	value->type = TYPE_INT;
-	value->v.num = dbpriv_object_has_flag(o, FLAG_WIZARD);
+	*value = Var::new_int(dbpriv_object_has_flag(o, FLAG_WIZARD));
 	break;
     case BP_R:
-	value->type = TYPE_INT;
-	value->v.num = dbpriv_object_has_flag(o, FLAG_READ);
+	*value = Var::new_int(dbpriv_object_has_flag(o, FLAG_READ));
 	break;
     case BP_W:
-	value->type = TYPE_INT;
-	value->v.num = dbpriv_object_has_flag(o, FLAG_WRITE);
+	*value = Var::new_int(dbpriv_object_has_flag(o, FLAG_WRITE));
 	break;
     case BP_F:
-	value->type = TYPE_INT;
-	value->v.num = dbpriv_object_has_flag(o, FLAG_FERTILE);
+	*value = Var::new_int(dbpriv_object_has_flag(o, FLAG_FERTILE));
 	break;
     case BP_A:
-	value->type = TYPE_INT;
-	value->v.num = dbpriv_object_has_flag(o, FLAG_ANONYMOUS);
+	*value = Var::new_int(dbpriv_object_has_flag(o, FLAG_ANONYMOUS));
 	break;
     case BP_LOCATION:
 	*value = var_ref(dbpriv_object_location(o));

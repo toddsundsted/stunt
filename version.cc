@@ -75,10 +75,10 @@ static Var *version_structure = 0;
 static void init_version_structure()
 {
 
-#define SET_INT(W,value)  (W).type = TYPE_INT;  (W).v.num = (value)
-#define SET_STR(W,value)  (W).type = TYPE_STR;  (W).v.str = str_dup(value)
-#define SET_OBJ(W,value)  (W).type = TYPE_OBJ;  (W).v.obj = (value)
-#define SET_VAR(W,value)  (W) = var_ref(value)
+#define SET_INT(W,value) (W) = Var::new_int(value)
+#define SET_STR(W,value) (W) = Var::new_str(value)
+#define SET_OBJ(W,value) (W) = Var::new_obj(value)
+#define SET_VAR(W,value) (W) = var_ref(value)
 
 #define DEPTH 4
 

@@ -29,11 +29,11 @@ is_list_of_objs(Var v)
 {
     int i;
 
-    if (TYPE_LIST != v.type)
+    if (!v.is_list())
 	return false;
 
     for (i = 1; i <= v.v.list[0].v.num; i++)
-	if (TYPE_OBJ != v.v.list[i].type)
+	if (!v.v.list[i].is_obj())
 	    return false;
 
     return true;

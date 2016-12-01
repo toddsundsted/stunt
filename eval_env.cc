@@ -108,9 +108,7 @@ fill_in_rt_consts(Var * env, DB_Version version)
 void
 set_rt_env_obj(Var * env, int slot, Objid o)
 {
-    Var v;
-    v.type = TYPE_OBJ;
-    v.v.obj = o;
+    Var v = Var::new_obj(o);
     env[slot] = var_ref(v);
 }
 

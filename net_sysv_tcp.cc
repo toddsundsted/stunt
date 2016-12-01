@@ -90,8 +90,7 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 
     initialize_name_lookup();
 
-    desc->type = TYPE_INT;
-    desc->v.num = port;
+    *desc = Var::new_int(port);
     return 1;
 }
 
@@ -148,8 +147,7 @@ proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
 	t_close(s);
 	return E_QUOTA;
     }
-    canon->type = TYPE_INT;
-    canon->v.num = ntohs(rec_addr.sin_port);
+    *canon = Var::new_int(ntohs(rec_addr.sin_port));
 
     stream_printf(st, "port %d", canon->v.num);
     *name = reset_stream(st);

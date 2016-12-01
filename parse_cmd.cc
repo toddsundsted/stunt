@@ -116,8 +116,7 @@ parse_into_wordlist(const char *command)
     argv = parse_into_words(s, &argc);
     args = new_list(argc);
     for (i = 1; i <= argc; i++) {
-	args.v.list[i].type = TYPE_STR;
-	args.v.list[i].v.str = str_dup(argv[i - 1]);
+	args.v.list[i] = Var::new_str(argv[i - 1]);
     }
     free_str(s);
     return args;
@@ -187,8 +186,7 @@ parse_command(const char *command, Objid user)
 
     pc.args = new_list(argc - 1);
     for (i = 1; i < argc; i++) {
-	pc.args.v.list[i].type = TYPE_STR;
-	pc.args.v.list[i].v.str = str_dup(argv[i]);
+	pc.args.v.list[i] = Var::new_str(argv[i]);
     }
 
     /*

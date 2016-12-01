@@ -318,8 +318,7 @@ make_abort_pack(enum abort_reason reason)
     package p;
 
     p.kind = package::BI_KILL;
-    p.u.ret.type = TYPE_INT;
-    p.u.ret.v.num = reason;
+    p.u.ret = Var::new_int(reason);
     return p;
 }
 

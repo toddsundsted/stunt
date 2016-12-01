@@ -65,7 +65,7 @@ listlength(Var l)
 static inline Var
 enlist_var(Var v)
 {
-    if (TYPE_LIST == v.type)
+    if (v.is_list())
 	return v;
 
     Var r = new_list(1);

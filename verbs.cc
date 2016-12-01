@@ -295,10 +295,6 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!db_verb_allows(h, progr, VF_READ))
 	return make_error_pack(E_PERM);
 
-    r = new_list(3);
-    r.v.list[1].type = TYPE_OBJ;
-    r.v.list[1].v.obj = db_verb_owner(h);
-    r.v.list[2].type = TYPE_STR;
     s = perms;
     flags = db_verb_flags(h);
     if (flags & VF_READ)
@@ -310,9 +306,10 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
     if (flags & VF_DEBUG)
 	*s++ = 'd';
     *s = '\0';
-    r.v.list[2].v.str = str_dup(perms);
-    r.v.list[3].type = TYPE_STR;
-    r.v.list[3].v.str = str_ref(db_verb_names(h));
+    r = new_list(3);
+    r.v.list[1] = Var::new_obj(db_verb_owner(h));
+    r.v.list[2] = Var::new_str(perms);
+    r.v.list[3] = Var::new_str(db_verb_names(h));
 
     return make_var_pack(r);
 }
@@ -458,10 +455,7 @@ static void
 lister(void *data, const char *line)
 {
     Var *r = (Var *) data;
-    Var v;
-
-    v.type = TYPE_STR;
-    v.v.str = str_dup(line);
+    Var v = Var::new_str(line);
     *r = listappend(*r, v);
 }
 
@@ -625,8 +619,7 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 		Var r;
 
 		r = new_list(2);
-		r.v.list[1].type = TYPE_INT;
-		r.v.list[1].v.num = 0;
+		r.v.list[1] = Var::new_int(0);
 		r.v.list[2] = errors;
 		p = make_var_pack(r);
 	    }
@@ -635,8 +628,7 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 	Var r;
 
 	r = new_list(2);
-	r.v.list[1].type = TYPE_INT;
-	r.v.list[1].v.num = 1;
+	r.v.list[1] = Var::new_int(1);
 	r.v.list[2] = arglist;
 	p = make_var_pack(r);
     }

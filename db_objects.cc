@@ -241,10 +241,7 @@ db_destroy_object(Objid oid)
     free_var(o->contents);
 
     if (is_user(oid)) {
-	Var t;
-
-	t.type = TYPE_OBJ;
-	t.v.obj = oid;
+	Var t = Var::new_obj(oid);
 	all_users = setremove(all_users, t);
     }
     free_str(o->name);
@@ -404,7 +401,7 @@ db_destroy_anonymous_object(void *obj)
 int
 parents_ok(Object *o)
 {
-    if (TYPE_LIST == o->parents.type) {
+    if (o->parents.is_list()) {
 	Var parent;
 	int i, c;
 	FOR_EACH(parent, o->parents, i, c) {
@@ -462,7 +459,7 @@ db_renumber_object(Objid old)
 	    Var obj1, obj2;
 
 #define	    FIX(up, down)							\
-	    if (TYPE_LIST == o->up.type) {					\
+	    if (o->up.is_list()) {						\
 		FOR_EACH(obj1, o->up, i1, c1) {					\
 		    FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)		\
 			if (obj2.v.obj == old)					\
@@ -631,8 +628,7 @@ db2_add_##name(Object *o, Var *plist, int *px)				\
 	    if (bit_is_false(bit_array, oid)) {				\
 		bit_true(bit_array, oid);				\
 		++(*px);						\
-		plist->v.list[*px].type = TYPE_OBJ;			\
-		plist->v.list[*px].v.obj = oid;				\
+		plist->v.list[*px] = Var::new_obj(oid);			\
 		o2 = dbpriv_find_object(oid);				\
 		db2_add_##name(o2, plist, px);				\
 	    }								\
@@ -829,7 +825,7 @@ check_for_duplicates(Var list)
 {
     int i, j, c;
 
-    if (TYPE_LIST != list.type || (c = listlength(list)) < 1)
+    if (!list.is_list() || (c = listlength(list)) < 1)
 	return 1;
 
     for (i = 1; i <= c; i++)
@@ -1074,7 +1070,7 @@ db_object_isa(Var object, Var parent)
 
     Object *o, *t;
 
-    o = (TYPE_OBJ == object.type) ?
+    o = object.is_obj() ?
         dbpriv_find_object(object.v.obj) :
         object.v.anon;
 

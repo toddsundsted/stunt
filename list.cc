@@ -52,8 +52,7 @@ new_list(int size)
 
 	    emptylist.type = TYPE_LIST;
 	    emptylist.v.list = ptr;
-	    emptylist.v.list[0].type = TYPE_INT;
-	    emptylist.v.list[0].v.num = 0;
+	    emptylist.v.list[0] = Var::new_int(0);
 	}
 
 #ifdef ENABLE_GC
@@ -70,8 +69,7 @@ new_list(int size)
 
     list.type = TYPE_LIST;
     list.v.list = ptr;
-    list.v.list[0].type = TYPE_INT;
-    list.v.list[0].v.num = size;
+    list.v.list[0] = Var::new_int(size);
 
 #ifdef ENABLE_GC
     gc_set_color(list.v.list, GC_YELLOW);
@@ -596,16 +594,13 @@ bf_length(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     switch (arglist.v.list[1].type) {
     case TYPE_LIST:
-	r.type = TYPE_INT;
-	r.v.num = arglist.v.list[1].v.list[0].v.num;
+	r = Var::new_int(arglist.v.list[1].v.list[0].v.num);
 	break;
     case TYPE_MAP:
-	r.type = TYPE_INT;
-	r.v.num = maplength(arglist.v.list[1]);
+	r = Var::new_int(maplength(arglist.v.list[1]));
 	break;
     case TYPE_STR:
-	r.type = TYPE_INT;
-	r.v.num = memo_strlen(arglist.v.list[1].v.str);
+	r = Var::new_int(memo_strlen(arglist.v.list[1].v.str));
 	break;
     default:
 	free_var(arglist);
@@ -748,10 +743,7 @@ bf_listset(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_equal(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-
-    r.type = TYPE_INT;
-    r.v.num = equality(arglist.v.list[1], arglist.v.list[2], 1);
+    Var r = Var::new_int(equality(arglist.v.list[1], arglist.v.list[2], 1));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -775,8 +767,7 @@ bf_strsub(Var arglist, Byte next, void *vdata, Objid progr)
 	Var r;
 	stream_add_strsub(s, arglist.v.list[1].v.str, arglist.v.list[2].v.str,
 			  arglist.v.list[3].v.str, case_matters);
-	r.type = TYPE_STR;
-	r.v.str = str_dup(stream_contents(s));
+	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
     catch (stream_too_big& exception) {
@@ -797,10 +788,7 @@ signum(int x)
 static package
 bf_strcmp(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (string1, string2) */
-    Var r;
-
-    r.type = TYPE_INT;
-    r.v.num = signum(strcmp(arglist.v.list[1].v.str, arglist.v.list[2].v.str));
+    Var r = Var::new_int(signum(strcmp(arglist.v.list[1].v.str, arglist.v.list[2].v.str)));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -885,8 +873,7 @@ bf_tostr(Var arglist, Byte next, void *vdata, Objid progr)
 	for (i = 1; i <= arglist.v.list[0].v.num; i++) {
 	    stream_add_tostr(s, arglist.v.list[i]);
 	}
-	r.type = TYPE_STR;
-	r.v.str = str_dup(stream_contents(s));
+	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
     catch (stream_too_big& exception) {
@@ -909,8 +896,7 @@ bf_toliteral(Var arglist, Byte next, void *vdata, Objid progr)
 	Var r;
 
 	unparse_value(s, arglist.v.list[1]);
-	r.type = TYPE_STR;
-	r.v.str = str_dup(stream_contents(s));
+	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
     catch (stream_too_big& exception) {
@@ -1157,8 +1143,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 		    stream_add_char(s, subject[start++]);
 	    }
 	}
-	ans.type = TYPE_STR;
-	ans.v.str = str_dup(stream_contents(s));
+	ans = Var::new_str(stream_contents(s));
 	p = make_var_pack(ans);
       oops: ;
     }
@@ -1174,10 +1159,7 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_value_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-
-    r.type = TYPE_INT;
-    r.v.num = value_bytes(arglist.v.list[1]);
+    Var r = Var::new_int(value_bytes(arglist.v.list[1]));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1199,8 +1181,7 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
     if (fully) {
 	r = new_list(length);
 	for (i = 1; i <= length; i++) {
-	    r.v.list[i].type = TYPE_INT;
-	    r.v.list[i].v.num = (unsigned char) bytes[i - 1];
+	    r.v.list[i] = Var::new_int((unsigned char)bytes[i - 1]);
 	}
     } else {
 	int count, in_string;
@@ -1228,20 +1209,17 @@ bf_decode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 		in_string = 1;
 	    } else {
 		if (in_string) {
-		    r.v.list[count].type = TYPE_STR;
-		    r.v.list[count].v.str = str_dup(reset_stream(s));
+		    r.v.list[count] = Var::new_str(reset_stream(s));
 		    count++;
 		}
-		r.v.list[count].type = TYPE_INT;
-		r.v.list[count].v.num = c;
+		r.v.list[count] = Var::new_int(c);
 		count++;
 		in_string = 0;
 	    }
 	}
 
 	if (in_string) {
-	    r.v.list[count].type = TYPE_STR;
-	    r.v.list[count].v.str = str_dup(reset_stream(s));
+	    r.v.list[count] = Var::new_str(reset_stream(s));
 	}
 	free_stream(s);
     }
@@ -1293,8 +1271,7 @@ bf_encode_binary(Var arglist, Byte next, void *vdata, Objid progr)
 	if (encode_binary(s, arglist)) {
 	    stream_add_raw_bytes_to_binary(
 		s2, stream_contents(s), stream_length(s));
-	    r.type = TYPE_STR;
-	    r.v.str = str_dup(stream_contents(s2));
+	    r = Var::new_str(stream_contents(s2));
 	    p = make_var_pack(r);
 	}
 	else

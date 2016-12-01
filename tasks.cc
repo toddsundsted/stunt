@@ -1226,8 +1226,7 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
     a.prog = program_ref(a.prog);
     if (vid >= 0) {
 	free_var(a.rt_env[vid]);
-	a.rt_env[vid].type = TYPE_INT;
-	a.rt_env[vid].v.num = id;
+	a.rt_env[vid] = Var::new_int(id);
     }
     rt_env = copy_rt_env(a.rt_env, a.prog->num_var_names);
     enqueue_forked(a.prog, a, rt_env, f_index, time(0) + after_seconds, id);
@@ -1400,14 +1399,12 @@ create_or_extend(Var in, const char *_new, int newlen)
 	stream_add_string(s, in.v.str);
 	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
-	out.type = TYPE_STR;
-	out.v.str = str_dup(reset_stream(s));
+	out = Var::new_str(reset_stream(s));
     }
     else {
 	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
-	out.type = TYPE_STR;
-	out.v.str = str_dup(reset_stream(s));
+	out = Var::new_str(reset_stream(s));
     }
 
     return out;
@@ -1497,8 +1494,7 @@ on_message_complete_callback(http_parser *parser)
 	init = 1;
 
 #define INIT_KEY(var, val)		\
-    var.type = TYPE_STR;		\
-    var.v.str = str_dup(val)
+    var = Var::new_str(val)
 
     INIT_KEY(URI, "uri");
     INIT_KEY(METHOD, "method");
@@ -1512,15 +1508,11 @@ on_message_complete_callback(http_parser *parser)
     struct http_parsing_state *state = (struct http_parsing_state *)parser;
 
     if (parser->type == HTTP_REQUEST) {
-	Var method;
-	method.type = TYPE_STR;
-	method.v.str = str_dup(http_method_str((http_method)state->parser.method));
+	Var method = Var::new_str(http_method_str((http_method)state->parser.method));
 	state->result = mapinsert(state->result, var_dup(METHOD), method);
     }
     else { /* HTTP_RESPONSE */
-	Var status;
-	status.type = TYPE_INT;
-	status.v.num = parser->status_code;
+	Var status = Var::new_int(parser->status_code);
 	state->result = mapinsert(state->result, var_dup(STATUS), status);
     }
 
@@ -1645,20 +1637,16 @@ run_ready_tasks(void)
 			    http_parser_execute(&tq->parsing_state->parser, &settings, binary, len);
 			    if (tq->parsing_state->parser.http_errno != HPE_OK) {
 				Var key, value;
-				key.type = TYPE_STR;
-				key.v.str = str_dup("error");
+				key = Var::new_str("error");
 				value = new_list(2);
-				value.v.list[1].type = TYPE_STR;
-				value.v.list[1].v.str = str_dup(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
-				value.v.list[2].type = TYPE_STR;
-				value.v.list[2].v.str = str_dup(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
+				value.v.list[1] = Var::new_str(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
+				value.v.list[2] = Var::new_str(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
 				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
 				done = 1;
 			    }
 			    else if (tq->parsing_state->parser.upgrade) {
 				Var key;
-				key.type = TYPE_STR;
-				key.v.str = str_dup("upgrade");
+				key = Var::new_str("upgrade");
 				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, Var::new_int(1));
 				done = 1;
 			    }
@@ -1794,8 +1782,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
     else {
 	/* simulate an empty verb */
 	if (result) {
-	    result->type = TYPE_INT;
-	    result->v.num = 0;
+	    *result = Var::new_int(0);
 	}
 	free_var(args);
 	return OUTCOME_DONE;
@@ -2169,21 +2156,18 @@ bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
 
 	res = new_list(count);
 	for (tq = active_tqueues; tq; tq = tq->next) {
-	    res.v.list[count].type = TYPE_OBJ;
-	    res.v.list[count].v.obj = tq->player;
+	    res.v.list[count] = Var::new_obj(tq->player);
 	    count--;
 	}
 	for (tq = idle_tqueues; tq; tq = tq->next) {
-	    res.v.list[count].type = TYPE_OBJ;
-	    res.v.list[count].v.obj = tq->player;
+	    res.v.list[count] = Var::new_obj(tq->player);
 	    count--;
 	}
     } else {
 	Objid who = arglist.v.list[1].v.obj;
 	tqueue *tq = find_tqueue(who, 0);
 
-	res.type = TYPE_INT;
-	res.v.num = (tq ? tq->num_bg_tasks : 0);
+	res = Var::new_int(tq ? tq->num_bg_tasks : 0);
     }
 
     free_var(arglist);
@@ -2193,9 +2177,7 @@ bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_task_id(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = current_task_id;
+    Var r = Var::new_int(current_task_id);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -2311,8 +2293,7 @@ list_for_suspended_task(suspended_task st, Objid progr)
     Var list;
 
     list = list_for_vm(st.the_vm, progr);
-    list.v.list[2].type = TYPE_INT;
-    list.v.list[2].v.num = st.start_time;
+    list.v.list[2] = Var::new_int(st.start_time);
 
     return list;
 }
@@ -2323,10 +2304,8 @@ list_for_reading_task(Objid player, vm the_vm, Objid progr)
     Var list;
 
     list = list_for_vm(the_vm, progr);
-    list.v.list[2].type = TYPE_INT;
-    list.v.list[2].v.num = -1;	/* conventional value */
-
-    list.v.list[5].v.obj = player;
+    list.v.list[2] = Var::new_int(-1);	/* conventional value */
+    list.v.list[5] = Var::new_obj(player);
 
     return list;
 }
@@ -2350,8 +2329,7 @@ listing_closure(vm the_vm, const char *status, void *data)
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
 	list = list_for_vm(the_vm, qdata->progr);
-	list.v.list[2].type = TYPE_STR;
-	list.v.list[2].v.str = str_dup(status);
+	list.v.list[2] = Var::new_str(status);
 	qdata->tasks.v.list[qdata->i++] = list;
     }
 
@@ -2743,9 +2721,8 @@ bf_output_delimiters(Var arglist, Byte next, void *vdata, Objid progr)
 	    suffix = "";
 
 	r = new_list(2);
-	r.v.list[1].type = r.v.list[2].type = TYPE_STR;
-	r.v.list[1].v.str = str_dup(prefix);
-	r.v.list[2].v.str = str_dup(suffix);
+	r.v.list[1] = Var::new_str(prefix);
+	r.v.list[2] = Var::new_str(suffix);
     }
     return make_var_pack(r);
 }

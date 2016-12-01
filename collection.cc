@@ -45,7 +45,7 @@ do_map_iteration(Var key, Var value, void *data, int first)
 int
 ismember(Var lhs, Var rhs, int case_matters)
 {
-    if (rhs.type == TYPE_LIST) {
+    if (rhs.is_list()) {
 	int i;
 
 	for (i = 1; i <= rhs.v.list[0].v.num; i++) {
@@ -55,7 +55,7 @@ ismember(Var lhs, Var rhs, int case_matters)
 	}
 
 	return 0;
-    } else if (rhs.type == TYPE_MAP) {
+    } else if (rhs.is_map()) {
 	struct ismember_data ismember_data;
 
 	ismember_data.i = 1;
@@ -76,14 +76,15 @@ bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     Var rhs = arglist.v.list[2];
 
-    if (rhs.type != TYPE_LIST && rhs.type != TYPE_MAP) {
+    if (!rhs.is_list() && !rhs.is_map()) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
 
-    r.type = TYPE_INT;
-    r.v.num = ismember(arglist.v.list[1], rhs, 1);
+    r = Var::new_int(ismember(arglist.v.list[1], rhs, 1));
+
     free_var(arglist);
+
     return make_var_pack(r);
 }
 

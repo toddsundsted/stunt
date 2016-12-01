@@ -506,14 +506,11 @@ deal_with_child_exit(void)
 	if (tw && TWS_STOP == tw->status) {
 	    Var v;
 	    v = new_list(3);
-	    v.v.list[1].type = TYPE_INT;
-	    v.v.list[1].v.num = tw->code;
+	    v.v.list[1] = Var::new_int(tw->code);
 	    stdout_readable(tw->fout, tw);
-	    v.v.list[2].type = TYPE_STR;
-	    v.v.list[2].v.str = str_dup(reset_stream(tw->sout));
+	    v.v.list[2] = Var::new_str(reset_stream(tw->sout));
 	    stderr_readable(tw->ferr, tw);
-	    v.v.list[3].type = TYPE_STR;
-	    v.v.list[3].v.str = str_dup(reset_stream(tw->serr));
+	    v.v.list[3] = Var::new_str(reset_stream(tw->serr));
 
 	    resume_task(tw->the_vm, v);
 	}

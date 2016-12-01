@@ -429,10 +429,8 @@ bf_gc_stats(Var arglist, Byte next, void *vdata, Objid progr)
     Var k, v, r = new_map();
 
 #define PACK_COLOR(c, i)	\
-    k.type = TYPE_STR;		\
-    k.v.str = str_dup(#c);	\
-    v.type = TYPE_INT;		\
-    v.v.num = color[i];		\
+    k = Var::new_str(#c);	\
+    v = Var::new_int(color[i]);	\
     r = mapinsert(r, k, v)
 
     PACK_COLOR(green, 0);

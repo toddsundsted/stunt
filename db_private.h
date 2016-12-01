@@ -230,7 +230,7 @@ extern void dbpriv_set_dbio_output(FILE *);
 static inline Object *
 dbpriv_dereference(Var v)
 {
-    return (TYPE_OBJ == v.type)
+    return v.is_obj()
            ? dbpriv_find_object(v.v.obj)
            : v.v.anon;
 }

@@ -68,8 +68,7 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
     else if (argc == 1) {
 	connect_file = argv[0];
     }
-    desc->type = TYPE_STR;
-    desc->v.str = str_dup(connect_file);
+    desc = Var::new_str(connect_file);
     return 1;
 }
 

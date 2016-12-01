@@ -188,6 +188,14 @@ struct Var {
     is_str() const {
 	return TYPE_STR == type;
     }
+
+    static Var
+    new_str(const char* const str) {
+	Var v;
+	v.type = TYPE_STR;
+	v.v.str = str_dup(str);
+	return v;
+    }
 };
 
 inline Var

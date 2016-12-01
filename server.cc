@@ -308,8 +308,7 @@ call_checkpoint_notifier(int successful)
     Var args;
 
     args = new_list(1);
-    args.v.list[1].type = TYPE_INT;
-    args.v.list[1].v.num = successful;
+    args.v.list[1] = Var::new_int(successful);
     run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
 }
 
@@ -422,8 +421,7 @@ call_notifier(Objid player, Objid handler, const char *verb_name)
     Var args;
 
     args = new_list(1);
-    args.v.list[1].type = TYPE_OBJ;
-    args.v.list[1].v.obj = player;
+    args.v.list[1] = Var::new_obj(player);
     run_server_task(player, Var::new_obj(handler), verb_name, args, "", 0);
 }
 
@@ -1545,9 +1543,8 @@ read_active_connections(void)
 	    listener = SYSTEM_OBJECT;
 	}
 	checkpointed_connections.v.list[i] = v = new_list(2);
-	v.v.list[1].type = v.v.list[2].type = TYPE_OBJ;
-	v.v.list[1].v.obj = who;
-	v.v.list[2].v.obj = listener;
+	v.v.list[1] = Var::new_obj(who);
+	v.v.list[2] = Var::new_obj(listener);
     }
 
     return 1;
@@ -1725,8 +1722,7 @@ bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
 	r = server_version_full(arglist.v.list[1]);
     }
     else {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(server_version);
+	r = Var::new_str(server_version);
     }
     free_var(arglist);
     if (r.type == TYPE_ERR)
@@ -1747,8 +1743,7 @@ bf_renumber(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!is_wizard(progr))
 	return make_error_pack(E_PERM);
 
-    r.type = TYPE_OBJ;
-    r.v.obj = db_renumber_object(o);
+    r = Var::new_obj(db_renumber_object(o));
     return make_var_pack(r);
 }
 
@@ -1917,9 +1912,7 @@ bf_connected_players(Var arglist, Byte next, void *vdata, Objid progr)
 
     for (h = all_shandles; h; h = h->next) {
 	if ((show_all || h->connection_time != 0) && !h->disconnect_me) {
-	    count++;
-	    result.v.list[count].type = TYPE_OBJ;
-	    result.v.list[count].v.obj = h->player;
+	    result.v.list[++count] = Var::new_obj(h->player);
 	}
     }
 
@@ -1981,8 +1974,7 @@ bf_connection_name(Var arglist, Byte next, void *vdata, Objid progr)
     else if (!conn_name)
 	return make_error_pack(E_INVARG);
     else {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(conn_name);
+	r = Var::new_str(conn_name);
 	return make_var_pack(r);
     }
 }
@@ -2166,11 +2158,9 @@ bf_listeners(Var arglist, Byte next, void *vdata, Objid progr)
     list = new_list(count);
     for (i = 1, l = all_slisteners; l; i++, l = l->next) {
 	list.v.list[i] = entry = new_list(3);
-	entry.v.list[1].type = TYPE_OBJ;
-	entry.v.list[1].v.obj = l->oid;
+	entry.v.list[1] = Var::new_obj(l->oid);
 	entry.v.list[2] = var_ref(l->desc);
-	entry.v.list[3].type = TYPE_INT;
-	entry.v.list[3].v.num = l->print_messages;
+	entry.v.list[3] = Var::new_int(l->print_messages);
     }
 
     return make_var_pack(list);
@@ -2204,13 +2194,9 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_process_id(Var arglist, Byte next, void *vdata, Objid progr)
 {
+    Var r = Var::new_int(getpid());
     free_var(arglist);
-
-    Var taskid;
-    taskid.type = TYPE_INT;
-    taskid.v.num = getpid();
-
-    return make_var_pack(taskid);
+    return make_var_pack(r);
 }
 
 void
