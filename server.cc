@@ -1725,7 +1725,7 @@ bf_server_version(Var arglist, Byte next, void *vdata, Objid progr)
 	r = Var::new_str(server_version);
     }
     free_var(arglist);
-    if (r.type == TYPE_ERR)
+    if (r.is_err())
 	return make_error_pack(r.v.err);
     else
 	return make_var_pack(r);
@@ -1872,13 +1872,11 @@ bf_open_network_connection(Var arglist, Byte next, void *vdata, Objid progr)
 	 * player number was allocated for the connection.  Thus, the old
 	 * value of next_unconnected_player is the number of our connection.
 	 */
-	r.type = TYPE_OBJ;
-	r.v.obj = next_unconnected_player + 1;
+	r = Var::new_obj(next_unconnected_player + 1);
     } else {
-	r.type = TYPE_ERR;
-	r.v.err = e;
+	r = Var::new_err(e);
     }
-    if (r.type == TYPE_ERR)
+    if (r.is_err())
 	return make_error_pack(r.v.err);
     else
 	return make_var_pack(r);

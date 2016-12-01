@@ -265,11 +265,9 @@ compare_numbers(Var a, Var b)
     Var ans;
 
     if (a.type != b.type) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_TYPE;
+	ans = Var::new_err(E_TYPE);
     } else if (a.type == TYPE_INT) {
-	ans.type = TYPE_INT;
-	ans.v.num = compare_integers(a.v.num, b.v.num);
+	ans = Var::new_int(compare_integers(a.v.num, b.v.num));
     } else {
 	double aa = *a.v.fnum, bb = *b.v.fnum;
 
@@ -320,12 +318,10 @@ do_modulus(Var a, Var b)
     Var ans;
 
     if (a.type != b.type) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_TYPE;
+	ans = Var::new_err(E_TYPE);
     } else if ((a.type == TYPE_INT && b.v.num == 0) ||
                (a.type == TYPE_FLOAT && *b.v.fnum == 0.0)) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_DIV;
+	ans = Var::new_err(E_DIV);
     } else if (a.type == TYPE_INT) {
 	ans.type = TYPE_INT;
 	if (a.v.num == MININT && b.v.num == -1)
@@ -335,8 +331,7 @@ do_modulus(Var a, Var b)
     } else { // must be float
 	double d = fmod(*a.v.fnum, *b.v.fnum);
 	if (!IS_REAL(d)) {
-	    ans.type = TYPE_ERR;
-	    ans.v.err = E_FLOAT;
+	    ans = Var::new_err(E_FLOAT);
 	} else
 	    ans = new_float(d);
     }
@@ -350,12 +345,10 @@ do_divide(Var a, Var b)
     Var ans;
 
     if (a.type != b.type) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_TYPE;
+	ans = Var::new_err(E_TYPE);
     } else if ((a.type == TYPE_INT && b.v.num == 0) ||
                (a.type == TYPE_FLOAT && *b.v.fnum == 0.0)) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_DIV;
+	ans = Var::new_err(E_DIV);
     } else if (a.type == TYPE_INT) {
 	ans.type = TYPE_INT;
 	if (a.v.num == MININT && b.v.num == -1)
@@ -365,8 +358,7 @@ do_divide(Var a, Var b)
     } else { // must be float
 	double d = *a.v.fnum / *b.v.fnum;
 	if (!IS_REAL(d)) {
-	    ans.type = TYPE_ERR;
-	    ans.v.err = E_FLOAT;
+	    ans = Var::new_err(E_FLOAT);
 	} else
 	    ans = new_float(d);
     }

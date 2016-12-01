@@ -992,8 +992,7 @@ do_match(Var arglist, int reverse)
 				&& is_true(arglist.v.list[3])));
 
     if (!pat.ptr) {
-	ans.type = TYPE_ERR;
-	ans.v.err = E_INVARG;
+	ans = Var::new_err(E_INVARG);
     } else
 	switch (match_pattern(pat, subject, regs, reverse)) {
 	default:
@@ -1020,8 +1019,7 @@ do_match(Var arglist, int reverse)
 	    ans = new_list(0);
 	    break;
 	case MATCH_ABORTED:
-	    ans.type = TYPE_ERR;
-	    ans.v.err = E_QUOTA;
+	    ans = Var::new_err(E_QUOTA);
 	    break;
 	}
 
@@ -1031,11 +1029,9 @@ do_match(Var arglist, int reverse)
 static package
 bf_match(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var ans;
-
-    ans = do_match(arglist, 0);
+    Var ans = do_match(arglist, 0);
     free_var(arglist);
-    if (ans.type == TYPE_ERR)
+    if (ans.is_err())
 	return make_error_pack(ans.v.err);
     else
 	return make_var_pack(ans);
@@ -1044,11 +1040,9 @@ bf_match(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_rmatch(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var ans;
-
-    ans = do_match(arglist, 1);
+    Var ans = do_match(arglist, 1);
     free_var(arglist);
-    if (ans.type == TYPE_ERR)
+    if (ans.is_err())
 	return make_error_pack(ans.v.err);
     else
 	return make_var_pack(ans);

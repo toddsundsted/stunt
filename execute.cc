@@ -317,8 +317,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 				*outcome = OUTCOME_BLOCKED;
 			    return 1;
 			} else {
-			    value.type = TYPE_ERR;
-			    value.v.err = e;
+			    value = Var::new_err(e);
 			    return unwind_stack(FIN_RAISE, value, outcome);
 			}
 		    }
@@ -789,8 +788,7 @@ do {							\
 #define PUSH_ERROR(the_err)					\
 do {    							\
     RAISE_ERROR(the_err);	/* may not return!! */		\
-    error_var.type = TYPE_ERR;					\
-    error_var.v.err = the_err;					\
+    error_var = Var::new_err(the_err);				\
     PUSH(error_var);						\
 } while (0)
 
@@ -1137,7 +1135,7 @@ do {								\
 		if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
 		    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
 		    ans = compare_numbers(lhs, rhs);
-		    if (ans.type == TYPE_ERR) {
+		    if (ans.is_err()) {
 			free_var(rhs);
 			free_var(lhs);
 			PUSH_ERROR(ans.v.err);
@@ -1243,12 +1241,11 @@ do {								\
 			break;
 		    }
 		} else {
-		    ans.type = TYPE_ERR;
-		    ans.v.err = E_TYPE;
+		    ans = Var::new_err(E_TYPE);
 		}
 		free_var(rhs);
 		free_var(lhs);
-		if (ans.type == TYPE_ERR)
+		if (ans.is_err())
 		    PUSH_ERROR(ans.v.err);
 		else
 		    PUSH(ans);
@@ -1271,8 +1268,7 @@ do {								\
 
 		    if (server_int_option_cached(SVO_MAX_STRING_CONCAT)
 			< flen) {
-			ans.type = TYPE_ERR;
-			ans.v.err = E_QUOTA;
+			ans = Var::new_err(E_QUOTA);
 		    } else {
 			str = (char *)mymalloc(flen + 1, M_STRING);
 			strcpy(str, lhs.v.str);
@@ -1281,13 +1277,12 @@ do {								\
 			ans.v.str = str;
 		    }
 		} else {
-		    ans.type = TYPE_ERR;
-		    ans.v.err = E_TYPE;
+		    ans = Var::new_err(E_TYPE);
 		}
 		free_var(rhs);
 		free_var(lhs);
 
-		if (ans.type == TYPE_ERR)
+		if (ans.is_err())
 		    PUSH_ERROR_UNLESS_QUOTA(ans.v.err);
 		else
 		    PUSH(ans);
@@ -2045,7 +2040,7 @@ do {								\
 			ans = do_power(lhs, rhs);
 			free_var(lhs);
 			free_var(rhs);
-			if (ans.type == TYPE_ERR)
+			if (ans.is_err())
 			    PUSH_ERROR(ans.v.err);
 			else
 			    PUSH(ans);
@@ -2372,13 +2367,12 @@ do {								\
 			    else
 				errlog("RUN: Impossible opcode in bitwise ops: %d\n", eop);
 			} else {
-			    ans.type = TYPE_ERR;
-			    ans.v.err = E_TYPE;
+			    ans = Var::new_err(E_TYPE);
 			}
 
 			free_var(lhs);
 			free_var(rhs);
-			if (ans.type == TYPE_ERR)
+			if (ans.is_err())
 			    PUSH_ERROR(ans.v.err);
 			else
 			    PUSH(ans);
@@ -2393,11 +2387,9 @@ do {								\
 			rhs = POP();
 			lhs = POP();
 			if (lhs.type != TYPE_INT || rhs.type != TYPE_INT) {
-			    ans.type = TYPE_ERR;
-			    ans.v.err = E_TYPE;
+			    ans = Var::new_err(E_TYPE);
 			} else if (rhs.v.num > sizeof(Num) * CHAR_BIT || rhs.v.num < 0) {
-			    ans.type = TYPE_ERR;
-			    ans.v.err = E_INVARG;
+			    ans = Var::new_err(E_INVARG);
 			} else if (rhs.v.num == sizeof(Num) * CHAR_BIT) {
 			    ans = Var::new_int(0);
 			} else if (rhs.v.num == 0) {
@@ -2418,7 +2410,7 @@ do {								\
 
 			free_var(lhs);
 			free_var(rhs);
-			if (ans.type == TYPE_ERR)
+			if (ans.is_err())
 			    PUSH_ERROR(ans.v.err);
 			else
 			    PUSH(ans);
@@ -2433,12 +2425,11 @@ do {								\
 			if (arg.type == TYPE_INT) {
 			    ans = Var::new_int(~arg.v.num);
 			} else {
-			    ans.type = TYPE_ERR;
-			    ans.v.err = E_TYPE;
+			    ans = Var::new_err(E_TYPE);
 			}
 
 			free_var(arg);
-			if (ans.type == TYPE_ERR)
+			if (ans.is_err())
 			    PUSH_ERROR(ans.v.err);
 			else
 			    PUSH(ans);
@@ -2760,7 +2751,7 @@ resume_from_previous_vm(vm the_vm, Var v)
 
     free_vm(the_vm, 0);
 
-    if (v.type == TYPE_ERR)
+    if (v.is_err())
 	return run_interpreter(1, v.v.err, 0, 0/*bg*/, 1/*traceback*/);
     else {
 	/* PUSH_REF(v) */
@@ -3046,7 +3037,7 @@ bf_read(Var arglist, Byte next, void *vdata, Objid progr)
 	Var r;
 
 	r = read_input_now(connection);
-	if (r.type == TYPE_ERR)
+	if (r.is_err())
 	    return make_error_pack(r.v.err);
 	else
 	    return make_var_pack(r);

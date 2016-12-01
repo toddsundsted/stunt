@@ -1284,11 +1284,9 @@ read_input_now(Objid connection)
     Var r;
 
     if (!tq || is_out_of_input(tq)) {
-	r.type = TYPE_ERR;
-	r.v.err = E_INVARG;
+	r = Var::new_err(E_INVARG);
     } else if (!(t = dequeue_input_task(tq, DQ_INBAND))) {
-	r.type = TYPE_INT;
-	r.v.num = 0;
+	r = Var::new_int(0);
     } else {
 	r.type = TYPE_STR;
 	r.v.str = t->t.input.string;
@@ -1587,8 +1585,7 @@ run_ready_tasks(void)
 		    reset_http_parsing_state(tq->parsing_state);
 		current_task_id = tq->reading_vm->task_id;
 		current_local = var_ref(tq->reading_vm->local);
-		v.type = TYPE_ERR;
-		v.v.err = E_INVARG;
+		v = Var::new_err(E_INVARG);
 		resume_from_previous_vm(tq->reading_vm, v);
 		current_task_id = -1;
 		free_var(current_local);
@@ -2058,8 +2055,7 @@ read_task_queue(void)
 	task *t = (task *)mymalloc(sizeof(task), M_TASK);
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.start_time = 0;
-	t->t.suspended.value.type = TYPE_ERR;
-	t->t.suspended.value.v.err = E_INTRPT;
+	t->t.suspended.value = Var::new_err(E_INTRPT);
 	t->t.suspended.the_vm = the_vm;
 	enqueue_waiting(t);
     }

@@ -99,8 +99,7 @@ stdin_readable(int fd, void *data)
 	    buffer[n] = 'X';
 
     if (buffer[0] == 'a') {
-	v.type = TYPE_ERR;
-	v.v.err = E_NACC;
+	v = Var::new_err(E_NACC);
     } else {
 	v = Var::new_str(buffer);
     }

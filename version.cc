@@ -226,8 +226,7 @@ server_version_full(Var arg)
 	     tree[1].type != TYPE_LIST))
 	    break;
     }
-    r.type  = TYPE_ERR;
-    r.v.err = E_INVARG;
+    r = Var::new_err(E_INVARG);
     return r;
 }
 

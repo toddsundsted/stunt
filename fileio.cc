@@ -255,8 +255,7 @@ file_make_error(const char *errtype, const char *msg) {
   value = Var::new_str(errtype);
 
   p.kind = package::BI_RAISE;
-  p.u.raise.code.type = TYPE_ERR;
-  p.u.raise.code.v.err = E_FILE;
+  p.u.raise.code = Var::new_err(E_FILE);
   p.u.raise.msg = str_dup(msg);
   p.u.raise.value = value;
 

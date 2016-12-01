@@ -196,6 +196,19 @@ struct Var {
 	v.v.str = str_dup(str);
 	return v;
     }
+
+    bool
+    is_err() const {
+	return TYPE_ERR == type;
+    }
+
+    static Var
+    new_err(const enum error err) {
+	Var v;
+	v.type = TYPE_ERR;
+	v.v.err = err;
+	return v;
+    }
 };
 
 inline Var

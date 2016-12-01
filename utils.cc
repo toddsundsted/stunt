@@ -572,14 +572,12 @@ get_system_property(const char *name)
     db_prop_handle h;
 
     if (!valid(SYSTEM_OBJECT)) {
-	value.type = TYPE_ERR;
-	value.v.err = E_INVIND;
+	value = Var::new_err(E_INVIND);
 	return value;
     }
     h = db_find_property(Var::new_obj(SYSTEM_OBJECT), name, &value);
     if (!h.ptr) {
-	value.type = TYPE_ERR;
-	value.v.err = E_PROPNF;
+	value = Var::new_err(E_PROPNF);
     } else if (!db_is_property_built_in(h))	/* make two cases the same */
 	value = var_ref(value);
     return value;

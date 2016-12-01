@@ -334,8 +334,7 @@ make_raise_pack(enum error err, const char *msg, Var value)
     package p;
 
     p.kind = package::BI_RAISE;
-    p.u.raise.code.type = TYPE_ERR;
-    p.u.raise.code.v.err = err;
+    p.u.raise.code = Var::new_err(err);
     p.u.raise.msg = str_dup(msg);
     p.u.raise.value = value;
 
