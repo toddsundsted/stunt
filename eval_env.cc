@@ -41,7 +41,7 @@ new_rt_env(unsigned size)
 	ret = (Var *)mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
 
     for (i = 0; i < size; i++)
-	ret[i].type = TYPE_NONE;
+	ret[i] = none;
 
     return ret;
 }

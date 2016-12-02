@@ -667,8 +667,7 @@ mapinsert(Var map, Var key, Var value)
      * boundary conditions in the looping logic), and keys that are
      * collections (for which `compare' does not currently work).
      */
-    if (key.type == TYPE_NONE || key.type == TYPE_CLEAR
-	|| key.is_collection())
+    if (key.is_none() || key.is_clear() || key.is_collection())
 	panic("MAPINSERT: invalid key");
 
     Var _new = map;
@@ -970,7 +969,7 @@ iternext(Var iter)
 void
 clear_node_value(const rbnode *node)
 {
-    ((rbnode *)node)->value.type = TYPE_NONE;
+    ((rbnode *)node)->value = none;
 }
 
 /**** built in functions ****/

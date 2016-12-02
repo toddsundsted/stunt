@@ -327,7 +327,7 @@ init_http_parsing_state(struct http_parsing_state *state)
     state->status = READY;
 #define INIT_VAR(XX)		\
     {				\
-	(XX).type = TYPE_NONE;	\
+	(XX) = none;		\
     }
     INIT_VAR(state->uri);
     INIT_VAR(state->header_field_under_constr);
@@ -345,7 +345,7 @@ reset_http_parsing_state(struct http_parsing_state *state)
 #define RESET_VAR(XX)		\
     {				\
 	free_var(XX);		\
-	(XX).type = TYPE_NONE;	\
+	(XX) = none;		\
     }
     RESET_VAR(state->uri);
     RESET_VAR(state->header_field_under_constr);
@@ -1436,8 +1436,8 @@ maybe_complete_header(struct http_parsing_state *state)
 	state->headers = mapinsert(state->headers,
 				   state->header_field_under_constr,
 				   state->header_value_under_constr);
-	state->header_field_under_constr.type = TYPE_NONE;
-	state->header_value_under_constr.type = TYPE_NONE;
+	state->header_field_under_constr = none;
+	state->header_value_under_constr = none;
     }
 }
 
@@ -1965,7 +1965,7 @@ read_task_queue(void)
 	    errlog("READ_TASK_QUEUE: Bad activation, count = %d.\n", count);
 	    return 0;
 	}
-	a.temp.type = TYPE_NONE;
+	a.temp = none;
 	if (!read_rt_env(&old_names, &old_rt_env, &old_size)) {
 	    errlog("READ_TASK_QUEUE: Bad env, count = %d.\n", count);
 	    return 0;

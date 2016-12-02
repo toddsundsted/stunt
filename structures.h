@@ -139,8 +139,8 @@ struct Var {
     friend Var str_ref_to_var(const char *s);
 
     bool
-    is_complex() const {
-	return TYPE_COMPLEX_FLAG & type;
+    is_clear() const {
+	return TYPE_CLEAR == type;
     }
 
     bool
@@ -156,6 +156,11 @@ struct Var {
     bool
     is_object() const {
 	return TYPE_OBJ == type || TYPE_ANON == type;
+    }
+
+    bool
+    is_complex() const {
+	return TYPE_COMPLEX_FLAG & type;
     }
 
     bool

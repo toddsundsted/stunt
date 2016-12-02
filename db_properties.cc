@@ -530,7 +530,7 @@ db_find_property(Var obj, const char *name, Var *value)
     if (value) {
 	Pval *prop = (Pval *)h.ptr;
 
-	while (prop->var.type == TYPE_CLEAR) {
+	while (prop->var.is_clear()) {
 	    /* We take a few liberties at this point.  If a property
 	     * value on an object is clear, then its `definer' must be
 	     * a permanent (not an anonymous) object, because

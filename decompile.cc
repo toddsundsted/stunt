@@ -808,8 +808,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			Expr *list = pop_expr();
 			int jump_hot;
 
-			if (iter->kind != EXPR_VAR
-			    || iter->e.var.type != TYPE_NONE)
+			if (iter->kind != EXPR_VAR || !iter->e.var.is_none())
 			    panic("Not a `none' value in DECOMPILE!");
 			else
 			    dealloc_node(iter);
@@ -836,8 +835,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			Expr *list = pop_expr();
 			int jump_hot;
 
-			if (iter->kind != EXPR_VAR
-			    || iter->e.var.type != TYPE_NONE)
+			if (iter->kind != EXPR_VAR || !iter->e.var.is_none())
 			    panic("Not a `none' value in DECOMPILE!");
 			else
 			    dealloc_node(iter);

@@ -669,7 +669,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
     RUN_ACTIV.bi_func_pc = 0;
-    RUN_ACTIV.temp.type = TYPE_NONE;
+    RUN_ACTIV.temp = none;
 
     RUN_ACTIV.rt_env = env = new_rt_env(RUN_ACTIV.prog->num_var_names);
 
@@ -1099,7 +1099,7 @@ do {								\
 
 	case OP_PUSH_TEMP:
 	    PUSH(RUN_ACTIV.temp);
-	    RUN_ACTIV.temp.type = TYPE_NONE;
+	    RUN_ACTIV.temp = none;
 	    break;
 
 	case OP_EQ:
@@ -1425,7 +1425,7 @@ do {								\
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH(list.v.list[index.v.num]);
-			list.v.list[index.v.num].type = TYPE_NONE;
+			list.v.list[index.v.num] = none;
 		    }
 		} else {
 		    PUSH_ERROR(E_TYPE);
@@ -1518,7 +1518,7 @@ do {								\
 		Var value;
 
 		value = RUN_ACTIV.rt_env[READ_BYTES(bv, bc.numbytes_var_name)];
-		if (value.type == TYPE_NONE)
+		if (value.is_none())
 		    PUSH_ERROR(E_VARNF);
 		else
 		    PUSH_REF(value);
@@ -2227,7 +2227,7 @@ do {								\
 			    int len = BASE.is_str()
 				       ? memo_strlen(BASE.v.str)
 				       : BASE.v.list[0].v.num;
-			    if (ITER.type == TYPE_NONE) {
+			    if (ITER.is_none()) {
 				free_var(ITER);
 				ITER = Var::new_int(1);
 			    }
@@ -2243,7 +2243,7 @@ do {								\
 				ITER.v.num++;	/* increment iter */
 			    }
 			} else if (BASE.is_map()) {
-			    if (ITER.type == TYPE_NONE) {
+			    if (ITER.is_none()) {
 				/* starting iteration */
 				free_var(ITER);
 				ITER = new_iter(BASE);
@@ -2255,7 +2255,7 @@ do {								\
 				ITER = iter;
 			    }
 			    var_pair pair;
-			    if (ITER.type == TYPE_NONE || !iterget(ITER, &pair)) {
+			    if (ITER.is_none() || !iterget(ITER, &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
@@ -2288,7 +2288,7 @@ do {								\
 			    int len = BASE.is_str()
 				       ? memo_strlen(BASE.v.str)
 				       : BASE.v.list[0].v.num;
-			    if (ITER.type == TYPE_NONE) {
+			    if (ITER.is_none()) {
 				free_var(ITER);
 				ITER = Var::new_int(1);
 			    }
@@ -2306,7 +2306,7 @@ do {								\
 				ITER.v.num++;	/* increment iter */
 			    }
 			} else if (BASE.is_map()) {
-			    if (ITER.type == TYPE_NONE) {
+			    if (ITER.is_none()) {
 				free_var(ITER);
 				ITER = new_iter(BASE);
 			    } else if (ITER.type != TYPE_ITER) {
@@ -2316,7 +2316,7 @@ do {								\
 				ITER = iter;
 			    }
 			    var_pair pair;
-			    if (ITER.type == TYPE_NONE || !iterget(ITER, &pair)) {
+			    if (ITER.is_none() || !iterget(ITER, &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
@@ -2469,9 +2469,8 @@ do {								\
 	case OP_PUSH + 30:
 	case OP_PUSH + 31:
 	    {
-		Var value;
-		value = RUN_ACTIV.rt_env[PUSH_n_INDEX(op)];
-		if (value.type == TYPE_NONE) {
+		Var value = RUN_ACTIV.rt_env[PUSH_n_INDEX(op)];
+		if (value.is_none()) {
 		    free_var(value);
 		    PUSH_ERROR(E_VARNF);
 		} else
@@ -2513,13 +2512,12 @@ do {								\
 	case OP_PUSH_CLEAR + 30:
 	case OP_PUSH_CLEAR + 31:
 	    {
-		Var *vp;
-		vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
-		if (vp->type == TYPE_NONE) {
+		Var *vp = &RUN_ACTIV.rt_env[PUSH_CLEAR_n_INDEX(op)];
+		if (vp->is_none()) {
 		    PUSH_ERROR(E_VARNF);
 		} else {
 		    PUSH(*vp);
-		    vp->type = TYPE_NONE;
+		    *vp = none;
 		}
 	    }
 	    break;
@@ -2716,7 +2714,7 @@ do_task(Program * prog, int which_vector, Var * result, int is_fg, int do_db_tra
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
     RUN_ACTIV.bi_func_pc = 0;
-    RUN_ACTIV.temp.type = TYPE_NONE;
+    RUN_ACTIV.temp = none;
 
     return run_interpreter(0, E_NONE, result, is_fg, do_db_tracebacks);
 }
@@ -2878,7 +2876,7 @@ setup_activ_for_eval(Program * prog)
     alloc_rt_stack(&RUN_ACTIV, RUN_ACTIV.prog->main_vector.max_stack);
     RUN_ACTIV.pc = 0;
     RUN_ACTIV.error_pc = 0;
-    RUN_ACTIV.temp.type = TYPE_NONE;
+    RUN_ACTIV.temp = none;
 
     return 1;
 }

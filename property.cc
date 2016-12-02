@@ -314,7 +314,7 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 	    e = E_PERM;
 	else {
 	    r.type = TYPE_INT;
-	    r.v.num = (!db_is_property_built_in(h) && db_property_value(h).type == TYPE_CLEAR);
+	    r.v.num = (!db_is_property_built_in(h) && db_property_value(h).is_clear());
 	    e = E_NONE;
 	}
     }
