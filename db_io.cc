@@ -233,7 +233,7 @@ dbio_read_var(void)
 	r.v.num = dbio_read_num();
 	break;
     case _TYPE_FLOAT:
-	r = new_float(dbio_read_float());
+	r = Var::new_float(dbio_read_float());
 	break;
     case _TYPE_MAP:
 	l = dbio_read_num();

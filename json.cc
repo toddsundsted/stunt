@@ -231,7 +231,7 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
     d = strtod(numberVal, NULL);
 
     if (0 == errno) {
-	v = new_float(d);
+	v = Var::new_float(d);
 	PUSH(pctx->top, v);
 	return 1;
     }
@@ -269,7 +269,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 	case TYPE_FLOAT:
 	    {
 		char *p;
-		v = new_float(strtod(val, &p));
+		v = Var::new_float(strtod(val, &p));
 		break;
 	    }
 	case TYPE_ERR:

@@ -352,7 +352,7 @@ complex_var_dup(Var v)
 	v.v.str = str_dup(v.v.str);
 	break;
     case TYPE_FLOAT:
-	v = new_float(*v.v.fnum);
+	v = Var::new_float(*v.v.fnum);
 	break;
     case TYPE_LIST:
 	v = list_dup(v);
@@ -403,11 +403,11 @@ var_refcount(Var v)
 int
 is_true(Var v)
 {
-    return ((v.type == TYPE_INT && v.v.num != 0)
-	    || (v.type == TYPE_FLOAT && *v.v.fnum != 0.0)
-	    || (v.type == TYPE_STR && v.v.str && *v.v.str != '\0')
-	    || (v.type == TYPE_LIST && v.v.list[0].v.num != 0)
-	    || (v.type == TYPE_MAP && !mapempty(v)));
+    return ((v.is_int() && v.v.num != 0)
+	    || (v.is_float() && *v.v.fnum != 0.0)
+	    || (v.is_str() && v.v.str && *v.v.str != '\0')
+	    || (v.is_list() && listlength(v) != 0)
+	    || (v.is_map() && !mapempty(v)));
 }
 
 /* What is the sound of the comparison:

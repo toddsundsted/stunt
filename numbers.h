@@ -18,7 +18,6 @@
 #include "sosemanuk.h"
 #include "structures.h"
 
-extern Var new_float(double);
 extern enum error become_integer(Var, int *, int);
 
 extern int do_equals(Var, Var);

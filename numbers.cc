@@ -161,18 +161,6 @@ become_float(Var in, double *ret)
     return E_NONE;
 }
 
-Var
-new_float(double d)
-{
-    Var v;
-
-    v.type = TYPE_FLOAT;
-    v.v.fnum = (double *)mymalloc(sizeof(double), M_FLOAT);
-    *v.v.fnum = d;
-
-    return v;
-}
-
 #if COERCION_IS_EVER_IMPLEMENTED_AND_DESIRED
 static int
 to_float(Var v, double *dp)
@@ -302,7 +290,7 @@ compare_numbers(Var a, Var b)
 			    ans.type = TYPE_ERR;		\
 			    ans.v.err = E_FLOAT;		\
 			} else					\
-			    ans = new_float(d);			\
+			    ans = Var::new_float(d);		\
 		    }						\
 								\
 		    return ans;					\
@@ -319,8 +307,8 @@ do_modulus(Var a, Var b)
 
     if (a.type != b.type) {
 	ans = Var::new_err(E_TYPE);
-    } else if ((a.type == TYPE_INT && b.v.num == 0) ||
-               (a.type == TYPE_FLOAT && *b.v.fnum == 0.0)) {
+    } else if ((a.is_int() && b.v.num == 0) ||
+               (a.is_float() && *b.v.fnum == 0.0)) {
 	ans = Var::new_err(E_DIV);
     } else if (a.type == TYPE_INT) {
 	ans.type = TYPE_INT;
@@ -333,7 +321,7 @@ do_modulus(Var a, Var b)
 	if (!IS_REAL(d)) {
 	    ans = Var::new_err(E_FLOAT);
 	} else
-	    ans = new_float(d);
+	    ans = Var::new_float(d);
     }
 
     return ans;
@@ -346,8 +334,8 @@ do_divide(Var a, Var b)
 
     if (a.type != b.type) {
 	ans = Var::new_err(E_TYPE);
-    } else if ((a.type == TYPE_INT && b.v.num == 0) ||
-               (a.type == TYPE_FLOAT && *b.v.fnum == 0.0)) {
+    } else if ((a.is_int() && b.v.num == 0) ||
+               (a.is_float() && *b.v.fnum == 0.0)) {
 	ans = Var::new_err(E_DIV);
     } else if (a.type == TYPE_INT) {
 	ans.type = TYPE_INT;
@@ -360,7 +348,7 @@ do_divide(Var a, Var b)
 	if (!IS_REAL(d)) {
 	    ans = Var::new_err(E_FLOAT);
 	} else
-	    ans = new_float(d);
+	    ans = Var::new_float(d);
     }
 
     return ans;
@@ -403,7 +391,7 @@ do_power(Var lhs, Var rhs)
 	    }
 	    ans.v.num = r;
 	}
-    } else if (lhs.type == TYPE_FLOAT) {	/* floating-point exponentiation */
+    } else if (lhs.is_float()) {	/* floating-point exponentiation */
 	double d;
 
 	switch (rhs.type) {
@@ -422,7 +410,7 @@ do_power(Var lhs, Var rhs)
 	    ans.type = TYPE_ERR;
 	    ans.v.err = E_FLOAT;
 	} else
-	    ans = new_float(d);
+	    ans = Var::new_float(d);
     } else
 	goto type_error;
 
@@ -458,7 +446,7 @@ bf_tofloat(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     enum error e;
 
-    r = new_float(0.0);
+    r = Var::new_float(0.0);
     e = become_float(arglist.v.list[1], r.v.fnum);
 
     free_var(arglist);
@@ -485,7 +473,7 @@ bf_min(Var arglist, Byte next, void *vdata, Objid progr)
 		r = arglist.v.list[i];
     } else {			/* floats */
 	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_FLOAT)
+	    if (!arglist.v.list[i].is_float())
 		bad_types = 1;
 	    else if (*arglist.v.list[i].v.fnum < *r.v.fnum)
 		r = arglist.v.list[i];
@@ -515,7 +503,7 @@ bf_max(Var arglist, Byte next, void *vdata, Objid progr)
 		r = arglist.v.list[i];
     } else {			/* floats */
 	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_FLOAT)
+	    if (!arglist.v.list[i].is_float())
 		bad_types = 1;
 	    else if (*arglist.v.list[i].v.fnum > *r.v.fnum)
 		r = arglist.v.list[i];
@@ -557,10 +545,10 @@ bf_abs(Var arglist, Byte next, void *vdata, Objid progr)
 		    free_var(arglist);					      \
 		    if (errno == EDOM)					      \
 		        return make_error_pack(E_INVARG);		      \
-		    else if (errno != 0  ||  !IS_REAL(d))		      \
+		    else if (errno != 0 || !IS_REAL(d))			      \
 			return make_error_pack(E_FLOAT);		      \
 		    else						      \
-			return make_var_pack(new_float(d));		      \
+			return make_var_pack(Var::new_float(d));	      \
 		}
 
 MATH_FUNC(sqrt)
@@ -594,7 +582,7 @@ MATH_FUNC(floor)
     else if (errno != 0 || !IS_REAL(d))
 	return make_error_pack(E_FLOAT);
     else
-	return make_var_pack(new_float(d));
+	return make_var_pack(Var::new_float(d));
 }
 
 static package
@@ -615,7 +603,7 @@ bf_atan(Var arglist, Byte next, void *vdata, Objid progr)
     else if (errno != 0 || !IS_REAL(d))
 	return make_error_pack(E_FLOAT);
     else
-	return make_var_pack(new_float(d));
+	return make_var_pack(Var::new_float(d));
 }
 
 static package

@@ -1129,8 +1129,7 @@ do {								\
 
 		rhs = POP();
 		lhs = POP();
-		if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
-		    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
+		if ((lhs.is_int() || lhs.is_float()) && (rhs.is_int() || rhs.is_float())) {
 		    ans = compare_numbers(lhs, rhs);
 		    if (ans.is_err()) {
 			free_var(rhs);
@@ -1218,8 +1217,7 @@ do {								\
 
 		rhs = POP();	/* should be number */
 		lhs = POP();	/* should be number */
-		if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
-		    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT)) {
+		if ((lhs.is_int() || lhs.is_float()) && (rhs.is_int() || rhs.is_float())) {
 		    switch (op) {
 		    case OP_MULT:
 			ans = do_multiply(lhs, rhs);
@@ -1255,8 +1253,7 @@ do {								\
 
 		rhs = POP();
 		lhs = POP();
-		if ((lhs.type == TYPE_INT || lhs.type == TYPE_FLOAT)
-		    && (rhs.type == TYPE_INT || rhs.type == TYPE_FLOAT))
+		if ((lhs.is_int() || lhs.is_float()) && (rhs.is_int() || rhs.is_float()))
 		    ans = do_add(lhs, rhs);
 		else if (lhs.is_str() && rhs.is_str()) {
 		    char *str;
@@ -1318,10 +1315,10 @@ do {								\
 		Var arg, ans;
 
 		arg = POP();
-		if (arg.type == TYPE_INT) {
+		if (arg.is_int()) {
 		    ans = Var::new_int(-arg.v.num);
-		} else if (arg.type == TYPE_FLOAT)
-		    ans = new_float(-*arg.v.fnum);
+		} else if (arg.is_float())
+		    ans = Var::new_float(-*arg.v.fnum);
 		else {
 		    free_var(arg);
 		    PUSH_ERROR(E_TYPE);

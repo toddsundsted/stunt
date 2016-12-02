@@ -219,6 +219,20 @@ struct Var {
     is_map() const {
 	return TYPE_MAP == type;
     }
+
+    bool
+    is_float() const {
+	return TYPE_FLOAT == type;
+    }
+
+    static Var
+    new_float(const double d) {
+	Var v;
+	v.type = TYPE_FLOAT;
+	v.v.fnum = (double *)mymalloc(sizeof(double), M_FLOAT);
+	*v.v.fnum = d;
+	return v;
+    }
 };
 
 inline Var
