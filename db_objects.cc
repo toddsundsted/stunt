@@ -434,7 +434,7 @@ anon_valid(Object *o)
 int
 is_valid(Var obj)
 {
-    return (TYPE_ANON == obj.type) ?
+    return obj.is_anon() ?
            anon_valid(obj.v.anon) :
            valid(obj.v.obj);
 }
@@ -683,7 +683,7 @@ DEFUNC(all_contents, contents);
 Objid
 db_object_owner2(Var obj)
 {
-    return (TYPE_ANON == obj.type) ?
+    return obj.is_anon() ?
            dbpriv_object_owner(obj.v.anon) :
            db_object_owner(obj.v.obj);
 }
@@ -691,7 +691,7 @@ db_object_owner2(Var obj)
 Var
 db_object_parents2(Var obj)
 {
-    return (TYPE_ANON == obj.type) ?
+    return obj.is_anon() ?
            dbpriv_object_parents(obj.v.anon) :
            db_object_parents(obj.v.obj);
 }
@@ -699,7 +699,7 @@ db_object_parents2(Var obj)
 Var
 db_object_children2(Var obj)
 {
-    return (TYPE_ANON == obj.type) ?
+    return obj.is_anon() ?
            dbpriv_object_children(obj.v.anon) :
            db_object_children(obj.v.obj);
 }
@@ -707,7 +707,7 @@ db_object_children2(Var obj)
 int
 db_object_has_flag2(Var obj, db_object_flag f)
 {
-    return (TYPE_ANON == obj.type) ?
+    return obj.is_anon() ?
             dbpriv_object_has_flag(obj.v.anon, f) :
             db_object_has_flag(obj.v.obj, f);
 }
@@ -715,7 +715,7 @@ db_object_has_flag2(Var obj, db_object_flag f)
 void
 db_set_object_flag2(Var obj, db_object_flag f)
 {
-    (TYPE_ANON == obj.type) ?
+    obj.is_anon() ?
       dbpriv_set_object_flag(obj.v.anon, f) :
       db_set_object_flag(obj.v.obj, f);
 }
@@ -723,7 +723,7 @@ db_set_object_flag2(Var obj, db_object_flag f)
 void
 db_clear_object_flag2(Var obj, db_object_flag f)
 {
-    (TYPE_ANON == obj.type) ?
+    obj.is_anon() ?
       dbpriv_clear_object_flag(obj.v.anon, f) :
       db_clear_object_flag(obj.v.obj, f);
 }
@@ -847,9 +847,9 @@ check_children_of_object(Var obj, Var anon_kids)
 
     FOR_EACH (kid, anon_kids, i, c) {
 	Var parents = db_object_parents2(kid);
-	if (TYPE_ANON != kid.type
-	    || ((TYPE_OBJ == parents.type && !equality(obj, parents, 0))
-	        || (TYPE_LIST == parents.type && !ismember(obj, parents, 0))))
+	if (!kid.is_anon()
+	    || ((parents.is_obj() && !equality(obj, parents, 0))
+	        || (parents.is_list() && !ismember(obj, parents, 0))))
 	    return 0;
     }
 

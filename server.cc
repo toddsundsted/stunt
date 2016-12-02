@@ -489,7 +489,7 @@ queue_includes(Var v)
 void
 queue_anonymous_object(Var v)
 {
-    assert(TYPE_ANON == v.type);
+    assert(v.is_anon());
     assert(!db_object_has_flag2(v, FLAG_RECYCLED));
     assert(!db_object_has_flag2(v, FLAG_INVALID));
     assert(!queue_includes(v));
@@ -525,7 +525,7 @@ recycle_anonymous_objects(void)
     while (head) {
 	Var v = head->v;
 
-	assert(TYPE_ANON == v.type);
+	assert(v.is_anon());
 
 	next = head->next;
 	head->next = pending_free;
@@ -616,7 +616,7 @@ main_loop(void)
 
 	/* in theory this could be any value... */
 	/* in practice this will be an anonymous object... */
-	assert(TYPE_ANON == v.type);
+	assert(v.is_anon());
 
 	if (v.v.anon != NULL)
 	    queue_anonymous_object(var_ref(v));

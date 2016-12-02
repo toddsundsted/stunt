@@ -642,7 +642,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 	}
     }
     else {
-	if (TYPE_ANON == _this.type && is_valid(_this))
+	if (_this.is_anon() && is_valid(_this))
 	    h = db_find_callable_verb(_this, vname);
 	else if (valid(recv))
 	    h = db_find_callable_verb(Var::new_obj(recv), vname);
@@ -1753,9 +1753,9 @@ do {								\
 			    if (h.ptr && p.type == TYPE_OBJ && valid(p.v.obj))	\
 				recv = p.v.obj;					\
 			}
-		    if (obj.type == TYPE_ANON)
+		    if (obj.is_anon())
 			recv = NOTHING;
-		    else if (obj.type == TYPE_OBJ)
+		    else if (obj.is_obj())
 			recv = obj.v.obj;
 		    MATCH_TYPE(INT, int)
 		    MATCH_TYPE(FLOAT, float)

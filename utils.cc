@@ -725,7 +725,7 @@ anonymizing_var_ref(Var v, Objid progr)
 {
     Var r;
 
-    if (TYPE_ANON != v.type)
+    if (!v.is_anon())
 	return var_ref(v);
 
     if (valid(progr)

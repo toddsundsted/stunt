@@ -355,7 +355,7 @@ collect_white(Var v)
     if (gc_get_color(VOID_PTR(v)) == GC_PINK && !gc_is_buffered(VOID_PTR(v))) {
 	gc_set_color(VOID_PTR(v), GC_BLACK);
 	for_all_children(v, &cb_collect_white);
-	if (TYPE_ANON == v.type) {
+	if (v.is_anon()) {
 	    assert(refcount(v.v.anon) != 0);
 	    queue_anonymous_object(v);
 	}

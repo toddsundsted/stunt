@@ -778,7 +778,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	    free_data(data);
 	    return no_var_pack();
 	}
-	else if (TYPE_ANON == obj.type) {
+	else if (obj.is_anon()) {
 	    /* We'd like to run `db_change_parents()' to be consistent
 	     * with the pattern laid out for permanent objects, but we
 	     * can't because the object can be invalid at this point

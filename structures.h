@@ -233,6 +233,11 @@ struct Var {
 	*v.v.fnum = d;
 	return v;
     }
+
+    bool
+    is_anon() const {
+	return TYPE_ANON == type;
+    }
 };
 
 inline Var
