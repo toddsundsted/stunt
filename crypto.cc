@@ -169,23 +169,23 @@ parse_prefix(const char *prefix, size_t prefix_length,
 static char digits[] = "0123456789ABCDEF";
 
 #define DEF_HASH(algo, size)							\
-static const char *								\
+static Var									\
 algo##_hash_bytes(const char *input, int length, int binary)			\
 {										\
     algo##_ctx context;								\
     unsigned char result[size];							\
-    char *hex = (char *)mymalloc(size * (binary ? 3 : 2) + 1, M_STRING);	\
-    const char *answer = hex;							\
+    char hex[size * (binary ? 3 : 2) + 1];					\
+    char *answer = hex;								\
     algo##_init(&context);							\
     algo##_update(&context, length, (unsigned char *)input);			\
     algo##_digest(&context, size, result);					\
     for (int i = 0; i < size; i++) {						\
-	if (binary) *hex++ = '~';						\
-	*hex++ = digits[result[i] >> 4];					\
-	*hex++ = digits[result[i] & 0xF];					\
+	if (binary) *answer++ = '~';						\
+	*answer++ = digits[result[i] >> 4];					\
+	*answer++ = digits[result[i] & 0xF];					\
     }										\
-    *hex = 0;									\
-    return answer;								\
+    *answer = '\0';								\
+    return Var::new_str(hex);							\
 }
 
 DEF_HASH(md5, 16)
@@ -199,23 +199,23 @@ DEF_HASH(ripemd160, 20)
 #undef DEF_HASH
 
 #define DEF_HMAC(algo, size)										\
-static const char *											\
+static Var												\
 algo##_bytes(const char *message, int message_length, const char *key, int key_length, int binary)	\
 {													\
     algo##_ctx context;											\
     unsigned char result[size];										\
-    char *hex = (char *)mymalloc(size * (binary ? 3 : 2) + 1, M_STRING);				\
-    const char *answer = hex;										\
+    char hex[size * (binary ? 3 : 2) + 1];								\
+    char *answer = hex;											\
     algo##_set_key(&context, key_length, (unsigned char *)key);						\
     algo##_update(&context, message_length, (unsigned char *)message);					\
     algo##_digest(&context, size, result);								\
     for (int i = 0; i < size; i++) {									\
-	if (binary) *hex++ = '~';									\
-	*hex++ = digits[result[i] >> 4];								\
-	*hex++ = digits[result[i] & 0xF];								\
+	if (binary) *answer++ = '~';									\
+	*answer++ = digits[result[i] >> 4];								\
+	*answer++ = digits[result[i] & 0xF];								\
     }													\
-    *hex = 0;												\
-    return answer;											\
+    *answer = '\0';											\
+    return Var::new_str(hex);										\
 }
 
 DEF_HMAC(hmac_sha1, 20)
@@ -289,8 +289,7 @@ bf_salt(Var arglist, Byte next, void *vdata, Objid progr)
 	return p;
     }
 
-    r.type = TYPE_STR;
-    r.v.str = str_dup(ret);
+    r = str_dup_to_var(ret);
 
     free_var(arglist);
 
@@ -331,8 +330,7 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
     int success = parse_prefix(salt, salt_length, &rest, &rest_length, &count, &format);
 
     if (!success) {
-	r.type = TYPE_STR;
-	r.v.str = str_dup(salt);
+	r = str_dup_to_var(salt);
 	p = make_raise_pack(E_INVARG, "Invalid salt", r);
 	free_var(arglist);
 	return p;
@@ -356,16 +354,13 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
 	    return make_error_pack(E_INVARG);
 	}
 
-	r.type = TYPE_STR;
-	r.v.str = str_dup(ret);
+	r = str_dup_to_var(ret);
     }
     else {
 #if HAVE_CRYPT
-	r.type = TYPE_STR;
-	r.v.str = str_dup(crypt(arglist.v.list[1].v.str, salt));
+	r = str_dup_to_var(crypt(arglist.v.list[1].v.str, salt));
 #else
-	r.type = TYPE_STR;
-	r.v.str = str_ref(arglist.v.list[1].v.str);
+	r = str_ref_to_var(arglist.v.list[1].v.str);
 #endif
     }
 
@@ -397,8 +392,7 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 
 #define CASE(op, temp)							\
     op (!mystrcasecmp(#temp, algo)) {					\
-        r.type = TYPE_STR;						\
-        r.v.str = temp##_hash_bytes(str, memo_strlen(str), binary);	\
+	r = temp##_hash_bytes(str, memo_strlen(str), binary);		\
     }
 
     CASE(if, md5)
@@ -435,8 +429,7 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 
 #define CASE(op, temp)							\
 	op (!mystrcasecmp(#temp, algo)) {				\
-	    r.type = TYPE_STR;						\
-	    r.v.str = temp##_hash_bytes(bytes, length, binary);		\
+	    r = temp##_hash_bytes(bytes, length, binary);		\
 	    p = make_var_pack(r);					\
 	}
 
@@ -483,8 +476,7 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 
 #define CASE(op, temp)									\
 	op (!mystrcasecmp(#temp, algo)) {						\
-	    r.type = TYPE_STR;								\
-	    r.v.str = temp##_hash_bytes(stream_contents(s), stream_length(s), binary);	\
+	    r = temp##_hash_bytes(stream_contents(s), stream_length(s), binary);	\
 	    p = make_var_pack(r);							\
 	}
 
@@ -542,8 +534,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 
 #define CASE(op, temp)										\
 	    op (!mystrcasecmp(#temp, algo)) {							\
-		r.type = TYPE_STR;								\
-		r.v.str = hmac_##temp##_bytes(str, str_length, key, key_length, binary);	\
+		r = hmac_##temp##_bytes(str, str_length, key, key_length, binary);		\
 		p = make_var_pack(r);								\
 	    }
 
@@ -607,8 +598,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 
 #define CASE(op, temp)											\
 		op (!mystrcasecmp(#temp, algo)) {							\
-		    r.type = TYPE_STR;									\
-		    r.v.str = hmac_##temp##_bytes(bytes, bytes_length, key, key_length, binary);	\
+		    r = hmac_##temp##_bytes(bytes, bytes_length, key, key_length, binary);		\
 		    p = make_var_pack(r);								\
 		}
 
@@ -667,8 +657,7 @@ bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 
 #define CASE(op, temp)										\
 	    op (!mystrcasecmp(#temp, algo)) {							\
-		r.type = TYPE_STR;								\
-		r.v.str = hmac_##temp##_bytes(lit, lit_length, key, key_length, binary);	\
+		r = hmac_##temp##_bytes(lit, lit_length, key, key_length, binary);		\
 		p = make_var_pack(r);								\
 	    }
 
