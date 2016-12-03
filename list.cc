@@ -1114,7 +1114,7 @@ check_subs_list(Var subs)
 static package
 bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    int template_length, subject_length;
+    int template_length;
     const char *_template, *subject;
     Var subs, ans;
     package p;
@@ -1130,7 +1130,6 @@ bf_substitute(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_error_pack(E_INVARG);
     }
     subject = subs.v.list[4].v.str;
-    subject_length = memo_strlen(subject);
 
     s = new_stream(template_length);
     TRY_STREAM;
