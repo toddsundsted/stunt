@@ -25,6 +25,8 @@
 
 #include "config.h"
 
+#include "storage.h"
+
 #define MAXINT	((int32) 2147483647L)
 #define MININT	((int32) -2147483648L)
 #define MAXOBJ	((Objid) MAXINT)
@@ -132,7 +134,83 @@ struct Var {
 	Object *anon;		/* ANON */
     } v;
     var_type type;
+
+    friend Var str_dup_to_var(const char *s);
+    friend Var str_ref_to_var(const char *s);
+
+    bool
+    is_complex() {
+	return TYPE_COMPLEX_FLAG & type;
+    }
+
+    bool
+    is_none() {
+	return TYPE_NONE == type;
+    }
+
+    bool
+    is_collection() {
+	return TYPE_LIST == type || TYPE_MAP == type || TYPE_ANON == type;
+    }
+
+    bool
+    is_object() {
+	return TYPE_OBJ == type || TYPE_ANON == type;
+    }
+
+    bool
+    is_int() {
+	return TYPE_INT == type;
+    }
+
+    static Var
+    new_int(int32 num) {
+	Var v;
+	v.type = TYPE_INT;
+	v.v.num = num;
+	return v;
+    }
+
+    bool
+    is_obj() {
+	return TYPE_OBJ == type;
+    }
+
+    static Var
+    new_obj(Objid obj) {
+	Var v;
+	v.type = TYPE_OBJ;
+	v.v.obj = obj;
+	return v;
+    }
+
+    bool
+    is_str() {
+	return TYPE_STR == type;
+    }
 };
+
+inline Var
+str_dup_to_var(const char *s)
+{
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = str_dup(s);
+
+    return r;
+}
+
+inline Var
+str_ref_to_var(const char *s)
+{
+    Var r;
+
+    r.type = TYPE_STR;
+    r.v.str = str_ref(s);
+
+    return r;
+}
 
 /* generic tuples */
 typedef struct var_pair {
@@ -159,53 +237,5 @@ extern Var none;		/* see objects.c */
 #define MAX_STRING	(INT32_MAX - MIN_STRING_CONCAT_LIMIT)
 #define MAX_LIST_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_LIST_VALUE_BYTES_LIMIT)
 #define MAX_MAP_VALUE_BYTES_LIMIT	(INT32_MAX - MIN_MAP_VALUE_BYTES_LIMIT)
-
-static inline bool
-is_none(Var v)
-{
-    return TYPE_NONE == v.type;
-}
-
-static inline bool
-is_collection(Var v)
-{
-    return TYPE_LIST == v.type || TYPE_MAP == v.type || TYPE_ANON == v.type;
-}
-
-static inline bool
-is_object(Var v)
-{
-    return TYPE_OBJ == v.type || TYPE_ANON == v.type;
-}
-
-static inline Var
-new_int(int32 num)
-{
-    Var r;
-    r.type = TYPE_INT;
-    r.v.num = num;
-    return r;
-}
-
-static inline bool
-is_int(Var v)
-{
-    return TYPE_INT == v.type;
-}
-
-static inline Var
-new_obj(Objid obj)
-{
-    Var r;
-    r.type = TYPE_OBJ;
-    r.v.obj = obj;
-    return r;
-}
-
-static inline bool
-is_obj(Var v)
-{
-    return TYPE_OBJ == v.type;
-}
 
 #endif				/* !Structures_h */

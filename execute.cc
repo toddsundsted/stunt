@@ -426,9 +426,9 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
 	    v.v.list[1] = anonymizing_var_ref(stack[i]._this, progr);
 	    v.v.list[2] = str_ref_to_var(stack[i].verb);
-	    v.v.list[3] = new_obj(stack[i].progr);
+	    v.v.list[3] = Var::new_obj(stack[i].progr);
 	    v.v.list[4] = anonymizing_var_ref(stack[i].vloc, progr);
-	    v.v.list[5] = new_obj(stack[i].player);
+	    v.v.list[5] = Var::new_obj(stack[i].player);
 	    if (line_numbers_too) {
 		v.v.list[6].type = TYPE_INT;
 		v.v.list[6].v.num = find_line_number(stack[i].prog,
@@ -658,7 +658,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 	    int i, c;
 	    FOR_EACH(parent, parents, i, c) {
 		where = parent.v.obj;
-		h = db_find_callable_verb(new_obj(where), vname);
+		h = db_find_callable_verb(Var::new_obj(where), vname);
 		if (h.ptr)
 		    break;
 	    }
@@ -670,7 +670,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 	    where = parents.v.obj;
 	    if (!valid(where))
 		return E_INVIND;
-	    h = db_find_callable_verb(new_obj(where), vname);
+	    h = db_find_callable_verb(Var::new_obj(where), vname);
 	}
 	else {
 	    return E_VERBNF;
@@ -680,7 +680,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 	if (TYPE_ANON == _this.type && is_valid(_this))
 	    h = db_find_callable_verb(_this, vname);
 	else if (valid(recv))
-	    h = db_find_callable_verb(new_obj(recv), vname);
+	    h = db_find_callable_verb(Var::new_obj(recv), vname);
 	else
 	    return E_INVIND;
     }
@@ -979,7 +979,7 @@ do {								\
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
-		if (map.type != TYPE_MAP || is_collection(key)) {
+		if (map.type != TYPE_MAP || key.is_collection()) {
 		    free_var(key);
 		    free_var(value);
 		    free_var(map);
@@ -1066,7 +1066,7 @@ do {								\
 		     list.type != TYPE_MAP)
 		    || ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
 			index.type != TYPE_INT)
-		    || (list.type == TYPE_MAP && is_collection(index))
+		    || (list.type == TYPE_MAP && index.is_collection())
 		    || (list.type == TYPE_STR && value.type != TYPE_STR)) {
 		    free_var(value);
 		    free_var(index);
@@ -1388,7 +1388,7 @@ do {								\
 		     list.type != TYPE_MAP) ||
 		    ((list.type == TYPE_LIST || list.type == TYPE_STR) &&
 		     index.type != TYPE_INT) ||
-		    (list.type == TYPE_MAP && is_collection(index))) {
+		    (list.type == TYPE_MAP && index.is_collection())) {
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
@@ -1458,7 +1458,7 @@ do {								\
 		if (list.type == TYPE_MAP) {
 		    Var value;
 		    const rbnode *node;
-		    if (is_collection(index)) {
+		    if (index.is_collection()) {
 			PUSH_ERROR(E_TYPE);
 		    } else if (!(node = maplookup(list, index, &value, 0))) {
 			PUSH_ERROR(E_RANGE);
@@ -1497,7 +1497,7 @@ do {								\
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
 		} else if (base.type == TYPE_MAP
-			   && (is_collection(to) || is_collection(from))) {
+			   && (to.is_collection() || from.is_collection())) {
 		    free_var(to);
 		    free_var(from);
 		    free_var(base);
@@ -1513,7 +1513,7 @@ do {								\
 		    int rel = compare(from, to, 0);
 		    mapseek(base, from, &iterfrom, 0);
 		    mapseek(base, to, &iterto, 0);
-		    if ((rel <= 0) && (is_none(iterfrom) || is_none(iterto))) {
+		    if ((rel <= 0) && (iterfrom.is_none() || iterto.is_none())) {
 			free_var(to);
 			free_var(from);
 			free_var(iterto);
@@ -1582,7 +1582,7 @@ do {								\
 
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!is_object(obj) || propname.type != TYPE_STR) {
+		if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(propname);
 		    free_var(obj);
 		    PUSH_ERROR(E_TYPE);
@@ -1620,7 +1620,7 @@ do {								\
 
 		propname = TOP_RT_VALUE;	/* should be string */
 		obj = NEXT_TOP_RT_VALUE;	/* should be an object */
-		if (!is_object(obj) || propname.type != TYPE_STR)
+		if (!obj.is_object() || propname.type != TYPE_STR)
 		    PUSH_ERROR(E_TYPE);
 		else if (!is_valid(obj))
 		    PUSH_ERROR(E_INVIND);
@@ -1651,7 +1651,7 @@ do {								\
 		rhs = POP();		/* any type */
 		propname = POP();	/* should be string */
 		obj = POP();		/* should be an object */
-		if (!is_object(obj) || propname.type != TYPE_STR) {
+		if (!obj.is_object() || propname.type != TYPE_STR) {
 		    free_var(rhs);
 		    free_var(propname);
 		    free_var(obj);
@@ -1681,7 +1681,7 @@ do {								\
 			    if (rhs.type != TYPE_STR)
 				err = E_TYPE;
 			    else if (!is_wizard(progr) &&
-				     ((is_obj(obj) && is_user(obj.v.obj)) ||
+				     ((obj.is_obj() && is_user(obj.v.obj)) ||
 				      bi_prop_protected(built_in, progr) ||
 				      progr != db_object_owner2(obj)))
 				err = E_PERM;
@@ -1696,7 +1696,7 @@ do {								\
 			case BP_WIZARD:
 			    if (!is_wizard(progr))
 				err = E_PERM;
-			    else if (!is_obj(obj))
+			    else if (!obj.is_obj())
 				err = E_INVARG;
 			    else if (built_in == BP_WIZARD
 			     && !is_true(rhs) != !is_wizard(obj.v.obj)) {
@@ -1787,7 +1787,7 @@ do {								\
 
 		if (args.type != TYPE_LIST || verb.type != TYPE_STR)
 		    err = E_TYPE;
-		else if (is_object(obj) && !is_valid(obj))
+		else if (obj.is_object() && !is_valid(obj))
 		    err = E_INVIND;
 		else {
 		    Objid recv = NOTHING;
@@ -1799,7 +1799,7 @@ do {								\
 		     * object that points us to the prototype/handler
 		     * for the primitive type.
 		     */
-		    Var system = new_obj(SYSTEM_OBJECT);
+		    Var system = Var::new_obj(SYSTEM_OBJECT);
 
 #define		    MATCH_TYPE(t1, t2)						\
 			else if (obj.type == TYPE_##t1) {			\
@@ -1821,7 +1821,7 @@ do {								\
 
 		    free_var(system);
 
-		    if (is_object(obj) || recv != NOTHING) {
+		    if (obj.is_object() || recv != NOTHING) {
 			STORE_STATE_VARIABLES();
 			err = call_verb2(recv, verb.v.str, obj, args, 0);
 			/* if there is no error, RUN_ACTIV is now the CALLEE's.
@@ -1952,7 +1952,7 @@ do {								\
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
 			} else if (base.type == TYPE_MAP
-				   && (is_collection(to) || is_collection(from))) {
+				   && (to.is_collection() || from.is_collection())) {
 			    free_var(to);
 			    free_var(from);
 			    free_var(base);
@@ -1970,7 +1970,7 @@ do {								\
 			    Var iterfrom, iterto;
 			    mapseek(base, from, &iterfrom, 0);
 			    mapseek(base, to, &iterto, 0);
-			    if (is_none(iterfrom) || is_none(iterto)) {
+			    if (iterfrom.is_none() || iterto.is_none()) {
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
@@ -2376,7 +2376,7 @@ do {								\
 				       : BASE.v.list[0].v.num);
 			    if (ITER.type == TYPE_NONE) {
 				free_var(ITER);
-				ITER = new_int(1);
+				ITER = Var::new_int(1);
 			    }
 			    if (ITER.v.num > len) {
 				free_var(POP());
@@ -2438,7 +2438,7 @@ do {								\
 				       : BASE.v.list[0].v.num);
 			    if (ITER.type == TYPE_NONE) {
 				free_var(ITER);
-				ITER = new_int(1);
+				ITER = Var::new_int(1);
 			    }
 			    if (ITER.v.num > len) {
 				free_var(POP());
@@ -2797,9 +2797,9 @@ run_interpreter(char raise, enum error e,
 	Var handled, traceback;
 	int i;
 
-	h = db_find_callable_verb(new_obj(SYSTEM_OBJECT), handler_verb_name);
+	h = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), handler_verb_name);
 	if (do_db_tracebacks && h.ptr) {
-	    hret = do_server_verb_task(new_obj(SYSTEM_OBJECT), handler_verb_name,
+	    hret = do_server_verb_task(Var::new_obj(SYSTEM_OBJECT), handler_verb_name,
 				       var_ref(args), h,
 				       activ_stack[0].player, "", &handled,
 				       0/*no-traceback*/);
@@ -2963,7 +2963,7 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     top_activ_stack = 0;
 
     RUN_ACTIV.rt_env = env = new_rt_env(prog->num_var_names);
-    RUN_ACTIV._this = new_obj(recv);
+    RUN_ACTIV._this = Var::new_obj(recv);
     RUN_ACTIV.player = user;
     RUN_ACTIV.progr = db_verb_owner(vh);
     RUN_ACTIV.recv = recv;
@@ -3419,11 +3419,11 @@ read_activ_as_pi(activation * a)
      * write `vloc' as an object number.
      */
     if (dbio_input_version < DBV_This)
-	a->_this = new_obj(a->recv);
+	a->_this = Var::new_obj(a->recv);
     else
 	a->_this = _this;
     if (dbio_input_version < DBV_Anon)
-	a->vloc = new_obj(vloc_oid);
+	a->vloc = Var::new_obj(vloc_oid);
     else
 	a->vloc = vloc;
 

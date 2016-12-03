@@ -312,7 +312,7 @@ db_find_command_verb(Objid oid, const char *verb,
     Var ancestor;
     int i, c;
 
-    ancestors = db_ancestors(new_obj(oid), true);
+    ancestors = db_ancestors(Var::new_obj(oid), true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	o = dbpriv_find_object(ancestor.v.obj);
@@ -527,7 +527,7 @@ find_callable_verbdef(Object *start, const char *verb)
 db_verb_handle
 db_find_callable_verb(Var recv, const char *verb)
 {
-    if (!is_object(recv))
+    if (!recv.is_object())
 	panic("DB_FIND_CALLABLE_VERB: Not an object!");
 
     Object *o;
@@ -556,7 +556,7 @@ db_find_callable_verb(Var recv, const char *verb)
 
 	POP_TOP(top, stack);
 
-	if (is_object(top) && is_valid(top)) {
+	if (top.is_object() && is_valid(top)) {
 	    o = dbpriv_dereference(top);
 	    if (o->verbdefs == NULL) {
 		/* keep looking */
@@ -612,7 +612,7 @@ db_find_callable_verb(Var recv, const char *verb)
 	verbcache_miss++;
 
 #else
-	if (is_object(recv) && is_valid(recv))
+	if (recv.is_object() && is_valid(recv))
 	    o = dbpriv_dereference(recv);
 	else
 	    o = NULL;

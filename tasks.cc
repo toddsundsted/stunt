@@ -694,7 +694,7 @@ end_programming(tqueue * tq)
 
 	desc.type = TYPE_STR;
 	desc.v.str = tq->program_verb;
-	h = find_described_verb(new_obj(tq->program_object), desc);
+	h = find_described_verb(Var::new_obj(tq->program_object), desc);
 
 	if (!h.ptr)
 	    notify(player, "That verb appears to have disappeared ...");
@@ -823,7 +823,7 @@ do_command_task(tqueue * tq, char *command)
 		notify(tq->player, tq->output_prefix);
 
 	    args = parse_into_wordlist(command);
-	    if (run_server_task_setting_id(tq->player, new_obj(tq->handler),
+	    if (run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
 				           "do_command", args, command,
 				           &result, &(tq->last_input_task_id))
 		!= OUTCOME_DONE
@@ -835,11 +835,11 @@ do_command_task(tqueue * tq, char *command)
 		       || find_verb_on(_this = pc->iobj, pc, &vh)
 		       || (valid(location)
 			   && !server_int_option("player_huh", PLAYER_HUH)
-			   && (vh = db_find_callable_verb(new_obj(_this = location), "huh"),
+			   && (vh = db_find_callable_verb(Var::new_obj(_this = location), "huh"),
 			       vh.ptr))
 		       || (valid(tq->player)
 			   && server_int_option("player_huh", PLAYER_HUH)
-			   && (vh = db_find_callable_verb(new_obj(_this = tq->player), "huh"),
+			   && (vh = db_find_callable_verb(Var::new_obj(_this = tq->player), "huh"),
 			       vh.ptr))) {
 		do_input_task(tq->player, pc, _this, vh);
 	    } else {
@@ -874,7 +874,7 @@ do_login_task(tqueue * tq, char *command)
 				 */
 
     args = parse_into_wordlist(command);
-    run_server_task_setting_id(tq->player, new_obj(tq->handler),
+    run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
 			       "do_login_command", args, command,
 			        &result, &(tq->last_input_task_id));
     /* The connected player (tq->player) may be non-negative if
@@ -932,7 +932,7 @@ do_login_task(tqueue * tq, char *command)
 static void
 do_out_of_band_command(tqueue * tq, char *command)
 {
-    run_server_task(tq->player, new_obj(tq->handler), "do_out_of_band_command",
+    run_server_task(tq->player, Var::new_obj(tq->handler), "do_out_of_band_command",
 		    parse_into_wordlist(command), command, 0);
 }
 
@@ -1200,7 +1200,7 @@ check_user_task_limit(Objid user)
     Var v;
 
     if (valid(user)
-	&& db_find_property(new_obj(user), "queued_task_limit", &v).ptr
+	&& db_find_property(Var::new_obj(user), "queued_task_limit", &v).ptr
 	&& v.type == TYPE_INT)
 	limit = v.v.num;
 
@@ -1686,7 +1686,7 @@ run_ready_tasks(void)
 				Var key;
 				key.type = TYPE_STR;
 				key.v.str = str_dup("upgrade");
-				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, new_int(1));
+				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, Var::new_int(1));
 				done = 1;
 			    }
 			    else if (tq->parsing_state->status == DONE)
@@ -1839,7 +1839,7 @@ run_server_program_task(Objid _this, const char *verb, Var args, Objid vloc,
     current_task_id = new_task_id();
     current_local = new_map();
 
-    enum outcome ret = do_server_program_task(new_obj(_this), verb, args, new_obj(vloc), verbname, program,
+    enum outcome ret = do_server_program_task(Var::new_obj(_this), verb, args, Var::new_obj(vloc), verbname, program,
                                               progr, debug, player, argstr,
                                               result, 1/*traceback*/);
 
@@ -2165,7 +2165,7 @@ find_verb_for_programming(Objid player, const char *verbref,
     }
     desc.type = TYPE_STR;
     desc.v.str = *vname;
-    h = find_described_verb(new_obj(oid), desc);
+    h = find_described_verb(Var::new_obj(oid), desc);
     free_str(copy);
 
     if (!h.ptr)

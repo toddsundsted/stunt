@@ -1,12 +1,12 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    blankslate (2.1.2.4)
-    parslet (1.2.3)
-      blankslate (~> 2.0)
+    blankslate (3.1.3)
+    parslet (1.6.2)
+      blankslate (>= 2.0, <= 4.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  parslet (= 1.2.3)
+  parslet (~> 1.6.0)

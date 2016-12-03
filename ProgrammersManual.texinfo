@@ -5548,6 +5548,10 @@ assumptions about the database for details.  If the programmer is not a wizard,
 then @code{E_PERM} is raised.
 @end deftypefun
 
+@deftypefun int process_id ()
+Returns the process id of the server.
+@end deftypefun
+
 @deftypefun none shutdown ([str @var{message}])
 Requests that the server shut itself down at its next opportunity.  Before
 doing so, a notice (incorporating @var{message}, if provided) is printed to all
@@ -5615,22 +5619,7 @@ version number as well as compilation options.
 
 @need 1500 
 @deftypefun list memory_usage ()
-On some versions of the server, this returns statistics concerning the server
-consumption of system memory.  The result is a list of lists, each in the
-following format:
-
-@example
-@{@var{block-size}, @var{nused}, @var{nfree}@}
-@end example
-
-@noindent
-where @var{block-size} is the size in bytes of a particular class of memory
-fragments, @var{nused} is the number of such fragments currently in use in the
-server, and @var{nfree} is the number of such fragments that have been reserved
-for use but are currently free.
-
-On servers for which such statistics are not available, @code{memory_usage()}
-returns @code{@{@}}.
+Exists for backwards compatibility with old databases.  Returns an empty list.
 @end deftypefun
 
 @deftypefun int db_disk_size ()

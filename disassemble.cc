@@ -471,7 +471,7 @@ bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
     int i;
     enum error e;
 
-    if (!is_object(obj)) {
+    if (!obj.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     } else if ((e = validate_verb_descriptor(desc)) != E_NONE
