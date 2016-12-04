@@ -671,7 +671,7 @@ ng_validate_hierarchies()
 			if (tmp.v.obj != NOTHING			\
 			    && !dbpriv_find_object(tmp.v.obj)) {	\
 			    errlog("VALIDATE: #%d.%s = #%d <invalid> ... removed.\n", \
-			           oid, name, tmp);			\
+			           oid, name, tmp.v.obj);		\
 			    o->field = setremove(o->field, tmp);	\
 			}						\
 		    }							\
