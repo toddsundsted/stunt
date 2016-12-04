@@ -130,7 +130,7 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 	if (t != top_activ_stack)
 	    stream_printf(str, "... called from ");
 
-	if (TYPE_OBJ == activ_stack[t].vloc.type)
+	if (activ_stack[t].vloc.is_obj())
 	    stream_printf(str, "#%d:%s", activ_stack[t].vloc.v.obj,
 		          activ_stack[t].verbname);
 	else
@@ -613,7 +613,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 
 	Var parents = db_object_parents2(RUN_ACTIV.vloc);
 
-	if (TYPE_LIST == parents.type) {
+	if (parents.is_list()) {
 	  if (listlength(parents) == 0)
 		return E_INVIND;
 	    /* Loop over each parent, looking for the first parent
@@ -628,7 +628,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 		    break;
 	    }
 	}
-	else if (TYPE_OBJ == parents.type) {
+	else if (parents.is_obj()) {
 	    /* Look for a suitable verb on the parent, if the parent
 	     * is valid.
 	     */
@@ -697,8 +697,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 
 #undef ENV_COPY
 
-    v.type = TYPE_STR;
-    v.v.str = str_ref(vname);
+    v = str_ref_to_var(vname);
     set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
     set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
 
@@ -870,8 +869,7 @@ do {								\
 
 		to = TOP_RT_VALUE;
 		from = NEXT_TOP_RT_VALUE;
-		if ((!to.is_int() && !to.is_obj())
-		    || to.type != from.type) {
+		if ((!to.is_int() && !to.is_obj()) || to.type != from.type) {
 		    RAISE_ERROR(E_TYPE);
 		    free_var(POP());
 		    free_var(POP());
@@ -1109,10 +1107,9 @@ do {								\
 
 		rhs = POP();
 		lhs = POP();
-		ans.type = TYPE_INT;
-		ans.v.num = (op == OP_EQ
-			     ? equality(rhs, lhs, 0)
-			     : !equality(rhs, lhs, 0));
+		ans = Var::new_int(op == OP_NE
+				   ? !equality(rhs, lhs, 0)
+				   : equality(rhs, lhs, 0));
 		PUSH(ans);
 		free_var(rhs);
 		free_var(lhs);
@@ -1164,19 +1161,18 @@ do {								\
 		    }
 
 		  finish_comparison:
-		    ans.type = TYPE_INT;
 		    switch (op) {
 		    case OP_LT:
-			ans.v.num = (comparison < 0);
+			ans = Var::new_int(comparison < 0);
 			break;
 		    case OP_LE:
-			ans.v.num = (comparison <= 0);
+			ans = Var::new_int(comparison <= 0);
 			break;
 		    case OP_GT:
-			ans.v.num = (comparison > 0);
+			ans = Var::new_int(comparison > 0);
 			break;
 		    case OP_GE:
-			ans.v.num = (comparison >= 0);
+			ans = Var::new_int(comparison >= 0);
 			break;
 		    default:
 			errlog("RUN: Imposible opcode in comparison: %d\n", op);
@@ -1747,22 +1743,22 @@ do {								\
 		     */
 		    Var system = Var::new_obj(SYSTEM_OBJECT);
 
-#define		    MATCH_TYPE(t1, t2)						\
-			else if (obj.type == TYPE_##t1) {			\
-			    h = db_find_property(system, #t2 "_proto", &p);	\
-			    if (h.ptr && p.type == TYPE_OBJ && valid(p.v.obj))	\
+#define		    MATCH_TYPE(t1)						\
+			else if (obj.is_##t1()) {				\
+			    h = db_find_property(system, #t1 "_proto", &p);	\
+			    if (h.ptr && p.is_obj() && valid(p.v.obj))		\
 				recv = p.v.obj;					\
 			}
 		    if (obj.is_anon())
 			recv = NOTHING;
 		    else if (obj.is_obj())
 			recv = obj.v.obj;
-		    MATCH_TYPE(INT, int)
-		    MATCH_TYPE(FLOAT, float)
-		    MATCH_TYPE(STR, str)
-		    MATCH_TYPE(ERR, err)
-		    MATCH_TYPE(LIST, list)
-		    MATCH_TYPE(MAP, map)
+		    MATCH_TYPE(int)
+		    MATCH_TYPE(float)
+		    MATCH_TYPE(str)
+		    MATCH_TYPE(err)
+		    MATCH_TYPE(list)
+		    MATCH_TYPE(map)
 #undef		    MATCH_TYPE
 
 		    free_var(system);
@@ -2167,7 +2163,7 @@ do {								\
 
 			v = POP();
 			why = POP();
-			switch (why.type == TYPE_INT ? why.v.num : -1) {
+			switch (why.is_int() ? why.v.num : -1) {
 			case FIN_FALL_THRU:
 			    /* Do nothing; normal case. */
 			    break;
@@ -2342,13 +2338,12 @@ do {								\
 			rhs = POP();
 			lhs = POP();
 			if (lhs.is_int() && rhs.is_int()) {
-			    ans.type = TYPE_INT;
 			    if (eop == EOP_BITXOR)
-				ans.v.num = lhs.v.num ^ rhs.v.num;
+				ans = Var::new_int(lhs.v.num ^ rhs.v.num);
 			    else if (eop == EOP_BITAND)
-				ans.v.num = lhs.v.num & rhs.v.num;
+				ans = Var::new_int(lhs.v.num & rhs.v.num);
 			    else if (eop == EOP_BITOR)
-				ans.v.num = lhs.v.num | rhs.v.num;
+				ans = Var::new_int(lhs.v.num | rhs.v.num);
 			    else
 				errlog("RUN: Impossible opcode in bitwise ops: %d\n", eop);
 			} else {
@@ -2384,11 +2379,10 @@ do {								\
 #define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * CHAR_BIT - (n)))
 #define SHIFTR(n, m) ((Num)((UNum)n >> m) & MASK(m))
 
-			    ans.type = TYPE_INT;
 			    if (eop == EOP_BITSHL)
-				ans.v.num = lhs.v.num << rhs.v.num;
+				ans = Var::new_int(lhs.v.num << rhs.v.num);
 			    else if (eop == EOP_BITSHR)
-				ans.v.num = SHIFTR(lhs.v.num, rhs.v.num);
+				ans = Var::new_int(SHIFTR(lhs.v.num, rhs.v.num));
 			    else
 				errlog("RUN: Impossible opcode in bitwise ops: %d\n", eop);
 			}
@@ -2773,7 +2767,7 @@ do_server_program_task(Var _this, const char *verb, Var args, Var vloc,
     RUN_ACTIV._this = var_ref(_this);
     RUN_ACTIV.player = player;
     RUN_ACTIV.progr = progr;
-    RUN_ACTIV.recv = (TYPE_OBJ == _this.type) ? _this.v.obj : NOTHING;
+    RUN_ACTIV.recv = _this.is_obj() ? _this.v.obj : NOTHING;
     RUN_ACTIV.vloc = var_ref(vloc);
     RUN_ACTIV.verb = str_dup(verb);
     RUN_ACTIV.verbname = str_dup(verbname);
@@ -3123,11 +3117,10 @@ static package
 bf_caller_perms(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* () */
     Var r;
-    r.type = TYPE_OBJ;
     if (top_activ_stack == 0)
-	r.v.obj = NOTHING;
+	r = Var::new_obj(NOTHING);
     else
-	r.v.obj = activ_stack[top_activ_stack - 1].progr;
+	r = Var::new_obj(activ_stack[top_activ_stack - 1].progr);
     free_var(arglist);
     return make_var_pack(r);
 }

@@ -585,8 +585,7 @@ expr:
 	| '-' expr  %prec tUNARYMINUS
 		{
 		    if ($2->kind == EXPR_VAR
-			&& ($2->e.var.type == TYPE_INT
-			    || $2->e.var.type == TYPE_FLOAT)) {
+			&& ($2->e.var.is_int() || $2->e.var.is_float())) {
 			switch ($2->e.var.type) {
 			  case TYPE_INT:
 			    $2->e.var.v.num = -$2->e.var.v.num;
@@ -1282,10 +1281,7 @@ static void
 my_error(void *data, const char *msg)
 {
     struct parser_state *state = (struct parser_state *) data;
-    Var                 v;
-
-    v.type = TYPE_STR;
-    v.v.str = str_dup(msg);
+    Var v = Var::new_str(msg);
     state->errors = listappend(state->errors, v);
 }
 

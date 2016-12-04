@@ -202,7 +202,7 @@ bf_server_log(Var arglist, Byte next, void *vdata, Objid progr)
 	int level = LOG_NONE;
 
 	if (arglist.v.list[0].v.num == 2) {
-	    if (TYPE_INT == arglist.v.list[2].type
+	    if (arglist.v.list[2].is_int()
 	          && LOG_NONE <= arglist.v.list[2].v.num
 	          && LOG_ERROR >= arglist.v.list[2].v.num) {
 		level = arglist.v.list[2].v.num;

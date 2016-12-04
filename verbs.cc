@@ -44,8 +44,7 @@ add_to_list(void *data, const char *verb_name)
     struct verb_data *d = (struct verb_data *)data;
 
     d->i++;
-    d->r.v.list[d->i].type = TYPE_STR;
-    d->r.v.list[d->i].v.str = str_ref(verb_name);
+    d->r.v.list[d->i] = str_ref_to_var(verb_name);
 
     return 0;
 }
@@ -200,8 +199,7 @@ bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
 	free_str(names);
 	e = E_PERM;
     } else {
-	result.type = TYPE_INT;
-	result.v.num = db_add_verb(obj, names, owner, flags, dobj, prep, iobj);
+	result = Var::new_int(db_add_verb(obj, names, owner, flags, dobj, prep, iobj));
     }
 
     free_var(arglist);
@@ -562,8 +560,7 @@ bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
 	if (db_object_allows(object, progr, FLAG_READ)) {
 	    r = new_list(2);
 	    r.v.list[1] = var_ref(db_verb_definer(h));
-	    r.v.list[2].type = TYPE_STR;
-	    r.v.list[2].v.str = str_ref(db_verb_names(h));
+	    r.v.list[2] = str_ref_to_var(db_verb_names(h));
 	}
 	else {
 	    r = Var::new_int(1);

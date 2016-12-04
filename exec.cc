@@ -359,7 +359,7 @@ bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
     Var v;
     int i, c;
     FOR_EACH(v, arglist.v.list[1], i, c) {
-	if (TYPE_STR != v.type) {
+	if (!v.is_str()) {
 	    pack = make_error_pack(E_INVARG);
 	    goto free_arglist;
 	}

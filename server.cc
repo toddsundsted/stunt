@@ -697,7 +697,7 @@ main_loop(void)
 
 		if (!h->outbound && h->connection_time == 0
 		    && (get_server_option(h->listener, "connect_timeout", &v)
-			? (v.type == TYPE_INT && v.v.num > 0
+			? (v.is_int() && v.v.num > 0
 			   && now - h->last_activity_time > v.v.num)
 			: (now - h->last_activity_time
 			   > DEFAULT_CONNECT_TIMEOUT))) {
@@ -884,14 +884,12 @@ emergency_mode()
 	    Program *program;
 	    Var str;
 
-	    str.type = TYPE_STR;
 	    code = new_list(0);
 
 	    if (*++line == ';')
 		line++;
 	    else {
-		str.v.str = str_dup("return");
-		code = listappend(code, str);
+		code = listappend(code, Var::new_str("return"));
 	    }
 
 	    while (*line == ' ')
@@ -905,16 +903,13 @@ emergency_mode()
 		    if (!strcmp(line, "."))
 			break;
 		    else {
-			str.v.str = str_dup(line);
-			code = listappend(code, str);
+			code = listappend(code, Var::new_str(line));
 		    }
 		}
 	    } else {
-		str.v.str = str_dup(line);
-		code = listappend(code, str);
+		code = listappend(code, Var::new_str(line));
 	    }
-	    str.v.str = str_dup(";");
-	    code = listappend(code, str);
+	    code = listappend(code, Var::new_str(";"));
 
 	    program = parse_list_as_program(code, &errors);
 	    free_var(code);
@@ -971,11 +966,9 @@ emergency_mode()
 		    Program *program;
 
 		    code = new_list(0);
-		    str.type = TYPE_STR;
 
 		    while (strcmp(line = read_stdin_line(" "), ".")) {
-			str.v.str = str_dup(line);
-			code = listappend(code, str);
+			code = listappend(code, Var::new_str(line));
 		    }
 
 		    program = parse_list_as_program(code, &errors);
@@ -1802,14 +1795,16 @@ bf_dump_database(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_db_disk_size(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var v;
+    int n = db_disk_size();
+    Var r = Var::new_int(n);
 
     free_var(arglist);
-    v.type = TYPE_INT;
-    if ((v.v.num = db_disk_size()) < 0)
+
+    if (n < 0) {
 	return make_raise_pack(E_QUOTA, "No database file(s) available", zero);
-    else
-	return make_var_pack(v);
+    } else {
+	return make_var_pack(r);
+    }
 }
 
 #ifdef OUTBOUND_NETWORK
@@ -1919,16 +1914,15 @@ bf_connected_players(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_connected_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (player) */
-    Var r;
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
+    int n = h && h->connection_time != 0 && !h->disconnect_me
+	? time(0) - h->connection_time
+	: -1;
+    Var r = Var::new_int(n);
 
-    r.type = TYPE_INT;
-    if (h && h->connection_time != 0 && !h->disconnect_me)
-	r.v.num = time(0) - h->connection_time;
-    else
-	r.v.num = -1;
     free_var(arglist);
-    if (r.v.num < 0)
+
+    if (n < 0)
 	return make_error_pack(E_INVARG);
     else
 	return make_var_pack(r);
@@ -1937,16 +1931,15 @@ bf_connected_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_idle_seconds(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (player) */
-    Var r;
     shandle *h = find_shandle(arglist.v.list[1].v.obj);
+    int n = h && !h->disconnect_me
+	? time(0) - h->last_activity_time
+	: -1;
+    Var r = Var::new_int(n);
 
-    r.type = TYPE_INT;
-    if (h && !h->disconnect_me)
-	r.v.num = time(0) - h->last_activity_time;
-    else
-	r.v.num = -1;
     free_var(arglist);
-    if (r.v.num < 0)
+
+    if (n < 0)
 	return make_error_pack(E_INVARG);
     else
 	return make_var_pack(r);
@@ -1991,25 +1984,27 @@ bf_notify(Var arglist, Byte next, void *vdata, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
-    r.type = TYPE_INT;
+
     if (h && !h->disconnect_me) {
 	if (h->binary) {
 	    int length;
-
 	    line = binary_to_raw_bytes(line, &length);
 	    if (!line) {
 		free_var(arglist);
 		return make_error_pack(E_INVARG);
 	    }
-	    r.v.num = network_send_bytes(h->nhandle, line, length, !no_flush);
-	} else
-	    r.v.num = network_send_line(h->nhandle, line, !no_flush);
+	    r = Var::new_int(network_send_bytes(h->nhandle, line, length, !no_flush));
+	} else {
+	    r = Var::new_int(network_send_line(h->nhandle, line, !no_flush));
+	}
     } else {
 	if (in_emergency_mode)
 	    emergency_notify(conn, line);
-	r.v.num = 1;
+	r = Var::new_int(1);
     }
+
     free_var(arglist);
+
     return make_var_pack(r);
 }
 
@@ -2171,10 +2166,10 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
 
     free_var(arglist);
-    r.type = TYPE_INT;
-    if (nargs == 0)
-	r.v.num = MAX_QUEUED_OUTPUT;
-    else {
+
+    if (nargs == 0) {
+	r = Var::new_int(MAX_QUEUED_OUTPUT);
+    } else {
 	shandle *h = find_shandle(conn);
 
 	if (!h)
@@ -2182,7 +2177,7 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
 	else if (progr != conn && !is_wizard(progr))
 	    return make_error_pack(E_PERM);
 
-	r.v.num = network_buffered_output_length(h->nhandle);
+	r = Var::new_int(network_buffered_output_length(h->nhandle));
     }
 
     return make_var_pack(r);

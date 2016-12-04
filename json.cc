@@ -277,9 +277,8 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 		char temp[len + 1];
 		strncpy(temp, val, len);
 		temp[len] = '\0';
-		v.type = TYPE_ERR;
 		int err = parse_error(temp);
-		v.v.err = err > -1 ? (error)err : E_NONE;
+		v = Var::new_err(err > -1 ? (error)err : E_NONE);
 		break;
 	    }
 	case TYPE_STR:

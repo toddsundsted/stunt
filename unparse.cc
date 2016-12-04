@@ -580,17 +580,17 @@ unparse_expr(Stream * str, Expr * expr)
     switch (expr->kind) {
     case EXPR_PROP:
 	if (expr->e.bin.lhs->kind == EXPR_VAR
-	    && expr->e.bin.lhs->e.var.type == TYPE_OBJ
+	    && expr->e.bin.lhs->e.var.is_obj()
 	    && expr->e.bin.lhs->e.var.v.obj == 0
 	    && expr->e.bin.rhs->kind == EXPR_VAR
-	    && expr->e.bin.rhs->e.var.type == TYPE_STR
+	    && expr->e.bin.rhs->e.var.is_str()
 	    && ok_identifier(expr->e.bin.rhs->e.var.v.str)) {
 	    stream_add_char(str, '$');
 	    stream_add_string(str, expr->e.bin.rhs->e.var.v.str);
 	} else {
 	    bracket_lt(str, EXPR_PROP, expr->e.bin.lhs);
 	    if (expr->e.bin.lhs->kind == EXPR_VAR
-		&& expr->e.bin.lhs->e.var.type == TYPE_INT)
+		&& expr->e.bin.lhs->e.var.is_int())
 		/* avoid parsing digits followed by dot as floating-point */
 		stream_add_char(str, ' ');
 	    stream_add_char(str, '.');
@@ -600,10 +600,10 @@ unparse_expr(Stream * str, Expr * expr)
 
     case EXPR_VERB:
 	if (expr->e.verb.obj->kind == EXPR_VAR
-	    && expr->e.verb.obj->e.var.type == TYPE_OBJ
+	    && expr->e.verb.obj->e.var.is_obj()
 	    && expr->e.verb.obj->e.var.v.obj == 0
 	    && expr->e.verb.verb->kind == EXPR_VAR
-	    && expr->e.verb.verb->e.var.type == TYPE_STR
+	    && expr->e.verb.verb->e.var.is_str()
 	    && ok_identifier(expr->e.verb.verb->e.var.v.str)) {
 	    stream_add_char(str, '$');
 	    stream_add_string(str, expr->e.verb.verb->e.var.v.str);

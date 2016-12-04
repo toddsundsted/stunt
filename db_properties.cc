@@ -148,7 +148,7 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 {
     insert_prop(root, prop_pos, pv);
 
-    pv.var.type = TYPE_CLEAR;	/* do after initial insert_prop so only
+    pv.var = clear;		/* do after initial insert_prop so only
 				   children will be TYPE_CLEAR */
 
     Var descendant, descendants = db_descendants(Var::new_obj(root), false);
@@ -406,8 +406,7 @@ get_bi_value(db_prop_handle h, Var * value)
 
     switch (h.built_in) {
     case BP_NAME:
-	value->type = TYPE_STR;
-	value->v.str = str_ref(dbpriv_object_name(o));
+	*value = str_ref_to_var(dbpriv_object_name(o));
 	break;
     case BP_OWNER:
 	*value = Var::new_obj(dbpriv_object_owner(o));
@@ -537,7 +536,7 @@ db_find_property(Var obj, const char *name, Var *value)
 	     * anonymous objects can't currently be parents of other
 	     * objects.  Thus `new_obj()' below is okay.
 	     */
-	    if (TYPE_LIST == o->parents.type) {
+	    if (o->parents.is_list()) {
 		Var parent, parents = o->parents;
 		int i2, c2, offset = 0;
 		FOR_EACH(parent, parents, i2, c2)
@@ -546,7 +545,7 @@ db_find_property(Var obj, const char *name, Var *value)
 		o = dbpriv_find_object(parent.v.obj);
 		prop = o->propval + offset + i;
 	    }
-	    else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
+	    else if (o->parents.is_obj() && NOTHING != o->parents.v.obj) {
 		int offset = properties_offset(Var::new_obj(((Object *)h.definer)->id), o->parents);
 		o = dbpriv_find_object(o->parents.v.obj);
 		prop = o->propval + offset + i;
@@ -731,7 +730,7 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
 
     free_var(stack);
 
-    int has_kids = (TYPE_LIST == anon_kids.type && listlength(anon_kids) > 0);
+    int has_kids = (anon_kids.is_list() && listlength(anon_kids) > 0);
     Object *o2, *o3, *o = dbpriv_dereference(obj);
     Proplist *props;
     Var ancestor;
@@ -954,7 +953,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
     int i4, c4, i5, c5, i6, c6;
     Var children;
 
-    if (TYPE_LIST == anon_kids.type)
+    if (anon_kids.is_list())
 	children = listconcat(var_ref(me->children), var_ref(anon_kids));
     else
 	children = var_ref(me->children);
@@ -965,7 +964,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 	Var old = new_list(1);
 	_new.v.list[1] = var_ref(child);
 	old.v.list[1] = var_ref(child);
-	if (TYPE_LIST == oc->parents.type) {
+	if (oc->parents.is_list()) {
 	    FOR_EACH(parent, oc->parents, i5, c5) {
 		Object *op = dbpriv_find_object(parent.v.obj);
 		if (op->id == obj.v.obj) {

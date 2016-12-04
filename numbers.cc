@@ -259,13 +259,12 @@ compare_numbers(Var a, Var b)
     } else {
 	double aa = *a.v.fnum, bb = *b.v.fnum;
 
-	ans.type = TYPE_INT;
 	if (aa < bb)
-	    ans.v.num = -1;
+	    ans = Var::new_int(-1);
 	else if (aa == bb)
-	    ans.v.num = 0;
+	    ans = Var::new_int(0);
 	else
-	    ans.v.num = 1;
+	    ans = Var::new_int(1);
     }
 
     return ans;
@@ -278,19 +277,16 @@ compare_numbers(Var a, Var b)
 		    Var	ans;					\
 								\
 		    if (a.type != b.type) {			\
-			ans.type = TYPE_ERR;			\
-			ans.v.err = E_TYPE;			\
-		    } else if (a.type == TYPE_INT) {		\
-			ans.type = TYPE_INT;			\
-			ans.v.num = a.v.num op b.v.num;		\
+			ans = Var::new_err(E_TYPE);		\
+		    } else if (a.is_int()) {			\
+			ans = Var::new_int(a.v.num op b.v.num);	\
 		    } else {					\
 			double d = *a.v.fnum op *b.v.fnum;	\
 								\
-			if (!IS_REAL(d)) {			\
-			    ans.type = TYPE_ERR;		\
-			    ans.v.err = E_FLOAT;		\
-			} else					\
+			if (IS_REAL(d)) {			\
 			    ans = Var::new_float(d);		\
+			} else					\
+			    ans = Var::new_err(E_FLOAT);	\
 		    }						\
 								\
 		    return ans;					\
@@ -310,18 +306,17 @@ do_modulus(Var a, Var b)
     } else if ((a.is_int() && b.v.num == 0) ||
                (a.is_float() && *b.v.fnum == 0.0)) {
 	ans = Var::new_err(E_DIV);
-    } else if (a.type == TYPE_INT) {
-	ans.type = TYPE_INT;
+    } else if (a.is_int()) {
 	if (a.v.num == MININT && b.v.num == -1)
-	    ans.v.num = 0;
+	    ans = Var::new_int(0);
 	else
-	    ans.v.num = a.v.num % b.v.num;
+	    ans = Var::new_int(a.v.num % b.v.num);
     } else { // must be float
 	double d = fmod(*a.v.fnum, *b.v.fnum);
-	if (!IS_REAL(d)) {
-	    ans = Var::new_err(E_FLOAT);
-	} else
+	if (IS_REAL(d)) {
 	    ans = Var::new_float(d);
+	} else
+	    ans = Var::new_err(E_FLOAT);
     }
 
     return ans;
@@ -337,18 +332,17 @@ do_divide(Var a, Var b)
     } else if ((a.is_int() && b.v.num == 0) ||
                (a.is_float() && *b.v.fnum == 0.0)) {
 	ans = Var::new_err(E_DIV);
-    } else if (a.type == TYPE_INT) {
-	ans.type = TYPE_INT;
+    } else if (a.is_int()) {
 	if (a.v.num == MININT && b.v.num == -1)
-	    ans.v.num = MININT;
+	    ans = Var::new_int(MININT);
 	else
-	    ans.v.num = a.v.num / b.v.num;
+	    ans = Var::new_int(a.v.num / b.v.num);
     } else { // must be float
 	double d = *a.v.fnum / *b.v.fnum;
-	if (!IS_REAL(d)) {
-	    ans = Var::new_err(E_FLOAT);
-	} else
+	if (IS_REAL(d)) {
 	    ans = Var::new_float(d);
+	} else
+	    ans = Var::new_err(E_FLOAT);
     }
 
     return ans;
@@ -359,28 +353,26 @@ do_power(Var lhs, Var rhs)
 {				/* LHS ^ RHS */
     Var ans;
 
-    if (lhs.type == TYPE_INT) {	/* integer exponentiation */
+    if (lhs.is_int()) {			/* integer exponentiation */
 	int a = lhs.v.num, b, r;
 
 	if (!rhs.is_int())
 	    goto type_error;
 
 	b = rhs.v.num;
-	ans.type = TYPE_INT;
 	if (b < 0)
 	    switch (a) {
 	    case -1:
-		ans.v.num = (b % 2 == 0 ? 1 : -1);
+		Var::new_int(b % 2 == 0 ? 1 : -1);
 		break;
 	    case 0:
-		ans.type = TYPE_ERR;
-		ans.v.err = E_DIV;
+		ans = Var::new_err(E_DIV);
 		break;
 	    case 1:
-		ans.v.num = 1;
+		Var::new_int(1);
 		break;
 	    default:
-		ans.v.num = 0;
+		Var::new_int(0);
 	} else {
 	    r = 1;
 	    while (b != 0) {
@@ -389,7 +381,7 @@ do_power(Var lhs, Var rhs)
 		a *= a;
 		b >>= 1;
 	    }
-	    ans.v.num = r;
+	    ans = Var::new_int(r);
 	}
     } else if (lhs.is_float()) {	/* floating-point exponentiation */
 	double d;
@@ -407,8 +399,7 @@ do_power(Var lhs, Var rhs)
 	errno = 0;
 	d = pow(*lhs.v.fnum, d);
 	if (errno != 0 || !IS_REAL(d)) {
-	    ans.type = TYPE_ERR;
-	    ans.v.err = E_FLOAT;
+	    ans = Var::new_err(E_FLOAT);
 	} else
 	    ans = Var::new_float(d);
     } else
@@ -417,8 +408,7 @@ do_power(Var lhs, Var rhs)
     return ans;
 
   type_error:
-    ans.type = TYPE_ERR;
-    ans.v.err = E_TYPE;
+    ans = Var::new_err(E_TYPE);
     return ans;
 }
 
@@ -427,29 +417,32 @@ do_power(Var lhs, Var rhs)
 static package
 bf_toint(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
     enum error e;
+    int n;
 
-    r.type = TYPE_INT;
-    e = become_integer(arglist.v.list[1], &(r.v.num), 1);
+    e = become_integer(arglist.v.list[1], &n, 1);
+    Var r = Var::new_int(n);
 
     free_var(arglist);
-    if (e != E_NONE)
-	return make_error_pack(e);
 
-    return make_var_pack(r);
+    if (e == E_NONE)
+	return make_var_pack(r);
+
+    free_var(r);
+    return make_error_pack(e);
 }
 
 static package
 bf_tofloat(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
     enum error e;
+    double d;
 
-    r = Var::new_float(0.0);
-    e = become_float(arglist.v.list[1], r.v.fnum);
+    e = become_float(arglist.v.list[1], &d);
+    Var r = Var::new_float(d);
 
     free_var(arglist);
+
     if (e == E_NONE)
 	return make_var_pack(r);
 
@@ -465,9 +458,9 @@ bf_min(Var arglist, Byte next, void *vdata, Objid progr)
     int bad_types = 0;
 
     r = arglist.v.list[1];
-    if (r.type == TYPE_INT) {	/* integers */
+    if (r.is_int()) {		/* integers */
 	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_INT)
+	    if (!arglist.v.list[i].is_int())
 		bad_types = 1;
 	    else if (arglist.v.list[i].v.num < r.v.num)
 		r = arglist.v.list[i];
@@ -495,9 +488,9 @@ bf_max(Var arglist, Byte next, void *vdata, Objid progr)
     int bad_types = 0;
 
     r = arglist.v.list[1];
-    if (r.type == TYPE_INT) {	/* integers */
+    if (r.is_int()) {		/* integers */
 	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_INT)
+	    if (!arglist.v.list[i].is_int())
 		bad_types = 1;
 	    else if (arglist.v.list[i].v.num > r.v.num)
 		r = arglist.v.list[i];
@@ -812,8 +805,6 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
     const int range_l =
 	((INTNUM_MAX > RAND_MAX ? RAND_MAX : (RAND_MAX - num)) + 1) % num;
 
-    r.type = TYPE_INT;
-
 #if ((RAND_MAX <= 0) || 0!=(RAND_MAX & (RAND_MAX+1)))
 #   error RAND_MAX+1 is not a positive power of 2 ??
 #endif
@@ -835,7 +826,7 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
     e = range_l;
 
     if (rnd >= e) {
-	r.v.num = 1 + rnd % num;
+	r = Var::new_int(1 + rnd % num);
 	return make_var_pack(r);
     }
 #endif
@@ -860,14 +851,14 @@ bf_random(Var arglist, Byte next, void *vdata, Objid progr)
 	 */
 	if (rnd > OR_ZERO(num/RANGE)) {
 	    /* rnd*RANGE > num */
-	    r.v.num = 1 + muladdmod(rnd, range_l, rnd_next, num);
+	    r = Var::new_int(1 + muladdmod(rnd, range_l, rnd_next, num));
 	    break;
 	}
 	rnd = OR_ZERO(rnd*RANGE) + rnd_next;
 	e = muladdmod(e, range_l, 0, num);
 
 	if (rnd >= e) {
-	    r.v.num = 1 + rnd % num;
+	    r = Var::new_int(1 + rnd % num);
 	    break;
 	}
     }

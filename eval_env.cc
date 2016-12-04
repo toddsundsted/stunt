@@ -75,41 +75,27 @@ copy_rt_env(Var * from, unsigned size)
 void
 fill_in_rt_consts(Var * env, DB_Version version)
 {
-    Var v;
-
-    v.type = TYPE_INT;
-    v.v.num = (int) TYPE_ERR;
-    env[SLOT_ERR] = var_ref(v);
-    v.v.num = (int) TYPE_INT;
-    env[SLOT_NUM] = var_ref(v);
-    v.v.num = (int) _TYPE_STR;
-    env[SLOT_STR] = var_ref(v);
-    v.v.num = (int) TYPE_OBJ;
-    env[SLOT_OBJ] = var_ref(v);
-    v.v.num = (int) _TYPE_LIST;
-    env[SLOT_LIST] = var_ref(v);
-
+    env[SLOT_ERR] = Var::new_int((int)TYPE_ERR);
+    env[SLOT_NUM] = Var::new_int((int)TYPE_INT);
+    env[SLOT_STR] = Var::new_int((int)_TYPE_STR);
+    env[SLOT_OBJ] = Var::new_int((int)TYPE_OBJ);
+    env[SLOT_LIST] = Var::new_int((int)_TYPE_LIST);
     if (version >= DBV_Float) {
-	v.v.num = (int) TYPE_INT;
-	env[SLOT_INT] = var_ref(v);
-	v.v.num = (int) _TYPE_FLOAT;
-	env[SLOT_FLOAT] = var_ref(v);
+	env[SLOT_INT] = Var::new_int((int)TYPE_INT);
+	env[SLOT_FLOAT] = Var::new_int((int)_TYPE_FLOAT);
     }
     if (version >= DBV_Map) {
-	v.v.num = (int) _TYPE_MAP;
-	env[SLOT_MAP] = var_ref(v);
+	env[SLOT_MAP] = Var::new_int((int)_TYPE_MAP);
     }
     if (version >= DBV_Anon) {
-	v.v.num = (int) _TYPE_ANON;
-	env[SLOT_ANON] = var_ref(v);
+	env[SLOT_ANON] = Var::new_int((int)_TYPE_ANON);
     }
 }
 
 void
 set_rt_env_obj(Var * env, int slot, Objid o)
 {
-    Var v = Var::new_obj(o);
-    env[slot] = var_ref(v);
+    env[slot] = Var::new_obj(o);
 }
 
 void

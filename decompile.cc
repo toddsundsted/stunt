@@ -634,15 +634,14 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			int label, done;
 			int is_hot = op_hot;
 
-			if (label_expr->kind != EXPR_VAR
-			    || label_expr->e.var.type != TYPE_INT)
+			if (label_expr->kind != EXPR_VAR || !label_expr->e.var.is_int())
 			    panic("Not a catch label in DECOMPILE!");
 			label = label_expr->e.var.v.num;
 			dealloc_node(label_expr);
 			if (codes->kind == EXPR_LIST)
 			    a = codes->e.list;
 			else if (codes->kind == EXPR_VAR
-				 && codes->e.var.type == TYPE_INT
+				 && codes->e.var.is_int()
 				 && codes->e.var.v.num == 0)
 			    a = 0;
 			else
@@ -697,8 +696,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			s->s._catch.excepts = 0;
 			while (count--) {
 			    label_expr = pop_expr();
-			    if (label_expr->kind != EXPR_VAR
-				|| label_expr->e.var.type != TYPE_INT)
+			    if (label_expr->kind != EXPR_VAR || !label_expr->e.var.is_int())
 				panic("Not an except label in DECOMPILE!");
 			    label = label_expr->e.var.v.num;
 			    dealloc_node(label_expr);
@@ -706,7 +704,7 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 			    if (e->kind == EXPR_LIST)
 				a = e->e.list;
 			    else if (e->kind == EXPR_VAR
-				     && e->e.var.type == TYPE_INT
+				     && e->e.var.is_int()
 				     && e->e.var.v.num == 0)
 				a = 0;
 			    else

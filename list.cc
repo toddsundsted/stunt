@@ -522,7 +522,6 @@ strrangeset(Var base, int from, int to, Var value)
     Var ans;
     char *s;
 
-    ans.type = TYPE_STR;
     s = (char *)mymalloc(sizeof(char) * (newsize + 1), M_STRING);
 
     for (index = 0; index < lenleft; index++)
@@ -532,6 +531,7 @@ strrangeset(Var base, int from, int to, Var value)
     for (index = 0; index < lenright; index++)
 	s[offset++] = base.v.str[index + to];
     s[offset] = '\0';
+    ans.type = TYPE_STR;
     ans.v.str = s;
     free_var(base);
     free_var(value);
@@ -799,13 +799,12 @@ bf_strtr(Var arglist, Byte next, void *vdata, Objid progr)
     Var r;
     int case_matters = 0;
 
-    if (arglist.v.list[0].v.num > 3)
+    if (listlength(arglist) > 3)
 	case_matters = is_true(arglist.v.list[4]);
-    r.type = TYPE_STR;
-    r.v.str = str_dup(strtr(arglist.v.list[1].v.str, memo_strlen(arglist.v.list[1].v.str),
-			    arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str),
-			    arglist.v.list[3].v.str, memo_strlen(arglist.v.list[3].v.str),
-			    case_matters));
+    r = Var::new_str(strtr(arglist.v.list[1].v.str, memo_strlen(arglist.v.list[1].v.str),
+			   arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str),
+			   arglist.v.list[3].v.str, memo_strlen(arglist.v.list[3].v.str),
+			   case_matters));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -817,19 +816,19 @@ bf_index(Var arglist, Byte next, void *vdata, Objid progr)
     int case_matters = 0;
     int offset = 0;
 
-    if (arglist.v.list[0].v.num > 2)
+    if (listlength(arglist) > 2)
 	case_matters = is_true(arglist.v.list[3]);
-    if (arglist.v.list[0].v.num > 3)
+    if (listlength(arglist) > 3)
 	offset = arglist.v.list[4].v.num;
     if (offset < 0) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    r.type = TYPE_INT;
-    r.v.num = strindex(arglist.v.list[1].v.str + offset, memo_strlen(arglist.v.list[1].v.str) - offset,
-		       arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str),
-		       case_matters);
-
+    r = Var::new_int(strindex(arglist.v.list[1].v.str + offset,
+			      memo_strlen(arglist.v.list[1].v.str) - offset,
+			      arglist.v.list[2].v.str,
+			      memo_strlen(arglist.v.list[2].v.str),
+			      case_matters));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -842,18 +841,19 @@ bf_rindex(Var arglist, Byte next, void *vdata, Objid progr)
     int case_matters = 0;
     int offset = 0;
 
-    if (arglist.v.list[0].v.num > 2)
+    if (listlength(arglist) > 2)
 	case_matters = is_true(arglist.v.list[3]);
-    if (arglist.v.list[0].v.num > 3)
+    if (listlength(arglist) > 3)
 	offset = arglist.v.list[4].v.num;
     if (offset > 0) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    r.type = TYPE_INT;
-    r.v.num = strrindex(arglist.v.list[1].v.str, memo_strlen(arglist.v.list[1].v.str) + offset,
-			arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str),
-			case_matters);
+    r = Var::new_int(strrindex(arglist.v.list[1].v.str,
+			       memo_strlen(arglist.v.list[1].v.str) + offset,
+			       arglist.v.list[2].v.str,
+			       memo_strlen(arglist.v.list[2].v.str),
+			       case_matters));
 
     free_var(arglist);
     return make_var_pack(r);
@@ -1000,20 +1000,15 @@ do_match(Var arglist, int reverse)
 	    /*notreached*/
 	case MATCH_SUCCEEDED:
 	    ans = new_list(4);
-	    ans.v.list[1].type = TYPE_INT;
-	    ans.v.list[2].type = TYPE_INT;
-	    ans.v.list[4].type = TYPE_STR;
-	    ans.v.list[1].v.num = regs[0].start;
-	    ans.v.list[2].v.num = regs[0].end;
+	    ans.v.list[1] = Var::new_int(regs[0].start);
+	    ans.v.list[2] = Var::new_int(regs[0].end);
 	    ans.v.list[3] = new_list(9);
-	    ans.v.list[4].v.str = str_ref(subject);
 	    for (i = 1; i <= 9; i++) {
 		ans.v.list[3].v.list[i] = new_list(2);
-		ans.v.list[3].v.list[i].v.list[1].type = TYPE_INT;
-		ans.v.list[3].v.list[i].v.list[1].v.num = regs[i].start;
-		ans.v.list[3].v.list[i].v.list[2].type = TYPE_INT;
-		ans.v.list[3].v.list[i].v.list[2].v.num = regs[i].end;
+		ans.v.list[3].v.list[i].v.list[1] = Var::new_int(regs[i].start);
+		ans.v.list[3].v.list[i].v.list[2] = Var::new_int(regs[i].end);
 	    }
+	    ans.v.list[4] = str_ref_to_var(subject);
 	    break;
 	case MATCH_FAILED:
 	    ans = new_list(0);
@@ -1064,12 +1059,12 @@ check_subs_list(Var subs)
     const char *subj;
     int subj_length, loop;
 
-    if (subs.type != TYPE_LIST || subs.v.list[0].v.num != 4
-	|| subs.v.list[1].type != TYPE_INT
-	|| subs.v.list[2].type != TYPE_INT
-	|| subs.v.list[3].type != TYPE_LIST
-	|| subs.v.list[3].v.list[0].v.num != 9
-	|| subs.v.list[4].type != TYPE_STR)
+    if (!subs.is_list() || listlength(subs) != 4
+	|| !subs.v.list[1].is_int()
+	|| !subs.v.list[2].is_int()
+	|| !subs.v.list[3].is_list()
+	|| listlength(subs.v.list[3]) != 9
+	|| !subs.v.list[4].is_str())
 	return 1;
     subj = subs.v.list[4].v.str;
     subj_length = memo_strlen(subj);
@@ -1080,10 +1075,9 @@ check_subs_list(Var subs)
     for (loop = 1; loop <= 9; loop++) {
 	Var pair;
 	pair = subs.v.list[3].v.list[loop];
-	if (pair.type != TYPE_LIST
-	    || pair.v.list[0].v.num != 2
-	    || pair.v.list[1].type != TYPE_INT
-	    || pair.v.list[2].type != TYPE_INT
+	if (!pair.is_list() || listlength(pair) != 2
+	    || !pair.v.list[1].is_int()
+	    || !pair.v.list[2].is_int()
 	    || invalid_pair(pair.v.list[1].v.num, pair.v.list[2].v.num,
 			    subj_length))
 	    return 1;

@@ -283,17 +283,18 @@ icmd_list(int icmd_flags)
 {
     Var s;
     Var list = new_list(0);
-    s.type = TYPE_STR;
+
 #define _ICMD_MKSTR(ICMD_PREFIX,PREFIX,_)	\
 	if (icmd_flags & (1<<ICMD_PREFIX)) {	\
-	    s.v.str = str_dup(#PREFIX);		\
+	    s = Var::new_str(#PREFIX);		\
 	    list = listappend(list, s);		\
 	}					\
 
     ICMD_FOR_EACH(_ICMD_MKSTR,@);
+#undef _ICMD_MKSTR
+
     return list;
 }
-#undef _ICMD_MKSTR
 
 static int
 icmd_set_flags(tqueue * tq, Var list)
@@ -802,7 +803,7 @@ do_command_task(tqueue * tq, char *command)
 	    db_verb_handle vh;
 	    Var result, args;
 
-	    result.type = TYPE_INT;	/* for free_var() if task isn't DONE */
+	    result = zero;	/* for free_var() if task isn't DONE */
 	    if (tq->output_prefix)
 		notify(tq->player, tq->output_prefix);
 
@@ -853,9 +854,9 @@ do_login_task(tqueue * tq, char *command)
     Var args;
     Objid old_max_object = db_last_used_objid();
 
-    result.type = TYPE_INT;	/* In case #0:do_login_command does not exist
-				 * or does not immediately return.
-				 */
+    result = zero;	/* In case #0:do_login_command does not exist
+			 * or does not immediately return.
+			 */
 
     args = parse_into_wordlist(command);
     run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
@@ -2218,28 +2219,17 @@ forked_task_bytes(forked_task ft)
 static Var
 list_for_forked_task(forked_task ft, Objid progr)
 {
-    Var list;
-
-    list = new_list(10);
-    list.v.list[1].type = TYPE_INT;
-    list.v.list[1].v.num = ft.id;
-    list.v.list[2].type = TYPE_INT;
-    list.v.list[2].v.num = ft.start_time;
-    list.v.list[3].type = TYPE_INT;
-    list.v.list[3].v.num = 0;			/* OBSOLETE: was clock ID */
-    list.v.list[4].type = TYPE_INT;
-    list.v.list[4].v.num = DEFAULT_BG_TICKS;	/* OBSOLETE: was clock ticks */
-    list.v.list[5].type = TYPE_OBJ;
-    list.v.list[5].v.obj = ft.a.progr;
+    Var list = new_list(10);
+    list.v.list[1] = Var::new_int(ft.id);
+    list.v.list[2] = Var::new_int(ft.start_time);
+    list.v.list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
+    list.v.list[4] = Var::new_int(DEFAULT_BG_TICKS);	/* OBSOLETE: was clock ticks */
+    list.v.list[5] = Var::new_obj(ft.a.progr);
     list.v.list[6] = anonymizing_var_ref(ft.a.vloc, progr);
-    list.v.list[7].type = TYPE_STR;
-    list.v.list[7].v.str = str_ref(ft.a.verbname);
-    list.v.list[8].type = TYPE_INT;
-    list.v.list[8].v.num = find_line_number(ft.program, ft.f_index, 0);
+    list.v.list[7] = str_ref_to_var(ft.a.verbname);
+    list.v.list[8] = Var::new_int(find_line_number(ft.program, ft.f_index, 0));
     list.v.list[9] = anonymizing_var_ref(ft.a._this, progr);
-    list.v.list[10].type = TYPE_INT;
-    list.v.list[10].v.num = forked_task_bytes(ft);
-
+    list.v.list[10] = Var::new_int(forked_task_bytes(ft));
     return list;
 }
 
@@ -2258,28 +2248,19 @@ suspended_task_bytes(vm the_vm)
 static Var
 list_for_vm(vm the_vm, Objid progr)
 {
-    Var list;
-
-    list = new_list(10);
-
-    list.v.list[1].type = TYPE_INT;
-    list.v.list[1].v.num = the_vm->task_id;
-
-    list.v.list[3].type = TYPE_INT;
-    list.v.list[3].v.num = 0;			/* OBSOLETE: was clock ID */
-    list.v.list[4].type = TYPE_INT;
-    list.v.list[4].v.num = DEFAULT_BG_TICKS;	/* OBSOLETE: was clock ticks */
-    list.v.list[5].type = TYPE_OBJ;
-    list.v.list[5].v.obj = progr_of_cur_verb(the_vm);
+    Var list = new_list(10);
+    list.v.list[1] = Var::new_int(the_vm->task_id);
+    // list.v.list[2] = ...
+    // see `list_for_suspended_task()', `list_for_forked_task()'
+    // or `listing_closure()'
+    list.v.list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
+    list.v.list[4] = Var::new_int(DEFAULT_BG_TICKS);	/* OBSOLETE: was clock ticks */
+    list.v.list[5] = Var::new_obj(progr_of_cur_verb(the_vm));
     list.v.list[6] = anonymizing_var_ref(top_activ(the_vm).vloc, progr);
-    list.v.list[7].type = TYPE_STR;
-    list.v.list[7].v.str = str_ref(top_activ(the_vm).verbname);
-    list.v.list[8].type = TYPE_INT;
-    list.v.list[8].v.num = suspended_lineno_of_vm(the_vm);
+    list.v.list[7] = str_ref_to_var(top_activ(the_vm).verbname);
+    list.v.list[8] = Var::new_int(suspended_lineno_of_vm(the_vm));
     list.v.list[9] = anonymizing_var_ref(top_activ(the_vm)._this, progr);
-    list.v.list[10].type = TYPE_INT;
-    list.v.list[10].v.num = suspended_task_bytes(the_vm);
-
+    list.v.list[10] = Var::new_int(suspended_task_bytes(the_vm));
     return list;
 }
 

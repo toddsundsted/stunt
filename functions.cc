@@ -397,18 +397,14 @@ function_description(int i)
 
     entry = bf_table[i];
     v = new_list(4);
-    v.v.list[1].type = TYPE_STR;
-    v.v.list[1].v.str = str_ref(entry.name);
-    v.v.list[2].type = TYPE_INT;
-    v.v.list[2].v.num = entry.minargs;
-    v.v.list[3].type = TYPE_INT;
-    v.v.list[3].v.num = entry.maxargs;
+    v.v.list[1] = str_ref_to_var(entry.name);
+    v.v.list[2] = Var::new_int(entry.minargs);
+    v.v.list[3] = Var::new_int(entry.maxargs);
     nargs = entry.maxargs == -1 ? entry.minargs : entry.maxargs;
     vv = v.v.list[4] = new_list(nargs);
     for (j = 0; j < nargs; j++) {
 	int proto = entry.prototype[j];
-	vv.v.list[j + 1].type = TYPE_INT;
-	vv.v.list[j + 1].v.num = proto < 0 ? proto : (proto & TYPE_DB_MASK);
+	vv.v.list[j + 1] = Var::new_int(proto < 0 ? proto : (proto & TYPE_DB_MASK));
     }
 
     return v;

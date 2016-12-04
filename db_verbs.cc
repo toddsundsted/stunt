@@ -504,7 +504,7 @@ find_callable_verbdef(Object *start, const char *verb)
 	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL)
 	    break;
 
-	if (TYPE_OBJ == o->parents.type)
+	if (o->parents.is_obj())
 	    stack = listinsert(stack, var_ref(o->parents), 1);
 	else
 	    stack = listconcat(var_ref(o->parents), stack);
@@ -555,7 +555,7 @@ db_find_callable_verb(Var recv, const char *verb)
 	    o = dbpriv_dereference(top);
 	    if (o->verbdefs == NULL) {
 		/* keep looking */
-		stack = (TYPE_OBJ == o->parents.type)
+		stack = o->parents.is_obj()
 		        ? listinsert(stack, var_ref(o->parents), 1)
 		        : listconcat(var_ref(o->parents), stack);
 		free_var(top);

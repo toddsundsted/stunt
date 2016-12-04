@@ -32,8 +32,7 @@ add_to_list(void *data, const char *prop_name)
     struct prop_data *d = (prop_data *)data;
 
     d->i++;
-    d->r.v.list[d->i].type = TYPE_STR;
-    d->r.v.list[d->i].v.str = str_ref(prop_name);
+    d->r.v.list[d->i] = str_ref_to_var(prop_name);
 
     return 0;
 }
@@ -263,7 +262,6 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
     Var obj = arglist.v.list[1];
     const char *pname = arglist.v.list[2].v.str;
     db_prop_handle h;
-    Var value;
     enum error e;
 
     if (!obj.is_object())
@@ -279,8 +277,7 @@ bf_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 	else if (db_is_property_defined_on(h, obj))
 	    e = E_INVARG;
 	else {
-	    value.type = TYPE_CLEAR;
-	    db_set_property_value(h, value);
+	    db_set_property_value(h, clear);
 	    e = E_NONE;
 	}
     }
@@ -313,8 +310,7 @@ bf_is_clear_prop(Var arglist, Byte next, void *vdata, Objid progr)
 	else if (!db_is_property_built_in(h) && !db_property_allows(h, progr, PF_READ))
 	    e = E_PERM;
 	else {
-	    r.type = TYPE_INT;
-	    r.v.num = (!db_is_property_built_in(h) && db_property_value(h).is_clear());
+	    r = Var::new_int(!db_is_property_built_in(h) && db_property_value(h).is_clear());
 	    e = E_NONE;
 	}
     }

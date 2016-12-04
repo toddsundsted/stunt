@@ -200,7 +200,7 @@ server_version_full(Var arg)
 		break;
 	    case TYPE_LIST:
 		if (tree[0].v.list[0].v.num == 2 &&
-		    tree[0].v.list[1].type == TYPE_STR &&
+		    tree[0].v.list[1].is_str() &&
 		    memo_strlen(tree[0].v.list[1].v.str) == e - s &&
 		    strncmp(tree[0].v.list[1].v.str, s, e - s) == 0) {
 

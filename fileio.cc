@@ -942,8 +942,9 @@ bf_file_tell(Var arglist, Byte next, void *vdata, Objid progr)
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
 	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
-	 rv.type = TYPE_INT;
-	 if((rv.v.num = ftell(f)) < 0)
+	 int n = ftell(f);
+	 rv = Var::new_int(n);
+	 if(n < 0)
 		r = file_raise_errno(file_handle_name(fhandle));		
 	 else
 		r = make_var_pack(rv);
