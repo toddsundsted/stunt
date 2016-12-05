@@ -653,10 +653,7 @@ bf_recycle(Var arglist, Byte func_pc, void *vdata, Objid progr)
 	obj = var_ref(arglist.v.list[1]);
 	free_var(arglist);
 
-	if (!obj.is_object()) {
-	    free_var(obj);
-	    return make_error_pack(E_TYPE);
-	} else if (!is_valid(obj) || db_object_has_flag2(obj, FLAG_RECYCLED)) {
+	if (!is_valid(obj) || db_object_has_flag2(obj, FLAG_RECYCLED)) {
 	    free_var(obj);
 	    return make_error_pack(E_INVARG);
 	} else if (!controls2(progr, obj)) {
@@ -924,10 +921,10 @@ register_objects(void)
     register_function("typeof", 1, 1, bf_typeof, TYPE_ANY);
     register_function_with_read_write("create", 1, 4, bf_create,
 				      bf_create_read, bf_create_write,
-				      TYPE_ANY, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+				      TYPE_INSTANCE, TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function_with_read_write("recycle", 1, 1, bf_recycle,
 				      bf_recycle_read, bf_recycle_write,
-				      TYPE_ANY);
+				      TYPE_INSTANCE);
     register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_INSTANCE);
     register_function("valid", 1, 1, bf_valid, TYPE_INSTANCE);
     register_function("chparents", 2, 3, bf_chparent_chparents,
