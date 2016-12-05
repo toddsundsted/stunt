@@ -891,11 +891,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     Var object = arglist.v.list[1];
     Var parent = arglist.v.list[2];
 
-    if (!parent.is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    }
-    else if (!is_valid(object)) {
+    if (!is_valid(object)) {
 	free_var(arglist);
 	return make_var_pack(Var::new_int(0));
     }
@@ -950,5 +946,5 @@ register_objects(void)
     register_function_with_read_write("move", 2, 2, bf_move,
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ);
-    register_function("isa", 2, 2, bf_isa, TYPE_INSTANCE, TYPE_ANY);
+    register_function("isa", 2, 2, bf_isa, TYPE_INSTANCE, TYPE_OBJ);
 }
