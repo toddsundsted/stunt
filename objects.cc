@@ -267,20 +267,14 @@ bf_typeof(Var arglist, Byte next, void *vdata, Objid progr)
     free_var(arglist);
     return make_var_pack(r);
 }
-
+
 static package
 bf_valid(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
     Var r;
 
-    if (arglist.v.list[1].is_object()) {
-	r.type = TYPE_INT;
-	r.v.num = is_valid(arglist.v.list[1]);
-    }
-    else {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    }
+    r.type = TYPE_INT;
+    r.v.num = is_valid(arglist.v.list[1]);
 
     free_var(arglist);
     return make_var_pack(r);
@@ -450,7 +444,7 @@ bf_create_read(void)
     else
 	return 0;
 }
-
+
 static package
 bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ obj, OBJ|LIST what, LIST anon) */
@@ -459,7 +453,7 @@ bf_chparent_chparents(Var arglist, Byte next, void *vdata, Objid progr)
     int n = listlength(arglist);
     Var anon_kids = nothing;
 
-    if (!obj.is_object() || !is_obj_or_list_of_objs(what)) {
+    if (!is_obj_or_list_of_objs(what)) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
@@ -513,10 +507,7 @@ bf_parent(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (!arglist.v.list[1].is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    } else if (!is_valid(arglist.v.list[1])) {
+    if (!is_valid(arglist.v.list[1])) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
@@ -542,10 +533,7 @@ bf_parents(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (!arglist.v.list[1].is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    }  else if (!is_valid(arglist.v.list[1])) {
+    if (!is_valid(arglist.v.list[1])) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
@@ -571,10 +559,7 @@ bf_children(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* (object) */
     Var obj = arglist.v.list[1];
 
-    if (!obj.is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    } else if (!is_valid(obj)) {
+    if (!is_valid(obj)) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
@@ -590,10 +575,7 @@ bf_ancestors(Var arglist, Byte next, void *vdata, Objid progr)
     Var obj = arglist.v.list[1];
     bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
-    if (!obj.is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    } else if (!is_valid(obj)) {
+    if (!is_valid(obj)) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
@@ -609,10 +591,7 @@ bf_descendants(Var arglist, Byte next, void *vdata, Objid progr)
     Var obj = arglist.v.list[1];
     bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
 
-    if (!obj.is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    } else if (!is_valid(obj)) {
+    if (!is_valid(obj)) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
@@ -621,7 +600,7 @@ bf_descendants(Var arglist, Byte next, void *vdata, Objid progr)
 	return make_var_pack(r);
     }
 }
-
+
 static int
 move_to_nothing(Objid oid)
 {
@@ -834,7 +813,7 @@ bf_recycle_read(void)
     else
 	return 0;
 }
-
+
 static package
 bf_players(Var arglist, Byte next, void *vdata, Objid progr)
 {				/* () */
@@ -888,10 +867,7 @@ bf_object_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var obj = arglist.v.list[1];
 
-    if (!obj.is_object()) {
-	free_var(arglist);
-	return make_error_pack(E_TYPE);
-    } else if (!is_valid(obj)) {
+    if (!is_valid(obj)) {
 	free_var(arglist);
 	return make_error_pack(E_INVIND);
     } else if (!is_wizard(progr)) {
@@ -915,7 +891,7 @@ bf_isa(Var arglist, Byte next, void *vdata, Objid progr)
     Var object = arglist.v.list[1];
     Var parent = arglist.v.list[2];
 
-    if (!object.is_object() || !parent.is_object()) {
+    if (!parent.is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
     }
@@ -953,19 +929,19 @@ register_objects(void)
     register_function_with_read_write("recycle", 1, 1, bf_recycle,
 				      bf_recycle_read, bf_recycle_write,
 				      TYPE_ANY);
-    register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_ANY);
-    register_function("valid", 1, 1, bf_valid, TYPE_ANY);
+    register_function("object_bytes", 1, 1, bf_object_bytes, TYPE_INSTANCE);
+    register_function("valid", 1, 1, bf_valid, TYPE_INSTANCE);
     register_function("chparents", 2, 3, bf_chparent_chparents,
-		      TYPE_ANY, TYPE_LIST, TYPE_LIST);
+		      TYPE_INSTANCE, TYPE_LIST, TYPE_LIST);
     register_function("chparent", 2, 3, bf_chparent_chparents,
-		      TYPE_ANY, TYPE_OBJ, TYPE_LIST);
-    register_function("parents", 1, 1, bf_parents, TYPE_ANY);
-    register_function("parent", 1, 1, bf_parent, TYPE_ANY);
-    register_function("children", 1, 1, bf_children, TYPE_ANY);
+		      TYPE_INSTANCE, TYPE_OBJ, TYPE_LIST);
+    register_function("parents", 1, 1, bf_parents, TYPE_INSTANCE);
+    register_function("parent", 1, 1, bf_parent, TYPE_INSTANCE);
+    register_function("children", 1, 1, bf_children, TYPE_INSTANCE);
     register_function("ancestors", 1, 2, bf_ancestors,
-		      TYPE_ANY, TYPE_ANY);
+		      TYPE_INSTANCE, TYPE_ANY);
     register_function("descendants", 1, 2, bf_descendants,
-		      TYPE_ANY, TYPE_ANY);
+		      TYPE_INSTANCE, TYPE_ANY);
     register_function("max_object", 0, 0, bf_max_object);
     register_function("players", 0, 0, bf_players);
     register_function("is_player", 1, 1, bf_is_player, TYPE_OBJ);
@@ -974,5 +950,5 @@ register_objects(void)
     register_function_with_read_write("move", 2, 2, bf_move,
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ);
-    register_function("isa", 2, 2, bf_isa, TYPE_ANY, TYPE_ANY);
+    register_function("isa", 2, 2, bf_isa, TYPE_INSTANCE, TYPE_ANY);
 }
