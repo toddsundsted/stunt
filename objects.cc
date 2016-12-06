@@ -946,5 +946,5 @@ register_objects(void)
     register_function_with_read_write("move", 2, 2, bf_move,
 				      bf_move_read, bf_move_write,
 				      TYPE_OBJ, TYPE_OBJ);
-    register_function("isa", 2, 2, bf_isa, TYPE_INSTANCE, TYPE_OBJ);
+    register_function("isa", 2, 2, bf_isa, TYPE_INSTANCE, TYPE_INSTANCE);
 }
