@@ -15,6 +15,9 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#ifndef Log_h
+#define Log_h 1
+
 #include "my-stdio.h"
 
 #include "config.h"
@@ -38,3 +41,5 @@ extern void add_command_to_history(Objid player, const char *command);
 
 extern int log_report_progress_cktime();
 extern int log_pcount;
+
+#endif
