@@ -126,9 +126,9 @@ crypt/x86.o: crypt/x86.S
 
 parser.o: parser.y
 	$(YACC) -y -d parser.y
-	mv -f y.tab.c parser.c
-	$(CXX) $(CXXFLAGS) -c -o parser.o parser.c
-	rm parser.c
+	mv -f y.tab.c parser.cc
+	$(CXX) $(CXXFLAGS) -c -o parser.o parser.cc
+	rm parser.cc
 
 client_bsd: client_bsd.o
 	$(CXX) $(CFLAGS) client_bsd.o $(LIBRARIES) -o $@
