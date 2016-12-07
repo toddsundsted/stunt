@@ -358,7 +358,7 @@ bf_exec(const List& arglist, Objid progr)
      */
     Var v;
     int i, c;
-    FOR_EACH(v, arglist.v.list[1], i, c) {
+    FOR_EACH(v, arglist[1], i, c) {
 	if (!v.is_str()) {
 	    pack = make_error_pack(E_INVARG);
 	    goto free_arglist;
@@ -371,7 +371,7 @@ bf_exec(const List& arglist, Objid progr)
     }
 
     /* check the path */
-    cmd = arglist.v.list[1].v.list[1].v.str;
+    cmd = arglist[1].v.list[1].v.str;
     if (0 == strlen(cmd)) {
 	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
 	goto free_arglist;
@@ -398,7 +398,7 @@ bf_exec(const List& arglist, Objid progr)
     in = NULL;
     len = 0;
     if (listlength(arglist) > 1) {
-	if ((in = binary_to_raw_bytes(arglist.v.list[2].v.str, &len)) == NULL) {
+	if ((in = binary_to_raw_bytes(arglist[2].v.str, &len)) == NULL) {
 	    pack = make_error_pack(E_INVARG);
 	    goto free_cmd;
 	}
@@ -423,7 +423,7 @@ bf_exec(const List& arglist, Objid progr)
     }
 
     args = (const char **)mymalloc(sizeof(const char *) * i, M_ARRAY);
-    FOR_EACH(v, arglist.v.list[1], i, c)
+    FOR_EACH(v, arglist[1], i, c)
 	args[i - 1] = str_dup(v.v.str);
     args[i - 1] = NULL;
 

@@ -19,6 +19,8 @@
  * Routines for manipulating DB objects
  *****************************************************************************/
 
+#include <assert.h>
+
 #include "my-string.h"
 
 #include "config.h"
@@ -1050,10 +1052,11 @@ is_user(Objid oid)
     return valid(oid) && db_object_has_flag(oid, FLAG_USER);
 }
 
-Var
+const List&
 db_all_users(void)
 {
-    return all_users;
+    assert(all_users.is_list());
+    return static_cast<const List&>(all_users);
 }
 
 void

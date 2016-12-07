@@ -2949,14 +2949,14 @@ static package
 bf_raise(const List& arglist, Objid progr)
 {
     package p;
-    int nargs = arglist.v.list[0].v.num;
-    Var code = var_ref(arglist.v.list[1]);
+    int nargs = arglist.length();
+    Var code = var_ref(arglist[1]);
     const char *msg = (nargs >= 2
-		       ? str_ref(arglist.v.list[2].v.str)
+		       ? str_ref(arglist[2].v.str)
 		       : value2str(code));
     Var value;
 
-    value = (nargs >= 3 ? var_ref(arglist.v.list[3]) : zero);
+    value = (nargs >= 3 ? var_ref(arglist[3]) : zero);
     free_var(arglist);
     p.kind = package::BI_RAISE;
     p.u.raise.code = code;
@@ -2970,10 +2970,10 @@ static package
 bf_suspend(const List& arglist, Objid progr)
 {
     static int seconds;
-    int nargs = arglist.v.list[0].v.num;
+    int nargs = arglist.length();
 
     if (nargs >= 1)
-	seconds = arglist.v.list[1].v.num;
+	seconds = arglist[1].v.num;
     else
 	seconds = -1;
     free_var(arglist);
@@ -2987,13 +2987,13 @@ bf_suspend(const List& arglist, Objid progr)
 static package
 bf_read(const List& arglist, Objid progr)
 {				/* ([object [, non_blocking]]) */
-    int argc = arglist.v.list[0].v.num;
+    int argc = arglist.length();
     static Objid connection;
     int non_blocking = (argc >= 2
-			&& is_true(arglist.v.list[2]));
+			&& is_true(arglist[2]));
 
     if (argc >= 1)
-	connection = arglist.v.list[1].v.obj;
+	connection = arglist[1].v.obj;
     else
 	connection = activ_stack[0].player;
     free_var(arglist);
@@ -3025,13 +3025,13 @@ bf_read(const List& arglist, Objid progr)
 static package
 bf_read_http(const List& arglist, Objid progr)
 {				/* ("request" | "response" [, object]) */
-    int argc = arglist.v.list[0].v.num;
+    int argc = arglist.length();
     static Objid connection;
     int request;
 
-    if (!mystrcasecmp(arglist.v.list[1].v.str, "request"))
+    if (!mystrcasecmp(arglist[1].v.str, "request"))
 	request = 1;
-    else if (!mystrcasecmp(arglist.v.list[1].v.str, "response"))
+    else if (!mystrcasecmp(arglist[1].v.str, "response"))
 	request = 0;
     else {
 	free_var(arglist);
@@ -3039,7 +3039,7 @@ bf_read_http(const List& arglist, Objid progr)
     }
 
     if (argc > 1)
-	connection = arglist.v.list[2].v.obj;
+	connection = arglist[2].v.obj;
     else
 	connection = activ_stack[0].player;
 
@@ -3094,7 +3094,7 @@ static package
 bf_set_task_perms(const List& arglist, Objid progr)
 {				/* (player) */
     /* warning!!  modifies top activation */
-    Objid oid = arglist.v.list[1].v.obj;
+    Objid oid = arglist[1].v.obj;
 
     free_var(arglist);
 
@@ -3130,8 +3130,8 @@ bf_callers(const List& arglist, Objid progr)
 {
     int line_numbers_too = 0;
 
-    if (arglist.v.list[0].v.num >= 1)
-	line_numbers_too = is_true(arglist.v.list[1]);
+    if (arglist.length() >= 1)
+	line_numbers_too = is_true(arglist[1]);
     free_var(arglist);
 
     return make_var_pack(make_stack_list(activ_stack, 0, top_activ_stack, 0,
@@ -3142,9 +3142,9 @@ bf_callers(const List& arglist, Objid progr)
 static package
 bf_task_stack(const List& arglist, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
-    int id = arglist.v.list[1].v.num;
-    int line_numbers_too = (nargs >= 2 && is_true(arglist.v.list[2]));
+    int nargs = arglist.length();
+    int id = arglist[1].v.num;
+    int line_numbers_too = (nargs >= 2 && is_true(arglist[2]));
     vm the_vm = find_suspended_task(id);
     Objid owner = (the_vm ? progr_of_cur_verb(the_vm) : NOTHING);
 

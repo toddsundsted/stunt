@@ -296,7 +296,7 @@ extern int is_wizard(Objid oid);
 extern int is_programmer(Objid oid);
 extern int is_user(Objid oid);
 
-extern Var db_all_users(void);
+extern const List& db_all_users(void);
 				/* db_all_users() does not change the reference
 				 * count of the `users' list maintained by this
 				 * module.  The caller should thus var_ref() it

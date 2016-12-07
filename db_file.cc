@@ -1058,7 +1058,7 @@ write_db_file(const char *reason)
     Objid last_oid = db_last_used_objid(), max_oid = -1;
     int nprogs = 0;
     Verbdef *v;
-    Var user_list;
+    List user_list;
     int i;
     volatile int success = 1;
 
@@ -1067,10 +1067,10 @@ write_db_file(const char *reason)
 
 	user_list = db_all_users();
 
-	dbio_printf("%d\n", listlength(user_list));
+	dbio_printf("%d\n", user_list.length());
 
-	for (i = 1; i <= user_list.v.list[0].v.num; i++)
-	    dbio_write_objid(user_list.v.list[i].v.obj);
+	for (i = 1; i <= user_list.length(); i++)
+	    dbio_write_objid(user_list[i].v.obj);
 
 	oklog("%s: Writing values pending finalization ...\n", reason);
 	write_values_pending_finalization();

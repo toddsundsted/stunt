@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <assert.h>
+
 #include "my-string.h"
 
 #include "config.h"
@@ -52,7 +54,7 @@ add_to_list(void *data, const char *verb_name)
 static package
 bf_verbs(const List& arglist, Objid progr)
 {				/* (object) */
-    Var obj = arglist.v.list[1];
+    Var obj = arglist[1];
 
     free_var(arglist);
 
@@ -73,22 +75,18 @@ bf_verbs(const List& arglist, Objid progr)
 }
 
 static enum error
-validate_verb_info(Var v, Objid * owner, unsigned *flags, const char **names)
+validate_verb_info(const List& v, Objid * owner, unsigned *flags, const char **names)
 {
     const char *s;
 
-    if (!(v.is_list()
-	  && listlength(v) == 3
-	  && v.v.list[1].is_obj()
-	  && v.v.list[2].is_str()
-	  && v.v.list[3].is_str()))
+    if (!(v.length() == 3 && v[1].is_obj() && v[2].is_str() && v[3].is_str()))
 	return E_TYPE;
 
-    *owner = v.v.list[1].v.obj;
+    *owner = v[1].v.obj;
     if (!valid(*owner))
 	return E_INVARG;
 
-    for (*flags = 0, s = v.v.list[2].v.str; *s; s++) {
+    for (*flags = 0, s = v[2].v.str; *s; s++) {
 	switch (*s) {
 	case 'r':
 	case 'R':
@@ -111,7 +109,7 @@ validate_verb_info(Var v, Objid * owner, unsigned *flags, const char **names)
 	}
     }
 
-    *names = v.v.list[3].v.str;
+    *names = v[3].v.str;
     while (**names == ' ')
 	(*names)++;
     if (**names == '\0')
@@ -152,19 +150,15 @@ match_prep_spec(const char *s, db_prep_spec * spec)
 }
 
 static enum error
-validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
+validate_verb_args(const List& v, db_arg_spec * dobj, db_prep_spec * prep,
 		   db_arg_spec * iobj)
 {
-    if (!(v.is_list()
-	  && listlength(v) == 3
-	  && v.v.list[1].is_str()
-	  && v.v.list[2].is_str()
-	  && v.v.list[3].is_str()))
+    if (!(v.length() == 3 && v[1].is_str() && v[2].is_str() && v[3].is_str()))
 	return E_TYPE;
 
-    if (!match_arg_spec(v.v.list[1].v.str, dobj)
-	|| !match_prep_spec(v.v.list[2].v.str, prep)
-	|| !match_arg_spec(v.v.list[3].v.str, iobj))
+    if (!match_arg_spec(v[1].v.str, dobj)
+	|| !match_prep_spec(v[2].v.str, prep)
+	|| !match_arg_spec(v[3].v.str, iobj))
 	return E_INVARG;
 
     return E_NONE;
@@ -173,9 +167,11 @@ validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
 static package
 bf_add_verb(const List& arglist, Objid progr)
 {				/* (object, info, args) */
-    Var obj = arglist.v.list[1];
-    Var info = arglist.v.list[2];
-    Var args = arglist.v.list[3];
+    Var obj = arglist[1];
+    assert(arglist[2].is_list());
+    const List& info = static_cast<const List&>(arglist[2]);
+    assert(arglist[3].is_list());
+    const List& args = static_cast<const List&>(arglist[3]);
     Var result;
     Objid owner;
     unsigned flags;
@@ -237,8 +233,8 @@ find_described_verb(Var obj, Var desc)
 static package
 bf_delete_verb(const List& arglist, Objid progr)
 {				/* (object, verb-desc) */
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
     db_verb_handle h;
     enum error e;
 
@@ -269,8 +265,8 @@ bf_delete_verb(const List& arglist, Objid progr)
 static package
 bf_verb_info(const List& arglist, Objid progr)
 {				/* (object, verb-desc) */
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
     db_verb_handle h;
     Var r;
     unsigned flags;
@@ -315,9 +311,10 @@ bf_verb_info(const List& arglist, Objid progr)
 static package
 bf_set_verb_info(const List& arglist, Objid progr)
 {				/* (object, verb-desc, {owner, flags, names}) */
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
-    Var info = arglist.v.list[3];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
+    assert(arglist[3].is_list());
+    const List& info = static_cast<const List&>(arglist[3]);
     Objid new_owner;
     unsigned new_flags;
     const char *new_names;
@@ -376,8 +373,8 @@ unparse_arg_spec(db_arg_spec spec)
 static package
 bf_verb_args(const List& arglist, Objid progr)
 {				/* (object, verb-desc) */
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
     db_verb_handle h;
     db_arg_spec dobj, iobj;
     db_prep_spec prep;
@@ -415,9 +412,10 @@ bf_verb_args(const List& arglist, Objid progr)
 static package
 bf_set_verb_args(const List& arglist, Objid progr)
 {				/* (object, verb-desc, {dobj, prep, iobj}) */
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
-    Var args = arglist.v.list[3];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
+    assert(arglist[3].is_list());
+    const List& args = static_cast<const List&>(arglist[3]);
     enum error e;
     db_verb_handle h;
     db_arg_spec dobj, iobj;
@@ -460,11 +458,11 @@ lister(void *data, const char *line)
 static package
 bf_verb_code(const List& arglist, Objid progr)
 {				/* (object, verb-desc [, fully-paren [, indent]]) */
-    int nargs = arglist.v.list[0].v.num;
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
-    int parens = nargs >= 3 && is_true(arglist.v.list[3]);
-    int indent = nargs < 4 || is_true(arglist.v.list[4]);
+    int nargs = arglist.length();
+    Var obj = arglist[1];
+    Var desc = arglist[2];
+    int parens = nargs >= 3 && is_true(arglist[3]);
+    int indent = nargs < 4 || is_true(arglist[4]);
     db_verb_handle h;
     Var code;
     enum error e;
@@ -495,9 +493,9 @@ bf_verb_code(const List& arglist, Objid progr)
 static package
 bf_set_verb_code(const List& arglist, Objid progr)
 {				/* (object, verb-desc, code) */
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
-    Var code = arglist.v.list[3];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
+    Var code = arglist[3];
     int i;
     Program *program;
     db_verb_handle h;
@@ -539,8 +537,8 @@ bf_set_verb_code(const List& arglist, Objid progr)
 static package
 bf_respond_to(const List& arglist, Objid progr)
 {
-    Var object = arglist.v.list[1];
-    const char *verb = arglist.v.list[2].v.str;
+    Var object = arglist[1];
+    const char *verb = arglist[2].v.str;
 
     if (!object.is_object()) {
 	free_var(arglist);

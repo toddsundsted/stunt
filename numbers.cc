@@ -420,7 +420,7 @@ bf_toint(const List& arglist, Objid progr)
     enum error e;
     int n;
 
-    e = become_integer(arglist.v.list[1], &n, 1);
+    e = become_integer(arglist[1], &n, 1);
     Var r = Var::new_int(n);
 
     free_var(arglist);
@@ -438,7 +438,7 @@ bf_tofloat(const List& arglist, Objid progr)
     enum error e;
     double d;
 
-    e = become_float(arglist.v.list[1], &d);
+    e = become_float(arglist[1], &d);
     Var r = Var::new_float(d);
 
     free_var(arglist);
@@ -454,22 +454,22 @@ static package
 bf_min(const List& arglist, Objid progr)
 {
     Var r;
-    int i, nargs = arglist.v.list[0].v.num;
+    int i, nargs = arglist.length();
     int bad_types = 0;
 
-    r = arglist.v.list[1];
+    r = arglist[1];
     if (r.is_int()) {		/* integers */
 	for (i = 2; i <= nargs; i++)
-	    if (!arglist.v.list[i].is_int())
+	    if (!arglist[i].is_int())
 		bad_types = 1;
-	    else if (arglist.v.list[i].v.num < r.v.num)
-		r = arglist.v.list[i];
+	    else if (arglist[i].v.num < r.v.num)
+		r = arglist[i];
     } else {			/* floats */
 	for (i = 2; i <= nargs; i++)
-	    if (!arglist.v.list[i].is_float())
+	    if (!arglist[i].is_float())
 		bad_types = 1;
-	    else if (*arglist.v.list[i].v.fnum < *r.v.fnum)
-		r = arglist.v.list[i];
+	    else if (*arglist[i].v.fnum < *r.v.fnum)
+		r = arglist[i];
     }
 
     r = var_ref(r);
@@ -484,22 +484,22 @@ static package
 bf_max(const List& arglist, Objid progr)
 {
     Var r;
-    int i, nargs = arglist.v.list[0].v.num;
+    int i, nargs = arglist.length();
     int bad_types = 0;
 
-    r = arglist.v.list[1];
+    r = arglist[1];
     if (r.is_int()) {		/* integers */
 	for (i = 2; i <= nargs; i++)
-	    if (!arglist.v.list[i].is_int())
+	    if (!arglist[i].is_int())
 		bad_types = 1;
-	    else if (arglist.v.list[i].v.num > r.v.num)
-		r = arglist.v.list[i];
+	    else if (arglist[i].v.num > r.v.num)
+		r = arglist[i];
     } else {			/* floats */
 	for (i = 2; i <= nargs; i++)
-	    if (!arglist.v.list[i].is_float())
+	    if (!arglist[i].is_float())
 		bad_types = 1;
-	    else if (*arglist.v.list[i].v.fnum > *r.v.fnum)
-		r = arglist.v.list[i];
+	    else if (*arglist[i].v.fnum > *r.v.fnum)
+		r = arglist[i];
     }
 
     r = var_ref(r);
@@ -515,7 +515,7 @@ bf_abs(const List& arglist, Objid progr)
 {
     Var r;
 
-    r = var_dup(arglist.v.list[1]);
+    r = var_dup(arglist[1]);
     if (r.is_int()) {
 	if (r.v.num < 0)
 	    r.v.num = -r.v.num;
@@ -532,7 +532,7 @@ bf_abs(const List& arglist, Objid progr)
 		{							\
 		    double	d;					\
 									\
-		    d = *arglist.v.list[1].v.fnum;			\
+		    d = *arglist[1].v.fnum;				\
 		    errno = 0;						\
 		    d = name(d);					\
 		    free_var(arglist);					\
@@ -564,7 +564,7 @@ bf_trunc(const List& arglist, Objid progr)
 {
     double d;
 
-    d = *arglist.v.list[1].v.fnum;
+    d = *arglist[1].v.fnum;
     errno = 0;
     if (d < 0.0)
 	d = ceil(d);
@@ -584,10 +584,10 @@ bf_atan(const List& arglist, Objid progr)
 {
     double d, dd;
 
-    d = *arglist.v.list[1].v.fnum;
+    d = *arglist[1].v.fnum;
     errno = 0;
-    if (arglist.v.list[0].v.num >= 2) {
-	dd = *arglist.v.list[2].v.fnum;
+    if (arglist.length() >= 2) {
+	dd = *arglist[2].v.fnum;
 	d = atan2(d, dd);
     } else
 	d = atan(d);
@@ -615,8 +615,8 @@ bf_ctime(const List& arglist, Objid progr)
     time_t c;
     char buffer[50];
 
-    if (arglist.v.list[0].v.num == 1) {
-	c = arglist.v.list[1].v.num;
+    if (arglist.length() == 1) {
+	c = arglist[1].v.num;
     } else {
 	c = time(0);
     }
@@ -792,8 +792,8 @@ muladdmod(Unsignednum a, Unsignednum b, Unsignednum c, Intnum m)
 static package
 bf_random(const List& arglist, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
-    int num = (nargs >= 1 ? arglist.v.list[1].v.num : INTNUM_MAX);
+    int nargs = arglist.length();
+    int num = (nargs >= 1 ? arglist[1].v.num : INTNUM_MAX);
     Var r;
     int e;
     int rnd;
@@ -886,10 +886,10 @@ bf_random_bytes(const List& arglist, Objid progr)
     Var r;
     package p;
 
-    int len = arglist.v.list[1].v.num;
+    int len = arglist[1].v.num;
 
     if (len < 0 || len > 10000) {
-	p = make_raise_pack(E_INVARG, "Invalid count", var_ref(arglist.v.list[1]));
+	p = make_raise_pack(E_INVARG, "Invalid count", var_ref(arglist[1]));
 	free_var(arglist);
 	return p;
     }
@@ -923,10 +923,9 @@ bf_random_bytes(const List& arglist, Objid progr)
 static package
 bf_floatstr(const List& arglist, Objid progr)
 {				/* (float, precision [, sci-notation]) */
-    double d = *arglist.v.list[1].v.fnum;
-    int prec = arglist.v.list[2].v.num;
-    int use_sci = (arglist.v.list[0].v.num >= 3
-		   && is_true(arglist.v.list[3]));
+    double d = *arglist[1].v.fnum;
+    int prec = arglist[2].v.num;
+    int use_sci = (arglist.length() >= 3 && is_true(arglist[3]));
     char fmt[10], output[500];	/* enough for IEEE double */
     Var r;
 

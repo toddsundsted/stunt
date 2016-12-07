@@ -506,17 +506,17 @@ bf_parse_json(const List& arglist, Objid progr)
     pctx.stack.v = Var::new_int(0);
     pctx.mode = MODE_COMMON_SUBSET;
 
-    const char *str = arglist.v.list[1].v.str;
+    const char *str = arglist[1].v.str;
     size_t len = strlen(str);
 
     package pack;
 
     int done = 0;
 
-    if (1 < arglist.v.list[0].v.num) {
-	if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+    if (1 < arglist.length()) {
+	if (!mystrcasecmp(arglist[2].v.str, "common-subset")) {
 	    pctx.mode = MODE_COMMON_SUBSET;
-	} else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+	} else if (!mystrcasecmp(arglist[2].v.str, "embedded-types")) {
 	    pctx.mode = MODE_EMBEDDED_TYPES;
 	} else {
 	    free_var(arglist);
@@ -574,10 +574,10 @@ bf_generate_json(const List& arglist, Objid progr)
 
     package pack;
 
-    if (1 < arglist.v.list[0].v.num) {
-	if (!mystrcasecmp(arglist.v.list[2].v.str, "common-subset")) {
+    if (1 < arglist.length()) {
+	if (!mystrcasecmp(arglist[2].v.str, "common-subset")) {
 	    gctx.mode = MODE_COMMON_SUBSET;
-	} else if (!mystrcasecmp(arglist.v.list[2].v.str, "embedded-types")) {
+	} else if (!mystrcasecmp(arglist[2].v.str, "embedded-types")) {
 	    gctx.mode = MODE_EMBEDDED_TYPES;
 	} else {
 	    free_var(arglist);
@@ -587,7 +587,7 @@ bf_generate_json(const List& arglist, Objid progr)
 
     g = yajl_gen_alloc(&cfg, NULL);
 
-    if (yajl_gen_status_ok == generate(g, arglist.v.list[1], &gctx)) {
+    if (yajl_gen_status_ok == generate(g, arglist[1], &gctx)) {
 	yajl_gen_get_buf(g, (const unsigned char **)&buf, &len);
 	json = Var::new_str(buf);
 	pack = make_var_pack(json);

@@ -43,7 +43,7 @@ do_map_iteration(Var key, Var value, void *data, int first)
 }
 
 int
-ismember(Var lhs, Var rhs, int case_matters)
+ismember(const Var& lhs, const Var& rhs, int case_matters)
 {
     if (rhs.is_list()) {
 	int i;
@@ -74,14 +74,15 @@ static package
 bf_is_member(const List& arglist, Objid progr)
 {
     Var r;
-    Var rhs = arglist.v.list[2];
+    const Var& lhs = arglist[1];
+    const Var& rhs = arglist[2];
 
     if (!rhs.is_list() && !rhs.is_map()) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
 
-    r = Var::new_int(ismember(arglist.v.list[1], rhs, 1));
+    r = Var::new_int(ismember(lhs, rhs, 1));
 
     free_var(arglist);
 

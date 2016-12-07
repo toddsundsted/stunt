@@ -18,6 +18,7 @@
 #ifndef Structures_h
 #define Structures_h 1
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -268,6 +269,14 @@ str_ref_to_var(const char *s)
 }
 
 struct List : public Var {
+    int32
+    length() const {
+	return v.list[0].v.num;
+    }
+    const Var& operator[] (const int i) const {
+	assert(i >= 1 && i <= length());
+	return v.list[i];
+    }
 };
 
 /* generic tuples */

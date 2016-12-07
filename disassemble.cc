@@ -457,8 +457,8 @@ add_line(const char *line, void *data)
 static package
 bf_disassemble(const List& arglist, Objid progr)
 {
-    Var obj = arglist.v.list[1];
-    Var desc = arglist.v.list[2];
+    Var obj = arglist[1];
+    Var desc = arglist[2];
     db_verb_handle h;
     struct data data;
     Var r;

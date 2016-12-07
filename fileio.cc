@@ -385,8 +385,8 @@ bf_file_open(const List& arglist, Objid progr)
   package r;
   Var fhandle;
   const char *real_filename;
-  const char *filename = arglist.v.list[1].v.str;
-  const char *mode = arglist.v.list[2].v.str;
+  const char *filename = arglist[1].v.str;
+  const char *mode = arglist[2].v.str;
   const char *fmode;
   file_mode rmode;
   file_type type;
@@ -399,7 +399,7 @@ bf_file_open(const List& arglist, Objid progr)
   else if ((real_filename = file_resolve_path(filename)) == NULL)
 	 r = file_raise_notokfilename("file_open", filename);
   else if ((fmode = file_modestr_to_mode(mode, &type, &rmode)) == NULL)
-	 r = make_raise_pack(E_INVARG, "Invalid mode string", var_ref(arglist.v.list[2]));
+	 r = make_raise_pack(E_INVARG, "Invalid mode string", var_ref(arglist[2]));
   else if ((fhandle = file_handle_new(filename, type, rmode)).v.num < 0)
 	 r = make_raise_pack(E_QUOTA, "Too many files open", zero);
   else if ((f = fopen(real_filename, fmode)) == NULL) {
@@ -422,7 +422,7 @@ static package
 bf_file_close(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   FILE *f;
 
   errno = 0;
@@ -448,7 +448,7 @@ static package
 bf_file_name(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   const char *name;
   Var rv;   
 
@@ -468,7 +468,7 @@ static package
 bf_file_openmode(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   char buffer[5] = {0, 0, 0, 0, 0};
   file_mode mode;
   file_type type;
@@ -551,7 +551,7 @@ static package
 bf_file_readline(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   Var rv;
   int len;
   file_mode mode;
@@ -610,9 +610,9 @@ static package
 bf_file_readlines(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
-  int32 begin = arglist.v.list[2].v.num;
-  int32 end   = arglist.v.list[3].v.num;
+  const Var& fhandle = arglist[1];
+  int32 begin = arglist[2].v.num;
+  int32 end   = arglist[3].v.num;
   int32 begin_loc = 0, linecount = 0;
   file_type type;
   file_mode mode;
@@ -696,8 +696,8 @@ static package
 bf_file_writeline(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];  
-  const char *buffer = arglist.v.list[2].v.str;
+  const Var& fhandle = arglist[1];
+  const char *buffer = arglist[2].v.str;
   const char *rawbuffer;
   file_mode mode;
   file_type type;
@@ -742,10 +742,10 @@ bf_file_read(const List& arglist, Objid progr)
 {
   package r;
 
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   file_mode mode;
   file_type type;
-  int32 record_length = arglist.v.list[2].v.num;
+  int32 record_length = arglist[2].v.num;
   int32 read_length;
 
   char buffer[FILE_IO_BUFFER_LENGTH];
@@ -814,7 +814,7 @@ static package
 bf_file_flush(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   FILE *f;
 
   errno = 0;
@@ -842,8 +842,9 @@ static package
 bf_file_write(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1], rv;  
-  const char *buffer = arglist.v.list[2].v.str;
+  const Var& fhandle = arglist[1];
+  Var rv;
+  const char *buffer = arglist[2].v.str;
   const char *rawbuffer;
   file_mode mode;
   file_type type;
@@ -890,9 +891,9 @@ static package
 bf_file_seek(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
-  int32 seek_to = arglist.v.list[2].v.num;
-  const char *whence = arglist.v.list[3].v.str;
+  const Var& fhandle = arglist[1];
+  int32 seek_to = arglist[2].v.num;
+  const char *whence = arglist[3].v.str;
   int whnce = 0, whence_ok = 1;
   FILE *f;
 
@@ -931,7 +932,7 @@ static package
 bf_file_tell(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   Var rv;
   FILE *f;
 
@@ -961,7 +962,7 @@ static package
 bf_file_eof(const List& arglist, Objid progr)
 {
   package r;
-  Var fhandle = arglist.v.list[1];
+  const Var& fhandle = arglist[1];
   Var rv;
   FILE *f;
 
@@ -1053,7 +1054,7 @@ bf_file_size(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1074,7 +1075,7 @@ bf_file_mode(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1095,7 +1096,7 @@ bf_file_type(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1116,7 +1117,7 @@ bf_file_last_access(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1137,7 +1138,7 @@ bf_file_last_modify(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1158,7 +1159,7 @@ bf_file_last_change(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1179,7 +1180,7 @@ bf_file_stat(const List& arglist, Objid progr)
 {  
   package r;
   Var     rv;
-  Var filespec = arglist.v.list[1];
+  const Var& filespec = arglist[1];
   struct stat buf;
 
   if (file_stat(progr, filespec, &r, &buf)) {
@@ -1224,12 +1225,12 @@ bf_file_list(const List& arglist, Objid progr)
      than the original scandir method.   -- AAB 06/03/97
    */
   package r;
-  const char *pathspec = arglist.v.list[1].v.str;
+  const char *pathspec = arglist[1].v.str;
   const char *real_pathname;
-  int	detailed = (arglist.v.list[0].v.num > 1
-						? is_true(arglist.v.list[2])
-						: 0);
-  
+  int detailed = arglist.length() > 1
+			? is_true(arglist[2])
+			: 0;
+ 
     if(!file_verify_caller(progr)) {
         r = file_raise_notokcall("file_list", progr);
     } else if((real_pathname = file_resolve_path(pathspec)) == NULL) {
@@ -1290,7 +1291,7 @@ static package
 bf_file_mkdir(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist.v.list[1].v.str;
+  const char *pathspec = arglist[1].v.str;
   const char *real_pathname;
 
   if(!file_verify_caller(progr)) {
@@ -1316,7 +1317,7 @@ static package
 bf_file_rmdir(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist.v.list[1].v.str;
+  const char *pathspec = arglist[1].v.str;
   const char *real_pathname;
 
   if(!file_verify_caller(progr)) {
@@ -1342,7 +1343,7 @@ static package
 bf_file_remove(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist.v.list[1].v.str;
+  const char *pathspec = arglist[1].v.str;
   const char *real_pathname;
 
   if(!file_verify_caller(progr)) {
@@ -1367,8 +1368,8 @@ static package
 bf_file_rename(const List& arglist, Objid progr)
 {  
   package r;
-  const char *fromspec = arglist.v.list[1].v.str;
-  const char *tospec = arglist.v.list[2].v.str;
+  const char *fromspec = arglist[1].v.str;
+  const char *tospec = arglist[2].v.str;
   char *real_fromspec = NULL;
   const char *real_tospec;
   
@@ -1422,8 +1423,8 @@ static package
 bf_file_chmod(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist.v.list[1].v.str;
-  const char *modespec = arglist.v.list[2].v.str;
+  const char *pathspec = arglist[1].v.str;
+  const char *modespec = arglist[2].v.str;
   mode_t newmode;
   const char *real_filename;
 

@@ -464,8 +464,8 @@ bf_function_info(const List& arglist, Objid progr)
     Var r;
     unsigned int i;
 
-    if (arglist.v.list[0].v.num == 1) {
-	i = number_func_by_name(arglist.v.list[1].v.str);
+    if (arglist.length() == 1) {
+	i = number_func_by_name(arglist[1].v.str);
 	if (i == FUNC_NOT_FOUND) {
 	    free_var(arglist);
 	    return make_error_pack(E_INVARG);

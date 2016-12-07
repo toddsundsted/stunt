@@ -1710,8 +1710,8 @@ static package
 bf_server_version(const List& arglist, Objid progr)
 {
     Var r;
-    if (arglist.v.list[0].v.num > 0) {
-	r = server_version_full(arglist.v.list[1]);
+    if (arglist.length() > 0) {
+	r = server_version_full(arglist[1]);
     }
     else {
 	r = Var::new_str(server_version);
@@ -1727,7 +1727,7 @@ static package
 bf_renumber(const List& arglist, Objid progr)
 {
     Var r;
-    Objid o = arglist.v.list[1].v.obj;
+    Objid o = arglist[1].v.obj;
     free_var(arglist);
 
     if (!valid(o))
@@ -1764,8 +1764,8 @@ bf_memory_usage(const List& arglist, Objid progr)
 static package
 bf_shutdown(const List& arglist, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
-    const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : 0);
+    int nargs = arglist.length();
+    const char *message = (nargs >= 1 ? arglist[1].v.str : 0);
 
     if (!is_wizard(progr)) {
 	free_var(arglist);
@@ -1836,10 +1836,10 @@ bf_open_network_connection(const List& arglist, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    if (arglist.v.list[0].v.num == 3) {
+    if (arglist.length() == 3) {
 	Objid oid;
 
-	if (!arglist.v.list[3].is_obj()) {
+	if (!arglist[3].is_obj()) {
 	    return make_error_pack(E_TYPE);
 	}
 	oid = arglist.v.list[3].v.obj;
@@ -1889,8 +1889,8 @@ static package
 bf_connected_players(const List& arglist, Objid progr)
 {
     shandle *h;
-    int nargs = arglist.v.list[0].v.num;
-    int show_all = (nargs >= 1 && is_true(arglist.v.list[1]));
+    int nargs = arglist.length();
+    int show_all = (nargs >= 1 && is_true(arglist[1]));
     int count = 0;
     Var result;
 
@@ -1914,7 +1914,7 @@ bf_connected_players(const List& arglist, Objid progr)
 static package
 bf_connected_seconds(const List& arglist, Objid progr)
 {				/* (player) */
-    shandle *h = find_shandle(arglist.v.list[1].v.obj);
+    shandle *h = find_shandle(arglist[1].v.obj);
     int n = h && h->connection_time != 0 && !h->disconnect_me
 	? time(0) - h->connection_time
 	: -1;
@@ -1931,7 +1931,7 @@ bf_connected_seconds(const List& arglist, Objid progr)
 static package
 bf_idle_seconds(const List& arglist, Objid progr)
 {				/* (player) */
-    shandle *h = find_shandle(arglist.v.list[1].v.obj);
+    shandle *h = find_shandle(arglist[1].v.obj);
     int n = h && !h->disconnect_me
 	? time(0) - h->last_activity_time
 	: -1;
@@ -1948,7 +1948,7 @@ bf_idle_seconds(const List& arglist, Objid progr)
 static package
 bf_connection_name(const List& arglist, Objid progr)
 {				/* (player) */
-    Objid who = arglist.v.list[1].v.obj;
+    Objid who = arglist[1].v.obj;
     shandle *h = find_shandle(who);
     const char *conn_name;
     Var r;
@@ -1972,11 +1972,9 @@ bf_connection_name(const List& arglist, Objid progr)
 static package
 bf_notify(const List& arglist, Objid progr)
 {				/* (player, string [, no_flush]) */
-    Objid conn = arglist.v.list[1].v.obj;
-    const char *line = arglist.v.list[2].v.str;
-    int no_flush = (arglist.v.list[0].v.num > 2
-		    ? is_true(arglist.v.list[3])
-		    : 0);
+    Objid conn = arglist[1].v.obj;
+    const char *line = arglist[2].v.str;
+    int no_flush = (arglist.length() > 2 ? is_true(arglist[3]) : 0);
     shandle *h = find_shandle(conn);
     Var r;
 
@@ -2011,7 +2009,7 @@ bf_notify(const List& arglist, Objid progr)
 static package
 bf_boot_player(const List& arglist, Objid progr)
 {				/* (object) */
-    Objid oid = arglist.v.list[1].v.obj;
+    Objid oid = arglist[1].v.obj;
 
     free_var(arglist);
 
@@ -2025,9 +2023,9 @@ bf_boot_player(const List& arglist, Objid progr)
 static package
 bf_set_connection_option(const List& arglist, Objid progr)
 {				/* (conn, option, value) */
-    Objid oid = arglist.v.list[1].v.obj;
-    const char *option = arglist.v.list[2].v.str;
-    Var value = arglist.v.list[3];
+    Objid oid = arglist[1].v.obj;
+    const char *option = arglist[2].v.str;
+    Var value = arglist[3];
     shandle *h = find_shandle(oid);
     enum error e = E_NONE;
 
@@ -2049,9 +2047,9 @@ bf_set_connection_option(const List& arglist, Objid progr)
 static package
 bf_connection_options(const List& arglist, Objid progr)
 {				/* (conn [, opt-name]) */
-    Objid oid = arglist.v.list[1].v.obj;
-    int nargs = arglist.v.list[0].v.num;
-    const char *oname = (nargs >= 2 ? arglist.v.list[2].v.str : 0);
+    Objid oid = arglist[1].v.obj;
+    int nargs = arglist.length();
+    const char *oname = (nargs >= 2 ? arglist[2].v.str : 0);
     shandle *h = find_shandle(oid);
     Var ans;
 
@@ -2095,10 +2093,10 @@ find_slistener(Var desc)
 static package
 bf_listen(const List& arglist, Objid progr)
 {				/* (oid, desc) */
-    Objid oid = arglist.v.list[1].v.obj;
-    Var desc = arglist.v.list[2];
-    int nargs = arglist.v.list[0].v.num;
-    int print_messages = nargs >= 3 && is_true(arglist.v.list[3]);
+    Objid oid = arglist[1].v.obj;
+    Var desc = arglist[2];
+    int nargs = arglist.length();
+    int print_messages = nargs >= 3 && is_true(arglist[3]);
     enum error e;
     slistener *l = 0;
 
@@ -2120,7 +2118,7 @@ bf_listen(const List& arglist, Objid progr)
 static package
 bf_unlisten(const List& arglist, Objid progr)
 {				/* (desc) */
-    Var desc = arglist.v.list[1];
+    Var desc = arglist[1];
     enum error e = E_NONE;
     slistener *l = 0;
 
@@ -2161,8 +2159,8 @@ bf_listeners(const List& arglist, Objid progr)
 static package
 bf_buffered_output_length(const List& arglist, Objid progr)
 {				/* ([connection]) */
-    int nargs = arglist.v.list[0].v.num;
-    Objid conn = nargs >= 1 ? arglist.v.list[1].v.obj : 0;
+    int nargs = arglist.length();
+    Objid conn = nargs >= 1 ? arglist[1].v.obj : 0;
     Var r;
 
     free_var(arglist);

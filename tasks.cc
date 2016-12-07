@@ -2139,7 +2139,7 @@ find_verb_for_programming(Objid player, const char *verbref,
 static package
 bf_queue_info(const List& arglist, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
+    int nargs = arglist.length();
     Var res;
 
     if (nargs == 0) {
@@ -2161,7 +2161,7 @@ bf_queue_info(const List& arglist, Objid progr)
 	    count--;
 	}
     } else {
-	Objid who = arglist.v.list[1].v.obj;
+	Objid who = arglist[1].v.obj;
 	tqueue *tq = find_tqueue(who, 0);
 
 	res = Var::new_int(tq ? tq->num_bg_tasks : 0);
@@ -2595,7 +2595,7 @@ kill_task(int id, Objid owner)
 static package
 bf_kill_task(const List& arglist, Objid progr)
 {
-    int id = arglist.v.list[1].v.num;
+    int id = arglist[1].v.num;
     enum error e = kill_task(id, progr);
 
     free_var(arglist);
@@ -2656,12 +2656,12 @@ do_resume(int id, Var value, Objid progr)
 static package
 bf_resume(const List& arglist, Objid progr)
 {
-    int nargs = arglist.v.list[0].v.num;
+    int nargs = arglist.length();
     Var value;
     enum error e;
 
-    value = (nargs >= 2 ? var_ref(arglist.v.list[2]) : zero);
-    e = do_resume(arglist.v.list[1].v.num, value, progr);
+    value = (nargs >= 2 ? var_ref(arglist[2]) : zero);
+    e = do_resume(arglist[1].v.num, value, progr);
     free_var(arglist);
     if (e != E_NONE) {
 	free_var(value);
@@ -2674,7 +2674,7 @@ static package
 bf_output_delimiters(const List& arglist, Objid progr)
 {
     Var r;
-    Objid player = arglist.v.list[1].v.obj;
+    Objid player = arglist[1].v.obj;
 
     free_var(arglist);
 
@@ -2707,10 +2707,9 @@ bf_output_delimiters(const List& arglist, Objid progr)
 static package
 bf_force_input(const List& arglist, Objid progr)
 {				/* (conn, string [, at_front]) */
-    Objid conn = arglist.v.list[1].v.obj;
-    const char *line = arglist.v.list[2].v.str;
-    int at_front = (arglist.v.list[0].v.num > 2
-		    && is_true(arglist.v.list[3]));
+    Objid conn = arglist[1].v.obj;
+    const char *line = arglist[2].v.str;
+    int at_front = (arglist.length() > 2 && is_true(arglist[3]));
     tqueue *tq;
 
     if (!is_wizard(progr) && progr != conn) {
@@ -2726,9 +2725,8 @@ bf_force_input(const List& arglist, Objid progr)
 static package
 bf_flush_input(const List& arglist, Objid progr)
 {				/* (conn [, show_messages]) */
-    Objid conn = arglist.v.list[1].v.obj;
-    int show_messages = (arglist.v.list[0].v.num > 1
-			 && is_true(arglist.v.list[2]));
+    Objid conn = arglist[1].v.obj;
+    int show_messages = (arglist.length() > 1 && is_true(arglist[2]));
     tqueue *tq;
 
     if (!is_wizard(progr) && progr != conn) {
@@ -2749,7 +2747,7 @@ bf_set_task_local(const List& arglist, Objid progr)
 	return make_error_pack(E_PERM);
     }
 
-    Var v = var_ref(arglist.v.list[1]);
+    Var v = var_ref(arglist[1]);
 
     free_var(current_local);
     current_local = v;
@@ -2777,12 +2775,12 @@ bf_task_local(const List& arglist, Objid progr)
 static package
 bf_switch_player(const List& arglist, Objid progr)
 {
-    Objid old_player = arglist.v.list[1].v.obj;
-    Objid new_player = arglist.v.list[2].v.obj;
+    Objid old_player = arglist[1].v.obj;
+    Objid new_player = arglist[2].v.obj;
     int _new = 0;
 
-    if (listlength(arglist) > 2)
-	_new = is_true(arglist.v.list[3]);
+    if (arglist.length() > 2)
+	_new = is_true(arglist[3]);
 
     free_var(arglist);
 

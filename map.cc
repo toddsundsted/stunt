@@ -978,8 +978,8 @@ static package
 bf_mapdelete(const List& arglist, Objid progr)
 {
     Var r;
-    Var map = arglist.v.list[1];
-    Var key = arglist.v.list[2];
+    Var map = arglist[1];
+    Var key = arglist[2];
 
     if (key.is_collection()) {
 	free_var(arglist);
@@ -1017,7 +1017,7 @@ static package
 bf_mapkeys(const List& arglist, Objid progr)
 {
     Var r = new_list(0);
-    mapforeach(arglist.v.list[1], do_map_keys, &r);
+    mapforeach(arglist[1], do_map_keys, &r);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1034,7 +1034,7 @@ static package
 bf_mapvalues(const List& arglist, Objid progr)
 {
     Var r = new_list(0);
-    mapforeach(arglist.v.list[1], do_map_values, &r);
+    mapforeach(arglist[1], do_map_values, &r);
     free_var(arglist);
     return make_var_pack(r);
 }

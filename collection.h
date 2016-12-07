@@ -17,4 +17,4 @@
 
 #include "structures.h"
 
-extern int ismember(Var value, Var list, int case_matters);
+extern int ismember(const Var& value, const Var& collection, int case_matters);

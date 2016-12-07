@@ -40,7 +40,7 @@ add_to_list(void *data, const char *prop_name)
 static package
 bf_properties(const List& arglist, Objid progr)
 {				/* (object) */
-    Var obj = arglist.v.list[1];
+    Var obj = arglist[1];
 
     free_var(arglist);
 
@@ -63,8 +63,8 @@ bf_properties(const List& arglist, Objid progr)
 static package
 bf_prop_info(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
-    Var obj = arglist.v.list[1];
-    const char *pname = arglist.v.list[2].v.str;
+    Var obj = arglist[1];
+    const char *pname = arglist[2].v.str;
     db_prop_handle h;
     Var r;
     unsigned flags;
@@ -187,9 +187,9 @@ set_prop_info(Var obj, const char *pname, Var info, Objid progr)
 static package
 bf_set_prop_info(const List& arglist, Objid progr)
 {				/* (object, prop-name, {owner, perms [, new-name]}) */
-    Var obj = arglist.v.list[1];
-    const char *pname = arglist.v.list[2].v.str;
-    Var info = arglist.v.list[3];
+    Var obj = arglist[1];
+    const char *pname = arglist[2].v.str;
+    Var info = arglist[3];
     enum error e = set_prop_info(obj, pname, info, progr);
 
     free_var(arglist);
@@ -203,10 +203,10 @@ bf_set_prop_info(const List& arglist, Objid progr)
 static package
 bf_add_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name, initial-value, initial-info) */
-    Var obj = arglist.v.list[1];
-    const char *pname = arglist.v.list[2].v.str;
-    Var value = arglist.v.list[3];
-    Var info = arglist.v.list[4];
+    Var obj = arglist[1];
+    const char *pname = arglist[2].v.str;
+    Var value = arglist[3];
+    Var info = arglist[4];
     Objid owner;
     unsigned flags;
     const char *new_name;
@@ -235,8 +235,8 @@ bf_add_prop(const List& arglist, Objid progr)
 static package
 bf_delete_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
-    Var obj = arglist.v.list[1];
-    const char *pname = arglist.v.list[2].v.str;
+    Var obj = arglist[1];
+    const char *pname = arglist[2].v.str;
     enum error e = E_NONE;
 
     if (!obj.is_object())
@@ -259,8 +259,8 @@ bf_delete_prop(const List& arglist, Objid progr)
 static package
 bf_clear_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
-    Var obj = arglist.v.list[1];
-    const char *pname = arglist.v.list[2].v.str;
+    Var obj = arglist[1];
+    const char *pname = arglist[2].v.str;
     db_prop_handle h;
     enum error e;
 
@@ -293,8 +293,8 @@ bf_clear_prop(const List& arglist, Objid progr)
 static package
 bf_is_clear_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
-    Var obj = arglist.v.list[1];
-    const char *pname = arglist.v.list[2].v.str;
+    Var obj = arglist[1];
+    const char *pname = arglist[2].v.str;
     db_prop_handle h;
     Var r;
     enum error e;

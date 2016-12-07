@@ -246,7 +246,7 @@ bf_toobj(const List& arglist, Objid progr)
     int i;
     enum error e;
 
-    e = become_integer(arglist.v.list[1], &i, 0);
+    e = become_integer(arglist[1], &i, 0);
     r = Var::new_obj(i);
 
     free_var(arglist);
@@ -260,7 +260,7 @@ bf_toobj(const List& arglist, Objid progr)
 static package
 bf_typeof(const List& arglist, Objid progr)
 {
-    Var r = Var::new_int((int)arglist.v.list[1].type & TYPE_DB_MASK);
+    Var r = Var::new_int((int)arglist[1].type & TYPE_DB_MASK);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -270,8 +270,8 @@ bf_valid(const List& arglist, Objid progr)
 {				/* (object) */
     Var r;
 
-    if (arglist.v.list[1].is_object()) {
-	r = Var::new_int(is_valid(arglist.v.list[1]));
+    if (arglist[1].is_object()) {
+	r = Var::new_int(is_valid(arglist[1]));
     }
     else {
 	free_var(arglist);
@@ -447,9 +447,9 @@ bf_create_read(void)
 static package
 bf_chparent_chparents(const List& arglist, Objid progr)
 {				/* (OBJ obj, OBJ|LIST what, LIST anon) */
-    Var obj = arglist.v.list[1];
-    Var what = arglist.v.list[2];
-    int n = listlength(arglist);
+    Var obj = arglist[1];
+    Var what = arglist[2];
+    int n = arglist.length();
     Var anon_kids = nothing;
 
     if (!obj.is_object() || !is_obj_or_list_of_objs(what)) {
@@ -462,7 +462,7 @@ bf_chparent_chparents(const List& arglist, Objid progr)
 	return make_error_pack(E_PERM);
     }
     else if (n > 2) {
-	anon_kids = arglist.v.list[3];
+	anon_kids = arglist[3];
     }
 
     if (!is_valid(obj)
@@ -502,14 +502,14 @@ bf_parent(const List& arglist, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (!arglist.v.list[1].is_object()) {
+    if (!arglist[1].is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
-    } else if (!is_valid(arglist.v.list[1])) {
+    } else if (!is_valid(arglist[1])) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
-	r = var_ref(db_object_parents2(arglist.v.list[1]));
+	r = var_ref(db_object_parents2(arglist[1]));
 	free_var(arglist);
     }
 
@@ -531,14 +531,14 @@ bf_parents(const List& arglist, Objid progr)
 {				/* (OBJ object) */
     Var r;
 
-    if (!arglist.v.list[1].is_object()) {
+    if (!arglist[1].is_object()) {
 	free_var(arglist);
 	return make_error_pack(E_TYPE);
-    }  else if (!is_valid(arglist.v.list[1])) {
+    }  else if (!is_valid(arglist[1])) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     } else {
-	r = var_ref(db_object_parents2(arglist.v.list[1]));
+	r = var_ref(db_object_parents2(arglist[1]));
 	free_var(arglist);
     }
 
@@ -558,7 +558,7 @@ bf_parents(const List& arglist, Objid progr)
 static package
 bf_children(const List& arglist, Objid progr)
 {				/* (object) */
-    Var obj = arglist.v.list[1];
+    Var obj = arglist[1];
 
     if (!obj.is_object()) {
 	free_var(arglist);
@@ -576,8 +576,8 @@ bf_children(const List& arglist, Objid progr)
 static package
 bf_ancestors(const List& arglist, Objid progr)
 {				/* (OBJ object) */
-    Var obj = arglist.v.list[1];
-    bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
+    Var obj = arglist[1];
+    bool full = (arglist.length() > 1 && is_true(arglist[2])) ? true : false;
 
     if (!obj.is_object()) {
 	free_var(arglist);
@@ -595,8 +595,8 @@ bf_ancestors(const List& arglist, Objid progr)
 static package
 bf_descendants(const List& arglist, Objid progr)
 {				/* (OBJ object) */
-    Var obj = arglist.v.list[1];
-    bool full = (listlength(arglist) > 1 && is_true(arglist.v.list[2])) ? true : false;
+    Var obj = arglist[1];
+    bool full = (arglist.length() > 1 && is_true(arglist[2])) ? true : false;
 
     if (!obj.is_object()) {
 	free_var(arglist);
@@ -835,7 +835,7 @@ static package
 bf_is_player(const List& arglist, Objid progr)
 {				/* (object) */
     Var r;
-    Objid oid = arglist.v.list[1].v.obj;
+    Objid oid = arglist[1].v.obj;
 
     free_var(arglist);
 
@@ -852,8 +852,8 @@ bf_set_player_flag(const List& arglist, Objid progr)
     Var obj;
     char flag;
 
-    obj = arglist.v.list[1];
-    flag = is_true(arglist.v.list[2]);
+    obj = arglist[1];
+    flag = is_true(arglist[2]);
 
     free_var(arglist);
 
@@ -874,7 +874,7 @@ bf_set_player_flag(const List& arglist, Objid progr)
 static package
 bf_object_bytes(const List& arglist, Objid progr)
 {
-    Var obj = arglist.v.list[1];
+    Var obj = arglist[1];
 
     if (!obj.is_object()) {
 	free_var(arglist);
@@ -897,8 +897,8 @@ bf_object_bytes(const List& arglist, Objid progr)
 static package
 bf_isa(const List& arglist, Objid progr)
 {				/* (object, parent) */
-    Var object = arglist.v.list[1];
-    Var parent = arglist.v.list[2];
+    Var object = arglist[1];
+    Var parent = arglist[2];
 
     if (!object.is_object() || !parent.is_object()) {
 	free_var(arglist);

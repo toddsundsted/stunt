@@ -592,15 +592,15 @@ static package
 bf_length(const List& arglist, Objid progr)
 {
     Var r;
-    switch (arglist.v.list[1].type) {
+    switch (arglist[1].type) {
     case TYPE_LIST:
-	r = Var::new_int(arglist.v.list[1].v.list[0].v.num);
+	r = Var::new_int(listlength(arglist[1]));
 	break;
     case TYPE_MAP:
-	r = Var::new_int(maplength(arglist.v.list[1]));
+	r = Var::new_int(maplength(arglist[1]));
 	break;
     case TYPE_STR:
-	r = Var::new_int(memo_strlen(arglist.v.list[1].v.str));
+	r = Var::new_int(memo_strlen(arglist[1].v.str));
 	break;
     default:
 	free_var(arglist);
@@ -616,8 +616,8 @@ static package
 bf_setadd(const List& arglist, Objid progr)
 {
     Var r;
-    Var lst = var_ref(arglist.v.list[1]);
-    Var elt = var_ref(arglist.v.list[2]);
+    Var lst = var_ref(arglist[1]);
+    Var elt = var_ref(arglist[2]);
 
     free_var(arglist);
 
@@ -631,14 +631,16 @@ bf_setadd(const List& arglist, Objid progr)
     }
 }
 
-
 static package
 bf_setremove(const List& arglist, Objid progr)
 {
     Var r;
+    Var lst = var_ref(arglist[1]);
+    Var elt = var_ref(arglist[2]);
 
-    r = setremove(var_ref(arglist.v.list[1]), arglist.v.list[2]);
     free_var(arglist);
+
+    r = setremove(lst, elt);
 
     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);
@@ -648,24 +650,24 @@ bf_setremove(const List& arglist, Objid progr)
     }
 }
 
-
 static package
 insert_or_append(const List& arglist, int append1)
 {
     int pos;
     Var r;
-    Var lst = var_ref(arglist.v.list[1]);
-    Var elt = var_ref(arglist.v.list[2]);
+    Var lst = var_ref(arglist[1]);
+    Var elt = var_ref(arglist[2]);
 
-    if (arglist.v.list[0].v.num == 2)
+    if (arglist.length() == 2)
 	pos = append1 ? lst.v.list[0].v.num + 1 : 1;
     else {
-	pos = arglist.v.list[3].v.num + append1;
+	pos = arglist[3].v.num + append1;
 	if (pos <= 0)
 	    pos = 1;
 	else if (pos > lst.v.list[0].v.num + 1)
 	    pos = lst.v.list[0].v.num + 1;
     }
+
     free_var(arglist);
 
     r = doinsert(lst, elt, pos);
@@ -677,7 +679,6 @@ insert_or_append(const List& arglist, int append1)
 	return make_space_pack();
     }
 }
-
 
 static package
 bf_listappend(const List& arglist, Objid progr)
@@ -692,18 +693,18 @@ bf_listinsert(const List& arglist, Objid progr)
     return insert_or_append(arglist, 0);
 }
 
-
 static package
 bf_listdelete(const List& arglist, Objid progr)
 {
     Var r;
-    if (arglist.v.list[2].v.num <= 0
-	|| arglist.v.list[2].v.num > arglist.v.list[1].v.list[0].v.num) {
+
+    if (arglist[2].v.num <= 0
+	|| arglist[2].v.num > listlength(arglist[1])) {
 	free_var(arglist);
 	return make_error_pack(E_RANGE);
     }
 
-    r = listdelete(var_ref(arglist.v.list[1]), arglist.v.list[2].v.num);
+    r = listdelete(var_ref(arglist[1]), arglist[2].v.num);
 
     free_var(arglist);
 
@@ -715,15 +716,14 @@ bf_listdelete(const List& arglist, Objid progr)
     }
 }
 
-
 static package
 bf_listset(const List& arglist, Objid progr)
 {
     Var r;
 
-    Var lst = var_ref(arglist.v.list[1]);
-    Var elt = var_ref(arglist.v.list[2]);
-    int pos = arglist.v.list[3].v.num;
+    Var lst = var_ref(arglist[1]);
+    Var elt = var_ref(arglist[2]);
+    int pos = arglist[3].v.num;
 
     free_var(arglist);
 
@@ -743,7 +743,7 @@ bf_listset(const List& arglist, Objid progr)
 static package
 bf_equal(const List& arglist, Objid progr)
 {
-    Var r = Var::new_int(equality(arglist.v.list[1], arglist.v.list[2], 1));
+    Var r = Var::new_int(equality(arglist[1], arglist[2], 1));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -755,9 +755,9 @@ bf_strsub(const List& arglist, Objid progr)
     Stream *s;
     package p;
 
-    if (arglist.v.list[0].v.num == 4)
-	case_matters = is_true(arglist.v.list[4]);
-    if (arglist.v.list[2].v.str[0] == '\0') {
+    if (arglist.length() == 4)
+	case_matters = is_true(arglist[4]);
+    if (arglist[2].v.str[0] == '\0') {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
@@ -765,8 +765,8 @@ bf_strsub(const List& arglist, Objid progr)
     TRY_STREAM;
     try {
 	Var r;
-	stream_add_strsub(s, arglist.v.list[1].v.str, arglist.v.list[2].v.str,
-			  arglist.v.list[3].v.str, case_matters);
+	stream_add_strsub(s, arglist[1].v.str, arglist[2].v.str,
+			  arglist[3].v.str, case_matters);
 	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
@@ -788,7 +788,7 @@ signum(int x)
 static package
 bf_strcmp(const List& arglist, Objid progr)
 {				/* (string1, string2) */
-    Var r = Var::new_int(signum(strcmp(arglist.v.list[1].v.str, arglist.v.list[2].v.str)));
+    Var r = Var::new_int(signum(strcmp(arglist[1].v.str, arglist[2].v.str)));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -800,10 +800,10 @@ bf_strtr(const List& arglist, Objid progr)
     int case_matters = 0;
 
     if (listlength(arglist) > 3)
-	case_matters = is_true(arglist.v.list[4]);
-    r = Var::new_str(strtr(arglist.v.list[1].v.str, memo_strlen(arglist.v.list[1].v.str),
-			   arglist.v.list[2].v.str, memo_strlen(arglist.v.list[2].v.str),
-			   arglist.v.list[3].v.str, memo_strlen(arglist.v.list[3].v.str),
+	case_matters = is_true(arglist[4]);
+    r = Var::new_str(strtr(arglist[1].v.str, memo_strlen(arglist[1].v.str),
+			   arglist[2].v.str, memo_strlen(arglist[2].v.str),
+			   arglist[3].v.str, memo_strlen(arglist[3].v.str),
 			   case_matters));
     free_var(arglist);
     return make_var_pack(r);
@@ -817,17 +817,17 @@ bf_index(const List& arglist, Objid progr)
     int offset = 0;
 
     if (listlength(arglist) > 2)
-	case_matters = is_true(arglist.v.list[3]);
+	case_matters = is_true(arglist[3]);
     if (listlength(arglist) > 3)
-	offset = arglist.v.list[4].v.num;
+	offset = arglist[4].v.num;
     if (offset < 0) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    r = Var::new_int(strindex(arglist.v.list[1].v.str + offset,
-			      memo_strlen(arglist.v.list[1].v.str) - offset,
-			      arglist.v.list[2].v.str,
-			      memo_strlen(arglist.v.list[2].v.str),
+    r = Var::new_int(strindex(arglist[1].v.str + offset,
+			      memo_strlen(arglist[1].v.str) - offset,
+			      arglist[2].v.str,
+			      memo_strlen(arglist[2].v.str),
 			      case_matters));
     free_var(arglist);
     return make_var_pack(r);
@@ -842,17 +842,17 @@ bf_rindex(const List& arglist, Objid progr)
     int offset = 0;
 
     if (listlength(arglist) > 2)
-	case_matters = is_true(arglist.v.list[3]);
+	case_matters = is_true(arglist[3]);
     if (listlength(arglist) > 3)
-	offset = arglist.v.list[4].v.num;
+	offset = arglist[4].v.num;
     if (offset > 0) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    r = Var::new_int(strrindex(arglist.v.list[1].v.str,
-			       memo_strlen(arglist.v.list[1].v.str) + offset,
-			       arglist.v.list[2].v.str,
-			       memo_strlen(arglist.v.list[2].v.str),
+    r = Var::new_int(strrindex(arglist[1].v.str,
+			       memo_strlen(arglist[1].v.str) + offset,
+			       arglist[2].v.str,
+			       memo_strlen(arglist[2].v.str),
 			       case_matters));
 
     free_var(arglist);
@@ -870,8 +870,8 @@ bf_tostr(const List& arglist, Objid progr)
 	Var r;
 	int i;
 
-	for (i = 1; i <= arglist.v.list[0].v.num; i++) {
-	    stream_add_tostr(s, arglist.v.list[i]);
+	for (i = 1; i <= arglist.length(); i++) {
+	    stream_add_tostr(s, arglist[i]);
 	}
 	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
@@ -895,7 +895,7 @@ bf_toliteral(const List& arglist, Objid progr)
     try {
 	Var r;
 
-	unparse_value(s, arglist.v.list[1]);
+	unparse_value(s, arglist[1]);
 	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
@@ -986,10 +986,10 @@ do_match(const List& arglist, int reverse)
     Var ans;
     Match_Indices regs[10];
 
-    subject = arglist.v.list[1].v.str;
-    pattern = arglist.v.list[2].v.str;
-    pat = get_pattern(pattern, (arglist.v.list[0].v.num == 3
-				&& is_true(arglist.v.list[3])));
+    subject = arglist[1].v.str;
+    pattern = arglist[2].v.str;
+    pat = get_pattern(pattern, (arglist.length() == 3
+				&& is_true(arglist[3])));
 
     if (!pat.ptr) {
 	ans = Var::new_err(E_INVARG);
@@ -1095,9 +1095,9 @@ bf_substitute(const List& arglist, Objid progr)
     Stream *s;
     char c = '\0';
 
-    _template = arglist.v.list[1].v.str;
+    _template = arglist[1].v.str;
     template_length = memo_strlen(_template);
-    subs = arglist.v.list[2];
+    subs = arglist[2];
 
     if (check_subs_list(subs)) {
 	free_var(arglist);
@@ -1147,7 +1147,7 @@ bf_substitute(const List& arglist, Objid progr)
 static package
 bf_value_bytes(const List& arglist, Objid progr)
 {
-    Var r = Var::new_int(value_bytes(arglist.v.list[1]));
+    Var r = Var::new_int(value_bytes(arglist[1]));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1156,9 +1156,9 @@ static package
 bf_decode_binary(const List& arglist, Objid progr)
 {
     int length;
-    const char *bytes = binary_to_raw_bytes(arglist.v.list[1].v.str, &length);
-    int nargs = arglist.v.list[0].v.num;
-    int fully = (nargs >= 2 && is_true(arglist.v.list[2]));
+    const char *bytes = binary_to_raw_bytes(arglist[1].v.str, &length);
+    int nargs = arglist.length();
+    int fully = (nargs >= 2 && is_true(arglist[2]));
     Var r;
     int i;
 
