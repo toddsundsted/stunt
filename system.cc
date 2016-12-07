@@ -41,7 +41,7 @@
 /**** built in functions ****/
 
 static package
-bf_getenv(Var arglist, Byte next, void *vdata, Objid progr)
+bf_getenv(const List& arglist, Objid progr)
 {
     package pack;
 

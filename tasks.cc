@@ -2137,7 +2137,7 @@ find_verb_for_programming(Objid player, const char *verbref,
 }
 
 static package
-bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
+bf_queue_info(const List& arglist, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
     Var res;
@@ -2172,7 +2172,7 @@ bf_queue_info(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_task_id(Var arglist, Byte next, void *vdata, Objid progr)
+bf_task_id(const List& arglist, Objid progr)
 {
     Var r = Var::new_int(current_task_id);
     free_var(arglist);
@@ -2327,7 +2327,7 @@ writing_closure(vm the_vm, const char *status, void *data)
 }
 
 static package
-bf_queued_tasks(Var arglist, Byte next, void *vdata, Objid progr)
+bf_queued_tasks(const List& arglist, Objid progr)
 {
     Var tasks;
     int show_all = is_wizard(progr);
@@ -2593,7 +2593,7 @@ kill_task(int id, Objid owner)
 }
 
 static package
-bf_kill_task(Var arglist, Byte next, void *vdata, Objid progr)
+bf_kill_task(const List& arglist, Objid progr)
 {
     int id = arglist.v.list[1].v.num;
     enum error e = kill_task(id, progr);
@@ -2654,7 +2654,7 @@ do_resume(int id, Var value, Objid progr)
 }
 
 static package
-bf_resume(Var arglist, Byte next, void *vdata, Objid progr)
+bf_resume(const List& arglist, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
     Var value;
@@ -2671,7 +2671,7 @@ bf_resume(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_output_delimiters(Var arglist, Byte next, void *vdata, Objid progr)
+bf_output_delimiters(const List& arglist, Objid progr)
 {
     Var r;
     Objid player = arglist.v.list[1].v.obj;
@@ -2705,7 +2705,7 @@ bf_output_delimiters(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_force_input(Var arglist, Byte next, void *vdata, Objid progr)
+bf_force_input(const List& arglist, Objid progr)
 {				/* (conn, string [, at_front]) */
     Objid conn = arglist.v.list[1].v.obj;
     const char *line = arglist.v.list[2].v.str;
@@ -2724,7 +2724,7 @@ bf_force_input(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_flush_input(Var arglist, Byte next, void *vdata, Objid progr)
+bf_flush_input(const List& arglist, Objid progr)
 {				/* (conn [, show_messages]) */
     Objid conn = arglist.v.list[1].v.obj;
     int show_messages = (arglist.v.list[0].v.num > 1
@@ -2742,7 +2742,7 @@ bf_flush_input(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_set_task_local(Var arglist, Byte next, void *vdata, Objid progr)
+bf_set_task_local(const List& arglist, Objid progr)
 {				/* (ANY value) */
     if (!is_wizard(progr)) {
 	free_var(arglist);
@@ -2759,7 +2759,7 @@ bf_set_task_local(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_task_local(Var arglist, Byte next, void *vdata, Objid progr)
+bf_task_local(const List& arglist, Objid progr)
 {
     if (!is_wizard(progr)) {
 	free_var(arglist);
@@ -2775,7 +2775,7 @@ bf_task_local(Var arglist, Byte next, void *vdata, Objid progr)
 /* Concept courtesy of Ryan Smith (http://zanosoft.net/rsgames/moo-switchcon/).
  */
 static package
-bf_switch_player(Var arglist, Byte next, void *vdata, Objid progr)
+bf_switch_player(const List& arglist, Objid progr)
 {
     Objid old_player = arglist.v.list[1].v.obj;
     Objid new_player = arglist.v.list[2].v.obj;

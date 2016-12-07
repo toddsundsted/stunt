@@ -267,6 +267,9 @@ str_ref_to_var(const char *s)
     return r;
 }
 
+struct List : public Var {
+};
+
 /* generic tuples */
 typedef struct var_pair {
     Var a;

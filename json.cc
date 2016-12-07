@@ -495,7 +495,7 @@ static yajl_callbacks callbacks = {
 /**** built in functions ****/
 
 static package
-bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
+bf_parse_json(const List& arglist, Objid progr)
 {
     yajl_handle hand;
     yajl_parser_config cfg = { 1, 1 };
@@ -559,7 +559,7 @@ bf_parse_json(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_generate_json(Var arglist, Byte next, void *vdata, Objid progr)
+bf_generate_json(const List& arglist, Objid progr)
 {
     yajl_gen g;
     yajl_gen_config cfg = { 0, "" };

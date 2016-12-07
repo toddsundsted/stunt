@@ -402,7 +402,7 @@ gc_collect()
 /**** built in functions ****/
 
 static package
-bf_run_gc(Var arglist, Byte next, void *vdata, Objid progr)
+bf_run_gc(const List& arglist, Objid progr)
 {
     free_var(arglist);
 
@@ -415,7 +415,7 @@ bf_run_gc(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_gc_stats(Var arglist, Byte next, void *vdata, Objid progr)
+bf_gc_stats(const List& arglist, Objid progr)
 {
     free_var(arglist);
 

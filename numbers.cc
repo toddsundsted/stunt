@@ -415,7 +415,7 @@ do_power(Var lhs, Var rhs)
 /**** built in functions ****/
 
 static package
-bf_toint(Var arglist, Byte next, void *vdata, Objid progr)
+bf_toint(const List& arglist, Objid progr)
 {
     enum error e;
     int n;
@@ -433,7 +433,7 @@ bf_toint(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_tofloat(Var arglist, Byte next, void *vdata, Objid progr)
+bf_tofloat(const List& arglist, Objid progr)
 {
     enum error e;
     double d;
@@ -451,7 +451,7 @@ bf_tofloat(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_min(Var arglist, Byte next, void *vdata, Objid progr)
+bf_min(const List& arglist, Objid progr)
 {
     Var r;
     int i, nargs = arglist.v.list[0].v.num;
@@ -481,7 +481,7 @@ bf_min(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_max(Var arglist, Byte next, void *vdata, Objid progr)
+bf_max(const List& arglist, Objid progr)
 {
     Var r;
     int i, nargs = arglist.v.list[0].v.num;
@@ -511,7 +511,7 @@ bf_max(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_abs(Var arglist, Byte next, void *vdata, Objid progr)
+bf_abs(const List& arglist, Objid progr)
 {
     Var r;
 
@@ -526,22 +526,22 @@ bf_abs(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
-#define MATH_FUNC(name)							      \
-		static package						      \
-		bf_ ## name(Var arglist, Byte next, void *vdata, Objid progr) \
-		{							      \
-		    double	d;					      \
-									      \
-		    d = *arglist.v.list[1].v.fnum;			      \
-		    errno = 0;						      \
-		    d = name(d);					      \
-		    free_var(arglist);					      \
-		    if (errno == EDOM)					      \
-		        return make_error_pack(E_INVARG);		      \
-		    else if (errno != 0 || !IS_REAL(d))			      \
-			return make_error_pack(E_FLOAT);		      \
-		    else						      \
-			return make_var_pack(Var::new_float(d));	      \
+#define MATH_FUNC(name)							\
+		static package						\
+		bf_ ## name(const List& arglist, Objid progr)		\
+		{							\
+		    double	d;					\
+									\
+		    d = *arglist.v.list[1].v.fnum;			\
+		    errno = 0;						\
+		    d = name(d);					\
+		    free_var(arglist);					\
+		    if (errno == EDOM)					\
+		        return make_error_pack(E_INVARG);		\
+		    else if (errno != 0 || !IS_REAL(d))			\
+			return make_error_pack(E_FLOAT);		\
+		    else						\
+			return make_var_pack(Var::new_float(d));	\
 		}
 
 MATH_FUNC(sqrt)
@@ -558,8 +558,9 @@ MATH_FUNC(log)
 MATH_FUNC(log10)
 MATH_FUNC(ceil)
 MATH_FUNC(floor)
-    static package
-     bf_trunc(Var arglist, Byte next, void *vdata, Objid progr)
+
+static package
+bf_trunc(const List& arglist, Objid progr)
 {
     double d;
 
@@ -579,7 +580,7 @@ MATH_FUNC(floor)
 }
 
 static package
-bf_atan(Var arglist, Byte next, void *vdata, Objid progr)
+bf_atan(const List& arglist, Objid progr)
 {
     double d, dd;
 
@@ -600,7 +601,7 @@ bf_atan(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_time(Var arglist, Byte next, void *vdata, Objid progr)
+bf_time(const List& arglist, Objid progr)
 {
     Var r = Var::new_int(time(0));
     free_var(arglist);
@@ -608,7 +609,7 @@ bf_time(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_ctime(Var arglist, Byte next, void *vdata, Objid progr)
+bf_ctime(const List& arglist, Objid progr)
 {
     Var r;
     time_t c;
@@ -789,7 +790,7 @@ muladdmod(Unsignednum a, Unsignednum b, Unsignednum c, Intnum m)
 }
 
 static package
-bf_random(Var arglist, Byte next, void *vdata, Objid progr)
+bf_random(const List& arglist, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
     int num = (nargs >= 1 ? arglist.v.list[1].v.num : INTNUM_MAX);
@@ -880,7 +881,7 @@ make_space_pack()
 }
 
 static package
-bf_random_bytes(Var arglist, Byte next, void *vdata, Objid progr)
+bf_random_bytes(const List& arglist, Objid progr)
 {				/* (count) */
     Var r;
     package p;
@@ -920,7 +921,7 @@ bf_random_bytes(Var arglist, Byte next, void *vdata, Objid progr)
 #undef ENDTRY_STREAM
 
 static package
-bf_floatstr(Var arglist, Byte next, void *vdata, Objid progr)
+bf_floatstr(const List& arglist, Objid progr)
 {				/* (float, precision [, sci-notation]) */
     double d = *arglist.v.list[1].v.fnum;
     int prec = arglist.v.list[2].v.num;

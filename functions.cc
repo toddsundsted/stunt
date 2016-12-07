@@ -81,6 +81,10 @@ register_bi_functions()
 
 /*** register ***/
 
+enum bft_func_type {
+    SIMPLE, COMPLEX
+};
+
 struct bft_entry {
     const char *name;
     const char *protect_str;
@@ -88,7 +92,11 @@ struct bft_entry {
     int minargs;
     int maxargs;
     var_type *prototype;
-    bf_type func;
+    enum bft_func_type type;
+    union {
+	bf_simple simple;
+	bf_complex complex;
+    } func;
     bf_read_type read;
     bf_write_type write;
     int _protected;
@@ -97,9 +105,8 @@ struct bft_entry {
 static struct bft_entry bf_table[MAX_FUNC];
 static unsigned top_bf_table = 0;
 
-static unsigned
-register_common(const char *name, int minargs, int maxargs, bf_type func,
-		bf_read_type read, bf_write_type write, va_list args)
+static void
+register_common(const char *name, int minargs, int maxargs, va_list args)
 {
     int va_index;
     int num_arg_types = maxargs == -1 ? minargs : maxargs;
@@ -110,7 +117,7 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 
     if (top_bf_table == MAX_FUNC) {
 	errlog("too many functions.  %s cannot be registered.\n", name);
-	return 0;
+	return;
     }
     bf_table[top_bf_table].name = str_dup(name);
     stream_printf(s, "protect_%s", name);
@@ -119,9 +126,6 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
     bf_table[top_bf_table].verb_str = str_dup(reset_stream(s));
     bf_table[top_bf_table].minargs = minargs;
     bf_table[top_bf_table].maxargs = maxargs;
-    bf_table[top_bf_table].func = func;
-    bf_table[top_bf_table].read = read;
-    bf_table[top_bf_table].write = write;
     bf_table[top_bf_table]._protected = 0;
 
     if (num_arg_types > 0)
@@ -131,35 +135,72 @@ register_common(const char *name, int minargs, int maxargs, bf_type func,
 	bf_table[top_bf_table].prototype = 0;
     for (va_index = 0; va_index < num_arg_types; va_index++)
 	bf_table[top_bf_table].prototype[va_index] = (var_type)va_arg(args, int);
+}
 
+unsigned
+register_function(const char *name, int minargs, int maxargs,
+		  bf_simple func,...)
+{
+    va_list args;
+
+    va_start(args, func);
+    register_common(name, minargs, maxargs, args);
+    bf_table[top_bf_table].type = SIMPLE;
+    bf_table[top_bf_table].func.simple = func;
+    bf_table[top_bf_table].read = 0;
+    bf_table[top_bf_table].write = 0;
+    va_end(args);
     return top_bf_table++;
 }
 
 unsigned
 register_function(const char *name, int minargs, int maxargs,
-		  bf_type func,...)
+		  bf_complex func,...)
 {
     va_list args;
-    unsigned ans;
 
     va_start(args, func);
-    ans = register_common(name, minargs, maxargs, func, 0, 0, args);
+    register_common(name, minargs, maxargs, args);
+    bf_table[top_bf_table].type = COMPLEX;
+    bf_table[top_bf_table].func.complex = func;
+    bf_table[top_bf_table].read = 0;
+    bf_table[top_bf_table].write = 0;
     va_end(args);
-    return ans;
+    return top_bf_table++;
 }
 
 unsigned
 register_function_with_read_write(const char *name, int minargs, int maxargs,
-				  bf_type func, bf_read_type read,
+				  bf_simple func, bf_read_type read,
 				  bf_write_type write,...)
 {
     va_list args;
-    unsigned ans;
 
     va_start(args, write);
-    ans = register_common(name, minargs, maxargs, func, read, write, args);
+    register_common(name, minargs, maxargs, args);
+    bf_table[top_bf_table].type = SIMPLE;
+    bf_table[top_bf_table].func.simple = func;
+    bf_table[top_bf_table].read = read;
+    bf_table[top_bf_table].write = write;
     va_end(args);
-    return ans;
+    return top_bf_table++;
+}
+
+unsigned
+register_function_with_read_write(const char *name, int minargs, int maxargs,
+				  bf_complex func, bf_read_type read,
+				  bf_write_type write,...)
+{
+    va_list args;
+
+    va_start(args, write);
+    register_common(name, minargs, maxargs, args);
+    bf_table[top_bf_table].type = COMPLEX;
+    bf_table[top_bf_table].func.complex = func;
+    bf_table[top_bf_table].read = read;
+    bf_table[top_bf_table].write = write;
+    va_end(args);
+    return top_bf_table++;
 }
 
 /*** looking up functions -- by name or num ***/
@@ -190,36 +231,35 @@ number_func_by_name(const char *name)
 /*** calling built-in functions ***/
 
 package
-call_bi_func(unsigned n, Var arglist, Byte func_pc,
+call_bi_func(unsigned n, const Var& value, Byte func_pc,
 	     Objid progr, void *vdata)
-     /* requires arglist.type == TYPE_LIST
-        call_bi_func will free arglist */
+     /* call_bi_func will free value */
 {
     struct bft_entry *f;
 
     if (n >= top_bf_table) {
 	errlog("CALL_BI_FUNC: Unknown function number: %d\n", n);
-	free_var(arglist);
+	free_var(value);
 	return no_var_pack();
     }
     f = bf_table + n;
 
     if (func_pc == 1) {		/* check arg types and count *ONLY* for first entry */
 	int k, max;
-	Var *args = arglist.v.list;
+	Var *args = value.v.list;
 
 	/*
 	 * Check permissions, if protected
 	 */
 	if ((!caller().is_obj() || caller().v.obj != SYSTEM_OBJECT) && f->_protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
-	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, Var::new_obj(SYSTEM_OBJECT), arglist, 0);
+	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, Var::new_obj(SYSTEM_OBJECT), value, 0);
 
 	    if (e == E_NONE)
 		return tail_call_pack();
 
 	    if (e == E_MAXREC || !is_wizard(progr)) {
-		free_var(arglist);
+		free_var(value);
 		return make_error_pack(e == E_MAXREC ? e : E_PERM);
 	    }
 	}
@@ -229,7 +269,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	 */
 	if (args[0].v.num < f->minargs
 	    || (f->maxargs != -1 && args[0].v.num > f->maxargs)) {
-	    free_var(arglist);
+	    free_var(value);
 	    return make_error_pack(E_ARGS);
 	}
 	/*
@@ -245,7 +285,7 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 		  || (proto == TYPE_NUMERIC && (arg == TYPE_INT
 						|| arg == TYPE_FLOAT))
 		  || proto == arg)) {
-		free_var(arglist);
+		free_var(value);
 		return make_error_pack(E_TYPE);
 	    }
 	}
@@ -253,13 +293,21 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	/* This is a return from calling #0:bf_FUNCNAME(@ARGS); return what
 	 * it returned.  If it errored, what we do will be ignored.
 	 */
-	return make_var_pack(arglist);
+	return make_var_pack(value);
     }
     /*
      * do the function
+     * f->func is responsible for freeing/using up value.
      */
-    return (*(f->func)) (arglist, func_pc, vdata, progr);
-    /* f->func is responsible for freeing/using up arglist. */
+    if (SIMPLE == f->type && value.is_list()) {
+	return (*(f->func.simple)) (static_cast<const List&>(value), progr);
+    } else if (COMPLEX == f->type) {
+	return (*(f->func.complex)) (value, progr, func_pc, vdata);
+    } else {
+	panic("Error in call_bi_func()");
+	/* dead code - eliminate compiler warning */
+	return no_var_pack();
+    }
 }
 
 void
@@ -411,7 +459,7 @@ function_description(int i)
 }
 
 static package
-bf_function_info(Var arglist, Byte next, void *vdata, Objid progr)
+bf_function_info(const List& arglist, Objid progr)
 {
     Var r;
     unsigned int i;
@@ -474,7 +522,7 @@ load_server_options(void)
 }
 
 static package
-bf_load_server_options(Var arglist, Byte next, void *vdata, Objid progr)
+bf_load_server_options(const List& arglist, Objid progr)
 {
     free_var(arglist);
 

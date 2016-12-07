@@ -128,7 +128,7 @@ stdin_suspender(vm the_vm, void *data)
 }
 
 static package
-bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
+bf_read_stdin(const List& arglist, Objid progr)
 {
     stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
 
@@ -141,7 +141,7 @@ bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
 #include "utils.h"
 
 static package
-bf_verb_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+bf_verb_cache_stats(const List& arglist, Objid progr)
 {
     Var r;
 
@@ -156,7 +156,7 @@ bf_verb_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+bf_log_cache_stats(const List& arglist, Objid progr)
 {
     free_var(arglist);
 

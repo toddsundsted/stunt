@@ -975,7 +975,7 @@ clear_node_value(const rbnode *node)
 /**** built in functions ****/
 
 static package
-bf_mapdelete(Var arglist, Byte next, void *vdata, Objid progr)
+bf_mapdelete(const List& arglist, Objid progr)
 {
     Var r;
     Var map = arglist.v.list[1];
@@ -1014,7 +1014,7 @@ do_map_keys(Var key, Var value, void *data, int first)
 }
 
 static package
-bf_mapkeys(Var arglist, Byte next, void *vdata, Objid progr)
+bf_mapkeys(const List& arglist, Objid progr)
 {
     Var r = new_list(0);
     mapforeach(arglist.v.list[1], do_map_keys, &r);
@@ -1031,7 +1031,7 @@ do_map_values(Var key, Var value, void *data, int first)
 }
 
 static package
-bf_mapvalues(Var arglist, Byte next, void *vdata, Objid progr)
+bf_mapvalues(const List& arglist, Objid progr)
 {
     Var r = new_list(0);
     mapforeach(arglist.v.list[1], do_map_values, &r);

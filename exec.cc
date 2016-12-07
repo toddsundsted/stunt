@@ -342,7 +342,7 @@ exec_waiter_suspender(vm the_vm, void *data)
 }
 
 static package
-bf_exec(Var arglist, Byte next, void *vdata, Objid progr)
+bf_exec(const List& arglist, Objid progr)
 {
     package pack;
 

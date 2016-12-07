@@ -192,7 +192,7 @@ add_command_to_history(Objid player, const char *command)
 /**** built in functions ****/
 
 static package
-bf_server_log(Var arglist, Byte next, void *vdata, Objid progr)
+bf_server_log(const List& arglist, Objid progr)
 {
     if (!is_wizard(progr)) {
 	free_var(arglist);

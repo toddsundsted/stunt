@@ -71,7 +71,7 @@ ismember(Var lhs, Var rhs, int case_matters)
 /**** built in functions ****/
 
 static package
-bf_is_member(Var arglist, Byte next, void *vdata, Objid progr)
+bf_is_member(const List& arglist, Objid progr)
 {
     Var r;
     Var rhs = arglist.v.list[2];

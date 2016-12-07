@@ -68,7 +68,8 @@ package make_call_pack(Byte pc, void *data);
 package tail_call_pack(void);
 package make_suspend_pack(enum error (*)(vm, void *), void *);
 
-typedef package(*bf_type) (Var, Byte, void *, Objid);
+typedef package(*bf_simple) (const List&, Objid);
+typedef package(*bf_complex) (const Var&, Objid, Byte, void *);
 typedef void (*bf_write_type) (void *vdata);
 typedef void *(*bf_read_type) (void);
 
@@ -76,18 +77,23 @@ typedef void *(*bf_read_type) (void);
 #define FUNC_NOT_FOUND   MAX_FUNC
 /* valid function numbers are 0 - 255, or a total of 256 of them.
    function number 256 is reserved for func_not_found signal.
-   hence valid function numbers will fit in one byte but the 
+   hence valid function numbers will fit in one byte but the
    func_not_found signal will not */
 
 extern const char *name_func_by_num(unsigned);
 extern unsigned number_func_by_name(const char *);
 
-extern unsigned register_function(const char *, int, int, bf_type,...);
-extern unsigned register_function_with_read_write(const char *, int, int,
-						  bf_type, bf_read_type,
-						  bf_write_type,...);
+extern unsigned register_function(const char *, int, int, bf_simple, ...);
+extern unsigned register_function(const char *, int, int, bf_complex, ...);
 
-extern package call_bi_func(unsigned, Var, Byte, Objid, void *);
+extern unsigned register_function_with_read_write(const char *, int, int,
+						  bf_simple, bf_read_type,
+						  bf_write_type, ...);
+extern unsigned register_function_with_read_write(const char *, int, int,
+						  bf_complex, bf_read_type,
+						  bf_write_type, ...);
+
+extern package call_bi_func(unsigned, const Var&, Byte, Objid, void *);
 /* will free or use Var arglist */
 
 extern void write_bi_func_data(void *vdata, Byte f_id);

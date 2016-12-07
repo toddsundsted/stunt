@@ -2883,28 +2883,28 @@ struct cf_state {
 };
 
 static package
-bf_call_function(Var arglist, Byte next, void *vdata, Objid progr)
+bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
 {
     package p;
     unsigned fnum;
     struct cf_state *s;
 
     if (next == 1) {		/* first call */
-	const char *fname = arglist.v.list[1].v.str;
+	const char *fname = value.v.list[1].v.str;
 
 	fnum = number_func_by_name(fname);
 	if (fnum == FUNC_NOT_FOUND) {
 	    p = make_raise_pack(E_INVARG, "Unknown built-in function",
-				var_ref(arglist.v.list[1]));
-	    free_var(arglist);
+				var_ref(value.v.list[1]));
+	    free_var(value);
 	} else {
-	    arglist = listdelete(arglist, 1);
-	    p = call_bi_func(fnum, arglist, next, progr, vdata);
+	    value = listdelete(value, 1);
+	    p = call_bi_func(fnum, value, next, progr, vdata);
 	}
     } else {			/* return to function */
 	s = (struct cf_state *)vdata;
 	fnum = s->fnum;
-	p = call_bi_func(fnum, arglist, next, progr, s->data);
+	p = call_bi_func(fnum, value, next, progr, s->data);
 	free_data(s);
     }
 
@@ -2946,7 +2946,7 @@ bf_call_function_read(void)
 }
 
 static package
-bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
+bf_raise(const List& arglist, Objid progr)
 {
     package p;
     int nargs = arglist.v.list[0].v.num;
@@ -2967,7 +2967,7 @@ bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
+bf_suspend(const List& arglist, Objid progr)
 {
     static int seconds;
     int nargs = arglist.v.list[0].v.num;
@@ -2985,7 +2985,7 @@ bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_read(Var arglist, Byte next, void *vdata, Objid progr)
+bf_read(const List& arglist, Objid progr)
 {				/* ([object [, non_blocking]]) */
     int argc = arglist.v.list[0].v.num;
     static Objid connection;
@@ -3023,7 +3023,7 @@ bf_read(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_read_http(Var arglist, Byte next, void *vdata, Objid progr)
+bf_read_http(const List& arglist, Objid progr)
 {				/* ("request" | "response" [, object]) */
     int argc = arglist.v.list[0].v.num;
     static Objid connection;
@@ -3063,7 +3063,7 @@ bf_read_http(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_seconds_left(Var arglist, Byte next, void *vdata, Objid progr)
+bf_seconds_left(const List& arglist, Objid progr)
 {
     Var r = Var::new_int(timer_wakeup_interval(task_alarm_id));
     free_var(arglist);
@@ -3071,7 +3071,7 @@ bf_seconds_left(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
+bf_ticks_left(const List& arglist, Objid progr)
 {
     Var r = Var::new_int(ticks_remaining);
     free_var(arglist);
@@ -3079,7 +3079,7 @@ bf_ticks_left(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
+bf_pass(const List& arglist, Objid progr)
 {
     enum error e = call_verb2(RUN_ACTIV.recv, RUN_ACTIV.verb, RUN_ACTIV._this, arglist, 1);
 
@@ -3091,7 +3091,7 @@ bf_pass(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_set_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
+bf_set_task_perms(const List& arglist, Objid progr)
 {				/* (player) */
     /* warning!!  modifies top activation */
     Objid oid = arglist.v.list[1].v.obj;
@@ -3106,7 +3106,7 @@ bf_set_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
+bf_task_perms(const List& arglist, Objid progr)
 {				/* () */
     Var r = Var::new_obj(RUN_ACTIV.progr);
     free_var(arglist);
@@ -3114,7 +3114,7 @@ bf_task_perms(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_caller_perms(Var arglist, Byte next, void *vdata, Objid progr)
+bf_caller_perms(const List& arglist, Objid progr)
 {				/* () */
     Var r;
     if (top_activ_stack == 0)
@@ -3126,7 +3126,7 @@ bf_caller_perms(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_callers(Var arglist, Byte next, void *vdata, Objid progr)
+bf_callers(const List& arglist, Objid progr)
 {
     int line_numbers_too = 0;
 
@@ -3140,7 +3140,7 @@ bf_callers(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_task_stack(Var arglist, Byte next, void *vdata, Objid progr)
+bf_task_stack(const List& arglist, Objid progr)
 {
     int nargs = arglist.v.list[0].v.num;
     int id = arglist.v.list[1].v.num;

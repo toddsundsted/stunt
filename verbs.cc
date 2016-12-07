@@ -50,7 +50,7 @@ add_to_list(void *data, const char *verb_name)
 }
 
 static package
-bf_verbs(Var arglist, Byte next, void *vdata, Objid progr)
+bf_verbs(const List& arglist, Objid progr)
 {				/* (object) */
     Var obj = arglist.v.list[1];
 
@@ -171,7 +171,7 @@ validate_verb_args(Var v, db_arg_spec * dobj, db_prep_spec * prep,
 }
 
 static package
-bf_add_verb(Var arglist, Byte next, void *vdata, Objid progr)
+bf_add_verb(const List& arglist, Objid progr)
 {				/* (object, info, args) */
     Var obj = arglist.v.list[1];
     Var info = arglist.v.list[2];
@@ -235,7 +235,7 @@ find_described_verb(Var obj, Var desc)
 }
 
 static package
-bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
+bf_delete_verb(const List& arglist, Objid progr)
 {				/* (object, verb-desc) */
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
@@ -267,7 +267,7 @@ bf_delete_verb(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
+bf_verb_info(const List& arglist, Objid progr)
 {				/* (object, verb-desc) */
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
@@ -313,7 +313,7 @@ bf_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_set_verb_info(Var arglist, Byte next, void *vdata, Objid progr)
+bf_set_verb_info(const List& arglist, Objid progr)
 {				/* (object, verb-desc, {owner, flags, names}) */
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
@@ -374,7 +374,7 @@ unparse_arg_spec(db_arg_spec spec)
 }
 
 static package
-bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
+bf_verb_args(const List& arglist, Objid progr)
 {				/* (object, verb-desc) */
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
@@ -413,7 +413,7 @@ bf_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_set_verb_args(Var arglist, Byte next, void *vdata, Objid progr)
+bf_set_verb_args(const List& arglist, Objid progr)
 {				/* (object, verb-desc, {dobj, prep, iobj}) */
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
@@ -458,7 +458,7 @@ lister(void *data, const char *line)
 }
 
 static package
-bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
+bf_verb_code(const List& arglist, Objid progr)
 {				/* (object, verb-desc [, fully-paren [, indent]]) */
     int nargs = arglist.v.list[0].v.num;
     Var obj = arglist.v.list[1];
@@ -493,7 +493,7 @@ bf_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
+bf_set_verb_code(const List& arglist, Objid progr)
 {				/* (object, verb-desc, code) */
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];
@@ -537,7 +537,7 @@ bf_set_verb_code(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_respond_to(Var arglist, Byte next, void *data, Objid progr)
+bf_respond_to(const List& arglist, Objid progr)
 {
     Var object = arglist.v.list[1];
     const char *verb = arglist.v.list[2].v.str;
@@ -587,22 +587,22 @@ all_strings(Var arglist)
 }
 
 static package
-bf_eval(Var arglist, Byte next, void *data, Objid progr)
+bf_eval(const Var& value, Objid progr, Byte next, void *vdata)
 {
     package p;
     if (next == 1) {
 
 	if (!is_programmer(progr)) {
-	    free_var(arglist);
+	    free_var(value);
 	    p = make_error_pack(E_PERM);
-	} else if (!all_strings(arglist)) {
-	    free_var(arglist);
+	} else if (!all_strings(value)) {
+	    free_var(value);
 	    p = make_error_pack(E_TYPE);
 	} else {
 	    Var errors;
-	    Program *program = parse_list_as_program(arglist, &errors);
+	    Program *program = parse_list_as_program(value, &errors);
 
-	    free_var(arglist);
+	    free_var(value);
 
 	    if (program) {
 		free_var(errors);
@@ -626,7 +626,7 @@ bf_eval(Var arglist, Byte next, void *data, Objid progr)
 
 	r = new_list(2);
 	r.v.list[1] = Var::new_int(1);
-	r.v.list[2] = arglist;
+	r.v.list[2] = value;
 	p = make_var_pack(r);
     }
     return p;

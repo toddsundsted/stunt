@@ -53,7 +53,7 @@ static const unsigned char url_safe_base64_chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 static package
-bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
+bf_encode_base64(const List& arglist, Objid progr)
 {
     const int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
     const unsigned char *chars = safe ? url_safe_base64_chars : base64_chars;
@@ -153,7 +153,7 @@ static const unsigned char url_safe_base64_table[] = {
 };
 
 static package
-bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
+bf_decode_base64(const List& arglist, Objid progr)
 {
     const int safe = arglist.v.list[0].v.num > 1 && is_true(arglist.v.list[2]);
     const unsigned char *table = safe ? url_safe_base64_table : base64_table;

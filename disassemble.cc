@@ -455,7 +455,7 @@ add_line(const char *line, void *data)
 }
 
 static package
-bf_disassemble(Var arglist, Byte next, void *vdata, Objid progr)
+bf_disassemble(const List& arglist, Objid progr)
 {
     Var obj = arglist.v.list[1];
     Var desc = arglist.v.list[2];

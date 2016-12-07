@@ -226,7 +226,7 @@ DEF_HMAC(hmac_sha256, 32)
 /**** built in functions ****/
 
 static package
-bf_salt(Var arglist, Byte next, void *vdata, Objid progr)
+bf_salt(const List& arglist, Objid progr)
 {				/* (prefix, input) */
     Var r;
     package p;
@@ -297,7 +297,7 @@ bf_salt(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
+bf_crypt(const List& arglist, Objid progr)
 {				/* (string, [salt]) */
     Var r;
     package p;
@@ -382,7 +382,7 @@ make_space_pack()
 }
 
 static package
-bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
+bf_string_hash(const List& arglist, Objid progr)
 {
     Var r;
     int nargs = arglist.v.list[0].v.num;
@@ -414,7 +414,7 @@ bf_string_hash(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
+bf_binary_hash(const List& arglist, Objid progr)
 {
     package p;
 
@@ -460,7 +460,7 @@ bf_binary_hash(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
+bf_value_hash(const List& arglist, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
@@ -505,7 +505,7 @@ bf_value_hash(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+bf_string_hmac(const List& arglist, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
@@ -560,7 +560,7 @@ bf_string_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+bf_binary_hmac(const List& arglist, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
@@ -626,7 +626,7 @@ bf_binary_hmac(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_value_hmac(Var arglist, Byte next, void *vdata, Objid progr)
+bf_value_hmac(const List& arglist, Objid progr)
 {
     package p;
     Stream *s = new_stream(100);
