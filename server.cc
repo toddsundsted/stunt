@@ -882,7 +882,6 @@ emergency_mode()
 	else if (*line == ';') {	/* eval command */
 	    Var code, errors;
 	    Program *program;
-	    Var str;
 
 	    code = new_list(0);
 
@@ -961,7 +960,7 @@ emergency_mode()
 					      &message, &vname);
 		printf("%s\n", message);
 		if (h.ptr) {
-		    Var code, str, errors;
+		    Var code, errors;
 		    const char *line;
 		    Program *program;
 
