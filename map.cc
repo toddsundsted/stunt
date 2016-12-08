@@ -849,7 +849,7 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(_new.v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic("MAPRANGE: rbinsert failed");
     } while (pnode != to->it);
 
     free_var(map);
@@ -875,7 +875,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
     enum error e = E_NONE;
 
     if (_new == NULL)
-	panic("MAP_DUP: new is NULL");
+	panic("MAPRANGESET: new is NULL");
 
     free_var(*_new);
     *_new = empty_map();
@@ -886,7 +886,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
 	if (!rbinsert(_new->v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic("MAPRANGESET: rbinsert failed");
     }
 
     for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
@@ -894,7 +894,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 	node.value = var_ref(pnode->value);
 	rberase(_new->v.tree, &node);
 	if (!rbinsert(_new->v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic("MAPRANGESET: rbinsert failed");
     }
 
     while ((pnode = rbtnext(to))) {
@@ -902,7 +902,7 @@ maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
 	node.value = var_ref(pnode->value);
 	rberase(_new->v.tree, &node);
 	if (!rbinsert(_new->v.tree, &node))
-	    panic("MAP_DUP: rbinsert failed");
+	    panic("MAPRANGESET: rbinsert failed");
     }
 
     free_var(map);
