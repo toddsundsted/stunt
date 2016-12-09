@@ -195,7 +195,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_MAP:
 	if (delref(v.v.tree) == 0) {
-	    destroy_map(v);
+	    destroy_map(static_cast<Map&>(v));
 	    gc_set_color(v.v.tree, GC_BLACK);
 	    if (!gc_is_buffered(v.v.tree))
 		myfree(v.v.tree, M_TREE);
@@ -205,7 +205,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_ITER:
 	if (delref(v.v.trav) == 0)
-	    destroy_iter(v);
+	    destroy_iter(static_cast<Iter&>(v));
 	break;
     case TYPE_ANON:
 	/* The first time an anonymous object's reference count drops
@@ -259,11 +259,11 @@ complex_free_var(Var v)
 	break;
     case TYPE_MAP:
 	if (delref(v.v.tree) == 0)
-	    destroy_map(v);
+	    destroy_map(static_cast<Map&>(v));
 	break;
     case TYPE_ITER:
 	if (delref(v.v.trav) == 0)
-	    destroy_iter(v);
+	    destroy_iter(static_cast<Iter&>(v));
 	break;
     case TYPE_ANON:
 	if (v.v.anon && delref(v.v.anon) == 0) {
@@ -358,13 +358,13 @@ complex_var_dup(Var v)
 	v = list_dup(v);
 	break;
     case TYPE_MAP:
-	v = map_dup(v);
+	v = map_dup(static_cast<const Map&>(v));
 	break;
     case TYPE_ITER:
-	v = iter_dup(v);
+	panic("cannot var_dup() iterators");
 	break;
     case TYPE_ANON:
-	panic("cannot var_dup() anonymous objects\n");
+	panic("cannot var_dup() anonymous objects");
 	break;
     }
     return v;
@@ -407,7 +407,7 @@ is_true(Var v)
 	    || (v.is_float() && *v.v.fnum != 0.0)
 	    || (v.is_str() && v.v.str && *v.v.str != '\0')
 	    || (v.is_list() && listlength(v) != 0)
-	    || (v.is_map() && !mapempty(v)));
+	    || (v.is_map() && !mapempty(static_cast<const Map&>(v))));
 }
 
 /* What is the sound of the comparison:
@@ -475,7 +475,9 @@ equality(Var lhs, Var rhs, int case_matters)
 	case TYPE_LIST:
 	    return listequal(lhs, rhs, case_matters);
 	case TYPE_MAP:
-	    return mapequal(lhs, rhs, case_matters);
+	    return mapequal(static_cast<const Map&>(lhs),
+			    static_cast<const Map&>(rhs),
+			    case_matters);
 	case TYPE_ANON:
 	    return lhs.v.anon == rhs.v.anon;
 	default:

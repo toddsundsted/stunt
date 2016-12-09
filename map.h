@@ -29,34 +29,33 @@
 
 #include "structures.h"
 
-extern Var new_map(void);
-extern void destroy_map(Var map);
-extern Var map_dup(Var map);
+extern Map new_map(void);
+extern void destroy_map(Map& map);
+extern Map map_dup(const Map& map);
 
-extern Var mapinsert(Var map, Var key, Var value);
-extern const rbnode *maplookup(Var map, Var key, Var *value, int case_matters);
-extern int mapseek(Var map, Var key, Var *iter, int case_matters);
-extern int mapequal(Var lhs, Var rhs, int case_matters);
-extern int32 maplength(Var map);
-extern int mapempty(Var map);
+extern Map mapinsert(const Map& map, Var key, Var value);
+extern const rbnode* maplookup(const Map& map, Var key, Var* value, int case_matters);
+extern int mapseek(const Map& map, Var key, Iter* iter, int case_matters);
+extern int mapequal(const Map& lhs, const Map& rhs, int case_matters);
+extern int32 maplength(const Map& map);
+extern int mapempty(const Map& map);
 
 extern int map_sizeof(rbtree *tree);
 
-extern int mapfirst(Var map, var_pair *pair);
-extern int maplast(Var map, var_pair *pair);
+extern int mapfirst(const Map& map, var_pair *pair);
+extern int maplast(const Map& map, var_pair *pair);
 
-extern Var new_iter(Var map);
-extern void destroy_iter(Var iter);
-extern Var iter_dup(Var iter);
+extern Iter new_iter(const Map& map);
+extern void destroy_iter(Iter iter);
 
-extern int iterget(Var iter, var_pair *pair);
-extern void iternext(Var iter);
+extern int iterget(const Iter& iter, var_pair *pair);
+extern void iternext(Iter& iter);
 
-extern Var maprange(Var map, rbtrav *from, rbtrav *to);
-extern enum error maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new);
+extern Map maprange(const Map& map, rbtrav *from, rbtrav *to);
+extern Map maprangeset(const Map& map, rbtrav *from, rbtrav *to, const Map& values);
 
 typedef int (*mapfunc) (Var key, Var value, void *data, int first);
-extern int mapforeach(Var map, mapfunc func, void *data);
+extern int mapforeach(const Map& map, mapfunc func, void *data);
 
 /* You're never going to need to use this!
  * Clears a node in place by setting the associated value type to

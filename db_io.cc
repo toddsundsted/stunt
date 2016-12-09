@@ -242,7 +242,7 @@ dbio_read_var(void)
 	    Var key, value;
 	    key = dbio_read_var();
 	    value = dbio_read_var();
-	    r = mapinsert(r, key, value);
+	    r = mapinsert(static_cast<const Map&>(r), key, value);
 	}
 	break;
     case _TYPE_LIST:
@@ -396,7 +396,7 @@ dbio_write_var(Var v)
     /* don't write out the iterator */
     if (v.type == TYPE_ITER) {
 	var_pair pair;
-	iterget(v, &pair)
+	iterget(static_cast<const Iter&>(v), &pair)
 	    ? dbio_write_var(pair.a)
 	    : dbio_write_var(clear);
 	return;
@@ -422,8 +422,8 @@ dbio_write_var(Var v)
 	dbio_write_float(*v.v.fnum);
 	break;
     case TYPE_MAP:
-        dbio_write_num(maplength(v));
-        mapforeach(v, dbio_write_map, NULL);
+        dbio_write_num(maplength(static_cast<const Map&>(v)));
+        mapforeach(static_cast<const Map&>(v), dbio_write_map, NULL);
         break;
     case TYPE_LIST:
 	dbio_write_num(v.v.list[0].v.num);

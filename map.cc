@@ -572,10 +572,10 @@ rbtprev(rbtrav *trav)
 
 /********/
 
-static Var
+static Map
 empty_map(void)
 {
-    Var map;
+    Map map;
     rbtree *tree;
 
     if ((tree = rbnew()) == NULL)
@@ -587,10 +587,10 @@ empty_map(void)
     return map;
 }
 
-Var
+Map
 new_map(void)
 {
-    static Var map;
+    static Map map;
 
     if (map.v.tree == NULL)
 	map = empty_map();
@@ -606,19 +606,19 @@ new_map(void)
 
 /* called from utils.c */
 void
-destroy_map(Var map)
+destroy_map(Map& map)
 {
     rbdelete(map.v.tree);
 }
 
 /* called from utils.c */
-Var
-map_dup(Var map)
+Map
+map_dup(const Map& map)
 {
     rbtrav trav;
     rbnode node;
     const rbnode *pnode;
-    Var _new = empty_map();
+    Map _new = empty_map();
 
     for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
@@ -659,8 +659,8 @@ map_sizeof(rbtree *tree)
     return size;
 }
 
-Var
-mapinsert(Var map, Var key, Var value)
+Map
+mapinsert(const Map& map, Var key, Var value)
 {				/* consumes `map', `key', `value' */
     /* Prevent the insertion of invalid values -- specifically keys
      * that have the values `none' and `clear' (which are used as
@@ -670,7 +670,7 @@ mapinsert(Var map, Var key, Var value)
     if (key.is_none() || key.is_clear() || key.is_collection())
 	panic("MAPINSERT: invalid key");
 
-    Var _new = map;
+    Map _new = map;
 
     if (var_refcount(map) > 1) {
 	_new = map_dup(map);
@@ -699,7 +699,7 @@ mapinsert(Var map, Var key, Var value)
 }
 
 const rbnode *
-maplookup(Var map, Var key, Var *value, int case_matters)
+maplookup(const Map& map, Var key, Var *value, int case_matters)
 {				/* does NOT consume `map' or `'key',
 				   does NOT increment the ref count on `value' */
     rbnode node;
@@ -717,26 +717,26 @@ maplookup(Var map, Var key, Var *value, int case_matters)
  * returns an iterator value for the map starting at that key.
  */
 int
-mapseek(Var map, Var key, Var *iter, int case_matters)
+mapseek(const Map& map, Var key, Iter* iter, int case_matters)
 {				/* does NOT consume `map' or `'key',
-				   ALWAYS returns a newly allocated value in `iter' */
+				   if `key' is found in `map', frees `iter' and
+				   returns a newly allocated value in `iter' */
     rbnode node;
     rbtrav *ptrav;
 
     node.key = key;
     ptrav = rbseek(map.v.tree, &node, case_matters);
-    if (ptrav && iter) {
+    if (iter && ptrav) {
+	free_var(*iter);
 	iter->type = TYPE_ITER;
 	iter->v.trav = ptrav;
-    } else if (iter) {
-	*iter = none;
     }
 
     return ptrav != NULL;
 }
 
 int
-mapequal(Var lhs, Var rhs, int case_matters)
+mapequal(const Map& lhs, const Map& rhs, int case_matters)
 {
     rbtrav trav_lhs, trav_rhs;
     const rbnode *pnode_lhs = NULL, *pnode_rhs = NULL;
@@ -762,13 +762,13 @@ mapequal(Var lhs, Var rhs, int case_matters)
 }
 
 int
-mapempty(Var map)
+mapempty(const Map& map)
 {
     return map.v.tree->size == 0;
 }
 
 int32
-maplength(Var map)
+maplength(const Map& map)
 {
     return map.v.tree->size;
 }
@@ -779,7 +779,7 @@ maplength(Var map)
  * is in effect.
  */
 int
-mapforeach(Var map, mapfunc func, void *data)
+mapforeach(const Map& map, mapfunc func, void *data)
 {				/* does NOT consume `map' */
     rbtrav trav;
     const rbnode *pnode;
@@ -796,7 +796,7 @@ mapforeach(Var map, mapfunc func, void *data)
 }
 
 int
-mapfirst(Var map, var_pair *pair)
+mapfirst(const Map& map, var_pair *pair)
 {
     rbnode *node = map.v.tree->root;
 
@@ -815,7 +815,7 @@ mapfirst(Var map, var_pair *pair)
 }
 
 int
-maplast(Var map, var_pair *pair)
+maplast(const Map& map, var_pair *pair)
 {
     rbnode *node = map.v.tree->root;
 
@@ -836,12 +836,12 @@ maplast(Var map, var_pair *pair)
 /* Returns the specified range from the map.  `from' and `to' must be
  * valid iterators for the map or the behavior is unspecified.
  */
-Var
-maprange(Var map, rbtrav *from, rbtrav *to)
+Map
+maprange(const Map& map, rbtrav *from, rbtrav *to)
 {				/* consumes `map' */
     rbnode node;
     const rbnode *pnode = NULL;
-    Var _new = empty_map();
+    Map _new = empty_map();
 
     do {
 	pnode = pnode == NULL ? from->it : rbtnext(from);
@@ -862,63 +862,55 @@ maprange(Var map, rbtrav *from, rbtrav *to)
 }
 
 /* Replaces the specified range in the map.  `from' and `to' must be
- * valid iterators for the map or the behavior is unspecified.  The
- * new map is placed in `new' (`new' is first freed).  Returns
- * `E_NONE' if successful.
+ * valid iterators for the map or the behavior is unspecified.
  */
-enum error
-maprangeset(Var map, rbtrav *from, rbtrav *to, Var value, Var *_new)
-{				/* consumes `map', `value' */
+Map
+maprangeset(const Map& map, rbtrav *from, rbtrav *to, const Map& values)
+{				/* consumes `map', `values' */
     rbtrav trav;
     rbnode node;
     const rbnode *pnode = NULL;
-    enum error e = E_NONE;
-
-    if (_new == NULL)
-	panic("MAPRANGESET: new is NULL");
-
-    free_var(*_new);
-    *_new = empty_map();
+    Map _new = empty_map();
 
     for (pnode = rbtfirst(&trav, map.v.tree); pnode; pnode = rbtnext(&trav)) {
 	if (pnode == from->it)
 	    break;
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	if (!rbinsert(_new->v.tree, &node))
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAPRANGESET: rbinsert failed");
     }
 
-    for (pnode = rbtfirst(&trav, value.v.tree); pnode; pnode = rbtnext(&trav)) {
+    for (pnode = rbtfirst(&trav, values.v.tree); pnode; pnode = rbtnext(&trav)) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	rberase(_new->v.tree, &node);
-	if (!rbinsert(_new->v.tree, &node))
+	rberase(_new.v.tree, &node);
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAPRANGESET: rbinsert failed");
     }
 
     while ((pnode = rbtnext(to))) {
 	node.key = var_ref(pnode->key);
 	node.value = var_ref(pnode->value);
-	rberase(_new->v.tree, &node);
-	if (!rbinsert(_new->v.tree, &node))
+	rberase(_new.v.tree, &node);
+	if (!rbinsert(_new.v.tree, &node))
 	    panic("MAPRANGESET: rbinsert failed");
     }
 
     free_var(map);
-    free_var(value);
+    free_var(values);
 
 #ifdef ENABLE_GC
-    gc_set_color(_new->v.tree, GC_YELLOW);
+    gc_set_color(_new.v.tree, GC_YELLOW);
 #endif
 
-    return e;
+    return _new;
 }
 
-Var
-new_iter(Var map)
+Iter
+new_iter(const Map& map)
 {
-    Var iter;
+    Iter iter;
 
     iter.type = TYPE_ITER;
     if ((iter.v.trav = rbtnew()) == NULL)
@@ -931,22 +923,13 @@ new_iter(Var map)
 
 /* called from utils.c */
 void
-destroy_iter(Var iter)
+destroy_iter(Iter iter)
 {
     rbtdelete(iter.v.trav);
 }
 
-/* called from utils.c */
-Var
-iter_dup(Var iter)
-{
-    panic("ITER_DUP: don't do this");
-
-    return none;
-}
-
 int
-iterget(Var iter, var_pair *pair)
+iterget(const Iter& iter, var_pair *pair)
 {
     if (iter.v.trav->it) {
 	pair->a = iter.v.trav->it->key;
@@ -959,7 +942,7 @@ iterget(Var iter, var_pair *pair)
 }
 
 void
-iternext(Var iter)
+iternext(Iter& iter)
 {
     rbtnext(iter.v.trav);
 }
@@ -978,7 +961,8 @@ static package
 bf_mapdelete(const List& arglist, Objid progr)
 {
     Var r;
-    Var map = arglist[1];
+    assert(arglist[1].is_map());
+    const Map& map = static_cast<const Map&>(arglist[1]);
     Var key = arglist[2];
 
     if (key.is_collection()) {
@@ -1017,7 +1001,8 @@ static package
 bf_mapkeys(const List& arglist, Objid progr)
 {
     Var r = new_list(0);
-    mapforeach(arglist[1], do_map_keys, &r);
+    assert(arglist[1].is_map());
+    mapforeach(static_cast<const Map&>(arglist[1]), do_map_keys, &r);
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -1034,7 +1019,8 @@ static package
 bf_mapvalues(const List& arglist, Objid progr)
 {
     Var r = new_list(0);
-    mapforeach(arglist[1], do_map_values, &r);
+    assert(arglist[1].is_map());
+    mapforeach(static_cast<const Map&>(arglist[1]), do_map_values, &r);
     free_var(arglist);
     return make_var_pack(r);
 }

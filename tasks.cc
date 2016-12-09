@@ -115,7 +115,7 @@ struct http_parsing_state {
     struct http_parser parser;
     enum parsing_status status;
     Var uri;
-    Var headers;
+    Map headers;
     Var header_field_under_constr;
     Var header_value_under_constr;
     Var body;
@@ -326,35 +326,24 @@ static void
 init_http_parsing_state(struct http_parsing_state *state)
 {
     state->status = READY;
-#define INIT_VAR(XX)		\
-    {				\
-	(XX) = none;		\
-    }
-    INIT_VAR(state->uri);
-    INIT_VAR(state->header_field_under_constr);
-    INIT_VAR(state->header_value_under_constr);
-    INIT_VAR(state->headers);
-    INIT_VAR(state->body);
-    INIT_VAR(state->result);
-#undef INIT_VAR
+    state->uri = none;
+    state->header_field_under_constr = none;
+    state->header_value_under_constr = none;
+    state->headers = new_map();
+    state->body = none;
+    state->result = none;
 }
 
 static void
-reset_http_parsing_state(struct http_parsing_state *state)
+free_http_parsing_state(struct http_parsing_state *state)
 {
-    state->status = READY;
-#define RESET_VAR(XX)		\
-    {				\
-	free_var(XX);		\
-	(XX) = none;		\
-    }
-    RESET_VAR(state->uri);
-    RESET_VAR(state->header_field_under_constr);
-    RESET_VAR(state->header_value_under_constr);
-    RESET_VAR(state->headers);
-    RESET_VAR(state->body);
-    RESET_VAR(state->result);
-#undef RESET_VAR
+    state->status = DONE;
+    free_var(state->uri);
+    free_var(state->header_field_under_constr);
+    free_var(state->header_value_under_constr);
+    free_var(state->headers);
+    free_var(state->body);
+    free_var(state->result);
 }
 
 static void
@@ -469,7 +458,7 @@ free_tqueue(tqueue * tq)
     if (tq->reading)
 	free_vm(tq->reading_vm, 1);
     if (tq->parsing_state) {
-	reset_http_parsing_state(tq->parsing_state);
+	free_http_parsing_state(tq->parsing_state);
 	myfree(tq->parsing_state, M_STRUCT);
     }
 
@@ -1428,11 +1417,6 @@ on_url_callback(http_parser *parser, const char *url, size_t length)
 static void
 maybe_complete_header(struct http_parsing_state *state)
 {
-    if (!state->headers.is_map()) {
-	free_var(state->headers);
-	state->headers = new_map();
-    }
-
     if (state->header_value_under_constr.is_str()) {
 	state->headers = mapinsert(state->headers,
 				   state->header_field_under_constr,
@@ -1506,23 +1490,22 @@ on_message_complete_callback(http_parser *parser)
 
     struct http_parsing_state *state = (struct http_parsing_state *)parser;
 
-    if (parser->type == HTTP_REQUEST) {
+    if (parser->type == HTTP_REQUEST && state->result.is_map()) {
 	Var method = Var::new_str(http_method_str((http_method)state->parser.method));
-	state->result = mapinsert(state->result, var_dup(METHOD), method);
-    }
-    else { /* HTTP_RESPONSE */
+	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(METHOD), method);
+    } else if (parser->type == HTTP_RESPONSE && state->result.is_map()) {
 	Var status = Var::new_int(parser->status_code);
-	state->result = mapinsert(state->result, var_dup(STATUS), status);
+	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(STATUS), status);
     }
 
-    if (state->uri.is_str())
-	state->result = mapinsert(state->result, var_dup(URI), var_dup(state->uri));
+    if (state->uri.is_str() && state->result.is_map())
+	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(URI), var_dup(state->uri));
 
-    if (state->headers.is_map())
-	state->result = mapinsert(state->result, var_dup(HEADERS), var_dup(state->headers));
+    if (state->headers.is_map() && state->result.is_map())
+	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(HEADERS), var_dup(state->headers));
 
-    if (state->body.is_str())
-	state->result = mapinsert(state->result, var_dup(BODY), var_dup(state->body));
+    if (state->body.is_str() && state->result.is_map())
+	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(BODY), var_dup(state->body));
 
     state->status = DONE;
 
@@ -1582,8 +1565,10 @@ run_ready_tasks(void)
 
 		tq->reading = 0;
 		tq->parsing = 0;
-		if (tq->parsing_state != NULL)
-		    reset_http_parsing_state(tq->parsing_state);
+		if (tq->parsing_state != NULL) {
+		    free_http_parsing_state(tq->parsing_state);
+		    init_http_parsing_state(tq->parsing_state);
+		}
 		current_task_id = tq->reading_vm->task_id;
 		current_local = var_ref(tq->reading_vm->local);
 		v = Var::new_err(E_INVARG);
@@ -1633,19 +1618,19 @@ run_ready_tasks(void)
 			}
 			else {
 			    http_parser_execute(&tq->parsing_state->parser, &settings, binary, len);
-			    if (tq->parsing_state->parser.http_errno != HPE_OK) {
+			    if (tq->parsing_state->parser.http_errno != HPE_OK && tq->parsing_state->result.is_map()) {
 				Var key, value;
 				key = Var::new_str("error");
 				value = new_list(2);
 				value.v.list[1] = Var::new_str(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
 				value.v.list[2] = Var::new_str(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
-				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
+				tq->parsing_state->result = mapinsert(static_cast<const Map&>(tq->parsing_state->result), key, value);
 				done = 1;
 			    }
-			    else if (tq->parsing_state->parser.upgrade) {
+			    else if (tq->parsing_state->parser.upgrade && tq->parsing_state->result.is_map()) {
 				Var key;
 				key = Var::new_str("upgrade");
-				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, Var::new_int(1));
+				tq->parsing_state->result = mapinsert(static_cast<const Map&>(tq->parsing_state->result), key, Var::new_int(1));
 				done = 1;
 			    }
 			    else if (tq->parsing_state->status == DONE)
@@ -1655,7 +1640,8 @@ run_ready_tasks(void)
 			    Var v = var_ref(tq->parsing_state->result);
 			    tq->reading = 0;
 			    tq->parsing = 0;
-			    reset_http_parsing_state(tq->parsing_state);
+			    free_http_parsing_state(tq->parsing_state);
+			    init_http_parsing_state(tq->parsing_state);
 			    current_task_id = tq->reading_vm->task_id;
 			    current_local = var_ref(tq->reading_vm->local);
 			    resume_from_previous_vm(tq->reading_vm, v);
@@ -2535,8 +2521,10 @@ kill_task(int id, Objid owner)
 	    free_vm(tq->reading_vm, 1);
 	    tq->reading = 0;
 	    tq->parsing = 0;
-	    if (tq->parsing_state != NULL)
-		reset_http_parsing_state(tq->parsing_state);
+	    if (tq->parsing_state != NULL) {
+		free_http_parsing_state(tq->parsing_state);
+		init_http_parsing_state(tq->parsing_state);
+	    }
 	    return E_NONE;
 	}
     }
@@ -2549,8 +2537,10 @@ kill_task(int id, Objid owner)
 	    free_vm(tq->reading_vm, 1);
 	    tq->reading = 0;
 	    tq->parsing = 0;
-	    if (tq->parsing_state != NULL)
-		reset_http_parsing_state(tq->parsing_state);
+	    if (tq->parsing_state != NULL) {
+		free_http_parsing_state(tq->parsing_state);
+		init_http_parsing_state(tq->parsing_state);
+	    }
 	    return E_NONE;
 	}
 	for (tt = &(tq->first_bg); *tt; tt = &((*tt)->next)) {

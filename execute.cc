@@ -947,7 +947,7 @@ do {								\
 		    free_var(map);
 		    PUSH_ERROR(E_TYPE);
 		} else {
-		    r = mapinsert(map, key, value);
+		    r = mapinsert(static_cast<const Map&>(map), key, value);
 		    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
 			PUSH(r);
 		    else {
@@ -1055,7 +1055,7 @@ do {								\
 			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
 		    }
 		} else if (list.is_map()) {
-		    Var res = mapinsert(list, index, value);
+		    Var res = mapinsert(static_cast<const Map&>(list), index, value);
 		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_MAP_VALUE_BYTES))
 			PUSH(res);
 		    else {
@@ -1341,7 +1341,7 @@ do {								\
 		    PUSH_ERROR(E_TYPE);
 		} else if (list.is_map()) {
 		    Var value;
-		    if (maplookup(list, index, &value, 0) == NULL) {
+		    if (maplookup(static_cast<const Map&>(list), index, &value, 0) == NULL) {
 			free_var(index);
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
@@ -1407,7 +1407,7 @@ do {								\
 		    const rbnode *node;
 		    if (index.is_collection()) {
 			PUSH_ERROR(E_TYPE);
-		    } else if (!(node = maplookup(list, index, &value, 0))) {
+		    } else if (!(node = maplookup(static_cast<const Map&>(list), index, &value, 0))) {
 			PUSH_ERROR(E_RANGE);
 		    } else {
 			PUSH(value);
@@ -1453,11 +1453,11 @@ do {								\
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
 		} else if (base.is_map()) {
-		    Var iterfrom, iterto;
+		    Iter iterfrom = Iter(), iterto = Iter();
 		    int rel = compare(from, to, 0);
-		    mapseek(base, from, &iterfrom, 0);
-		    mapseek(base, to, &iterto, 0);
-		    if ((rel <= 0) && (iterfrom.is_none() || iterto.is_none())) {
+		    int r1 = mapseek(static_cast<const Map&>(base), from, &iterfrom, 0);
+		    int r2 = mapseek(static_cast<const Map&>(base), to, &iterto, 0);
+		    if ((rel <= 0) && (!r1 || !r2)) {
 			free_var(to);
 			free_var(from);
 			free_var(iterto);
@@ -1465,16 +1465,16 @@ do {								\
 			free_var(base);
 			PUSH_ERROR(E_RANGE);
 		    } else if (rel > 0) {
-			PUSH(new_map());
 			free_var(to);
 			free_var(from);
 			free_var(iterto);
 			free_var(iterfrom);
 			free_var(base);
+			PUSH(new_map());
 		    } else {
-			PUSH(maprange(base, iterfrom.v.trav, iterto.v.trav));
-			free_var(from);
+			PUSH(maprange(static_cast<const Map&>(base), iterfrom.v.trav, iterto.v.trav));
 			free_var(to);
+			free_var(from);
 			free_var(iterto);
 			free_var(iterfrom);
 		    }
@@ -1905,11 +1905,10 @@ do {								\
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
 			} else if (base.is_map()) {
-			    Var res = none;
-			    Var iterfrom, iterto;
-			    mapseek(base, from, &iterfrom, 0);
-			    mapseek(base, to, &iterto, 0);
-			    if (iterfrom.is_none() || iterto.is_none()) {
+			    Iter iterfrom = Iter(), iterto = Iter();
+			    int r1 = mapseek(static_cast<const Map&>(base), from, &iterfrom, 0);
+			    int r2 = mapseek(static_cast<const Map&>(base), to, &iterto, 0);
+			    if (!r1 || !r2) {
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
@@ -1918,7 +1917,9 @@ do {								\
 				free_var(value);
 				PUSH_ERROR(E_RANGE);
 			    } else {
-				maprangeset(base, iterfrom.v.trav, iterto.v.trav, value, &res);
+				Map res = maprangeset(static_cast<const Map&>(base),
+						      iterfrom.v.trav, iterto.v.trav,
+						      static_cast<const Map&>(value));
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
@@ -1982,7 +1983,7 @@ do {								\
 			    PUSH(v);
 			} else if (item.is_map()) {
 			    var_pair pair;
-			    v = mapfirst(item, &pair)
+			    v = mapfirst(static_cast<const Map&>(item), &pair)
 				? var_ref(pair.a)
 				: var_ref(none);
 			    PUSH(v);
@@ -2005,7 +2006,7 @@ do {								\
 			    PUSH(v);
 			} else if (item.is_map()) {
 			    var_pair pair;
-			    v = maplast(item, &pair)
+			    v = maplast(static_cast<const Map&>(item), &pair)
 				? var_ref(pair.a)
 				: var_ref(none);
 			    PUSH(v);
@@ -2242,23 +2243,23 @@ do {								\
 			    if (ITER.is_none()) {
 				/* starting iteration */
 				free_var(ITER);
-				ITER = new_iter(BASE);
+				ITER = new_iter(static_cast<const Map&>(BASE));
 			    } else if (ITER.type != TYPE_ITER) {
 				/* resuming an iteration after a db load */
-				Var iter;
-				mapseek(BASE, ITER, &iter, 0);
+				Iter iter = Iter();
+				int r = mapseek(static_cast<const Map&>(BASE), ITER, &iter, 0);
 				free_var(ITER);
-				ITER = iter;
+				ITER = r ? iter : none;
 			    }
 			    var_pair pair;
-			    if (ITER.is_none() || !iterget(ITER, &pair)) {
+			    if (ITER.is_none() || !iterget(static_cast<const Iter&>(ITER), &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
 				RUN_ACTIV.rt_env[id] = var_ref(pair.b);
-				iternext(ITER);	/* increment iter */
+				iternext(static_cast<Iter&>(ITER));	/* increment iter */
 			    }
 			}
 #			undef ITER
@@ -2304,15 +2305,16 @@ do {								\
 			} else if (BASE.is_map()) {
 			    if (ITER.is_none()) {
 				free_var(ITER);
-				ITER = new_iter(BASE);
+				ITER = new_iter(static_cast<const Map&>(BASE));
 			    } else if (ITER.type != TYPE_ITER) {
-				Var iter;
-				mapseek(BASE, ITER, &iter, 0);
+				/* resuming an iteration after a db load */
+				Iter iter = Iter();
+				int r = mapseek(static_cast<const Map&>(BASE), ITER, &iter, 0);
 				free_var(ITER);
-				ITER = iter;
+				ITER = r ? iter : none;
 			    }
 			    var_pair pair;
-			    if (ITER.is_none() || !iterget(ITER, &pair)) {
+			    if (ITER.is_none() || !iterget(static_cast<const Iter&>(ITER), &pair)) {
 				free_var(POP());
 				free_var(POP());
 				JUMP(lab);
@@ -2321,7 +2323,7 @@ do {								\
 				RUN_ACTIV.rt_env[id] = var_ref(pair.b);
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(pair.a);
-				iternext(ITER);	/* increment iter */
+				iternext(static_cast<Iter&>(ITER));	/* increment iter */
 			    }
 			}
 #			undef ITER

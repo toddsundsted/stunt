@@ -470,7 +470,7 @@ unparse_value(Stream * s, Var v)
     case TYPE_MAP:
 	{
 	    stream_add_char(s, '[');
-	    mapforeach(v, print_map_to_stream, (void *)s);
+	    mapforeach(static_cast<const Map&>(v), print_map_to_stream, (void *)s);
 	    stream_add_char(s, ']');
 	}
 	break;
@@ -597,7 +597,7 @@ bf_length(const List& arglist, Objid progr)
 	r = Var::new_int(listlength(arglist[1]));
 	break;
     case TYPE_MAP:
-	r = Var::new_int(maplength(arglist[1]));
+	r = Var::new_int(maplength(static_cast<const Map&>(arglist[1])));
 	break;
     case TYPE_STR:
 	r = Var::new_int(memo_strlen(arglist[1].v.str));

@@ -279,6 +279,12 @@ struct List : public Var {
     }
 };
 
+struct Map : public Var {
+};
+
+struct Iter : public Var {
+};
+
 /* generic tuples */
 typedef struct var_pair {
     Var a;

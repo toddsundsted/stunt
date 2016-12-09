@@ -319,7 +319,7 @@ static int
 handle_end_map(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
-    Var map = new_map();
+    Map map = new_map();
     Var k, v;
     for (v = POP(pctx->top), k = POP(pctx->top);
 	 (int)v.type > MAP_SENTINEL && (int)k.type > MAP_SENTINEL;
@@ -456,7 +456,7 @@ generate(yajl_gen g, Var v, void *ctx)
 	    dmc.gctx = gctx;
 	    dmc.status = yajl_gen_status_ok;
 	    yajl_gen_map_open(g);
-	    if (mapforeach(v, do_map, &dmc))
+	    if (mapforeach(static_cast<const Map&>(v), do_map, &dmc))
 		return dmc.status;
 	    yajl_gen_map_close(g);
 	    return yajl_gen_status_ok;

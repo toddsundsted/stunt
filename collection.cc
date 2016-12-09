@@ -62,7 +62,7 @@ ismember(const Var& lhs, const Var& rhs, int case_matters)
 	ismember_data.value = lhs;
 	ismember_data.case_matters = case_matters;
 
-	return mapforeach(rhs, do_map_iteration, &ismember_data);
+	return mapforeach(static_cast<const Map&>(rhs), do_map_iteration, &ismember_data);
     } else {
 	return 0;
     }

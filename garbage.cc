@@ -200,7 +200,7 @@ for_all_children(Var v, gc_func *fp)
     else if (v.is_list())
 	listforeach(v, do_list, (void *)fp);
     else if (v.is_map())
-	mapforeach(v, do_map, (void *)fp);
+	mapforeach(static_cast<const Map&>(v), do_map, (void *)fp);
 }
 
 /* corresponds to `MarkGray' in Bacon and Rajan */
@@ -426,7 +426,8 @@ bf_gc_stats(const List& arglist, Objid progr)
 
     gc_stats(color);
 
-    Var k, v, r = new_map();
+    Var k, v;
+    Map r = new_map();
 
 #define PACK_COLOR(c, i)	\
     k = Var::new_str(#c);	\
