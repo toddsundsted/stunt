@@ -22,6 +22,9 @@
 
 #include "config.h"
 #include "execute.h"
+#include "list.h"
+#include "map.h"
+#include "storage.h"
 #include "streams.h"
 
 #undef MAX
@@ -46,28 +49,55 @@ extern int var_refcount(Var);
 extern void aux_free(Var);
 
 static inline void
-free_var(Var v)
+free_var(Var var)
 {
-    if (v.is_complex())
-	complex_free_var(v);
+    if (var.is_complex())
+	complex_free_var(var);
 }
 
 static inline Var
-var_ref(Var v)
+var_ref(Var var)
 {
-    if (v.is_complex())
-	return complex_var_ref(v);
-    else
-	return v;
+    return var.is_complex() ? complex_var_ref(var) : var;
+}
+
+static inline List
+var_ref(List list)
+{
+    addref(list.v.list);
+    return list;
+}
+
+static inline Map
+var_ref(Map map)
+{
+    addref(map.v.tree);
+    return map;
+}
+
+static inline Iter
+var_ref(Iter iter)
+{
+    addref(iter.v.trav);
+    return iter;
 }
 
 static inline Var
-var_dup(Var v)
+var_dup(Var var)
 {
-    if (v.is_complex())
-	return complex_var_dup(v);
-    else
-	return v;
+    return var.is_complex() ? complex_var_dup(var) : var;
+}
+
+static inline List
+var_dup(List list)
+{
+    return list_dup(list);
+}
+
+static inline Map
+var_dup(Map map)
+{
+    return map_dup(map);
 }
 
 extern int is_true(Var v);
