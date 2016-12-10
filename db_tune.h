@@ -3,4 +3,4 @@
  */
 
 extern void db_log_cache_stats(void);
-extern Var db_verb_cache_stats(void);
+extern List db_verb_cache_stats(void);

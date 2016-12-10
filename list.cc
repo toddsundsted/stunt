@@ -37,14 +37,14 @@
 #include "utils.h"
 #include "server.h"
 
-Var
+List
 new_list(int size)
 {
-    Var list;
+    List list;
     Var *ptr;
 
     if (size == 0) {
-	static Var emptylist;
+	static List emptylist;
 
 	if (emptylist.v.list == NULL) {
 	    if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == NULL)
@@ -80,12 +80,12 @@ new_list(int size)
 
 /* called from utils.c */
 void
-destroy_list(Var list)
+destroy_list(List& list)
 {
     int i;
     Var *pv;
 
-    for (i = list.v.list[0].v.num, pv = list.v.list + 1; i > 0; i--, pv++)
+    for (i = list.length(), pv = list.v.list + 1; i > 0; i--, pv++)
 	free_var(*pv);
 
     /* Since this list could possibly be the root of a cycle, final
@@ -98,11 +98,11 @@ destroy_list(Var list)
 }
 
 /* called from utils.c */
-Var
-list_dup(Var list)
+List
+list_dup(const List& list)
 {
-    int i, n = list.v.list[0].v.num;
-    Var _new = new_list(n);
+    int i, n = list.length();
+    List _new = new_list(n);
 
     for (i = 1; i <= n; i++)
 	_new.v.list[i] = var_ref(list.v.list[i]);
@@ -113,14 +113,14 @@ list_dup(Var list)
 }
 
 int
-listforeach(Var list, listfunc func, void *data)
+listforeach(const List& list, listfunc func, void *data)
 {				/* does NOT consume `list' */
     int i, n;
     int first = 1;
     int ret;
 
-    for (i = 1, n = list.v.list[0].v.num; i <= n; i++) {
-	if ((ret = (*func)(list.v.list[i], data, first)))
+    for (i = 1, n = list.length(); i <= n; i++) {
+	if ((ret = (*func)(list[i], data, first)))
 	    return ret;
 	first = 0;
     }
@@ -128,8 +128,8 @@ listforeach(Var list, listfunc func, void *data)
     return 0;
 }
 
-Var
-setadd(Var list, Var value)
+List
+setadd(const List& list, Var value)
 {
     if (ismember(value, list, 0)) {
 	free_var(value);
@@ -138,11 +138,10 @@ setadd(Var list, Var value)
     return listappend(list, value);
 }
 
-Var
-setremove(Var list, Var value)
+List
+setremove(const List& list, Var value)
 {
     int i;
-
     if ((i = ismember(value, list, 0)) != 0) {
 	return listdelete(list, i);
     } else {
@@ -150,14 +149,16 @@ setremove(Var list, Var value)
     }
 }
 
-Var
-listset(Var list, Var value, int pos)
+List
+listset(const List& list, Var value, int pos)
 {				/* consumes `list', `value' */
-    Var _new = list;
+    List _new;
 
     if (var_refcount(list) > 1) {
 	_new = var_dup(list);
 	free_var(list);
+    } else {
+	_new = list;
     }
 
 #ifdef MEMO_VALUE_BYTES
@@ -175,72 +176,76 @@ listset(Var list, Var value, int pos)
     return _new;
 }
 
-static Var
-doinsert(Var list, Var value, int pos)
+static List
+doinsert(const List& list, Var value, int pos)
 {
-    Var _new;
-    int i;
-    int size = list.v.list[0].v.num + 1;
+    int size = list.length() + 1;
 
     if (var_refcount(list) == 1 && pos == size) {
-	list.v.list = (Var *) myrealloc(list.v.list, (size + 1) * sizeof(Var), M_LIST);
+	List _new = list;
+
+	_new.v.list = (Var *) myrealloc(_new.v.list, (size + 1) * sizeof(Var), M_LIST);
 #ifdef MEMO_VALUE_BYTES
 	/* reset the memoized size */
-	((int *)(list.v.list))[-2] = 0;
+	((int *)(_new.v.list))[-2] = 0;
 #endif
-	list.v.list[0].v.num = size;
-	list.v.list[pos] = value;
+	_new.v.list[0].v.num = size;
+	_new.v.list[pos] = value;
 
 #ifdef ENABLE_GC
-	gc_set_color(list.v.list, GC_YELLOW);
+	gc_set_color(_new.v.list, GC_YELLOW);
 #endif
 
-	return list;
+	return _new;
+
+    } else {
+	List _new = new_list(size);
+	int i;
+
+	for (i = 1; i < pos; i++)
+	    _new.v.list[i] = var_ref(list.v.list[i]);
+	_new.v.list[pos] = value;
+	for (i = pos; i <= list.length(); i++)
+	    _new.v.list[i + 1] = var_ref(list.v.list[i]);
+
+	free_var(list);
+
+#ifdef ENABLE_GC
+	gc_set_color(_new.v.list, GC_YELLOW);
+#endif
+
+	return _new;
     }
-    _new = new_list(size);
-    for (i = 1; i < pos; i++)
-	_new.v.list[i] = var_ref(list.v.list[i]);
-    _new.v.list[pos] = value;
-    for (i = pos; i <= list.v.list[0].v.num; i++)
-	_new.v.list[i + 1] = var_ref(list.v.list[i]);
-
-    free_var(list);
-
-#ifdef ENABLE_GC
-    gc_set_color(_new.v.list, GC_YELLOW);
-#endif
-
-    return _new;
 }
 
-Var
-listinsert(Var list, Var value, int pos)
+List
+listinsert(const List& list, Var value, int pos)
 {
     if (pos <= 0)
 	pos = 1;
-    else if (pos > list.v.list[0].v.num)
-	pos = list.v.list[0].v.num + 1;
+    else if (pos > list.length())
+	pos = list.length() + 1;
     return doinsert(list, value, pos);
 }
 
-Var
-listappend(Var list, Var value)
+List
+listappend(const List& list, Var value)
 {
-    return doinsert(list, value, list.v.list[0].v.num + 1);
+    return doinsert(list, value, list.length() + 1);
 }
 
-Var
-listdelete(Var list, int pos)
+List
+listdelete(const List& list, int pos)
 {
-    Var _new;
+    List _new;
+    int size = list.length() - 1;
     int i;
-    int size = list.v.list[0].v.num - 1;
 
     _new = new_list(size);
     for (i = 1; i < pos; i++) {
 	_new.v.list[i] = var_ref(list.v.list[i]);
     }
-    for (i = pos + 1; i <= list.v.list[0].v.num; i++)
+    for (i = pos + 1; i <= list.length(); i++)
 	_new.v.list[i - 1] = var_ref(list.v.list[i]);
 
     free_var(list);
@@ -253,12 +258,12 @@ listdelete(Var list, int pos)
     return _new;
 }
 
-Var
-listconcat(Var first, Var second)
+List
+listconcat(const List& first, const List& second)
 {
-    int lsecond = second.v.list[0].v.num;
-    int lfirst = first.v.list[0].v.num;
-    Var _new;
+    int lfirst = first.length();
+    int lsecond = second.length();
+    List _new;
     int i;
 
     _new = new_list(lsecond + lfirst);
@@ -278,20 +283,19 @@ listconcat(Var first, Var second)
     return _new;
 }
 
-Var
-listrangeset(Var base, int from, int to, Var value)
+List
+listrangeset(const List& base, int from, int to, const List& value)
 {
     /* base and value are free'd */
     int index, offset = 0;
-    int val_len = value.v.list[0].v.num;
-    int base_len = base.v.list[0].v.num;
+    int base_len = base.length();
+    int val_len = value.length();
     int lenleft = (from > 1) ? from - 1 : 0;
     int lenmiddle = val_len;
     int lenright = (base_len > to) ? base_len - to : 0;
     int newsize = lenleft + lenmiddle + lenright;
-    Var ans;
 
-    ans = new_list(newsize);
+    List ans = new_list(newsize);
     for (index = 1; index <= lenleft; index++)
 	ans.v.list[++offset] = var_ref(base.v.list[index]);
     for (index = 1; index <= lenmiddle; index++)
@@ -310,17 +314,15 @@ listrangeset(Var base, int from, int to, Var value)
     return ans;
 }
 
-Var
-sublist(Var list, int lower, int upper)
+List
+sublist(const List& list, int lower, int upper)
 {
     if (lower > upper) {
 	free_var(list);
 	return new_list(0);
     } else {
-	Var r;
 	int i;
-
-	r = new_list(upper - lower + 1);
+	List r = new_list(upper - lower + 1);
 	for (i = lower; i <= upper; i++)
 	    r.v.list[i - lower + 1] = var_ref(list.v.list[i]);
 
@@ -335,17 +337,17 @@ sublist(Var list, int lower, int upper)
 }
 
 int
-listequal(Var lhs, Var rhs, int case_matters)
+listequal(const List& lhs, const List& rhs, int case_matters)
 {
     if (lhs.v.list == rhs.v.list)
 	return 1;
 
-    if (lhs.v.list[0].v.num != rhs.v.list[0].v.num)
+    if (lhs.length() != rhs.length())
 	return 0;
 
-    int i, c = lhs.v.list[0].v.num;
+    int i, c = lhs.length();
     for (i = 1; i <= c; i++) {
-	if (!equality(lhs.v.list[i], rhs.v.list[i], case_matters))
+	if (!equality(lhs[i], rhs[i], case_matters))
 	    return 0;
     }
 
@@ -485,7 +487,7 @@ unparse_value(Stream * s, Var v)
 
 /* called from utils.c */
 int
-list_sizeof(Var *list)
+list_sizeof(const Var *list)
 {
     int i, len, size;
 
@@ -615,13 +617,14 @@ bf_length(const List& arglist, Objid progr)
 static package
 bf_setadd(const List& arglist, Objid progr)
 {
-    Var r;
+    List r;
     Var lst = var_ref(arglist[1]);
     Var elt = var_ref(arglist[2]);
 
     free_var(arglist);
 
-    r = setadd(lst, elt);
+    assert(lst.is_list());
+    r = setadd(static_cast<const List&>(lst), elt);
 
     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);
@@ -634,13 +637,14 @@ bf_setadd(const List& arglist, Objid progr)
 static package
 bf_setremove(const List& arglist, Objid progr)
 {
-    Var r;
+    List r;
     Var lst = var_ref(arglist[1]);
     Var elt = var_ref(arglist[2]);
 
     free_var(arglist);
 
-    r = setremove(lst, elt);
+    assert(lst.is_list());
+    r = setremove(static_cast<const List&>(lst), elt);
 
     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);
@@ -651,26 +655,25 @@ bf_setremove(const List& arglist, Objid progr)
 }
 
 static package
-insert_or_append(const List& arglist, int append1)
+insert_or_append(const List& arglist, int append)
 {
     int pos;
-    Var r;
     Var lst = var_ref(arglist[1]);
     Var elt = var_ref(arglist[2]);
 
-    if (arglist.length() == 2)
-	pos = append1 ? lst.v.list[0].v.num + 1 : 1;
-    else {
-	pos = arglist[3].v.num + append1;
+    if (arglist.length() == 2) {
+	pos = append ? listlength(lst) + 1 : 1;
+    } else {
+	pos = arglist[3].v.num + append;
 	if (pos <= 0)
 	    pos = 1;
-	else if (pos > lst.v.list[0].v.num + 1)
-	    pos = lst.v.list[0].v.num + 1;
+	else if (pos > listlength(lst) + 1)
+	    pos = listlength(lst) + 1;
     }
 
     free_var(arglist);
 
-    r = doinsert(lst, elt, pos);
+    List r = doinsert(static_cast<const List&>(lst), elt, pos);
 
     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);
@@ -696,15 +699,16 @@ bf_listinsert(const List& arglist, Objid progr)
 static package
 bf_listdelete(const List& arglist, Objid progr)
 {
-    Var r;
-
-    if (arglist[2].v.num <= 0
-	|| arglist[2].v.num > listlength(arglist[1])) {
+    if (arglist[2].v.num <= 0 ||
+	arglist[2].v.num > listlength(arglist[1])) {
 	free_var(arglist);
 	return make_error_pack(E_RANGE);
     }
 
-    r = listdelete(var_ref(arglist[1]), arglist[2].v.num);
+    Var lst = var_ref(arglist[1]);
+    int pos = arglist[2].v.num;
+
+    List r = listdelete(static_cast<const List&>(lst), pos);
 
     free_var(arglist);
 
@@ -719,8 +723,6 @@ bf_listdelete(const List& arglist, Objid progr)
 static package
 bf_listset(const List& arglist, Objid progr)
 {
-    Var r;
-
     Var lst = var_ref(arglist[1]);
     Var elt = var_ref(arglist[2]);
     int pos = arglist[3].v.num;
@@ -730,7 +732,7 @@ bf_listset(const List& arglist, Objid progr)
     if (pos <= 0 || pos > listlength(lst))
 	return make_error_pack(E_RANGE);
 
-    r = listset(lst, elt, pos);
+    List r = listset(static_cast<const List&>(lst), elt, pos);
 
     if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 	return make_var_pack(r);
@@ -1159,7 +1161,7 @@ bf_decode_binary(const List& arglist, Objid progr)
     const char *bytes = binary_to_raw_bytes(arglist[1].v.str, &length);
     int nargs = arglist.length();
     int fully = (nargs >= 2 && is_true(arglist[2]));
-    Var r;
+    List r;
     int i;
 
     free_var(arglist);

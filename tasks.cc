@@ -278,11 +278,11 @@ icmd_index(const char * verb) {
 }
 #undef _ICMD_IX
 
-static Var
+static List
 icmd_list(int icmd_flags)
 {
     Var s;
-    Var list = new_list(0);
+    List list = new_list(0);
 
 #define _ICMD_MKSTR(ICMD_PREFIX,PREFIX,_)	\
 	if (icmd_flags & (1<<ICMD_PREFIX)) {	\
@@ -995,13 +995,13 @@ tasks_set_connection_option(task_queue q, const char *option, Var value)
 }
 
 int
-tasks_connection_option(task_queue q, const char *option, Var * value)
+tasks_connection_option(task_queue q, const char *option, Var *value)
 {
     CONNECTION_OPTION_GET(TASK_CO_TABLE, (tqueue *)q.ptr, option, value);
 }
 
-Var
-tasks_connection_options(task_queue q, Var list)
+List
+tasks_connection_options(task_queue q, List list)
 {
     CONNECTION_OPTION_LIST(TASK_CO_TABLE, (tqueue *)q.ptr, list);
 }
@@ -2205,7 +2205,7 @@ forked_task_bytes(forked_task ft)
 static Var
 list_for_forked_task(forked_task ft, Objid progr)
 {
-    Var list = new_list(10);
+    List list = new_list(10);
     list.v.list[1] = Var::new_int(ft.id);
     list.v.list[2] = Var::new_int(ft.start_time);
     list.v.list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
@@ -2234,7 +2234,7 @@ suspended_task_bytes(vm the_vm)
 static Var
 list_for_vm(vm the_vm, Objid progr)
 {
-    Var list = new_list(10);
+    List list = new_list(10);
     list.v.list[1] = Var::new_int(the_vm->task_id);
     // list.v.list[2] = ...
     // see `list_for_suspended_task()', `list_for_forked_task()'
@@ -2315,7 +2315,7 @@ writing_closure(vm the_vm, const char *status, void *data)
 static package
 bf_queued_tasks(const List& arglist, Objid progr)
 {
-    Var tasks;
+    List tasks;
     int show_all = is_wizard(progr);
     tqueue *tq;
     task *t;
@@ -2663,7 +2663,7 @@ bf_resume(const List& arglist, Objid progr)
 static package
 bf_output_delimiters(const List& arglist, Objid progr)
 {
-    Var r;
+    List r;
     Objid player = arglist[1].v.obj;
 
     free_var(arglist);

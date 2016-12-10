@@ -66,7 +66,7 @@ bf_prop_info(const List& arglist, Objid progr)
     Var obj = arglist[1];
     const char *pname = arglist[2].v.str;
     db_prop_handle h;
-    Var r;
+    List r;
     unsigned flags;
     char perms[4], *s;
 

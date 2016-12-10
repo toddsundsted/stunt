@@ -461,7 +461,7 @@ bf_disassemble(const List& arglist, Objid progr)
     Var desc = arglist[2];
     db_verb_handle h;
     struct data data;
-    Var r;
+    List r;
     int i;
     enum error e;
 

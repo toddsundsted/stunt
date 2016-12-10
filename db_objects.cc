@@ -41,7 +41,7 @@ static int max_objects = 0;
 
 static unsigned int nonce = 0;
 
-static Var all_users;
+static List all_users;
 
 /* used in graph traversals */
 static unsigned char *bit_array;
@@ -496,7 +496,7 @@ db_renumber_object(Objid old)
 	    if (is_user(_new)) {
 		int i;
 
-		for (i = 1; i <= all_users.v.list[0].v.num; i++)
+		for (i = 1; i <= all_users.length(); i++)
 		    if (all_users.v.list[i].v.obj == old) {
 			all_users.v.list[i].v.obj = _new;
 			break;
@@ -640,12 +640,12 @@ db2_add_##name(Object *o, Var *plist, int *px)				\
     free_var(field);							\
 }									\
 									\
-Var									\
+List									\
 db_##name(Var obj, bool full)						\
 {									\
     Object *o;								\
     int n, i = 0;							\
-    Var list;								\
+    List list;								\
 									\
     o = dbpriv_dereference(obj);					\
     if ((o->field.is_obj() && o->field.v.obj == NOTHING) ||		\
@@ -859,7 +859,13 @@ check_children_of_object(Var obj, Var anon_kids)
 }
 
 int
-db_change_parents(Var obj, Var new_parents, Var anon_kids)
+db_change_parents(Var obj, Var new_parents)
+{
+    return db_change_parents(obj, new_parents, new_list(0));
+}
+
+int
+db_change_parents(Var obj, Var new_parents, List anon_kids)
 {
     if (!check_for_duplicates(new_parents))
 	return 0;
@@ -873,8 +879,8 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
     Object *o = dbpriv_dereference(obj);
 
     if (o->verbdefs == NULL
-        && listlength(o->children) == 0
-        && (!anon_kids.is_list() || listlength(anon_kids) == 0)) {
+        && o->children.length() == 0
+        && anon_kids.length() == 0) {
 	/* Since this object has no children and no verbs, we know that it
 	   can't have had any part in affecting verb lookup, since we use first
 	   parent with verbs as a key in the verb lookup cache. */
@@ -890,7 +896,7 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
     Var old_parents = o->parents;
 
     /* save this; we need it later */
-    Var old_ancestors = db_ancestors(obj, true);
+    List old_ancestors = db_ancestors(obj, true);
 
     /* only adjust the parent's children for permanent objects */
     if (obj.is_obj()) {
@@ -921,7 +927,7 @@ db_change_parents(Var obj, Var new_parents, Var anon_kids)
      * the aforementioned call will fix that).
      */
 
-    Var new_ancestors = db_ancestors(obj, true);
+    List new_ancestors = db_ancestors(obj, true);
 
     dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors, anon_kids);
 
@@ -1055,12 +1061,11 @@ is_user(Objid oid)
 const List&
 db_all_users(void)
 {
-    assert(all_users.is_list());
-    return static_cast<const List&>(all_users);
+    return all_users;
 }
 
 void
-dbpriv_set_all_users(Var v)
+dbpriv_set_all_users(List& v)
 {
     all_users = v;
 }
@@ -1077,7 +1082,8 @@ db_object_isa(Var object, Var parent)
         dbpriv_find_object(object.v.obj) :
         object.v.anon;
 
-    Var ancestor, ancestors = enlist_var(var_ref(o->parents));
+    List ancestors = enlist_var(var_ref(o->parents));
+    Var ancestor;
 
     while (listlength(ancestors) > 0) {
 	POP_TOP(ancestor, ancestors);

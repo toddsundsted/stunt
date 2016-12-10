@@ -268,7 +268,7 @@ bf_verb_info(const List& arglist, Objid progr)
     Var obj = arglist[1];
     Var desc = arglist[2];
     db_verb_handle h;
-    Var r;
+    List r;
     unsigned flags;
     char perms[5], *s;
     enum error e;
@@ -378,7 +378,7 @@ bf_verb_args(const List& arglist, Objid progr)
     db_verb_handle h;
     db_arg_spec dobj, iobj;
     db_prep_spec prep;
-    Var r;
+    List r;
     enum error e;
 
     if (!obj.is_object()) {
@@ -448,9 +448,9 @@ bf_set_verb_args(const List& arglist, Objid progr)
 }
 
 static void
-lister(void *data, const char *line)
+lister(void* data, const char* line)
 {
-    Var *r = (Var *) data;
+    List *r = (List *) data;
     Var v = Var::new_str(line);
     *r = listappend(*r, v);
 }
@@ -611,18 +611,14 @@ bf_eval(const Var& value, Objid progr, Byte next, void *vdata)
 		    p = make_error_pack(E_MAXREC);
 		}
 	    } else {
-		Var r;
-
-		r = new_list(2);
+		List r = new_list(2);
 		r.v.list[1] = Var::new_int(0);
 		r.v.list[2] = errors;
 		p = make_var_pack(r);
 	    }
 	}
     } else {			/* next == 2 */
-	Var r;
-
-	r = new_list(2);
+	List r = new_list(2);
 	r.v.list[1] = Var::new_int(1);
 	r.v.list[2] = value;
 	p = make_var_pack(r);

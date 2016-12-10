@@ -436,26 +436,26 @@ make_suspend_pack(enum error(*proc) (vm, void *), void *data)
     return p;
 }
 
-static Var
+static List
 function_description(int i)
 {
     struct bft_entry entry;
-    Var v, vv;
+    List l, v;
     int j, nargs;
 
     entry = bf_table[i];
-    v = new_list(4);
-    v.v.list[1] = str_ref_to_var(entry.name);
-    v.v.list[2] = Var::new_int(entry.minargs);
-    v.v.list[3] = Var::new_int(entry.maxargs);
+    l = new_list(4);
+    l.v.list[1] = str_ref_to_var(entry.name);
+    l.v.list[2] = Var::new_int(entry.minargs);
+    l.v.list[3] = Var::new_int(entry.maxargs);
     nargs = entry.maxargs == -1 ? entry.minargs : entry.maxargs;
-    vv = v.v.list[4] = new_list(nargs);
+    l.v.list[4] = v = new_list(nargs);
     for (j = 0; j < nargs; j++) {
 	int proto = entry.prototype[j];
-	vv.v.list[j + 1] = Var::new_int(proto < 0 ? proto : (proto & TYPE_DB_MASK));
+	v.v.list[j + 1] = Var::new_int(proto < 0 ? proto : (proto & TYPE_DB_MASK));
     }
 
-    return v;
+    return l;
 }
 
 static package

@@ -82,8 +82,8 @@ static void init_version_structure()
 
 #define DEPTH 4
 
-    Var stack[DEPTH];
-    Var *the_list = stack;
+    List stack[DEPTH];
+    List* the_list = stack;
 
 #define BEGIN_LIST(n)				\
     if (++the_list - stack >= DEPTH)		\

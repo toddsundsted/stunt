@@ -616,7 +616,7 @@ bf_file_readlines(const List& arglist, Objid progr)
   int32 begin_loc = 0, linecount = 0;
   file_type type;
   file_mode mode;
-  Var rv;
+  List rv;
   int current_line = 0, len = 0, i = 0;
   const char *line = NULL;
   FILE *f;
@@ -1179,7 +1179,7 @@ static package
 bf_file_stat(const List& arglist, Objid progr)
 {  
   package r;
-  Var     rv;
+  List    rv;
   const Var& filespec = arglist[1];
   struct stat buf;
 
@@ -1240,7 +1240,8 @@ bf_file_list(const List& arglist, Objid progr)
         Stream *s = new_stream(64);
         int failed = 0;
         struct stat buf;
-        Var     rv, detail;
+        List rv;
+        Var detail;
 	struct dirent *curfile;
 
 	if (!(curdir = opendir (real_pathname)))

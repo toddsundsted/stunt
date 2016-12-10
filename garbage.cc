@@ -198,7 +198,7 @@ for_all_children(Var v, gc_func *fp)
     if (v.is_object())
 	db_for_all_propvals(v, do_obj, (void *)fp);
     else if (v.is_list())
-	listforeach(v, do_list, (void *)fp);
+	listforeach(static_cast<const List&>(v), do_list, (void *)fp);
     else if (v.is_map())
 	mapforeach(static_cast<const Map&>(v), do_map, (void *)fp);
 }

@@ -152,7 +152,7 @@ extern int db_object_bytes(Var);
 				 * properties.
 				 */
 
-extern Var db_ancestors(Var, bool);
+extern List db_ancestors(Var, bool);
 				/* Returns a list of the ancestors of the
 				 * given object.  db_ancestors() does not/
 				 * can not free the returned list.  The caller
@@ -160,7 +160,7 @@ extern Var db_ancestors(Var, bool);
 				 * operating on it.
 				 */
 
-extern Var db_descendants(Var, bool);
+extern List db_descendants(Var, bool);
 				/* Returns a list of the descendants of the
 				 * given object.  db_descendants() does not/
 				 * can not free the returned list.  The caller
@@ -168,7 +168,7 @@ extern Var db_descendants(Var, bool);
 				 * operating on it.
 				 */
 
-extern Var db_all_locations(Var, bool);
+extern List db_all_locations(Var, bool);
 				/* Returns a list of all objects that
 				 * contain the given object.
 				 * db_all_locations() does not/can not free the
@@ -176,7 +176,7 @@ extern Var db_all_locations(Var, bool);
 				 * free it once it has finished operating on it.
 				 */
 
-extern Var db_all_contents(Var, bool);
+extern List db_all_contents(Var, bool);
 				/* Returns a list of all objects that are
 				 * contained by the given object.
 				 * db_all_contents() does not/can not free the
@@ -223,7 +223,9 @@ extern int db_for_all_children(Objid,
 				 *      db_renumber_object()
 				 *      db_change_parent()
 				 */
-extern int db_change_parents(Var obj, Var parents, Var anon_kids);
+
+extern int db_change_parents(Var obj, Var parents);
+extern int db_change_parents(Var obj, Var parents, List anon_kids);
 				/* db_change_parents() returns true (and
 				 * actually changes the parent of OBJ) iff
 				 * neither OBJ nor any of its descendents

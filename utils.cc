@@ -185,7 +185,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
-	    destroy_list(v);
+	    destroy_list(static_cast<List&>(v));
 	    gc_set_color(v.v.list, GC_BLACK);
 	    if (!gc_is_buffered(v.v.list))
 		myfree(v.v.list, M_LIST);
@@ -255,7 +255,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0)
-	    destroy_list(v);
+	    destroy_list(static_cast<List&>(v));
 	break;
     case TYPE_MAP:
 	if (delref(v.v.tree) == 0)
@@ -355,7 +355,7 @@ complex_var_dup(Var v)
 	v = Var::new_float(*v.v.fnum);
 	break;
     case TYPE_LIST:
-	v = list_dup(v);
+	v = list_dup(static_cast<const List&>(v));
 	break;
     case TYPE_MAP:
 	v = map_dup(static_cast<const Map&>(v));
@@ -473,7 +473,9 @@ equality(Var lhs, Var rhs, int case_matters)
 	    else
 		return *(lhs.v.fnum) == *(rhs.v.fnum);
 	case TYPE_LIST:
-	    return listequal(lhs, rhs, case_matters);
+	    return listequal(static_cast<const List&>(lhs),
+			     static_cast<const List&>(rhs),
+			     case_matters);
 	case TYPE_MAP:
 	    return mapequal(static_cast<const Map&>(lhs),
 			    static_cast<const Map&>(rhs),

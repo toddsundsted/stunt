@@ -992,7 +992,7 @@ bf_mapdelete(const List& arglist, Objid progr)
 static int
 do_map_keys(Var key, Var value, void *data, int first)
 {
-    Var *list = (Var *)data;
+    List *list = (List*)data;
     *list = listappend(*list, var_ref(key));
     return 0;
 }
@@ -1000,7 +1000,7 @@ do_map_keys(Var key, Var value, void *data, int first)
 static package
 bf_mapkeys(const List& arglist, Objid progr)
 {
-    Var r = new_list(0);
+    List r = new_list(0);
     assert(arglist[1].is_map());
     mapforeach(static_cast<const Map&>(arglist[1]), do_map_keys, &r);
     free_var(arglist);
@@ -1010,7 +1010,7 @@ bf_mapkeys(const List& arglist, Objid progr)
 static int
 do_map_values(Var key, Var value, void *data, int first)
 {
-    Var *list = (Var *)data;
+    List *list = (List*)data;
     *list = listappend(*list, var_ref(value));
     return 0;
 }
@@ -1018,7 +1018,7 @@ do_map_values(Var key, Var value, void *data, int first)
 static package
 bf_mapvalues(const List& arglist, Objid progr)
 {
-    Var r = new_list(0);
+    List r = new_list(0);
     assert(arglist[1].is_map());
     mapforeach(static_cast<const Map&>(arglist[1]), do_map_values, &r);
     free_var(arglist);

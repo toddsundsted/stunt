@@ -110,7 +110,7 @@ parse_into_wordlist(const char *command)
 {
     int argc, i;
     char **argv;
-    Var args;
+    List args;
     char *s = str_dup(command);
 
     argv = parse_into_words(s, &argc);

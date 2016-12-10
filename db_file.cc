@@ -333,11 +333,21 @@ ng_read_object(int anonymous)
 
     o->owner = dbio_read_objid();
 
+    // Note: if contents and/or children are not lists,
+    // leave the fields in an uninitialized state, and let
+    // `ng_validate_hierarchies()' catch the error.
+
     o->location = dbio_read_var();
-    o->contents = dbio_read_var();
+    Var contents = dbio_read_var();
+    o->contents = contents.is_list()
+		  ? o->contents = static_cast<List&>(contents)
+		  : List();
 
     o->parents = dbio_read_var();
-    o->children = dbio_read_var();
+    Var children = dbio_read_var();
+    o->children = children.is_list()
+		  ? o->children = static_cast<List&>(children)
+		  : List();
 
     o->verbdefs = 0;
     prevv = &(o->verbdefs);
@@ -672,7 +682,7 @@ ng_validate_hierarchies()
 			    && !dbpriv_find_object(tmp.v.obj)) {	\
 			    errlog("VALIDATE: #%d.%s = #%d <invalid> ... removed.\n", \
 			           oid, name, tmp.v.obj);		\
-			    o->field = setremove(o->field, tmp);	\
+			    o->field = setremove(static_cast<const List&>(o->field), tmp); \
 			}						\
 		    }							\
 		}							\
@@ -866,7 +876,7 @@ read_db_file(void)
 {
     Objid oid;
     int nobjs, nprogs, nusers;
-    Var user_list;
+    List user_list;
     int i, vnum, dummy;
     db_verb_handle h;
     Program *program;

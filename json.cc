@@ -344,7 +344,7 @@ static int
 handle_end_array(void *ctx)
 {
     struct parse_context *pctx = (struct parse_context *)ctx;
-    Var list = new_list(0);
+    List list = new_list(0);
     Var v;
     for (v = POP(pctx->top); (int)v.type > ARRAY_SENTINEL;
 	 v = POP(pctx->top)) {
@@ -468,7 +468,7 @@ generate(yajl_gen g, Var v, void *ctx)
 	    dmc.gctx = gctx;
 	    dmc.status = yajl_gen_status_ok;
 	    yajl_gen_array_open(g);
-	    if (listforeach(v, do_list, &dmc))
+	    if (listforeach(static_cast<const List&>(v), do_list, &dmc))
 		return dmc.status;
 	    yajl_gen_array_close(g);
 	    return yajl_gen_status_ok;

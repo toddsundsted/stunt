@@ -72,7 +72,7 @@ static bool shutdown_triggered = false;
 
 static bool in_emergency_mode = false;
 
-static Var checkpointed_connections;
+static List checkpointed_connections;
 
 typedef enum {
     CHKPT_OFF, CHKPT_TIMER, CHKPT_SIGNAL, CHKPT_FUNC
@@ -120,7 +120,7 @@ static struct pending_recycle *pending_tail = 0;
 static unsigned int pending_count = 0;
 
 /* used once when the server loads the database */
-static Var pending_list = new_list(0);
+static List pending_list = new_list(0);
 
 static void
 free_shandle(shandle * h)
@@ -305,9 +305,7 @@ checkpoint_signal(int sig)
 static void
 call_checkpoint_notifier(int successful)
 {
-    Var args;
-
-    args = new_list(1);
+    List args = new_list(1);
     args.v.list[1] = Var::new_int(successful);
     run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
 }
@@ -418,9 +416,7 @@ object_name(Objid oid)
 static void
 call_notifier(Objid player, Objid handler, const char *verb_name)
 {
-    Var args;
-
-    args = new_list(1);
+    List args = new_list(1);
     args.v.list[1] = Var::new_obj(player);
     run_server_task(player, Var::new_obj(handler), verb_name, args, "", 0);
 }
@@ -790,8 +786,8 @@ server_connection_option(shandle * h, const char *option, Var * value)
     CONNECTION_OPTION_GET(SERVER_CO_TABLE, h, option, value);
 }
 
-static Var
-server_connection_options(shandle * h, Var list)
+static List
+server_connection_options(shandle * h, List list)
 {
     CONNECTION_OPTION_LIST(SERVER_CO_TABLE, h, list);
 }
@@ -863,7 +859,7 @@ emergency_mode()
 	    if (!is_wizard(wizard)) {
 		if (first_valid < 0) {
 		    first_valid = db_create_object();
-		    db_change_parents(Var::new_obj(first_valid), new_list(0), none);
+		    db_change_parents(Var::new_obj(first_valid), new_list(0));
 		    printf("** No objects in database; created #%d.\n",
 			   first_valid);
 		}
@@ -880,7 +876,8 @@ emergency_mode()
 	if (!line)
 	    start_ok = 0;	/* treat EOF as "quit" */
 	else if (*line == ';') {	/* eval command */
-	    Var code, errors;
+	    List code;
+	    Var errors;
 	    Program *program;
 
 	    code = new_list(0);
@@ -960,7 +957,8 @@ emergency_mode()
 					      &message, &vname);
 		printf("%s\n", message);
 		if (h.ptr) {
-		    Var code, errors;
+		    List code;
+		    Var errors;
 		    const char *line;
 		    Program *program;
 
@@ -1100,7 +1098,7 @@ static void
 do_script_line(const char *line)
 {
     Var str;
-    Var code = new_list(0);
+    List code = new_list(0);
 
     str = str_dup_to_var(raw_bytes_to_clean(line, strlen(line)));
     code = listappend(code, str);
@@ -1112,7 +1110,7 @@ static void
 do_script_file(const char *path)
 {
     Var str;
-    Var code = new_list(0);
+    List code = new_list(0);
     std::ifstream file(path);
     std::string line;
 
@@ -1753,10 +1751,8 @@ bf_reset_max_object(const List& arglist, Objid progr)
 static package
 bf_memory_usage(const List& arglist, Objid progr)
 {
-    Var r = new_list(0);
-
+    List r = new_list(0);
     free_var(arglist);
-
     return make_var_pack(r);
 }
 
@@ -1835,14 +1831,16 @@ bf_open_network_connection(const List& arglist, Objid progr)
         return make_error_pack(E_PERM);
     }
 
-    if (arglist.length() == 3) {
+    List dest = arglist;
+
+    if (dest.length() == 3) {
 	Objid oid;
 
-	if (!arglist[3].is_obj()) {
+	if (!dest[3].is_obj()) {
 	    return make_error_pack(E_TYPE);
 	}
-	oid = arglist.v.list[3].v.obj;
-	arglist = listdelete(arglist, 3);
+	oid = dest[3].v.obj;
+	dest = listdelete(dest, 3);
 
 	sl.ptr = find_slistener_by_oid(oid);
 	if (!sl.ptr) {
@@ -1857,8 +1855,8 @@ bf_open_network_connection(const List& arglist, Objid progr)
 	sl.ptr = NULL;
     }
 
-    e = network_open_connection(arglist, sl);
-    free_var(arglist);
+    e = network_open_connection(dest, sl);
+    free_var(dest);
     if (e == E_NONE) {
 	/* The connection was successfully opened, implying that
 	 * server_new_connection was called, implying and a new negative
@@ -1891,7 +1889,7 @@ bf_connected_players(const List& arglist, Objid progr)
     int nargs = arglist.length();
     int show_all = (nargs >= 1 && is_true(arglist[1]));
     int count = 0;
-    Var result;
+    List result;
 
     free_var(arglist);
     for (h = all_shandles; h; h = h->next)
@@ -2050,7 +2048,6 @@ bf_connection_options(const List& arglist, Objid progr)
     int nargs = arglist.length();
     const char *oname = (nargs >= 2 ? arglist[2].v.str : 0);
     shandle *h = find_shandle(oid);
-    Var ans;
 
     if (!h || h->disconnect_me) {
 	free_var(arglist);
@@ -2060,21 +2057,23 @@ bf_connection_options(const List& arglist, Objid progr)
 	return make_error_pack(E_PERM);
     }
     if (oname) {
-	if (!server_connection_option(h, oname, &ans)
-	    && !tasks_connection_option(h->tasks, oname, &ans)
-	    && !network_connection_option(h->nhandle, oname, &ans)) {
+	Var ans;
+	if (!server_connection_option(h, oname, &ans) &&
+	    !tasks_connection_option(h->tasks, oname, &ans) &&
+	    !network_connection_option(h->nhandle, oname, &ans)) {
 	    free_var(arglist);
 	    return make_error_pack(E_INVARG);
 	}
+	free_var(arglist);
+	return make_var_pack(ans);
     } else {
-	ans = new_list(0);
+	List ans = new_list(0);
 	ans = server_connection_options(h, ans);
 	ans = tasks_connection_options(h->tasks, ans);
 	ans = network_connection_options(h->nhandle, ans);
+	free_var(arglist);
+	return make_var_pack(ans);
     }
-
-    free_var(arglist);
-    return make_var_pack(ans);
 }
 
 static slistener *
@@ -2138,7 +2137,7 @@ static package
 bf_listeners(const List& arglist, Objid progr)
 {				/* () */
     int i, count = 0;
-    Var list, entry;
+    List list, entry;
     slistener *l;
 
     free_var(arglist);

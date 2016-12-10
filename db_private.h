@@ -22,6 +22,7 @@
 #include <stdexcept>
 
 #include "config.h"
+#include "list.h"
 #include "program.h"
 #include "structures.h"
 
@@ -65,9 +66,9 @@ typedef struct Object {
     int flags; /* see db.h for `flags' values */
 
     Var location;
-    Var contents;
+    List contents;
     Var parents;
-    Var children;
+    List children;
 
     Pval *propval;
     unsigned int nval;
@@ -88,6 +89,24 @@ typedef struct Object {
  * number.  `children' and `contents' must be a list of valid object
  * numbers.
  */
+
+/*
+ * Wraps `v' in a list if it is not already a list.  Consumes `v' and
+ * allocates a new `List'. Called by functions that operate on an
+ * object's parents, which can be either an object reference
+ * (TYPE_OBJ) or a list (TYPE_LIST) of object references.
+ */
+static inline List
+enlist_var(Var v)
+{
+    if (v.is_list()) {
+	return static_cast<List&>(v);
+    } else {
+	List l = new_list(1);
+	l.v.list[1] = v;
+	return l;
+    }
+}
 
 /*********** Verb cache support ***********/
 
@@ -143,7 +162,7 @@ extern Var dbpriv_object_contents(Object *);
 				 * reference is to be persistent.
 				 */
 
-extern void dbpriv_set_all_users(Var);
+extern void dbpriv_set_all_users(List&);
 				/* Initialize the list returned by
 				 * db_all_users().
 				 */
@@ -175,8 +194,10 @@ extern void dbpriv_after_load(void);
 extern Propdef dbpriv_new_propdef(const char *);
 
 extern int dbpriv_check_properties_for_chparent(Var obj,
+						Var parents);
+extern int dbpriv_check_properties_for_chparent(Var obj,
 						Var parents,
-						Var anon_kids);
+						List anon_kids);
 				/* Return true iff PARENTS defines no
 				 * properties that are also defined by either
 				 * OBJ or any of OBJ's descendants, or by
@@ -185,9 +206,12 @@ extern int dbpriv_check_properties_for_chparent(Var obj,
 				 */
 
 extern void dbpriv_fix_properties_after_chparent(Var obj,
-						 Var old_ancestors,
-						 Var new_ancestors,
-						 Var anon_kids);
+						 List old_ancestors,
+						 List new_ancestors);
+extern void dbpriv_fix_properties_after_chparent(Var obj,
+						 List old_ancestors,
+						 List new_ancestors,
+						 List anon_kids);
 				/* OBJ has just had its parents changed.
 				 * Fix up the properties of OBJ and its
 				 * descendants, removing obsolete ones

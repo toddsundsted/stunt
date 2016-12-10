@@ -709,20 +709,25 @@ db_property_allows(db_prop_handle h, Objid progr, db_prop_flag flag)
  * their ancestors define a property with the same name.
  */
 int
-dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
+dbpriv_check_properties_for_chparent(Var obj, Var parents)
+{
+    return dbpriv_check_properties_for_chparent(obj, parents, new_list(0));
+}
+
+int
+dbpriv_check_properties_for_chparent(Var obj, Var parents, List anon_kids)
 {
     /* build a hypothetical list of ancestors from the supplied parents */
     /* `obj' must not be in any of `parents' ancestors */
 
-    Var ancestors = new_list(0);
-    Var stack = enlist_var(var_dup(parents));
+    List ancestors = new_list(0);
+    List stack = enlist_var(var_dup(parents));
     Var top;
 
-    while (listlength(stack) > 0) {
+    while (stack.length() > 0) {
 	POP_TOP(top, stack);
 	if (is_valid(top)) {
-	    Var tmp = dbpriv_dereference(top)->parents;
-	    tmp = enlist_var(var_ref(tmp));
+	    List tmp = enlist_var(var_ref(dbpriv_dereference(top)->parents));
 	    stack = listconcat(tmp, stack);
 	    ancestors = setadd(ancestors, top);
 	}
@@ -849,7 +854,13 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
  * preserve information about those properties.
  */
 void
-dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancestors, Var anon_kids)
+dbpriv_fix_properties_after_chparent(Var obj, List old_ancestors, List new_ancestors)
+{
+    return dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors, new_list(0));
+}
+
+void
+dbpriv_fix_properties_after_chparent(Var obj, List old_ancestors, List new_ancestors, List anon_kids)
 {
     Object *o;
     Var ancestor;
@@ -951,7 +962,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
      */
     Var parent, child;
     int i4, c4, i5, c5, i6, c6;
-    Var children;
+    List children;
 
     if (anon_kids.is_list())
 	children = listconcat(var_ref(me->children), var_ref(anon_kids));
@@ -960,8 +971,8 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 
     FOR_EACH(child, children, i4, c4) {
 	Object *oc = dbpriv_dereference(child);
-	Var _new = new_list(1);
-	Var old = new_list(1);
+	List _new = new_list(1);
+	List old = new_list(1);
 	_new.v.list[1] = var_ref(child);
 	old.v.list[1] = var_ref(child);
 	if (oc->parents.is_list()) {
@@ -988,7 +999,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 	    _new = listconcat(_new, var_ref(new_ancestors));
 	    old = listconcat(old, var_ref(old_ancestors));
 	}
-	dbpriv_fix_properties_after_chparent(child, old, _new, none);
+	dbpriv_fix_properties_after_chparent(child, old, _new);
 	free_var(_new);
 	free_var(old);
     }

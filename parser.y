@@ -1274,7 +1274,7 @@ struct parser_state {
     Var         code;           /* a list of strings */
     int         cur_string;     /* which string? */
     int         cur_char;       /* which character in that string? */
-    Var         errors;         /* a list of strings */
+    List        errors;         /* a list of strings */
 };
 
 static void

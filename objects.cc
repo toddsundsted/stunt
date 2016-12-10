@@ -43,11 +43,8 @@ controls2(Objid who, Var what)
 static Var
 make_arglist(Objid what)
 {
-    Var r;
-
-    r = new_list(1);
+    List r = new_list(1);
     r.v.list[1] = Var::new_obj(what);
-
     return r;
 }
 
@@ -374,7 +371,7 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 
 	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
 
-	    if (!db_change_parents(Var::new_obj(oid), value.v.list[1], none)) {
+	    if (!db_change_parents(Var::new_obj(oid), value.v.list[1])) {
 		db_destroy_object(oid);
 		db_set_last_used_objid(last);
 		free_var(value);
@@ -450,7 +447,7 @@ bf_chparent_chparents(const List& arglist, Objid progr)
     Var obj = arglist[1];
     Var what = arglist[2];
     int n = arglist.length();
-    Var anon_kids = nothing;
+    List anon_kids;
 
     if (!obj.is_object() || !is_obj_or_list_of_objs(what)) {
 	free_var(arglist);
@@ -461,8 +458,11 @@ bf_chparent_chparents(const List& arglist, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
-    else if (n > 2) {
-	anon_kids = arglist[3];
+    else if (n > 2 && arglist[3].is_list()) {
+	anon_kids = static_cast<const List&>(arglist[3]);
+    }
+    else {
+	anon_kids = new_list(0);
     }
 
     if (!is_valid(obj)
@@ -549,7 +549,7 @@ bf_parents(const List& arglist, Objid progr)
 	free_var(r);
 	return make_var_pack(new_list(0));
     } else {
-	Var t = new_list(1);
+	List t = new_list(1);
 	t.v.list[1] = r;
 	return make_var_pack(t);
     }
@@ -733,12 +733,12 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 		Var cp = db_object_parents(c);
 		Var op = db_object_parents(oid);
 		if (cp.is_obj()) {
-		    db_change_parents(Var::new_obj(c), op, none);
+		    db_change_parents(Var::new_obj(c), op);
 		}
 		else {
 		    int i = 1;
 		    int j = 1;
-		    Var _new = new_list(0);
+		    List _new = new_list(0);
 		    while (i <= cp.v.list[0].v.num && cp.v.list[i].v.obj != oid) {
 			_new = setadd(_new, var_ref(cp.v.list[i]));
 			i++;
@@ -758,12 +758,12 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 			_new = setadd(_new, var_ref(cp.v.list[i]));
 			i++;
 		    }
-		    db_change_parents(Var::new_obj(c), _new, none);
+		    db_change_parents(Var::new_obj(c), _new);
 		    free_var(_new);
 		}
 	    }
 
-	    db_change_parents(obj, nothing, none);
+	    db_change_parents(obj, nothing);
 
 	    incr_quota(db_object_owner(oid));
 

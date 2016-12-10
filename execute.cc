@@ -65,7 +65,7 @@ static Var handler_verb_args;
 
 /* used when loading the database to hold values that may reference yet
    unloaded anonymous objects */
-static Var temp_vars = new_list(0);
+static List temp_vars = new_list(0);
 
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
@@ -167,7 +167,7 @@ output_to_log(const char *line)
     applog(LOG_INFO2, "%s\n", line);
 }
 
-static Var backtrace_list;
+static List backtrace_list;
 
 static void
 output_to_list(const char *line)
@@ -397,11 +397,11 @@ find_handler_activ(Var code)
     return -1;
 }
 
-static Var
+static List
 make_stack_list(activation * stack, int start, int end, int include_end,
 		int root_vector, int line_numbers_too, Objid progr)
 {
-    Var r;
+    List r;
     int count = 0, i, j;
 
     for (i = end; i >= start; i--) {
@@ -496,7 +496,7 @@ raise_error(package p, enum outcome *outcome)
 static void
 abort_task(enum abort_reason reason)
 {
-    Var value;
+    List value;
     const char *msg;
     const char *htag;
 
@@ -960,16 +960,15 @@ do {								\
 
 	case OP_MAKE_EMPTY_LIST:
 	    {
-		Var list;
-
-		list = new_list(0);
+		List list = new_list(0);
 		PUSH(list);
 	    }
 	    break;
 
 	case OP_LIST_ADD_TAIL:
 	    {
-		Var r, tail, list;
+		Var tail, list;
+		List r;
 
 		tail = POP();	/* whatever */
 		list = POP();	/* should be list */
@@ -978,7 +977,7 @@ do {								\
 		    free_var(tail);
 		    PUSH_ERROR(E_TYPE);
 		} else {
-		    r = listappend(list, tail);
+		    r = listappend(static_cast<const List&>(list), tail);
 		    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 			PUSH(r);
 		    else {
@@ -991,7 +990,8 @@ do {								\
 
 	case OP_LIST_APPEND:
 	    {
-		Var r, tail, list;
+		Var tail, list;
+		List r;
 
 		tail = POP();	/* second, should be list */
 		list = POP();	/* first, should be list */
@@ -1000,7 +1000,7 @@ do {								\
 		    free_var(tail);
 		    PUSH_ERROR(E_TYPE);
 		} else {
-		    r = listconcat(list, tail);
+		    r = listconcat(static_cast<const List&>(list), static_cast<const List&>(tail));
 		    if (value_bytes(r) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 			PUSH(r);
 		    else {
@@ -1040,14 +1040,13 @@ do {								\
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_RANGE);
-		} else if (list.is_str()
-			   && memo_strlen(value.v.str) != 1) {
+		} else if (list.is_str() && memo_strlen(value.v.str) != 1) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
 		    PUSH_ERROR(E_INVARG);
 		} else if (list.is_list()) {
-		    Var res = listset(list, value, index.v.num);
+		    Var res = listset(static_cast<const List&>(list), value, index.v.num);
 		    if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 			PUSH(res);
 		    else {
@@ -1075,9 +1074,7 @@ do {								\
 
 	case OP_MAKE_SINGLETON_LIST:
 	    {
-		Var list;
-
-		list = new_list(1);
+		List list = new_list(1);
 		list.v.list[1] = POP();
 		PUSH(list);
 	    }
@@ -1490,9 +1487,9 @@ do {								\
 			free_var(base);
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH((base.is_str()
-			      ? substr(base, from.v.num, to.v.num)
-			      : sublist(base, from.v.num, to.v.num)));
+			PUSH(base.is_list()
+			     ? sublist(static_cast<const List&>(base), from.v.num, to.v.num)
+			     : substr(base, from.v.num, to.v.num));
 			/* base freed by substr/sublist */
 			free_var(from);
 			free_var(to);
@@ -1932,7 +1929,6 @@ do {								\
 				}
 			    }
 			} else if (base.is_list()) {
-			    Var res;
 			    if (from.v.num > base.v.list[0].v.num + 1 || to.v.num < 0) {
 				free_var(to);
 				free_var(from);
@@ -1940,7 +1936,9 @@ do {								\
 				free_var(value);
 				PUSH_ERROR(E_RANGE);
 			    } else {
-				res = listrangeset(base, from.v.num, to.v.num, value);
+				List res = listrangeset(static_cast<const List&>(base),
+							from.v.num, to.v.num,
+							static_cast<const List&>(value));
 				if (value_bytes(res) <= server_int_option_cached(SVO_MAX_LIST_VALUE_BYTES))
 				    PUSH(res);
 				else {
@@ -2037,15 +2035,14 @@ do {								\
 			int nreq = READ_BYTES(bv, 1);
 			int rest = READ_BYTES(bv, 1);
 			int have_rest = (rest > nargs ? 0 : 1);
-			Var list;
 			int len = 0, nopt_avail, nrest, i, offset;
 			int done, where = 0;
 			enum error e = E_NONE;
 
-			list = TOP_RT_VALUE;
-			if (!list.is_list())
+			Var top = TOP_RT_VALUE;
+			if (!top.is_list())
 			    e = E_TYPE;
-			else if ((len = list.v.list[0].v.num) < nreq
+			else if ((len = top.v.list[0].v.num) < nreq
 				 || (!have_rest && len > nargs))
 			    e = E_ARGS;
 
@@ -2058,8 +2055,8 @@ do {								\
 			    }
 			} else {
 			    nopt_avail = len - nreq;
-			    nrest = (have_rest && len >= nargs ? len - nargs + 1
-				     : 0);
+			    nrest = (have_rest && len >= nargs ? len - nargs + 1 : 0);
+			    const List& list = static_cast<const List&>(top);
 			    for (offset = 0, i = 1; i <= nargs; i++) {
 				int id = READ_BYTES(bv, bc.numbytes_var_name);
 				int label = READ_BYTES(bv, bc.numbytes_label);
@@ -2196,9 +2193,7 @@ do {								\
 		    /* fall thru */
 		case EOP_EXIT:
 		    {
-			Var v;
-
-			v = new_list(2);
+			List v = new_list(2);
 			v.v.list[1] = Var::new_int(READ_BYTES(bv, bc.numbytes_stack));
 			v.v.list[2] = Var::new_int(READ_BYTES(bv, bc.numbytes_label));
 			STORE_STATE_VARIABLES();
@@ -2892,16 +2887,16 @@ bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
     struct cf_state *s;
 
     if (next == 1) {		/* first call */
-	const char *fname = value.v.list[1].v.str;
+	assert(value.is_list());
+	const List& list = static_cast<const List&>(value);
+	const char* fname = list[1].v.str;
 
 	fnum = number_func_by_name(fname);
 	if (fnum == FUNC_NOT_FOUND) {
-	    p = make_raise_pack(E_INVARG, "Unknown built-in function",
-				var_ref(value.v.list[1]));
-	    free_var(value);
+	    p = make_raise_pack(E_INVARG, "Unknown built-in function", var_ref(list[1]));
+	    free_var(list);
 	} else {
-	    value = listdelete(value, 1);
-	    p = call_bi_func(fnum, value, next, progr, vdata);
+	    p = call_bi_func(fnum, listdelete(list, 1), next, progr, vdata);
 	}
     } else {			/* return to function */
 	s = (struct cf_state *)vdata;

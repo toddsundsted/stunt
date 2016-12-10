@@ -15,28 +15,31 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#ifndef List_h
+#define List_h 1
+
 #include "structures.h"
 #include "streams.h"
 
-extern Var new_list(int size);
-extern void destroy_list(Var list);
-extern Var list_dup(Var list);
+extern List new_list(int size);
+extern void destroy_list(List& list);
+extern List list_dup(const List& list);
 
-extern Var listappend(Var list, Var value);
-extern Var listinsert(Var list, Var value, int pos);
-extern Var listdelete(Var list, int pos);
-extern Var listset(Var list, Var value, int pos);
-extern Var listrangeset(Var list, int from, int to, Var value);
-extern Var listconcat(Var first, Var second);
-extern Var setadd(Var list, Var value);
-extern Var setremove(Var list, Var value);
-extern Var sublist(Var list, int lower, int upper);
-extern int listequal(Var lhs, Var rhs, int case_matters);
+extern List listappend(const List& list, Var value);
+extern List listinsert(const List& list, Var value, int pos);
+extern List listdelete(const List& list, int pos);
+extern List listset(const List& list, Var value, int pos);
+extern List listrangeset(const List& list, int from, int to, const List& value);
+extern List listconcat(const List& first, const List& second);
+extern List setadd(const List& list, Var value);
+extern List setremove(const List& list, Var value);
+extern List sublist(const List& list, int lower, int upper);
+extern int listequal(const List& lhs, const List& rhs, int case_matters);
 
-extern int list_sizeof(Var *list);
+extern int list_sizeof(const Var *list);
 
 typedef int (*listfunc) (Var value, void *data, int first);
-extern int listforeach(Var list, listfunc func, void *data);
+extern int listforeach(const List& list, listfunc func, void *data);
 
 extern Var strrangeset(Var list, int from, int to, Var value);
 extern Var substr(Var str, int lower, int upper);
@@ -53,24 +56,6 @@ static inline int32
 listlength(Var l)
 {
     return l.v.list[0].v.num;
-}
-
-/*
- * Wraps `v' in a list if it is not already a list.  Consumes `v', so
- * you may want to var_ref/var_dup `v'.  Currently, this function is
- * called by functions that operate on an object's parents, which can
- * be either an object reference (TYPE_OBJ) or a list of object
- * references (TYPE_LIST).
- */
-static inline Var
-enlist_var(Var v)
-{
-    if (v.is_list())
-	return v;
-
-    Var r = new_list(1);
-    r.v.list[1] = v;
-    return r;
 }
 
 /*
@@ -96,3 +81,5 @@ for (idx = 1, cnt = lst.v.list[0].v.num;			\
 #define POP_TOP(tp, stck)					\
 tp = var_ref(stck.v.list[1]);					\
 stck = listdelete(stck, 1);
+
+#endif

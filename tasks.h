@@ -29,11 +29,9 @@ typedef struct {
 extern task_queue new_task_queue(Objid player, Objid handler);
 extern void free_task_queue(task_queue q);
 
-extern int tasks_connection_option(task_queue, const char *,
-				   Var *);
-extern Var tasks_connection_options(task_queue, Var);
-extern int tasks_set_connection_option(task_queue, const char *,
-				       Var);
+extern int tasks_set_connection_option(task_queue, const char *, Var);
+extern int tasks_connection_option(task_queue, const char *, Var *);
+extern List tasks_connection_options(task_queue, List);
 
 extern void new_input_task(task_queue, const char *, int);
 extern void task_suspend_input(task_queue);

@@ -404,12 +404,12 @@ make_vc_table(int size)
 
 #define VC_CACHE_STATS_MAX 16
 
-Var
+List
 db_verb_cache_stats(void)
 {
     int i, depth, histogram[VC_CACHE_STATS_MAX + 1];
     vc_entry *vc;
-    Var v, vv;
+    List l, v;
 
     for (i = 0; i < VC_CACHE_STATS_MAX + 1; i++) {
 	histogram[i] = 0;
@@ -424,16 +424,16 @@ db_verb_cache_stats(void)
 	histogram[depth]++;
     }
 
-    v = new_list(5);
-    v.v.list[1] = Var::new_int(verbcache_hit);
-    v.v.list[2] = Var::new_int(verbcache_neg_hit);
-    v.v.list[3] = Var::new_int(verbcache_miss);
-    v.v.list[4] = Var::new_int(db_verb_generation);
-    vv = (v.v.list[5] = new_list(VC_CACHE_STATS_MAX + 1));
+    l = new_list(5);
+    l.v.list[1] = Var::new_int(verbcache_hit);
+    l.v.list[2] = Var::new_int(verbcache_neg_hit);
+    l.v.list[3] = Var::new_int(verbcache_miss);
+    l.v.list[4] = Var::new_int(db_verb_generation);
+    l.v.list[5] = (v = new_list(VC_CACHE_STATS_MAX + 1));
     for (i = 0; i < VC_CACHE_STATS_MAX + 1; i++) {
-	vv.v.list[i + 1] = Var::new_int(histogram[i]);
+	v.v.list[i + 1] = Var::new_int(histogram[i]);
     }
-    return v;
+    return l;
 }
 
 void
@@ -488,9 +488,9 @@ find_callable_verbdef(Object *start, const char *verb)
 	return data;
     }
 
-    Var stack = enlist_var(var_ref(start->parents));
+    List stack = enlist_var(var_ref(start->parents));
 
-    while (listlength(stack) > 0) {
+    while (stack.length() > 0) {
 	Var top;
 
 	POP_TOP(top, stack);
@@ -504,10 +504,10 @@ find_callable_verbdef(Object *start, const char *verb)
 	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL)
 	    break;
 
-	if (o->parents.is_obj())
-	    stack = listinsert(stack, var_ref(o->parents), 1);
+	if (o->parents.is_list())
+	    stack = listconcat(var_ref(static_cast<const List&>(o->parents)), stack);
 	else
-	    stack = listconcat(var_ref(o->parents), stack);
+	    stack = listinsert(stack, var_ref(o->parents), 1);
     }
 
     free_var(stack);
@@ -542,11 +542,11 @@ db_find_callable_verb(Var recv, const char *verb)
      * with verbs, and then try to find the verb starting at that
      * point.
      */
-    Var stack = new_list(0);
+    List stack = new_list(0);
     stack = listappend(stack, var_ref(recv));
 
     try_again:
-    while (listlength(stack) > 0) {
+    while (stack.length() > 0) {
 	Var top;
 
 	POP_TOP(top, stack);
@@ -555,9 +555,9 @@ db_find_callable_verb(Var recv, const char *verb)
 	    o = dbpriv_dereference(top);
 	    if (o->verbdefs == NULL) {
 		/* keep looking */
-		stack = o->parents.is_obj()
-		        ? listinsert(stack, var_ref(o->parents), 1)
-		        : listconcat(var_ref(o->parents), stack);
+		stack = o->parents.is_list()
+		        ? listconcat(var_ref(static_cast<const List&>(o->parents)), stack)
+		        : listinsert(stack, var_ref(o->parents), 1);
 		free_var(top);
 		continue;
 	    }

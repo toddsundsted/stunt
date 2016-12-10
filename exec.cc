@@ -504,8 +504,7 @@ deal_with_child_exit(void)
     for (i = 0; i < EXEC_MAX_PROCESSES; i++) {
 	tw = process_table[i];
 	if (tw && TWS_STOP == tw->status) {
-	    Var v;
-	    v = new_list(3);
+	    List v = new_list(3);
 	    v.v.list[1] = Var::new_int(tw->code);
 	    stdout_readable(tw->fout, tw);
 	    v.v.list[2] = Var::new_str(reset_stream(tw->sout));

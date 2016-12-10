@@ -164,8 +164,8 @@ extern const char *network_connection_name(network_handle nh);
 				 * into the phrase 'Connection accepted: %s'.
 				 */
 
-extern Var network_connection_options(network_handle nh,
-				      Var list);
+extern List network_connection_options(network_handle nh,
+				       List list);
 				/* Add the current option settings for the
 				 * given connection onto the end of LIST and
 				 * return the new list.  Each entry on LIST

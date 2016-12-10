@@ -23,20 +23,20 @@
 #  include "net_multi.cc"
 #endif
 
-Var
-network_connection_options(network_handle nh, Var list)
-{
-    CONNECTION_OPTION_LIST(NETWORK_CO_TABLE, nh, list);
-}
-
-int
-network_connection_option(network_handle nh, const char *option, Var * value)
-{
-    CONNECTION_OPTION_GET(NETWORK_CO_TABLE, nh, option, value);
-}
-
 int
 network_set_connection_option(network_handle nh, const char *option, Var value)
 {
     CONNECTION_OPTION_SET(NETWORK_CO_TABLE, nh, option, value);
+}
+
+int
+network_connection_option(network_handle nh, const char *option, Var *value)
+{
+    CONNECTION_OPTION_GET(NETWORK_CO_TABLE, nh, option, value);
+}
+
+List
+network_connection_options(network_handle nh, List list)
+{
+    CONNECTION_OPTION_LIST(NETWORK_CO_TABLE, nh, list);
 }

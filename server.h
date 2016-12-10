@@ -332,7 +332,7 @@ extern int read_active_connections(void);
 				    TYPE_FOO, VFOO_MEMBER,	\
 				    GETVALUE, SETVALUE)		\
     {								\
-	Var pair = new_list(2);					\
+	List pair = new_list(2);				\
 	pair.v.list[1].type = TYPE_STR;				\
 	pair.v.list[1].v.str = str_dup(#NAME);			\
 	pair.v.list[2].type = (TYPE_FOO);			\
