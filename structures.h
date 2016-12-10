@@ -124,9 +124,9 @@ typedef struct Object Object;
 
 struct Var {
     union {
-	const char *str;	/* STR */
-	int32 num;		/* NUM, CATCH, FINALLY */
+	int32 num;		/* INT, CATCH, FINALLY */
 	Objid obj;		/* OBJ */
+	const char *str;	/* STR */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
 	rbtree *tree;		/* MAP */
