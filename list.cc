@@ -509,23 +509,20 @@ list_sizeof(const Var *list)
     return size;
 }
 
-Var
-strrangeset(Var base, int from, int to, Var value)
+Str
+strrangeset(const Str& base, int from, int to, const Str& value)
 {
     /* base and value are free'd */
     int index, offset = 0;
-    int val_len = memo_strlen(value.v.str);
     int base_len = memo_strlen(base.v.str);
+    int val_len = memo_strlen(value.v.str);
     int lenleft = (from > 1) ? from - 1 : 0;
     int lenmiddle = val_len;
     int lenright = (base_len > to) ? base_len - to : 0;
     int newsize = lenleft + lenmiddle + lenright;
 
-    Var ans;
-    char *s;
-
-    s = (char *)mymalloc(sizeof(char) * (newsize + 1), M_STRING);
-
+    Str ans;
+    char *s = (char *)mymalloc(sizeof(char) * (newsize + 1), M_STRING);
     for (index = 0; index < lenleft; index++)
 	s[offset++] = base.v.str[index];
     for (index = 0; index < lenmiddle; index++)
@@ -535,20 +532,22 @@ strrangeset(Var base, int from, int to, Var value)
     s[offset] = '\0';
     ans.type = TYPE_STR;
     ans.v.str = s;
+
     free_var(base);
     free_var(value);
+
     return ans;
 }
 
-Var
-substr(Var str, int lower, int upper)
+Str
+substr(const Str& str, int lower, int upper)
 {
-    Var r;
-
+    Str r;
     r.type = TYPE_STR;
-    if (lower > upper)
+
+    if (lower > upper) {
 	r.v.str = str_dup("");
-    else {
+    } else {
 	int loop, index = 0;
 	char *s = (char *)mymalloc(upper - lower + 2, M_STRING);
 
@@ -557,20 +556,23 @@ substr(Var str, int lower, int upper)
 	s[index] = '\0';
 	r.v.str = s;
     }
+
     free_var(str);
+
     return r;
 }
 
-Var
-strget(Var str, int i)
+Str
+strget(const Str& str, int i)
 {
-    Var r;
+    Str r;
     char *s;
 
     r.type = TYPE_STR;
     s = str_dup(" ");
     s[0] = str.v.str[i - 1];
     r.v.str = s;
+
     return r;
 }
 

@@ -41,9 +41,9 @@ extern int list_sizeof(const Var *list);
 typedef int (*listfunc) (Var value, void *data, int first);
 extern int listforeach(const List& list, listfunc func, void *data);
 
-extern Var strrangeset(Var list, int from, int to, Var value);
-extern Var substr(Var str, int lower, int upper);
-extern Var strget(Var str, int i);
+extern Str strrangeset(const Str& str, int from, int to, const Str& value);
+extern Str substr(const Str& str, int lower, int upper);
+extern Str strget(const Str& str, int i);
 
 extern const char *value2str(Var);
 extern void unparse_value(Stream *, Var);

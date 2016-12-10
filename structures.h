@@ -268,6 +268,9 @@ str_ref_to_var(const char *s)
     return r;
 }
 
+struct Str : public Var {
+};
+
 struct List : public Var {
     int32
     length() const {

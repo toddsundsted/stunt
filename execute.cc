@@ -1358,13 +1358,12 @@ do {								\
 			free_var(list);
 		    }
 		} else {	/* list.type == TYPE_STR */
-		    if (index.v.num <= 0
-			|| index.v.num > (int) memo_strlen(list.v.str)) {
+		    if (index.v.num <= 0 || index.v.num > (int)memo_strlen(list.v.str)) {
 			free_var(index);
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH(strget(list, index.v.num));
+			PUSH(strget(static_cast<const Str&>(list), index.v.num));
 			free_var(index);
 			free_var(list);
 		    }
@@ -1487,9 +1486,11 @@ do {								\
 			free_var(base);
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH(base.is_list()
-			     ? sublist(static_cast<const List&>(base), from.v.num, to.v.num)
-			     : substr(base, from.v.num, to.v.num));
+			if (base.is_list()) {
+			    PUSH(sublist(static_cast<const List&>(base), from.v.num, to.v.num));
+			} else {
+			    PUSH(substr(static_cast<const Str&>(base), from.v.num, to.v.num));
+			}
 			/* base freed by substr/sublist */
 			free_var(from);
 			free_var(to);
@@ -1947,7 +1948,6 @@ do {								\
 				}
 			    }
 			} else {	/* TYPE_STR */
-			    Var res;
 			    if (from.v.num > memo_strlen(base.v.str) + 1 || to.v.num < 0) {
 				free_var(to);
 				free_var(from);
@@ -1955,7 +1955,9 @@ do {								\
 				free_var(value);
 				PUSH_ERROR(E_RANGE);
 			    } else {
-				res = strrangeset(base, from.v.num, to.v.num, value);
+				Str res = strrangeset(static_cast<const Str&>(base),
+						      from.v.num, to.v.num,
+						      static_cast<const Str&>(value));
 				if (memo_strlen(res.v.str) <= server_int_option_cached(SVO_MAX_STRING_CONCAT))
 				    PUSH(res);
 				else {
@@ -2230,7 +2232,7 @@ do {								\
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
 				RUN_ACTIV.rt_env[id] = BASE.is_str()
-				  ? strget(BASE, ITER.v.num)
+				  ? strget(static_cast<const Str&>(BASE), ITER.v.num)
 				  : var_ref(BASE.v.list[ITER.v.num]);
 				ITER.v.num++;	/* increment iter */
 			    }
@@ -2291,7 +2293,7 @@ do {								\
 			    } else {
 				free_var(RUN_ACTIV.rt_env[id]);
 				RUN_ACTIV.rt_env[id] = BASE.is_str()
-				  ? strget(BASE, ITER.v.num)
+				  ? strget(static_cast<const Str&>(BASE), ITER.v.num)
 				  : var_ref(BASE.v.list[ITER.v.num]);
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(ITER);
