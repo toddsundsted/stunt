@@ -17,8 +17,8 @@ dnl   Pavel@Xerox.Com
 dnl
 AC_PREREQ([2.61])
 AC_INIT([Stunt], [10], [http://groups.google.com/group/MOO-talk], [stunt], [http://stunt.io/])
-AC_CONFIG_SRCDIR([server.cc])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_SRCDIR([server.cc])
 
 AC_LANG([C])
 
@@ -44,9 +44,9 @@ AC_ISC_POSIX
 AC_MINIX
 AC_SCO_INTL
 AC_PROG_CC_STDC
-AC_HEADER_CHECK(sys/bsdtypes.h, AC_DEFINE(NEED_BSDTYPES_H))
-AC_HEADER_CHECK(sys/select.h, AC_DEFINE(NEED_SELECT_H))
-AC_HEADER_CHECK(memory.h, AC_DEFINE(NEED_MEMORY_H))
+AC_HEADER_CHECK(sys/bsdtypes.h, AC_DEFINE([NEED_BSDTYPES_H], [1], [Define to 1 if we need <sys/bsdtypes.h>.]))
+AC_HEADER_CHECK(sys/select.h, AC_DEFINE([NEED_SELECT_H], [1], [Define to 1 if we need <sys/select.h>.]))
+AC_HEADER_CHECK(memory.h, AC_DEFINE([NEED_MEMORY_H], [1], [Define to 1 if we need <memory.h>.]))
 AC_PID_T
 AC_MODE_T
 AC_SIZE_T
@@ -111,7 +111,7 @@ echo "
 " > conftest.c
 $CC $DEFS conftest.c -o conftest $LIBS > conftest.out 2>&1
 if grep "conflicting types for built-in function" conftest.out >/dev/null; then
-  AC_DEFINE(USE_OWN_STRING_H)
+  AC_DEFINE([USE_OWN_STRING_H], [1], [Define to 1 if we should use our <my-string.h>.])
 fi
 rm -f conftest*
 
@@ -120,7 +120,7 @@ echo "checking for incompatibility between <sys/ioctl.h> and <stropts.h>"
 AC_TEST_CPP([
 #include <sys/ioctl.h>
 #include <stropts.h>
-], , AC_DEFINE(UNDEF_IO_IN_STROPTS_H))
+], , AC_DEFINE([UNDEF_IO_IN_STROPTS_H], [1], [Define to 1 if we should undef `_IO'.]))
 
 dnl ***************************************************************************
 echo "checking whether or not fstat() can tell how much data is in a FIFO"
@@ -144,7 +144,7 @@ main()
   unlink("/tmp/conftest-fifo");
   exit(result);
 }
-], AC_DEFINE(FSTAT_WORKS_ON_FIFOS))
+], AC_DEFINE([FSTAT_WORKS_ON_FIFOS], [1], [Define to 1 if `fstat()' can tell how much data is in a FIFO.]))
 
 dnl ***************************************************************************
 echo "checking whether or not select() can be used on FIFOs"
@@ -180,7 +180,7 @@ main()
   unlink("/tmp/conftest-fifo");
   exit(result);
 }
-], AC_DEFINE(SELECT_WORKS_ON_FIFOS))
+], AC_DEFINE([SELECT_WORKS_ON_FIFOS], [1], [Define to 1 if `select()' can be used on FIFOs.]))
 
 dnl ***************************************************************************
 echo "checking whether or not poll() can be used on FIFOs"
@@ -201,7 +201,7 @@ main()
   unlink("/tmp/conftest-fifo");
   exit(result);
 }
-], AC_DEFINE(POLL_WORKS_ON_FIFOS))
+], AC_DEFINE([POLL_WORKS_ON_FIFOS], [1], [Define to 1 if `poll()' can be used on FIFOs.]))
 
 dnl ***************************************************************************
 echo checking whether POSIX-style non-blocking I/O works
@@ -229,7 +229,7 @@ main ()
   unlink("/tmp/conftest-fifo");
   exit(result);
 }
-], AC_DEFINE(POSIX_NONBLOCKING_WORKS))
+], AC_DEFINE([POSIX_NONBLOCKING_WORKS], [1], [Define to 1 if POSIX-style non-blocking I/O works.]))
 
 dnl ***************************************************************************
 echo checking which MOO networking configurations are likely to work...
