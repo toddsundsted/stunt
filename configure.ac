@@ -26,24 +26,20 @@ dnl ***************************************************************************
 dnl Start of actual configuration tests
 dnl ***************************************************************************
 
-AC_PROG_YACC
+AM_PROG_AS
 AC_PROG_CC
 AC_PROG_CXX
 AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
-AM_PROG_AS
+AC_PROG_CPP
 AC_PROG_INSTALL
-AC_GCC_TRADITIONAL
+AC_PROG_LN_S
+AC_PROG_YACC
 AC_EGREP_CPP(yes, [
 #if __GNUC__==2
   yes
 #endif
 ], [CC="$CC -Wall -Wwrite-strings"])
 test -n "$GCC" && CC="$CC -g"
-AC_PROG_CPP
-AC_AIX
-AC_ISC_POSIX
-AC_MINIX
-AC_SCO_INTL
 AC_PROG_CC_STDC
 AC_HEADER_CHECK(sys/bsdtypes.h, AC_DEFINE([NEED_BSDTYPES_H], [1], [Define to 1 if we need <sys/bsdtypes.h>.]))
 AC_HEADER_CHECK(sys/select.h, AC_DEFINE([NEED_SELECT_H], [1], [Define to 1 if we need <sys/select.h>.]))
@@ -268,16 +264,15 @@ else
 fi
 
 AC_C_INLINE
+AC_TYPE_SSIZE_T
+
 AC_FUNC_ALLOCA
 AC_FUNC_ERROR_AT_LINE
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
-AC_HEADER_STDBOOL
 
-AC_PROG_LN_S
-AC_TYPE_SSIZE_T
 AC_CHECK_FUNCS([alarm bzero crypt floor gethostbyaddr gethostbyname getpagesize gettimeofday inet_ntoa memmove memset mkdir mkfifo modf pow re_comp rmdir select socket sqrt strchr strcspn strerror strrchr strstr strtol strtoul])
 
 AX_RANDOM_DEVICE
