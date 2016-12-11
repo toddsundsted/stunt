@@ -52,7 +52,7 @@ extern void unparse_value(Stream *, Var);
  * Returns the length of the given list `l'.  Does *not* check to
  * ensure `l' is, in fact, a list.
  */
-static inline int32
+static inline int32_t
 listlength(Var l)
 {
     return l.v.list[0].v.num;

@@ -683,8 +683,8 @@ bf_ctime(const List& arglist, Objid progr)
 
 
 #ifdef INTNUM_AND_OBJID_ARE_64_BITS
-typedef int64 Intnum;
-typedef unsigned64 Unsignednum;
+typedef int64_t Intnum;
+typedef uint64_t Unsignednum;
 #define INTNUM_MAX INT64_MAX
 
 /* Assume lack of 128-bit integer type */
@@ -694,8 +694,8 @@ typedef unsigned64 Unsignednum;
 #  endif
 
 #else
-typedef int32 Intnum;
-typedef unsigned32 Unsignednum;
+typedef int32_t Intnum;
+typedef uint32_t Unsignednum;
 #define INTNUM_MAX INT32_MAX
 
 /* Assume support for u_int64_t otherwise uncomment */

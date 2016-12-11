@@ -28,8 +28,8 @@
 
 #include "storage.h"
 
-#define MAXINT	((int32) 2147483647L)
-#define MININT	((int32) -2147483648L)
+#define MAXINT	((int32_t) 2147483647L)
+#define MININT	((int32_t) -2147483648L)
 #define MAXOBJ	((Objid) MAXINT)
 #define MINOBJ	((Objid) MININT)
 
@@ -124,7 +124,7 @@ typedef struct Object Object;
 
 struct Var {
     union {
-	int32 num;		/* INT, CATCH, FINALLY */
+	int32_t num;		/* INT, CATCH, FINALLY */
 	Objid obj;		/* OBJ */
 	const char *str;	/* STR */
 	enum error err;		/* ERR */
@@ -170,7 +170,7 @@ struct Var {
     }
 
     static Var
-    new_int(const int32 num) {
+    new_int(const int32_t num) {
 	Var v;
 	v.type = TYPE_INT;
 	v.v.num = num;
@@ -272,7 +272,7 @@ struct Str : public Var {
 };
 
 struct List : public Var {
-    int32
+    int32_t
     length() const {
 	return v.list[0].v.num;
     }

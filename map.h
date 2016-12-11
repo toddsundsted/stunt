@@ -37,7 +37,7 @@ extern Map mapinsert(const Map& map, Var key, Var value);
 extern const rbnode* maplookup(const Map& map, Var key, Var* value, int case_matters);
 extern int mapseek(const Map& map, Var key, Iter* iter, int case_matters);
 extern int mapequal(const Map& lhs, const Map& rhs, int case_matters);
-extern int32 maplength(const Map& map);
+extern int32_t maplength(const Map& map);
 extern int mapempty(const Map& map);
 
 extern int map_sizeof(rbtree *tree);

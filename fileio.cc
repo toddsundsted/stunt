@@ -97,7 +97,7 @@ char file_package_version[] = "1.5p4";
 file_handle file_table[FILE_IO_MAX_FILES];
 
 char file_handle_valid(Var fhandle) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   if(!fhandle.is_int())
 	 return 0;
   if((i < 0) || (i >= FILE_IO_MAX_FILES))
@@ -107,37 +107,37 @@ char file_handle_valid(Var fhandle) {
 
 
 FILE *file_handle_file(Var fhandle) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   return file_table[i].file;
 }
 
 const char *file_handle_name(Var fhandle) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   return file_table[i].name;
 }
 
 file_type file_handle_type(Var fhandle) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   return file_table[i].type;
 }  
 
 file_mode file_handle_mode(Var fhandle) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   return file_table[i].mode;
 }  
 
 
 void file_handle_destroy(Var fhandle) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   file_table[i].file = NULL;
   file_table[i].valid = 0;
   free_str(file_table[i].name);
 }
 
 
-int32 file_allocate_next_handle(void) {
-  static int32 current_handle = 0;
-  int32 wrapped = current_handle;
+int32_t file_allocate_next_handle(void) {
+  static int32_t current_handle = 0;
+  int32_t wrapped = current_handle;
 
   if(current_handle > FILE_IO_MAX_FILES)
 	 wrapped = current_handle = 0;
@@ -162,7 +162,7 @@ int32 file_allocate_next_handle(void) {
 
 Var file_handle_new(const char *name, file_type type, file_mode mode) {
   Var r;
-  int32 handle = file_allocate_next_handle();
+  int32_t handle = file_allocate_next_handle();
 
   r = Var::new_int(handle);
 
@@ -177,7 +177,7 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
 }
 
 void file_handle_set_file(Var fhandle, FILE *f) {
-  int32 i = fhandle.v.num;
+  int32_t i = fhandle.v.num;
   file_table[i].file = f;
 }
 
@@ -611,9 +611,9 @@ bf_file_readlines(const List& arglist, Objid progr)
 {
   package r;
   const Var& fhandle = arglist[1];
-  int32 begin = arglist[2].v.num;
-  int32 end   = arglist[3].v.num;
-  int32 begin_loc = 0, linecount = 0;
+  int32_t begin = arglist[2].v.num;
+  int32_t end   = arglist[3].v.num;
+  int32_t begin_loc = 0, linecount = 0;
   file_type type;
   file_mode mode;
   List rv;
@@ -745,8 +745,8 @@ bf_file_read(const List& arglist, Objid progr)
   const Var& fhandle = arglist[1];
   file_mode mode;
   file_type type;
-  int32 record_length = arglist[2].v.num;
-  int32 read_length;
+  int32_t record_length = arglist[2].v.num;
+  int32_t read_length;
 
   char buffer[FILE_IO_BUFFER_LENGTH];
 
@@ -892,7 +892,7 @@ bf_file_seek(const List& arglist, Objid progr)
 {
   package r;
   const Var& fhandle = arglist[1];
-  int32 seek_to = arglist[2].v.num;
+  int32_t seek_to = arglist[2].v.num;
   const char *whence = arglist[3].v.str;
   int whnce = 0, whence_ok = 1;
   FILE *f;

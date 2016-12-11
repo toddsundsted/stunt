@@ -767,7 +767,7 @@ mapempty(const Map& map)
     return map.v.tree->size == 0;
 }
 
-int32
+int32_t
 maplength(const Map& map)
 {
     return map.v.tree->size;
