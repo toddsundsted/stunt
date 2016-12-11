@@ -69,7 +69,7 @@ typedef struct nhandle {
     struct nhandle *next, **prev;
     server_handle shandle;
     int rfd, wfd;
-    char *name;
+    const char *name;
     Stream *input;
     int last_input_was_CR;
     int input_suspended;

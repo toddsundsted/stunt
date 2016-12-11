@@ -171,7 +171,7 @@ typedef struct tqueue {
     task *first_bg, **last_bg;
     int usage;			/* a kind of inverted priority */
     int num_bg_tasks;		/* in either here or waiting_tasks */
-    char *output_prefix, *output_suffix;
+    const char *output_prefix, *output_suffix;
     const char *flush_cmd;
 
     /* Used in emergency mode and when handling the `.program'
@@ -387,7 +387,7 @@ ensure_usage(tqueue * tq)
     }
 }
 
-char *
+static const char *
 default_flush_command(void)
 {
     const char *str = server_string_option("default_flush_command", ".flush");
@@ -700,7 +700,7 @@ end_programming(tqueue * tq)
 }
 
 static void
-set_delimiter(char **slot, const char *string)
+set_delimiter(const char **slot, const char *string)
 {
     if (*slot)
 	free_str(*slot);
@@ -2058,9 +2058,9 @@ db_verb_handle
 find_verb_for_programming(Objid player, const char *verbref,
 			  const char **message, const char **vname)
 {
-    char *copy = str_dup(verbref);
+    const char *obj;
+    const char *copy = str_dup(verbref);
     char *colon = strchr(copy, ':');
-    char *obj;
     Objid oid;
     db_verb_handle h;
     static Stream *str = 0;

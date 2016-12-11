@@ -78,7 +78,7 @@ parse_into_words(char *input, int *nwords)
     return words;
 }
 
-static char *
+static const char *
 build_string(int argc, char *argv[])
 {
     int i, len = 0;

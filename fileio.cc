@@ -67,7 +67,7 @@ typedef struct file_handle file_handle;
 
 struct file_handle {
   char  valid;               /* Is this a valid entry?   */
-  char *name;                /* pathname of the file     */
+  const char *name;          /* pathname of the file     */
   file_type type;            /* text or binary, sir?     */
   file_mode mode;            /* readin', writin' or both */
  
@@ -77,7 +77,7 @@ struct file_handle {
 typedef struct line_buffer line_buffer;
 
 struct line_buffer {
-  char *line;
+  const char *line;
   struct line_buffer *next;
 };
 
@@ -599,7 +599,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
   }
 }
     
-line_buffer *new_line_buffer(char *line) {
+line_buffer *new_line_buffer(const char *line) {
   line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRUCT);
   p->line = line;
   p->next = NULL;
@@ -1371,7 +1371,7 @@ bf_file_rename(const List& arglist, Objid progr)
   package r;
   const char *fromspec = arglist[1].v.str;
   const char *tospec = arglist[2].v.str;
-  char *real_fromspec = NULL;
+  const char *real_fromspec = NULL;
   const char *real_tospec;
   
   if(!file_verify_caller(progr)) {

@@ -913,7 +913,7 @@ bf_toliteral(const List& arglist, Objid progr)
 }
 
 struct pat_cache_entry {
-    char *string;
+    const char *string;
     int case_matters;
     Pattern pattern;
     struct pat_cache_entry *next;

@@ -430,7 +430,7 @@ disassemble_to_stderr(Program * prog)
 }
 
 struct data {
-    char **lines;
+    const char** lines;
     int used, max;
 };
 
@@ -441,7 +441,7 @@ add_line(const char *line, void *data)
 
     if (d->used >= d->max) {
 	int new_max = (d->max == 0 ? 20 : d->max * 2);
-	char **_new = (char **)mymalloc(sizeof(char **) * new_max, M_DISASSEMBLE);
+	const char **_new = (const char **)mymalloc(sizeof(const char **) * new_max, M_DISASSEMBLE);
 	int i;
 
 	for (i = 0; i < d->used; i++)

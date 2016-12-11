@@ -69,7 +69,7 @@ static const char *prep_list[] =
 
 typedef struct pt_entry {
     int nwords;
-    char *words[MAXPPHRASE];
+    const char *words[MAXPPHRASE];
     struct pt_entry *next;
 } pt_entry;
 
@@ -357,7 +357,7 @@ struct vc_entry {
     int generation;
 #endif
     Object *object;
-    char *verbname;
+    const char *verbname;
     handle h;
     struct vc_entry *next;
 };

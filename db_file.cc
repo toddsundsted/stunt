@@ -41,7 +41,7 @@
 #include "utils.h"
 #include "version.h"
 
-static char *input_db_name, *dump_db_name;
+static const char *input_db_name, *dump_db_name;
 static int dump_generation = 0;
 static const char *header_format_string
   = "** LambdaMOO Database, Format Version %u **\n";

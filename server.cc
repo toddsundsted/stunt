@@ -1372,7 +1372,7 @@ player_connected_silent(Objid old_id, Objid new_id, int is_newly_created)
 	/* network_connection_name is allowed to reuse the same string
 	 * storage, so we have to copy one of them.
 	 */
-	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
+	const char *name1 = str_dup(network_connection_name(existing_h->nhandle));
 	oklog("REDIRECTED: %s, was %s, now %s\n",
 	      object_name(new_id),
 	      name1,
@@ -1410,7 +1410,7 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	/* network_connection_name is allowed to reuse the same string
 	 * storage, so we have to copy one of them.
 	 */
-	char *name1 = str_dup(network_connection_name(existing_h->nhandle));
+	const char *name1 = str_dup(network_connection_name(existing_h->nhandle));
 	oklog("REDIRECTED: %s, was %s, now %s\n",
 	      object_name(new_id),
 	      name1,
@@ -1542,7 +1542,7 @@ read_active_connections(void)
 int
 main(int argc, char **argv)
 {
-    char *this_program = str_dup(argv[0]);
+    const char *this_program = str_dup(argv[0]);
     const char *log_file = 0;
     const char *script_file = 0;
     const char *script_line = 0;
