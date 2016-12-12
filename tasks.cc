@@ -73,7 +73,7 @@ typedef struct suspended_task {
 } suspended_task;
 
 typedef struct {
-    char *string;
+    const char *string;
     int length;
     struct task *next_itail;	/* see tqueue.first_itail */ 
 } input_task;
@@ -552,10 +552,14 @@ dequeue_input_task(tqueue * tq, enum dequeue_how how)
 		t->kind = TASK_INBAND;
 	}
 	else if (t->kind == TASK_QUOTED) {
-	    if (!tq->disable_oob) 
-		memmove(t->t.input.string,
-			t->t.input.string + oob_quote_prefix_length, 
-			1 + strlen(t->t.input.string + oob_quote_prefix_length));
+	    if (!tq->disable_oob) {
+		// intentionally throwing away `const' in order to
+		// move the characters after the OOB quote prefix
+		// forward.
+		memmove(const_cast<char*>(t->t.input.string),
+			const_cast<char*>(t->t.input.string) + oob_quote_prefix_length,
+			strlen(const_cast<char*>(t->t.input.string) + oob_quote_prefix_length) + 1);
+	    }
 	    t->kind = TASK_INBAND;
 	}
     }
@@ -771,7 +775,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
 			   int *task_id);
 
 static int
-do_command_task(tqueue * tq, char *command)
+do_command_task(tqueue * tq, const char *command)
 {
     if (tq->program_stream) {	/* We're programming */
 	if (strcmp(command, ".") == 0)	/* Done programming */
@@ -837,7 +841,7 @@ do_command_task(tqueue * tq, char *command)
 }
 
 static int
-do_login_task(tqueue * tq, char *command)
+do_login_task(tqueue * tq, const char *command)
 {
     Var result;
     Var args;
@@ -904,7 +908,7 @@ do_login_task(tqueue * tq, char *command)
 }
 
 static void
-do_out_of_band_command(tqueue * tq, char *command)
+do_out_of_band_command(tqueue * tq, const char *command)
 {
     run_server_task(tq->player, Var::new_obj(tq->handler), "do_out_of_band_command",
 		    parse_into_wordlist(command), command, 0);
@@ -1671,7 +1675,7 @@ run_ready_tasks(void)
 			add_command_to_history(tq->player, t->t.input.string);
 			did_one = (tq->player >= 0
 				   ? do_command_task
-				: do_login_task) (tq, t->t.input.string);
+				   : do_login_task) (tq, t->t.input.string);
 		    }
 		    break;
 		case TASK_FORKED:

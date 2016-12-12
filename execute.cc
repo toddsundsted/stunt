@@ -1062,11 +1062,13 @@ do {								\
 			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
 		    }
 		} else {	/* TYPE_STR */
-		    char *tmp_str = str_dup(list.v.str);
+		    char* tmp_str = (char*)mymalloc(strlen(list.v.str) + 1, M_STRING);
+		    strcpy(tmp_str, list.v.str);
 		    free_str(list.v.str);
 		    tmp_str[index.v.num - 1] = value.v.str[0];
 		    list.v.str = tmp_str;
 		    free_var(value);
+		    free_var(index);
 		    PUSH(list);
 		}
 	    }

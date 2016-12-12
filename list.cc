@@ -566,12 +566,10 @@ Str
 strget(const Str& str, int i)
 {
     Str r;
-    char *s;
+    char buf[] = { str.v.str[i - 1], '\0' };
 
     r.type = TYPE_STR;
-    s = str_dup(" ");
-    s[0] = str.v.str[i - 1];
-    r.v.str = s;
+    r.v.str = str_dup(buf);
 
     return r;
 }

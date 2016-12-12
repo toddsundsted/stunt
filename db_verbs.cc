@@ -157,13 +157,14 @@ db_match_prep(const char *prepname)
     char **argv;
     char *s, first;
 
-    s = str_dup(prepname);
+    s = (char*)mymalloc(strlen(prepname) + 1, M_ARRAY);
+    strcpy(s, prepname);
     first = s[0];
     if (first == '#')
 	first = (++s)[0];
     prep = (db_prep_spec)strtol(s, &ptr, 10);
     if (*ptr == '\0') {
-	free_str(s);
+	myfree(s, M_ARRAY);
 	if (!isdigit(first) || prep >= NPREPS)
 	    return PREP_NONE;
 	else
@@ -174,7 +175,7 @@ db_match_prep(const char *prepname)
 
     argv = parse_into_words(s, &argc);
     prep = db_find_prep(argc, argv, 0, 0);
-    free_str(s);
+    myfree(s, M_ARRAY);
     return prep;
 }
 

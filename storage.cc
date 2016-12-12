@@ -111,7 +111,7 @@ str_ref(const char *s)
     return s;
 }
 
-char *
+const char *
 str_dup(const char *s)
 {
     char *r;

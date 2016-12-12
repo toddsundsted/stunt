@@ -114,7 +114,7 @@ typedef enum Memory_Type {
 
 } Memory_Type;
 
-extern char *str_dup(const char *);
+extern const char *str_dup(const char *);
 extern const char *str_ref(const char *);
 
 extern void myfree(void *where, Memory_Type type);

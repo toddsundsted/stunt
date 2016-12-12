@@ -111,14 +111,15 @@ parse_into_wordlist(const char *command)
     int argc, i;
     char **argv;
     List args;
-    char *s = str_dup(command);
+    char *s = (char*)mymalloc(strlen(command) + 1, M_ARRAY);
+    strcpy(s, command);
 
     argv = parse_into_words(s, &argc);
     args = new_list(argc);
     for (i = 1; i <= argc; i++) {
 	args.v.list[i] = Var::new_str(argv[i - 1]);
     }
-    free_str(s);
+    myfree(s, M_ARRAY);
     return args;
 }
 
@@ -149,15 +150,15 @@ parse_command(const char *command, Objid user)
 
       finish_specials:
 	argstr = command + 1;
-	buf = (char *) mymalloc(strlen(argstr) + strlen(verb) + 2,
-				M_STRING);
+	buf = (char*) mymalloc(strlen(argstr) + strlen(verb) + 2, M_STRING);
 	strcpy(buf, verb);
 	strcat(buf, " ");
 	strcat(buf, argstr);
 	break;
 
     default:
-	buf = str_dup(command);
+	buf = (char*)mymalloc(strlen(command) + 1, M_STRING);
+	strcpy(buf, command);
 	{			/* Skip past even complexly-quoted verbs */
 	    int in_quotes = 0;
 
