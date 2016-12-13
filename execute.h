@@ -76,8 +76,8 @@ typedef struct {
 
 typedef vmstruct *vm;
 
-#define alloc_data(size)   mymalloc(size, M_BI_FUNC_DATA)
-#define free_data(ptr)     myfree((void *) ptr, M_BI_FUNC_DATA)
+#define alloc_data(size) malloc(size)
+#define free_data(ptr) free(ptr)
 
 /* call_verb will only return E_MAXREC, E_INVIND, E_VERBNF,
    or E_NONE.  the vm will only be changed if E_NONE is returned */

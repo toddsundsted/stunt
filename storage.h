@@ -91,24 +91,9 @@ gc_get_color(const void *ptr)
 }
 
 typedef enum Memory_Type {
-    M_AST_POOL, M_AST, M_PROGRAM, M_PVAL, M_NETWORK, M_STRING, M_VERBDEF,
-    M_LIST, M_PREP, M_PROPDEF, M_OBJECT_TABLE, M_OBJECT, M_FLOAT, M_INT,
-    M_STREAM, M_NAMES, M_ENV, M_TASK, M_PATTERN,
+    M_NONE,
 
-    M_BYTECODES, M_FORK_VECTORS, M_LIT_LIST,
-    M_PROTOTYPE, M_CODE_GEN, M_DISASSEMBLE, M_DECOMPILE,
-
-    M_RT_STACK, M_RT_ENV, M_BI_FUNC_DATA, M_VM,
-
-    M_REF_ENTRY, M_REF_TABLE, M_VC_ENTRY, M_VC_TABLE, M_STRING_PTRS,
-    M_INTERN_POINTER, M_INTERN_ENTRY, M_INTERN_HUNK,
-
-    M_TREE, M_NODE, M_TRAV,
-
-    M_ANON, /* anonymous object */
-
-    /* to be used when no more specific type applies */
-    M_STRUCT, M_ARRAY,
+    M_STRING, M_LIST, M_TREE, M_TRAV, M_FLOAT, M_ANON,
 
     Sizeof_Memory_Type
 

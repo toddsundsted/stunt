@@ -411,7 +411,7 @@ find_tqueue(Objid player, int create_if_not_found)
     if (!create_if_not_found)
 	return 0;
 
-    tq = (tqueue *)mymalloc(sizeof(tqueue), M_TASK);
+    tq = (tqueue *)malloc(sizeof(tqueue));
 
     deactivate_tqueue(tq);
 
@@ -459,14 +459,14 @@ free_tqueue(tqueue * tq)
 	free_vm(tq->reading_vm, 1);
     if (tq->parsing_state) {
 	free_http_parsing_state(tq->parsing_state);
-	myfree(tq->parsing_state, M_STRUCT);
+	free(tq->parsing_state);
     }
 
     *(tq->prev) = tq->next;
     if (tq->next)
 	tq->next->prev = tq->prev;
 
-    myfree(tq, M_TASK);
+    free(tq);
 }
 
 static void
@@ -594,7 +594,7 @@ free_task(task * t, int strong)
 	    free_vm(t->t.suspended.the_vm, 1);
 	break;
     }
-    myfree(t, M_TASK);
+    free(t);
 }
 
 static int
@@ -1018,7 +1018,7 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
     task *t;
 
-    t = (task *)mymalloc(sizeof(task), M_TASK);
+    t = (task *)malloc(sizeof(task));
     if (binary)
 	t->kind = TASK_BINARY;
     else if (oob_quote_prefix_length > 0
@@ -1147,7 +1147,7 @@ static void
 enqueue_forked(Program * program, activation a, Var * rt_env,
 	   int f_index, time_t start_time, int id)
 {
-    task *t = (task *)mymalloc(sizeof(task), M_TASK);
+    task *t = (task *)malloc(sizeof(task));
 
     t->kind = TASK_FORKED;
     t->t.forked.program = program;
@@ -1237,7 +1237,7 @@ enqueue_suspended_task(vm the_vm, void *data)
     task *t;
 
     if (check_user_task_limit(progr_of_cur_verb(the_vm))) {
-	t = (task *)mymalloc(sizeof(task), M_TASK);
+	t = (task *)malloc(sizeof(task));
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.the_vm = the_vm;
 	if (now + after_seconds < now)
@@ -1257,7 +1257,7 @@ enqueue_suspended_task(vm the_vm, void *data)
 void
 resume_task(vm the_vm, Var value)
 {
-    task *t = (task *)mymalloc(sizeof(task), M_TASK);
+    task *t = (task *)malloc(sizeof(task));
     Objid progr = progr_of_cur_verb(the_vm);
     tqueue *tq = find_tqueue(progr, 1);
 
@@ -1284,7 +1284,7 @@ read_input_now(Objid connection)
     } else {
 	r.type = TYPE_STR;
 	r.v.str = t->t.input.string;
-	myfree(t, M_TASK);
+	free(t);
     }
 
     return r;
@@ -1325,7 +1325,7 @@ make_http_task(vm the_vm, Objid player, int request)
 	tq->reading_vm = the_vm;
 	if (tq->parsing_state == NULL) {
 	    tq->parsing_state =
-		(http_parsing_state *)mymalloc(sizeof(struct http_parsing_state), M_STRUCT);
+		(http_parsing_state *)malloc(sizeof(struct http_parsing_state));
 	    init_http_parsing_state(tq->parsing_state);
 	}
 	tq->parsing_state->status = PARSING;
@@ -1800,7 +1800,7 @@ run_server_program_task(Objid _this, const char *verb, Var args, Objid vloc,
 void
 register_task_queue(task_enumerator enumerator)
 {
-    ext_queue *eq = (ext_queue *)mymalloc(sizeof(ext_queue), M_TASK);
+    ext_queue *eq = (ext_queue *)malloc(sizeof(ext_queue));
 
     eq->enumerator = enumerator;
     eq->next = external_queues;
@@ -1981,7 +1981,7 @@ read_task_queue(void)
 	return 0;
     }
     for (; suspended_count > 0; suspended_count--) {
-	task *t = (task *)mymalloc(sizeof(task), M_TASK);
+	task *t = (task *)malloc(sizeof(task));
 	int task_id, start_time;
 	char c;
 
@@ -2043,7 +2043,7 @@ read_task_queue(void)
 	    return 0;
 	}
 
-	task *t = (task *)mymalloc(sizeof(task), M_TASK);
+	task *t = (task *)malloc(sizeof(task));
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.start_time = 0;
 	t->t.suspended.value = Var::new_err(E_INTRPT);

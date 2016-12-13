@@ -94,15 +94,15 @@ extend(unsigned int new_objects)
 	;
 
     if (max_objects == 0) {
-	objects = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+	objects = (Object **)malloc(size * sizeof(Object *));
 	memset(objects, 0, size * sizeof(Object *));
 	max_objects = size;
     }
     if (size > max_objects) {
-	Object **_new = (Object **)mymalloc(size * sizeof(Object *), M_OBJECT_TABLE);
+	Object **_new = (Object **)malloc(size * sizeof(Object *));
 	memcpy(_new, objects, max_objects * sizeof(Object *));
 	memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object *));
-	myfree(objects, M_OBJECT_TABLE);
+	free(objects);
 	objects = _new;
 	max_objects = size;
     }
@@ -111,12 +111,12 @@ extend(unsigned int new_objects)
 	;
 
     if (array_size == 0) {
-	bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+	bit_array = (unsigned char *)malloc((size / 8) * sizeof(unsigned char));
 	array_size = size;
     }
     if (size > array_size) {
-	myfree(bit_array, M_ARRAY);
-	bit_array = (unsigned char *)mymalloc((size / 8) * sizeof(unsigned char), M_ARRAY);
+	free(bit_array);
+	bit_array = (unsigned char *)malloc((size / 8) * sizeof(unsigned char));
 	array_size = size;
     }
 }
@@ -157,7 +157,7 @@ dbpriv_new_object(void)
     Object *o;
 
     ensure_new_object();
-    o = objects[num_objects] = (Object *)mymalloc(sizeof(Object), M_OBJECT);
+    o = objects[num_objects] = (Object *)malloc(sizeof(Object));
     o->id = num_objects;
     num_objects++;
 
@@ -256,9 +256,9 @@ db_destroy_object(Objid oid)
 	free_var(o->propval[i].var);
     }
     if (o->propdefs.l)
-	myfree(o->propdefs.l, M_PROPDEF);
+	free(o->propdefs.l);
     if (o->propval)
-	myfree(o->propval, M_PVAL);
+	free(o->propval);
     o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
@@ -266,10 +266,10 @@ db_destroy_object(Objid oid)
 	    free_program(v->program);
 	free_str(v->name);
 	w = v->next;
-	myfree(v, M_VERBDEF);
+	free(v);
     }
 
-    myfree(objects[oid], M_OBJECT);
+    free(objects[oid]);
     objects[oid] = 0;
 }
 
@@ -356,7 +356,7 @@ db_make_anonymous(Objid oid, Objid last)
      */
     Object *t = (Object *)mymalloc(sizeof(Object), M_ANON);
     memcpy(t, o, sizeof(Object));
-    myfree(o, M_OBJECT);
+    free(o);
 
     return t;
 }
@@ -376,11 +376,11 @@ db_destroy_anonymous_object(void *obj)
     for (i = 0; i < o->propdefs.cur_length; i++)
 	free_str(o->propdefs.l[i].name);
     if (o->propdefs.l)
-	myfree(o->propdefs.l, M_PROPDEF);
+	free(o->propdefs.l);
     for (i = 0; i < o->nval; i++)
 	free_var(o->propval[i].var);
     if (o->propval)
-	myfree(o->propval, M_PVAL);
+	free(o->propval);
     o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
@@ -388,7 +388,7 @@ db_destroy_anonymous_object(void *obj)
 	    free_program(v->program);
 	free_str(v->name);
 	w = v->next;
-	myfree(v, M_VERBDEF);
+	free(v);
     }
 
     dbpriv_set_object_flag(o, FLAG_INVALID);

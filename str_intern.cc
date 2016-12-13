@@ -37,10 +37,10 @@ new_intern_entry_hunk(int size)
 {
     struct intern_entry_hunk *_new;
     
-    _new = (struct intern_entry_hunk *)mymalloc(sizeof(struct intern_entry_hunk), M_INTERN_HUNK);
+    _new = (struct intern_entry_hunk *)malloc(sizeof(struct intern_entry_hunk));
     _new->size = size;
     _new->handout = 0;
-    _new->contents = (struct intern_entry *)mymalloc(sizeof(struct intern_entry) * size, M_INTERN_ENTRY);
+    _new->contents = (struct intern_entry *)malloc(sizeof(struct intern_entry) * size);
     _new->next = NULL;
     
     return _new;
@@ -80,8 +80,8 @@ free_intern_entry_hunks(void)
     
     for (h = intern_alloc; h; h = next) {
         next = h->next;
-        myfree(h->contents, M_INTERN_ENTRY);
-        myfree(h, M_INTERN_HUNK);
+        free(h->contents);
+        free(h);
     }
     
     intern_alloc = NULL;
@@ -103,7 +103,7 @@ make_intern_table(int size) {
     struct intern_entry **table;
     int i;
 
-    table = (intern_entry **)mymalloc(sizeof(struct intern_entry *) * size, M_INTERN_POINTER);
+    table = (intern_entry **)malloc(sizeof(struct intern_entry *) * size);
     for (i = 0; i < size; i++) {
         table[i] = NULL;
     }
@@ -134,14 +134,11 @@ str_intern_close(void)
     for (i = 0; i < intern_table_size; i++) {
         for (e = intern_table[i]; e; e = next) {
             next = e->next;
-            
             free_str(e->s);
-            
-            /* myfree(e, M_INTERN_ENTRY); */
         }
     }
     
-    myfree(intern_table, M_INTERN_POINTER);
+    free(intern_table);
     intern_table = NULL;
     
     free_intern_entry_hunks();
@@ -175,7 +172,6 @@ add_interned_string(const char *s, unsigned hash)
     int bucket = hash % intern_table_size;
     struct intern_entry *p;
     
-    /* p = mymalloc(sizeof(struct intern_entry), M_INTERN_ENTRY); */
     p = allocate_intern_entry();
     p->s = s;
     p->hash = hash;
@@ -214,7 +210,7 @@ intern_rehash(int new_size) {
     
     intern_table_size = new_size;
 
-    myfree(intern_table, M_INTERN_POINTER);
+    free(intern_table);
     intern_table = new_table;
 }
 

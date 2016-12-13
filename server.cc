@@ -131,13 +131,13 @@ free_shandle(shandle * h)
 
     free_task_queue(h->tasks);
 
-    myfree(h, M_NETWORK);
+    free(h);
 }
 
 static slistener *
 new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
 {
-    slistener *l = (slistener *)mymalloc(sizeof(slistener), M_NETWORK);
+    slistener *l = (slistener *)malloc(sizeof(slistener));
     server_listener sl;
     enum error e;
     const char *name;
@@ -149,7 +149,7 @@ new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
 	*ee = e;
 
     if (e != E_NONE) {
-	myfree(l, M_NETWORK);
+	free(l);
 	return 0;
     }
     l->oid = oid;
@@ -190,7 +190,7 @@ free_slistener(slistener * l)
     free_var(l->desc);
     free_str(l->name);
 
-    myfree(l, M_NETWORK);
+    free(l);
 }
 
 static void
@@ -491,7 +491,7 @@ queue_anonymous_object(Var v)
     assert(!queue_includes(v));
 
     if (!pending_free) {
-	pending_free = (struct pending_recycle *)mymalloc(sizeof(struct pending_recycle), M_STRUCT);
+	pending_free = (struct pending_recycle *)malloc(sizeof(struct pending_recycle));
 	pending_free->next = NULL;
     }
 
@@ -1264,7 +1264,7 @@ server_handle
 server_new_connection(server_listener sl, network_handle nh, int outbound)
 {
     slistener *l = (slistener *)sl.ptr;
-    shandle *h = (shandle *)mymalloc(sizeof(shandle), M_NETWORK);
+    shandle *h = (shandle *)malloc(sizeof(shandle));
     server_handle result;
 
     h->next = all_shandles;

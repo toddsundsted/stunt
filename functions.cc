@@ -130,7 +130,7 @@ register_common(const char *name, int minargs, int maxargs, va_list args)
 
     if (num_arg_types > 0)
 	bf_table[top_bf_table].prototype =
-	    (var_type *)mymalloc(num_arg_types * sizeof(var_type), M_PROTOTYPE);
+	    (var_type *)malloc(num_arg_types * sizeof(var_type));
     else
 	bf_table[top_bf_table].prototype = 0;
     for (va_index = 0; va_index < num_arg_types; va_index++)

@@ -1119,7 +1119,7 @@ static struct loop_entry *loop_stack;
 static void
 push_loop_name(const char *name)
 {
-    struct loop_entry *entry = (struct loop_entry *)mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (struct loop_entry *)malloc(sizeof(struct loop_entry));
 
     entry->next = loop_stack;
     entry->name = (name ? str_dup(name) : 0);
@@ -1140,14 +1140,14 @@ pop_loop_name(void)
 	loop_stack = loop_stack->next;
 	if (entry->name)
 	    free_str(entry->name);
-	myfree(entry, M_AST);
+	free(entry);
     }
 }
 
 static void
 suspend_loop_scope(void)
 {
-    struct loop_entry *entry = (struct loop_entry *)mymalloc(sizeof(struct loop_entry), M_AST);
+    struct loop_entry *entry = (struct loop_entry *)malloc(sizeof(struct loop_entry));
 
     entry->next = loop_stack;
     entry->name = 0;
@@ -1166,7 +1166,7 @@ resume_loop_scope(void)
 	struct loop_entry      *entry = loop_stack;
 
 	loop_stack = loop_stack->next;
-	myfree(entry, M_AST);
+	free(entry);
     }
 }
 
@@ -1226,7 +1226,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 	    loop_stack = loop_stack->next;
 	    if (entry->name)
 		free_str(entry->name);
-	    myfree(entry, M_AST);
+	    free(entry);
 	}
     }
 
@@ -1260,7 +1260,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 	prog->num_var_names = local_names->size;
 	prog->var_names = local_names->names;
 
-	myfree(local_names, M_NAMES);
+	free(local_names);
 	free_stmt(prog_start);
 
 	return prog;

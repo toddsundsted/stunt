@@ -113,7 +113,7 @@ new_pattern(const char *pattern, int case_matters)
 {
     int tpatlen = -1;
     const char *tpattern = translate_pattern(pattern, &tpatlen);
-    regexp_t buf = (regexp_t)mymalloc(sizeof(*buf), M_PATTERN);
+    regexp_t buf = (regexp_t)malloc(sizeof(*buf));
     Pattern p;
 
     init_casefold_once();
@@ -125,13 +125,13 @@ new_pattern(const char *pattern, int case_matters)
 
     if (tpattern
 	&& !re_compile_pattern((char *)tpattern, tpatlen, buf)) {
-	buf->fastmap = (char *)mymalloc(256 * sizeof(char), M_PATTERN);
+	buf->fastmap = (char *)malloc(256 * sizeof(char));
 	re_compile_fastmap(buf);
 	p.ptr = buf;
     } else {
 	if (buf->buffer)
 	    free(buf->buffer);
-	myfree(buf, M_PATTERN);
+	free(buf);
 	p.ptr = 0;
     }
 
@@ -172,7 +172,7 @@ free_pattern(Pattern p)
 
     if (buf) {
 	free(buf->buffer);
-	myfree(buf->fastmap, M_PATTERN);
-	myfree(buf, M_PATTERN);
+	free(buf->fastmap);
+	free(buf);
     }
 }

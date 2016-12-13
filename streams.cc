@@ -28,12 +28,12 @@
 Stream *
 new_stream(int size)
 {
-    Stream *s = (Stream *)mymalloc(sizeof(Stream), M_STREAM);
+    Stream *s = (Stream *)malloc(sizeof(Stream));
 
     if (size < 1)
 	size = 1;
 
-    s->buffer = (char *)mymalloc(size, M_STREAM);
+    s->buffer = (char *)malloc(size);
     s->buflen = size;
     s->current = 0;
 
@@ -69,9 +69,9 @@ grow(Stream * s, int newlen, int need)
 		throw stream_too_big();
 	}
     }
-    newbuf = (char *)mymalloc(newlen, M_STREAM);
+    newbuf = (char *)malloc(newlen);
     memcpy(newbuf, s->buffer, s->current);
-    myfree(s->buffer, M_STREAM);
+    free(s->buffer);
     s->buffer = newbuf;
     s->buflen = newlen;
 }
@@ -236,8 +236,8 @@ stream_printf(Stream * s, const char *fmt,...)
 void
 free_stream(Stream * s)
 {
-    myfree(s->buffer, M_STREAM);
-    myfree(s, M_STREAM);
+    free(s->buffer);
+    free(s);
 }
 
 char *

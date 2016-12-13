@@ -83,16 +83,16 @@ dbv4_ensure_new_object(void)
 {
     if (max_objects == 0) {
 	max_objects = 100;
-	objects = (Object4 **)mymalloc(max_objects * sizeof(Object4 *), M_OBJECT_TABLE);
+	objects = (Object4 **)malloc(max_objects * sizeof(Object4 *));
     }
     if (num_objects >= max_objects) {
 	int i;
 	Object4 **_new;
 
-	_new = (Object4 **)mymalloc(max_objects * 2 * sizeof(Object4 *), M_OBJECT_TABLE);
+	_new = (Object4 **)malloc(max_objects * 2 * sizeof(Object4 *));
 	for (i = 0; i < max_objects; i++)
 	    _new[i] = objects[i];
-	myfree(objects, M_OBJECT_TABLE);
+	free(objects);
 	objects = _new;
 	max_objects *= 2;
     }
@@ -104,7 +104,7 @@ dbv4_new_object(void)
     Object4 *o;
 
     dbv4_ensure_new_object();
-    o = objects[num_objects] = (Object4 *)mymalloc(sizeof(Object4), M_OBJECT);
+    o = objects[num_objects] = (Object4 *)malloc(sizeof(Object4));
     o->id = num_objects;
     num_objects++;
 
@@ -260,7 +260,7 @@ v4_read_object(void)
     o->verbdefs = 0;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
-	v = (Verbdef *)mymalloc(sizeof(Verbdef), M_VERBDEF);
+	v = (Verbdef *)malloc(sizeof(Verbdef));
 	read_verbdef(v);
 	*prevv = v;
 	prevv = &(v->next);
@@ -270,7 +270,7 @@ v4_read_object(void)
     o->propdefs.max_length = 0;
     o->propdefs.l = 0;
     if ((i = dbio_read_num()) != 0) {
-	o->propdefs.l = (Propdef *)mymalloc(i * sizeof(Propdef), M_PROPDEF);
+	o->propdefs.l = (Propdef *)malloc(i * sizeof(Propdef));
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++) {
@@ -284,7 +284,7 @@ v4_read_object(void)
 
     nprops = dbio_read_num();
     if (nprops)
-	o->propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
+	o->propval = (Pval *)malloc(nprops * sizeof(Pval));
     else
 	o->propval = 0;
 
@@ -352,7 +352,7 @@ ng_read_object(int anonymous)
     o->verbdefs = 0;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
-	v = (Verbdef *)mymalloc(sizeof(Verbdef), M_VERBDEF);
+	v = (Verbdef *)malloc(sizeof(Verbdef));
 	read_verbdef(v);
 	*prevv = v;
 	prevv = &(v->next);
@@ -362,7 +362,7 @@ ng_read_object(int anonymous)
     o->propdefs.max_length = 0;
     o->propdefs.l = 0;
     if ((i = dbio_read_num()) != 0) {
-	o->propdefs.l = (Propdef *)mymalloc(i * sizeof(Propdef), M_PROPDEF);
+	o->propdefs.l = (Propdef *)malloc(i * sizeof(Propdef));
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++) {
@@ -376,7 +376,7 @@ ng_read_object(int anonymous)
 
     o->nval = nprops = dbio_read_num();
     if (nprops)
-	o->propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
+	o->propval = (Pval *)malloc(nprops * sizeof(Pval));
     else
 	o->propval = 0;
 
@@ -843,14 +843,14 @@ v4_upgrade_objects()
 
     for (oid = 0; oid < size; oid++) {
 	if (objects[oid]) {
-	    myfree(objects[oid], M_OBJECT);
+	    free(objects[oid]);
 	    objects[oid] = 0;
 	}
     }
 
     num_objects = 0;
     max_objects = 0;
-    myfree(objects, M_OBJECT_TABLE);
+    free(objects);
 
     oklog("UPGRADING objects to new structure ... finished.\n");
     return 1;

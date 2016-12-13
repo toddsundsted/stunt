@@ -89,7 +89,7 @@ static task_waiting_on_exec *
 malloc_task_waiting_on_exec()
 {
     task_waiting_on_exec *tw =
-	(task_waiting_on_exec *)mymalloc(sizeof(task_waiting_on_exec), M_TASK);
+	(task_waiting_on_exec *)malloc(sizeof(task_waiting_on_exec));
     tw->cmd = NULL;
     tw->args = NULL;
     tw->in = NULL;
@@ -110,7 +110,7 @@ free_task_waiting_on_exec(task_waiting_on_exec * tw)
     if (tw->args) {
 	for (i = 0; tw->args[i]; i++)
 	    free_str(tw->args[i]);
-	myfree(tw->args, M_ARRAY);
+	free(tw->args);
     }
     if (tw->in)
 	free_str(tw->in);
@@ -122,7 +122,7 @@ free_task_waiting_on_exec(task_waiting_on_exec * tw)
 	free_stream(tw->sout);
     if (tw->serr)
 	free_stream(tw->serr);
-    myfree(tw, M_TASK);
+    free(tw);
 }
 
 static task_enum_action
@@ -422,7 +422,7 @@ bf_exec(const List& arglist, Objid progr)
 	goto free_in;
     }
 
-    args = (const char **)mymalloc(sizeof(const char *) * i, M_ARRAY);
+    args = (const char **)malloc(sizeof(const char *) * i);
     FOR_EACH(v, arglist[1], i, c)
 	args[i - 1] = str_dup(v.v.str);
     args[i - 1] = NULL;

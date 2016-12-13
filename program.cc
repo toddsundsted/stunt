@@ -27,7 +27,7 @@
 Program *
 new_program(void)
 {
-    Program *p = (Program *) mymalloc(sizeof(Program), M_PROGRAM);
+    Program *p = (Program *)malloc(sizeof(Program));
 
     p->ref_count = 1;
     p->first_lineno = 1;
@@ -97,19 +97,19 @@ free_program(Program * p)
 	    /* can't be a list--strings and floats need to be freed, though. */
 	    free_var(p->literals[i]);
 	if (p->literals)
-	    myfree(p->literals, M_LIT_LIST);
+	    free(p->literals);
 
 	for (i = 0; i < p->fork_vectors_size; i++)
-	    myfree(p->fork_vectors[i].vector, M_BYTECODES);
+	    free(p->fork_vectors[i].vector);
 	if (p->fork_vectors_size)
-	    myfree(p->fork_vectors, M_FORK_VECTORS);
+	    free(p->fork_vectors);
 
 	for (i = 0; i < p->num_var_names; i++)
 	    free_str(p->var_names[i]);
-	myfree(p->var_names, M_NAMES);
+	free(p->var_names);
 
-	myfree(p->main_vector.vector, M_BYTECODES);
+	free(p->main_vector.vector);
 
-	myfree(p, M_PROGRAM);
+	free(p);
     }
 }

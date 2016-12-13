@@ -61,18 +61,16 @@ add_common(int fd, Direction dir)
 {
     if (fd >= rw_size) {	/* Grow readable/writable arrays */
 	int new_size = (fd + 9) / 10 * 10 + 1;
-	char *new_readable = (char *) mymalloc(new_size * sizeof(char),
-					       M_NETWORK);
-	char *new_writable = (char *) mymalloc(new_size * sizeof(char),
-					       M_NETWORK);
+	char *new_readable = (char *)malloc(new_size * sizeof(char));
+	char *new_writable = (char *)malloc(new_size * sizeof(char));
 	int i;
 
 	for (i = 0; i < new_size; i++)
 	    new_readable[i] = new_writable[i] = 0;
 
 	if (readable != 0) {
-	    myfree(readable, M_NETWORK);
-	    myfree(writable, M_NETWORK);
+	    free(readable);
+	    free(writable);
 	}
 	readable = new_readable;
 	writable = new_writable;
@@ -80,14 +78,14 @@ add_common(int fd, Direction dir)
     }
     if (num_ports == max_ports) {	/* Grow ports array */
 	int new_max = max_ports + 10;
-	Port *new_ports = (Port *)mymalloc(new_max * sizeof(Port), M_NETWORK);
+	Port *new_ports = (Port *)malloc(new_max * sizeof(Port));
 	int i;
 
 	for (i = 0; i < max_ports; i++)
 	    new_ports[i] = ports[i];
 
 	if (ports != 0)
-	    myfree(ports, M_NETWORK);
+	    free(ports);
 
 	ports = new_ports;
 	max_ports = new_max;

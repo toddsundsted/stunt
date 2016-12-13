@@ -40,7 +40,7 @@ parse_into_words(char *input, int *nwords)
 
     if (!words) {
 	max_words = 50;
-	words = (char **)mymalloc(max_words * sizeof(char *), M_STRING_PTRS);
+	words = (char **)malloc(max_words * sizeof(char *));
     }
     while (*input == ' ')
 	input++;
@@ -48,13 +48,13 @@ parse_into_words(char *input, int *nwords)
     for (*nwords = 0; *input != '\0'; (*nwords)++) {
 	if (*nwords == max_words) {
 	    int new_max = max_words * 2;
-	    char **_new = (char **)mymalloc(new_max * sizeof(char *), M_STRING_PTRS);
+	    char **_new = (char **)malloc(new_max * sizeof(char *));
 	    int i;
 
 	    for (i = 0; i < max_words; i++)
 		_new[i] = words[i];
 
-	    myfree(words, M_STRING_PTRS);
+	    free(words);
 	    words = _new;
 	    max_words = new_max;
 	}
@@ -111,7 +111,7 @@ parse_into_wordlist(const char *command)
     int argc, i;
     char **argv;
     List args;
-    char *s = (char*)mymalloc(strlen(command) + 1, M_ARRAY);
+    char *s = (char*)malloc(strlen(command) + 1);
     strcpy(s, command);
 
     argv = parse_into_words(s, &argc);
@@ -119,7 +119,7 @@ parse_into_wordlist(const char *command)
     for (i = 1; i <= argc; i++) {
 	args.v.list[i] = Var::new_str(argv[i - 1]);
     }
-    myfree(s, M_ARRAY);
+    free(s);
     return args;
 }
 

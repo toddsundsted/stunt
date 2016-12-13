@@ -99,7 +99,7 @@ alloc_rt_stack(activation * a, int size)
 	res = rt_stack_quick;
 	rt_stack_quick = rt_stack_quick[0].v.list;
     } else {
-	res = (Var *)mymalloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var), M_RT_STACK);
+	res = (Var *)malloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var));
     }
     a->base_rt_stack = a->top_rt_stack = res;
     a->rt_stack_size = size;
@@ -114,7 +114,7 @@ free_rt_stack(activation * a)
 	stack[0].v.list = rt_stack_quick;
 	rt_stack_quick = stack;
     } else
-	myfree(stack, M_RT_STACK);
+	free(stack);
 }
 
 void
@@ -2667,9 +2667,9 @@ check_activ_stack_size(int max)
 {
     if (max_stack_size != max) {
 	if (activ_stack)
-	    myfree(activ_stack, M_VM);
+	    free(activ_stack);
 
-	activ_stack = (activation *)mymalloc(sizeof(activation) * max, M_VM);
+	activ_stack = (activation *)malloc(sizeof(activation) * max);
 	max_stack_size = max;
     }
 }
@@ -3279,8 +3279,7 @@ read_rt_env(const char ***old_names, Var ** rt_env, int *old_size)
 	errlog("READ_RT_ENV: Bad count.\n");
 	return 0;
     }
-    *old_names = (const char **) mymalloc((*old_size) * sizeof(char *),
-					  M_NAMES);
+    *old_names = (const char **)malloc((*old_size) * sizeof(char *));
     *rt_env = new_rt_env(*old_size);
 
     for (i = 0; i < *old_size; i++) {
@@ -3326,7 +3325,7 @@ reorder_rt_env(Var * old_rt_env, const char **old_names,
     free_rt_env(old_rt_env, old_size);
     for (i = 0; i < old_size; i++)
 	free_str(old_names[i]);
-    myfree((void *) old_names, M_NAMES);
+    free(old_names);
 
     return rt_env;
 }

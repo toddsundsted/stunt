@@ -917,7 +917,7 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
     sum = program->main_vector.max_stack;
     for (i = 0; i < program->fork_vectors_size; i++)
 	sum += program->fork_vectors[i].max_stack;
-    expr_stack = (Expr **)mymalloc(sum * sizeof(Expr *), M_DECOMPILE);
+    expr_stack = (Expr **)malloc(sum * sizeof(Expr *));
     top_expr_stack = 0;
 
     bc = (vector == MAIN_VECTOR
@@ -928,7 +928,7 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
     decompile(bc, bc.vector, bc.vector + bc.size, &result, 0);
     end_code_allocation(0);
 
-    myfree(expr_stack, M_DECOMPILE);
+    free(expr_stack);
 
     return result;
 }

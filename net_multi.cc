@@ -113,7 +113,7 @@ network_register_fd(int fd, network_fd_callback readable,
 
     if (!reg_fds) {
 	max_reg_fds = 5;
-	reg_fds = (fd_reg *)mymalloc(max_reg_fds * sizeof(fd_reg), M_NETWORK);
+	reg_fds = (fd_reg *)malloc(max_reg_fds * sizeof(fd_reg));
 	for (i = 0; i < max_reg_fds; i++)
 	    reg_fds[i].fd = -1;
     }
@@ -123,7 +123,7 @@ network_register_fd(int fd, network_fd_callback readable,
 	    break;
     if (i >= max_reg_fds) {	/* No free slots */
 	int new_max = 2 * max_reg_fds;
-	fd_reg *_new = (fd_reg *)mymalloc(new_max * sizeof(fd_reg), M_NETWORK);
+	fd_reg *_new = (fd_reg *)malloc(new_max * sizeof(fd_reg));
 
 	for (i = 0; i < new_max; i++)
 	    if (i < max_reg_fds)
@@ -131,7 +131,7 @@ network_register_fd(int fd, network_fd_callback readable,
 	    else
 		_new[i].fd = -1;
 
-	myfree(reg_fds, M_NETWORK);
+	free(reg_fds);
 	i = max_reg_fds;	/* first free slot */
 	max_reg_fds = new_max;
 	reg_fds = _new;
@@ -184,8 +184,8 @@ check_registered_fds(void)
 static void
 free_text_block(text_block * b)
 {
-    myfree(b->buffer, M_NETWORK);
-    myfree(b, M_NETWORK);
+    free(b->buffer);
+    free(b);
 }
 
 int
@@ -303,7 +303,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
 	|| (rfd != wfd && !network_set_nonblocking(wfd)))
 	log_perror("Setting connection non-blocking");
 
-    h = (nhandle *)mymalloc(sizeof(nhandle), M_NETWORK);
+    h = (nhandle *)malloc(sizeof(nhandle));
 
     if (all_nhandles)
 	all_nhandles->prev = &(h->next);
@@ -351,7 +351,7 @@ close_nhandle(nhandle * h)
     free_stream(h->input);
     proto_close_connection(h->rfd, h->wfd);
     free_str(h->name);
-    myfree(h, M_NETWORK);
+    free(h);
 }
 
 static void
@@ -362,7 +362,7 @@ close_nlistener(nlistener * l)
 	l->next->prev = l->prev;
     proto_close_listener(l->fd);
     free_str(l->name);
-    myfree(l, M_NETWORK);
+    free(l);
 }
 
 static void
@@ -384,7 +384,7 @@ get_pocket_descriptors()
 
     if (!pocket_descriptors)
 	pocket_descriptors =
-	    (int *) mymalloc(proto.pocket_size * sizeof(int), M_NETWORK);
+	    (int *)malloc(proto.pocket_size * sizeof(int));
 
     for (i = 0; i < proto.pocket_size; i++) {
 	pocket_descriptors[i] = dup(0);
@@ -455,8 +455,8 @@ enqueue_output(network_handle nh, const char *line, int line_length,
 	if (h->output_head == 0)
 	    h->output_tail = &(h->output_head);
     }
-    buffer = (char *) mymalloc(length * sizeof(char), M_NETWORK);
-    block = (text_block *) mymalloc(sizeof(text_block), M_NETWORK);
+    buffer = (char *)malloc(length * sizeof(char));
+    block = (text_block *)malloc(sizeof(text_block));
     memcpy(buffer, line, line_length);
     if (add_eol)
 	memcpy(buffer + line_length, proto.eol_out_string, eol_length);
@@ -511,7 +511,7 @@ network_make_listener(server_listener sl, Var desc,
     nlistener *l;
 
     if (e == E_NONE) {
-	nl->ptr = l = (nlistener *)mymalloc(sizeof(nlistener), M_NETWORK);
+	nl->ptr = l = (nlistener *)malloc(sizeof(nlistener));
 	l->fd = fd;
 	l->slistener = sl;
 	l->name = str_dup(*name);

@@ -38,7 +38,7 @@ new_rt_env(unsigned size)
 	ret = ready_size_rt_envs;
 	ready_size_rt_envs = ret[0].v.list;
     } else
-	ret = (Var *)mymalloc(MAX(size, NUM_READY_VARS) * sizeof(Var), M_RT_ENV);
+	ret = (Var *)malloc(MAX(size, NUM_READY_VARS) * sizeof(Var));
 
     for (i = 0; i < size; i++)
 	ret[i] = none;
@@ -58,7 +58,7 @@ free_rt_env(Var * rt_env, unsigned size)
 	rt_env[0].v.list = ready_size_rt_envs;
 	ready_size_rt_envs = rt_env;
     } else
-	myfree((void *) rt_env, M_RT_ENV);
+	free(rt_env);
 }
 
 Var *

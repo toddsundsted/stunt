@@ -142,7 +142,7 @@ rbdouble(rbnode *root, int dir)
 static rbnode *
 new_node(rbtree *tree, Var key, Var value)
 {
-    rbnode *rn = (rbnode *)mymalloc(sizeof *rn, M_NODE);
+    rbnode *rn = (rbnode *)malloc(sizeof *rn);
 
     if (rn == NULL)
 	return NULL;
@@ -192,7 +192,7 @@ rbdelete(rbtree *tree)
 	    /* No left links, just kill the node and move on */
 	    save = it->link[1];
 	    node_free_data(it);
-	    myfree(it, M_NODE);
+	    free(it);
 	} else {
 	    /* Rotate away the left link and check again */
 	    save = it->link[0];
@@ -437,7 +437,7 @@ rberase(rbtree *tree, rbnode *node)
 	    f->key = q->key;
 	    f->value = q->value;
 	    p->link[p->link[1] == q] = q->link[q->link[0] == NULL];
-	    myfree(q, M_NODE);
+	    free(q);
 
 	    --tree->size;
 	} else

@@ -29,9 +29,9 @@
 static Names *
 new_names(unsigned max_size)
 {
-    Names *names = (Names *)mymalloc(sizeof(Names), M_NAMES);
+    Names *names = (Names *)malloc(sizeof(Names));
 
-    names->names = (const char **)mymalloc(sizeof(char *) * max_size, M_NAMES);
+    names->names = (const char **)malloc(sizeof(char *) * max_size);
     names->max_size = max_size;
     names->size = 0;
 
@@ -138,8 +138,8 @@ find_or_add_name(Names ** names, const char *str)
 	for (i = 0; i < old_max; i++)
 	    _new->names[i] = (*names)->names[i];
 	_new->size = old_max;
-	myfree((*names)->names, M_NAMES);
-	myfree(*names, M_NAMES);
+	free((*names)->names);
+	free(*names);
 	*names = _new;
     }
     (*names)->names[(*names)->size] = str_dup(str);
@@ -153,6 +153,6 @@ free_names(Names * names)
 
     for (i = 0; i < names->size; i++)
 	free_str(names->names[i]);
-    myfree(names->names, M_NAMES);
-    myfree(names, M_NAMES);
+    free(names->names);
+    free(names);
 }

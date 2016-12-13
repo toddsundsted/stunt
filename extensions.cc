@@ -66,7 +66,7 @@ stdin_enumerator(task_closure closure, void *data)
 
 	if (tea == TEA_KILL) {
 	    *ww = w->next;
-	    myfree(w, M_TASK);
+	    free(w);
 	    if (!waiters)
 		network_unregister_fd(0);
 	}
@@ -106,7 +106,7 @@ stdin_readable(int fd, void *data)
 
     resume_task(waiters->the_vm, v);
     w = waiters->next;
-    myfree(waiters, M_TASK);
+    free(waiters);
     waiters = w;
     if (!waiters)
 	network_unregister_fd(0);
@@ -130,7 +130,7 @@ stdin_suspender(vm the_vm, void *data)
 static package
 bf_read_stdin(const List& arglist, Objid progr)
 {
-    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
+    stdin_waiter *w = malloc(sizeof(stdin_waiter));
 
     return make_suspend_pack(stdin_suspender, w);
 }

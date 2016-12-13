@@ -587,20 +587,20 @@ void free_line_buffer(line_buffer *head, int strings_too) {
   line_buffer *next;
   if(head) {
 	 next = head->next;
-	 myfree(head, M_STRUCT);
+	 free(head);
 	 head = next;
 	 while(head != NULL) {
 		next = head->next;
 		if(strings_too)
 		  free_str(head->line);
-		myfree(head, M_STRUCT);
+		free(head);
 		head = next;
 	 }   
   }
 }
     
 line_buffer *new_line_buffer(const char *line) {
-  line_buffer *p = (line_buffer *)mymalloc(sizeof(line_buffer), M_STRUCT);
+  line_buffer *p = (line_buffer *)malloc(sizeof(line_buffer));
   p->line = line;
   p->next = NULL;
   return p;

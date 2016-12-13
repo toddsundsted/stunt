@@ -33,11 +33,11 @@
 vm
 new_vm(int task_id, Var local, int stack_size)
 {
-    vm the_vm = (vm)mymalloc(sizeof(vmstruct), M_VM);
+    vm the_vm = (vm)malloc(sizeof(vmstruct));
 
     the_vm->task_id = task_id;
     the_vm->local = local;
-    the_vm->activ_stack = (activation *)mymalloc(sizeof(activation) * stack_size, M_VM);
+    the_vm->activ_stack = (activation *)malloc(sizeof(activation) * stack_size);
 
     return the_vm;
 }
@@ -52,8 +52,8 @@ free_vm(vm the_vm, int stack_too)
     if (stack_too)
 	for (i = the_vm->top_activ_stack; i >= 0; i--)
 	    free_activation(&the_vm->activ_stack[i], 1);
-    myfree(the_vm->activ_stack, M_VM);
-    myfree(the_vm, M_VM);
+    free(the_vm->activ_stack);
+    free(the_vm);
 }
 
 activation

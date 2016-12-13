@@ -117,7 +117,7 @@ insert_prop2(Var obj, int pos, Pval pval)
     int i, nprops;
 
     nprops = ++o->nval;
-    new_propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
+    new_propval = (Pval *)malloc(nprops * sizeof(Pval));
 
     dbpriv_assign_nonce(o);
 
@@ -133,7 +133,7 @@ insert_prop2(Var obj, int pos, Pval pval)
 	new_propval[i] = o->propval[i - 1];
 
     if (o->propval)
-	myfree(o->propval, M_PVAL);
+	free(o->propval);
     o->propval = new_propval;
 }
 
@@ -189,13 +189,13 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 	int new_size = (o->propdefs.max_length == 0
 			? 8 : 2 * o->propdefs.max_length);
 
-	o->propdefs.l = (Propdef *)mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+	o->propdefs.l = (Propdef *)malloc(new_size * sizeof(Propdef));
 	for (i = 0; i < o->propdefs.max_length; i++)
 	    o->propdefs.l[i] = old_props[i];
 	o->propdefs.max_length = new_size;
 
 	if (old_props)
-	    myfree(old_props, M_PROPDEF);
+	    free(old_props);
     }
     o->propdefs.l[o->propdefs.cur_length++] = dbpriv_new_propdef(pname);
 
@@ -257,7 +257,7 @@ remove_prop2(Var obj, int pos)
     free_var(o->propval[pos].var);	/* free deleted property */
 
     if (nprops) {
-	new_propval = (Pval *)mymalloc(nprops * sizeof(Pval), M_PVAL);
+	new_propval = (Pval *)malloc(nprops * sizeof(Pval));
 	for (i = 0; i < pos; i++)
 	    new_propval[i] = o->propval[i];
 	for (i = pos; i < nprops; i++)
@@ -266,7 +266,7 @@ remove_prop2(Var obj, int pos)
 	new_propval = 0;
 
     if (o->propval)
-	myfree(o->propval, M_PVAL);
+	free(o->propval);
     o->propval = new_propval;
 }
 
@@ -320,14 +320,14 @@ db_delete_propdef(Var obj, const char *pname)
 		int new_size = max / 2;
 		Propdef *new_props;
 
-		new_props = (Propdef *)mymalloc(new_size * sizeof(Propdef), M_PROPDEF);
+		new_props = (Propdef *)malloc(new_size * sizeof(Propdef));
 
 		for (j = 0; j < i; j++)
 		    new_props[j] = props->l[j];
 		for (j = i + 1; j < count; j++)
 		    new_props[j - 1] = props->l[j];
 
-		myfree(props->l, M_PROPDEF);
+		free(props->l);
 		props->l = new_props;
 		props->max_length = new_size;
 	    } else
@@ -871,8 +871,8 @@ dbpriv_fix_properties_after_chparent(Var obj, List old_ancestors, List new_ances
      * hold the starting point of each sub-array.
      */
     int offset;
-    int old_count, *old_offsets = (int *)mymalloc((listlength(old_ancestors) + 1) * sizeof(int), M_INT);
-    int new_count, *new_offsets = (int *)mymalloc((listlength(new_ancestors) + 1) * sizeof(int), M_INT);
+    int old_count, *old_offsets = (int *)malloc((listlength(old_ancestors) + 1) * sizeof(int));
+    int new_count, *new_offsets = (int *)malloc((listlength(new_ancestors) + 1) * sizeof(int));
     int i1, c1;
 
     /* C arrays start at index 0, MOO arrays start at index 1 */
@@ -905,7 +905,7 @@ dbpriv_fix_properties_after_chparent(Var obj, List old_ancestors, List new_ances
     assert(old_count == me->nval);
 
     if (new_count != 0) {
-	new_propval = (Pval *)mymalloc(new_count * sizeof(Pval), M_PVAL);
+	new_propval = (Pval *)malloc(new_count * sizeof(Pval));
 	int i2, c2, i3, c3;
 	FOR_EACH(ancestor, new_ancestors, i2, c2) {
 	    int n1 = new_offsets[i2 - 1];
@@ -944,15 +944,15 @@ dbpriv_fix_properties_after_chparent(Var obj, List old_ancestors, List new_ances
     if (me->propval) {
 	for (c = 0; c < old_count; c++)
 	  free_var(me->propval[c].var);
-	myfree(me->propval, M_PVAL);
+	free(me->propval);
     }
     me->propval = new_propval;
     me->nval = new_count;
 
     dbpriv_assign_nonce(me);
 
-    myfree(old_offsets, M_INT);
-    myfree(new_offsets, M_INT);
+    free(old_offsets);
+    free(new_offsets);
 
     /*
      * Recursively call dbpriv_fix_properties_after_chparent for each
