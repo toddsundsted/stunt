@@ -67,7 +67,7 @@ extern int proto_initialize(struct proto *proto, Var * desc,
 				 * server's initial listening point.
 				 */
 
-extern enum error proto_make_listener(Var desc, int *fd, Var * canon,
+extern enum error proto_make_listener(const Var& desc, int *fd, Var * canon,
 				      const char **name);
 				/* DESC is the second argument in a call to the
 				 * built-in MOO function `listen()'; it should
@@ -123,7 +123,7 @@ extern enum proto_accept_error
 
 #ifdef OUTBOUND_NETWORK
 
-extern enum error proto_open_connection(Var arglist,
+extern enum error proto_open_connection(const Var& arglist,
 					int *read_fd, int *write_fd,
 					const char **local_name,
 					const char **remote_name);

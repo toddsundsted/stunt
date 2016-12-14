@@ -165,7 +165,7 @@ static void init_version_structure()
 }
 
 Var
-server_version_full(Var arg)
+server_version_full(const Var& arg)
 {
     Var r;
     const char *s;

@@ -18,5 +18,5 @@
 #include "db.h"
 #include "structures.h"
 
-extern enum error validate_verb_descriptor(Var desc);
-extern db_verb_handle find_described_verb(Var obj, Var desc);
+extern enum error validate_verb_descriptor(const Var& desc);
+extern db_verb_handle find_described_verb(const Var& obj, const Var& desc);

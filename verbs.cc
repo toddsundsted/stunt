@@ -207,7 +207,7 @@ bf_add_verb(const List& arglist, Objid progr)
 }
 
 enum error
-validate_verb_descriptor(Var desc)
+validate_verb_descriptor(const Var& desc)
 {
     if (desc.is_str())
 	return E_NONE;
@@ -220,7 +220,7 @@ validate_verb_descriptor(Var desc)
 }
 
 db_verb_handle
-find_described_verb(Var obj, Var desc)
+find_described_verb(const Var& obj, const Var& desc)
 {
     if (desc.is_int())
 	return db_find_indexed_verb(obj, desc.v.num);
@@ -572,7 +572,7 @@ bf_respond_to(const List& arglist, Objid progr)
 }
 
 static int
-all_strings(Var arglist)
+all_strings(const Var& arglist)
 {
     Var arg;
     int i, c;

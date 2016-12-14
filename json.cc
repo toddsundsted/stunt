@@ -83,7 +83,7 @@ struct stack_item {
 };
 
 static void
-push(struct stack_item **top, Var v)
+push(struct stack_item **top, const Var& v)
 {
     struct stack_item *item = (struct stack_item *)malloc(sizeof(struct stack_item));
     item->prev = *top;
@@ -123,7 +123,7 @@ struct generate_context {
 #define MAP_SENTINEL -2
 
 static const char *
-value_to_literal(Var v)
+value_to_literal(const Var& v)
 {
     static Stream *s = NULL;
     if (!s)
@@ -355,7 +355,7 @@ handle_end_array(void *ctx)
 }
 
 static yajl_gen_status
-generate_key(yajl_gen g, Var v, void *ctx)
+generate_key(yajl_gen g, const Var& v, void *ctx)
 {
     struct generate_context *gctx = (struct generate_context *)ctx;
 
@@ -387,7 +387,7 @@ generate_key(yajl_gen g, Var v, void *ctx)
 }
 
 static yajl_gen_status
-generate(yajl_gen g, Var v, void *ctx);
+generate(yajl_gen g, const Var& v, void *ctx);
 
 struct do_closure {
     yajl_gen g;
@@ -396,7 +396,7 @@ struct do_closure {
 };
 
 static int
-do_map(Var key, Var value, void *data, int first)
+do_map(const Var& key, const Var& value, void *data, int first)
 {
     struct do_closure *dmc = (struct do_closure *)data;
 
@@ -411,7 +411,7 @@ do_map(Var key, Var value, void *data, int first)
 }
 
 static int
-do_list(Var value, void *data, int first)
+do_list(const Var& value, void *data, int first)
 {
     struct do_closure *dmc = (struct do_closure *)data;
 
@@ -423,7 +423,7 @@ do_list(Var value, void *data, int first)
 }
 
 static yajl_gen_status
-generate(yajl_gen g, Var v, void *ctx)
+generate(yajl_gen g, const Var& v, void *ctx)
 {
     struct generate_context *gctx = (struct generate_context *)ctx;
 

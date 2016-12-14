@@ -82,11 +82,11 @@ typedef vmstruct *vm;
 /* call_verb will only return E_MAXREC, E_INVIND, E_VERBNF,
    or E_NONE.  the vm will only be changed if E_NONE is returned */
 extern enum error call_verb(Objid obj, const char *vname,
-			    Var _this, Var args, int do_pass);
+			    const Var& _this, const Var& args, int do_pass);
 /* if your vname is already a moo str (via str_dup) then you can
    use this interface instead */
 extern enum error call_verb2(Objid obj, const char *vname,
-			     Var _this, Var args, int do_pass);
+			     const Var& _this, const Var& args, int do_pass);
 
 extern int setup_activ_for_eval(Program * prog);
 
@@ -101,19 +101,19 @@ extern enum outcome do_forked_task(Program * prog, Var * rt_env,
 				   activation a, int f_id);
 extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
 				  Objid recv, db_verb_handle vh);
-extern enum outcome do_server_verb_task(Var _this, const char *verb,
-					Var args, db_verb_handle h,
+extern enum outcome do_server_verb_task(const Var& _this, const char *verb,
+					const Var& args, db_verb_handle h,
 					Objid player, const char *argstr,
 					Var * result, int do_db_tracebacks);
-extern enum outcome do_server_program_task(Var _this, const char *verb,
-					   Var args, Var vloc,
+extern enum outcome do_server_program_task(const Var& _this, const char *verb,
+					   const Var& args, const Var& vloc,
 					   const char *verbname,
 					   Program * program, Objid progr,
 					   int debug, Objid player,
 					   const char *argstr,
 					   Var * result,
 					   int do_db_tracebacks);
-extern enum outcome resume_from_previous_vm(vm the_vm, Var value);
+extern enum outcome resume_from_previous_vm(vm the_vm, const Var& value);
 
 extern int task_timed_out;
 extern void abort_running_task(void);

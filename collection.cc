@@ -29,7 +29,7 @@ struct ismember_data {
 };
 
 static int
-do_map_iteration(Var key, Var value, void *data, int first)
+do_map_iteration(const Var& key, const Var& value, void *data, int first)
 {
     struct ismember_data *ismember_data = (struct ismember_data *)data;
 

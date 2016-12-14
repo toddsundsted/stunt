@@ -26,7 +26,7 @@
  */
 
 extern const char *server_version;
-extern Var server_version_full(Var);
+extern Var server_version_full(const Var&);
 
 
 /*****************************************************************

@@ -98,7 +98,7 @@ parse_float(const char *str, double *result)
 }
 
 enum error
-become_integer(Var in, int *ret, int called_from_tonum)
+become_integer(const Var& in, int *ret, int called_from_tonum)
 {
     switch (in.type) {
     case TYPE_INT:
@@ -132,7 +132,7 @@ become_integer(Var in, int *ret, int called_from_tonum)
 }
 
 static enum error
-become_float(Var in, double *ret)
+become_float(const Var& in, double *ret)
 {
     switch (in.type) {
     case TYPE_INT:
@@ -163,7 +163,7 @@ become_float(Var in, double *ret)
 
 #if COERCION_IS_EVER_IMPLEMENTED_AND_DESIRED
 static int
-to_float(Var v, double *dp)
+to_float(const Var& v, double *dp)
 {
     switch (v.type) {
     case TYPE_INT:
@@ -226,7 +226,7 @@ matherr(struct exception *x)
  */
 
 int
-do_equals(Var lhs, Var rhs)
+do_equals(const Var& lhs, const Var& rhs)
 {				/* LHS == RHS */
     /* At least one of LHS and RHS is TYPE_FLOAT */
 
@@ -248,7 +248,7 @@ compare_integers(int a, int b)
 }
 
 Var
-compare_numbers(Var a, Var b)
+compare_numbers(const Var& a, const Var& b)
 {
     Var ans;
 
@@ -272,7 +272,7 @@ compare_numbers(Var a, Var b)
 
 #define SIMPLE_BINARY(name, op)					\
 		Var						\
-		do_ ## name(Var a, Var b)			\
+		do_ ## name(const Var& a, const Var& b)		\
 		{						\
 		    Var	ans;					\
 								\
@@ -297,7 +297,7 @@ SIMPLE_BINARY(subtract, -)
 SIMPLE_BINARY(multiply, *)
 
 Var
-do_modulus(Var a, Var b)
+do_modulus(const Var& a, const Var& b)
 {
     Var ans;
 
@@ -323,7 +323,7 @@ do_modulus(Var a, Var b)
 }
 
 Var
-do_divide(Var a, Var b)
+do_divide(const Var& a, const Var& b)
 {
     Var ans;
 
@@ -349,7 +349,7 @@ do_divide(Var a, Var b)
 }
 
 Var
-do_power(Var lhs, Var rhs)
+do_power(const Var& lhs, const Var& rhs)
 {				/* LHS ^ RHS */
     Var ans;
 

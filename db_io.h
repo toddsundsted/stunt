@@ -91,7 +91,7 @@ extern void dbio_write_string(const char *);
 				 * newline characters.
 				 */
 
-extern void dbio_write_var(Var);
+extern void dbio_write_var(const Var&);
 
 extern void dbio_write_program(Program *);
 extern void dbio_write_forked_program(Program * prog, int f_index);

@@ -1308,7 +1308,7 @@ my_getc(void *data)
 static Parser_Client list_parser_client = { my_error, 0, my_getc };
 
 Program *
-parse_list_as_program(Var code, Var *errors)
+parse_list_as_program(const Var& code, Var *errors)
 {
     struct parser_state state;
     Program            *program;

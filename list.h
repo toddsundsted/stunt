@@ -25,35 +25,35 @@ extern List new_list(int size);
 extern void destroy_list(List& list);
 extern List list_dup(const List& list);
 
-extern List listappend(const List& list, Var value);
-extern List listinsert(const List& list, Var value, int pos);
+extern List listappend(const List& list, const Var& value);
+extern List listinsert(const List& list, const Var& value, int pos);
 extern List listdelete(const List& list, int pos);
-extern List listset(const List& list, Var value, int pos);
+extern List listset(const List& list, const Var& value, int pos);
 extern List listrangeset(const List& list, int from, int to, const List& value);
 extern List listconcat(const List& first, const List& second);
-extern List setadd(const List& list, Var value);
-extern List setremove(const List& list, Var value);
+extern List setadd(const List& list, const Var& value);
+extern List setremove(const List& list, const Var& value);
 extern List sublist(const List& list, int lower, int upper);
 extern int listequal(const List& lhs, const List& rhs, int case_matters);
 
 extern int list_sizeof(const Var *list);
 
-typedef int (*listfunc) (Var value, void *data, int first);
+typedef int (*listfunc) (const Var& value, void *data, int first);
 extern int listforeach(const List& list, listfunc func, void *data);
 
 extern Str strrangeset(const Str& str, int from, int to, const Str& value);
 extern Str substr(const Str& str, int lower, int upper);
 extern Str strget(const Str& str, int i);
 
-extern const char *value2str(Var);
-extern void unparse_value(Stream *, Var);
+extern const char *value2str(const Var&);
+extern void unparse_value(Stream *, const Var&);
 
 /*
  * Returns the length of the given list `l'.  Does *not* check to
  * ensure `l' is, in fact, a list.
  */
 static inline int32_t
-listlength(Var l)
+listlength(const Var& l)
 {
     return l.v.list[0].v.num;
 }

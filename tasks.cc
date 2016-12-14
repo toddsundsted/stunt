@@ -297,7 +297,7 @@ icmd_list(int icmd_flags)
 }
 
 static int
-icmd_set_flags(tqueue * tq, Var list)
+icmd_set_flags(tqueue * tq, const Var& list)
 {
     int i;
     int newflags;
@@ -770,8 +770,8 @@ do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
  */
 static
 enum outcome
-run_server_task_setting_id(Objid player, Var what, const char *verb,
-			   Var args, const char *argstr, Var *result,
+run_server_task_setting_id(Objid player, const Var& what, const char *verb,
+			   const Var& args, const char *argstr, Var *result,
 			   int *task_id);
 
 static int
@@ -993,7 +993,7 @@ free_task_queue(task_queue q)
 	   })								\
 
 int
-tasks_set_connection_option(task_queue q, const char *option, Var value)
+tasks_set_connection_option(task_queue q, const char *option, const Var& value)
 {
     CONNECTION_OPTION_SET(TASK_CO_TABLE, (tqueue *)q.ptr, option, value);
 }
@@ -1005,7 +1005,7 @@ tasks_connection_option(task_queue q, const char *option, Var *value)
 }
 
 List
-tasks_connection_options(task_queue q, List list)
+tasks_connection_options(task_queue q, const List& list)
 {
     CONNECTION_OPTION_LIST(TASK_CO_TABLE, (tqueue *)q.ptr, list);
 }
@@ -1255,7 +1255,7 @@ enqueue_suspended_task(vm the_vm, void *data)
 }
 
 void
-resume_task(vm the_vm, Var value)
+resume_task(vm the_vm, const Var& value)
 {
     task *t = (task *)malloc(sizeof(task));
     Objid progr = progr_of_cur_verb(the_vm);
@@ -1379,7 +1379,7 @@ next_task_start(void)
 }
 
 static Var
-create_or_extend(Var in, const char *_new, int newlen)
+create_or_extend(const Var& in, const char *_new, int newlen)
 {
     static Stream *s = NULL;
     if (!s)
@@ -1731,8 +1731,8 @@ run_ready_tasks(void)
 }
 
 enum outcome
-run_server_task(Objid player, Var what, const char *verb, Var args,
-		const char *argstr, Var *result)
+run_server_task(Objid player, const Var& what, const char *verb,
+		const Var& args, const char *argstr, Var *result)
 {
     enum outcome ret = run_server_task_setting_id(player, what, verb,
                                                   args, argstr,
@@ -1751,8 +1751,8 @@ run_server_task(Objid player, Var what, const char *verb, Var args,
  */
 static
 enum outcome
-run_server_task_setting_id(Objid player, Var what, const char *verb,
-			   Var args, const char *argstr, Var *result,
+run_server_task_setting_id(Objid player, const Var& what, const char *verb,
+			   const Var& args, const char *argstr, Var *result,
 			   int *task_id)
 {
     db_verb_handle h;
@@ -1779,7 +1779,7 @@ run_server_task_setting_id(Objid player, Var what, const char *verb,
 
 /* for emergency mode */
 enum outcome
-run_server_program_task(Objid _this, const char *verb, Var args, Objid vloc,
+run_server_program_task(Objid _this, const char *verb, const Var& args, Objid vloc,
 			const char *verbname, Program * program, Objid progr,
 			int debug, Objid player, const char *argstr,
 			Var *result)
@@ -2602,7 +2602,7 @@ bf_kill_task(const List& arglist, Objid progr)
 }
 
 static enum error
-do_resume(int id, Var value, Objid progr)
+do_resume(int id, const Var& value, Objid progr)
 {
     task **tt;
     tqueue *tq;

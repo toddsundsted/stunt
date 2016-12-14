@@ -73,7 +73,7 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+proto_make_listener(const Var& desc, int *fd, Var * canon, const char **name)
 {
     struct sockaddr_un address;
     int s;

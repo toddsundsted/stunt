@@ -60,7 +60,7 @@ extern int network_initialize(int argc, char **argv,
 				 * create the server's initial listening point.
 				 */
 
-extern enum error network_make_listener(server_listener sl, Var desc,
+extern enum error network_make_listener(server_listener sl, const Var& desc,
 					network_listener * nl,
 					Var * canon, const char **name);
 				/* DESC is the second argument in a call to the
@@ -164,8 +164,7 @@ extern const char *network_connection_name(network_handle nh);
 				 * into the phrase 'Connection accepted: %s'.
 				 */
 
-extern List network_connection_options(network_handle nh,
-				       List list);
+extern List network_connection_options(network_handle nh, const List& list);
 				/* Add the current option settings for the
 				 * given connection onto the end of LIST and
 				 * return the new list.  Each entry on LIST
@@ -182,7 +181,7 @@ extern int network_connection_option(network_handle nh,
 
 extern int network_set_connection_option(network_handle nh,
 					 const char *option,
-					 Var value);
+					 const Var& value);
 				/* Return true iff the given option/value pair
 				 * is valid for the given connection, applying
 				 * the given setting if valid.
@@ -191,7 +190,7 @@ extern int network_set_connection_option(network_handle nh,
 #ifdef OUTBOUND_NETWORK
 #include "structures.h"
 
-extern enum error network_open_connection(Var arglist, server_listener sl);
+extern enum error network_open_connection(const Var& arglist, server_listener sl);
 				/* The given MOO arguments should be used as a
 				 * specification of a remote network connection
 				 * to be made.  If the arguments are OK and the

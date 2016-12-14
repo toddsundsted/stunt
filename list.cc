@@ -129,7 +129,7 @@ listforeach(const List& list, listfunc func, void *data)
 }
 
 List
-setadd(const List& list, Var value)
+setadd(const List& list, const Var& value)
 {
     if (ismember(value, list, 0)) {
 	free_var(value);
@@ -139,7 +139,7 @@ setadd(const List& list, Var value)
 }
 
 List
-setremove(const List& list, Var value)
+setremove(const List& list, const Var& value)
 {
     int i;
     if ((i = ismember(value, list, 0)) != 0) {
@@ -150,7 +150,7 @@ setremove(const List& list, Var value)
 }
 
 List
-listset(const List& list, Var value, int pos)
+listset(const List& list, const Var& value, int pos)
 {				/* consumes `list', `value' */
     List _new;
 
@@ -177,7 +177,7 @@ listset(const List& list, Var value, int pos)
 }
 
 static List
-doinsert(const List& list, Var value, int pos)
+doinsert(const List& list, const Var& value, int pos)
 {
     int size = list.length() + 1;
 
@@ -219,7 +219,7 @@ doinsert(const List& list, Var value, int pos)
 }
 
 List
-listinsert(const List& list, Var value, int pos)
+listinsert(const List& list, const Var& value, int pos)
 {
     if (pos <= 0)
 	pos = 1;
@@ -229,7 +229,7 @@ listinsert(const List& list, Var value, int pos)
 }
 
 List
-listappend(const List& list, Var value)
+listappend(const List& list, const Var& value)
 {
     return doinsert(list, value, list.length() + 1);
 }
@@ -355,7 +355,7 @@ listequal(const List& lhs, const List& rhs, int case_matters)
 }
 
 static void
-stream_add_tostr(Stream * s, Var v)
+stream_add_tostr(Stream * s, const Var& v)
 {
     switch (v.type) {
     case TYPE_INT:
@@ -388,7 +388,7 @@ stream_add_tostr(Stream * s, Var v)
 }
 
 const char *
-value2str(Var value)
+value2str(const Var& value)
 {
     if (value.is_str()) {
 	/* do this case separately to avoid two copies
@@ -405,7 +405,7 @@ value2str(Var value)
 }
 
 static int
-print_map_to_stream(Var key, Var value, void *sptr, int first)
+print_map_to_stream(const Var& key, const Var& value, void *sptr, int first)
 {
     Stream *s = (Stream *)sptr;
 
@@ -421,7 +421,7 @@ print_map_to_stream(Var key, Var value, void *sptr, int first)
 }
 
 void
-unparse_value(Stream * s, Var v)
+unparse_value(Stream * s, const Var& v)
 {
     switch (v.type) {
     case TYPE_INT:
@@ -1056,7 +1056,7 @@ invalid_pair(int num1, int num2, int max)
 }
 
 int
-check_subs_list(Var subs)
+check_subs_list(const Var& subs)
 {
     const char *subj;
     int subj_length, loop;
@@ -1223,7 +1223,7 @@ bf_decode_binary(const List& arglist, Objid progr)
 }
 
 static int
-encode_binary(Stream * s, Var v)
+encode_binary(Stream * s, const Var& v)
 {
     int i;
 

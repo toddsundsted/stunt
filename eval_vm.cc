@@ -31,7 +31,7 @@
 /**** external functions ****/
 
 vm
-new_vm(int task_id, Var local, int stack_size)
+new_vm(int task_id, const Var& local, int stack_size)
 {
     vm the_vm = (vm)malloc(sizeof(vmstruct));
 

@@ -114,7 +114,7 @@ gc_debug(const char *name)
 }
 
 static void
-gc_add_root(Var v)
+gc_add_root(const Var& v)
 {
     if (!pending_free) {
 	pending_free = (struct pending_recycle *)malloc(sizeof(struct pending_recycle));
@@ -141,7 +141,7 @@ gc_add_root(Var v)
 
 /* corresponds to `PossibleRoot' in Bacon and Rajan */
 void
-gc_possible_root(Var v)
+gc_possible_root(const Var& v)
 {
     GC_Color color;
 
@@ -157,16 +157,16 @@ gc_possible_root(Var v)
 }
 
 static inline int
-is_not_green(Var v)
+is_not_green(const Var& v)
 {
     void *p = VOID_PTR(v);
     return p && gc_get_color(p) != GC_GREEN;
 }
 
-typedef void (gc_func)(Var);
+typedef void (gc_func)(const Var&);
 
 static int
-do_obj(void *data, Var v)
+do_obj(void *data, const Var& v)
 {
     gc_func *fp = (gc_func *)data;
     if (v.is_collection() && is_not_green(v))
@@ -175,7 +175,7 @@ do_obj(void *data, Var v)
 }
 
 static int
-do_list(Var v, void *data, int first)
+do_list(const Var& v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
     if (v.is_collection() && is_not_green(v))
@@ -184,7 +184,7 @@ do_list(Var v, void *data, int first)
 }
 
 static int
-do_map(Var k, Var v, void *data, int first)
+do_map(const Var& k, const Var& v, void *data, int first)
 {
     gc_func *fp = (gc_func *)data;
     if (v.is_collection() && is_not_green(v))
@@ -193,7 +193,7 @@ do_map(Var k, Var v, void *data, int first)
 }
 
 static void
-for_all_children(Var v, gc_func *fp)
+for_all_children(const Var& v, gc_func *fp)
 {
     if (v.is_object())
 	db_for_all_propvals(v, do_obj, (void *)fp);
@@ -205,17 +205,17 @@ for_all_children(Var v, gc_func *fp)
 
 /* corresponds to `MarkGray' in Bacon and Rajan */
 static void
-mark_gray(Var);
+mark_gray(const Var&);
 
 static void
-cb_mark_gray(Var v)
+cb_mark_gray(const Var& v)
 {
     delref(VOID_PTR(v));
     mark_gray(v);
 }
 
 static void
-mark_gray(Var v)
+mark_gray(const Var& v)
 {
     if (gc_get_color(VOID_PTR(v)) != GC_GRAY) {
 	gc_set_color(VOID_PTR(v), GC_GRAY);
@@ -248,10 +248,10 @@ mark_roots(void)
 
 /* corresponds to `ScanBlack' in Bacon and Rajan */
 static void
-scan_black(Var);
+scan_black(const Var&);
 
 static void
-cb_scan_black(Var v)
+cb_scan_black(const Var& v)
 {
     addref(VOID_PTR(v));
     if (gc_get_color(VOID_PTR(v)) != GC_BLACK)
@@ -259,7 +259,7 @@ cb_scan_black(Var v)
 }
 
 static void
-scan_black(Var v)
+scan_black(const Var& v)
 {
     gc_set_color(VOID_PTR(v), GC_BLACK);
     for_all_children(v, &cb_scan_black);
@@ -267,16 +267,16 @@ scan_black(Var v)
 
 /* corresponds to `Scan' in Bacon and Rajan */
 static void
-scan(Var);
+scan(const Var&);
 
 static void
-cb_scan(Var v)
+cb_scan(const Var& v)
 {
     scan(v);
 }
 
 static void
-scan(Var v)
+scan(const Var& v)
 {
     if (gc_get_color(VOID_PTR(v)) == GC_GRAY) {
 	if (refcount(VOID_PTR(v)) > 0)
@@ -305,10 +305,10 @@ scan_roots()
 
 /* no correspondence in Bacon and Rajan */
 static void
-scan_white(Var);
+scan_white(const Var&);
 
 static void
-cb_scan_white(Var v)
+cb_scan_white(const Var& v)
 {
     addref(VOID_PTR(v));
     if (gc_get_color(VOID_PTR(v)) != GC_PINK)
@@ -316,7 +316,7 @@ cb_scan_white(Var v)
 }
 
 static void
-scan_white(Var v)
+scan_white(const Var& v)
 {
     gc_set_color(VOID_PTR(v), GC_PINK);
     for_all_children(v, &cb_scan_white);
@@ -341,16 +341,16 @@ restore_white()
 
 /* replaces `CollectWhite' in Bacon and Rajan */
 static void
-collect_white(Var);
+collect_white(const Var&);
 
 static void
-cb_collect_white(Var v)
+cb_collect_white(const Var& v)
 {
     collect_white(v);
 }
 
 static void
-collect_white(Var v)
+collect_white(const Var& v)
 {
     if (gc_get_color(VOID_PTR(v)) == GC_PINK && !gc_is_buffered(VOID_PTR(v))) {
 	gc_set_color(VOID_PTR(v), GC_BLACK);

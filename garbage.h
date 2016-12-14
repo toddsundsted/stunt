@@ -32,5 +32,5 @@
 extern int gc_roots_count;
 extern int gc_run_called;
 
-extern void gc_possible_root(Var);
+extern void gc_possible_root(const Var&);
 extern void gc_collect(void);

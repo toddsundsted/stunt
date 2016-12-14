@@ -24,7 +24,7 @@
 #endif
 
 int
-network_set_connection_option(network_handle nh, const char *option, Var value)
+network_set_connection_option(network_handle nh, const char *option, const Var& value)
 {
     CONNECTION_OPTION_SET(NETWORK_CO_TABLE, nh, option, value);
 }
@@ -36,7 +36,7 @@ network_connection_option(network_handle nh, const char *option, Var *value)
 }
 
 List
-network_connection_options(network_handle nh, List list)
+network_connection_options(network_handle nh, const List& list)
 {
     CONNECTION_OPTION_LIST(NETWORK_CO_TABLE, nh, list);
 }

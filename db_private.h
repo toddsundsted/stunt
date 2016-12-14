@@ -97,10 +97,10 @@ typedef struct Object {
  * (TYPE_OBJ) or a list (TYPE_LIST) of object references.
  */
 static inline List
-enlist_var(Var v)
+enlist_var(const Var& v)
 {
     if (v.is_list()) {
-	return static_cast<List&>(v);
+	return static_cast<const List&>(v);
     } else {
 	List l = new_list(1);
 	l.v.list[1] = v;
@@ -133,7 +133,7 @@ extern void db_priv_affected_callable_verb_lookup(void);
 /*********** Objects ***********/
 
 extern Var db_read_anonymous();
-extern void db_write_anonymous(Var);
+extern void db_write_anonymous(const Var&);
 
 extern void dbpriv_assign_nonce(Object *);
 
@@ -162,7 +162,7 @@ extern Var dbpriv_object_contents(Object *);
 				 * reference is to be persistent.
 				 */
 
-extern void dbpriv_set_all_users(List&);
+extern void dbpriv_set_all_users(const List&);
 				/* Initialize the list returned by
 				 * db_all_users().
 				 */
@@ -193,11 +193,11 @@ extern void dbpriv_after_load(void);
 
 extern Propdef dbpriv_new_propdef(const char *);
 
-extern int dbpriv_check_properties_for_chparent(Var obj,
-						Var parents);
-extern int dbpriv_check_properties_for_chparent(Var obj,
-						Var parents,
-						List anon_kids);
+extern int dbpriv_check_properties_for_chparent(const Var& obj,
+						const Var& parents);
+extern int dbpriv_check_properties_for_chparent(const Var& obj,
+						const Var& parents,
+						const List& anon_kids);
 				/* Return true iff PARENTS defines no
 				 * properties that are also defined by either
 				 * OBJ or any of OBJ's descendants, or by
@@ -205,13 +205,13 @@ extern int dbpriv_check_properties_for_chparent(Var obj,
 				 * ancestors.
 				 */
 
-extern void dbpriv_fix_properties_after_chparent(Var obj,
-						 List old_ancestors,
-						 List new_ancestors);
-extern void dbpriv_fix_properties_after_chparent(Var obj,
-						 List old_ancestors,
-						 List new_ancestors,
-						 List anon_kids);
+extern void dbpriv_fix_properties_after_chparent(const Var& obj,
+						 const List& old_ancestors,
+						 const List& new_ancestors);
+extern void dbpriv_fix_properties_after_chparent(const Var& obj,
+						 const List& old_ancestors,
+						 const List& new_ancestors,
+						 const List& anon_kids);
 				/* OBJ has just had its parents changed.
 				 * Fix up the properties of OBJ and its
 				 * descendants, removing obsolete ones
@@ -252,7 +252,7 @@ extern void dbpriv_set_dbio_output(FILE *);
 /****/
 
 static inline Object *
-dbpriv_dereference(Var v)
+dbpriv_dereference(const Var& v)
 {
     return v.is_obj()
            ? dbpriv_find_object(v.v.obj)

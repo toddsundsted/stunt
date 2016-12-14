@@ -103,7 +103,7 @@ bf_prop_info(const List& arglist, Objid progr)
 }
 
 static enum error
-validate_prop_info(Var v, Objid * owner, unsigned *flags, const char **name)
+validate_prop_info(const Var& v, Objid * owner, unsigned *flags, const char **name)
 {
     const char *s;
     int len = v.is_list() ? v.v.list[0].v.num : 0;
@@ -146,7 +146,7 @@ validate_prop_info(Var v, Objid * owner, unsigned *flags, const char **name)
 }
 
 static enum error
-set_prop_info(Var obj, const char *pname, Var info, Objid progr)
+set_prop_info(const Var& obj, const char *pname, const Var& info, Objid progr)
 {
     Objid new_owner;
     unsigned new_flags;

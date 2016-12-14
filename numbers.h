@@ -18,18 +18,18 @@
 #include "sosemanuk.h"
 #include "structures.h"
 
-extern enum error become_integer(Var, int *, int);
+extern enum error become_integer(const Var&, int *, int);
 
-extern int do_equals(Var, Var);
+extern int do_equals(const Var&, const Var&);
 extern int compare_integers(int, int);
-extern Var compare_numbers(Var, Var);
+extern Var compare_numbers(const Var&, const Var&);
 
-extern Var do_add(Var, Var);
-extern Var do_subtract(Var, Var);
-extern Var do_multiply(Var, Var);
-extern Var do_divide(Var, Var);
-extern Var do_modulus(Var, Var);
-extern Var do_power(Var, Var);
+extern Var do_add(const Var&, const Var&);
+extern Var do_subtract(const Var&, const Var&);
+extern Var do_multiply(const Var&, const Var&);
+extern Var do_divide(const Var&, const Var&);
+extern Var do_modulus(const Var&, const Var&);
+extern Var do_power(const Var&, const Var&);
 
 extern sosemanuk_key_context key_context;
 extern sosemanuk_run_context run_context;

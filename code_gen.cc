@@ -238,7 +238,7 @@ add_fixup(enum fixup_kind kind, unsigned value, State * state)
 }
 
 static void
-add_literal(Var v, State * state)
+add_literal(const Var& v, State * state)
 {
     GState *gstate = state->gstate;
     Var *literals = gstate->literals;
@@ -268,7 +268,6 @@ add_literal(Var v, State * state)
 	if (v.is_str()) {
 	    /* intern string if we can */
 	    Var nv;
-
 	    nv.type = TYPE_STR;
 	    nv.v.str = str_intern(v.v.str);
 	    gstate->literals[i = gstate->num_literals++] = nv;
@@ -604,9 +603,7 @@ generate_expr(Expr * expr, State * state)
     switch (expr->kind) {
     case EXPR_VAR:
 	{
-	    Var v;
-
-	    v = expr->e.var;
+	    const Var& v = expr->e.var;
 	    if (v.is_int() && IN_OPTIM_NUM_RANGE(v.v.num))
 		emit_byte(OPTIM_NUM_TO_OPCODE(v.v.num), state);
 	    else {

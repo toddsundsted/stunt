@@ -135,7 +135,7 @@ free_shandle(shandle * h)
 }
 
 static slistener *
-new_slistener(Objid oid, Var desc, int print_messages, enum error *ee)
+new_slistener(Objid oid, const Var& desc, int print_messages, enum error *ee)
 {
     slistener *l = (slistener *)malloc(sizeof(slistener));
     server_listener sl;
@@ -469,7 +469,7 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
  * the list of roots.  After they are recycled, they are freed.
  */
 static int
-queue_includes(Var v)
+queue_includes(const Var& v)
 {
     struct pending_recycle *head = pending_head;
 
@@ -483,7 +483,7 @@ queue_includes(Var v)
 }
 
 void
-queue_anonymous_object(Var v)
+queue_anonymous_object(const Var& v)
 {
     assert(v.is_anon());
     assert(!db_object_has_flag2(v, FLAG_RECYCLED));
@@ -775,7 +775,7 @@ init_cmdline(int argc, char *argv[])
 	   })								\
 
 static int
-server_set_connection_option(shandle * h, const char *option, Var value)
+server_set_connection_option(shandle * h, const char *option, const Var& value)
 {
     CONNECTION_OPTION_SET(SERVER_CO_TABLE, h, option, value);
 }
@@ -787,7 +787,7 @@ server_connection_option(shandle * h, const char *option, Var * value)
 }
 
 static List
-server_connection_options(shandle * h, List list)
+server_connection_options(shandle * h, const List& list)
 {
     CONNECTION_OPTION_LIST(SERVER_CO_TABLE, h, list);
 }
@@ -1070,7 +1070,7 @@ emergency_mode()
 }
 
 static void
-run_do_start_script(Var code)
+run_do_start_script(const Var& code)
 {
     Stream *s = new_stream(100);
     Var result;
@@ -2077,7 +2077,7 @@ bf_connection_options(const List& arglist, Objid progr)
 }
 
 static slistener *
-find_slistener(Var desc)
+find_slistener(const Var& desc)
 {
     slistener *l;
 

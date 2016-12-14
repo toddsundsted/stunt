@@ -199,7 +199,7 @@ db_unparse_prep(db_prep_spec prep)
 #define PERMMASK   0xF
 
 int
-db_add_verb(Var obj, const char *vnames, Objid owner, unsigned flags,
+db_add_verb(const Var& obj, const char *vnames, Objid owner, unsigned flags,
 	    db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
     Object *o = dbpriv_dereference(obj);
@@ -239,7 +239,7 @@ find_verbdef_by_name(Object * o, const char *vname, int check_x_bit)
 }
 
 int
-db_count_verbs(Var obj)
+db_count_verbs(const Var& obj)
 {
     int count = 0;
     Object *o = dbpriv_dereference(obj);
@@ -252,7 +252,7 @@ db_count_verbs(Var obj)
 }
 
 int
-db_for_all_verbs(Var obj,
+db_for_all_verbs(const Var& obj,
 		 int (*func) (void *data, const char *vname),
 		 void *data)
 {
@@ -521,7 +521,7 @@ find_callable_verbdef(Object *start, const char *verb)
 
 /* does NOT consume `recv' and `verb' */
 db_verb_handle
-db_find_callable_verb(Var recv, const char *verb)
+db_find_callable_verb(const Var& recv, const char *verb)
 {
     if (!recv.is_object())
 	panic("DB_FIND_CALLABLE_VERB: Not an object!");
@@ -664,7 +664,7 @@ db_find_callable_verb(Var recv, const char *verb)
 }
 
 db_verb_handle
-db_find_defined_verb(Var obj, const char *vname, int allow_numbers)
+db_find_defined_verb(const Var& obj, const char *vname, int allow_numbers)
 {
     Object *o = dbpriv_dereference(obj);
     Verbdef *v;
@@ -695,7 +695,7 @@ db_find_defined_verb(Var obj, const char *vname, int allow_numbers)
 }
 
 db_verb_handle
-db_find_indexed_verb(Var obj, unsigned index)
+db_find_indexed_verb(const Var& obj, unsigned index)
 {
     Object *o = dbpriv_dereference(obj);
     Verbdef *v;

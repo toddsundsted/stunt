@@ -381,7 +381,7 @@ dbio_write_string(const char *s)
 }
 
 static int
-dbio_write_map(Var key, Var value, void *data, int first)
+dbio_write_map(const Var& key, const Var& value, void *data, int first)
 {
     dbio_write_var(key);
     dbio_write_var(value);
@@ -389,7 +389,7 @@ dbio_write_map(Var key, Var value, void *data, int first)
 }
 
 void
-dbio_write_var(Var v)
+dbio_write_var(const Var& v)
 {
     int i;
 

@@ -28,7 +28,7 @@ extern Var *copy_rt_env(Var * from, unsigned size);
 
 void set_rt_env_obj(Var * env, int slot, Objid o);
 void set_rt_env_str(Var * env, int slot, const char *s);
-void set_rt_env_var(Var * env, int slot, Var v);
+void set_rt_env_var(Var * env, int slot, const Var& v);
 
 void fill_in_rt_consts(Var * env, DB_Version);
 

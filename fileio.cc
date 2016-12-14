@@ -96,7 +96,7 @@ char file_package_version[] = "1.5p4";
 
 file_handle file_table[FILE_IO_MAX_FILES];
 
-char file_handle_valid(Var fhandle) {
+char file_handle_valid(const Var& fhandle) {
   int32_t i = fhandle.v.num;
   if(!fhandle.is_int())
 	 return 0;
@@ -106,28 +106,28 @@ char file_handle_valid(Var fhandle) {
 }
 
 
-FILE *file_handle_file(Var fhandle) {
+FILE *file_handle_file(const Var& fhandle) {
   int32_t i = fhandle.v.num;
   return file_table[i].file;
 }
 
-const char *file_handle_name(Var fhandle) {
+const char *file_handle_name(const Var& fhandle) {
   int32_t i = fhandle.v.num;
   return file_table[i].name;
 }
 
-file_type file_handle_type(Var fhandle) {
+file_type file_handle_type(const Var& fhandle) {
   int32_t i = fhandle.v.num;
   return file_table[i].type;
 }  
 
-file_mode file_handle_mode(Var fhandle) {
+file_mode file_handle_mode(const Var& fhandle) {
   int32_t i = fhandle.v.num;
   return file_table[i].mode;
 }  
 
 
-void file_handle_destroy(Var fhandle) {
+void file_handle_destroy(const Var& fhandle) {
   int32_t i = fhandle.v.num;
   file_table[i].file = NULL;
   file_table[i].valid = 0;
@@ -176,7 +176,7 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
   return r;
 }
 
-void file_handle_set_file(Var fhandle, FILE *f) {
+void file_handle_set_file(const Var& fhandle, FILE *f) {
   int32_t i = fhandle.v.num;
   file_table[i].file = f;
 }
@@ -313,14 +313,14 @@ int file_verify_path(const char *pathname) {
  * Common code for FHANDLE-using functions
  **************************************************************/
 
-FILE *file_handle_file_safe(Var handle) {
+FILE *file_handle_file_safe(const Var& handle) {
   if(!file_handle_valid(handle))
 	 return NULL;
   else
 	 return file_handle_file(handle);
 }
 
-const char *file_handle_name_safe(Var handle) {
+const char *file_handle_name_safe(const Var& handle) {
   if(!file_handle_valid(handle))
 	 return NULL;
   else
@@ -519,7 +519,7 @@ bf_file_openmode(const List& arglist, Objid progr)
  * common functionality of file_readline and file_readlines 
  */
 
-static const char *file_read_line(Var fhandle, int *count) {
+static const char *file_read_line(const Var& fhandle, int *count) {
   static Stream *str = 0;
   FILE *f;
   int c;
@@ -988,7 +988,7 @@ bf_file_eof(const List& arglist, Objid progr)
  * (internal) int(statok) file_stat(Var filespec, package *r, struct stat *buf)
  */
 
-int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
+int file_stat(Objid progr, const Var& filespec, package *r, struct stat *buf) {
   int statok = 0;
   
   if(!file_verify_caller(progr)) {

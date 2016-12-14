@@ -58,7 +58,7 @@ network_initialize(int argc, char **argv, Var * desc)
 }
 
 enum error
-network_make_listener(server_listener sl, Var desc, network_listener * nl,
+network_make_listener(server_listener sl, const Var& desc, network_listener * nl,
 		      Var * canon, const char **name)
 {
     if (listening)

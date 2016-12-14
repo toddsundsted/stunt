@@ -35,7 +35,7 @@ controls(Objid who, Objid what)
 }
 
 static int
-controls2(Objid who, Var what)
+controls2(Objid who, const Var& what)
 {
     return is_wizard(who) || who == db_object_owner2(what);
 }
@@ -49,7 +49,7 @@ make_arglist(Objid what)
 }
 
 static bool
-all_valid(Var vars)
+all_valid(const Var& vars)
 {
     Var var;
     int i, c;
@@ -60,7 +60,7 @@ all_valid(Var vars)
 }
 
 static bool
-all_allowed(Var vars, Objid progr, db_object_flag f)
+all_allowed(const Var& vars, Objid progr, db_object_flag f)
 {
     Var var;
     int i, c;
@@ -74,7 +74,7 @@ all_allowed(Var vars, Objid progr, db_object_flag f)
  * Returns true if `_this' is a descendant of `obj'.
  */
 static bool
-is_a_descendant(Var _this, Var obj)
+is_a_descendant(const Var& _this, const Var& obj)
 {
     Var descendants = db_descendants(obj, true);
     int ret = ismember(_this, descendants, 1);
@@ -86,7 +86,7 @@ is_a_descendant(Var _this, Var obj)
  * Returns true if any of `these' are descendants of `obj'.
  */
 static bool
-any_are_descendants(Var these, Var obj)
+any_are_descendants(const Var& these, const Var& obj)
 {
     Var _this, descendants = db_descendants(obj, true);
     int i, c;

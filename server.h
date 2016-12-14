@@ -146,7 +146,7 @@ extern int get_server_option(Objid oid, const char *name, Var * r);
 				 * OPT.NAME and return 1; else return 0.
 				 */
 
-extern void queue_anonymous_object(Var v);
+extern void queue_anonymous_object(const Var& v);
 				/* Adds the specified value to the queue of
 				 * values to be recycled in between running
 				 * player tasks.
@@ -279,11 +279,11 @@ extern int read_active_connections(void);
     })
 
 /* Body for *_connection_options() */
-#define CONNECTION_OPTION_LIST(TABLE,HANDLE,LIST)	\
-    _STATEMENT({					\
-	TABLE(_CONNECT_OPTION_LIST_SINGLE, (HANDLE), @,	\
-	      (LIST))					\
-	return (LIST);					\
+#define CONNECTION_OPTION_LIST(TABLE,HANDLE,LIST)		\
+    _STATEMENT({						\
+	List tmp = (LIST);					\
+	TABLE(_CONNECT_OPTION_LIST_SINGLE, (HANDLE), @, tmp)	\
+	return tmp;						\
     })
 
 /* All of the above require a TABLE of connection options #defined

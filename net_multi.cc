@@ -503,7 +503,7 @@ network_initialize(int argc, char **argv, Var * desc)
 }
 
 enum error
-network_make_listener(server_listener sl, Var desc,
+network_make_listener(server_listener sl, const Var& desc,
 		   network_listener * nl, Var * canon, const char **name)
 {
     int fd;
@@ -663,7 +663,7 @@ network_set_client_echo(network_handle nh, int is_on)
 #ifdef OUTBOUND_NETWORK
 
 enum error
-network_open_connection(Var arglist, server_listener sl)
+network_open_connection(const Var& arglist, server_listener sl)
 {
     int rfd, wfd;
     const char *local_name, *remote_name;

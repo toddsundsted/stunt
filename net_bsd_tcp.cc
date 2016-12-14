@@ -70,7 +70,7 @@ proto_initialize(struct proto *proto, Var * desc, int argc, char **argv)
 }
 
 enum error
-proto_make_listener(Var desc, int *fd, Var * canon, const char **name)
+proto_make_listener(const Var& desc, int *fd, Var * canon, const char **name)
 {
     struct sockaddr_in address;
     int s, port, option = 1;
@@ -198,7 +198,7 @@ timeout_proc(Timer_ID id, Timer_Data data)
 }
 
 enum error
-proto_open_connection(Var arglist, int *read_fd, int *write_fd,
+proto_open_connection(const Var& arglist, int *read_fd, int *write_fd,
 		      const char **local_name, const char **remote_name)
 {
     /* These are `static' rather than `volatile' because I can't cope with

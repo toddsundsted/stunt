@@ -377,7 +377,7 @@ make_error_pack(enum error err)
 }
 
 package
-make_raise_pack(enum error err, const char *msg, Var value)
+make_raise_pack(enum error err, const char *msg, const Var& value)
 {
     package p;
 
@@ -390,7 +390,7 @@ make_raise_pack(enum error err, const char *msg, Var value)
 }
 
 package
-make_var_pack(Var v)
+make_var_pack(const Var& v)
 {
     package p;
 

@@ -140,7 +140,7 @@ rbdouble(rbnode *root, int dir)
  * data.  This function does not insert the new node into a tree.
  */
 static rbnode *
-new_node(rbtree *tree, Var key, Var value)
+new_node(rbtree *tree, const Var& key, const Var& value)
 {
     rbnode *rn = (rbnode *)malloc(sizeof *rn);
 
@@ -660,7 +660,7 @@ map_sizeof(rbtree *tree)
 }
 
 Map
-mapinsert(const Map& map, Var key, Var value)
+mapinsert(const Map& map, const Var& key, const Var& value)
 {				/* consumes `map', `key', `value' */
     /* Prevent the insertion of invalid values -- specifically keys
      * that have the values `none' and `clear' (which are used as
@@ -699,7 +699,7 @@ mapinsert(const Map& map, Var key, Var value)
 }
 
 const rbnode *
-maplookup(const Map& map, Var key, Var *value, int case_matters)
+maplookup(const Map& map, const Var& key, Var *value, int case_matters)
 {				/* does NOT consume `map' or `'key',
 				   does NOT increment the ref count on `value' */
     rbnode node;
@@ -717,7 +717,7 @@ maplookup(const Map& map, Var key, Var *value, int case_matters)
  * returns an iterator value for the map starting at that key.
  */
 int
-mapseek(const Map& map, Var key, Iter* iter, int case_matters)
+mapseek(const Map& map, const Var& key, Iter* iter, int case_matters)
 {				/* does NOT consume `map' or `'key',
 				   if `key' is found in `map', frees `iter' and
 				   returns a newly allocated value in `iter' */
@@ -990,7 +990,7 @@ bf_mapdelete(const List& arglist, Objid progr)
 }
 
 static int
-do_map_keys(Var key, Var value, void *data, int first)
+do_map_keys(const Var& key, const Var& value, void *data, int first)
 {
     List *list = (List*)data;
     *list = listappend(*list, var_ref(key));
@@ -1008,7 +1008,7 @@ bf_mapkeys(const List& arglist, Objid progr)
 }
 
 static int
-do_map_values(Var key, Var value, void *data, int first)
+do_map_values(const Var& key, const Var& value, void *data, int first)
 {
     List *list = (List*)data;
     *list = listappend(*list, var_ref(value));

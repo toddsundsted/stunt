@@ -108,7 +108,7 @@ set_rt_env_str(Var * env, int slot, const char *s)
 }
 
 void
-set_rt_env_var(Var * env, int slot, Var v)
+set_rt_env_var(Var * env, int slot, const Var& v)
 {
     env[slot] = v;
 }

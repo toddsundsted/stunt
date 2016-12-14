@@ -33,9 +33,9 @@ extern Map new_map(void);
 extern void destroy_map(Map& map);
 extern Map map_dup(const Map& map);
 
-extern Map mapinsert(const Map& map, Var key, Var value);
-extern const rbnode* maplookup(const Map& map, Var key, Var* value, int case_matters);
-extern int mapseek(const Map& map, Var key, Iter* iter, int case_matters);
+extern Map mapinsert(const Map& map, const Var& key, const Var& value);
+extern const rbnode* maplookup(const Map& map, const Var& key, Var* value, int case_matters);
+extern int mapseek(const Map& map, const Var& key, Iter* iter, int case_matters);
 extern int mapequal(const Map& lhs, const Map& rhs, int case_matters);
 extern int32_t maplength(const Map& map);
 extern int mapempty(const Map& map);
@@ -54,7 +54,7 @@ extern void iternext(Iter& iter);
 extern Map maprange(const Map& map, rbtrav *from, rbtrav *to);
 extern Map maprangeset(const Map& map, rbtrav *from, rbtrav *to, const Map& values);
 
-typedef int (*mapfunc) (Var key, Var value, void *data, int first);
+typedef int (*mapfunc) (const Var& key, const Var& value, void *data, int first);
 extern int mapforeach(const Map& map, mapfunc func, void *data);
 
 /* You're never going to need to use this!

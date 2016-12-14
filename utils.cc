@@ -153,7 +153,7 @@ str_hash(const char *s)
  * drop to zero.  Roughly corresponds to `Free' in Bacon and Rajan.
  */
 void
-aux_free(Var v)
+aux_free(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_LIST:
@@ -172,7 +172,7 @@ aux_free(Var v)
 #ifdef ENABLE_GC
 /* Corresponds to `Decrement' and `Release' in Bacon and Rajan. */
 void
-complex_free_var(Var v)
+complex_free_var(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
@@ -185,7 +185,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
-	    destroy_list(static_cast<List&>(v));
+	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
 	    gc_set_color(v.v.list, GC_BLACK);
 	    if (!gc_is_buffered(v.v.list))
 		myfree(v.v.list, M_LIST);
@@ -195,7 +195,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_MAP:
 	if (delref(v.v.tree) == 0) {
-	    destroy_map(static_cast<Map&>(v));
+	    destroy_map(static_cast<Map&>(const_cast<Var&>(v)));
 	    gc_set_color(v.v.tree, GC_BLACK);
 	    if (!gc_is_buffered(v.v.tree))
 		myfree(v.v.tree, M_TREE);
@@ -205,7 +205,7 @@ complex_free_var(Var v)
 	break;
     case TYPE_ITER:
 	if (delref(v.v.trav) == 0)
-	    destroy_iter(static_cast<Iter&>(v));
+	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ANON:
 	/* The first time an anonymous object's reference count drops
@@ -242,7 +242,7 @@ complex_free_var(Var v)
 }
 #else
 void
-complex_free_var(Var v)
+complex_free_varx(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
@@ -255,15 +255,15 @@ complex_free_var(Var v)
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0)
-	    destroy_list(static_cast<List&>(v));
+	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
 	break;
     case TYPE_MAP:
 	if (delref(v.v.tree) == 0)
-	    destroy_map(static_cast<Map&>(v));
+	    destroy_map(static_cast<Map&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ITER:
 	if (delref(v.v.trav) == 0)
-	    destroy_iter(static_cast<Iter&>(v));
+	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ANON:
 	if (v.v.anon && delref(v.v.anon) == 0) {
@@ -287,7 +287,7 @@ complex_free_var(Var v)
 #ifdef ENABLE_GC
 /* Corresponds to `Increment' in Bacon and Rajan. */
 Var
-complex_var_ref(Var v)
+complex_var_ref(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
@@ -317,7 +317,7 @@ complex_var_ref(Var v)
 }
 #else
 Var
-complex_var_ref(Var v)
+complex_var_ref(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
@@ -345,20 +345,22 @@ complex_var_ref(Var v)
 #endif
 
 Var
-complex_var_dup(Var v)
+complex_var_dup(const Var& v)
 {
+    Var t;
     switch ((int) v.type) {
     case TYPE_STR:
-	v.v.str = str_dup(v.v.str);
+	t.type = TYPE_STR;
+	t.v.str = str_dup(v.v.str);
 	break;
     case TYPE_FLOAT:
-	v = Var::new_float(*v.v.fnum);
+	t = Var::new_float(*v.v.fnum);
 	break;
     case TYPE_LIST:
-	v = list_dup(static_cast<const List&>(v));
+	t = list_dup(static_cast<const List&>(v));
 	break;
     case TYPE_MAP:
-	v = map_dup(static_cast<const Map&>(v));
+	t = map_dup(static_cast<const Map&>(v));
 	break;
     case TYPE_ITER:
 	panic("cannot var_dup() iterators");
@@ -367,14 +369,14 @@ complex_var_dup(Var v)
 	panic("cannot var_dup() anonymous objects");
 	break;
     }
-    return v;
+    return t;
 }
 
 /* could be inlined and use complex_etc like the others, but this should
  * usually be called in a context where we already konw the type.
  */
 int
-var_refcount(Var v)
+var_refcount(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
@@ -401,7 +403,7 @@ var_refcount(Var v)
 }
 
 int
-is_true(Var v)
+is_true(const Var& v)
 {
     return ((v.is_int() && v.v.num != 0)
 	    || (v.is_float() && *v.v.fnum != 0.0)
@@ -416,7 +418,7 @@ is_true(Var v)
  * (nor other collection types, for the time being).
  */
 int
-compare(Var lhs, Var rhs, int case_matters)
+compare(const Var& lhs, const Var& rhs, int case_matters)
 {
     if (lhs.type == rhs.type) {
 	switch (lhs.type) {
@@ -446,7 +448,7 @@ compare(Var lhs, Var rhs, int case_matters)
 }
 
 int
-equality(Var lhs, Var rhs, int case_matters)
+equality(const Var& lhs, const Var& rhs, int case_matters)
 {
     if (lhs.type == rhs.type) {
 	switch (lhs.type) {
@@ -601,7 +603,7 @@ get_system_object(const char *name)
 }
 
 int
-value_bytes(Var v)
+value_bytes(const Var& v)
 {
     int size = sizeof(Var);
 
@@ -725,7 +727,7 @@ binary_to_raw_bytes(const char *binary, int *buflen)
 }
 
 Var
-anonymizing_var_ref(Var v, Objid progr)
+anonymizing_var_ref(const Var& v, Objid progr)
 {
     Var r;
 

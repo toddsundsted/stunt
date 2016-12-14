@@ -374,7 +374,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 }
 
 static int
-find_handler_activ(Var code)
+find_handler_activ(const Var& code)
 {
     /* Returns the index of the hottest activation with an active exception
      * handler for the given code.
@@ -446,7 +446,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 }
 
 static void
-save_handler_info(const char *vname, Var args)
+save_handler_info(const char *vname, const Var& args)
 {
     handler_verb_name = vname;
     free_var(handler_verb_args);
@@ -568,14 +568,14 @@ free_activation(activation * ap, char data_too)
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
 
-enum error call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass);
+enum error call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int do_pass);
 
 /*
  * Historical interface for things which want to call with vname not
  * already in a moo-str.
  */
 enum error
-call_verb(Objid recv, const char *vname_in, Var _this, Var args, int do_pass)
+call_verb(Objid recv, const char *vname_in, const Var& _this, const Var& args, int do_pass)
 {
     const char *vname = str_dup(vname_in);
     enum error result;
@@ -587,7 +587,7 @@ call_verb(Objid recv, const char *vname_in, Var _this, Var args, int do_pass)
 }
 
 enum error
-call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
+call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int do_pass)
 {
     /* if call succeeds, args will be consumed.  If call fails, args
        will NOT be consumed  -- it must therefore be freed by caller */
@@ -2717,7 +2717,7 @@ do_task(Program * prog, int which_vector, Var * result, int is_fg, int do_db_tra
 /* procedure to resume an old task */
 
 enum outcome
-resume_from_previous_vm(vm the_vm, Var v)
+resume_from_previous_vm(vm the_vm, const Var& v)
 {
     unsigned int i;
 
@@ -2743,7 +2743,7 @@ resume_from_previous_vm(vm the_vm, Var v)
 /*** external functions ***/
 
 enum outcome
-do_server_verb_task(Var _this, const char *verb, Var args, db_verb_handle h,
+do_server_verb_task(const Var& _this, const char *verb, const Var& args, db_verb_handle h,
 		    Objid player, const char *argstr, Var *result,
 		    int do_db_tracebacks)
 {
@@ -2754,7 +2754,7 @@ do_server_verb_task(Var _this, const char *verb, Var args, db_verb_handle h,
 }
 
 enum outcome
-do_server_program_task(Var _this, const char *verb, Var args, Var vloc,
+do_server_program_task(const Var& _this, const char *verb, const Var& args, const Var& vloc,
 		       const char *verbname, Program * program, Objid progr,
 		       int debug, Objid player, const char *argstr,
 		       Var * result, int do_db_tracebacks)

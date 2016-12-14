@@ -306,7 +306,7 @@ db_read_anonymous()
 }
 
 void
-db_write_anonymous(Var v)
+db_write_anonymous(const Var& v)
 {
     Objid oid;
     Object *o = (Object *)v.v.anon;
@@ -434,7 +434,7 @@ anon_valid(Object *o)
 }
 
 int
-is_valid(Var obj)
+is_valid(const Var& obj)
 {
     return obj.is_anon() ?
            anon_valid(obj.v.anon) :
@@ -545,7 +545,7 @@ db_renumber_object(Objid old)
 }
 
 int
-db_object_bytes(Var obj)
+db_object_bytes(const Var& obj)
 {
     Object *o = dbpriv_dereference(obj);
     int i, len, count;
@@ -641,7 +641,7 @@ db2_add_##name(Object *o, Var *plist, int *px)				\
 }									\
 									\
 List									\
-db_##name(Var obj, bool full)						\
+db_##name(const Var& obj, bool full)					\
 {									\
     Object *o;								\
     int n, i = 0;							\
@@ -683,7 +683,7 @@ DEFUNC(all_contents, contents);
 /*********** Object attributes ***********/
 
 Objid
-db_object_owner2(Var obj)
+db_object_owner2(const Var& obj)
 {
     return obj.is_anon() ?
            dbpriv_object_owner(obj.v.anon) :
@@ -691,7 +691,7 @@ db_object_owner2(Var obj)
 }
 
 Var
-db_object_parents2(Var obj)
+db_object_parents2(const Var& obj)
 {
     return obj.is_anon() ?
            dbpriv_object_parents(obj.v.anon) :
@@ -699,7 +699,7 @@ db_object_parents2(Var obj)
 }
 
 Var
-db_object_children2(Var obj)
+db_object_children2(const Var& obj)
 {
     return obj.is_anon() ?
            dbpriv_object_children(obj.v.anon) :
@@ -707,7 +707,7 @@ db_object_children2(Var obj)
 }
 
 int
-db_object_has_flag2(Var obj, db_object_flag f)
+db_object_has_flag2(const Var& obj, db_object_flag f)
 {
     return obj.is_anon() ?
             dbpriv_object_has_flag(obj.v.anon, f) :
@@ -715,7 +715,7 @@ db_object_has_flag2(Var obj, db_object_flag f)
 }
 
 void
-db_set_object_flag2(Var obj, db_object_flag f)
+db_set_object_flag2(const Var& obj, db_object_flag f)
 {
     obj.is_anon() ?
       dbpriv_set_object_flag(obj.v.anon, f) :
@@ -723,7 +723,7 @@ db_set_object_flag2(Var obj, db_object_flag f)
 }
 
 void
-db_clear_object_flag2(Var obj, db_object_flag f)
+db_clear_object_flag2(const Var& obj, db_object_flag f)
 {
     obj.is_anon() ?
       dbpriv_clear_object_flag(obj.v.anon, f) :
@@ -823,7 +823,7 @@ db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
 }
 
 static int
-check_for_duplicates(Var list)
+check_for_duplicates(const Var& list)
 {
     int i, j, c;
 
@@ -839,15 +839,15 @@ check_for_duplicates(Var list)
 }
 
 static int
-check_children_of_object(Var obj, Var anon_kids)
+check_children_of_object(const Var& obj, const List& anon_kids)
 {
     Var kid;
     int i, c;
 
-    if (!anon_kids.is_list() || listlength(anon_kids) < 1)
+    if (anon_kids.length() < 1)
 	return 1;
 
-    FOR_EACH (kid, anon_kids, i, c) {
+    FOR_EACH(kid, anon_kids, i, c) {
 	Var parents = db_object_parents2(kid);
 	if (!kid.is_anon()
 	    || ((parents.is_obj() && !equality(obj, parents, 0))
@@ -859,13 +859,13 @@ check_children_of_object(Var obj, Var anon_kids)
 }
 
 int
-db_change_parents(Var obj, Var new_parents)
+db_change_parents(const Var& obj, const Var& new_parents)
 {
     return db_change_parents(obj, new_parents, new_list(0));
 }
 
 int
-db_change_parents(Var obj, Var new_parents, List anon_kids)
+db_change_parents(const Var& obj, const Var& new_parents, const List& anon_kids)
 {
     if (!check_for_duplicates(new_parents))
 	return 0;
@@ -1033,7 +1033,7 @@ db_clear_object_flag(Objid oid, db_object_flag f)
 }
 
 int
-db_object_allows(Var obj, Objid progr, db_object_flag f)
+db_object_allows(const Var& obj, Objid progr, db_object_flag f)
 {
     return (is_wizard(progr)
 	    || progr == db_object_owner2(obj)
@@ -1065,13 +1065,13 @@ db_all_users(void)
 }
 
 void
-dbpriv_set_all_users(List& v)
+dbpriv_set_all_users(const List& v)
 {
     all_users = v;
 }
 
 int
-db_object_isa(Var object, Var parent)
+db_object_isa(const Var& object, const Var& parent)
 {
     if (equality(object, parent, 0))
 	return 1;
