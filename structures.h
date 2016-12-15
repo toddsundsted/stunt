@@ -131,7 +131,7 @@ struct Var {
 	Var *list;		/* LIST */
 	rbtree *tree;		/* MAP */
 	rbtrav *trav;		/* ITER */
-	double *fnum;		/* FLOAT */
+	ref_ptr<double> fnum;	/* FLOAT */
 	Object *anon;		/* ANON */
     } v;
     var_type type;
@@ -235,7 +235,7 @@ struct Var {
     new_float(const double d) {
 	Var v;
 	v.type = TYPE_FLOAT;
-	v.v.fnum = (double *)mymalloc(sizeof(double), M_FLOAT);
+	v.v.fnum = mymalloc<double>(sizeof(double));
 	*v.v.fnum = d;
 	return v;
     }

@@ -180,8 +180,8 @@ complex_free_var(const Var& v)
 	    free_str(v.v.str);
 	break;
     case TYPE_FLOAT:
-	if (delref(v.v.fnum) == 0)
-	    myfree(v.v.fnum, M_FLOAT);
+	if (v.v.fnum.dec_ref() == 0)
+	    myfree(v.v.fnum);
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0) {
@@ -250,8 +250,8 @@ complex_free_varx(const Var& v)
 	    free_str(v.v.str);
 	break;
     case TYPE_FLOAT:
-	if (delref(v.v.fnum) == 0)
-	    myfree(v.v.fnum, M_FLOAT);
+	if (v.v.fnum.dec_ref() == 0)
+	    myfree(v.v.fnum);
 	break;
     case TYPE_LIST:
 	if (delref(v.v.list) == 0)
@@ -294,7 +294,7 @@ complex_var_ref(const Var& v)
 	addref(v.v.str);
 	break;
     case TYPE_FLOAT:
-	addref(v.v.fnum);
+	v.v.fnum.inc_ref();
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -324,7 +324,7 @@ complex_var_ref(const Var& v)
 	addref(v.v.str);
 	break;
     case TYPE_FLOAT:
-	addref(v.v.fnum);
+	v.v.fnum.inc_ref();
 	break;
     case TYPE_LIST:
 	addref(v.v.list);
@@ -392,7 +392,7 @@ var_refcount(const Var& v)
 	return refcount(v.v.trav);
 	break;
     case TYPE_FLOAT:
-	return refcount(v.v.fnum);
+	return v.v.fnum.ref_count();
 	break;
     case TYPE_ANON:
 	if (v.v.anon)

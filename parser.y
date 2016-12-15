@@ -71,7 +71,7 @@ static void     check_loop_name(const char *, enum loop_exit_kind);
   Expr         *expr;
   int           integer;
   Objid         object;
-  double       *real;
+  double        real;
   char         *string;
   enum error    error;
   Arg_List     *args;
@@ -363,8 +363,8 @@ expr:
 		}
 	| tFLOAT
 		{
-		    $$ = alloc_var(TYPE_FLOAT);
-		    $$->e.var.v.fnum = $1;
+		    $$ = alloc_expr(EXPR_VAR);
+		    $$->e.var = Var::new_float($1);
 		}
 	| tSTRING
 		{
@@ -982,7 +982,7 @@ start_over:
 		yyerror("Floating-point literal out of range");
 		d = 0.0;
 	    }
-	    yylval.real = alloc_float(d);
+	    yylval.real = d;
 	}
 	return type;
     }

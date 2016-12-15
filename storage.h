@@ -99,8 +99,73 @@ typedef enum Memory_Type {
 
 } Memory_Type;
 
+/* A simple wrapper for pointers with hidden allocations
+ * (reference counts, memoized values, etc.)
+ */
+
+// forward declarations
+
+template<typename T>
+class ref_ptr;
+
+template<typename T>
+extern ref_ptr<T> mymalloc(size_t);
+
+template<typename T>
+extern ref_ptr<T> myrealloc(ref_ptr<T>, size_t);
+
+template<typename T>
+extern void myfree(ref_ptr<T>);
+
+template<typename T>
+class ref_ptr {
+
+    T* ptr;
+
+    explicit ref_ptr(T* t) : ptr(t) {}
+
+ public:
+
+    const T& operator * () const {
+	return *ptr;
+    }
+
+    T& operator * () {
+	return *ptr;
+    }
+
+    bool operator == (const ref_ptr<T> that) const { return this->ptr == that.ptr; }
+    bool operator != (const ref_ptr<T> that) const { return this->ptr != that.ptr; }
+
+    int inc_ref() const { return addref(ptr); }     // should not be const!
+    int dec_ref() const { return delref(ptr); }     // should not be const!
+    int ref_count() const { return refcount(ptr); }
+
+    friend ref_ptr<T> mymalloc<>(size_t);
+    friend ref_ptr<T> myrealloc<>(ref_ptr<T>, size_t);
+    friend void myfree<>(ref_ptr<T>);
+};
+
 extern const char *str_dup(const char *);
 extern const char *str_ref(const char *);
+
+template<typename T>
+extern ref_ptr<T> mymalloc(size_t);
+
+template<>
+extern ref_ptr<double> mymalloc(size_t);
+
+template<typename T>
+extern ref_ptr<T> myrealloc(ref_ptr<T>, size_t);
+
+template<>
+extern ref_ptr<double> myrealloc(ref_ptr<double>, size_t);
+
+template<typename T>
+extern void myfree(ref_ptr<T>);
+
+template<>
+extern void myfree(ref_ptr<double>);
 
 extern void myfree(void *where, Memory_Type type);
 extern void *mymalloc(unsigned size, Memory_Type type);

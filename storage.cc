@@ -65,6 +65,18 @@ refcount_overhead(Memory_Type type)
     }
 }
 
+template<typename T> ref_ptr<T>
+mymalloc(size_t size)
+{
+    return ref_ptr<T>((T*)mymalloc(size, M_NONE));
+}
+
+template<> ref_ptr<double>
+mymalloc(size_t size)
+{
+    return ref_ptr<double>((double*)mymalloc(size, M_FLOAT));
+}
+
 void *
 mymalloc(unsigned size, Memory_Type type)
 {
@@ -132,6 +144,18 @@ str_dup(const char *s)
     return r;
 }
 
+template<typename T> ref_ptr<T>
+myrealloc(ref_ptr<T> ptr, size_t size)
+{
+    return ref_ptr<T>((T*)myrealloc(ptr, size, M_NONE));
+}
+
+template<> ref_ptr<double>
+myrealloc(ref_ptr<double> ptr, size_t size)
+{
+    return ref_ptr<double>((double*)myrealloc(ptr.ptr, size, M_FLOAT));
+}
+
 void *
 myrealloc(void *ptr, unsigned size, Memory_Type type)
 {
@@ -145,6 +169,18 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
     }
 
     return (char *) ptr + offs;
+}
+
+template<typename T> void
+myfree(ref_ptr<T> ptr)
+{
+    myfree(ptr, M_NONE);
+}
+
+template<> void
+myfree<double>(ref_ptr<double> ptr)
+{
+    myfree(ptr.ptr, M_FLOAT);
 }
 
 void
