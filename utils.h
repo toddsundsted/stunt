@@ -71,14 +71,14 @@ var_ref(const List& list)
 static inline Map
 var_ref(const Map& map)
 {
-    addref(map.v.tree);
+    map.v.tree.inc_ref();
     return map;
 }
 
 static inline Iter
 var_ref(const Iter& iter)
 {
-    addref(iter.v.trav);
+    iter.v.trav.inc_ref();
     return iter;
 }
 

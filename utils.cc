@@ -160,7 +160,7 @@ aux_free(const Var& v)
 	myfree(v.v.list, M_LIST);
 	break;
     case TYPE_MAP:
-	myfree(v.v.tree, M_TREE);
+	myfree(v.v.tree);
 	break;
     case TYPE_ANON:
 	assert(db_object_has_flag2(v, FLAG_INVALID));
@@ -194,17 +194,17 @@ complex_free_var(const Var& v)
 	    gc_possible_root(v);
 	break;
     case TYPE_MAP:
-	if (delref(v.v.tree) == 0) {
+	if (v.v.tree.dec_ref() == 0) {
 	    destroy_map(static_cast<Map&>(const_cast<Var&>(v)));
-	    gc_set_color(v.v.tree, GC_BLACK);
-	    if (!gc_is_buffered(v.v.tree))
-		myfree(v.v.tree, M_TREE);
+	    v.v.tree.set_color(GC_BLACK);
+	    if (!v.v.tree.is_buffered())
+		myfree(v.v.tree);
 	}
 	else
 	    gc_possible_root(v);
 	break;
     case TYPE_ITER:
-	if (delref(v.v.trav) == 0)
+	if (v.v.trav.dec_ref() == 0)
 	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ANON:
@@ -258,11 +258,11 @@ complex_free_varx(const Var& v)
 	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
 	break;
     case TYPE_MAP:
-	if (delref(v.v.tree) == 0)
+	if (v.v.tree.dec_ref() == 0)
 	    destroy_map(static_cast<Map&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ITER:
-	if (delref(v.v.trav) == 0)
+	if (v.v.trav.dec_ref() == 0)
 	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ANON:
@@ -300,10 +300,10 @@ complex_var_ref(const Var& v)
 	addref(v.v.list);
 	break;
     case TYPE_MAP:
-	addref(v.v.tree);
+	v.v.tree.inc_ref();
 	break;
     case TYPE_ITER:
-	addref(v.v.trav);
+	v.v.trav.inc_ref();
 	break;
     case TYPE_ANON:
 	if (v.v.anon) {
@@ -330,10 +330,10 @@ complex_var_ref(const Var& v)
 	addref(v.v.list);
 	break;
     case TYPE_MAP:
-	addref(v.v.tree);
+	v.v.tree.inc_ref();
 	break;
     case TYPE_ITER:
-	addref(v.v.trav);
+	v.v.trav.inc_ref();
 	break;
     case TYPE_ANON:
 	if (v.v.anon)
@@ -386,10 +386,10 @@ var_refcount(const Var& v)
 	return refcount(v.v.list);
 	break;
     case TYPE_MAP:
-	return refcount(v.v.tree);
+	return v.v.tree.ref_count();
 	break;
     case TYPE_ITER:
-	return refcount(v.v.trav);
+	return v.v.trav.ref_count();
 	break;
     case TYPE_FLOAT:
 	return v.v.fnum.ref_count();
@@ -618,7 +618,7 @@ value_bytes(const Var& v)
 	size += list_sizeof(v.v.list);
 	break;
     case TYPE_MAP:
-	size += map_sizeof(v.v.tree);
+	size += map_sizeof(static_cast<const Map&>(v));
 	break;
     default:
 	break;

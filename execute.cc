@@ -1451,10 +1451,11 @@ do {								\
 		    free_var(base);
 		    PUSH_ERROR(E_TYPE);
 		} else if (base.is_map()) {
-		    Iter iterfrom = Iter(), iterto = Iter();
+		    const Map& map = static_cast<const Map&>(base);
+		    Iter iterfrom, iterto;
 		    int rel = compare(from, to, 0);
-		    int r1 = mapseek(static_cast<const Map&>(base), from, &iterfrom, 0);
-		    int r2 = mapseek(static_cast<const Map&>(base), to, &iterto, 0);
+		    int r1 = mapseek(map, from, &iterfrom, 0);
+		    int r2 = mapseek(map, to, &iterto, 0);
 		    if ((rel <= 0) && (!r1 || !r2)) {
 			free_var(to);
 			free_var(from);
@@ -1470,7 +1471,7 @@ do {								\
 			free_var(base);
 			PUSH(new_map());
 		    } else {
-			PUSH(maprange(static_cast<const Map&>(base), iterfrom.v.trav, iterto.v.trav));
+			PUSH(maprange(map, iterfrom, iterto));
 			free_var(to);
 			free_var(from);
 			free_var(iterto);
@@ -1905,9 +1906,11 @@ do {								\
 			    free_var(value);
 			    PUSH_ERROR(E_TYPE);
 			} else if (base.is_map()) {
-			    Iter iterfrom = Iter(), iterto = Iter();
-			    int r1 = mapseek(static_cast<const Map&>(base), from, &iterfrom, 0);
-			    int r2 = mapseek(static_cast<const Map&>(base), to, &iterto, 0);
+			    const Map& map = static_cast<const Map&>(base);
+			    const Map& values = static_cast<const Map&>(value);
+			    Iter iterfrom, iterto;
+			    int r1 = mapseek(map, from, &iterfrom, 0);
+			    int r2 = mapseek(map, to, &iterto, 0);
 			    if (!r1 || !r2) {
 				free_var(to);
 				free_var(from);
@@ -1917,9 +1920,7 @@ do {								\
 				free_var(value);
 				PUSH_ERROR(E_RANGE);
 			    } else {
-				Map res = maprangeset(static_cast<const Map&>(base),
-						      iterfrom.v.trav, iterto.v.trav,
-						      static_cast<const Map&>(value));
+				Map res = maprangeset(map, iterfrom, iterto, values);
 				free_var(to);
 				free_var(from);
 				free_var(iterto);
@@ -2245,7 +2246,7 @@ do {								\
 				ITER = new_iter(static_cast<const Map&>(BASE));
 			    } else if (ITER.type != TYPE_ITER) {
 				/* resuming an iteration after a db load */
-				Iter iter = Iter();
+				Iter iter;
 				int r = mapseek(static_cast<const Map&>(BASE), ITER, &iter, 0);
 				free_var(ITER);
 				ITER = r ? iter : none;
@@ -2307,7 +2308,7 @@ do {								\
 				ITER = new_iter(static_cast<const Map&>(BASE));
 			    } else if (ITER.type != TYPE_ITER) {
 				/* resuming an iteration after a db load */
-				Iter iter = Iter();
+				Iter iter;
 				int r = mapseek(static_cast<const Map&>(BASE), ITER, &iter, 0);
 				free_var(ITER);
 				ITER = r ? iter : none;

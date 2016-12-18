@@ -129,8 +129,8 @@ struct Var {
 	const char *str;	/* STR */
 	enum error err;		/* ERR */
 	Var *list;		/* LIST */
-	rbtree *tree;		/* MAP */
-	rbtrav *trav;		/* ITER */
+	ref_ptr<rbtree> tree;	/* MAP */
+	ref_ptr<rbtrav> trav;	/* ITER */
 	ref_ptr<double> fnum;	/* FLOAT */
 	Object *anon;		/* ANON */
     } v;
@@ -283,9 +283,38 @@ struct List : public Var {
 };
 
 struct Map : public Var {
+
+    Map(const ref_ptr<rbtree> tree) {
+	type = TYPE_MAP;
+	v.tree = tree;
+    }
+
+#ifdef MEMO_VALUE_BYTES
+    void
+    reset_memoized_size(void) const {
+	((int*)v.tree.expose())[-2] = 0;
+    }
+    void
+    set_memoized_size(size_t size) const {
+	((int*)v.tree.expose())[-2] = size;
+    }
+    size_t
+    memoized_size(void) const {
+	return ((int*)v.tree.expose())[-2];
+    }
+#endif
 };
 
 struct Iter : public Var {
+
+    Iter() {
+	type = TYPE_NONE;
+    }
+
+    Iter(const ref_ptr<rbtrav> trav) {
+	type = TYPE_ITER;
+	v.trav = trav;
+    }
 };
 
 /* generic tuples */

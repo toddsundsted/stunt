@@ -99,8 +99,10 @@ typedef enum Memory_Type {
 
 } Memory_Type;
 
-/* A simple wrapper for pointers with hidden allocations
- * (reference counts, memoized values, etc.)
+/* A simple wrapper for pointers with hidden allocations (reference
+ * counts, memoized values...). Construction is intentionally private
+ * and, once instantiated, access to the underlying pointer is
+ * restricted/explicit.
  */
 
 // forward declarations
@@ -134,12 +136,39 @@ class ref_ptr {
 	return *ptr;
     }
 
+    const T* operator -> () const {
+	return ptr;
+    }
+
+    T* operator -> () {
+	return ptr;
+    }
+
+    const T* expose() const {
+	return ptr;
+    }
+
+    T* expose() {
+	return ptr;
+    }
+
     bool operator == (const ref_ptr<T> that) const { return this->ptr == that.ptr; }
     bool operator != (const ref_ptr<T> that) const { return this->ptr != that.ptr; }
 
-    int inc_ref() const { return addref(ptr); }     // should not be const!
-    int dec_ref() const { return delref(ptr); }     // should not be const!
+    // `inc_ref()', `dec_ref()', `set_buffered()', `clear_buffered()'
+    // and `set_color()' should not be `const' in the following
+    // definitions.
+
+    int inc_ref() const { return addref(ptr); }
+    int dec_ref() const { return delref(ptr); }
     int ref_count() const { return refcount(ptr); }
+
+    void set_buffered() const { gc_set_buffered(ptr); }
+    void clear_buffered() const { gc_clear_buffered(ptr); }
+    bool is_buffered() const { return gc_is_buffered(ptr); }
+
+    void set_color(GC_Color color) const { gc_set_color(ptr, color); }
+    GC_Color color() const { return gc_get_color(ptr); }
 
     friend ref_ptr<T> mymalloc<>(size_t);
     friend ref_ptr<T> myrealloc<>(ref_ptr<T>, size_t);

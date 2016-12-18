@@ -40,7 +40,7 @@ extern int mapequal(const Map& lhs, const Map& rhs, int case_matters);
 extern int32_t maplength(const Map& map);
 extern int mapempty(const Map& map);
 
-extern int map_sizeof(rbtree *tree);
+extern size_t map_sizeof(const Map& map);
 
 extern int mapfirst(const Map& map, var_pair *pair);
 extern int maplast(const Map& map, var_pair *pair);
@@ -51,8 +51,8 @@ extern void destroy_iter(Iter iter);
 extern int iterget(const Iter& iter, var_pair *pair);
 extern void iternext(Iter& iter);
 
-extern Map maprange(const Map& map, rbtrav *from, rbtrav *to);
-extern Map maprangeset(const Map& map, rbtrav *from, rbtrav *to, const Map& values);
+extern Map maprange(const Map& map, const Iter& from, const Iter& to);
+extern Map maprangeset(const Map& map, const Iter& from, const Iter& to, const Map& values);
 
 typedef int (*mapfunc) (const Var& key, const Var& value, void *data, int first);
 extern int mapforeach(const Map& map, mapfunc func, void *data);

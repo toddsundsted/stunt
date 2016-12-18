@@ -77,6 +77,18 @@ mymalloc(size_t size)
     return ref_ptr<double>((double*)mymalloc(size, M_FLOAT));
 }
 
+template<> ref_ptr<rbtree>
+mymalloc(size_t size)
+{
+    return ref_ptr<rbtree>((rbtree*)mymalloc(size, M_TREE));
+}
+
+template<> ref_ptr<rbtrav>
+mymalloc(size_t size)
+{
+    return ref_ptr<rbtrav>((rbtrav*)mymalloc(size, M_TRAV));
+}
+
 void *
 mymalloc(unsigned size, Memory_Type type)
 {
@@ -156,6 +168,18 @@ myrealloc(ref_ptr<double> ptr, size_t size)
     return ref_ptr<double>((double*)myrealloc(ptr.ptr, size, M_FLOAT));
 }
 
+template<> ref_ptr<rbtree>
+myrealloc(ref_ptr<rbtree> ptr, size_t size)
+{
+    return ref_ptr<rbtree>((rbtree*)myrealloc(ptr.ptr, size, M_TREE));
+}
+
+template<> ref_ptr<rbtrav>
+myrealloc(ref_ptr<rbtrav> ptr, size_t size)
+{
+    return ref_ptr<rbtrav>((rbtrav*)myrealloc(ptr.ptr, size, M_TRAV));
+}
+
 void *
 myrealloc(void *ptr, unsigned size, Memory_Type type)
 {
@@ -181,6 +205,18 @@ template<> void
 myfree<double>(ref_ptr<double> ptr)
 {
     myfree(ptr.ptr, M_FLOAT);
+}
+
+template<> void
+myfree<rbtree>(ref_ptr<rbtree> ptr)
+{
+    myfree(ptr.ptr, M_TREE);
+}
+
+template<> void
+myfree<rbtrav>(ref_ptr<rbtrav> ptr)
+{
+    myfree(ptr.ptr, M_TRAV);
 }
 
 void
