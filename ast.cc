@@ -29,7 +29,6 @@
 
 struct entry {
     void *ptr;
-    Memory_Type type;
 };
 
 static int pool_size, next_pool_slot;
@@ -51,14 +50,14 @@ end_code_allocation(int aborted)
 
 	for (i = 0; i < next_pool_slot; i++) {
 	    if (pool[i].ptr != 0)
-		myfree(pool[i].ptr, pool[i].type);
+		free(pool[i].ptr);
 	}
     }
     free(pool);
 }
 
 static void *
-allocate(int size, Memory_Type type)
+allocate(int size)
 {
     if (next_pool_slot >= pool_size) {	/* enlarge the pool */
 	struct entry *new_pool;
@@ -72,8 +71,7 @@ allocate(int size, Memory_Type type)
 	free(pool);
 	pool = new_pool;
     }
-    pool[next_pool_slot].type = type;
-    return pool[next_pool_slot++].ptr = mymalloc(size, type);
+    return pool[next_pool_slot++].ptr = malloc(size);
 }
 
 static void
@@ -83,7 +81,7 @@ deallocate(void *ptr)
 
     for (i = 0; i < next_pool_slot; i++) {
 	if (ptr == pool[i].ptr) {
-	    myfree(ptr, pool[i].type);
+	    free(ptr);
 	    pool[i].ptr = 0;
 	    return;
 	}
@@ -95,7 +93,7 @@ deallocate(void *ptr)
 char *
 alloc_string(const char *buffer)
 {
-    char *string = (char *)allocate(strlen(buffer) + 1, M_STRING);
+    char *string = (char *)allocate(strlen(buffer) + 1);
 
     strcpy(string, buffer);
     return string;
@@ -116,7 +114,7 @@ dealloc_node(void *node)
 Stmt *
 alloc_stmt(enum Stmt_Kind kind)
 {
-    Stmt *result = (Stmt *)allocate(sizeof(Stmt), M_NONE);
+    Stmt *result = (Stmt *)allocate(sizeof(Stmt));
 
     result->kind = kind;
     result->next = 0;
@@ -126,7 +124,7 @@ alloc_stmt(enum Stmt_Kind kind)
 Cond_Arm *
 alloc_cond_arm(Expr * condition, Stmt * stmt)
 {
-    Cond_Arm *result = (Cond_Arm *)allocate(sizeof(Cond_Arm), M_NONE);
+    Cond_Arm *result = (Cond_Arm *)allocate(sizeof(Cond_Arm));
 
     result->condition = condition;
     result->stmt = stmt;
@@ -137,7 +135,7 @@ alloc_cond_arm(Expr * condition, Stmt * stmt)
 Except_Arm *
 alloc_except(int id, Arg_List * codes, Stmt * stmt)
 {
-    Except_Arm *result = (Except_Arm *)allocate(sizeof(Except_Arm), M_NONE);
+    Except_Arm *result = (Except_Arm *)allocate(sizeof(Except_Arm));
 
     result->id = id;
     result->codes = codes;
@@ -150,7 +148,7 @@ alloc_except(int id, Arg_List * codes, Stmt * stmt)
 Expr *
 alloc_expr(enum Expr_Kind kind)
 {
-    Expr *result = (Expr *)allocate(sizeof(Expr), M_NONE);
+    Expr *result = (Expr *)allocate(sizeof(Expr));
 
     result->kind = kind;
     return result;
@@ -189,7 +187,7 @@ alloc_verb(Expr * obj, Expr * verb, Arg_List * args)
 Map_List *
 alloc_map_list(Expr * key, Expr * value)
 {
-    Map_List *result = (Map_List *)allocate(sizeof(Map_List), M_NONE);
+    Map_List *result = (Map_List *)allocate(sizeof(Map_List));
 
     result->key = key;
     result->value = value;
@@ -200,7 +198,7 @@ alloc_map_list(Expr * key, Expr * value)
 Arg_List *
 alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 {
-    Arg_List *result = (Arg_List *)allocate(sizeof(Arg_List), M_NONE);
+    Arg_List *result = (Arg_List *)allocate(sizeof(Arg_List));
 
     result->kind = kind;
     result->expr = expr;
@@ -211,7 +209,7 @@ alloc_arg_list(enum Arg_Kind kind, Expr * expr)
 Scatter *
 alloc_scatter(enum Scatter_Kind kind, int id, Expr * expr)
 {
-    Scatter *sc = (Scatter *)allocate(sizeof(Scatter), M_NONE);
+    Scatter *sc = (Scatter *)allocate(sizeof(Scatter));
 
     sc->kind = kind;
     sc->id = id;
@@ -233,7 +231,7 @@ free_map_list(Map_List * map)
 	next_m = m->next;
 	free_expr(m->key);
 	free_expr(m->value);
-	myfree(m, M_NONE);
+	free(m);
     }
 }
 
@@ -245,7 +243,7 @@ free_arg_list(Arg_List * args)
     for (arg = args; arg; arg = next_arg) {
 	next_arg = arg->next;
 	free_expr(arg->expr);
-	myfree(arg, M_NONE);
+	free(arg);
     }
 }
 
@@ -258,7 +256,7 @@ free_scatter(Scatter * sc)
 	next_sc = sc->next;
 	if (sc->expr)
 	    free_expr(sc->expr);
-	myfree(sc, M_NONE);
+	free(sc);
     }
 }
 
@@ -356,7 +354,7 @@ free_expr(Expr * expr)
 	break;
     }
 
-    myfree(expr, M_NONE);
+    free(expr);
 }
 
 void
@@ -376,7 +374,7 @@ free_stmt(Stmt * stmt)
 		next_arm = arm->next;
 		free_expr(arm->condition);
 		free_stmt(arm->stmt);
-		myfree(arm, M_NONE);
+		free(arm);
 	    }
 	    if (stmt->s.cond.otherwise)
 		free_stmt(stmt->s.cond.otherwise);
@@ -415,7 +413,7 @@ free_stmt(Stmt * stmt)
 		next_e = except->next;
 		free_arg_list(except->codes);
 		free_stmt(except->stmt);
-		myfree(except, M_NONE);
+		free(except);
 	    }
 	    break;
 
@@ -433,6 +431,6 @@ free_stmt(Stmt * stmt)
 	    break;
 	}
 
-	myfree(stmt, M_NONE);
+	free(stmt);
     }
 }
