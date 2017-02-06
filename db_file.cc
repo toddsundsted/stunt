@@ -19,6 +19,8 @@
  * Routines for initializing, loading, dumping, and shutting down the database
  *****************************************************************************/
 
+#include <string>
+
 #include "my-stat.h"
 #include "my-unistd.h"
 #include "my-stdio.h"
@@ -41,7 +43,7 @@
 #include "utils.h"
 #include "version.h"
 
-static const char *input_db_name, *dump_db_name;
+static std::string input_db_name, dump_db_name;
 static int dump_generation = 0;
 static const char *header_format_string
   = "** LambdaMOO Database, Format Version %u **\n";
@@ -1155,14 +1157,14 @@ dump_database(Dump_Reason reason)
 
   retryDumping:
 
-    stream_printf(s, "%s.#%d#", dump_db_name, dump_generation);
+    stream_printf(s, "%s.#%d#", dump_db_name.c_str(), dump_generation);
     remove(reset_stream(s));	/* Remove previous checkpoint */
 
     if (reason == DUMP_PANIC)
-	stream_printf(s, "%s.PANIC", dump_db_name);
+	stream_printf(s, "%s.PANIC", dump_db_name.c_str());
     else {
 	dump_generation++;
-	stream_printf(s, "%s.#%d#", dump_db_name, dump_generation);
+	stream_printf(s, "%s.#%d#", dump_db_name.c_str(), dump_generation);
     }
     temp_name = reset_stream(s);
 
@@ -1211,8 +1213,8 @@ dump_database(Dump_Reason reason)
 	    fclose(f);
 	    oklog("%s on %s finished\n", reason_names[reason], temp_name);
 	    if (reason != DUMP_PANIC) {
-		remove(dump_db_name);
-		if (rename(temp_name, dump_db_name) != 0) {
+		remove(dump_db_name.c_str());
+		if (rename(temp_name, dump_db_name.c_str()) != 0) {
 		    log_perror("Renaming temporary dump file");
 		    success = 0;
 		}
@@ -1253,14 +1255,14 @@ db_initialize(int *pargc, char ***pargv)
     if (*pargc < 2)
 	return 0;
 
-    input_db_name = str_dup((*pargv)[0]);
-    dump_db_name = str_dup((*pargv)[1]);
+    input_db_name = (*pargv)[0];
+    dump_db_name = (*pargv)[1];
     *pargc -= 2;
     *pargv += 2;
 
-    if (!(f = fopen(input_db_name, "r"))) {
+    if (!(f = fopen(input_db_name.c_str(), "r"))) {
 	fprintf(stderr, "Cannot open input database file: %s\n",
-		input_db_name);
+		input_db_name.c_str());
 	return 0;
     }
     input_db = f;
@@ -1276,13 +1278,13 @@ db_load(void)
 
     str_intern_open(0);
 
-    oklog("LOADING: %s\n", input_db_name);
+    oklog("LOADING: %s\n", input_db_name.c_str());
     if (!read_db_file()) {
 	errlog("DB_LOAD: Cannot load database!\n");
 	return 0;
     }
     oklog("LOADING: %s done, will dump new database on %s\n",
-	  input_db_name, dump_db_name);
+	  input_db_name.c_str(), dump_db_name.c_str());
 
     str_intern_close();
 
@@ -1318,8 +1320,8 @@ db_disk_size(void)
 {
     struct stat st;
 
-    if ((dump_generation == 0 || stat(dump_db_name, &st) < 0)
-	&& stat(input_db_name, &st) < 0)
+    if ((dump_generation == 0 || stat(dump_db_name.c_str(), &st) < 0)
+	&& stat(input_db_name.c_str(), &st) < 0)
 	return -1;
     else
 	return st.st_size;
@@ -1329,7 +1331,4 @@ void
 db_shutdown()
 {
     dump_database(DUMP_SHUTDOWN);
-
-    free_str(input_db_name);
-    free_str(dump_db_name);
 }
