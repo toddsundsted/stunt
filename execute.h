@@ -55,8 +55,8 @@ typedef struct {
     Objid progr;
     Objid recv;
     Var vloc;
-    const char *verb;
-    const char *verbname;
+    ref_ptr<const char> verb;
+    ref_ptr<const char> verbname;
     int debug;
 } activation;
 
@@ -85,7 +85,7 @@ extern enum error call_verb(Objid obj, const char *vname,
 			    const Var& _this, const Var& args, int do_pass);
 /* if your vname is already a moo str (via str_dup) then you can
    use this interface instead */
-extern enum error call_verb2(Objid obj, const char *vname,
+extern enum error call_verb2(Objid obj, const ref_ptr<const char>& vname,
 			     const Var& _this, const Var& args, int do_pass);
 
 extern int setup_activ_for_eval(Program * prog);
@@ -97,37 +97,37 @@ enum outcome {
     OUTCOME_BLOCKED		/* Task called a blocking built-in function. */
 };
 
-extern enum outcome do_forked_task(Program * prog, Var * rt_env,
+extern enum outcome do_forked_task(Program* prog, Var* rt_env,
 				   activation a, int f_id);
-extern enum outcome do_input_task(Objid user, Parsed_Command * pc,
+extern enum outcome do_input_task(Objid user, Parsed_Command* pc,
 				  Objid recv, db_verb_handle vh);
-extern enum outcome do_server_verb_task(const Var& _this, const char *verb,
+extern enum outcome do_server_verb_task(const Var& _this,
+					const ref_ptr<const char>& verb,
 					const Var& args, db_verb_handle h,
-					Objid player, const char *argstr,
-					Var * result, int do_db_tracebacks);
-extern enum outcome do_server_program_task(const Var& _this, const char *verb,
+					Objid player, const char* argstr,
+					Var* result, int do_db_tracebacks);
+extern enum outcome do_server_program_task(const Var& _this,
+					   const ref_ptr<const char>& verb,
 					   const Var& args, const Var& vloc,
-					   const char *verbname,
-					   Program * program, Objid progr,
+					   const ref_ptr<const char>& verbname,
+					   Program* program, Objid progr,
 					   int debug, Objid player,
-					   const char *argstr,
-					   Var * result,
+					   const char* argstr,
+					   Var* result,
 					   int do_db_tracebacks);
 extern enum outcome resume_from_previous_vm(vm the_vm, const Var& value);
 
 extern int task_timed_out;
 extern void abort_running_task(void);
-extern void print_error_backtrace(const char *, void (*)(const char *));
+extern void print_error_backtrace(const char*, void (*)(const char*));
 extern Var caller();
 
 extern void write_activ_as_pi(activation);
 extern int read_activ_as_pi(activation *);
-void write_rt_env(const char **var_names, Var * rt_env,
-		  unsigned size);
-int read_rt_env(const char ***old_names, Var ** rt_env,
-		int *old_size);
-Var *reorder_rt_env(Var * old_rt_env, const char **old_names,
-		    int old_size, Program * prog);
+void write_rt_env(const ref_ptr<const char> var_names[], Var rt_env[], unsigned size);
+int read_rt_env(ref_ptr<const char>* old_names[], Var* rt_env[], unsigned* old_size);
+Var* reorder_rt_env(Var old_rt_env[], ref_ptr<const char> old_names[],
+		    int old_size, Program* prog);
 extern void free_reordered_rt_env_values(void);
 extern void write_activ(activation a);
 extern int read_activ(activation * a, int which_vector);

@@ -109,9 +109,9 @@ ensure_buffer(char **buffer, int *buflen, int len)
 {
     if (len > *buflen) {
 	if (*buffer)
-	    myfree(*buffer, M_STRING);
+	    free(*buffer);
 	*buflen = len;
-	*buffer = (char *)mymalloc(len, M_STRING);
+	*buffer = (char*)malloc(len);
     }
 }
 

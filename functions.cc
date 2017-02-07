@@ -86,9 +86,9 @@ enum bft_func_type {
 };
 
 struct bft_entry {
-    const char *name;
-    const char *protect_str;
-    const char *verb_str;
+    ref_ptr<const char> name;
+    ref_ptr<const char> protect_str;
+    ref_ptr<const char> verb_str;
     int minargs;
     int maxargs;
     var_type *prototype;
@@ -205,24 +205,24 @@ register_function_with_read_write(const char *name, int minargs, int maxargs,
 
 /*** looking up functions -- by name or num ***/
 
-static const char *func_not_found_msg = "no such function";
+static const ref_ptr<const char> NO_SUCH_FUNCTION = str_dup("no such function");
 
-const char *
+const ref_ptr<const char>&
 name_func_by_num(unsigned n)
-{				/* used by unparse only */
+{
     if (n >= top_bf_table)
-	return func_not_found_msg;
+	return NO_SUCH_FUNCTION;
     else
 	return bf_table[n].name;
 }
 
 unsigned
-number_func_by_name(const char *name)
-{				/* used by parser only */
+number_func_by_name(const char* name)
+{
     unsigned i;
 
     for (i = 0; i < top_bf_table; i++)
-	if (!mystrcasecmp(name, bf_table[i].name))
+	if (!mystrcasecmp(name, bf_table[i].name.expose()))
 	    return i;
 
     return FUNC_NOT_FOUND;
@@ -349,7 +349,7 @@ read_bi_func_data(Byte f_id, void **bi_func_state, Byte * bi_func_pc)
 	 * bug described in the Version 1.8.0p4 entry in ChangeLog.txt.
 	 */
 	if (*bi_func_pc == 2 && dbio_input_version == DBV_Float
-	    && strcmp(bf_table[f_id].name, "eval") != 0) {
+	    && strcmp(bf_table[f_id].name.expose(), "eval") != 0) {
 	    oklog("LOADING: Warning: patching bogus return to `%s()'\n",
 		  bf_table[f_id].name);
 	    oklog("         (See 1.8.0p4 ChangeLog.txt entry for details.)\n");
@@ -465,7 +465,7 @@ bf_function_info(const List& arglist, Objid progr)
     unsigned int i;
 
     if (arglist.length() == 1) {
-	i = number_func_by_name(arglist[1].v.str);
+	i = number_func_by_name(arglist[1].v.str.expose());
 	if (i == FUNC_NOT_FOUND) {
 	    free_var(arglist);
 	    return make_error_pack(E_INVARG);
@@ -488,7 +488,7 @@ load_server_protect_function_flags(void)
 
     for (i = 0; i < top_bf_table; i++) {
 	bf_table[i]._protected
-	    = server_flag_option(bf_table[i].protect_str, 0);
+	    = server_flag_option(bf_table[i].protect_str.expose(), 0);
     }
     oklog("Loaded protect cache for %d builtin functions\n", i);
 }

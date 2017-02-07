@@ -177,7 +177,7 @@ complex_free_var(const Var& v)
     switch ((int) v.type) {
     case TYPE_STR:
 	if (v.v.str)
-	    free_str(v.v.str);
+	    free_str(const_cast<ref_ptr<const char>&>(v.v.str));
 	break;
     case TYPE_FLOAT:
 	if (v.v.fnum.dec_ref() == 0)
@@ -291,7 +291,7 @@ complex_var_ref(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
-	addref(v.v.str);
+	v.v.str.inc_ref();
 	break;
     case TYPE_FLOAT:
 	v.v.fnum.inc_ref();
@@ -321,7 +321,7 @@ complex_var_ref(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
-	addref(v.v.str);
+	v.v.str.inc_ref();
 	break;
     case TYPE_FLOAT:
 	v.v.fnum.inc_ref();
@@ -351,7 +351,7 @@ complex_var_dup(const Var& v)
     switch ((int) v.type) {
     case TYPE_STR:
 	t.type = TYPE_STR;
-	t.v.str = str_dup(v.v.str);
+	t.v.str = str_dup(v.v.str.expose());
 	break;
     case TYPE_FLOAT:
 	t = Var::new_float(*v.v.fnum);
@@ -380,7 +380,7 @@ var_refcount(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
-	return refcount(v.v.str);
+	return v.v.str.ref_count();
 	break;
     case TYPE_LIST:
 	return refcount(v.v.list);
@@ -432,9 +432,9 @@ compare(const Var& lhs, const Var& rhs, int case_matters)
 	    if (lhs.v.str == rhs.v.str)
 		return 0;
 	    else if (case_matters)
-		return strcmp(lhs.v.str, rhs.v.str);
+		return strcmp(lhs.v.str.expose(), rhs.v.str.expose());
 	    else
-		return mystrcasecmp(lhs.v.str, rhs.v.str);
+		return mystrcasecmp(lhs.v.str.expose(), rhs.v.str.expose());
 	case TYPE_FLOAT:
 	    if (lhs.v.fnum == rhs.v.fnum)
 		return 0;
@@ -466,9 +466,9 @@ equality(const Var& lhs, const Var& rhs, int case_matters)
 	    if (lhs.v.str == rhs.v.str)
 		return 1;
 	    else if (case_matters)
-		return !strcmp(lhs.v.str, rhs.v.str);
+		return !strcmp(lhs.v.str.expose(), rhs.v.str.expose());
 	    else
-		return !mystrcasecmp(lhs.v.str, rhs.v.str);
+		return !mystrcasecmp(lhs.v.str.expose(), rhs.v.str.expose());
 	case TYPE_FLOAT:
 	    if (lhs.v.fnum == rhs.v.fnum)
 		return 1;
@@ -581,7 +581,9 @@ get_system_property(const char *name)
 	value = Var::new_err(E_INVIND);
 	return value;
     }
-    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), name, &value);
+    ref_ptr<const char> prop_name = str_dup(name);
+    h = db_find_property(Var::new_obj(SYSTEM_OBJECT), prop_name, &value);
+    free_str(prop_name);
     if (!h.ptr) {
 	value = Var::new_err(E_PROPNF);
     } else if (!db_is_property_built_in(h))	/* make two cases the same */

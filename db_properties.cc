@@ -31,12 +31,12 @@
 #include "utils.h"
 
 Propdef
-dbpriv_new_propdef(const char *name)
+dbpriv_new_propdef(const ref_ptr<const char>& name)
 {
     Propdef newprop;
 
     newprop.name = str_ref(name);
-    newprop.hash = str_hash(name);
+    newprop.hash = str_hash(name.expose());
     return newprop;
 }
 
@@ -69,7 +69,7 @@ properties_offset(const Var& target, const Var& _this)
  * Returns true iff `o' defines a property named `pname'.
  */
 static int
-property_defined_at(const char *pname, int phash, Object *o)
+property_defined_at(const ref_ptr<const char>& pname, int phash, Object *o)
 {
     Proplist *props = &(o->propdefs);
     int length = props->cur_length;
@@ -77,18 +77,17 @@ property_defined_at(const char *pname, int phash, Object *o)
 
     for (i = 0; i < length; i++)
 	if (props->l[i].hash == phash
-	    && !mystrcasecmp(props->l[i].name, pname))
+	    && !mystrcasecmp(props->l[i].name.expose(), pname.expose()))
 	    return 1;
 
     return 0;
 }
 
 /*
- * Return true iff some descendant of `o' defines a property named
- * `pname'.
+ * Return true iff some descendant of `o' defines a property named `pname'.
  */
 static int
-property_defined_at_or_below(const char *pname, int phash, Object *o)
+property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, Object *o)
 {
     Proplist *props = &(o->propdefs);
     int length = props->cur_length;
@@ -96,7 +95,7 @@ property_defined_at_or_below(const char *pname, int phash, Object *o)
 
     for (i = 0; i < length; i++)
 	if (props->l[i].hash == phash
-	    && !mystrcasecmp(props->l[i].name, pname))
+	    && !mystrcasecmp(props->l[i].name.expose(), pname.expose()))
 	    return 1;
 
     Var children = o->children;
@@ -169,7 +168,7 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 }
 
 int
-db_add_propdef(const Var& obj, const char *pname, const Var& value, Objid owner,
+db_add_propdef(const Var& obj, const ref_ptr<const char>& name, const Var& value, Objid owner,
 	       unsigned flags)
 {
     Object *o;
@@ -179,9 +178,9 @@ db_add_propdef(const Var& obj, const char *pname, const Var& value, Objid owner,
 
     o = dbpriv_dereference(obj);
 
-    h = db_find_property(obj, pname, 0);
+    h = db_find_property(obj, name, 0);
 
-    if (h.ptr || property_defined_at_or_below(pname, str_hash(pname), o))
+    if (h.ptr || property_defined_at_or_below(name, str_hash(name.expose()), o))
 	return 0;
 
     if (o->propdefs.cur_length == o->propdefs.max_length) {
@@ -197,7 +196,7 @@ db_add_propdef(const Var& obj, const char *pname, const Var& value, Objid owner,
 	if (old_props)
 	    free(old_props);
     }
-    o->propdefs.l[o->propdefs.cur_length++] = dbpriv_new_propdef(pname);
+    o->propdefs.l[o->propdefs.cur_length++] = dbpriv_new_propdef(name);
 
     pval.var = value;
     pval.owner = owner;
@@ -213,11 +212,11 @@ db_add_propdef(const Var& obj, const char *pname, const Var& value, Objid owner,
 }
 
 int
-db_rename_propdef(const Var& obj, const char *old, const char *_new)
+db_rename_propdef(const Var& obj, const ref_ptr<const char>& old, const ref_ptr<const char>& _new)
 {
     Object *o = dbpriv_dereference(obj);
     Proplist *props = &(o->propdefs);
-    int hash = str_hash(old);
+    int hash = str_hash(old.expose());
     int count = props->cur_length;
     int i;
     db_prop_handle h;
@@ -226,15 +225,15 @@ db_rename_propdef(const Var& obj, const char *old, const char *_new)
 	Propdef p;
 
 	p = props->l[i];
-	if (p.hash == hash && !mystrcasecmp(p.name, old)) {
-	    if (mystrcasecmp(old, _new) != 0) {	/* not changing just the case */
+	if (p.hash == hash && !mystrcasecmp(p.name.expose(), old.expose())) {
+	    if (mystrcasecmp(old.expose(), _new.expose()) != 0) {	/* not changing just the case */
 		h = db_find_property(obj, _new, 0);
-		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new), o))
+		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new.expose()), o))
 		    return 0;
 	    }
 	    free_str(props->l[i].name);
 	    props->l[i].name = str_ref(_new);
-	    props->l[i].hash = str_hash(_new);
+	    props->l[i].hash = str_hash(_new.expose());
 
 	    return 1;
 	}
@@ -299,11 +298,11 @@ remove_prop_recursively(Objid root, int prop_pos)
 }
 
 int
-db_delete_propdef(const Var& obj, const char *pname)
+db_delete_propdef(const Var& obj, const ref_ptr<const char>& pname)
 {
     Object *o = dbpriv_dereference(obj);
     Proplist *props = &(o->propdefs);
-    int hash = str_hash(pname);
+    int hash = str_hash(pname.expose());
     int count = props->cur_length;
     int max = props->max_length;
     int i, j;
@@ -312,7 +311,7 @@ db_delete_propdef(const Var& obj, const char *pname)
 	Propdef p;
 
 	p = props->l[i];
-	if (p.hash == hash && !mystrcasecmp(p.name, pname)) {
+	if (p.hash == hash && !mystrcasecmp(p.name.expose(), pname.expose())) {
 	    if (p.name)
 		free_str(p.name);
 
@@ -356,7 +355,7 @@ db_count_propdefs(const Var& obj)
 }
 
 int
-db_for_all_propdefs(const Var& obj, int (*func) (void *, const char *), void *data)
+db_for_all_propdefs(const Var& obj, int (*func) (void *, const ref_ptr<const char>&), void *data)
 {
     int i;
     Object *o = dbpriv_dereference(obj);
@@ -442,10 +441,10 @@ get_bi_value(db_prop_handle h, Var * value)
 
 /* does NOT consume `obj' and `name' */
 db_prop_handle
-db_find_property(const Var& obj, const char *name, Var *value)
+db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 {
     Object *o = dbpriv_dereference(obj);
-    int hash = str_hash(name);
+    int hash = str_hash(name.expose());
 
     static struct {
 	const char *name;
@@ -470,7 +469,7 @@ db_find_property(const Var& obj, const char *name, Var *value)
     h.ptr = 0;
 
     for (i = 0; i < Arraysize(ptable); i++) {
-	if (ptable[i].hash == hash && !mystrcasecmp(name, ptable[i].name)) {
+	if (ptable[i].hash == hash && !mystrcasecmp(name.expose(), ptable[i].name)) {
 	    h.built_in = ptable[i].prop;
 	    h.ptr = o;
 	    if (value)
@@ -490,7 +489,7 @@ db_find_property(const Var& obj, const char *name, Var *value)
     n = 0;
 
     for (i = 0; i < length; i++, n++) {
-	if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+	if (defs[i].hash == hash && !mystrcasecmp(name.expose(), defs[i].name.expose())) {
 		h.definer = o;
 		h.ptr = o->propval + n;
 		goto done;
@@ -511,7 +510,7 @@ db_find_property(const Var& obj, const char *name, Var *value)
 	length = props->cur_length;
 
 	for (i = 0; i < length; i++, n++) {
-	    if (defs[i].hash == hash && !mystrcasecmp(defs[i].name, name)) {
+	    if (defs[i].hash == hash && !mystrcasecmp(name.expose(), defs[i].name.expose())) {
 		h.definer = t;
 		h.ptr = o->propval + n;
 		goto done;

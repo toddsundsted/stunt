@@ -27,6 +27,8 @@
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
 
+#include <assert.h>
+
 #include <sstream>
 #include <string>
 
@@ -58,12 +60,12 @@ bf_encode_base64(const List& arglist, Objid progr)
     const int safe = arglist.length() > 1 && is_true(arglist[2]);
     const unsigned char *chars = safe ? url_safe_base64_chars : base64_chars;
 
+    assert(arglist[1].is_str());
+
     /* check input */
 
     int len;
-    const char *in;
-
-    in = binary_to_raw_bytes(arglist[1].v.str, &len);
+    const char* in = binary_to_raw_bytes(arglist[1].v.str.expose(), &len);
 
     if (!in) {
 	const package pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist[1]));
@@ -158,18 +160,17 @@ bf_decode_base64(const List& arglist, Objid progr)
     const int safe = arglist.length() > 1 && is_true(arglist[2]);
     const unsigned char *table = safe ? url_safe_base64_table : base64_table;
 
+    assert(arglist[1].is_str());
+
     /* check input */
 
-    unsigned int len;
-    const char *in;
-
-    in = arglist[1].v.str;
-    len = memo_strlen(in);
+    const Str& in = static_cast<const Str&>(arglist[1]);
+    unsigned int len = in.length();
 
     int i, pad = 0;
 
     for (i = 0; i < len; i++) {
-	const unsigned char tmp = (unsigned char)in[i];
+	const unsigned char tmp = (unsigned char)in[i + 1];
 	if (table[tmp] == 80) {
 	    const package pack = make_raise_pack(E_INVARG, "Invalid character in encoded data", var_ref(arglist[1]));
 	    free_var(arglist);
@@ -208,8 +209,8 @@ bf_decode_base64(const List& arglist, Objid progr)
 
     for (i = 0; i < len + len % 4; i++) {
 	if (i < len) {
-	    block[i % 4] = table[(unsigned char)in[i]];
-	    ar[i % 4] = in[i];
+	    block[i % 4] = table[(unsigned char)in[i + 1]];
+	    ar[i % 4] = in[i + 1];
 	} else {
 	    block[i % 4] = '\0';
 	    ar[i % 4] = '=';

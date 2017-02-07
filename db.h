@@ -192,8 +192,8 @@ extern Var db_object_children2(const Var&);
 extern Objid db_object_owner(Objid);
 extern void db_set_object_owner(Objid oid, Objid owner);
 
-extern const char *db_object_name(Objid);
-extern void db_set_object_name(Objid oid, const char *name);
+extern ref_ptr<const char> db_object_name(Objid);
+extern void db_set_object_name(Objid oid, const ref_ptr<const char>& name);
 				/* These functions do not change the reference
 				 * count of the name they accept/return.  Thus,
 				 * the caller should str_ref() the name if the
@@ -314,7 +314,8 @@ typedef enum {
     PF_CHOWN = 04
 } db_prop_flag;
 
-extern int db_add_propdef(const Var& obj, const char *pname,
+extern int db_add_propdef(const Var& obj,
+			  const ref_ptr<const char>& pname,
 			  const Var& value, Objid owner,
 			  unsigned flags);
 				/* Returns true (and actually adds the property
@@ -329,8 +330,9 @@ extern int db_add_propdef(const Var& obj, const char *pname,
 				 * zero or more elements of `db_prop_flag'.
 				 */
 
-extern int db_rename_propdef(const Var& obj, const char *old,
-			     const char *_new);
+extern int db_rename_propdef(const Var& obj,
+			     const ref_ptr<const char>& old_name,
+			     const ref_ptr<const char>& new_name);
 				/* Returns true (and actually renames the
 				 * propdef on OBJ) iff (1) a propdef with the
 				 * name OLD existed on OBJ, (2) no property
@@ -341,7 +343,7 @@ extern int db_rename_propdef(const Var& obj, const char *old,
 				 * this is a no-op that returns true.
 				 */
 
-extern int db_delete_propdef(const Var&, const char *);
+extern int db_delete_propdef(const Var&, const ref_ptr<const char>&);
 				/* Returns true iff a propdef with the given
 				 * name existed on the object (i.e., was there
 				 * to be deleted).
@@ -349,7 +351,7 @@ extern int db_delete_propdef(const Var&, const char *);
 
 extern int db_count_propdefs(const Var&);
 extern int db_for_all_propdefs(const Var&,
-			       int (*)(void *, const char *),
+			       int (*)(void *, const ref_ptr<const char>&),
 			       void *);
 				/* db_for_all_propdefs() does not change the
 				 * reference counts of the property names
@@ -396,7 +398,8 @@ typedef struct {
     void *ptr;			/* null iff property not found */
 } db_prop_handle;
 
-extern db_prop_handle db_find_property(const Var& obj, const char *name,
+extern db_prop_handle db_find_property(const Var& obj,
+				       const ref_ptr<const char>& name,
 				       Var* value);
 				/* Returns a handle on the named property of
 				 * the given object.  If `value' is non-null,
@@ -532,7 +535,7 @@ extern const char *db_unparse_prep(db_prep_spec);
 				 * persistent.
 				 */
 
-extern int  db_add_verb(const Var& obj, const char *vnames,
+extern int  db_add_verb(const Var& obj, const ref_ptr<const char>& vnames,
 			Objid owner, unsigned flags,
 			db_arg_spec dobj, db_prep_spec prep,
 			db_arg_spec iobj);
@@ -544,7 +547,7 @@ extern int  db_add_verb(const Var& obj, const char *vnames,
 
 extern int db_count_verbs(const Var&);
 extern int db_for_all_verbs(const Var&,
-			    int (*)(void *, const char *),
+			    int (*)(void *, const ref_ptr<const char>&),
 			    void *);
 				/* db_for_all_verbs() does not change the
 				 * reference counts of the verb names
@@ -557,9 +560,9 @@ typedef struct {
     void *ptr;
 } db_verb_handle;
 
-extern db_verb_handle db_find_command_verb(Objid oid, const char *verb,
+extern db_verb_handle db_find_command_verb(Objid oid, const ref_ptr<const char>& verb,
 					 db_arg_spec dobj, unsigned prep,
-					   db_arg_spec iobj);
+					 db_arg_spec iobj);
 				/* Returns a handle on the first matching
 				 * verb found defined on OID or one of its
 				 * ancestors.  A matching verb has a name
@@ -574,7 +577,7 @@ extern db_verb_handle db_find_command_verb(Objid oid, const char *verb,
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_callable_verb(const Var& recv, const char *verb);
+extern db_verb_handle db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb);
 				/* Returns a handle on the first verb found
 				 * defined on OID or one of its ancestors with
 				 * a name matching VERB (and, for now, the
@@ -586,7 +589,7 @@ extern db_verb_handle db_find_callable_verb(const Var& recv, const char *verb);
 				 * leave the handle intact.
 				 */
 
-extern db_verb_handle db_find_defined_verb(const Var& obj, const char *verb,
+extern db_verb_handle db_find_defined_verb(const Var& obj, const ref_ptr<const char>& verb,
 					   int allow_numbers);
 				/* Returns a handle on the first verb found
 				 * defined on OBJ with a name matching VERB
@@ -618,8 +621,8 @@ extern Var db_verb_definer(db_verb_handle);
 				 * persistent.
 				 */
 
-extern const char *db_verb_names(db_verb_handle);
-extern void db_set_verb_names(db_verb_handle, const char *);
+extern ref_ptr<const char> db_verb_names(db_verb_handle);
+extern void db_set_verb_names(db_verb_handle, const ref_ptr<const char>&);
 				/* These functions do not change the reference
 				 * count of the string they accept/return.
 				 * Thus, the caller should str_ref() it if it

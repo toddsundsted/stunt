@@ -369,7 +369,7 @@ db_destroy_anonymous_object(void *obj)
     int i;
 
     free_str(o->name);
-    o->name = NULL;
+    o->name = ref_ptr<const char>::empty;
 
     free_var(o->parents);
 
@@ -754,28 +754,28 @@ db_set_object_owner(Objid oid, Objid owner)
     dbpriv_set_object_owner(objects[oid], owner);
 }
 
-const char *
+ref_ptr<const char>
 dbpriv_object_name(Object *o)
 {
     return o->name;
 }
 
 void
-dbpriv_set_object_name(Object *o, const char *name)
+dbpriv_set_object_name(Object *o, const ref_ptr<const char>& name)
 {
     if (o->name)
 	free_str(o->name);
     o->name = name;
 }
 
-const char *
+ref_ptr<const char>
 db_object_name(Objid oid)
 {
     return dbpriv_object_name(objects[oid]);
 }
 
 void
-db_set_object_name(Objid oid, const char *name)
+db_set_object_name(Objid oid, const ref_ptr<const char>& name)
 {
     dbpriv_set_object_name(objects[oid], name);
 }

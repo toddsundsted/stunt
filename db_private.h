@@ -29,7 +29,7 @@
 typedef struct Verbdef Verbdef;
 
 struct Verbdef {
-    const char *name;
+    ref_ptr<const char> name;
     Program *program;
     Objid owner;
     short perms;
@@ -41,7 +41,7 @@ typedef struct Proplist Proplist;
 typedef struct Propdef Propdef;
 
 struct Propdef {
-    const char *name;
+    ref_ptr<const char> name;
     int hash;
 };
 
@@ -62,7 +62,7 @@ typedef struct Object {
 
     Objid owner;
 
-    const char *name;
+    ref_ptr<const char> name;
     int flags; /* see db.h for `flags' values */
 
     Var location;
@@ -140,8 +140,8 @@ extern void dbpriv_assign_nonce(Object *);
 extern Objid dbpriv_object_owner(Object *);
 extern void dbpriv_set_object_owner(Object *, Objid owner);
 
-extern const char *dbpriv_object_name(Object *);
-extern void dbpriv_set_object_name(Object *, const char *);
+extern ref_ptr<const char> dbpriv_object_name(Object *);
+extern void dbpriv_set_object_name(Object *, const ref_ptr<const char>&);
 				/* These functions do not change the reference
 				 * count of the name they accept/return.  Thus,
 				 * the caller should str_ref() the name if the
@@ -191,7 +191,7 @@ extern void dbpriv_after_load(void);
 
 /*********** Properties ***********/
 
-extern Propdef dbpriv_new_propdef(const char *);
+extern Propdef dbpriv_new_propdef(const ref_ptr<const char>&);
 
 extern int dbpriv_check_properties_for_chparent(const Var& obj,
 						const Var& parents);

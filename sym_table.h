@@ -24,7 +24,7 @@
 typedef struct {
     unsigned max_size;
     unsigned size;
-    const char **names;
+    ref_ptr<const char>* names;
 } Names;
 
 extern Names *new_builtin_names(DB_Version);

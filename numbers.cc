@@ -106,8 +106,8 @@ become_integer(const Var& in, int *ret, int called_from_tonum)
 	break;
     case TYPE_STR:
 	if (!(called_from_tonum
-	      ? parse_number(in.v.str, ret, 1)
-	      : parse_object(in.v.str, ret)))
+	      ? parse_number(in.v.str.expose(), ret, 1)
+	      : parse_object(in.v.str.expose(), ret)))
 	    *ret = 0;
 	break;
     case TYPE_OBJ:
@@ -139,7 +139,7 @@ become_float(const Var& in, double *ret)
 	*ret = (double) in.v.num;
 	break;
     case TYPE_STR:
-	if (!parse_float(in.v.str, ret) || !IS_REAL(*ret))
+	if (!parse_float(in.v.str.expose(), ret) || !IS_REAL(*ret))
 	    return E_INVARG;
 	break;
     case TYPE_OBJ:

@@ -23,18 +23,18 @@
 #include "structures.h"
 
 typedef struct {
-    const char *verb;		/* verb (as typed by player) */
-    const char *argstr;		/* arguments to verb */
-    Var args;			/* arguments to the verb */
+    ref_ptr<const char> verb;		/* verb (as typed by player) */
+    ref_ptr<const char> argstr;		/* arguments to verb */
+    Var args;				/* arguments to the verb */
 
-    const char *dobjstr;	/* direct object string */
-    Objid dobj;			/* direct object */
+    ref_ptr<const char> dobjstr;	/* direct object string */
+    Objid dobj;				/* direct object */
 
-    const char *prepstr;	/* preposition string */
-    db_prep_spec prep;		/* preposition identifier */
+    ref_ptr<const char> prepstr;	/* preposition string */
+    db_prep_spec prep;			/* preposition identifier */
 
-    const char *iobjstr;	/* indirect object string */
-    Objid iobj;			/* indirect object */
+    ref_ptr<const char> iobjstr;	/* indirect object string */
+    Objid iobj;				/* indirect object */
 } Parsed_Command;
 
 extern char **parse_into_words(char *input, int *nwords);

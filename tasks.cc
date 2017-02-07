@@ -41,6 +41,7 @@
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "tasks.h"
 #include "utils.h"
 #include "verbs.h"
@@ -73,7 +74,7 @@ typedef struct suspended_task {
 } suspended_task;
 
 typedef struct {
-    const char *string;
+    ref_ptr<const char> string;
     int length;
     struct task *next_itail;	/* see tqueue.first_itail */ 
 } input_task;
@@ -171,8 +172,8 @@ typedef struct tqueue {
     task *first_bg, **last_bg;
     int usage;			/* a kind of inverted priority */
     int num_bg_tasks;		/* in either here or waiting_tasks */
-    const char *output_prefix, *output_suffix;
-    const char *flush_cmd;
+    ref_ptr<const char> output_prefix, output_suffix;
+    ref_ptr<const char> flush_cmd;
 
     /* Used in emergency mode and when handling the `.program'
      * intrinsic command.  `program_object' _could_ be changed to hold
@@ -182,7 +183,7 @@ typedef struct tqueue {
      */
     Stream *program_stream;
     Objid program_object;
-    const char *program_verb;
+    ref_ptr<const char> program_verb;
 
     /* booleans */
     int hold_input:1;		/* input tasks must wait for read() */
@@ -312,7 +313,7 @@ icmd_set_flags(tqueue * tq, const Var& list)
 	    int icmd;
 	    if (!list.v.list[i].is_str())
 		return 0;
-	    icmd = icmd_index(list.v.list[i].v.str);
+	    icmd = icmd_index(list.v.list[i].v.str.expose());
 	    if (!icmd)
 		return 0;
 	    newflags |= (1<<icmd);
@@ -387,12 +388,12 @@ ensure_usage(tqueue * tq)
     }
 }
 
-static const char *
+static ref_ptr<const char>
 default_flush_command(void)
 {
     const char *str = server_string_option("default_flush_command", ".flush");
 
-    return (str && str[0] != '\0') ? str_dup(str) : 0;
+    return (str && str[0] != '\0') ? str_dup(str) : ref_ptr<const char>::empty;
 }
 
 static tqueue *
@@ -411,7 +412,7 @@ find_tqueue(Objid player, int create_if_not_found)
     if (!create_if_not_found)
 	return 0;
 
-    tq = (tqueue *)malloc(sizeof(tqueue));
+    tq = new tqueue;
 
     deactivate_tqueue(tq);
 
@@ -425,7 +426,6 @@ find_tqueue(Objid player, int create_if_not_found)
     tq->last_bg = &(tq->first_bg);
     tq->total_input_length = tq->input_suspended = 0;
 
-    tq->output_prefix = tq->output_suffix = 0;
     tq->flush_cmd = default_flush_command();
     tq->program_stream = 0;
 
@@ -466,7 +466,7 @@ free_tqueue(tqueue * tq)
     if (tq->next)
 	tq->next->prev = tq->prev;
 
-    free(tq);
+    delete tq;
 }
 
 static void
@@ -556,9 +556,8 @@ dequeue_input_task(tqueue * tq, enum dequeue_how how)
 		// intentionally throwing away `const' in order to
 		// move the characters after the OOB quote prefix
 		// forward.
-		memmove(const_cast<char*>(t->t.input.string),
-			const_cast<char*>(t->t.input.string) + oob_quote_prefix_length,
-			strlen(const_cast<char*>(t->t.input.string) + oob_quote_prefix_length) + 1);
+		char* s = const_cast<char*>(t->t.input.string.expose());
+		memmove(s, s + oob_quote_prefix_length, strlen(s + oob_quote_prefix_length) + 1);
 	    }
 	    t->kind = TASK_INBAND;
 	}
@@ -610,7 +609,7 @@ new_task_id(void)
 }
 
 static void
-start_programming(tqueue * tq, char *argstr)
+start_programming(tqueue * tq, const ref_ptr<const char>& argstr)
 {
     db_verb_handle h;
     const char *message, *vname;
@@ -704,14 +703,14 @@ end_programming(tqueue * tq)
 }
 
 static void
-set_delimiter(const char **slot, const char *string)
+set_delimiter(ref_ptr<const char> *slot, const ref_ptr<const char>& string)
 {
     if (*slot)
 	free_str(*slot);
-    if (*string == '\0')
-	*slot = 0;
+    if (!string || string.expose()[0] == '\0')
+	*slot = ref_ptr<const char>::empty;
     else
-	*slot = str_dup(string);
+	*slot = str_ref(string);
 }
 
 static int
@@ -735,7 +734,7 @@ find_verb_on(Objid oid, Parsed_Command * pc, db_verb_handle * vh)
 static int
 do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
 {
-    int icmd = icmd_index(pc->verb);
+    int icmd = icmd_index(pc->verb.expose());
     if (!(icmd && (tq->icmds & (1<<icmd))))
 	return 0;
     switch (icmd) {
@@ -748,7 +747,7 @@ do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
 	if (pc->args.v.list[0].v.num != 1)
 	    notify(tq->player, "Usage:  .program object:verb");
 	else	
-	    start_programming(tq, (char *) pc->args.v.list[1].v.str);
+	    start_programming(tq, pc->args.v.list[1].v.str);
 	break;
     case ICMD_PREFIX:	
     case ICMD_OUTPUTPREFIX:
@@ -774,6 +773,8 @@ run_server_task_setting_id(Objid player, const Var& what, const char *verb,
 			   const Var& args, const char *argstr, Var *result,
 			   int *task_id);
 
+static const ref_ptr<const char> HUH = str_intern("huh");
+
 static int
 do_command_task(tqueue * tq, const char *command)
 {
@@ -798,7 +799,7 @@ do_command_task(tqueue * tq, const char *command)
 
 	    result = zero;	/* for free_var() if task isn't DONE */
 	    if (tq->output_prefix)
-		notify(tq->player, tq->output_prefix);
+		notify(tq->player, tq->output_prefix.expose());
 
 	    args = parse_into_wordlist(command);
 	    if (run_server_task_setting_id(tq->player, Var::new_obj(tq->handler),
@@ -813,11 +814,11 @@ do_command_task(tqueue * tq, const char *command)
 		       || find_verb_on(_this = pc->iobj, pc, &vh)
 		       || (valid(location)
 			   && !server_int_option("player_huh", PLAYER_HUH)
-			   && (vh = db_find_callable_verb(Var::new_obj(_this = location), "huh"),
+			   && (vh = db_find_callable_verb(Var::new_obj(_this = location), HUH),
 			       vh.ptr))
 		       || (valid(tq->player)
 			   && server_int_option("player_huh", PLAYER_HUH)
-			   && (vh = db_find_callable_verb(Var::new_obj(_this = tq->player), "huh"),
+			   && (vh = db_find_callable_verb(Var::new_obj(_this = tq->player), HUH),
 			       vh.ptr))) {
 		do_input_task(tq->player, pc, _this, vh);
 	    } else {
@@ -826,7 +827,7 @@ do_command_task(tqueue * tq, const char *command)
 	    }
 
 	    if (tq->output_suffix)
-		notify(tq->player, tq->output_suffix);
+		notify(tq->player, tq->output_suffix.expose());
 
 	    /* clean up after `run_server_task_setting_id' */
 	    current_task_id = -1;
@@ -959,10 +960,10 @@ free_task_queue(task_queue q)
 	   {								\
 	       if (tq->flush_cmd)					\
 		   free_str(tq->flush_cmd);				\
-	       if (value.type == TYPE_STR && value.v.str[0] != '\0')	\
+	       if (value.type == TYPE_STR && value.v.str.expose()[0] != '\0')	\
 		   tq->flush_cmd = str_ref(value.v.str);		\
 	       else							\
-		   tq->flush_cmd = 0;					\
+		   tq->flush_cmd = ref_ptr<const char>::empty;		\
 	   })								\
 									\
     DEFINE(hold-input, _, TYPE_INT, num,				\
@@ -1013,7 +1014,7 @@ tasks_connection_options(task_queue q, const List& list)
 #undef TASK_CO_TABLE
 
 static void
-enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
+enqueue_input_task(tqueue * tq, const ref_ptr<const char>& input, int at_front, int binary)
 {
     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
     task *t;
@@ -1022,16 +1023,16 @@ enqueue_input_task(tqueue * tq, const char *input, int at_front, int binary)
     if (binary)
 	t->kind = TASK_BINARY;
     else if (oob_quote_prefix_length > 0
-	     && strncmp(oob_quote_prefix, input, oob_quote_prefix_length) == 0)
+	     && strncmp(oob_quote_prefix, input.expose(), oob_quote_prefix_length) == 0)
 	t->kind = TASK_QUOTED;
     else if (sizeof(oob_prefix) > 1
-	     && strncmp(oob_prefix, input, sizeof(oob_prefix) - 1) == 0)
+	     && strncmp(oob_prefix, input.expose(), sizeof(oob_prefix) - 1) == 0)
 	t->kind = TASK_OOB;
     else
 	t->kind = TASK_INBAND;
 
-    t->t.input.string = str_dup(input);
-    tq->total_input_length += (t->t.input.length = strlen(input));
+    t->t.input.string = str_ref(input);
+    tq->total_input_length += (t->t.input.length = memo_strlen(input));
 
     t->t.input.next_itail = 0;
     if (at_front && tq->first_input) {	/* if nothing there, front == back */
@@ -1093,7 +1094,7 @@ flush_input(tqueue * tq, int show_messages)
 	while ((t = dequeue_input_task(tq, DQ_FIRST)) != 0) {
 	    /* TODO*** flush only non-TASK_OOB tasks ??? */
 	    if (show_messages) {
-		stream_printf(s, ">>     %s", t->t.input.string);
+		stream_printf(s, ">>     %s", t->t.input.string.expose());
 		notify(tq->player, reset_stream(s));
 	    }
 	    free_task(t, 1);
@@ -1111,11 +1112,14 @@ new_input_task(task_queue q, const char *input, int binary)
 {
     tqueue *tq = (tqueue *)q.ptr;
 
-    if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd) == 0) {
+    if (tq->flush_cmd && mystrcasecmp(input, tq->flush_cmd.expose()) == 0) {
 	flush_input(tq, 1);
 	return;
     }
-    enqueue_input_task(tq, input, 0/*at-rear*/, binary);
+
+    ref_ptr<const char> line = str_dup(input);
+    enqueue_input_task(tq, line, 0/*at-rear*/, binary);
+    free_str(line);
 }
 
 static void
@@ -1177,8 +1181,10 @@ check_user_task_limit(Objid user)
     int limit = -1;
     Var v;
 
+    static const ref_ptr<const char> QUEUED_TASK_LIMIT = str_intern("queued_task_limit");
+
     if (valid(user)
-	&& db_find_property(Var::new_obj(user), "queued_task_limit", &v).ptr
+	&& db_find_property(Var::new_obj(user), QUEUED_TASK_LIMIT, &v).ptr
 	&& v.is_int())
 	limit = v.v.num;
 
@@ -1282,6 +1288,7 @@ read_input_now(Objid connection)
     } else if (!(t = dequeue_input_task(tq, DQ_INBAND))) {
 	r = Var::new_int(0);
     } else {
+	// yes, literally steal the reference and discard the task
 	r.type = TYPE_STR;
 	r.v.str = t->t.input.string;
 	free(t);
@@ -1388,7 +1395,7 @@ create_or_extend(const Var& in, const char *_new, int newlen)
     Var out;
 
     if (in.is_str()) {
-	stream_add_string(s, in.v.str);
+	stream_add_string(s, in.v.str.expose());
 	stream_add_raw_bytes_to_binary(s, _new, newlen);
 	free_var(in);
 	out = Var::new_str(reset_stream(s));
@@ -1597,7 +1604,7 @@ run_ready_tasks(void)
 		    panic("Unexpected task kind in run_ready_tasks()");
 		    break;
 		case TASK_OOB:
-		    do_out_of_band_command(tq, t->t.input.string);
+		    do_out_of_band_command(tq, t->t.input.string.expose());
 		    did_one = 1;
 		    break;
 		case TASK_BINARY:
@@ -1605,7 +1612,7 @@ run_ready_tasks(void)
 		    if (tq->reading && tq->parsing) {
 			int done = 0;
 			int len;
-			const char *binary = binary_to_raw_bytes(t->t.input.string, &len);
+			const char *binary = binary_to_raw_bytes(t->t.input.string.expose(), &len);
 			if (binary == NULL) {
 			    /* This can happen if someone forces an
 			     * invalid binary string as input on this
@@ -1672,10 +1679,10 @@ run_ready_tasks(void)
 			 * couldn't come up with a good reason to keep that
 			 * restriction.
 			 */
-			add_command_to_history(tq->player, t->t.input.string);
+			add_command_to_history(tq->player, t->t.input.string.expose());
 			did_one = (tq->player >= 0
 				   ? do_command_task
-				   : do_login_task) (tq, t->t.input.string);
+				   : do_login_task) (tq, t->t.input.string.expose());
 		    }
 		    break;
 		case TASK_FORKED:
@@ -1763,16 +1770,21 @@ run_server_task_setting_id(Objid player, const Var& what, const char *verb,
     if (task_id)
 	*task_id = current_task_id;
 
-    h = db_find_callable_verb(what, verb);
-    if (h.ptr)
-	return do_server_verb_task(what, verb, args, h, player, argstr,
-				   result, 1/*traceback*/);
-    else {
+    ref_ptr<const char> verb_name = str_dup(verb);
+    h = db_find_callable_verb(what, verb_name);
+    if (h.ptr) {
+	enum outcome r =
+	    do_server_verb_task(what, verb_name, args, h, player, argstr,
+				result, 1/*traceback*/);
+	free_str(verb_name);
+	return r;
+    } else {
 	/* simulate an empty verb */
 	if (result) {
 	    *result = Var::new_int(0);
 	}
 	free_var(args);
+	free_str(verb_name);
 	return OUTCOME_DONE;
     }
 }
@@ -1787,12 +1799,18 @@ run_server_program_task(Objid _this, const char *verb, const Var& args, Objid vl
     current_task_id = new_task_id();
     current_local = new_map();
 
-    enum outcome ret = do_server_program_task(Var::new_obj(_this), verb, args, Var::new_obj(vloc), verbname, program,
-                                              progr, debug, player, argstr,
-                                              result, 1/*traceback*/);
+    ref_ptr<const char> _verb = str_dup(verb);
+    ref_ptr<const char> _verbname = str_dup(verbname);
+    enum outcome ret =
+	do_server_program_task(Var::new_obj(_this), _verb, args,
+			       Var::new_obj(vloc), _verbname, program,
+			       progr, debug, player, argstr,
+			       result, 1/*traceback*/);
 
     current_task_id = -1;
     free_var(current_local);
+    free_str(_verb);
+    free_str(_verbname);
 
     return ret;
 }
@@ -1937,12 +1955,13 @@ read_task_queue(void)
 	return 0;
     }
     for (; count > 0; count--) {
-	int first_lineno, id, old_size, st;
+	int first_lineno, id, st;
 	char c;
 	time_t start_time;
 	Program *program;
 	Var *rt_env, *old_rt_env;
-	const char **old_names;
+	ref_ptr<const char>* old_names;
+	unsigned old_size;
 	activation a;
 
 	if (dbio_scanf("%d %d %d %d%c",
@@ -2059,16 +2078,15 @@ read_task_queue(void)
  * objects (relies on `Objid' internally).
  */
 db_verb_handle
-find_verb_for_programming(Objid player, const char *verbref,
+find_verb_for_programming(Objid player, const ref_ptr<const char>& verbref,
 			  const char **message, const char **vname)
 {
     const char *obj;
-    const char *copy = str_dup(verbref);
+    const char *copy = verbref.expose();
     char *colon = strchr(copy, ':');
     Objid oid;
     db_verb_handle h;
     static Stream *str = 0;
-    Var desc;
 
     if (!str)
 	str = new_stream(100);
@@ -2076,13 +2094,12 @@ find_verb_for_programming(Objid player, const char *verbref,
     h.ptr = 0;
 
     if (!colon || colon[1] == '\0') {
-	free_str(copy);
 	*message = "You must specify a verb; use the format object:verb.";
 	return h;
     }
     *colon = '\0';
     obj = copy;
-    *vname = verbref + (colon - copy) + 1;
+    *vname = colon + 1;
 
     if (obj[0] == '$')
 	oid = get_system_object(obj + 1);
@@ -2102,13 +2119,12 @@ find_verb_for_programming(Objid player, const char *verbref,
 	    break;
 	}
 	*message = reset_stream(str);
-	free_str(copy);
 	return h;
     }
-    desc.type = TYPE_STR;
-    desc.v.str = *vname;
+
+    Var desc = str_dup_to_var(*vname);
     h = find_described_verb(Var::new_obj(oid), desc);
-    free_str(copy);
+    free_var(desc);
 
     if (!h.ptr)
 	*message = "That object does not have that verb definition.";
@@ -2664,6 +2680,8 @@ bf_resume(const List& arglist, Objid progr)
     return no_var_pack();
 }
 
+static const ref_ptr<const char> EMPTY = str_intern("");
+
 static package
 bf_output_delimiters(const List& arglist, Objid progr)
 {
@@ -2675,25 +2693,14 @@ bf_output_delimiters(const List& arglist, Objid progr)
     if (!is_wizard(progr) && progr != player)
 	return make_error_pack(E_PERM);
     else {
-	const char *prefix, *suffix;
 	tqueue *tq = find_tqueue(player, 0);
 
 	if (!tq || !tq->connected)
 	    return make_error_pack(E_INVARG);
 
-	if (tq->output_prefix)
-	    prefix = tq->output_prefix;
-	else
-	    prefix = "";
-
-	if (tq->output_suffix)
-	    suffix = tq->output_suffix;
-	else
-	    suffix = "";
-
 	r = new_list(2);
-	r.v.list[1] = Var::new_str(prefix);
-	r.v.list[2] = Var::new_str(suffix);
+	r.v.list[1] = Var::new_str(tq->output_prefix ? tq->output_prefix : EMPTY);
+	r.v.list[2] = Var::new_str(tq->output_suffix ? tq->output_suffix : EMPTY);
     }
     return make_var_pack(r);
 }
@@ -2702,7 +2709,7 @@ static package
 bf_force_input(const List& arglist, Objid progr)
 {				/* (conn, string [, at_front]) */
     Objid conn = arglist[1].v.obj;
-    const char *line = arglist[2].v.str;
+    const ref_ptr<const char>& line = arglist[2].v.str;
     int at_front = (arglist.length() > 2 && is_true(arglist[3]));
     tqueue *tq;
 

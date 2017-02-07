@@ -33,6 +33,7 @@
 #include "streams.h"
 #include "storage.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "unparse.h"
 #include "utils.h"
 #include "server.h"
@@ -365,7 +366,7 @@ stream_add_tostr(Stream * s, const Var& v)
 	stream_printf(s, "#%d", v.v.obj);
 	break;
     case TYPE_STR:
-	stream_add_string(s, v.v.str);
+	stream_add_string(s, v.v.str.expose());
 	break;
     case TYPE_ERR:
 	stream_add_string(s, unparse_error(v.v.err));
@@ -387,7 +388,7 @@ stream_add_tostr(Stream * s, const Var& v)
     }
 }
 
-const char *
+ref_ptr<const char>
 value2str(const Var& value)
 {
     if (value.is_str()) {
@@ -421,7 +422,7 @@ print_map_to_stream(const Var& key, const Var& value, void *sptr, int first)
 }
 
 void
-unparse_value(Stream * s, const Var& v)
+unparse_value(Stream* s, const Var& v)
 {
     switch (v.type) {
     case TYPE_INT:
@@ -438,7 +439,7 @@ unparse_value(Stream * s, const Var& v)
 	break;
     case TYPE_STR:
 	{
-	    const char *str = v.v.str;
+	    const char* str = v.v.str.expose();
 
 	    stream_add_char(s, '"');
 	    while (*str) {
@@ -522,16 +523,17 @@ strrangeset(const Str& base, int from, int to, const Str& value)
     int newsize = lenleft + lenmiddle + lenright;
 
     Str ans;
-    char *s = (char *)mymalloc(sizeof(char) * (newsize + 1), M_STRING);
+    ref_ptr<const char> tmp = mymalloc<const char>(newsize + 1);
+    char* s = const_cast<char*>(tmp.expose());
     for (index = 0; index < lenleft; index++)
-	s[offset++] = base.v.str[index];
+	s[offset++] = base.v.str.expose()[index];
     for (index = 0; index < lenmiddle; index++)
-	s[offset++] = value.v.str[index];
+	s[offset++] = value.v.str.expose()[index];
     for (index = 0; index < lenright; index++)
-	s[offset++] = base.v.str[index + to];
+	s[offset++] = base.v.str.expose()[index + to];
     s[offset] = '\0';
     ans.type = TYPE_STR;
-    ans.v.str = s;
+    ans.v.str = tmp;
 
     free_var(base);
     free_var(value);
@@ -546,15 +548,15 @@ substr(const Str& str, int lower, int upper)
     r.type = TYPE_STR;
 
     if (lower > upper) {
-	r.v.str = str_dup("");
+	r.v.str = str_intern("");
     } else {
 	int loop, index = 0;
-	char *s = (char *)mymalloc(upper - lower + 2, M_STRING);
-
+	ref_ptr<const char> tmp = mymalloc<const char>(upper - lower + 2);
+	char* s = const_cast<char*>(tmp.expose());
 	for (loop = lower - 1; loop < upper; loop++)
-	    s[index++] = str.v.str[loop];
+	    s[index++] = str.v.str.expose()[loop];
 	s[index] = '\0';
-	r.v.str = s;
+	r.v.str = tmp;
     }
 
     free_var(str);
@@ -566,7 +568,7 @@ Str
 strget(const Str& str, int i)
 {
     Str r;
-    char buf[] = { str.v.str[i - 1], '\0' };
+    char buf[] = { str.v.str.expose()[i - 1], '\0' };
 
     r.type = TYPE_STR;
     r.v.str = str_dup(buf);
@@ -759,7 +761,7 @@ bf_strsub(const List& arglist, Objid progr)
 
     if (arglist.length() == 4)
 	case_matters = is_true(arglist[4]);
-    if (arglist[2].v.str[0] == '\0') {
+    if (arglist[2].v.str.expose()[0] == '\0') {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
@@ -767,8 +769,10 @@ bf_strsub(const List& arglist, Objid progr)
     TRY_STREAM;
     try {
 	Var r;
-	stream_add_strsub(s, arglist[1].v.str, arglist[2].v.str,
-			  arglist[3].v.str, case_matters);
+	stream_add_strsub(s, arglist[1].v.str.expose(),
+			  arglist[2].v.str.expose(),
+			  arglist[3].v.str.expose(),
+			  case_matters);
 	r = Var::new_str(stream_contents(s));
 	p = make_var_pack(r);
     }
@@ -790,7 +794,7 @@ signum(int x)
 static package
 bf_strcmp(const List& arglist, Objid progr)
 {				/* (string1, string2) */
-    Var r = Var::new_int(signum(strcmp(arglist[1].v.str, arglist[2].v.str)));
+    Var r = Var::new_int(signum(strcmp(arglist[1].v.str.expose(), arglist[2].v.str.expose())));
     free_var(arglist);
     return make_var_pack(r);
 }
@@ -803,9 +807,9 @@ bf_strtr(const List& arglist, Objid progr)
 
     if (listlength(arglist) > 3)
 	case_matters = is_true(arglist[4]);
-    r = Var::new_str(strtr(arglist[1].v.str, memo_strlen(arglist[1].v.str),
-			   arglist[2].v.str, memo_strlen(arglist[2].v.str),
-			   arglist[3].v.str, memo_strlen(arglist[3].v.str),
+    r = Var::new_str(strtr(arglist[1].v.str.expose(), memo_strlen(arglist[1].v.str),
+			   arglist[2].v.str.expose(), memo_strlen(arglist[2].v.str),
+			   arglist[3].v.str.expose(), memo_strlen(arglist[3].v.str),
 			   case_matters));
     free_var(arglist);
     return make_var_pack(r);
@@ -826,9 +830,9 @@ bf_index(const List& arglist, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    r = Var::new_int(strindex(arglist[1].v.str + offset,
+    r = Var::new_int(strindex(arglist[1].v.str.expose() + offset,
 			      memo_strlen(arglist[1].v.str) - offset,
-			      arglist[2].v.str,
+			      arglist[2].v.str.expose(),
 			      memo_strlen(arglist[2].v.str),
 			      case_matters));
     free_var(arglist);
@@ -851,9 +855,9 @@ bf_rindex(const List& arglist, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    r = Var::new_int(strrindex(arglist[1].v.str,
+    r = Var::new_int(strrindex(arglist[1].v.str.expose(),
 			       memo_strlen(arglist[1].v.str) + offset,
-			       arglist[2].v.str,
+			       arglist[2].v.str.expose(),
 			       memo_strlen(arglist[2].v.str),
 			       case_matters));
 
@@ -956,7 +960,7 @@ get_pattern(const char *string, int case_matters)
 	     * the compilation succeeds.
 	     */
 	    if (entry->string) {
-		free_str(entry->string);
+		free((void*)entry->string);
 		free_pattern(entry->pattern);
 	    }
 	    entry->pattern = new_pattern(string, case_matters);
@@ -964,7 +968,7 @@ get_pattern(const char *string, int case_matters)
 	    if (!entry->pattern.ptr)
 		entry->string = 0;
 	    else
-		entry->string = str_dup(string);
+		entry->string = strdup(string);
 	    break;
 	} else {
 	    /* not done searching the cache... */
@@ -988,8 +992,8 @@ do_match(const List& arglist, int reverse)
     Var ans;
     Match_Indices regs[10];
 
-    subject = arglist[1].v.str;
-    pattern = arglist[2].v.str;
+    subject = arglist[1].v.str.expose();
+    pattern = arglist[2].v.str.expose();
     pat = get_pattern(pattern, (arglist.length() == 3
 				&& is_true(arglist[3])));
 
@@ -1010,7 +1014,7 @@ do_match(const List& arglist, int reverse)
 		ans.v.list[3].v.list[i].v.list[1] = Var::new_int(regs[i].start);
 		ans.v.list[3].v.list[i].v.list[2] = Var::new_int(regs[i].end);
 	    }
-	    ans.v.list[4] = str_ref_to_var(subject);
+	    ans.v.list[4] = var_ref(arglist[1]);
 	    break;
 	case MATCH_FAILED:
 	    ans = new_list(0);
@@ -1058,9 +1062,6 @@ invalid_pair(int num1, int num2, int max)
 int
 check_subs_list(const Var& subs)
 {
-    const char *subj;
-    int subj_length, loop;
-
     if (!subs.is_list() || listlength(subs) != 4
 	|| !subs.v.list[1].is_int()
 	|| !subs.v.list[2].is_int()
@@ -1068,13 +1069,14 @@ check_subs_list(const Var& subs)
 	|| listlength(subs.v.list[3]) != 9
 	|| !subs.v.list[4].is_str())
 	return 1;
-    subj = subs.v.list[4].v.str;
-    subj_length = memo_strlen(subj);
+
+    const ref_ptr<const char>& subj = subs.v.list[4].v.str;
+    int subj_length = memo_strlen(subj);
     if (invalid_pair(subs.v.list[1].v.num, subs.v.list[2].v.num,
 		     subj_length))
 	return 1;
 
-    for (loop = 1; loop <= 9; loop++) {
+    for (int loop = 1; loop <= 9; loop++) {
 	Var pair;
 	pair = subs.v.list[3].v.list[loop];
 	if (!pair.is_list() || listlength(pair) != 2
@@ -1097,16 +1099,17 @@ bf_substitute(const List& arglist, Objid progr)
     Stream *s;
     char c = '\0';
 
-    _template = arglist[1].v.str;
-    template_length = memo_strlen(_template);
-    subs = arglist[2];
+    _template = arglist[1].v.str.expose();
+    template_length = memo_strlen(arglist[1].v.str);
 
+    subs = arglist[2];
     if (check_subs_list(subs)) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
-    subject = subs.v.list[4].v.str;
-    subject_length = memo_strlen(subject);
+
+    subject = subs.v.list[4].v.str.expose();
+    subject_length = memo_strlen(subs.v.list[4].v.str);
 
     s = new_stream(template_length);
     TRY_STREAM;
@@ -1158,7 +1161,7 @@ static package
 bf_decode_binary(const List& arglist, Objid progr)
 {
     int length;
-    const char *bytes = binary_to_raw_bytes(arglist[1].v.str, &length);
+    const char *bytes = binary_to_raw_bytes(arglist[1].v.str.expose(), &length);
     int nargs = arglist.length();
     int fully = (nargs >= 2 && is_true(arglist[2]));
     List r;
@@ -1234,7 +1237,7 @@ encode_binary(Stream * s, const Var& v)
 	stream_add_char(s, (char) v.v.num);
 	break;
     case TYPE_STR:
-	stream_add_string(s, v.v.str);
+	stream_add_string(s, v.v.str.expose());
 	break;
     case TYPE_LIST:
 	for (i = 1; i <= v.v.list[0].v.num; i++)

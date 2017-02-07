@@ -369,7 +369,8 @@ expr:
 	| tSTRING
 		{
 		    $$ = alloc_var(TYPE_STR);
-		    $$->e.var.v.str = $1;
+		    $$->e.var.v.str = str_dup($1);
+		    dealloc_string($1);
 		}
 	| tOBJECT
 		{
@@ -392,14 +393,16 @@ expr:
 		    Expr *obj = alloc_var(TYPE_OBJ);
 		    Expr *prop = alloc_var(TYPE_STR);
 		    obj->e.var.v.obj = 0;
-		    prop->e.var.v.str = $2;
+		    prop->e.var.v.str = str_dup($2);
+		    dealloc_string($2);
 		    $$ = alloc_binary(EXPR_PROP, obj, prop);
 		}
 	| expr '.' tID
 		{
 		    /* Treat foo.bar like foo.("bar") for simplicity */
 		    Expr *prop = alloc_var(TYPE_STR);
-		    prop->e.var.v.str = $3;
+		    prop->e.var.v.str = str_dup($3);
+		    dealloc_string($3);
 		    $$ = alloc_binary(EXPR_PROP, $1, prop);
 		}
 	| expr '.' '(' expr ')'
@@ -410,7 +413,8 @@ expr:
 		{
 		    /* treat foo:bar(args) like foo:("bar")(args) */
 		    Expr *verb = alloc_var(TYPE_STR);
-		    verb->e.var.v.str = $3;
+		    verb->e.var.v.str = str_dup($3);
+		    dealloc_string($3);
 		    $$ = alloc_verb($1, verb, $5);
 		}
 	| '$' tID '(' arglist ')'
@@ -419,7 +423,8 @@ expr:
 		    Expr *obj = alloc_var(TYPE_OBJ);
 		    Expr *verb = alloc_var(TYPE_STR);
 		    obj->e.var.v.obj = 0;
-		    verb->e.var.v.str = $2;
+		    verb->e.var.v.str = str_dup($2);
+		    dealloc_string($2);
 		    $$ = alloc_verb(obj, verb, $4);
 		}
 	| expr ':' '(' expr ')' '(' arglist ')'
@@ -491,7 +496,8 @@ expr:
 			Expr           *fname = alloc_var(TYPE_STR);
 			Arg_List       *a = alloc_arg_list(ARG_NORMAL, fname);
 
-			fname->e.var.v.str = $1;
+			fname->e.var.v.str = str_dup($1);
+			dealloc_string($1);
 			a->next = $3;
 			warning("Unknown built-in function: ", $1);
 			$$->e.call.func = number_func_by_name("call_function");
@@ -1110,7 +1116,7 @@ vet_scatter(Scatter *sc)
 
 struct loop_entry {
     struct loop_entry  *next;
-    const char         *name;
+    char               *name;
     int                 is_barrier;
 };
 
@@ -1119,10 +1125,11 @@ static struct loop_entry *loop_stack;
 static void
 push_loop_name(const char *name)
 {
-    struct loop_entry *entry = (struct loop_entry *)malloc(sizeof(struct loop_entry));
+    struct loop_entry *entry =
+      (struct loop_entry *)malloc(sizeof(struct loop_entry) + (name ? strlen(name) + 1 : 0));
 
     entry->next = loop_stack;
-    entry->name = (name ? str_dup(name) : 0);
+    entry->name = (name ? strcpy((char*)entry + sizeof(struct loop_entry), name) : nullptr);
     entry->is_barrier = 0;
     loop_stack = entry;
 }
@@ -1138,8 +1145,6 @@ pop_loop_name(void)
 	struct loop_entry      *entry = loop_stack;
 
 	loop_stack = loop_stack->next;
-	if (entry->name)
-	    free_str(entry->name);
 	free(entry);
     }
 }
@@ -1224,8 +1229,6 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 	    struct loop_entry *entry = loop_stack;
 
 	    loop_stack = loop_stack->next;
-	    if (entry->name)
-		free_str(entry->name);
 	    free(entry);
 	}
     }
@@ -1241,7 +1244,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 	    unsigned i;
 
 	    for (i = first_user_slot(version); i < local_names->size; i++) {
-		const char	*name = local_names->names[i];
+		const char	*name = local_names->names[i].expose();
 	    
 		if (find_keyword(name)) { /* Got one... */
 		    stream_add_string(token_stream, name);
@@ -1249,7 +1252,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 			stream_add_char(token_stream, '_');
 		    } while (find_name(local_names,
 				       stream_contents(token_stream)) >= 0);
-		    free_str(name);
+		    free_str(local_names->names[i]);
 		    local_names->names[i] =
 			str_dup(reset_stream(token_stream));
 		}
@@ -1295,7 +1298,7 @@ my_getc(void *data)
     code = state->code;
     if (task_timed_out  ||  state->cur_string > code.v.list[0].v.num)
 	return EOF;
-    else if (!(c = code.v.list[state->cur_string].v.str[state->cur_char])) {
+    else if (!(c = code.v.list[state->cur_string].v.str.expose()[state->cur_char])) {
 	state->cur_string++;
 	state->cur_char = 0;
 	return '\n';

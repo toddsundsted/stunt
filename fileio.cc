@@ -67,7 +67,7 @@ typedef struct file_handle file_handle;
 
 struct file_handle {
   char  valid;               /* Is this a valid entry?   */
-  const char *name;          /* pathname of the file     */
+  ref_ptr<const char> name;  /* pathname of the file     */
   file_type type;            /* text or binary, sir?     */
   file_mode mode;            /* readin', writin' or both */
  
@@ -77,7 +77,7 @@ struct file_handle {
 typedef struct line_buffer line_buffer;
 
 struct line_buffer {
-  const char *line;
+  ref_ptr<const char> line;
   struct line_buffer *next;
 };
 
@@ -113,7 +113,7 @@ FILE *file_handle_file(const Var& fhandle) {
 
 const char *file_handle_name(const Var& fhandle) {
   int32_t i = fhandle.v.num;
-  return file_table[i].name;
+  return file_table[i].name.expose();
 }
 
 file_type file_handle_type(const Var& fhandle) {
@@ -160,7 +160,7 @@ int32_t file_allocate_next_handle(void) {
 }
 
 
-Var file_handle_new(const char *name, file_type type, file_mode mode) {
+Var file_handle_new(const ref_ptr<const char>& name, file_type type, file_mode mode) {
   Var r;
   int32_t handle = file_allocate_next_handle();
 
@@ -168,7 +168,7 @@ Var file_handle_new(const char *name, file_type type, file_mode mode) {
 
   if(handle >= 0) {
 	 file_table[handle].valid = 1;
-	 file_table[handle].name = str_dup(name);
+	 file_table[handle].name = str_ref(name);
 	 file_table[handle].type = type;
 	 file_table[handle].mode = mode;
   }
@@ -191,7 +191,8 @@ void file_handle_set_file(const Var& fhandle, FILE *f) {
  *  NULL if not.
  */ 
 
-const char *file_modestr_to_mode(const char *s, file_type *type, file_mode *mode) {
+const char *file_modestr_to_mode(const ref_ptr<const char>& str, file_type *type, file_mode *mode) {
+  const char* s = str.expose();
   static char buffer[4] = {0, 0, 0, 0};
   int p = 0;
   file_type t;
@@ -278,9 +279,8 @@ package file_raise_notokcall(const char *funcid, Objid progr) {
   return make_error_pack(E_PERM);
 }
 
-package file_raise_notokfilename(const char *funcid, const char *pathname) {
-  Var p = Var::new_str(pathname);
-  return make_raise_pack(E_INVARG, "Invalid pathname", p);
+package file_raise_notokfilename(const char *funcid, const ref_ptr<const char>& pathname) {
+  return make_raise_pack(E_INVARG, "Invalid pathname", Var::new_str(pathname));
 }
 
 /***************************************************************
@@ -331,20 +331,20 @@ const char *file_handle_name_safe(const Var& handle) {
  * Common code for file opening functions
  ***************************************************************/
 
-const char *file_resolve_path(const char *pathname) {
+const char *file_resolve_path(const ref_ptr<const char>& pathname) {
   static Stream *s = 0;
   
   if(!s)
-	 s = new_stream(strlen(pathname) + strlen(FILE_SUBDIR) + 1);
+	 s = new_stream(memo_strlen(pathname) + strlen(FILE_SUBDIR) + 1);
   
-  if(!file_verify_path(pathname))
+  if(!file_verify_path(pathname.expose()))
 	 return NULL;
   
   stream_add_string(s, FILE_SUBDIR);
-  if(pathname[0] == '/')
-	 stream_add_string(s, pathname + 1);
+  if(pathname.expose()[0] == '/')
+	 stream_add_string(s, pathname.expose() + 1);
   else
-	 stream_add_string(s, pathname);
+	 stream_add_string(s, pathname.expose());
   
   return reset_stream(s);
   
@@ -385,8 +385,8 @@ bf_file_open(const List& arglist, Objid progr)
   package r;
   Var fhandle;
   const char *real_filename;
-  const char *filename = arglist[1].v.str;
-  const char *mode = arglist[2].v.str;
+  const ref_ptr<const char>& filename = arglist[1].v.str;
+  const ref_ptr<const char>& mode = arglist[2].v.str;
   const char *fmode;
   file_mode rmode;
   file_type type;
@@ -599,7 +599,7 @@ void free_line_buffer(line_buffer *head, int strings_too) {
   }
 }
     
-line_buffer *new_line_buffer(const char *line) {
+line_buffer *new_line_buffer(const ref_ptr<const char>& line) {
   line_buffer *p = (line_buffer *)malloc(sizeof(line_buffer));
   p->line = line;
   p->next = NULL;
@@ -653,7 +653,7 @@ bf_file_readlines(const List& arglist, Objid progr)
 		 * and seek to EOF or to the end_line, whichever comes first
 		 */
 		
-		linebuf_head = linebuf_cur = new_line_buffer(NULL);
+		linebuf_head = linebuf_cur = new_line_buffer(ref_ptr<const char>::empty);
 		
 		while((current_line != end) 
 				&& ((line = file_read_line(fhandle, &len)) != NULL)) {
@@ -697,7 +697,7 @@ bf_file_writeline(const List& arglist, Objid progr)
 {
   package r;
   const Var& fhandle = arglist[1];
-  const char *buffer = arglist[2].v.str;
+  const ref_ptr<const char>& buffer = arglist[2].v.str;
   const char *rawbuffer;
   file_mode mode;
   file_type type;
@@ -714,7 +714,7 @@ bf_file_writeline(const List& arglist, Objid progr)
 	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
-	 if((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
+	 if((rawbuffer = (type->out_filter)(buffer.expose(), &len)) == NULL)
 		r = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(fhandle));
 	 else if((fputs(rawbuffer, f) == EOF) || (fputc('\n', f) != '\n'))
 		r = file_raise_errno(file_handle_name(fhandle));
@@ -844,7 +844,7 @@ bf_file_write(const List& arglist, Objid progr)
   package r;
   const Var& fhandle = arglist[1];
   Var rv;
-  const char *buffer = arglist[2].v.str;
+  const ref_ptr<const char>& buffer = arglist[2].v.str;
   const char *rawbuffer;
   file_mode mode;
   file_type type;
@@ -862,7 +862,7 @@ bf_file_write(const List& arglist, Objid progr)
 	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
-	 if((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
+	 if((rawbuffer = (type->out_filter)(buffer.expose(), &len)) == NULL)
 		r = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(fhandle));
 	 else if(!(written = fwrite(rawbuffer, sizeof(char), len, f)))
 		r = file_raise_errno(file_handle_name(fhandle));
@@ -893,17 +893,17 @@ bf_file_seek(const List& arglist, Objid progr)
   package r;
   const Var& fhandle = arglist[1];
   int32_t seek_to = arglist[2].v.num;
-  const char *whence = arglist[3].v.str;
+  const ref_ptr<const char>& whence = arglist[3].v.str;
   int whnce = 0, whence_ok = 1;
   FILE *f;
 
   errno = 0;
 
-  if(!mystrcasecmp(whence, "SEEK_SET"))
+  if(!mystrcasecmp(whence.expose(), "SEEK_SET"))
 	 whnce = SEEK_SET;
-  else if (!mystrcasecmp(whence, "SEEK_CUR"))
+  else if (!mystrcasecmp(whence.expose(), "SEEK_CUR"))
 	 whnce = SEEK_CUR;
-  else if (!mystrcasecmp(whence, "SEEK_END"))
+  else if (!mystrcasecmp(whence.expose(), "SEEK_END"))
 	 whnce = SEEK_END;
   else 
 	 whence_ok = 0;
@@ -994,14 +994,14 @@ int file_stat(Objid progr, const Var& filespec, package *r, struct stat *buf) {
   if(!file_verify_caller(progr)) {
 	 *r = file_raise_notokcall("file_stat", progr);
   } else if (filespec.is_str()) {
-	 const char *filename = filespec.v.str;
+	 const ref_ptr<const char>& filename = filespec.v.str;
 	 const char *real_filename;
 
 	 if((real_filename = file_resolve_path(filename)) == NULL) {
 		*r =  file_raise_notokfilename("file_stat", filename);
 	 } else {
 		if(stat(real_filename, buf) != 0)		  
-		  *r = file_raise_errno(filename);
+		  *r = file_raise_errno(filename.expose());
 		else {
 		  statok = 1;
 		}
@@ -1225,7 +1225,7 @@ bf_file_list(const List& arglist, Objid progr)
      than the original scandir method.   -- AAB 06/03/97
    */
   package r;
-  const char *pathspec = arglist[1].v.str;
+  const ref_ptr<const char>& pathspec = arglist[1].v.str;
   const char *real_pathname;
   int detailed = arglist.length() > 1
 			? is_true(arglist[2])
@@ -1245,7 +1245,7 @@ bf_file_list(const List& arglist, Objid progr)
 	struct dirent *curfile;
 
 	if (!(curdir = opendir (real_pathname)))
-		r = file_raise_errno(pathspec);
+		r = file_raise_errno(pathspec.expose());
 	else {
 		rv = new_list(0);
 		while ( (curfile = readdir(curdir)) != 0 ) {
@@ -1272,7 +1272,7 @@ bf_file_list(const List& arglist, Objid progr)
 		}
 		if(failed) {
 			free_var(rv);
-			r = file_raise_errno(pathspec);
+			r = file_raise_errno(pathspec.expose());
 		} else
 			r = make_var_pack(rv);
 		closedir(curdir);
@@ -1292,7 +1292,7 @@ static package
 bf_file_mkdir(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist[1].v.str;
+  const ref_ptr<const char>& pathspec = arglist[1].v.str;
   const char *real_pathname;
 
   if(!file_verify_caller(progr)) {
@@ -1301,7 +1301,7 @@ bf_file_mkdir(const List& arglist, Objid progr)
 	 r =  file_raise_notokfilename("file_mkdir", pathspec);
   } else {
 	 if(mkdir(real_pathname, 0777) != 0) 
-		r = file_raise_errno(pathspec);
+		r = file_raise_errno(pathspec.expose());
 	 else 
 		r = no_var_pack();
 	 
@@ -1318,7 +1318,7 @@ static package
 bf_file_rmdir(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist[1].v.str;
+  const ref_ptr<const char>& pathspec = arglist[1].v.str;
   const char *real_pathname;
 
   if(!file_verify_caller(progr)) {
@@ -1327,7 +1327,7 @@ bf_file_rmdir(const List& arglist, Objid progr)
 	 r =  file_raise_notokfilename("file_rmdir", pathspec);
   } else {
 	 if(rmdir(real_pathname) != 0)
-		r = file_raise_errno(pathspec);
+		r = file_raise_errno(pathspec.expose());
 	 else 
 		r = no_var_pack();
 	 
@@ -1344,7 +1344,7 @@ static package
 bf_file_remove(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist[1].v.str;
+  const ref_ptr<const char>& pathspec = arglist[1].v.str;
   const char *real_pathname;
 
   if(!file_verify_caller(progr)) {
@@ -1353,7 +1353,7 @@ bf_file_remove(const List& arglist, Objid progr)
 	 r =  file_raise_notokfilename("file_remove", pathspec);
   } else {
 	 if(remove(real_pathname) != 0)
-		r = file_raise_errno(pathspec);
+		r = file_raise_errno(pathspec.expose());
 	 else 
 		r = no_var_pack();	 
   }
@@ -1369,14 +1369,14 @@ static package
 bf_file_rename(const List& arglist, Objid progr)
 {  
   package r;
-  const char *fromspec = arglist[1].v.str;
-  const char *tospec = arglist[2].v.str;
+  const ref_ptr<const char>& fromspec = arglist[1].v.str;
+  const ref_ptr<const char>& tospec = arglist[2].v.str;
   const char *real_fromspec = NULL;
   const char *real_tospec;
   
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_rename", progr);
-  } else if((real_fromspec = str_dup(file_resolve_path(fromspec))) == NULL) {
+  } else if((real_fromspec = strdup(file_resolve_path(fromspec))) == NULL) {
 	 r =  file_raise_notokfilename("file_rename", fromspec);
   } else if((real_tospec = file_resolve_path(tospec)) == NULL) {
 	 r =  file_raise_notokfilename("file_rename", tospec);
@@ -1387,7 +1387,7 @@ bf_file_rename(const List& arglist, Objid progr)
 		r = no_var_pack();	 
   }
   if(real_fromspec)
-	 free_str(real_fromspec);
+	 free((void*)real_fromspec);
   free_var(arglist);
   return r;
 }			 
@@ -1424,14 +1424,14 @@ static package
 bf_file_chmod(const List& arglist, Objid progr)
 {  
   package r;
-  const char *pathspec = arglist[1].v.str;
-  const char *modespec = arglist[2].v.str;
+  const ref_ptr<const char>& pathspec = arglist[1].v.str;
+  const ref_ptr<const char>& modespec = arglist[2].v.str;
   mode_t newmode;
   const char *real_filename;
 
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_chmod", progr);
-  } else if(!file_chmodstr_to_mode(modespec, &newmode)) {
+  } else if(!file_chmodstr_to_mode(modespec.expose(), &newmode)) {
 	 r = make_raise_pack(E_INVARG, "Invalid mode string", zero);	 
   } else if((real_filename = file_resolve_path(pathspec)) == NULL) {
 	 r =  file_raise_notokfilename("file_chmod", pathspec);

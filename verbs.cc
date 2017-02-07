@@ -31,6 +31,7 @@
 #include "server.h"
 #include "storage.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "unparse.h"
 #include "utils.h"
 #include "verbs.h"
@@ -41,7 +42,7 @@ struct verb_data {
 };
 
 static int
-add_to_list(void *data, const char *verb_name)
+add_to_list(void *data, const ref_ptr<const char>& verb_name)
 {
     struct verb_data *d = (struct verb_data *)data;
 
@@ -75,10 +76,8 @@ bf_verbs(const List& arglist, Objid progr)
 }
 
 static enum error
-validate_verb_info(const List& v, Objid * owner, unsigned *flags, const char **names)
+validate_verb_info(const List& v, Objid * owner, unsigned *flags, ref_ptr<const char>* names)
 {
-    const char *s;
-
     if (!(v.length() == 3 && v[1].is_obj() && v[2].is_str() && v[3].is_str()))
 	return E_TYPE;
 
@@ -86,7 +85,8 @@ validate_verb_info(const List& v, Objid * owner, unsigned *flags, const char **n
     if (!valid(*owner))
 	return E_INVARG;
 
-    for (*flags = 0, s = v[2].v.str; *s; s++) {
+    *flags = 0;
+    for (const char* s = v[2].v.str.expose(); *s; s++) {
 	switch (*s) {
 	case 'r':
 	case 'R':
@@ -109,27 +109,27 @@ validate_verb_info(const List& v, Objid * owner, unsigned *flags, const char **n
 	}
     }
 
-    *names = v[3].v.str;
-    while (**names == ' ')
-	(*names)++;
-    if (**names == '\0')
+    const char* new_names = v[3].v.str.expose();
+    while (*new_names == ' ')
+	new_names++;
+    if (*new_names == '\0')
 	return E_INVARG;
 
-    *names = str_dup(*names);
+    *names = str_dup(new_names);
 
     return E_NONE;
 }
 
 static int
-match_arg_spec(const char *s, db_arg_spec * spec)
+match_arg_spec(const ref_ptr<const char>& s, db_arg_spec * spec)
 {
-    if (!mystrcasecmp(s, "none")) {
+    if (!mystrcasecmp(s.expose(), "none")) {
 	*spec = ASPEC_NONE;
 	return 1;
-    } else if (!mystrcasecmp(s, "any")) {
+    } else if (!mystrcasecmp(s.expose(), "any")) {
 	*spec = ASPEC_ANY;
 	return 1;
-    } else if (!mystrcasecmp(s, "this")) {
+    } else if (!mystrcasecmp(s.expose(), "this")) {
 	*spec = ASPEC_THIS;
 	return 1;
     } else
@@ -137,16 +137,16 @@ match_arg_spec(const char *s, db_arg_spec * spec)
 }
 
 static int
-match_prep_spec(const char *s, db_prep_spec * spec)
+match_prep_spec(const ref_ptr<const char>& s, db_prep_spec * spec)
 {
-    if (!mystrcasecmp(s, "none")) {
+    if (!mystrcasecmp(s.expose(), "none")) {
 	*spec = PREP_NONE;
 	return 1;
-    } else if (!mystrcasecmp(s, "any")) {
+    } else if (!mystrcasecmp(s.expose(), "any")) {
 	*spec = PREP_ANY;
 	return 1;
     } else
-	return (*spec = db_match_prep(s)) != PREP_NONE;
+	return (*spec = db_match_prep(s.expose())) != PREP_NONE;
 }
 
 static enum error
@@ -175,7 +175,7 @@ bf_add_verb(const List& arglist, Objid progr)
     Var result;
     Objid owner;
     unsigned flags;
-    const char *names;
+    ref_ptr<const char> names;
     db_arg_spec dobj, iobj;
     db_prep_spec prep;
     enum error e;
@@ -317,7 +317,7 @@ bf_set_verb_info(const List& arglist, Objid progr)
     const List& info = static_cast<const List&>(arglist[3]);
     Objid new_owner;
     unsigned new_flags;
-    const char *new_names;
+    ref_ptr<const char> new_names;
     enum error e;
     db_verb_handle h;
 
@@ -354,19 +354,18 @@ bf_set_verb_info(const List& arglist, Objid progr)
     return no_var_pack();
 }
 
-static const char *
+static ref_ptr<const char>
 unparse_arg_spec(db_arg_spec spec)
 {
     switch (spec) {
     case ASPEC_NONE:
-	return str_dup("none");
+	return str_intern("none");
     case ASPEC_ANY:
-	return str_dup("any");
+	return str_intern("any");
     case ASPEC_THIS:
-	return str_dup("this");
+	return str_intern("this");
     default:
 	panic("UNPARSE_ARG_SPEC: Unknown db_arg_spec!");
-	return "";
     }
 }
 
@@ -538,7 +537,7 @@ static package
 bf_respond_to(const List& arglist, Objid progr)
 {
     Var object = arglist[1];
-    const char *verb = arglist[2].v.str;
+    const ref_ptr<const char>& verb = arglist[2].v.str;
 
     if (!object.is_object()) {
 	free_var(arglist);

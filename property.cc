@@ -27,7 +27,7 @@ struct prop_data {
 };
 
 static int
-add_to_list(void *data, const char *prop_name)
+add_to_list(void *data, const ref_ptr<const char>& prop_name)
 {
     struct prop_data *d = (prop_data *)data;
 
@@ -64,7 +64,7 @@ static package
 bf_prop_info(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
     Var obj = arglist[1];
-    const char *pname = arglist[2].v.str;
+    const ref_ptr<const char>& pname = arglist[2].v.str;
     db_prop_handle h;
     List r;
     unsigned flags;
@@ -103,9 +103,8 @@ bf_prop_info(const List& arglist, Objid progr)
 }
 
 static enum error
-validate_prop_info(const Var& v, Objid * owner, unsigned *flags, const char **name)
+validate_prop_info(const Var& v, Objid * owner, unsigned *flags, ref_ptr<const char>* name)
 {
-    const char *s;
     int len = v.is_list() ? v.v.list[0].v.num : 0;
 
     if (!((len == 2 || len == 3)
@@ -118,7 +117,8 @@ validate_prop_info(const Var& v, Objid * owner, unsigned *flags, const char **na
     if (!valid(*owner))
 	return E_INVARG;
 
-    for (*flags = 0, s = v.v.list[2].v.str; *s; s++) {
+    *flags = 0;
+    for (const char* s = v.v.list[2].v.str.expose(); *s; s++) {
 	switch (*s) {
 	case 'r':
 	case 'R':
@@ -138,7 +138,7 @@ validate_prop_info(const Var& v, Objid * owner, unsigned *flags, const char **na
     }
 
     if (len == 2)
-	*name = 0;
+	*name = ref_ptr<const char>::empty;
     else
 	*name = v.v.list[3].v.str;
 
@@ -146,11 +146,11 @@ validate_prop_info(const Var& v, Objid * owner, unsigned *flags, const char **na
 }
 
 static enum error
-set_prop_info(const Var& obj, const char *pname, const Var& info, Objid progr)
+set_prop_info(const Var& obj, const ref_ptr<const char>& pname, const Var& info, Objid progr)
 {
     Objid new_owner;
     unsigned new_flags;
-    const char *new_name;
+    ref_ptr<const char> new_name;
     enum error e;
     db_prop_handle h;
 
@@ -188,7 +188,7 @@ static package
 bf_set_prop_info(const List& arglist, Objid progr)
 {				/* (object, prop-name, {owner, perms [, new-name]}) */
     Var obj = arglist[1];
-    const char *pname = arglist[2].v.str;
+    const ref_ptr<const char>& pname = arglist[2].v.str;
     Var info = arglist[3];
     enum error e = set_prop_info(obj, pname, info, progr);
 
@@ -204,12 +204,12 @@ static package
 bf_add_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name, initial-value, initial-info) */
     Var obj = arglist[1];
-    const char *pname = arglist[2].v.str;
+    const ref_ptr<const char>& pname = arglist[2].v.str;
     Var value = arglist[3];
     Var info = arglist[4];
     Objid owner;
     unsigned flags;
-    const char *new_name;
+    ref_ptr<const char> new_name;
     enum error e;
 
     if ((e = validate_prop_info(info, &owner, &flags, &new_name)) != E_NONE)
@@ -236,7 +236,7 @@ static package
 bf_delete_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
     Var obj = arglist[1];
-    const char *pname = arglist[2].v.str;
+    const ref_ptr<const char>& pname = arglist[2].v.str;
     enum error e = E_NONE;
 
     if (!obj.is_object())
@@ -260,7 +260,7 @@ static package
 bf_clear_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
     Var obj = arglist[1];
-    const char *pname = arglist[2].v.str;
+    const ref_ptr<const char>& pname = arglist[2].v.str;
     db_prop_handle h;
     enum error e;
 
@@ -294,7 +294,7 @@ static package
 bf_is_clear_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name) */
     Var obj = arglist[1];
-    const char *pname = arglist[2].v.str;
+    const ref_ptr<const char>& pname = arglist[2].v.str;
     db_prop_handle h;
     Var r;
     enum error e;

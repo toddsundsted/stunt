@@ -78,11 +78,10 @@ parse_into_words(char *input, int *nwords)
     return words;
 }
 
-static const char *
+static ref_ptr<const char>
 build_string(int argc, char *argv[])
 {
     int i, len = 0;
-    char *str;
 
     if (!argc)
 	return str_dup("");
@@ -91,7 +90,8 @@ build_string(int argc, char *argv[])
     for (i = 1; i < argc; i++)
 	len += 1 + strlen(argv[i]);
 
-    str = (char *) mymalloc(len + 1, M_STRING);
+    ref_ptr<const char> tmp = mymalloc<const char>(len + 1);
+    char* str = const_cast<char*>(tmp.expose());
 
     strcpy(str, argv[0]);
     for (i = 1; i < argc; i++) {
@@ -99,7 +99,7 @@ build_string(int argc, char *argv[])
 	strcat(str, argv[i]);
     }
 
-    return str;
+    return tmp;
 }
 
 #define MAXWORDS		500	/* maximum number of words in a line */
@@ -128,6 +128,7 @@ parse_command(const char *command, Objid user)
 {
     static Parsed_Command pc;
     const char *argstr;
+    ref_ptr<const char> tmp;
     char *buf;
     const char *verb;
     int argc;
@@ -137,6 +138,7 @@ parse_command(const char *command, Objid user)
 
     while (*command == ' ')
 	command++;
+
     switch (*command) {
     case '"':
 	verb = "say";
@@ -150,14 +152,16 @@ parse_command(const char *command, Objid user)
 
       finish_specials:
 	argstr = command + 1;
-	buf = (char*) mymalloc(strlen(argstr) + strlen(verb) + 2, M_STRING);
+	tmp = mymalloc<const char>(strlen(argstr) + strlen(verb) + 2);
+	buf = const_cast<char*>(tmp.expose());
 	strcpy(buf, verb);
 	strcat(buf, " ");
 	strcat(buf, argstr);
 	break;
 
     default:
-	buf = (char*)mymalloc(strlen(command) + 1, M_STRING);
+	tmp = mymalloc<const char>(strlen(command) + 1);
+	buf = const_cast<char*>(tmp.expose());
 	strcpy(buf, command);
 	{			/* Skip past even complexly-quoted verbs */
 	    int in_quotes = 0;
@@ -176,12 +180,13 @@ parse_command(const char *command, Objid user)
 	    argstr++;
 	break;
     }
-    argv = parse_into_words(buf, &argc);
 
+    argv = parse_into_words(buf, &argc);
     if (argc == 0) {
-	free_str(buf);
+	free_str(tmp);
 	return 0;
     }
+
     pc.verb = str_dup(argv[0]);
     pc.argstr = str_dup(argstr);
 
@@ -215,7 +220,7 @@ parse_command(const char *command, Objid user)
     if (pc.prep != PREP_NONE) {
 	pc.prepstr = build_string(pend - pstart + 1, argv + pstart);
 	pc.iobjstr = build_string(argc - (pend + 1), argv + (pend + 1));
-	pc.iobj = match_object(user, pc.iobjstr);
+	pc.iobj = match_object(user, pc.iobjstr.expose());
     } else {
 	pc.prepstr = str_dup("");
 	pc.iobjstr = str_dup("");
@@ -228,10 +233,10 @@ parse_command(const char *command, Objid user)
 	pc.dobj = NOTHING;
     } else {
 	pc.dobjstr = build_string(dlen, argv + 1);
-	pc.dobj = match_object(user, pc.dobjstr);
+	pc.dobj = match_object(user, pc.dobjstr.expose());
     }
 
-    free_str(buf);
+    free_str(tmp);
 
     return &pc;
 }

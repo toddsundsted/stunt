@@ -128,6 +128,10 @@ class ref_ptr {
 
  public:
 
+    static const ref_ptr<T> empty;
+
+    explicit ref_ptr() : ptr(nullptr) {}
+
     const T& operator * () const {
 	return *ptr;
     }
@@ -152,8 +156,10 @@ class ref_ptr {
 	return ptr;
     }
 
-    bool operator == (const ref_ptr<T> that) const { return this->ptr == that.ptr; }
-    bool operator != (const ref_ptr<T> that) const { return this->ptr != that.ptr; }
+    operator bool () const { return this->ptr != nullptr; }
+
+    bool operator == (const ref_ptr<T>& that) const { return this->ptr == that.ptr; }
+    bool operator != (const ref_ptr<T>& that) const { return this->ptr != that.ptr; }
 
     // `inc_ref()', `dec_ref()', `set_buffered()', `clear_buffered()'
     // and `set_color()' should not be `const' in the following
@@ -175,8 +181,8 @@ class ref_ptr {
     friend void myfree<>(ref_ptr<T>);
 };
 
-extern const char *str_dup(const char *);
-extern const char *str_ref(const char *);
+template<typename T>
+const ref_ptr<T> ref_ptr<T>::empty;
 
 template<typename T>
 extern ref_ptr<T> mymalloc(size_t);
@@ -196,26 +202,31 @@ extern void myfree(ref_ptr<T>);
 template<>
 extern void myfree(ref_ptr<double>);
 
-extern void myfree(void *where, Memory_Type type);
+template<>
+extern void myfree(ref_ptr<const char>);
+
 extern void *mymalloc(unsigned size, Memory_Type type);
 extern void *myrealloc(void *where, unsigned size, Memory_Type type);
+extern void myfree(void *where, Memory_Type type);
 
-static inline void		/* XXX was extern, fix for non-gcc compilers */
-free_str(const char *s)
+extern ref_ptr<const char> str_ref(const ref_ptr<const char>&);
+extern ref_ptr<const char> str_dup(const char *);
+
+static inline void
+free_str(ref_ptr<const char>& s)
 {
-    if (delref(s) == 0)
-	myfree((void *) s, M_STRING);
+    if (s.dec_ref() == 0)
+	myfree(s);
 }
 
+static inline int
+memo_strlen(ref_ptr<const char> s)
+{
 #ifdef MEMO_STRLEN
-/*
- * Using the same mechanism as ref_count.h uses to hide Value ref counts,
- * keep a memozied strlen in the storage with the string.
- */
-#define memo_strlen(X)		((void)0, (((int *)(X))[-2]))
+    return ((int*)s.expose())[-2];
 #else
-#define memo_strlen(X)		strlen(X)
-
-#endif /* MEMO_STRLEN */
+    return strlen(s.expose());
+#endif
+}
 
 #endif				/* Storage_h */

@@ -60,11 +60,12 @@ typedef enum {
 				 */
 } task_waiting_status;
 
-typedef struct task_waiting_on_exec {
-    const char *cmd;
-    const char **args;
-    const char *in;
-    int len;
+struct task_waiting_on_exec {
+    char *cmd;
+    int count;
+    char **args;
+    int length;
+    char *in;
     pid_t pid;
     task_waiting_status status;
     int code;
@@ -74,7 +75,48 @@ typedef struct task_waiting_on_exec {
     Stream *sout;
     Stream *serr;
     vm the_vm;
-} task_waiting_on_exec;
+
+    task_waiting_on_exec(const char* cmd,
+                         int count, const char** args,
+                         int length, const char* in) {
+	this->cmd = new char[strlen(cmd) + 1];
+	strcpy(this->cmd, cmd);
+	this->count = count;
+	this->args = new char*[count + 1];
+	for (int i = 0; i < count + 1; i++) {
+	    if (args[i]) {
+		this->args[i] = new char[strlen(args[i]) + 1];
+		strcpy(this->args[i], args[i]);
+	    } else {
+		this->args[i] = nullptr;
+	    }
+	}
+	this->length = length;
+	this->in = new char[length];
+	memcpy(this->in, in, length);
+	status = TWS_CONTINUE;
+	code = 0;
+	sout = new_stream(1000);
+	serr = new_stream(1000);
+    }
+
+    ~task_waiting_on_exec() {
+	delete cmd;
+	for (int i = 0; i < count; i++) {
+	    if (args[i]) {
+		delete args[i];
+	    }
+	}
+	delete args;
+	delete in;
+	close(fout);
+	close(ferr);
+	network_unregister_fd(fout);
+	network_unregister_fd(ferr);
+	free_stream(sout);
+	free_stream(serr);
+    }
+};
 
 static task_waiting_on_exec *process_table[EXEC_MAX_PROCESSES];
 
@@ -85,44 +127,16 @@ static sigset_t block_sigchld;
 #define BLOCK_SIGCHLD sigprocmask(SIG_BLOCK, &block_sigchld, NULL)
 #define UNBLOCK_SIGCHLD sigprocmask(SIG_UNBLOCK, &block_sigchld, NULL)
 
-static task_waiting_on_exec *
-malloc_task_waiting_on_exec()
+static task_waiting_on_exec*
+malloc_task_waiting_on_exec(const char* cmd, int count, const char** args, int length, const char* in)
 {
-    task_waiting_on_exec *tw =
-	(task_waiting_on_exec *)malloc(sizeof(task_waiting_on_exec));
-    tw->cmd = NULL;
-    tw->args = NULL;
-    tw->in = NULL;
-    tw->status = TWS_CONTINUE;
-    tw->code = 0;
-    tw->sout = new_stream(1000);
-    tw->serr = new_stream(1000);
-    return tw;
+    return new task_waiting_on_exec(cmd, count, args, length, in);
 }
 
 static void
-free_task_waiting_on_exec(task_waiting_on_exec * tw)
+free_task_waiting_on_exec(task_waiting_on_exec* tw)
 {
-    int i;
-
-    if (tw->cmd)
-	free_str(tw->cmd);
-    if (tw->args) {
-	for (i = 0; tw->args[i]; i++)
-	    free_str(tw->args[i]);
-	free(tw->args);
-    }
-    if (tw->in)
-	free_str(tw->in);
-    close(tw->fout);
-    close(tw->ferr);
-    network_unregister_fd(tw->fout);
-    network_unregister_fd(tw->ferr);
-    if (tw->sout)
-	free_stream(tw->sout);
-    if (tw->serr)
-	free_stream(tw->serr);
-    free(tw);
+    delete tw;
 }
 
 static task_enum_action
@@ -310,7 +324,7 @@ exec_waiter_suspender(vm the_vm, void *data)
     set_nonblocking(tw->ferr);
 
     if (tw->in) {
-	if (write_all(tw->fin, tw->in, tw->len) < 0) {
+	if (write_all(tw->fin, tw->in, tw->length) < 0) {
 	    error = E_EXEC;
 	    goto close_fin;
 	}
@@ -346,11 +360,13 @@ bf_exec(const List& arglist, Objid progr)
 {
     package pack;
 
-    const char *cmd = 0;
-    const char **args = 0;
-    task_waiting_on_exec *tw = 0;
-    const char *in = 0;
-    int len;
+    const char* cmd = nullptr;
+    int count = listlength(arglist[1]);
+    const char* args[count + 1];
+    int length = 0;
+    const char *in = nullptr;
+    static Stream *s = new_stream(strlen(EXEC_SUBDIR) * 2);
+    task_waiting_on_exec *tw;
 
     /* The first argument must be a list of strings.  The first string
      * is the command (required).  The rest are command line arguments
@@ -371,7 +387,7 @@ bf_exec(const List& arglist, Objid progr)
     }
 
     /* check the path */
-    cmd = arglist[1].v.list[1].v.str;
+    cmd = arglist[1].v.list[1].v.str.expose();
     if (0 == strlen(cmd)) {
 	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
 	goto free_arglist;
@@ -387,62 +403,47 @@ bf_exec(const List& arglist, Objid progr)
     }
 
     /* prepend the exec subdirectory path */
-    static Stream *s;
-    if (!s)
-	s = new_stream(strlen(EXEC_SUBDIR) * 2);
     stream_add_string(s, EXEC_SUBDIR);
     stream_add_string(s, cmd);
-    cmd = str_dup(reset_stream(s));
+    cmd = reset_stream(s);
+
+    /* args must be null terminated */
+    FOR_EACH(v, arglist[1], i, c)
+	args[i - 1] = v.v.str.expose();
+    args[i - 1] = NULL;
 
     /* clean input */
-    in = NULL;
-    len = 0;
     if (listlength(arglist) > 1) {
-	if ((in = binary_to_raw_bytes(arglist[2].v.str, &len)) == NULL) {
+	const char* tmp;
+	if ((tmp = binary_to_raw_bytes(arglist[2].v.str.expose(), &length)) == NULL) {
 	    pack = make_error_pack(E_INVARG);
-	    goto free_cmd;
+	    goto free_arglist;
 	}
-	in = str_dup(in);
+	in = tmp;
     }
 
     /* check perms */
     if (!is_wizard(progr)) {
 	pack = make_error_pack(E_PERM);
-	goto free_in;
+	goto free_arglist;
     }
 
     /* stat the command */
     struct stat buf;
     if (stat(cmd, &buf) != 0) {
 	pack = make_raise_pack(E_INVARG, "Does not exist", var_ref(zero));
-	goto free_in;
+	goto free_arglist;
     }
     if (!S_ISREG(buf.st_mode)) {
 	pack = make_raise_pack(E_INVARG, "Is not a file", var_ref(zero));
-	goto free_in;
+	goto free_arglist;
     }
 
-    args = (const char **)malloc(sizeof(const char *) * i);
-    FOR_EACH(v, arglist[1], i, c)
-	args[i - 1] = str_dup(v.v.str);
-    args[i - 1] = NULL;
-
-    tw = malloc_task_waiting_on_exec();
-    tw->cmd = cmd;
-    tw->args = args;
-    tw->in = in;
-    tw->len = len;
+    tw = malloc_task_waiting_on_exec(cmd, count, args, length, in);
 
     free_var(arglist);
 
     return make_suspend_pack(exec_waiter_suspender, tw);
-
- free_in:
-    if (in)
-	free_str(in);
-
- free_cmd:
-    free_str(cmd);
 
  free_arglist:
     free_var(arglist);

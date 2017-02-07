@@ -68,7 +68,7 @@ typedef struct Object4 {
     Objid child;
     Objid sibling;
 
-    const char *name;
+    ref_ptr<const char> name;
     int flags;
 
     Verbdef *verbdefs;
@@ -186,7 +186,7 @@ read_verbdef(Verbdef * v)
 static void
 write_verbdef(Verbdef * v)
 {
-    dbio_write_string(v->name);
+    dbio_write_string(v->name.expose());
     dbio_write_objid(v->owner);
     dbio_write_num(v->perms);
     dbio_write_num(v->prep);
@@ -195,14 +195,14 @@ write_verbdef(Verbdef * v)
 static Propdef
 read_propdef()
 {
-    const char *name = dbio_read_string_intern();
+    ref_ptr<const char> name = dbio_read_string_intern();
     return dbpriv_new_propdef(name);
 }
 
 static void
 write_propdef(Propdef * p)
 {
-    dbio_write_string(p->name);
+    dbio_write_string(p->name.expose());
 }
 
 static void
@@ -272,14 +272,14 @@ v4_read_object(void)
     o->propdefs.max_length = 0;
     o->propdefs.l = 0;
     if ((i = dbio_read_num()) != 0) {
-	o->propdefs.l = (Propdef *)malloc(i * sizeof(Propdef));
+	o->propdefs.l = new Propdef[i];
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++) {
 	    o->propdefs.l[i] = read_propdef();
-#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name, #property) ||
+#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name.expose(), #property) ||
 	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
-		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
+		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name.expose());
 #undef CHECK_PROP
 	}
     }
@@ -364,14 +364,14 @@ ng_read_object(int anonymous)
     o->propdefs.max_length = 0;
     o->propdefs.l = 0;
     if ((i = dbio_read_num()) != 0) {
-	o->propdefs.l = (Propdef *)malloc(i * sizeof(Propdef));
+	o->propdefs.l = new Propdef[i];
 	o->propdefs.cur_length = i;
 	o->propdefs.max_length = i;
 	for (i = 0; i < o->propdefs.cur_length; i++) {
 	    o->propdefs.l[i] = read_propdef();
-#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name, #property) ||
+#define CHECK_PROP_NAME(PROPERTY, property) !mystrcasecmp(o->propdefs.l[i].name.expose(), #property) ||
 	    if (BUILTIN_PROPERTIES(CHECK_PROP_NAME) 0)
-		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name);
+		oklog("DB_WARNING: Property #%d.%s has a reserved name\n", o->id, o->propdefs.l[i].name.expose());
 #undef CHECK_PROP
 	}
     }
@@ -404,7 +404,7 @@ v4_write_object(Objid oid)
     o = dbv4_find_object(oid);
 
     dbio_printf("#%d\n", oid);
-    dbio_write_string(o->name);
+    dbio_write_string(o->name.expose());
     dbio_write_string("");	/* placeholder for old handles string */
     dbio_write_num(o->flags);
 
@@ -451,7 +451,7 @@ ng_write_object(Objid oid)
     o = dbpriv_find_object(oid);
 
     dbio_printf("#%d\n", oid);
-    dbio_write_string(o->name);
+    dbio_write_string(o->name.expose());
     dbio_write_num(o->flags);
 
     dbio_write_objid(o->owner);

@@ -231,10 +231,10 @@ bf_salt(const List& arglist, Objid progr)
     Var r;
     package p;
 
-    const char *prefix = arglist[1].v.str;
-    size_t prefix_length = memo_strlen(prefix);
-    const char *input = arglist[2].v.str;
-    size_t input_length = memo_strlen(input);
+    const char *prefix = arglist[1].v.str.expose();
+    size_t prefix_length = memo_strlen(arglist[1].v.str);
+    const char *input = arglist[2].v.str.expose();
+    size_t input_length = memo_strlen(arglist[2].v.str);
 
     const char *rest;
     size_t rest_length;
@@ -318,7 +318,7 @@ bf_crypt(const List& arglist, Objid progr)
 	salt = temp;
 	salt_length = 2;
     } else {
-	salt = arglist[2].v.str;
+	salt = arglist[2].v.str.expose();
 	salt_length = memo_strlen(arglist[2].v.str);
     }
 
@@ -347,7 +347,7 @@ bf_crypt(const List& arglist, Objid progr)
 	errno = 0;
 
 	char output[64];
-	char *ret = _crypt_blowfish_rn(arglist[1].v.str, salt, output, sizeof(output));
+	char *ret = _crypt_blowfish_rn(arglist[1].v.str.expose(), salt, output, sizeof(output));
 
 	if (errno) {
 	    free_var(arglist);
@@ -358,7 +358,7 @@ bf_crypt(const List& arglist, Objid progr)
     }
     else {
 #if HAVE_CRYPT
-	r = str_dup_to_var(crypt(arglist[1].v.str, salt));
+	r = str_dup_to_var(crypt(arglist[1].v.str.expose(), salt));
 #else
 	r = str_ref_to_var(arglist[1].v.str);
 #endif
@@ -386,13 +386,14 @@ bf_string_hash(const List& arglist, Objid progr)
 {
     Var r;
     int nargs = arglist.length();
-    const char *str = arglist[1].v.str;
-    const char *algo = (1 < nargs) ? arglist[2].v.str : "sha256";
+    const char *str = arglist[1].v.str.expose();
+    size_t str_len = memo_strlen(arglist[1].v.str);
+    const char *algo = (1 < nargs) ? arglist[2].v.str.expose() : "sha256";
     int binary = (2 < nargs) ? is_true(arglist[3]) : 0;
 
-#define CASE(op, temp)							\
-    op (!mystrcasecmp(#temp, algo)) {					\
-	r = temp##_hash_bytes(str, memo_strlen(str), binary);		\
+#define CASE(op, temp)						\
+    op (!mystrcasecmp(#temp, algo)) {				\
+	r = temp##_hash_bytes(str, str_len, binary);		\
     }
 
     CASE(if, md5)
@@ -423,8 +424,8 @@ bf_binary_hash(const List& arglist, Objid progr)
 	Var r;
 	int length;
 	int nargs = arglist.length();
-	const char *bytes = binary_to_raw_bytes(arglist[1].v.str, &length);
-	const char *algo = (1 < nargs) ? arglist[2].v.str : "sha256";
+	const char *bytes = binary_to_raw_bytes(arglist[1].v.str.expose(), &length);
+	const char *algo = (1 < nargs) ? arglist[2].v.str.expose() : "sha256";
 	int binary = (2 < nargs) ? is_true(arglist[3]) : 0;
 
 #define CASE(op, temp)							\
@@ -469,7 +470,7 @@ bf_value_hash(const List& arglist, Objid progr)
     try {
 	Var r;
 	int nargs = arglist.length();
-	const char *algo = (1 < nargs) ? arglist[2].v.str : "sha256";
+	const char *algo = (1 < nargs) ? arglist[2].v.str.expose() : "sha256";
 	int binary = (2 < nargs) ? is_true(arglist[3]) : 0;
 
 	unparse_value(s, arglist[1]);
@@ -515,20 +516,20 @@ bf_string_hmac(const List& arglist, Objid progr)
 	Var r;
 
 	int nargs = arglist.length();
-	const char *algo = (2 < nargs) ? arglist[3].v.str : "sha256";
+	const char *algo = (2 < nargs) ? arglist[3].v.str.expose() : "sha256";
 	int binary = (3 < nargs) ? is_true(arglist[4]) : 0;
 
-	const char *str = arglist[1].v.str;
-	int str_length = memo_strlen(str);
+	const char *str = arglist[1].v.str.expose();
+	int str_length = memo_strlen(arglist[1].v.str);
 
 	int key_length;
-	const char *key = binary_to_raw_bytes(arglist[2].v.str, &key_length);
+	const char *key = binary_to_raw_bytes(arglist[2].v.str.expose(), &key_length);
 
 	if (!key) {
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char *key_new = (char *)mymalloc(key_length, M_STRING);
+	    char* key_new = (char*)malloc(key_length);
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
@@ -546,7 +547,7 @@ bf_string_hmac(const List& arglist, Objid progr)
 
 #undef CASE
 
-	    free_str(key);
+	    free((void*)key_new);
 	}
     }
     catch (stream_too_big& exception) {
@@ -570,29 +571,29 @@ bf_binary_hmac(const List& arglist, Objid progr)
 	Var r;
 
 	int nargs = arglist.length();
-	const char *algo = (2 < nargs) ? arglist[3].v.str : "sha256";
+	const char *algo = (2 < nargs) ? arglist[3].v.str.expose() : "sha256";
 	int binary = (3 < nargs) ? is_true(arglist[4]) : 0;
 
 	int bytes_length;
-	const char *bytes = binary_to_raw_bytes(arglist[1].v.str, &bytes_length);
+	const char *bytes = binary_to_raw_bytes(arglist[1].v.str.expose(), &bytes_length);
 
 	if (!bytes) {
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char *bytes_new = (char *)mymalloc(bytes_length, M_STRING);
+	    char* bytes_new = (char*)malloc(bytes_length);
 	    memcpy(bytes_new, bytes, bytes_length);
 	    bytes = bytes_new;
 
 	    int key_length;
-	    const char *key = binary_to_raw_bytes(arglist[2].v.str, &key_length);
+	    const char *key = binary_to_raw_bytes(arglist[2].v.str.expose(), &key_length);
 
 	    if (!key) {
-		free_str(bytes);
+		free((void*)bytes_new);
 		p = make_error_pack(E_INVARG);
 	    }
 	    else {
-		char *key_new = (char *)mymalloc(key_length, M_STRING);
+		char* key_new = (char*)malloc(key_length);
 		memcpy(key_new, key, key_length);
 		key = key_new;
 
@@ -610,8 +611,8 @@ bf_binary_hmac(const List& arglist, Objid progr)
 
 #undef CASE
 
-		free_str(bytes);
-		free_str(key);
+		free((void*)bytes_new);
+		free((void*)key_new);
 	    }
 	}
     }
@@ -636,28 +637,28 @@ bf_value_hmac(const List& arglist, Objid progr)
 	Var r;
 
 	int nargs = arglist.length();
-	const char *algo = (2 < nargs) ? arglist[3].v.str : "sha256";
+	const char *algo = (2 < nargs) ? arglist[3].v.str.expose() : "sha256";
 	int binary = (3 < nargs) ? is_true(arglist[4]) : 0;
 
 	unparse_value(s, arglist[1]);
-	const char *lit = str_dup(stream_contents(s));
+	ref_ptr<const char> lit = str_dup(stream_contents(s));
 	int lit_length = stream_length(s);
 
 	int key_length;
-	const char *key = binary_to_raw_bytes(arglist[2].v.str, &key_length);
+	const char *key = binary_to_raw_bytes(arglist[2].v.str.expose(), &key_length);
 
 	if (!key) {
 	    free_str(lit);
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char *key_new = (char *)mymalloc(key_length, M_STRING);
+	    char* key_new = (char*)malloc(key_length);
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
 #define CASE(op, temp)										\
 	    op (!mystrcasecmp(#temp, algo)) {							\
-		r = hmac_##temp##_bytes(lit, lit_length, key, key_length, binary);		\
+		r = hmac_##temp##_bytes(lit.expose(), lit_length, key, key_length, binary);	\
 		p = make_var_pack(r);								\
 	    }
 
@@ -670,7 +671,7 @@ bf_value_hmac(const List& arglist, Objid progr)
 #undef CASE
 
 	    free_str(lit);
-	    free_str(key);
+	    free((void*)key_new);
 	}
     }
     catch (stream_too_big& exception) {

@@ -123,21 +123,22 @@ typedef struct rbtrav rbtrav;
 typedef struct Object Object;
 
 struct Var {
-    union {
-	int32_t num;		/* INT, CATCH, FINALLY */
-	Objid obj;		/* OBJ */
-	const char *str;	/* STR */
-	enum error err;		/* ERR */
-	Var *list;		/* LIST */
-	ref_ptr<rbtree> tree;	/* MAP */
-	ref_ptr<rbtrav> trav;	/* ITER */
-	ref_ptr<double> fnum;	/* FLOAT */
-	Object *anon;		/* ANON */
+    union v {
+	int32_t num;			/* INT, CATCH, FINALLY */
+	Objid obj;			/* OBJ */
+	ref_ptr<const char> str;	/* STR */
+	enum error err;			/* ERR */
+	Var *list;			/* LIST */
+	ref_ptr<rbtree> tree;		/* MAP */
+	ref_ptr<rbtrav> trav;		/* ITER */
+	ref_ptr<double> fnum;		/* FLOAT */
+	Object *anon;			/* ANON */
+	v() {}
     } v;
     var_type type;
 
-    friend Var str_dup_to_var(const char *s);
-    friend Var str_ref_to_var(const char *s);
+    friend Var str_dup_to_var(const char* s);
+    friend Var str_ref_to_var(ref_ptr<const char> s);
 
     bool
     is_clear() const {
@@ -196,10 +197,18 @@ struct Var {
     }
 
     static Var
-    new_str(const char* const str) {
+    new_str(const char* str) {
 	Var v;
 	v.type = TYPE_STR;
 	v.v.str = str_dup(str);
+	return v;
+    }
+
+    static Var
+    new_str(const ref_ptr<const char> str) {
+	Var v;
+	v.type = TYPE_STR;
+	v.v.str = str_ref(str);
 	return v;
     }
 
@@ -258,7 +267,7 @@ str_dup_to_var(const char *s)
 }
 
 inline Var
-str_ref_to_var(const char *s)
+str_ref_to_var(ref_ptr<const char> s)
 {
     Var r;
 
@@ -269,6 +278,14 @@ str_ref_to_var(const char *s)
 }
 
 struct Str : public Var {
+    int32_t
+    length() const {
+	return memo_strlen(v.str);
+    }
+    const char operator[] (const int i) const {
+	assert(i >= 1 && i <= length());
+	return v.str.expose()[i - 1];
+    }
 };
 
 struct List : public Var {

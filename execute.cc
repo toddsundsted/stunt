@@ -37,6 +37,7 @@
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "sym_table.h"
 #include "tasks.h"
 #include "timers.h"
@@ -60,7 +61,10 @@ int task_timed_out;
 static int interpreter_is_running = 0;
 static Timer_ID task_alarm_id;
 
-static const char *handler_verb_name;	/* For in-DB traceback handling */
+static const ref_ptr<const char> HANDLE_UNCAUGHT_ERROR = str_intern("handle_uncaught_error");
+static const ref_ptr<const char> HANDLE_TASK_TIMEOUT = str_intern("handle_task_timeout");
+
+static ref_ptr<const char> handler_verb_name;
 static Var handler_verb_args;
 
 /* used when loading the database to hold values that may reference yet
@@ -118,7 +122,7 @@ free_rt_stack(activation * a)
 }
 
 void
-print_error_backtrace(const char *msg, void (*output) (const char *))
+print_error_backtrace(const char* msg, void (*output)(const char*))
 {
     int t;
     Stream *str;
@@ -162,7 +166,7 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 }
 
 static void
-output_to_log(const char *line)
+output_to_log(const char* line)
 {
     applog(LOG_INFO2, "%s\n", line);
 }
@@ -170,14 +174,14 @@ output_to_log(const char *line)
 static List backtrace_list;
 
 static void
-output_to_list(const char *line)
+output_to_list(const char* line)
 {
     Var str = Var::new_str(line);
     backtrace_list = listappend(backtrace_list, str);
 }
 
 static Var
-error_backtrace_list(const char *msg)
+error_backtrace_list(const char* msg)
 {
     backtrace_list = new_list(0);
     print_error_backtrace(msg, output_to_list);
@@ -446,7 +450,7 @@ make_stack_list(activation * stack, int start, int end, int include_end,
 }
 
 static void
-save_handler_info(const char *vname, const Var& args)
+save_handler_info(const ref_ptr<const char>& vname, const Var& args)
 {
     handler_verb_name = vname;
     free_var(handler_verb_args);
@@ -474,7 +478,7 @@ raise_error(package p, enum outcome *outcome)
     } else {			/* uncaught exception */
 	why = FIN_UNCAUGHT;
 	value = new_list(5);
-	value.v.list[5] = error_backtrace_list(p.u.raise.msg);
+	value.v.list[5] = error_backtrace_list(p.u.raise.msg.expose());
 	handler_activ = 0;	/* get entire stack in list */
     }
     value.v.list[1] = p.u.raise.code;
@@ -487,7 +491,7 @@ raise_error(package p, enum outcome *outcome)
 				      NOTHING);
 
     if (why == FIN_UNCAUGHT) {
-	save_handler_info("handle_uncaught_error", value);
+	save_handler_info(HANDLE_UNCAUGHT_ERROR, value);
 	value = zero;
     }
     return unwind_stack(why, value, outcome);
@@ -521,7 +525,7 @@ abort_task(enum abort_reason reason)
 					  root_activ_vector, 1,
 					  NOTHING);
 	value.v.list[3] = error_backtrace_list(msg);
-	save_handler_info("handle_task_timeout", value);
+	save_handler_info(HANDLE_TASK_TIMEOUT, value);
 	/* fall through */
 
     case ABORT_KILL:
@@ -568,7 +572,7 @@ free_activation(activation * ap, char data_too)
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
 
-enum error call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int do_pass);
+enum error call_verb2(Objid recv, const ref_ptr<const char>& vname, const Var& _this, const Var& args, int do_pass);
 
 /*
  * Historical interface for things which want to call with vname not
@@ -577,7 +581,7 @@ enum error call_verb2(Objid recv, const char *vname, const Var& _this, const Var
 enum error
 call_verb(Objid recv, const char *vname_in, const Var& _this, const Var& args, int do_pass)
 {
-    const char *vname = str_dup(vname_in);
+    ref_ptr<const char> vname = str_dup(vname_in);
     enum error result;
 
     result = call_verb2(recv, vname, _this, args, do_pass);
@@ -587,7 +591,7 @@ call_verb(Objid recv, const char *vname_in, const Var& _this, const Var& args, i
 }
 
 enum error
-call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int do_pass)
+call_verb2(Objid recv, const ref_ptr<const char>& vname, const Var& _this, const Var& args, int do_pass)
 {
     /* if call succeeds, args will be consumed.  If call fails, args
        will NOT be consumed  -- it must therefore be freed by caller */
@@ -603,7 +607,6 @@ call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int
     db_verb_handle h = { };
     Program *program;
     Var *env;
-    Var v;
 
     if (do_pass) {
 	Objid where;
@@ -675,11 +678,11 @@ call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int
 
     fill_in_rt_consts(env, program->version);
 
-    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV._this));
-    set_rt_env_var(env, SLOT_CALLER, var_ref(CALLER_ACTIV._this));
+    set_rt_env_var(env, SLOT_THIS, RUN_ACTIV._this);
+    set_rt_env_var(env, SLOT_CALLER, CALLER_ACTIV._this);
 
 #define ENV_COPY(slot) \
-    set_rt_env_var(env, slot, var_ref(CALLER_ACTIV.rt_env[slot]))
+    set_rt_env_var(env, slot, CALLER_ACTIV.rt_env[slot])
 
     ENV_COPY(SLOT_ARGSTR);
     ENV_COPY(SLOT_DOBJ);
@@ -697,9 +700,10 @@ call_verb2(Objid recv, const char *vname, const Var& _this, const Var& args, int
 
 #undef ENV_COPY
 
-    v = str_ref_to_var(vname);
-    set_rt_env_var(env, SLOT_VERB, v);	/* no var_dup */
-    set_rt_env_var(env, SLOT_ARGS, args);	/* no var_dup */
+    set_rt_env_str(env, SLOT_VERB, vname);
+    set_rt_env_var(env, SLOT_ARGS, args);
+
+    free_var(args);
 
     return E_NONE;
 }
@@ -1062,11 +1066,12 @@ do {								\
 			PUSH_ERROR_UNLESS_QUOTA(E_QUOTA);
 		    }
 		} else {	/* TYPE_STR */
-		    char* tmp_str = (char*)mymalloc(strlen(list.v.str) + 1, M_STRING);
-		    strcpy(tmp_str, list.v.str);
+		    int i = index.v.num;
+		    char c = value.v.str.expose()[0];
+		    ref_ptr<const char> tmp = str_dup(list.v.str.expose());
+		    const_cast<char *>(tmp.expose())[i - 1] = c;
 		    free_str(list.v.str);
-		    tmp_str[index.v.num - 1] = value.v.str[0];
-		    list.v.str = tmp_str;
+		    list.v.str = tmp;
 		    free_var(value);
 		    free_var(index);
 		    PUSH(list);
@@ -1151,7 +1156,7 @@ do {								\
 			comparison = ((int) lhs.v.err) - ((int) rhs.v.err);
 			break;
 		    case TYPE_STR:
-			comparison = mystrcasecmp(lhs.v.str, rhs.v.str);
+			comparison = mystrcasecmp(lhs.v.str.expose(), rhs.v.str.expose());
 			break;
 		    default:
 			errlog("RUN: Impossible type in comparison: %d\n",
@@ -1255,15 +1260,15 @@ do {								\
 		    int llen = memo_strlen(lhs.v.str);
 		    int flen = llen + memo_strlen(rhs.v.str);
 
-		    if (server_int_option_cached(SVO_MAX_STRING_CONCAT)
-			< flen) {
+		    if (server_int_option_cached(SVO_MAX_STRING_CONCAT) < flen) {
 			ans = Var::new_err(E_QUOTA);
 		    } else {
-			str = (char *)mymalloc(flen + 1, M_STRING);
-			strcpy(str, lhs.v.str);
-			strcpy(str + llen, rhs.v.str);
+			ref_ptr<const char> tmp = mymalloc<const char>(flen + 1);
+			str = const_cast<char *>(tmp.expose());
+			strcpy(str, lhs.v.str.expose());
+			strcpy(str + llen, rhs.v.str.expose());
 			ans.type = TYPE_STR;
-			ans.v.str = str;
+			ans.v.str = tmp;
 		    }
 		} else {
 		    ans = Var::new_err(E_TYPE);
@@ -1655,7 +1660,7 @@ do {								\
 				      is_wizard(obj.v.obj) ? "DE" : "",
 				      obj.v.obj, progr);
 				print_error_backtrace(is_wizard(obj.v.obj)
-						    ? "Wizard bit unset."
+						      ? "Wizard bit unset."
 						      : "Wizard bit set.",
 						      output_to_log);
 			    }
@@ -1742,11 +1747,21 @@ do {								\
 		     * object that points us to the prototype/handler
 		     * for the primitive type.
 		     */
-		    Var system = Var::new_obj(SYSTEM_OBJECT);
+		    static Var system = Var::new_obj(SYSTEM_OBJECT);
+
+#define		    DEF_TYPE(t1)							\
+			static ref_ptr<const char> t1##_proto = str_dup(#t1"_proto");
+		    DEF_TYPE(int)
+		    DEF_TYPE(float)
+		    DEF_TYPE(str)
+		    DEF_TYPE(err)
+		    DEF_TYPE(list)
+		    DEF_TYPE(map)
+#undef		    DEF_TYPE
 
 #define		    MATCH_TYPE(t1)						\
 			else if (obj.is_##t1()) {				\
-			    h = db_find_property(system, #t1 "_proto", &p);	\
+			    h = db_find_property(system, t1##_proto, &p);	\
 			    if (h.ptr && p.is_obj() && valid(p.v.obj))		\
 				recv = p.v.obj;					\
 			}
@@ -2608,18 +2623,18 @@ run_interpreter(char raise, enum error e,
     Var args;
 
     setup_task_execution_limits(is_fg ? server_int_option("fg_seconds",
-						      DEFAULT_FG_SECONDS)
+						    DEFAULT_FG_SECONDS)
 				: server_int_option("bg_seconds",
 						    DEFAULT_BG_SECONDS),
 				is_fg ? server_int_option("fg_ticks",
-							DEFAULT_FG_TICKS)
+						    DEFAULT_FG_TICKS)
 				: server_int_option("bg_ticks",
 						    DEFAULT_BG_TICKS));
 
     /* handler_verb_* is garbage/unreferenced outside of run()
      * and this is the only place run() is called. */
     handler_verb_args = zero;
-    handler_verb_name = 0;
+    handler_verb_name = ref_ptr<const char>::empty;
     interpreter_is_running = 1;
     ret = run(raise, e, result);
     interpreter_is_running = 0;
@@ -2650,7 +2665,7 @@ run_interpreter(char raise, enum error e,
 	i = args.v.list[0].v.num;
 	traceback = args.v.list[i];	/* traceback is always the last argument */
 	for (i = 1; i <= traceback.v.list[0].v.num; i++)
-	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
+	    notify(activ_stack[0].player, traceback.v.list[i].v.str.expose());
     }
     free_var(args);
     return ret;
@@ -2744,8 +2759,8 @@ resume_from_previous_vm(vm the_vm, const Var& v)
 /*** external functions ***/
 
 enum outcome
-do_server_verb_task(const Var& _this, const char *verb, const Var& args, db_verb_handle h,
-		    Objid player, const char *argstr, Var *result,
+do_server_verb_task(const Var& _this, const ref_ptr<const char>& verb, const Var& args,
+		    db_verb_handle h, Objid player, const char* argstr, Var* result,
 		    int do_db_tracebacks)
 {
     return do_server_program_task(_this, verb, args, db_verb_definer(h),
@@ -2755,10 +2770,10 @@ do_server_verb_task(const Var& _this, const char *verb, const Var& args, db_verb
 }
 
 enum outcome
-do_server_program_task(const Var& _this, const char *verb, const Var& args, const Var& vloc,
-		       const char *verbname, Program * program, Objid progr,
-		       int debug, Objid player, const char *argstr,
-		       Var * result, int do_db_tracebacks)
+do_server_program_task(const Var& _this, const ref_ptr<const char>& verb, const Var& args,
+		       const Var& vloc, const ref_ptr<const char>& verbname,
+		       Program* program, Objid progr, int debug, Objid player,
+		       const char* argstr, Var* result, int do_db_tracebacks)
 {
     Var *env;
 
@@ -2771,21 +2786,23 @@ do_server_program_task(const Var& _this, const char *verb, const Var& args, cons
     RUN_ACTIV.progr = progr;
     RUN_ACTIV.recv = _this.is_obj() ? _this.v.obj : NOTHING;
     RUN_ACTIV.vloc = var_ref(vloc);
-    RUN_ACTIV.verb = str_dup(verb);
-    RUN_ACTIV.verbname = str_dup(verbname);
+    RUN_ACTIV.verb = str_ref(verb);
+    RUN_ACTIV.verbname = str_ref(verbname);
     RUN_ACTIV.debug = debug;
     fill_in_rt_consts(env, program->version);
     set_rt_env_obj(env, SLOT_PLAYER, player);
     set_rt_env_obj(env, SLOT_CALLER, -1);
-    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV._this));
+    set_rt_env_var(env, SLOT_THIS, RUN_ACTIV._this);
     set_rt_env_obj(env, SLOT_DOBJ, NOTHING);
     set_rt_env_obj(env, SLOT_IOBJ, NOTHING);
-    set_rt_env_str(env, SLOT_DOBJSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_IOBJSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_ARGSTR, str_dup(argstr));
-    set_rt_env_str(env, SLOT_PREPSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_VERB, str_ref(RUN_ACTIV.verb));
+    set_rt_env_str(env, SLOT_DOBJSTR, "");
+    set_rt_env_str(env, SLOT_IOBJSTR, "");
+    set_rt_env_str(env, SLOT_ARGSTR, argstr);
+    set_rt_env_str(env, SLOT_PREPSTR, "");
+    set_rt_env_str(env, SLOT_VERB, RUN_ACTIV.verb);
     set_rt_env_var(env, SLOT_ARGS, args);
+
+    free_var(args);
 
     return do_task(program, MAIN_VECTOR, result, 1/*fg*/, do_db_tracebacks);
 }
@@ -2811,15 +2828,15 @@ do_input_task(Objid user, Parsed_Command * pc, Objid recv, db_verb_handle vh)
     fill_in_rt_consts(env, prog->version);
     set_rt_env_obj(env, SLOT_PLAYER, user);
     set_rt_env_obj(env, SLOT_CALLER, user);
-    set_rt_env_var(env, SLOT_THIS, var_ref(RUN_ACTIV._this));
+    set_rt_env_var(env, SLOT_THIS, RUN_ACTIV._this);
     set_rt_env_obj(env, SLOT_DOBJ, pc->dobj);
     set_rt_env_obj(env, SLOT_IOBJ, pc->iobj);
-    set_rt_env_str(env, SLOT_DOBJSTR, str_ref(pc->dobjstr));
-    set_rt_env_str(env, SLOT_IOBJSTR, str_ref(pc->iobjstr));
-    set_rt_env_str(env, SLOT_ARGSTR, str_ref(pc->argstr));
-    set_rt_env_str(env, SLOT_PREPSTR, str_ref(pc->prepstr));
-    set_rt_env_str(env, SLOT_VERB, str_ref(pc->verb));
-    set_rt_env_var(env, SLOT_ARGS, var_ref(pc->args));
+    set_rt_env_str(env, SLOT_DOBJSTR, pc->dobjstr);
+    set_rt_env_str(env, SLOT_IOBJSTR, pc->iobjstr);
+    set_rt_env_str(env, SLOT_ARGSTR, pc->argstr);
+    set_rt_env_str(env, SLOT_PREPSTR, pc->prepstr);
+    set_rt_env_str(env, SLOT_VERB, pc->verb);
+    set_rt_env_var(env, SLOT_ARGS, pc->args);
 
     return do_task(prog, MAIN_VECTOR, 0, 1/*fg*/, 1/*traceback*/);
 }
@@ -2842,6 +2859,8 @@ int
 setup_activ_for_eval(Program * prog)
 {
     Var *env;
+    static List empty_list = new_list(0);
+
     if (!push_activation())
 	return 0;
 
@@ -2850,16 +2869,16 @@ setup_activ_for_eval(Program * prog)
     RUN_ACTIV.rt_env = env = new_rt_env(prog->num_var_names);
     fill_in_rt_consts(env, prog->version);
     set_rt_env_obj(env, SLOT_PLAYER, CALLER_ACTIV.player);
-    set_rt_env_var(env, SLOT_CALLER, var_ref(CALLER_ACTIV._this));
+    set_rt_env_var(env, SLOT_CALLER, CALLER_ACTIV._this);
     set_rt_env_obj(env, SLOT_THIS, NOTHING);
     set_rt_env_obj(env, SLOT_DOBJ, NOTHING);
     set_rt_env_obj(env, SLOT_IOBJ, NOTHING);
-    set_rt_env_str(env, SLOT_DOBJSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_IOBJSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_ARGSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_PREPSTR, str_dup(""));
-    set_rt_env_str(env, SLOT_VERB, str_dup(""));
-    set_rt_env_var(env, SLOT_ARGS, new_list(0));
+    set_rt_env_str(env, SLOT_DOBJSTR, "");
+    set_rt_env_str(env, SLOT_IOBJSTR, "");
+    set_rt_env_str(env, SLOT_ARGSTR, "");
+    set_rt_env_str(env, SLOT_PREPSTR, "");
+    set_rt_env_str(env, SLOT_VERB, "");
+    set_rt_env_var(env, SLOT_ARGS, empty_list);
 
     RUN_ACTIV._this = var_ref(nothing);
     RUN_ACTIV.player = CALLER_ACTIV.player;
@@ -2894,9 +2913,9 @@ bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
     if (next == 1) {		/* first call */
 	assert(value.is_list());
 	const List& list = static_cast<const List&>(value);
-	const char* fname = list[1].v.str;
+	const ref_ptr<const char>& fname = list[1].v.str;
 
-	fnum = number_func_by_name(fname);
+	fnum = number_func_by_name(fname.expose());
 	if (fnum == FUNC_NOT_FOUND) {
 	    p = make_raise_pack(E_INVARG, "Unknown built-in function", var_ref(list[1]));
 	    free_var(list);
@@ -2953,9 +2972,9 @@ bf_raise(const List& arglist, Objid progr)
     package p;
     int nargs = arglist.length();
     Var code = var_ref(arglist[1]);
-    const char *msg = (nargs >= 2
-		       ? str_ref(arglist[2].v.str)
-		       : value2str(code));
+    const ref_ptr<const char> msg = (nargs >= 2
+				     ? str_ref(arglist[2].v.str)
+				     : value2str(code));
     Var value;
 
     value = (nargs >= 3 ? var_ref(arglist[3]) : zero);
@@ -3031,9 +3050,9 @@ bf_read_http(const List& arglist, Objid progr)
     static Objid connection;
     int request;
 
-    if (!mystrcasecmp(arglist[1].v.str, "request"))
+    if (!mystrcasecmp(arglist[1].v.str.expose(), "request"))
 	request = 1;
-    else if (!mystrcasecmp(arglist[1].v.str, "response"))
+    else if (!mystrcasecmp(arglist[1].v.str.expose(), "response"))
 	request = 0;
     else {
 	free_var(arglist);
@@ -3202,8 +3221,8 @@ write_activ_as_pi(activation a)
     dbio_write_string("More");
     dbio_write_string("Parse");
     dbio_write_string("Infos");
-    dbio_write_string(a.verb);
-    dbio_write_string(a.verbname);
+    dbio_write_string(a.verb.expose());
+    dbio_write_string(a.verbname.expose());
 }
 
 int
@@ -3260,19 +3279,19 @@ read_activ_as_pi(activation * a)
 }
 
 void
-write_rt_env(const char **var_names, Var * rt_env, unsigned size)
+write_rt_env(const ref_ptr<const char> var_names[], Var rt_env[], unsigned size)
 {
     unsigned i;
 
     dbio_printf("%d variables\n", size);
     for (i = 0; i < size; i++) {
-	dbio_write_string(var_names[i]);
+	dbio_write_string(var_names[i].expose());
 	dbio_write_var(rt_env[i]);
     }
 }
 
 int
-read_rt_env(const char ***old_names, Var ** rt_env, int *old_size)
+read_rt_env(ref_ptr<const char>* old_names[], Var* rt_env[], unsigned* old_size)
 {
     unsigned i;
 
@@ -3280,7 +3299,7 @@ read_rt_env(const char ***old_names, Var ** rt_env, int *old_size)
 	errlog("READ_RT_ENV: Bad count.\n");
 	return 0;
     }
-    *old_names = (const char **)malloc((*old_size) * sizeof(char *));
+    *old_names = new ref_ptr<const char>[*old_size];
     *rt_env = new_rt_env(*old_size);
 
     for (i = 0; i < *old_size; i++) {
@@ -3290,9 +3309,9 @@ read_rt_env(const char ***old_names, Var ** rt_env, int *old_size)
     return 1;
 }
 
-Var *
-reorder_rt_env(Var * old_rt_env, const char **old_names,
-	       int old_size, Program * prog)
+Var*
+reorder_rt_env(Var old_rt_env[], ref_ptr<const char> old_names[],
+	       int old_size, Program* prog)
 {
     /* reorder old_rt_env, which is aligned according to old_names,
        to align to prog->var_names -- return the new rt_env
@@ -3310,7 +3329,7 @@ reorder_rt_env(Var * old_rt_env, const char **old_names,
 	int slot;
 
 	for (slot = 0; slot < old_size; slot++) {
-	    if (mystrcasecmp(old_names[slot], prog->var_names[i]) == 0)
+	    if (mystrcasecmp(old_names[slot].expose(), prog->var_names[i].expose()) == 0)
 		break;
 	}
 
@@ -3326,7 +3345,7 @@ reorder_rt_env(Var * old_rt_env, const char **old_names,
     free_rt_env(old_rt_env, old_size);
     for (i = 0; i < old_size; i++)
 	free_str(old_names[i]);
-    free(old_names);
+    delete old_names;
 
     return rt_env;
 }
@@ -3357,7 +3376,7 @@ write_activ(activation a)
 
     dbio_printf("%u %u %u\n", a.pc, a.bi_func_pc, a.error_pc);
     if (a.bi_func_pc != 0) {
-	dbio_write_string(name_func_by_num(a.bi_func_id));
+	dbio_write_string(name_func_by_num(a.bi_func_id).expose());
 	write_bi_func_data(a.bi_func_data, a.bi_func_id);
     }
 }
@@ -3382,8 +3401,9 @@ read_activ(activation * a, int which_vector)
 {
     DB_Version version;
     Var *old_rt_env;
-    const char **old_names;
-    int old_size, stack_in_use;
+    ref_ptr<const char>* old_names;
+    unsigned old_size;
+    int stack_in_use;
     unsigned i;
     const char *func_name;
     int max_stack;

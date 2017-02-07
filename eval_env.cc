@@ -99,16 +99,19 @@ set_rt_env_obj(Var * env, int slot, Objid o)
 }
 
 void
-set_rt_env_str(Var * env, int slot, const char *s)
+set_rt_env_str(Var * env, int slot, const char* s)
 {
-    Var v;
-    v.type = TYPE_STR;
-    v.v.str = s;
-    env[slot] = v;
+    env[slot] = Var::new_str(s);
+}
+
+void
+set_rt_env_str(Var * env, int slot, const ref_ptr<const char>& s)
+{
+    env[slot] = Var::new_str(s);
 }
 
 void
 set_rt_env_var(Var * env, int slot, const Var& v)
 {
-    env[slot] = v;
+    env[slot] = var_ref(v);
 }

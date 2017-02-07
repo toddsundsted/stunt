@@ -25,8 +25,6 @@
 #include "structures.h"
 #include "utils.h"
 
-static unsigned alloc_num[Sizeof_Memory_Type];
-
 static inline int
 refcount_overhead(Memory_Type type)
 {
@@ -89,6 +87,12 @@ mymalloc(size_t size)
     return ref_ptr<rbtrav>((rbtrav*)mymalloc(size, M_TRAV));
 }
 
+template<> ref_ptr<const char>
+mymalloc(size_t size)
+{
+    return ref_ptr<const char>((const char*)mymalloc(size, M_STRING));
+}
+
 void *
 mymalloc(unsigned size, Memory_Type type)
 {
@@ -100,60 +104,58 @@ mymalloc(unsigned size, Memory_Type type)
 	size = 1;
 
     offs = refcount_overhead(type);
-    memptr = (char *) malloc(offs + size);
+    memptr = (char*)malloc(offs + size);
     if (!memptr) {
 	sprintf(msg, "memory allocation (size %u) failed!", size);
 	panic(msg);
     }
-    alloc_num[type]++;
 
     if (offs) {
 	memptr += offs;
-	((reference_overhead *)memptr)[-1].count = 1;
+	((reference_overhead*)memptr)[-1].count = 1;
 #ifdef ENABLE_GC
-	((reference_overhead *)memptr)[-1].buffered = 0;
-	((reference_overhead *)memptr)[-1].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
+	((reference_overhead*)memptr)[-1].buffered = 0;
+	((reference_overhead*)memptr)[-1].color = (type == M_ANON) ? GC_BLACK : GC_GREEN;
 #endif /* ENABLE_GC */
 #ifdef MEMO_STRLEN
 	if (type == M_STRING)
-	    ((int *) memptr)[-2] = size - 1;
+	    ((int*)memptr)[-2] = size - 1;
 #endif /* MEMO_STRLEN */
 #ifdef MEMO_VALUE_BYTES
 	if (type == M_LIST)
-	    ((int *) memptr)[-2] = 0;
+	    ((int*)memptr)[-2] = 0;
 	if (type == M_TREE)
-	    ((int *) memptr)[-2] = 0;
+	    ((int*)memptr)[-2] = 0;
 #endif /* MEMO_VALUE_BYTES */
     }
     return memptr;
 }
 
-const char *
-str_ref(const char *s)
+ref_ptr<const char>
+str_ref(const ref_ptr<const char>& s)
 {
-    addref(s);
+    s.inc_ref();
     return s;
 }
 
-const char *
-str_dup(const char *s)
+ref_ptr<const char>
+str_dup(const char* s)
 {
-    char *r;
-
-    if (s == 0 || *s == '\0') {
-	static char *emptystring;
-
-	if (!emptystring) {
-	    emptystring = (char *) mymalloc(1, M_STRING);
-	    *emptystring = '\0';
+    if (s == nullptr || *s == '\0') {
+	static ref_ptr<const char> e;
+	if (!e) {
+	    e = mymalloc<const char>(1);
+	    char* t = const_cast<char*>(e.expose());
+	    *t = '\0';
 	}
-	addref(emptystring);
-	return emptystring;
+	e.inc_ref();
+	return e;
     } else {
-	r = (char *) mymalloc(strlen(s) + 1, M_STRING);	/* NO MEMO HERE */
-	strcpy(r, s);
+	ref_ptr<const char> r = mymalloc<const char>(strlen(s) + 1);
+	char *t = const_cast<char*>(r.expose());
+	strcpy(t, s);
+	return r;
     }
-    return r;
 }
 
 template<typename T> ref_ptr<T>
@@ -180,6 +182,12 @@ myrealloc(ref_ptr<rbtrav> ptr, size_t size)
     return ref_ptr<rbtrav>((rbtrav*)myrealloc(ptr.ptr, size, M_TRAV));
 }
 
+template<> ref_ptr<const char>
+myrealloc(ref_ptr<const char> ptr, size_t size)
+{
+    return ref_ptr<const char>((const char*)myrealloc((void*)ptr.ptr, size, M_STRING));
+}
+
 void *
 myrealloc(void *ptr, unsigned size, Memory_Type type)
 {
@@ -198,7 +206,7 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
 template<typename T> void
 myfree(ref_ptr<T> ptr)
 {
-    myfree(ptr, M_NONE);
+    myfree((void*)ptr.ptr, M_NONE);
 }
 
 template<> void
@@ -219,21 +227,14 @@ myfree<rbtrav>(ref_ptr<rbtrav> ptr)
     myfree(ptr.ptr, M_TRAV);
 }
 
+template<> void
+myfree<const char>(ref_ptr<const char> ptr)
+{
+    myfree((void*)ptr.ptr, M_STRING);
+}
+
 void
 myfree(void *ptr, Memory_Type type)
 {
-    alloc_num[type]--;
-
     free((char *) ptr - refcount_overhead(type));
 }
-
-/* XXX stupid fix for non-gcc compilers, already in storage.h */
-#ifdef NEVER
-void
-free_str(const char *s)
-{
-    if (delref(s) == 0)
-	myfree((void *) s, M_STRING);
-}
-
-#endif

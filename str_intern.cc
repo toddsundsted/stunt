@@ -8,7 +8,7 @@
 #ifdef STRING_INTERNING
 
 struct intern_entry {
-    const char *s;
+    ref_ptr<const char> s;
     unsigned hash;
     struct intern_entry *next;
 };
@@ -155,7 +155,7 @@ find_interned_string(const char *s, unsigned hash)
     
     for (p = intern_table[bucket]; p; p = p->next) {
         if (hash == p->hash) {
-            if (!strcmp(s, p->s)) {
+            if (!strcmp(s, p->s.expose())) {
                 return p;
             }
         }
@@ -164,16 +164,14 @@ find_interned_string(const char *s, unsigned hash)
     return NULL;
 }
 
-/* Caller must addref s */
-
 static void
-add_interned_string(const char *s, unsigned hash)
+add_interned_string(const ref_ptr<const char>& s, unsigned hash)
 {
     int bucket = hash % intern_table_size;
     struct intern_entry *p;
     
     p = allocate_intern_entry();
-    p->s = s;
+    p->s = str_ref(s);
     p->hash = hash;
     p->next = intern_table[bucket];
     
@@ -214,15 +212,10 @@ intern_rehash(int new_size) {
     intern_table = new_table;
 }
 
-
-/* Make an immutable copy of s.  If there's an intern table open,
-   possibly share storage. */
-const char *
-str_intern(const char *s)
+ref_ptr<const char>
+str_intern(const char* s)
 {
     struct intern_entry *e;
-    unsigned hash;
-    const char *r;
     
     if (s == NULL || *s == '\0') {
         /* str_dup already has a canonical empty string */
@@ -233,9 +226,9 @@ str_intern(const char *s)
         return str_dup(s);
     }
     
-    hash = str_hash(s);
+    unsigned h = str_hash(s);
     
-    e = find_interned_string(s, hash);
+    e = find_interned_string(s, h);
     
     if (e != NULL) {
         intern_allocations_saved++;
@@ -247,17 +240,16 @@ str_intern(const char *s)
         intern_rehash(intern_table_size * 2);
     }
     
-    r = str_dup(s);
-    r = str_ref(r);
-    add_interned_string(r, hash);
+    ref_ptr<const char> r = str_dup(s);
+    add_interned_string(r, h);
     
     return r;
 }
 
 #else /* STRING_INTERNING */
 
-const char *
-str_intern(const char *s)
+ref_ptr<const char>
+str_intern(const char* s)
 {
 	return str_dup(s);
 }

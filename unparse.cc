@@ -564,8 +564,8 @@ unparse_name_expr(Stream * str, Expr * expr)
      */
 
     if (expr->kind == EXPR_VAR && expr->e.var.is_str()
-	&& ok_identifier(expr->e.var.v.str)) {
-	stream_add_string(str, expr->e.var.v.str);
+	&& ok_identifier(expr->e.var.v.str.expose())) {
+	stream_add_string(str, expr->e.var.v.str.expose());
 	return;
     }
     /* We need to use the full unparser */
@@ -584,9 +584,9 @@ unparse_expr(Stream * str, Expr * expr)
 	    && expr->e.bin.lhs->e.var.v.obj == 0
 	    && expr->e.bin.rhs->kind == EXPR_VAR
 	    && expr->e.bin.rhs->e.var.is_str()
-	    && ok_identifier(expr->e.bin.rhs->e.var.v.str)) {
+	    && ok_identifier(expr->e.bin.rhs->e.var.v.str.expose())) {
 	    stream_add_char(str, '$');
-	    stream_add_string(str, expr->e.bin.rhs->e.var.v.str);
+	    stream_add_string(str, expr->e.bin.rhs->e.var.v.str.expose());
 	} else {
 	    bracket_lt(str, EXPR_PROP, expr->e.bin.lhs);
 	    if (expr->e.bin.lhs->kind == EXPR_VAR
@@ -604,9 +604,9 @@ unparse_expr(Stream * str, Expr * expr)
 	    && expr->e.verb.obj->e.var.v.obj == 0
 	    && expr->e.verb.verb->kind == EXPR_VAR
 	    && expr->e.verb.verb->e.var.is_str()
-	    && ok_identifier(expr->e.verb.verb->e.var.v.str)) {
+	    && ok_identifier(expr->e.verb.verb->e.var.v.str.expose())) {
 	    stream_add_char(str, '$');
-	    stream_add_string(str, expr->e.verb.verb->e.var.v.str);
+	    stream_add_string(str, expr->e.verb.verb->e.var.v.str.expose());
 	} else {
 	    bracket_lt(str, EXPR_VERB, expr->e.verb.obj);
 	    stream_add_char(str, ':');
@@ -699,14 +699,14 @@ unparse_expr(Stream * str, Expr * expr)
 	break;
 
     case EXPR_CALL:
-	stream_add_string(str, name_func_by_num(expr->e.call.func));
+	stream_add_string(str, name_func_by_num(expr->e.call.func).expose());
 	stream_add_char(str, '(');
 	unparse_arglist(str, expr->e.call.args);
 	stream_add_char(str, ')');
 	break;
 
     case EXPR_ID:
-	stream_add_string(str, prog->var_names[expr->e.id]);
+	stream_add_string(str, prog->var_names[expr->e.id].expose());
 	break;
 
     case EXPR_LIST:
@@ -793,7 +793,7 @@ unparse_scatter(Stream * str, Scatter * sc)
 	    stream_add_char(str, '@');
 	    /* fall thru to ... */
 	case SCAT_REQUIRED:
-	    stream_add_string(str, prog->var_names[sc->id]);
+	    stream_add_string(str, prog->var_names[sc->id].expose());
 	    break;
 	case SCAT_OPTIONAL:
 	    stream_printf(str, "?%s", prog->var_names[sc->id]);

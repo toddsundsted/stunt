@@ -69,7 +69,7 @@ static const char *prep_list[] =
 
 typedef struct pt_entry {
     int nwords;
-    const char *words[MAXPPHRASE];
+    ref_ptr<const char> words[MAXPPHRASE];
     struct pt_entry *next;
 } pt_entry;
 
@@ -128,7 +128,7 @@ db_find_prep(int argc, char *argv[], int *first, int *last)
 	    for (alias = prep_table[j]; alias; alias = alias->next) {
 		if (i + alias->nwords <= argc) {
 		    for (k = 0; k < alias->nwords; k++) {
-			if (mystrcasecmp(argv[i + k], alias->words[k]))
+			if (mystrcasecmp(argv[i + k], alias->words[k].expose()))
 			    break;
 		    }
 		    if (k == alias->nwords
@@ -199,7 +199,7 @@ db_unparse_prep(db_prep_spec prep)
 #define PERMMASK   0xF
 
 int
-db_add_verb(const Var& obj, const char *vnames, Objid owner, unsigned flags,
+db_add_verb(const Var& obj, const ref_ptr<const char>& vnames, Objid owner, unsigned flags,
 	    db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
     Object *o = dbpriv_dereference(obj);
@@ -226,12 +226,12 @@ db_add_verb(const Var& obj, const char *vnames, Objid owner, unsigned flags,
 }
 
 static Verbdef *
-find_verbdef_by_name(Object * o, const char *vname, int check_x_bit)
+find_verbdef_by_name(Object * o, const ref_ptr<const char>& vname, int check_x_bit)
 {
     Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
-	if (verbcasecmp(v->name, vname)
+	if (verbcasecmp(v->name.expose(), vname.expose())
 	    && (!check_x_bit || (v->perms & VF_EXEC)))
 	    break;
 
@@ -253,7 +253,7 @@ db_count_verbs(const Var& obj)
 
 int
 db_for_all_verbs(const Var& obj,
-		 int (*func) (void *data, const char *vname),
+		 int (*func) (void *data, const ref_ptr<const char>& vname),
 		 void *data)
 {
     Object *o = dbpriv_dereference(obj);
@@ -301,7 +301,7 @@ db_delete_verb(db_verb_handle vh)
 }
 
 db_verb_handle
-db_find_command_verb(Objid oid, const char *verb,
+db_find_command_verb(Objid oid, const ref_ptr<const char>& verb,
 		     db_arg_spec dobj, unsigned prep, db_arg_spec iobj)
 {
     Object *o;
@@ -321,7 +321,7 @@ db_find_command_verb(Objid oid, const char *verb,
 	    db_arg_spec vdobj = (db_arg_spec)((v->perms >> DOBJSHIFT) & OBJMASK);
 	    db_arg_spec viobj = (db_arg_spec)((v->perms >> IOBJSHIFT) & OBJMASK);
 
-	    if (verbcasecmp(v->name, verb)
+	    if (verbcasecmp(v->name.expose(), verb.expose())
 		&& (vdobj == ASPEC_ANY || vdobj == dobj)
 		&& (v->prep == PREP_ANY || v->prep == prep)
 		&& (viobj == ASPEC_ANY || viobj == iobj)) {
@@ -358,7 +358,7 @@ struct vc_entry {
     int generation;
 #endif
     Object *object;
-    const char *verbname;
+    ref_ptr<const char> verbname;
     handle h;
     struct vc_entry *next;
 };
@@ -477,7 +477,7 @@ struct verbdef_definer_data {
 };
 
 static struct verbdef_definer_data
-find_callable_verbdef(Object *start, const char *verb)
+find_callable_verbdef(Object *start, const ref_ptr<const char>& verb)
 {
     Object *o = NULL;
     Verbdef *v = NULL;
@@ -521,7 +521,7 @@ find_callable_verbdef(Object *start, const char *verb)
 
 /* does NOT consume `recv' and `verb' */
 db_verb_handle
-db_find_callable_verb(const Var& recv, const char *verb)
+db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 {
     if (!recv.is_object())
 	panic("DB_FIND_CALLABLE_VERB: Not an object!");
@@ -582,12 +582,12 @@ db_find_callable_verb(const Var& recv, const char *verb)
 	if (vc_table == NULL)
 	    make_vc_table(DEFAULT_VC_SIZE);
 
-	hash = str_hash(verb) ^ (~first_parent_with_verbs);	/* ewww, but who cares */
+	hash = str_hash(verb.expose()) ^ (~first_parent_with_verbs);	/* ewww, but who cares */
 	bucket = hash % vc_size;
 
 	for (vc = vc_table[bucket]; vc; vc = vc->next) {
 	    if (hash == vc->hash
-		&& o == vc->object && !mystrcasecmp(verb, vc->verbname)) {
+		&& o == vc->object && !mystrcasecmp(verb.expose(), vc->verbname.expose())) {
 		/* we haaave a winnaaah */
 		if (vc->h.verbdef) {
 		    verbcache_hit++;
@@ -625,7 +625,7 @@ db_find_callable_verb(const Var& recv, const char *verb)
 
 	new_vc->hash = hash;
 	new_vc->object = o;
-	new_vc->verbname = str_dup(verb);
+	new_vc->verbname = str_ref(verb);
 	new_vc->h.verbdef = NULL;
 	new_vc->next = vc_table[bucket];
 	vc_table[bucket] = new_vc;
@@ -664,7 +664,7 @@ db_find_callable_verb(const Var& recv, const char *verb)
 }
 
 db_verb_handle
-db_find_defined_verb(const Var& obj, const char *vname, int allow_numbers)
+db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow_numbers)
 {
     Object *o = dbpriv_dereference(obj);
     Verbdef *v;
@@ -673,13 +673,12 @@ db_find_defined_verb(const Var& obj, const char *vname, int allow_numbers)
     static handle h;
     db_verb_handle vh;
 
-    if (!allow_numbers ||
-	(num = strtol(vname, &p, 10),
-	 (isspace(*vname) || *p != '\0')))
+    const char* tmp = vname.expose();
+    if (!allow_numbers || (num = strtol(tmp, &p, 10), (isspace(*tmp) || *p != '\0')))
 	num = -1;
 
     for (i = 0, v = o->verbdefs; v; v = v->next, i++)
-	if (i == num || verbcasecmp(v->name, vname))
+	if (i == num || verbcasecmp(v->name.expose(), vname.expose()))
 	    break;
 
     if (v) {
@@ -738,7 +737,7 @@ db_verb_definer(db_verb_handle vh)
     return r;
 }
 
-const char *
+ref_ptr<const char>
 db_verb_names(db_verb_handle vh)
 {
     handle *h = (handle *) vh.ptr;
@@ -747,11 +746,11 @@ db_verb_names(db_verb_handle vh)
 	return h->verbdef->name;
 
     panic("DB_VERB_NAMES: Null handle!");
-    return 0;
+    return ref_ptr<const char>::empty;
 }
 
 void
-db_set_verb_names(db_verb_handle vh, const char *names)
+db_set_verb_names(db_verb_handle vh, const ref_ptr<const char>& names)
 {
     handle *h = (handle *) vh.ptr;
 

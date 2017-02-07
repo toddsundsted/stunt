@@ -173,12 +173,12 @@ server_version_full(const Var& arg)
     if (!version_structure) {
 	init_version_structure();
     }
-    if (!arg.is_str() || arg.v.str[0] == '\0' ) {
+    if (!arg.is_str() || arg.v.str.expose()[0] == '\0' ) {
 	r.type   = TYPE_LIST;
 	r.v.list = version_structure;
 	return var_ref(r);
     }
-    s = arg.v.str;
+    s = arg.v.str.expose();
     tree = version_structure;
     for (;;) {
 	/* invariants:
@@ -195,14 +195,14 @@ server_version_full(const Var& arg)
 		break;
 	    case TYPE_STR:
 		if (memo_strlen(tree[0].v.str) == e - s &&
-		    strncmp(tree[0].v.str, s, e - s) == 0)
+		    strncmp(tree[0].v.str.expose(), s, e - s) == 0)
 		    goto found;
 		break;
 	    case TYPE_LIST:
 		if (tree[0].v.list[0].v.num == 2 &&
 		    tree[0].v.list[1].is_str() &&
 		    memo_strlen(tree[0].v.list[1].v.str) == e - s &&
-		    strncmp(tree[0].v.list[1].v.str, s, e - s) == 0) {
+		    strncmp(tree[0].v.list[1].v.str.expose(), s, e - s) == 0) {
 
 		    if (tree[0].v.list[0].v.num > 1)
 			tree = tree[0].v.list + 2;

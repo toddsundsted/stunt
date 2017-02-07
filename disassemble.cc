@@ -200,11 +200,10 @@ disassemble(Program * prog, Printer p, void *data)
     int i, l;
     unsigned pc;
     Bytecodes bc;
-    const char *ptr;
-    const char **names = prog->var_names;
+    const ref_ptr<const char>* names = prog->var_names;
     unsigned tmp, num_names = prog->num_var_names;
 #   define NAMES(i)	(tmp = i,					\
-			 tmp < num_names ? names[tmp]			\
+			 tmp < num_names ? names[tmp].expose()		\
 					 : "*** Unknown variable ***")
     Var *literals = prog->literals;
 
@@ -366,6 +365,7 @@ disassemble(Program * prog, Printer p, void *data)
 		case OP_IMM:
 		    {
 			Var v;
+			const char *ptr;
 
 			v = literals[ADD_BYTES(bc.numbytes_literal)];
 			switch (v.type) {
@@ -377,7 +377,7 @@ disassemble(Program * prog, Printer p, void *data)
 			    break;
 			case TYPE_STR:
 			    stream_add_string(insn, " \"");
-			    for (ptr = v.v.str; *ptr; ptr++) {
+			    for (ptr = v.v.str.expose(); *ptr; ptr++) {
 				if (*ptr == '"' || *ptr == '\\')
 				    stream_add_char(insn, '\\');
 				stream_add_char(insn, *ptr);
@@ -430,7 +430,7 @@ disassemble_to_stderr(Program * prog)
 }
 
 struct data {
-    const char** lines;
+    ref_ptr<const char>* lines;
     int used, max;
 };
 
@@ -441,7 +441,7 @@ add_line(const char *line, void *data)
 
     if (d->used >= d->max) {
 	int new_max = (d->max == 0 ? 20 : d->max * 2);
-	const char **_new = (const char **)malloc(sizeof(const char **) * new_max);
+	ref_ptr<const char>* _new = (ref_ptr<const char>*)malloc(sizeof(ref_ptr<const char>*) * new_max);
 	int i;
 
 	for (i = 0; i < d->used; i++)

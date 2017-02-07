@@ -33,7 +33,9 @@ aliases(Objid oid)
     Var value;
     db_prop_handle h;
 
-    h = db_find_property(Var::new_obj(oid), "aliases", &value);
+    static const ref_ptr<const char> ALIASES = str_dup("aliases");
+
+    h = db_find_property(Var::new_obj(oid), ALIASES, &value);
     if (!h.ptr || !value.is_list()) {
 	/* Simulate a pointer to an empty list */
 	return &zero;
@@ -57,11 +59,11 @@ match_proc(void *data, Objid oid)
 
     for (i = 0; i <= names[0].v.num; i++) {
 	if (i == 0)
-	    name = db_object_name(oid);
+	    name = db_object_name(oid).expose();
 	else if (!names[i].is_str())
 	    continue;
 	else
-	    name = names[i].v.str;
+	    name = names[i].v.str.expose();
 
 	if (!mystrncasecmp(name, d->name, d->lname)) {
 	    if (name[d->lname] == '\0') {	/* exact match */

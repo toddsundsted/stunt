@@ -193,15 +193,11 @@ dbio_read_string(void)
 	return buffer;
 }
 
-const char *
+ref_ptr<const char>
 dbio_read_string_intern(void)
 {
-    const char *s, *r;
-
-    s = dbio_read_string();
-    r = str_intern(s);
-
-    /* puts(r); */
+    const char* s = dbio_read_string();
+    ref_ptr<const char> r = str_intern(s);
 
     return r;
 }
@@ -409,7 +405,7 @@ dbio_write_var(const Var& v)
     case TYPE_NONE:
 	break;
     case TYPE_STR:
-	dbio_write_string(v.v.str);
+	dbio_write_string(v.v.str.expose());
 	break;
     case TYPE_OBJ:
     case TYPE_ERR:

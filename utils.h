@@ -120,7 +120,19 @@ extern const char *raw_bytes_to_clean(const char *buffer, int buflen);
 extern const char *clean_to_raw_bytes(const char *binary, int *rawlen);
 
 extern void stream_add_raw_bytes_to_binary(Stream *, const char *buffer, int buflen);
+/**
+ * Converts an array of 8-bit binary characters into a null-terminated
+ * string in MOO binary string format. `buflen` specifies the length
+ * of the array. The returned string is re-used on subsequent calls,
+ * so is should be copied if not used immediately.
+ */
 extern const char *raw_bytes_to_binary(const char *buffer, int buflen);
+/**
+ * Converts a null-terminated string in MOO binary string format into
+ * an array of 8-bit binary characters. Returns the length of the
+ * array in `rawlen`. The returned array is re-used on subsequent
+ * calls, so is should be copied if not used immediately.
+ */
 extern const char *binary_to_raw_bytes(const char *binary, int *rawlen);
 
 extern Var anonymizing_var_ref(const Var& v, Objid progr);

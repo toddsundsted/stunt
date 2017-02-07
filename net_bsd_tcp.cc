@@ -227,7 +227,7 @@ proto_open_connection(const Var& arglist, int *read_fd, int *write_fd,
 	     !arglist.v.list[2].is_int())
 	return E_TYPE;
 
-    host_name = arglist.v.list[1].v.str;
+    host_name = arglist.v.list[1].v.str.expose();
     port = arglist.v.list[2].v.num;
 
     addr.sin_family = AF_INET;

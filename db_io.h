@@ -46,7 +46,7 @@ extern const char *dbio_read_string(void);
 				 * str_dup() it if it is to persist.
 				 */
 
-extern const char *dbio_read_string_intern(void);
+extern ref_ptr<const char> dbio_read_string_intern(void);
 				/* The returned string is duplicated
 				 * and possibly interned in a db-load
 				 * string intern table.

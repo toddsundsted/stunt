@@ -22,6 +22,7 @@
 #include "log.h"
 #include "storage.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "sym_table.h"
 #include "utils.h"
 #include "version.h"
@@ -29,9 +30,9 @@
 static Names *
 new_names(unsigned max_size)
 {
-    Names *names = (Names *)malloc(sizeof(Names));
+    Names* names = new Names;
 
-    names->names = (const char **)malloc(sizeof(char *) * max_size);
+    names->names = new ref_ptr<const char>[max_size];
     names->max_size = max_size;
     names->size = 0;
 
@@ -79,32 +80,32 @@ new_builtin_names(DB_Version version)
 	builtins[version] = bi;
 	bi->size = bi->max_size;
 
-	bi->names[SLOT_NUM] = str_dup("NUM");
-	bi->names[SLOT_OBJ] = str_dup("OBJ");
-	bi->names[SLOT_STR] = str_dup("STR");
-	bi->names[SLOT_LIST] = str_dup("LIST");
-	bi->names[SLOT_ERR] = str_dup("ERR");
-	bi->names[SLOT_PLAYER] = str_dup("player");
-	bi->names[SLOT_THIS] = str_dup("this");
-	bi->names[SLOT_CALLER] = str_dup("caller");
-	bi->names[SLOT_VERB] = str_dup("verb");
-	bi->names[SLOT_ARGS] = str_dup("args");
-	bi->names[SLOT_ARGSTR] = str_dup("argstr");
-	bi->names[SLOT_DOBJ] = str_dup("dobj");
-	bi->names[SLOT_DOBJSTR] = str_dup("dobjstr");
-	bi->names[SLOT_PREPSTR] = str_dup("prepstr");
-	bi->names[SLOT_IOBJ] = str_dup("iobj");
-	bi->names[SLOT_IOBJSTR] = str_dup("iobjstr");
+	bi->names[SLOT_NUM] = str_intern("NUM");
+	bi->names[SLOT_OBJ] = str_intern("OBJ");
+	bi->names[SLOT_STR] = str_intern("STR");
+	bi->names[SLOT_LIST] = str_intern("LIST");
+	bi->names[SLOT_ERR] = str_intern("ERR");
+	bi->names[SLOT_PLAYER] = str_intern("player");
+	bi->names[SLOT_THIS] = str_intern("this");
+	bi->names[SLOT_CALLER] = str_intern("caller");
+	bi->names[SLOT_VERB] = str_intern("verb");
+	bi->names[SLOT_ARGS] = str_intern("args");
+	bi->names[SLOT_ARGSTR] = str_intern("argstr");
+	bi->names[SLOT_DOBJ] = str_intern("dobj");
+	bi->names[SLOT_DOBJSTR] = str_intern("dobjstr");
+	bi->names[SLOT_PREPSTR] = str_intern("prepstr");
+	bi->names[SLOT_IOBJ] = str_intern("iobj");
+	bi->names[SLOT_IOBJSTR] = str_intern("iobjstr");
 
 	if (version >= DBV_Float) {
-	    bi->names[SLOT_INT] = str_dup("INT");
-	    bi->names[SLOT_FLOAT] = str_dup("FLOAT");
+	    bi->names[SLOT_INT] = str_intern("INT");
+	    bi->names[SLOT_FLOAT] = str_intern("FLOAT");
 	}
         if (version >= DBV_Map) {
-            bi->names[SLOT_MAP] = str_dup("MAP");
+            bi->names[SLOT_MAP] = str_intern("MAP");
         }
         if (version >= DBV_Anon) {
-            bi->names[SLOT_ANON] = str_dup("ANON");
+            bi->names[SLOT_ANON] = str_intern("ANON");
         }
     }
     return copy_names(builtins[version]);
@@ -116,7 +117,7 @@ find_name(Names * names, const char *str)
     unsigned i;
 
     for (i = 0; i < names->size; i++)
-	if (!mystrcasecmp(names->names[i], str))
+	if (!mystrcasecmp(names->names[i].expose(), str))
 	    return i;
     return -1;
 }
@@ -127,7 +128,7 @@ find_or_add_name(Names ** names, const char *str)
     unsigned i;
 
     for (i = 0; i < (*names)->size; i++)
-	if (!mystrcasecmp((*names)->names[i], str)) {	/* old name */
+	if (!mystrcasecmp((*names)->names[i].expose(), str)) {	/* old name */
 	    return i;
 	}
     if ((*names)->size == (*names)->max_size) {
@@ -149,10 +150,8 @@ find_or_add_name(Names ** names, const char *str)
 void
 free_names(Names * names)
 {
-    unsigned i;
-
-    for (i = 0; i < names->size; i++)
+    for (unsigned i = 0; i < names->size; i++)
 	free_str(names->names[i]);
-    free(names->names);
-    free(names);
+    delete names->names;
+    delete names;
 }

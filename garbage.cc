@@ -90,7 +90,7 @@ static struct pending_recycle *pending_tail = 0;
  * specific type isn't important to the garbage collector, so this
  * macro picks a flavor and casts the pointer to a pointer to a void.
  */
-#define VOID_PTR(var) ((void *)((var).v.str))
+#define VOID_PTR(var) (*((void**)(&var)))
 
 static void
 gc_stats(int color[])

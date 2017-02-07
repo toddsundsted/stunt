@@ -45,7 +45,7 @@ typedef struct {
     Bytecodes *fork_vectors;
 
     unsigned num_var_names;
-    const char **var_names;
+    ref_ptr<const char>* var_names;
 
     unsigned cached_lineno;
     unsigned cached_lineno_pc;

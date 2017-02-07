@@ -45,7 +45,7 @@ extern Str strrangeset(const Str& str, int from, int to, const Str& value);
 extern Str substr(const Str& str, int lower, int upper);
 extern Str strget(const Str& str, int i);
 
-extern const char *value2str(const Var&);
+extern ref_ptr<const char> value2str(const Var&);
 extern void unparse_value(Stream *, const Var&);
 
 /*

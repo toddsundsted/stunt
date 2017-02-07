@@ -33,11 +33,11 @@ typedef struct {
 	BI_SUSPEND,		/* Suspending the current task */
 	BI_KILL			/* Killing the current task */
     } kind;
-    union {
+    union u {
 	Var ret;
 	struct {
 	    Var code;
-	    const char *msg;
+	    ref_ptr<const char> msg;
 	    Var value;
 	} raise;
 	struct {
@@ -48,6 +48,7 @@ typedef struct {
 	    enum error (*proc) (vm, void *);
 	    void *data;
 	} susp;
+	u() {}
     } u;
 } package;
 
@@ -80,8 +81,8 @@ typedef void *(*bf_read_type) (void);
    hence valid function numbers will fit in one byte but the
    func_not_found signal will not */
 
-extern const char *name_func_by_num(unsigned);
-extern unsigned number_func_by_name(const char *);
+extern const ref_ptr<const char>& name_func_by_num(unsigned);
+extern unsigned number_func_by_name(const char*);
 
 extern unsigned register_function(const char *, int, int, bf_simple, ...);
 extern unsigned register_function(const char *, int, int, bf_complex, ...);

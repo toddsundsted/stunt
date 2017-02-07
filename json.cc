@@ -27,6 +27,7 @@
   policies, either expressed or implied, of Todd Sundsted.
  *****************************************************************************/
 
+#include <assert.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -372,8 +373,8 @@ generate_key(yajl_gen g, const Var& v, void *ctx)
 	}
     case TYPE_STR:
 	{
-	    const char *tmp = v.v.str;
-	    size_t len = strlen(tmp);
+	    const char *tmp = v.v.str.expose();
+	    size_t len = memo_strlen(v.v.str);
 	    if (MODE_EMBEDDED_TYPES == gctx->mode)
 		if (TYPE_NONE != valid_type(&tmp, &len))
 		    tmp = append_type(tmp, v.type);
@@ -442,8 +443,8 @@ generate(yajl_gen g, const Var& v, void *ctx)
 	}
     case TYPE_STR:
 	{
-	    const char *tmp = v.v.str;
-	    size_t len = strlen(tmp);
+	    const char *tmp = v.v.str.expose();
+	    size_t len = memo_strlen(v.v.str);
 	    if (MODE_EMBEDDED_TYPES == gctx->mode)
 		if (TYPE_NONE != valid_type(&tmp, &len))
 		    tmp = append_type(tmp, v.type);
@@ -506,17 +507,19 @@ bf_parse_json(const List& arglist, Objid progr)
     pctx.stack.v = Var::new_int(0);
     pctx.mode = MODE_COMMON_SUBSET;
 
-    const char *str = arglist[1].v.str;
-    size_t len = strlen(str);
+    assert(arglist[1].is_str());
+
+    const char *str = arglist[1].v.str.expose();
+    size_t len = memo_strlen(arglist[1].v.str);
 
     package pack;
 
     int done = 0;
 
     if (1 < arglist.length()) {
-	if (!mystrcasecmp(arglist[2].v.str, "common-subset")) {
+	if (!mystrcasecmp(arglist[2].v.str.expose(), "common-subset")) {
 	    pctx.mode = MODE_COMMON_SUBSET;
-	} else if (!mystrcasecmp(arglist[2].v.str, "embedded-types")) {
+	} else if (!mystrcasecmp(arglist[2].v.str.expose(), "embedded-types")) {
 	    pctx.mode = MODE_EMBEDDED_TYPES;
 	} else {
 	    free_var(arglist);
@@ -575,9 +578,9 @@ bf_generate_json(const List& arglist, Objid progr)
     package pack;
 
     if (1 < arglist.length()) {
-	if (!mystrcasecmp(arglist[2].v.str, "common-subset")) {
+	if (!mystrcasecmp(arglist[2].v.str.expose(), "common-subset")) {
 	    gctx.mode = MODE_COMMON_SUBSET;
-	} else if (!mystrcasecmp(arglist[2].v.str, "embedded-types")) {
+	} else if (!mystrcasecmp(arglist[2].v.str.expose(), "embedded-types")) {
 	    gctx.mode = MODE_EMBEDDED_TYPES;
 	} else {
 	    free_var(arglist);

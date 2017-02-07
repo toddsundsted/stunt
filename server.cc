@@ -54,6 +54,7 @@
 #include "storage.h"
 #include "streams.h"
 #include "structures.h"
+#include "str_intern.h"
 #include "tasks.h"
 #include "timers.h"
 #include "unparse.h"
@@ -154,7 +155,7 @@ new_slistener(Objid oid, const Var& desc, int print_messages, enum error *ee)
     }
     l->oid = oid;
     l->print_messages = print_messages;
-    l->name = str_dup(name);
+    l->name = strdup(name);
 
     l->next = all_slisteners;
     l->prev = &all_slisteners;
@@ -188,7 +189,7 @@ free_slistener(slistener * l)
 	l->next->prev = l->prev;
 
     free_var(l->desc);
-    free_str(l->name);
+    free((void*)l->name);
 
     free(l);
 }
@@ -424,16 +425,22 @@ call_notifier(Objid player, Objid handler, const char *verb_name)
 int
 get_server_option(Objid oid, const char *name, Var * r)
 {
+    static const ref_ptr<const char> SERVER_OPTIONS = str_dup("server_options");
+    ref_ptr<const char> prop_name = str_dup(name);
+
     if (((valid(oid) &&
-	  db_find_property(Var::new_obj(oid), "server_options", r).ptr)
+	  db_find_property(Var::new_obj(oid), SERVER_OPTIONS, r).ptr)
 	 || (valid(SYSTEM_OBJECT) &&
-	     db_find_property(Var::new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
+	     db_find_property(Var::new_obj(SYSTEM_OBJECT), SERVER_OPTIONS, r).ptr))
 	&& r->is_obj()
 	&& valid(r->v.obj)
-	&& db_find_property(*r, name, r).ptr)
+	&& db_find_property(*r, prop_name, r).ptr) {
+	free_str(prop_name);
 	return 1;
-
-    return 0;
+    } else {
+	free_str(prop_name);
+	return 0;
+    }
 }
 
 static void
@@ -446,12 +453,12 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
     va_start(args, msg_name);
     if (get_server_option(listener, msg_name, &msg)) {
 	if (msg.is_str())
-	    network_send_line(nh, msg.v.str, 1);
+	    network_send_line(nh, msg.v.str.expose(), 1);
 	else if (msg.is_list()) {
 	    int i;
 	    for (i = 1; i <= msg.v.list[0].v.num; i++)
 		if (msg.v.list[i].is_str())
-		    network_send_line(nh, msg.v.list[i].v.str, 1);
+		    network_send_line(nh, msg.v.list[i].v.str.expose(), 1);
 	}
     } else			/* Use default message */
 	while ((line = va_arg(args, const char *)) != 0)
@@ -944,12 +951,12 @@ emergency_mode()
 	    nargs = words.v.list[0].v.num - 1;
 	    if (nargs < 0)
 		continue;
-	    command = words.v.list[1].v.str;
+	    command = words.v.list[1].v.str.expose();
 
 	    if ((!mystrcasecmp(command, "program")
 		 || !mystrcasecmp(command, ".program"))
 		&& nargs == 1) {
-		const char *verbref = words.v.list[2].v.str;
+		const ref_ptr<const char>& verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
 
@@ -986,7 +993,7 @@ emergency_mode()
 		    free_var(errors);
 		}
 	    } else if (!mystrcasecmp(command, "list") && nargs == 1) {
-		const char *verbref = words.v.list[2].v.str;
+		const ref_ptr<const char>& verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
 
@@ -998,7 +1005,7 @@ emergency_mode()
 		else
 		    printf("%s\n", message);
 	    } else if (!mystrcasecmp(command, "disassemble") && nargs == 1) {
-		const char *verbref = words.v.list[2].v.str;
+		const ref_ptr<const char>& verbref = words.v.list[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
 
@@ -1018,7 +1025,7 @@ emergency_mode()
 	    } else if (!mystrcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
 	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
-		       && sscanf(words.v.list[2].v.str, "#%d", &wizard) == 1) {
+		       && sscanf(words.v.list[2].v.str.expose(), "#%d", &wizard) == 1) {
 		printf("** Switching to wizard #%d...\n", wizard);
 	    } else if (!mystrcasecmp(command, "help") || !mystrcasecmp(command, "?")) {
 		printf(";EXPR                 "
@@ -1253,7 +1260,7 @@ server_string_option(const char *name, const char *defallt)
     Var v;
 
     if (get_server_option(SYSTEM_OBJECT, name, &v))
-	return v.is_str() ? v.v.str : defallt;
+	return v.is_str() ? v.v.str.expose() : defallt;
     else
 	return defallt;
 }
@@ -1372,12 +1379,12 @@ player_connected_silent(Objid old_id, Objid new_id, int is_newly_created)
 	/* network_connection_name is allowed to reuse the same string
 	 * storage, so we have to copy one of them.
 	 */
-	const char *name1 = str_dup(network_connection_name(existing_h->nhandle));
+	ref_ptr<const char> name = str_dup(network_connection_name(existing_h->nhandle));
 	oklog("REDIRECTED: %s, was %s, now %s\n",
 	      object_name(new_id),
-	      name1,
+	      name.expose(),
 	      network_connection_name(new_h->nhandle));
-	free_str(name1);
+	free_str(name);
 	network_close(existing_h->nhandle);
 	free_shandle(existing_h);
     } else {
@@ -1410,12 +1417,12 @@ player_connected(Objid old_id, Objid new_id, int is_newly_created)
 	/* network_connection_name is allowed to reuse the same string
 	 * storage, so we have to copy one of them.
 	 */
-	const char *name1 = str_dup(network_connection_name(existing_h->nhandle));
+	ref_ptr<const char> name = str_dup(network_connection_name(existing_h->nhandle));
 	oklog("REDIRECTED: %s, was %s, now %s\n",
 	      object_name(new_id),
-	      name1,
+	      name.expose(),
 	      network_connection_name(new_h->nhandle));
-	free_str(name1);
+	free_str(name);
 	if (existing_h->print_messages)
 	    send_message(existing_listener, existing_h->nhandle,
 			 "redirect_from_msg",
@@ -1542,7 +1549,7 @@ read_active_connections(void)
 int
 main(int argc, char **argv)
 {
-    const char *this_program = str_dup(argv[0]);
+    ref_ptr<const char> this_program = str_dup(argv[0]);
     const char *log_file = 0;
     const char *script_file = 0;
     const char *script_line = 0;
@@ -1760,7 +1767,7 @@ static package
 bf_shutdown(const List& arglist, Objid progr)
 {
     int nargs = arglist.length();
-    const char *message = (nargs >= 1 ? arglist[1].v.str : 0);
+    const char *message = (nargs >= 1 ? arglist[1].v.str.expose() : 0);
 
     if (!is_wizard(progr)) {
 	free_var(arglist);
@@ -1970,7 +1977,7 @@ static package
 bf_notify(const List& arglist, Objid progr)
 {				/* (player, string [, no_flush]) */
     Objid conn = arglist[1].v.obj;
-    const char *line = arglist[2].v.str;
+    const char *line = arglist[2].v.str.expose();
     int no_flush = (arglist.length() > 2 ? is_true(arglist[3]) : 0);
     shandle *h = find_shandle(conn);
     Var r;
@@ -2021,7 +2028,7 @@ static package
 bf_set_connection_option(const List& arglist, Objid progr)
 {				/* (conn, option, value) */
     Objid oid = arglist[1].v.obj;
-    const char *option = arglist[2].v.str;
+    const char *option = arglist[2].v.str.expose();
     Var value = arglist[3];
     shandle *h = find_shandle(oid);
     enum error e = E_NONE;
@@ -2046,7 +2053,7 @@ bf_connection_options(const List& arglist, Objid progr)
 {				/* (conn [, opt-name]) */
     Objid oid = arglist[1].v.obj;
     int nargs = arglist.length();
-    const char *oname = (nargs >= 2 ? arglist[2].v.str : 0);
+    const char *oname = (nargs >= 2 ? arglist[2].v.str.expose() : 0);
     shandle *h = find_shandle(oid);
 
     if (!h || h->disconnect_me) {

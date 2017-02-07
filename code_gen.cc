@@ -269,7 +269,7 @@ add_literal(const Var& v, State * state)
 	    /* intern string if we can */
 	    Var nv;
 	    nv.type = TYPE_STR;
-	    nv.v.str = str_intern(v.v.str);
+	    nv.v.str = str_intern(v.v.str.expose());
 	    gstate->literals[i = gstate->num_literals++] = nv;
 	} else {
 	    gstate->literals[i = gstate->num_literals++] = var_ref(v);

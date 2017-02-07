@@ -20,7 +20,7 @@
 #include "quota.h"
 #include "structures.h"
 
-static const char *quota_name = "ownership_quota";
+static const ref_ptr<const char> OWNERSHIP_QUOTA = str_dup("ownership_quota");
 
 int
 decr_quota(Objid player)
@@ -31,7 +31,7 @@ decr_quota(Objid player)
     if (!valid(player))
 	return 1;
 
-    h = db_find_property(Var::new_obj(player), quota_name, &v);
+    h = db_find_property(Var::new_obj(player), OWNERSHIP_QUOTA, &v);
     if (!h.ptr)
 	return 1;
 
@@ -55,7 +55,7 @@ incr_quota(Objid player)
     if (!valid(player))
 	return;
 
-    h = db_find_property(Var::new_obj(player), quota_name, &v);
+    h = db_find_property(Var::new_obj(player), OWNERSHIP_QUOTA, &v);
     if (!h.ptr)
 	return;
 

@@ -328,7 +328,7 @@ new_nhandle(int rfd, int wfd, const char *local_name, const char *remote_name,
 
     stream_printf(s, "%s %s %s",
 		  local_name, outbound ? "to" : "from", remote_name);
-    h->name = str_dup(reset_stream(s));
+    h->name = strdup(reset_stream(s));
 
     return h;
 }
@@ -350,7 +350,7 @@ close_nhandle(nhandle * h)
     }
     free_stream(h->input);
     proto_close_connection(h->rfd, h->wfd);
-    free_str(h->name);
+    free((void*)h->name);
     free(h);
 }
 
@@ -361,7 +361,7 @@ close_nlistener(nlistener * l)
     if (l->next)
 	l->next->prev = l->prev;
     proto_close_listener(l->fd);
-    free_str(l->name);
+    free((void*)l->name);
     free(l);
 }
 
@@ -514,7 +514,7 @@ network_make_listener(server_listener sl, const Var& desc,
 	nl->ptr = l = (nlistener *)malloc(sizeof(nlistener));
 	l->fd = fd;
 	l->slistener = sl;
-	l->name = str_dup(*name);
+	l->name = strdup(*name);
 	if (all_nlisteners)
 	    all_nlisteners->prev = &(l->next);
 	l->next = all_nlisteners;

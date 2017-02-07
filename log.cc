@@ -198,7 +198,6 @@ bf_server_log(const List& arglist, Objid progr)
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     } else {
-	const char *message = arglist[1].v.str;
 	int level = LOG_NONE;
 
 	if (arglist.length() == 2) {
@@ -211,7 +210,7 @@ bf_server_log(const List& arglist, Objid progr)
 	    }
 	}
 
-	applog(level, "> %s\n", message);
+	applog(level, "> %s\n", arglist[1].v.str.expose());
 
 	free_var(arglist);
 	return no_var_pack();
