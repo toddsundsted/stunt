@@ -247,7 +247,7 @@ complex_free_var(const Var& v)
     switch ((int) v.type) {
     case TYPE_STR:
 	if (v.v.str)
-	    free_str(v.v.str);
+	    free_str(const_cast<ref_ptr<const char>&>(v.v.str));
 	break;
     case TYPE_FLOAT:
 	if (v.v.fnum.dec_ref() == 0)
