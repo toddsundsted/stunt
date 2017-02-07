@@ -49,9 +49,16 @@ module MooSupport
   TYPE_OBJ = 1
   TYPE_ANON = 12
 
-  raise '"./test.yml" configuration file not found' unless File.exists?('./test.yml')
-
-  @@options = YAML.load(File.open('./test.yml'))
+  @@options =
+    if File.exists?('./test.yml')
+      YAML.load(File.open('./test.yml'))
+    else
+      {
+        'verbose' => false,
+        'host' => 'localhost',
+        'port' => 9898
+      }
+    end
 
   @@options['verbose'] = true if ARGV.include?('--loud')
   @@options['verbose'] = false if ARGV.include?('--quiet')
