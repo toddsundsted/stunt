@@ -242,7 +242,7 @@ complex_free_var(const Var& v)
 }
 #else
 void
-complex_free_varx(const Var& v)
+complex_free_var(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_STR:
