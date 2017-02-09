@@ -48,7 +48,7 @@ end
 
 class GeneralExpressionTransform < Parslet::Transform
 
-  rule(:string => simple(:string))     { eval(string) }
+  rule(:string => simple(:string))     { eval(string.to_s.gsub('#$', '\#$')) }
 
   rule(:integer => simple(:integer))   { integer.to_i }
 
