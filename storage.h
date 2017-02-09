@@ -188,22 +188,22 @@ template<typename T>
 extern ref_ptr<T> mymalloc(size_t);
 
 template<>
-extern ref_ptr<double> mymalloc(size_t);
+ref_ptr<double> mymalloc(size_t);
 
 template<typename T>
 extern ref_ptr<T> myrealloc(ref_ptr<T>, size_t);
 
 template<>
-extern ref_ptr<double> myrealloc(ref_ptr<double>, size_t);
+ref_ptr<double> myrealloc(ref_ptr<double>, size_t);
 
 template<typename T>
 extern void myfree(ref_ptr<T>);
 
 template<>
-extern void myfree(ref_ptr<double>);
+void myfree(ref_ptr<double>);
 
 template<>
-extern void myfree(ref_ptr<const char>);
+void myfree(ref_ptr<const char>);
 
 extern void *mymalloc(unsigned size, Memory_Type type);
 extern void *myrealloc(void *where, unsigned size, Memory_Type type);

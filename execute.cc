@@ -944,7 +944,6 @@ do {								\
 	case OP_MAP_INSERT:
 	    {
 		Var r, map, key, value;
-		enum error e = E_NONE;
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
@@ -1894,7 +1893,6 @@ do {								\
 		case EOP_RANGESET:
 		    {
 			Var base, from, to, value;
-			enum error e;
 
 			value = POP();
 			to = POP();

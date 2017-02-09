@@ -940,7 +940,7 @@ emergency_mode()
 
 		printf("** %d errors during parsing:\n", errors.length());
 		for (i = 1; i <= errors.length(); i++)
-		    printf("  %s\n", errors[i].v.str);
+		    printf("  %s\n", errors[i].v.str.expose());
 	    }
 	    free_var(errors);
 	} else {
@@ -980,7 +980,7 @@ emergency_mode()
 
 			printf("** %d errors during parsing:\n", errors.length());
 			for (i = 1; i <= errors.length(); i++)
-			    printf("  %s\n", errors[i].v.str);
+			    printf("  %s\n", errors[i].v.str.expose());
 			printf("Verb not programmed.\n");
 		    }
 
@@ -1619,7 +1619,7 @@ main(int argc, char **argv)
 	|| !db_initialize(&argc, &argv)
 	|| !network_initialize(argc, argv, &desc)) {
 	fprintf(stderr, "Usage: %s [-e] [-f script-file] [-c script-line] [-l log-file] %s %s\n",
-		this_program, db_usage_string(), network_usage_string());
+		this_program.expose(), db_usage_string(), network_usage_string());
 	fprintf(stderr, "Options:\n");
 	fprintf(stderr, "\t-e\t\temergency wizard mode\n");
 	fprintf(stderr, "\t-f\t\tfile to load and pass to `#0:do_start_script()'\n");
@@ -1628,8 +1628,8 @@ main(int argc, char **argv)
 	fprintf(stderr, "The emergency mode switch (-e) may not be used with either the file (-f) or line (-c) options.\n\n");
 	fprintf(stderr, "Both the file and line options may be specified. Their order on the command line determines the order of their invocation.\n\n");
 	fprintf(stderr, "Examples: \n");
-	fprintf(stderr, "\t%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program);
-	fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program);
+	fprintf(stderr, "\t%s -c '$enable_debugging();' -f development.moo Minimal.db Minimal.db.new 7777\n", this_program.expose());
+	fprintf(stderr, "\t%s Minimal.db Minimal.db.new\n", this_program.expose());
 	exit(1);
     }
 #if NETWORK_PROTOCOL != NP_SINGLE
