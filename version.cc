@@ -52,12 +52,12 @@
 
 #include "version_src.h"
 #ifndef VERSION_MAJOR
-#  define VERSION_MAJOR 1
-#  define VERSION_MINOR 8
-#  define VERSION_RELEASE 3
+#  define VERSION_MAJOR 2
+#  define VERSION_MINOR 10
+#  define VERSION_RELEASE 0
 #endif
 #ifndef VERSION_EXT
-#  define VERSION_EXT "+?_ad_hoc_??"
+#  define VERSION_EXT "+pre"
 #endif
 #ifndef VERSION_STRING
 #  define _V(MAJ,MIN,REL) #MAJ "." #MIN "." #REL
@@ -65,7 +65,7 @@
 #  define VERSION_STRING _V2(VERSION_MAJOR,VERSION_MINOR,VERSION_RELEASE) VERSION_EXT
 #endif
 #ifndef VERSION_SOURCE
-#  define VERSION_SOURCE(DEF) DEF(vcs,"unknown")
+#  define VERSION_SOURCE(DEF) DEF(git,"https://github.com/toddsundsted/stunt")
 #endif
 
 const char *server_version = VERSION_STRING;
