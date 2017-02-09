@@ -274,6 +274,26 @@ module MooSupport
     end
   end
 
+  def match(subject, pattern, case_matters = nil)
+    if case_matters
+      simplify command %Q|; return match(#{value_ref(subject)}, #{value_ref(pattern)}, #{value_ref(case_matters)});|
+    else
+      simplify command %Q|; return match(#{value_ref(subject)}, #{value_ref(pattern)});|
+    end
+  end
+
+  def rmatch(subject, pattern, case_matters = nil)
+    if case_matters
+      simplify command %Q|; return rmatch(#{value_ref(subject)}, #{value_ref(pattern)}, #{value_ref(case_matters)});|
+    else
+      simplify command %Q|; return rmatch(#{value_ref(subject)}, #{value_ref(pattern)});|
+    end
+  end
+
+  def substitute(template, subs)
+    simplify command %Q|; return substitute(#{value_ref(template)}, #{value_ref(subs)});|
+  end
+
   def encode_binary(str)
     simplify command %Q|; return encode_binary(#{value_ref(str)});|
   end
@@ -558,8 +578,12 @@ module MooSupport
 
   ## MOO-Code Evaluation and Task Manipulation
 
-  def function_info(name)
-    simplify command %Q|; return function_info("#{name}");|
+  def function_info(name = nil)
+    if (name)
+      simplify command %Q|; return function_info("#{name}");|
+    else
+      simplify command %Q|; return function_info();|
+    end
   end
 
   def has_function?(name)
@@ -610,6 +634,14 @@ module MooSupport
 
   def server_log(message)
     simplify command %|; return server_log(#{value_ref(message)});|
+  end
+
+  def server_version(full = nil)
+    if full
+      simplify command %|; return server_version(#{value_ref(full)});|
+    else
+      simplify command %|; return server_version();|
+    end
   end
 
   def shutdown
