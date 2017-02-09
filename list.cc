@@ -41,41 +41,27 @@
 List
 new_list(int size)
 {
-    List list;
-    Var *ptr;
-
     if (size == 0) {
 	static List emptylist;
-
-	if (emptylist.v.list == NULL) {
-	    if ((ptr = (Var *)mymalloc(1 * sizeof(Var), M_LIST)) == NULL)
-		panic("EMPTY_LIST: mymalloc failed");
-
+	if (!emptylist.v.list) {
 	    emptylist.type = TYPE_LIST;
-	    emptylist.v.list = ptr;
-	    emptylist.v.list[0] = Var::new_int(0);
+	    emptylist.v.list = mymalloc<Var>(1 * sizeof(Var));
+	    emptylist.v.list.expose()[0] = Var::new_int(0);
 	}
-
 #ifdef ENABLE_GC
-	assert(gc_get_color(emptylist.v.list) == GC_GREEN);
+	assert(emptylist.v.list.color() == GC_GREEN);
 #endif
-
-	addref(emptylist.v.list);
-
+	emptylist.v.list.inc_ref();
 	return emptylist;
     }
 
-    if ((ptr = (Var *)mymalloc((size + 1) * sizeof(Var), M_LIST)) == NULL)
-	panic("EMPTY_LIST: mymalloc failed");
-
+    List list;
     list.type = TYPE_LIST;
-    list.v.list = ptr;
-    list.v.list[0] = Var::new_int(size);
-
+    list.v.list = mymalloc<Var>((size + 1) * sizeof(Var));
+    list.v.list.expose()[0] = Var::new_int(size);
 #ifdef ENABLE_GC
-    gc_set_color(list.v.list, GC_YELLOW);
+    list.v.list.set_color(GC_YELLOW);
 #endif
-
     return list;
 }
 
@@ -83,18 +69,15 @@ new_list(int size)
 void
 destroy_list(List& list)
 {
-    int i;
-    Var *pv;
-
-    for (i = list.length(), pv = list.v.list + 1; i > 0; i--, pv++)
-	free_var(*pv);
+    for (int i = list.length(); i > 0; i--)
+	free_var(list[i]);
 
     /* Since this list could possibly be the root of a cycle, final
      * destruction is handled in the garbage collector if garbage
      * collection is enabled.
      */
 #ifndef ENABLE_GC
-    myfree(list.v.list, M_LIST);
+    myfree(list.v.list);
 #endif
 }
 
@@ -106,9 +89,9 @@ list_dup(const List& list)
     List _new = new_list(n);
 
     for (i = 1; i <= n; i++)
-	_new.v.list[i] = var_ref(list.v.list[i]);
+	_new[i] = var_ref(list[i]);
 
-    gc_set_color(_new.v.list, gc_get_color(list.v.list));
+    _new.v.list.set_color(list.v.list.color());
 
     return _new;
 }
@@ -164,14 +147,14 @@ listset(const List& list, const Var& value, int pos)
 
 #ifdef MEMO_VALUE_BYTES
     /* reset the memoized size */
-    ((int *)(_new.v.list))[-2] = 0;
+    ((int *)(_new.v.list.expose()))[-2] = 0;
 #endif
 
-    free_var(_new.v.list[pos]);
-    _new.v.list[pos] = value;
+    free_var(_new[pos]);
+    _new[pos] = value;
 
 #ifdef ENABLE_GC
-    gc_set_color(_new.v.list, GC_YELLOW);
+    _new.v.list.set_color(GC_YELLOW);
 #endif
 
     return _new;
@@ -185,16 +168,16 @@ doinsert(const List& list, const Var& value, int pos)
     if (var_refcount(list) == 1 && pos == size) {
 	List _new = list;
 
-	_new.v.list = (Var *) myrealloc(_new.v.list, (size + 1) * sizeof(Var), M_LIST);
+	_new.v.list = myrealloc<Var>(_new.v.list, (size + 1) * sizeof(Var));
 #ifdef MEMO_VALUE_BYTES
 	/* reset the memoized size */
-	((int *)(_new.v.list))[-2] = 0;
+	((int *)(_new.v.list.expose()))[-2] = 0;
 #endif
-	_new.v.list[0].v.num = size;
-	_new.v.list[pos] = value;
+	_new.v.list.expose()[0].v.num = size;
+	_new[pos] = value;
 
 #ifdef ENABLE_GC
-	gc_set_color(_new.v.list, GC_YELLOW);
+	_new.v.list.set_color(GC_YELLOW);
 #endif
 
 	return _new;
@@ -204,15 +187,15 @@ doinsert(const List& list, const Var& value, int pos)
 	int i;
 
 	for (i = 1; i < pos; i++)
-	    _new.v.list[i] = var_ref(list.v.list[i]);
-	_new.v.list[pos] = value;
+	    _new[i] = var_ref(list[i]);
+	_new[pos] = value;
 	for (i = pos; i <= list.length(); i++)
-	    _new.v.list[i + 1] = var_ref(list.v.list[i]);
+	    _new[i + 1] = var_ref(list[i]);
 
 	free_var(list);
 
 #ifdef ENABLE_GC
-	gc_set_color(_new.v.list, GC_YELLOW);
+	_new.v.list.set_color(GC_YELLOW);
 #endif
 
 	return _new;
@@ -244,16 +227,16 @@ listdelete(const List& list, int pos)
 
     _new = new_list(size);
     for (i = 1; i < pos; i++) {
-	_new.v.list[i] = var_ref(list.v.list[i]);
+	_new[i] = var_ref(list[i]);
     }
     for (i = pos + 1; i <= list.length(); i++)
-	_new.v.list[i - 1] = var_ref(list.v.list[i]);
+	_new[i - 1] = var_ref(list[i]);
 
     free_var(list);
 
 #ifdef ENABLE_GC
     if (size > 0)		/* only non-empty lists */
-	gc_set_color(_new.v.list, GC_YELLOW);
+	_new.v.list.set_color(GC_YELLOW);
 #endif
 
     return _new;
@@ -269,16 +252,16 @@ listconcat(const List& first, const List& second)
 
     _new = new_list(lsecond + lfirst);
     for (i = 1; i <= lfirst; i++)
-	_new.v.list[i] = var_ref(first.v.list[i]);
+	_new[i] = var_ref(first[i]);
     for (i = 1; i <= lsecond; i++)
-	_new.v.list[i + lfirst] = var_ref(second.v.list[i]);
+	_new[i + lfirst] = var_ref(second[i]);
 
     free_var(first);
     free_var(second);
 
 #ifdef ENABLE_GC
     if (lsecond + lfirst > 0)	/* only non-empty lists */
-	gc_set_color(_new.v.list, GC_YELLOW);
+	_new.v.list.set_color(GC_YELLOW);
 #endif
 
     return _new;
@@ -298,18 +281,18 @@ listrangeset(const List& base, int from, int to, const List& value)
 
     List ans = new_list(newsize);
     for (index = 1; index <= lenleft; index++)
-	ans.v.list[++offset] = var_ref(base.v.list[index]);
+	ans[++offset] = var_ref(base[index]);
     for (index = 1; index <= lenmiddle; index++)
-	ans.v.list[++offset] = var_ref(value.v.list[index]);
+	ans[++offset] = var_ref(value[index]);
     for (index = 1; index <= lenright; index++)
-	ans.v.list[++offset] = var_ref(base.v.list[to + index]);
+	ans[++offset] = var_ref(base[to + index]);
 
     free_var(base);
     free_var(value);
 
 #ifdef ENABLE_GC
     if (newsize > 0)	/* only non-empty lists */
-	gc_set_color(ans.v.list, GC_YELLOW);
+	ans.v.list.set_color(GC_YELLOW);
 #endif
 
     return ans;
@@ -325,12 +308,12 @@ sublist(const List& list, int lower, int upper)
 	int i;
 	List r = new_list(upper - lower + 1);
 	for (i = lower; i <= upper; i++)
-	    r.v.list[i - lower + 1] = var_ref(list.v.list[i]);
+	    r[i - lower + 1] = var_ref(list[i]);
 
 	free_var(list);
 
 #ifdef ENABLE_GC
-	gc_set_color(r.v.list, GC_YELLOW);
+	r.v.list.set_color(GC_YELLOW);
 #endif
 
 	return r;
@@ -461,11 +444,11 @@ unparse_value(Stream* s, const Var& v)
 	    int len, i;
 
 	    stream_add_char(s, '{');
-	    len = v.v.list[0].v.num;
+	    len = listlength(v);
 	    for (i = 1; i <= len; i++) {
 		stream_add_string(s, sep);
 		sep = ", ";
-		unparse_value(s, v.v.list[i]);
+		unparse_value(s, static_cast<const List&>(v)[i]);
 	    }
 	    stream_add_char(s, '}');
 	}
@@ -488,23 +471,23 @@ unparse_value(Stream* s, const Var& v)
 
 /* called from utils.c */
 int
-list_sizeof(const Var *list)
+list_sizeof(const List& list)
 {
     int i, len, size;
 
 #ifdef MEMO_VALUE_BYTES
-    if ((size = (((int *)(list))[-2])))
+    if ((size = (((int *)(list.v.list.expose()))[-2])))
 	return size;
 #endif
 
     size = sizeof(Var);	/* for the `length' element */
-    len = list[0].v.num;
+    len = list.length();
     for (i = 1; i <= len; i++) {
 	size += value_bytes(list[i]);
     }
 
 #ifdef MEMO_VALUE_BYTES
-    (((int *)(list))[-2]) = size;
+    (((int *)(list.v.list.expose()))[-2]) = size;
 #endif
 
     return size;
@@ -989,42 +972,38 @@ do_match(const List& arglist, int reverse)
     const char *subject, *pattern;
     int i;
     Pattern pat;
-    Var ans;
     Match_Indices regs[10];
 
     subject = arglist[1].v.str.expose();
     pattern = arglist[2].v.str.expose();
-    pat = get_pattern(pattern, (arglist.length() == 3
-				&& is_true(arglist[3])));
+    pat = get_pattern(pattern, (arglist.length() == 3 && is_true(arglist[3])));
 
     if (!pat.ptr) {
-	ans = Var::new_err(E_INVARG);
+	return Var::new_err(E_INVARG);
     } else
 	switch (match_pattern(pat, subject, regs, reverse)) {
 	default:
 	    panic("do_match:  match_pattern returned unfortunate value.\n");
 	    /*notreached*/
-	case MATCH_SUCCEEDED:
-	    ans = new_list(4);
-	    ans.v.list[1] = Var::new_int(regs[0].start);
-	    ans.v.list[2] = Var::new_int(regs[0].end);
-	    ans.v.list[3] = new_list(9);
+	case MATCH_SUCCEEDED: {
+	    List ans = new_list(4), pairs = new_list(9);
+	    ans[1] = Var::new_int(regs[0].start);
+	    ans[2] = Var::new_int(regs[0].end);
+	    ans[3] = pairs;
 	    for (i = 1; i <= 9; i++) {
-		ans.v.list[3].v.list[i] = new_list(2);
-		ans.v.list[3].v.list[i].v.list[1] = Var::new_int(regs[i].start);
-		ans.v.list[3].v.list[i].v.list[2] = Var::new_int(regs[i].end);
+		List pair = new_list(2);
+		pairs[i] = pair;
+		pair[1] = Var::new_int(regs[i].start);
+		pair[2] = Var::new_int(regs[i].end);
 	    }
-	    ans.v.list[4] = var_ref(arglist[1]);
-	    break;
-	case MATCH_FAILED:
-	    ans = new_list(0);
-	    break;
-	case MATCH_ABORTED:
-	    ans = Var::new_err(E_QUOTA);
-	    break;
+	    ans[4] = var_ref(arglist[1]);
+	    return ans;
 	}
-
-    return ans;
+	case MATCH_FAILED:
+	    return new_list(0);
+	case MATCH_ABORTED:
+	    return Var::new_err(E_QUOTA);
+	}
 }
 
 static package
@@ -1062,28 +1041,32 @@ invalid_pair(int num1, int num2, int max)
 int
 check_subs_list(const Var& subs)
 {
-    if (!subs.is_list() || listlength(subs) != 4
-	|| !subs.v.list[1].is_int()
-	|| !subs.v.list[2].is_int()
-	|| !subs.v.list[3].is_list()
-	|| listlength(subs.v.list[3]) != 9
-	|| !subs.v.list[4].is_str())
+    if (!subs.is_list())
+	return 1;
+    const List& list = static_cast<const List&>(subs);
+    if (list.length() != 4
+	|| !list[1].is_int()
+	|| !list[2].is_int()
+	|| !list[3].is_list()
+	|| listlength(list[3]) != 9
+	|| !list[4].is_str())
 	return 1;
 
-    const ref_ptr<const char>& subj = subs.v.list[4].v.str;
+    const ref_ptr<const char>& subj = list[4].v.str;
     int subj_length = memo_strlen(subj);
-    if (invalid_pair(subs.v.list[1].v.num, subs.v.list[2].v.num,
-		     subj_length))
+    if (invalid_pair(list[1].v.num, list[2].v.num, subj_length))
 	return 1;
 
+    const List& pairs = static_cast<const List&>(list[3]);
     for (int loop = 1; loop <= 9; loop++) {
-	Var pair;
-	pair = subs.v.list[3].v.list[loop];
-	if (!pair.is_list() || listlength(pair) != 2
-	    || !pair.v.list[1].is_int()
-	    || !pair.v.list[2].is_int()
-	    || invalid_pair(pair.v.list[1].v.num, pair.v.list[2].v.num,
-			    subj_length))
+	const Var& tmp = pairs[loop];
+	if (!tmp.is_list())
+	    return 1;
+	const List& pair = static_cast<const List&>(tmp);
+	if (pair.length() != 2
+	    || !pair[1].is_int()
+	    || !pair[2].is_int()
+	    || invalid_pair(pair[1].v.num, pair[2].v.num, subj_length))
 	    return 1;
     }
     return 0;
@@ -1094,7 +1077,7 @@ bf_substitute(const List& arglist, Objid progr)
 {
     int template_length, subject_length;
     const char *_template, *subject;
-    Var subs, ans;
+    Var ans;
     package p;
     Stream *s;
     char c = '\0';
@@ -1102,14 +1085,15 @@ bf_substitute(const List& arglist, Objid progr)
     _template = arglist[1].v.str.expose();
     template_length = memo_strlen(arglist[1].v.str);
 
-    subs = arglist[2];
-    if (check_subs_list(subs)) {
+    if (check_subs_list(arglist[2])) {
 	free_var(arglist);
 	return make_error_pack(E_INVARG);
     }
 
-    subject = subs.v.list[4].v.str.expose();
-    subject_length = memo_strlen(subs.v.list[4].v.str);
+    const List& subs = static_cast<const List&>(arglist[2]);
+
+    subject = subs[4].v.str.expose();
+    subject_length = memo_strlen(subs[4].v.str);
 
     s = new_stream(template_length);
     TRY_STREAM;
@@ -1120,14 +1104,15 @@ bf_substitute(const List& arglist, Objid progr)
 	    else if ((c = *(_template++)) == '%')
 		stream_add_char(s, '%');
 	    else {
+		const List& pairs = static_cast<const List&>(subs[3]);
 		int start = 0, end = 0;
 		if (c >= '1' && c <= '9') {
-		    Var pair = subs.v.list[3].v.list[c - '0'];
-		    start = pair.v.list[1].v.num - 1;
-		    end = pair.v.list[2].v.num - 1;
+		    const List& pair = static_cast<const List&>(pairs[c - '0']);
+		    start = pair[1].v.num - 1;
+		    end = pair[2].v.num - 1;
 		} else if (c == '0') {
-		    start = subs.v.list[1].v.num - 1;
-		    end = subs.v.list[2].v.num - 1;
+		    start = subs[1].v.num - 1;
+		    end = subs[2].v.num - 1;
 		} else {
 		    p = make_error_pack(E_INVARG);
 		    goto oops;
@@ -1174,7 +1159,7 @@ bf_decode_binary(const List& arglist, Objid progr)
     if (fully) {
 	r = new_list(length);
 	for (i = 1; i <= length; i++) {
-	    r.v.list[i] = Var::new_int((unsigned char)bytes[i - 1]);
+	    r[i] = Var::new_int((unsigned char)bytes[i - 1]);
 	}
     } else {
 	int count, in_string;
@@ -1202,17 +1187,17 @@ bf_decode_binary(const List& arglist, Objid progr)
 		in_string = 1;
 	    } else {
 		if (in_string) {
-		    r.v.list[count] = Var::new_str(reset_stream(s));
+		    r[count] = Var::new_str(reset_stream(s));
 		    count++;
 		}
-		r.v.list[count] = Var::new_int(c);
+		r[count] = Var::new_int(c);
 		count++;
 		in_string = 0;
 	    }
 	}
 
 	if (in_string) {
-	    r.v.list[count] = Var::new_str(reset_stream(s));
+	    r[count] = Var::new_str(reset_stream(s));
 	}
 	free_stream(s);
     }
@@ -1239,11 +1224,13 @@ encode_binary(Stream * s, const Var& v)
     case TYPE_STR:
 	stream_add_string(s, v.v.str.expose());
 	break;
-    case TYPE_LIST:
-	for (i = 1; i <= v.v.list[0].v.num; i++)
-	    if (!encode_binary(s, v.v.list[i]))
+    case TYPE_LIST: {
+	const List& l = static_cast<const List&>(v);
+	for (i = 1; i <= l.length(); i++)
+	    if (!encode_binary(s, l[i]))
 		return 0;
 	break;
+    }
     default:
 	return 0;
     }

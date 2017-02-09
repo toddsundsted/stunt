@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <assert.h>
+
 #include "db.h"
 #include "functions.h"
 #include "list.h"
@@ -22,8 +24,8 @@
 #include "utils.h"
 
 struct prop_data {
-    Var r;
     int i;
+    List l;
 };
 
 static int
@@ -32,7 +34,7 @@ add_to_list(void *data, const ref_ptr<const char>& prop_name)
     struct prop_data *d = (prop_data *)data;
 
     d->i++;
-    d->r.v.list[d->i] = str_ref_to_var(prop_name);
+    d->l[d->i] = str_ref_to_var(prop_name);
 
     return 0;
 }
@@ -52,11 +54,11 @@ bf_properties(const List& arglist, Objid progr)
 	return make_error_pack(E_PERM);
     else {
 	struct prop_data d;
-	d.r = new_list(db_count_propdefs(obj));
 	d.i = 0;
+	d.l = new_list(db_count_propdefs(obj));
 	db_for_all_propdefs(obj, add_to_list, &d);
 
-	return make_var_pack(d.r);
+	return make_var_pack(d.l);
     }
 }
 
@@ -96,29 +98,29 @@ bf_prop_info(const List& arglist, Objid progr)
 	*s++ = 'c';
     *s = '\0';
     r = new_list(2);
-    r.v.list[1] = Var::new_obj(db_property_owner(h));
-    r.v.list[2] = Var::new_str(perms);
+    r[1] = Var::new_obj(db_property_owner(h));
+    r[2] = Var::new_str(perms);
 
     return make_var_pack(r);
 }
 
 static enum error
-validate_prop_info(const Var& v, Objid * owner, unsigned *flags, ref_ptr<const char>* name)
+validate_prop_info(const List& v, Objid * owner, unsigned *flags, ref_ptr<const char>* name)
 {
-    int len = v.is_list() ? v.v.list[0].v.num : 0;
+    int len = v.length();
 
     if (!((len == 2 || len == 3)
-	  && v.v.list[1].is_obj()
-	  && v.v.list[2].is_str()
-	  && (len == 2 || v.v.list[3].is_str())))
+	  && v[1].is_obj()
+	  && v[2].is_str()
+	  && (len == 2 || v[3].is_str())))
 	return E_TYPE;
 
-    *owner = v.v.list[1].v.obj;
+    *owner = v[1].v.obj;
     if (!valid(*owner))
 	return E_INVARG;
 
     *flags = 0;
-    for (const char* s = v.v.list[2].v.str.expose(); *s; s++) {
+    for (const char* s = v[2].v.str.expose(); *s; s++) {
 	switch (*s) {
 	case 'r':
 	case 'R':
@@ -140,13 +142,13 @@ validate_prop_info(const Var& v, Objid * owner, unsigned *flags, ref_ptr<const c
     if (len == 2)
 	*name = ref_ptr<const char>::empty;
     else
-	*name = v.v.list[3].v.str;
+	*name = v[3].v.str;
 
     return E_NONE;
 }
 
 static enum error
-set_prop_info(const Var& obj, const ref_ptr<const char>& pname, const Var& info, Objid progr)
+set_prop_info(const Var& obj, const ref_ptr<const char>& pname, const List& info, Objid progr)
 {
     Objid new_owner;
     unsigned new_flags;
@@ -187,9 +189,12 @@ set_prop_info(const Var& obj, const ref_ptr<const char>& pname, const Var& info,
 static package
 bf_set_prop_info(const List& arglist, Objid progr)
 {				/* (object, prop-name, {owner, perms [, new-name]}) */
+    assert(arglist[2].is_str());
+    assert(arglist[3].is_list());
+
     Var obj = arglist[1];
     const ref_ptr<const char>& pname = arglist[2].v.str;
-    Var info = arglist[3];
+    const List& info = static_cast<const List&>(arglist[3]);
     enum error e = set_prop_info(obj, pname, info, progr);
 
     free_var(arglist);
@@ -203,10 +208,13 @@ bf_set_prop_info(const List& arglist, Objid progr)
 static package
 bf_add_prop(const List& arglist, Objid progr)
 {				/* (object, prop-name, initial-value, initial-info) */
+    assert(arglist[2].is_str());
+    assert(arglist[4].is_list());
+
     Var obj = arglist[1];
     const ref_ptr<const char>& pname = arglist[2].v.str;
     Var value = arglist[3];
-    Var info = arglist[4];
+    const List& info = static_cast<const List&>(arglist[4]);
     Objid owner;
     unsigned flags;
     ref_ptr<const char> new_name;

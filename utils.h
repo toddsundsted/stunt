@@ -64,7 +64,7 @@ var_ref(const Var& var)
 static inline List
 var_ref(const List& list)
 {
-    addref(list.v.list);
+    list.v.list.inc_ref();
     return list;
 }
 

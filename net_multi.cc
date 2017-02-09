@@ -663,7 +663,7 @@ network_set_client_echo(network_handle nh, int is_on)
 #ifdef OUTBOUND_NETWORK
 
 enum error
-network_open_connection(const Var& arglist, server_listener sl)
+network_open_connection(const List& arglist, server_listener sl)
 {
     int rfd, wfd;
     const char *local_name, *remote_name;

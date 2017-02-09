@@ -360,8 +360,10 @@ bf_exec(const List& arglist, Objid progr)
 {
     package pack;
 
+    const List& list = static_cast<const List&>(arglist[1]);
+
     const char* cmd = nullptr;
-    int count = listlength(arglist[1]);
+    int count = list.length();
     const char* args[count + 1];
     int length = 0;
     const char *in = nullptr;
@@ -374,7 +376,7 @@ bf_exec(const List& arglist, Objid progr)
      */
     Var v;
     int i, c;
-    FOR_EACH(v, arglist[1], i, c) {
+    FOR_EACH(v, list, i, c) {
 	if (!v.is_str()) {
 	    pack = make_error_pack(E_INVARG);
 	    goto free_arglist;
@@ -387,7 +389,7 @@ bf_exec(const List& arglist, Objid progr)
     }
 
     /* check the path */
-    cmd = arglist[1].v.list[1].v.str.expose();
+    cmd = list[1].v.str.expose();
     if (0 == strlen(cmd)) {
 	pack = make_raise_pack(E_INVARG, "Invalid path", var_ref(zero));
 	goto free_arglist;
@@ -408,7 +410,7 @@ bf_exec(const List& arglist, Objid progr)
     cmd = reset_stream(s);
 
     /* args must be null terminated */
-    FOR_EACH(v, arglist[1], i, c)
+    FOR_EACH(v, list, i, c)
 	args[i - 1] = v.v.str.expose();
     args[i - 1] = NULL;
 
@@ -506,11 +508,11 @@ deal_with_child_exit(void)
 	tw = process_table[i];
 	if (tw && TWS_STOP == tw->status) {
 	    List v = new_list(3);
-	    v.v.list[1] = Var::new_int(tw->code);
+	    v[1] = Var::new_int(tw->code);
 	    stdout_readable(tw->fout, tw);
-	    v.v.list[2] = Var::new_str(reset_stream(tw->sout));
+	    v[2] = Var::new_str(reset_stream(tw->sout));
 	    stderr_readable(tw->ferr, tw);
-	    v.v.list[3] = Var::new_str(reset_stream(tw->serr));
+	    v[3] = Var::new_str(reset_stream(tw->serr));
 
 	    resume_task(tw->the_vm, v);
 	}

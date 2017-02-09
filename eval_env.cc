@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <stack>
+
 #include "config.h"
 #include "eval_env.h"
 #include "storage.h"
@@ -26,17 +28,17 @@
  * Keep a pool of rt_envs big enough to hold NUM_READY_VARS variables to
  * avoid lots of malloc/free.
  */
-static Var *ready_size_rt_envs;
+static std::stack<Var*> ready_size_rt_envs;
 
-Var *
+Var*
 new_rt_env(unsigned size)
 {
     Var *ret;
     unsigned i;
 
-    if (size <= NUM_READY_VARS && ready_size_rt_envs) {
-	ret = ready_size_rt_envs;
-	ready_size_rt_envs = ret[0].v.list;
+    if (size <= NUM_READY_VARS && !ready_size_rt_envs.empty()) {
+	ret = ready_size_rt_envs.top();
+        ready_size_rt_envs.pop();
     } else
 	ret = (Var *)malloc(MAX(size, NUM_READY_VARS) * sizeof(Var));
 
@@ -47,7 +49,7 @@ new_rt_env(unsigned size)
 }
 
 void
-free_rt_env(Var * rt_env, unsigned size)
+free_rt_env(Var* rt_env, unsigned size)
 {
     unsigned i;
 
@@ -55,14 +57,13 @@ free_rt_env(Var * rt_env, unsigned size)
 	free_var(rt_env[i]);
 
     if (size <= NUM_READY_VARS) {
-	rt_env[0].v.list = ready_size_rt_envs;
-	ready_size_rt_envs = rt_env;
+	ready_size_rt_envs.push(rt_env);
     } else
 	free(rt_env);
 }
 
-Var *
-copy_rt_env(Var * from, unsigned size)
+Var*
+copy_rt_env(Var* from, unsigned size)
 {
     unsigned i;
 

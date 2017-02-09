@@ -486,8 +486,8 @@ bf_disassemble(const List& arglist, Objid progr)
     disassemble(db_verb_program(h), add_line, &data);
     r = new_list(data.used);
     for (i = 1; i <= data.used; i++) {
-	r.v.list[i].type = TYPE_STR;
-	r.v.list[i].v.str = data.lines[i - 1];
+	r[i].type = TYPE_STR;
+	r[i].v.str = data.lines[i - 1];
     }
     if (data.lines)
 	free(data.lines);

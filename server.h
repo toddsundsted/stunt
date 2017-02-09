@@ -333,10 +333,10 @@ extern int read_active_connections(void);
 				    GETVALUE, SETVALUE)		\
     {								\
 	List pair = new_list(2);				\
-	pair.v.list[1].type = TYPE_STR;				\
-	pair.v.list[1].v.str = str_dup(#NAME);			\
-	pair.v.list[2].type = (TYPE_FOO);			\
-	pair.v.list[2].v.VFOO_MEMBER = (GETVALUE);		\
+	pair[1].type = TYPE_STR;				\
+	pair[1].v.str = str_dup(#NAME);				\
+	pair[2].type = (TYPE_FOO);				\
+	pair[2].v.VFOO_MEMBER = (GETVALUE);			\
 	LIST = listappend(LIST, pair);				\
     }								\
 

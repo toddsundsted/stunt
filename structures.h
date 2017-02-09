@@ -128,7 +128,7 @@ struct Var {
 	Objid obj;			/* OBJ */
 	ref_ptr<const char> str;	/* STR */
 	enum error err;			/* ERR */
-	Var *list;			/* LIST */
+	ref_ptr<Var> list;		/* LIST */
 	ref_ptr<rbtree> tree;		/* MAP */
 	ref_ptr<rbtrav> trav;		/* ITER */
 	ref_ptr<double> fnum;		/* FLOAT */
@@ -291,11 +291,15 @@ struct Str : public Var {
 struct List : public Var {
     int32_t
     length() const {
-	return v.list[0].v.num;
+	return v.list.expose()[0].v.num;
     }
     const Var& operator[] (const int i) const {
 	assert(i >= 1 && i <= length());
-	return v.list[i];
+	return v.list.expose()[i];
+    }
+    Var& operator[] (const int i) {
+	assert(i >= 1 && i <= length());
+	return v.list.expose()[i];
     }
 };
 

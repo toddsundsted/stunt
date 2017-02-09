@@ -210,7 +210,7 @@ extern void *myrealloc(void *where, unsigned size, Memory_Type type);
 extern void myfree(void *where, Memory_Type type);
 
 extern ref_ptr<const char> str_ref(const ref_ptr<const char>&);
-extern ref_ptr<const char> str_dup(const char *);
+extern ref_ptr<const char> str_dup(const char*);
 
 static inline void
 free_str(ref_ptr<const char>& s)

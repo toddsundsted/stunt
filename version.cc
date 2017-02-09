@@ -70,7 +70,7 @@
 
 const char *server_version = VERSION_STRING;
 
-static Var *version_structure = 0;
+static ref_ptr<Var> version_structure;
 
 static void init_version_structure()
 {
@@ -97,7 +97,7 @@ static void init_version_structure()
 
 #define BEGIN_GROUP(name)			\
     BEGIN_LIST(1);				\
-    SET_STR(the_list[0].v.list[1],#name);	\
+    SET_STR(the_list[0][1],#name);		\
     BEGIN_LIST(0)
 
 #define END_GROUP()   END_LIST(); END_LIST()
@@ -108,16 +108,18 @@ static void init_version_structure()
     SET_##WHAT(item,value);			\
     the_list[0] = listappend(the_list[0], item);
 
+    List list;
+
 #define PUSH_PAIR(name,WHAT,value)		\
-    item = new_list(2);				\
-    SET_STR(item.v.list[1],name);		\
-    SET_##WHAT(item.v.list[2],value);		\
-    the_list[0] = listappend(the_list[0], item);
+    list = new_list(2);				\
+    SET_STR(list[1],name);			\
+    SET_##WHAT(list[2],value);			\
+    the_list[0] = listappend(the_list[0], list);
 
     /* create non-string/int true and false values */
     Var falsev;
-    Var truev = new_list(1);
-    SET_INT(truev.v.list[1],0);
+    List truev = new_list(1);
+    SET_INT(truev[1],0);
     SET_OBJ(falsev,-1);
 
     the_list[0] = new_list(0);
@@ -161,6 +163,7 @@ static void init_version_structure()
 
     free_var(truev);
     free_var(falsev);
+
     version_structure = the_list[0].v.list;
 }
 
@@ -179,7 +182,7 @@ server_version_full(const Var& arg)
 	return var_ref(r);
     }
     s = arg.v.str.expose();
-    tree = version_structure;
+    tree = version_structure.expose();
     for (;;) {
 	/* invariants:
 	 *   s is a nonempty string;
@@ -194,23 +197,24 @@ server_version_full(const Var& arg)
 	    default:
 		break;
 	    case TYPE_STR:
-		if (memo_strlen(tree[0].v.str) == e - s &&
-		    strncmp(tree[0].v.str.expose(), s, e - s) == 0)
-		    goto found;
-		break;
-	    case TYPE_LIST:
-		if (tree[0].v.list[0].v.num == 2 &&
-		    tree[0].v.list[1].is_str() &&
-		    memo_strlen(tree[0].v.list[1].v.str) == e - s &&
-		    strncmp(tree[0].v.list[1].v.str.expose(), s, e - s) == 0) {
-
-		    if (tree[0].v.list[0].v.num > 1)
-			tree = tree[0].v.list + 2;
-		    else
-			tree = tree[0].v.list + 1;
-		    goto found;
+		{
+		    Str& str = static_cast<Str&>(tree[0]);
+		    if ((memo_strlen(str.v.str) == e - s) && strncmp(str.v.str.expose(), s, e - s) == 0)
+			goto found;
+		    break;
 		}
-		break;
+	    case TYPE_LIST:
+		{
+		    List& list = static_cast<List&>(tree[0]);
+		    if (list.length() == 2 && list[1].is_str() && memo_strlen(list[1].v.str) == e - s && strncmp(list[1].v.str.expose(), s, e - s) == 0) {
+			if (list.length() > 1)
+			    tree = list.v.list.expose() + 2;
+			else
+			    tree = list.v.list.expose() + 1;
+			goto found;
+		    }
+		    break;
+		}
 	    }
 	} while (i > 0);
 	break;
@@ -220,7 +224,7 @@ server_version_full(const Var& arg)
 	    return var_ref(tree[0]);
 	if (!tree[0].is_list())
 	    break;
-	tree = tree[0].v.list;
+	tree = tree[0].v.list.expose();
 	if (tree[0].v.num <= 0 || (!tree[1].is_str() && !tree[1].is_list()))
 	    break;
     }

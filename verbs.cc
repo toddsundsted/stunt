@@ -37,8 +37,8 @@
 #include "verbs.h"
 
 struct verb_data {
-    Var r;
     int i;
+    List l;
 };
 
 static int
@@ -47,7 +47,7 @@ add_to_list(void *data, const ref_ptr<const char>& verb_name)
     struct verb_data *d = (struct verb_data *)data;
 
     d->i++;
-    d->r.v.list[d->i] = str_ref_to_var(verb_name);
+    d->l[d->i] = str_ref_to_var(verb_name);
 
     return 0;
 }
@@ -67,11 +67,11 @@ bf_verbs(const List& arglist, Objid progr)
 	return make_error_pack(E_PERM);
     else {
 	struct verb_data d;
-	d.r = new_list(db_count_verbs(obj));
 	d.i = 0;
+	d.l = new_list(db_count_verbs(obj));
 	db_for_all_verbs(obj, add_to_list, &d);
 
-	return make_var_pack(d.r);
+	return make_var_pack(d.l);
     }
 }
 
@@ -301,9 +301,9 @@ bf_verb_info(const List& arglist, Objid progr)
 	*s++ = 'd';
     *s = '\0';
     r = new_list(3);
-    r.v.list[1] = Var::new_obj(db_verb_owner(h));
-    r.v.list[2] = Var::new_str(perms);
-    r.v.list[3] = Var::new_str(db_verb_names(h));
+    r[1] = Var::new_obj(db_verb_owner(h));
+    r[2] = Var::new_str(perms);
+    r[3] = Var::new_str(db_verb_names(h));
 
     return make_var_pack(r);
 }
@@ -398,12 +398,12 @@ bf_verb_args(const List& arglist, Objid progr)
 
     db_verb_arg_specs(h, &dobj, &prep, &iobj);
     r = new_list(3);
-    r.v.list[1].type = TYPE_STR;
-    r.v.list[1].v.str = unparse_arg_spec(dobj);
-    r.v.list[2].type = TYPE_STR;
-    r.v.list[2].v.str = str_dup(db_unparse_prep(prep));
-    r.v.list[3].type = TYPE_STR;
-    r.v.list[3].v.str = unparse_arg_spec(iobj);
+    r[1].type = TYPE_STR;
+    r[1].v.str = unparse_arg_spec(dobj);
+    r[2].type = TYPE_STR;
+    r[2].v.str = str_dup(db_unparse_prep(prep));
+    r[3].type = TYPE_STR;
+    r[3].v.str = unparse_arg_spec(iobj);
 
     return make_var_pack(r);
 }
@@ -492,17 +492,19 @@ bf_verb_code(const List& arglist, Objid progr)
 static package
 bf_set_verb_code(const List& arglist, Objid progr)
 {				/* (object, verb-desc, code) */
+    assert(arglist[3].is_list());
+
     Var obj = arglist[1];
     Var desc = arglist[2];
-    Var code = arglist[3];
+    const List& code = static_cast<const List&>(arglist[3]);
     int i;
     Program *program;
     db_verb_handle h;
-    Var errors;
+    List errors;
     enum error e;
 
-    for (i = 1; i <= code.v.list[0].v.num; i++)
-	if (!code.v.list[i].is_str()) {
+    for (i = 1; i <= code.length(); i++)
+	if (!code[i].is_str()) {
 	    free_var(arglist);
 	    return make_error_pack(E_TYPE);
 	}
@@ -555,9 +557,10 @@ bf_respond_to(const List& arglist, Objid progr)
 
     if (h.ptr) {
 	if (db_object_allows(object, progr, FLAG_READ)) {
-	    r = new_list(2);
-	    r.v.list[1] = var_ref(db_verb_definer(h));
-	    r.v.list[2] = str_ref_to_var(db_verb_names(h));
+	    List l;
+	    r = l = new_list(2);
+	    l[1] = var_ref(db_verb_definer(h));
+	    l[2] = str_ref_to_var(db_verb_names(h));
 	}
 	else {
 	    r = Var::new_int(1);
@@ -596,8 +599,9 @@ bf_eval(const Var& value, Objid progr, Byte next, void *vdata)
 	    free_var(value);
 	    p = make_error_pack(E_TYPE);
 	} else {
-	    Var errors;
-	    Program *program = parse_list_as_program(value, &errors);
+	    const List& code = static_cast<const List&>(value);
+	    List errors;
+	    Program *program = parse_list_as_program(code, &errors);
 
 	    free_var(value);
 
@@ -611,15 +615,15 @@ bf_eval(const Var& value, Objid progr, Byte next, void *vdata)
 		}
 	    } else {
 		List r = new_list(2);
-		r.v.list[1] = Var::new_int(0);
-		r.v.list[2] = errors;
+		r[1] = Var::new_int(0);
+		r[2] = errors;
 		p = make_var_pack(r);
 	    }
 	}
     } else {			/* next == 2 */
 	List r = new_list(2);
-	r.v.list[1] = Var::new_int(1);
-	r.v.list[2] = value;
+	r[1] = Var::new_int(1);
+	r[2] = value;
 	p = make_var_pack(r);
     }
     return p;

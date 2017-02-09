@@ -123,7 +123,7 @@ extern enum proto_accept_error
 
 #ifdef OUTBOUND_NETWORK
 
-extern enum error proto_open_connection(const Var& arglist,
+extern enum error proto_open_connection(const List& arglist,
 					int *read_fd, int *write_fd,
 					const char **local_name,
 					const char **remote_name);

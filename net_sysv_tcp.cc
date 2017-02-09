@@ -262,7 +262,7 @@ timeout_proc(Timer_ID id, Timer_Data data)
 }
 
 enum error
-proto_open_connection(const Var& arglist, int *read_fd, int *write_fd,
+proto_open_connection(const List& arglist, int *read_fd, int *write_fd,
 		      const char **local_name, const char **remote_name)
 {
     /* These are `static' rather than `volatile' because I can't cope with
@@ -286,14 +286,13 @@ proto_open_connection(const Var& arglist, int *read_fd, int *write_fd,
 	st1 = new_stream(20);
 	st2 = new_stream(50);
     }
-    if (arglist.v.list[0].v.num != 2)
+    if (arglist.length() != 2)
 	return E_ARGS;
-    else if (!arglist.v.list[1].is_str() ||
-	     !arglist.v.list[2].is_int())
+    else if (!arglist[1].is_str() || !arglist[2].is_int())
 	return E_TYPE;
 
-    host_name = arglist.v.list[1].v.str;
-    port = arglist.v.list[2].v.num;
+    host_name = arglist[1].v.str.expose();
+    port = arglist[2].v.num;
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);

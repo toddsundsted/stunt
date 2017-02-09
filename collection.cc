@@ -48,8 +48,10 @@ ismember(const Var& lhs, const Var& rhs, int case_matters)
     if (rhs.is_list()) {
 	int i;
 
-	for (i = 1; i <= rhs.v.list[0].v.num; i++) {
-	    if (equality(lhs, rhs.v.list[i], case_matters)) {
+	const List& list = static_cast<const List&>(rhs);
+
+	for (i = 1; i <= list.length(); i++) {
+	    if (equality(lhs, list[i], case_matters)) {
 		return i;
 	    }
 	}

@@ -25,7 +25,7 @@
 typedef struct {
     ref_ptr<const char> verb;		/* verb (as typed by player) */
     ref_ptr<const char> argstr;		/* arguments to verb */
-    Var args;				/* arguments to the verb */
+    List args;				/* arguments to the verb */
 
     ref_ptr<const char> dobjstr;	/* direct object string */
     Objid dobj;				/* direct object */
@@ -38,7 +38,7 @@ typedef struct {
 } Parsed_Command;
 
 extern char **parse_into_words(char *input, int *nwords);
-extern Var parse_into_wordlist(const char *command);
+extern List parse_into_wordlist(const char *command);
 extern Parsed_Command *parse_command(const char *command, Objid user);
 extern void free_parsed_command(Parsed_Command *);
 

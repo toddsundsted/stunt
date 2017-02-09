@@ -23,6 +23,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <vector>
 
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
@@ -73,7 +74,7 @@ static bool shutdown_triggered = false;
 
 static bool in_emergency_mode = false;
 
-static List checkpointed_connections;
+static std::vector<List> checkpointed_connections;
 
 typedef enum {
     CHKPT_OFF, CHKPT_TIMER, CHKPT_SIGNAL, CHKPT_FUNC
@@ -307,7 +308,7 @@ static void
 call_checkpoint_notifier(int successful)
 {
     List args = new_list(1);
-    args.v.list[1] = Var::new_int(successful);
+    args[1] = Var::new_int(successful);
     run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
 }
 
@@ -418,7 +419,7 @@ static void
 call_notifier(Objid player, Objid handler, const char *verb_name)
 {
     List args = new_list(1);
-    args.v.list[1] = Var::new_obj(player);
+    args[1] = Var::new_obj(player);
     run_server_task(player, Var::new_obj(handler), verb_name, args, "", 0);
 }
 
@@ -451,14 +452,15 @@ send_message(Objid listener, network_handle nh, const char *msg_name,...)
     const char *line;
 
     va_start(args, msg_name);
+
     if (get_server_option(listener, msg_name, &msg)) {
 	if (msg.is_str())
 	    network_send_line(nh, msg.v.str.expose(), 1);
 	else if (msg.is_list()) {
-	    int i;
-	    for (i = 1; i <= msg.v.list[0].v.num; i++)
-		if (msg.v.list[i].is_str())
-		    network_send_line(nh, msg.v.list[i].v.str.expose(), 1);
+	    const List& list = static_cast<const List&>(msg);
+	    for (int i = 1; i <= list.length(); i++)
+		if (list[i].is_str())
+		    network_send_line(nh, list[i].v.str.expose(), 1);
 	}
     } else			/* Use default message */
 	while ((line = va_arg(args, const char *)) != 0)
@@ -600,7 +602,7 @@ read_values_pending_finalization(void)
     pending_list = new_list(count);
 
     for (i = 1; i <= count; i++) {
-	pending_list.v.list[i] = dbio_read_var();
+	pending_list[i] = dbio_read_var();
     }
 
     return 1;
@@ -612,10 +614,10 @@ main_loop(void)
     int i;
 
     /* First, queue anonymous objects */
-    for (i = 1; i <= pending_list.v.list[0].v.num; i++) {
+    for (i = 1; i <= pending_list.length(); i++) {
 	Var v;
 
-	v = pending_list.v.list[i];
+	v = pending_list[i];
 
 	/* in theory this could be any value... */
 	/* in practice this will be an anonymous object... */
@@ -627,14 +629,11 @@ main_loop(void)
     free_var(pending_list);
 
     /* Second, notify DB of disconnections for all checkpointed connections */
-    for (i = 1; i <= checkpointed_connections.v.list[0].v.num; i++) {
-	Var v;
-
-	v = checkpointed_connections.v.list[i];
-	call_notifier(v.v.list[1].v.obj, v.v.list[2].v.obj,
-		      "user_disconnected");
+    std::vector<List>::iterator l;
+    for (l = checkpointed_connections.begin(); l < checkpointed_connections.end(); l++) {
+	call_notifier(l[1].v.obj, l[2].v.obj, "user_disconnected");
+	free_var(*l);
     }
-    free_var(checkpointed_connections);
 
     /* Third, run #0:server_started() */
     run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
@@ -833,7 +832,7 @@ static int
 emergency_mode()
 {
     const char *line;
-    Var words;
+    List words;
     int nargs;
     const char *command;
     Stream *s = new_stream(100);
@@ -883,8 +882,7 @@ emergency_mode()
 	if (!line)
 	    start_ok = 0;	/* treat EOF as "quit" */
 	else if (*line == ';') {	/* eval command */
-	    List code;
-	    Var errors;
+	    List code, errors;
 	    Program *program;
 
 	    code = new_list(0);
@@ -940,23 +938,22 @@ emergency_mode()
 	    } else {
 		int i;
 
-		printf("** %d errors during parsing:\n",
-		       errors.v.list[0].v.num);
-		for (i = 1; i <= errors.v.list[0].v.num; i++)
-		    printf("  %s\n", errors.v.list[i].v.str);
+		printf("** %d errors during parsing:\n", errors.length());
+		for (i = 1; i <= errors.length(); i++)
+		    printf("  %s\n", errors[i].v.str);
 	    }
 	    free_var(errors);
 	} else {
 	    words = parse_into_wordlist(line);
-	    nargs = words.v.list[0].v.num - 1;
+	    nargs = words.length() - 1;
 	    if (nargs < 0)
 		continue;
-	    command = words.v.list[1].v.str.expose();
+	    command = words[1].v.str.expose();
 
 	    if ((!mystrcasecmp(command, "program")
 		 || !mystrcasecmp(command, ".program"))
 		&& nargs == 1) {
-		const ref_ptr<const char>& verbref = words.v.list[2].v.str;
+		const ref_ptr<const char>& verbref = words[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
 
@@ -964,8 +961,7 @@ emergency_mode()
 					      &message, &vname);
 		printf("%s\n", message);
 		if (h.ptr) {
-		    List code;
-		    Var errors;
+		    List code, errors;
 		    const char *line;
 		    Program *program;
 
@@ -982,10 +978,9 @@ emergency_mode()
 		    } else {
 			int i;
 
-			printf("** %d errors during parsing:\n",
-			       errors.v.list[0].v.num);
-			for (i = 1; i <= errors.v.list[0].v.num; i++)
-			    printf("  %s\n", errors.v.list[i].v.str);
+			printf("** %d errors during parsing:\n", errors.length());
+			for (i = 1; i <= errors.length(); i++)
+			    printf("  %s\n", errors[i].v.str);
 			printf("Verb not programmed.\n");
 		    }
 
@@ -993,7 +988,7 @@ emergency_mode()
 		    free_var(errors);
 		}
 	    } else if (!mystrcasecmp(command, "list") && nargs == 1) {
-		const ref_ptr<const char>& verbref = words.v.list[2].v.str;
+		const ref_ptr<const char>& verbref = words[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
 
@@ -1005,7 +1000,7 @@ emergency_mode()
 		else
 		    printf("%s\n", message);
 	    } else if (!mystrcasecmp(command, "disassemble") && nargs == 1) {
-		const ref_ptr<const char>& verbref = words.v.list[2].v.str;
+		const ref_ptr<const char>& verbref = words[2].v.str;
 		db_verb_handle h;
 		const char *message, *vname;
 
@@ -1025,7 +1020,7 @@ emergency_mode()
 	    } else if (!mystrcasecmp(command, "debug") && nargs == 0) {
 		debug = !debug;
 	    } else if (!mystrcasecmp(command, "wizard") && nargs == 1
-		       && sscanf(words.v.list[2].v.str.expose(), "#%d", &wizard) == 1) {
+		       && sscanf(words[2].v.str.expose(), "#%d", &wizard) == 1) {
 		printf("** Switching to wizard #%d...\n", wizard);
 	    } else if (!mystrcasecmp(command, "help") || !mystrcasecmp(command, "?")) {
 		printf(";EXPR                 "
@@ -1509,7 +1504,6 @@ read_active_connections(void)
 
     i = dbio_scanf("%d active connections%c", &count, &c);
     if (i == EOF) {		/* older database format */
-	checkpointed_connections = new_list(0);
 	return 1;
     } else if (i != 2) {
 	errlog("READ_ACTIVE_CONNECTIONS: Bad active connections count.\n");
@@ -1524,10 +1518,8 @@ read_active_connections(void)
 	errlog("READ_ACTIVE_CONNECTIONS: Bad EOL.\n");
 	return 0;
     }
-    checkpointed_connections = new_list(count);
     for (i = 1; i <= count; i++) {
 	Objid who, listener;
-	Var v;
 
 	if (have_listeners) {
 	    if (dbio_scanf("%d %d\n", &who, &listener) != 2) {
@@ -1538,9 +1530,9 @@ read_active_connections(void)
 	    who = dbio_read_num();
 	    listener = SYSTEM_OBJECT;
 	}
-	checkpointed_connections.v.list[i] = v = new_list(2);
-	v.v.list[1] = Var::new_obj(who);
-	v.v.list[2] = Var::new_obj(listener);
+	List l = checkpointed_connections[i] = new_list(2);
+	l[1] = Var::new_obj(who);
+	l[2] = Var::new_obj(listener);
     }
 
     return 1;
@@ -1908,7 +1900,7 @@ bf_connected_players(const List& arglist, Objid progr)
 
     for (h = all_shandles; h; h = h->next) {
 	if ((show_all || h->connection_time != 0) && !h->disconnect_me) {
-	    result.v.list[++count] = Var::new_obj(h->player);
+	    result[++count] = Var::new_obj(h->player);
 	}
     }
 
@@ -2152,10 +2144,10 @@ bf_listeners(const List& arglist, Objid progr)
 	count++;
     list = new_list(count);
     for (i = 1, l = all_slisteners; l; i++, l = l->next) {
-	list.v.list[i] = entry = new_list(3);
-	entry.v.list[1] = Var::new_obj(l->oid);
-	entry.v.list[2] = var_ref(l->desc);
-	entry.v.list[3] = Var::new_int(l->print_messages);
+	list[i] = entry = new_list(3);
+	entry[1] = Var::new_obj(l->oid);
+	entry[2] = var_ref(l->desc);
+	entry[3] = Var::new_int(l->print_messages);
     }
 
     return make_var_pack(list);

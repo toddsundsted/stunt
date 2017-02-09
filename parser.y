@@ -1274,7 +1274,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 }
 
 struct parser_state {
-    Var         code;           /* a list of strings */
+    List        code;           /* a list of strings */
     int         cur_string;     /* which string? */
     int         cur_char;       /* which character in that string? */
     List        errors;         /* a list of strings */
@@ -1292,13 +1292,12 @@ static int
 my_getc(void *data)
 {
     struct parser_state *state = (struct parser_state *) data;
-    Var                 code;
-    char                c;
+    const List&          code = state->code;
+    char                 c;
 
-    code = state->code;
-    if (task_timed_out  ||  state->cur_string > code.v.list[0].v.num)
+    if (task_timed_out  ||  state->cur_string > code.length())
 	return EOF;
-    else if (!(c = code.v.list[state->cur_string].v.str.expose()[state->cur_char])) {
+    else if (!(c = code[state->cur_string].v.str.expose()[state->cur_char])) {
 	state->cur_string++;
 	state->cur_char = 0;
 	return '\n';
@@ -1310,8 +1309,8 @@ my_getc(void *data)
 
 static Parser_Client list_parser_client = { my_error, 0, my_getc };
 
-Program *
-parse_list_as_program(const Var& code, Var *errors)
+Program*
+parse_list_as_program(const List& code, List* errors)
 {
     struct parser_state state;
     Program            *program;

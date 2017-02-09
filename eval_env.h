@@ -22,9 +22,9 @@
 #include "structures.h"
 #include "version.h"
 
-extern Var *new_rt_env(unsigned size);
-extern void free_rt_env(Var * rt_env, unsigned size);
-extern Var *copy_rt_env(Var * from, unsigned size);
+extern Var* new_rt_env(unsigned size);
+extern void free_rt_env(Var* rt_env, unsigned size);
+extern Var* copy_rt_env(Var* from, unsigned size);
 
 void set_rt_env_obj(Var * env, int slot, Objid o);
 void set_rt_env_str(Var * env, int slot, const char* s);

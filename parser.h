@@ -28,7 +28,7 @@ typedef struct {
     int (*getch) (void *);
 } Parser_Client;
 
-extern Program *parse_program(DB_Version, Parser_Client, void *);
-extern Program *parse_list_as_program(const Var& code, Var * errors);
+extern Program* parse_program(DB_Version, Parser_Client, void*);
+extern Program* parse_list_as_program(const List&, List*);
 
 #endif

@@ -103,7 +103,7 @@ enlist_var(const Var& v)
 	return static_cast<const List&>(v);
     } else {
 	List l = new_list(1);
-	l.v.list[1] = v;
+	l[1] = v;
 	return l;
     }
 }

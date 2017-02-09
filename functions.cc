@@ -246,7 +246,7 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
 
     if (func_pc == 1) {		/* check arg types and count *ONLY* for first entry */
 	int k, max;
-	Var *args = value.v.list;
+	const Var *args = value.v.list.expose();
 
 	/*
 	 * Check permissions, if protected
@@ -445,14 +445,14 @@ function_description(int i)
 
     entry = bf_table[i];
     l = new_list(4);
-    l.v.list[1] = str_ref_to_var(entry.name);
-    l.v.list[2] = Var::new_int(entry.minargs);
-    l.v.list[3] = Var::new_int(entry.maxargs);
+    l[1] = str_ref_to_var(entry.name);
+    l[2] = Var::new_int(entry.minargs);
+    l[3] = Var::new_int(entry.maxargs);
     nargs = entry.maxargs == -1 ? entry.minargs : entry.maxargs;
-    l.v.list[4] = v = new_list(nargs);
+    l[4] = v = new_list(nargs);
     for (j = 0; j < nargs; j++) {
 	int proto = entry.prototype[j];
-	v.v.list[j + 1] = Var::new_int(proto < 0 ? proto : (proto & TYPE_DB_MASK));
+	v[j + 1] = Var::new_int(proto < 0 ? proto : (proto & TYPE_DB_MASK));
     }
 
     return l;
@@ -461,7 +461,6 @@ function_description(int i)
 static package
 bf_function_info(const List& arglist, Objid progr)
 {
-    Var r;
     unsigned int i;
 
     if (arglist.length() == 1) {
@@ -470,15 +469,16 @@ bf_function_info(const List& arglist, Objid progr)
 	    free_var(arglist);
 	    return make_error_pack(E_INVARG);
 	}
-	r = function_description(i);
+	Var r = function_description(i);
+	free_var(arglist);
+	return make_var_pack(r);
     } else {
-	r = new_list(top_bf_table);
+	List l = new_list(top_bf_table);
 	for (i = 0; i < top_bf_table; i++)
-	    r.v.list[i + 1] = function_description(i);
+	    l[i + 1] = function_description(i);
+	free_var(arglist);
+	return make_var_pack(l);
     }
-
-    free_var(arglist);
-    return make_var_pack(r);
 }
 
 static void

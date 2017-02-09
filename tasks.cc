@@ -225,7 +225,7 @@ struct qcl_data {
     Objid progr;
     int show_all;
     int i;
-    Var tasks;
+    List tasks;
 };
 
 static task_enum_action
@@ -298,27 +298,29 @@ icmd_list(int icmd_flags)
 }
 
 static int
-icmd_set_flags(tqueue * tq, const Var& list)
+icmd_set_flags(tqueue * tq, const Var& value)
 {
     int i;
     int newflags;
-    if (list.is_int()) {
-	newflags = is_true(list) ? ICMD_ALL_CMDS : 0;
+    if (value.is_int()) {
+	newflags = is_true(value) ? ICMD_ALL_CMDS : 0;
     }
-    else if (!list.is_list())
-	return 0;
-    else {
+    else if (value.is_list()) {
 	newflags = 0;
-	for (i = 1; i <= list.v.list[0].v.num; ++i) {
+	const List& list = static_cast<const List&>(value);
+	for (i = 1; i <= list.length(); ++i) {
 	    int icmd;
-	    if (!list.v.list[i].is_str())
+	    if (!list[i].is_str())
 		return 0;
-	    icmd = icmd_index(list.v.list[i].v.str.expose());
+	    icmd = icmd_index(list[i].v.str.expose());
 	    if (!icmd)
 		return 0;
 	    newflags |= (1<<icmd);
 	}
     }
+    else
+	return 0;
+
     tq->icmds = newflags;
     return 1;
 }
@@ -744,10 +746,10 @@ do_intrinsic_command(tqueue * tq, Parsed_Command * pc)
     case ICMD_PROGRAM:
 	if (!is_programmer(tq->player))
 	    return 0;
-	if (pc->args.v.list[0].v.num != 1)
+	if (pc->args.length() != 1)
 	    notify(tq->player, "Usage:  .program object:verb");
 	else	
-	    start_programming(tq, pc->args.v.list[1].v.str);
+	    start_programming(tq, pc->args[1].v.str);
 	break;
     case ICMD_PREFIX:	
     case ICMD_OUTPUTPREFIX:
@@ -1630,11 +1632,10 @@ run_ready_tasks(void)
 			else {
 			    http_parser_execute(&tq->parsing_state->parser, &settings, binary, len);
 			    if (tq->parsing_state->parser.http_errno != HPE_OK && tq->parsing_state->result.is_map()) {
-				Var key, value;
-				key = Var::new_str("error");
-				value = new_list(2);
-				value.v.list[1] = Var::new_str(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
-				value.v.list[2] = Var::new_str(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
+				Var key = Var::new_str("error");
+				List value = new_list(2);
+				value[1] = Var::new_str(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
+				value[2] = Var::new_str(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
 				tq->parsing_state->result = mapinsert(static_cast<const Map&>(tq->parsing_state->result), key, value);
 				done = 1;
 			    }
@@ -2146,35 +2147,32 @@ static package
 bf_queue_info(const List& arglist, Objid progr)
 {
     int nargs = arglist.length();
-    Var res;
 
     if (nargs == 0) {
 	int count = 0;
 	tqueue *tq;
-
 	for (tq = active_tqueues; tq; tq = tq->next)
 	    count++;
 	for (tq = idle_tqueues; tq; tq = tq->next)
 	    count++;
-
-	res = new_list(count);
+	List res = new_list(count);
 	for (tq = active_tqueues; tq; tq = tq->next) {
-	    res.v.list[count] = Var::new_obj(tq->player);
+	    res[count] = Var::new_obj(tq->player);
 	    count--;
 	}
 	for (tq = idle_tqueues; tq; tq = tq->next) {
-	    res.v.list[count] = Var::new_obj(tq->player);
+	    res[count] = Var::new_obj(tq->player);
 	    count--;
 	}
+	free_var(arglist);
+	return make_var_pack(res);
     } else {
 	Objid who = arglist[1].v.obj;
 	tqueue *tq = find_tqueue(who, 0);
-
-	res = Var::new_int(tq ? tq->num_bg_tasks : 0);
+	Var res = Var::new_int(tq ? tq->num_bg_tasks : 0);
+	free_var(arglist);
+	return make_var_pack(res);
     }
-
-    free_var(arglist);
-    return make_var_pack(res);
 }
 
 static package
@@ -2226,16 +2224,16 @@ static Var
 list_for_forked_task(forked_task ft, Objid progr)
 {
     List list = new_list(10);
-    list.v.list[1] = Var::new_int(ft.id);
-    list.v.list[2] = Var::new_int(ft.start_time);
-    list.v.list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
-    list.v.list[4] = Var::new_int(DEFAULT_BG_TICKS);	/* OBSOLETE: was clock ticks */
-    list.v.list[5] = Var::new_obj(ft.a.progr);
-    list.v.list[6] = anonymizing_var_ref(ft.a.vloc, progr);
-    list.v.list[7] = str_ref_to_var(ft.a.verbname);
-    list.v.list[8] = Var::new_int(find_line_number(ft.program, ft.f_index, 0));
-    list.v.list[9] = anonymizing_var_ref(ft.a._this, progr);
-    list.v.list[10] = Var::new_int(forked_task_bytes(ft));
+    list[1] = Var::new_int(ft.id);
+    list[2] = Var::new_int(ft.start_time);
+    list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
+    list[4] = Var::new_int(DEFAULT_BG_TICKS);	/* OBSOLETE: was clock ticks */
+    list[5] = Var::new_obj(ft.a.progr);
+    list[6] = anonymizing_var_ref(ft.a.vloc, progr);
+    list[7] = str_ref_to_var(ft.a.verbname);
+    list[8] = Var::new_int(find_line_number(ft.program, ft.f_index, 0));
+    list[9] = anonymizing_var_ref(ft.a._this, progr);
+    list[10] = Var::new_int(forked_task_bytes(ft));
     return list;
 }
 
@@ -2251,32 +2249,32 @@ suspended_task_bytes(vm the_vm)
     return total;
 }
 
-static Var
+static List
 list_for_vm(vm the_vm, Objid progr)
 {
     List list = new_list(10);
-    list.v.list[1] = Var::new_int(the_vm->task_id);
-    // list.v.list[2] = ...
+    list[1] = Var::new_int(the_vm->task_id);
+    // list[2] = ...
     // see `list_for_suspended_task()', `list_for_forked_task()'
     // or `listing_closure()'
-    list.v.list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
-    list.v.list[4] = Var::new_int(DEFAULT_BG_TICKS);	/* OBSOLETE: was clock ticks */
-    list.v.list[5] = Var::new_obj(progr_of_cur_verb(the_vm));
-    list.v.list[6] = anonymizing_var_ref(top_activ(the_vm).vloc, progr);
-    list.v.list[7] = str_ref_to_var(top_activ(the_vm).verbname);
-    list.v.list[8] = Var::new_int(suspended_lineno_of_vm(the_vm));
-    list.v.list[9] = anonymizing_var_ref(top_activ(the_vm)._this, progr);
-    list.v.list[10] = Var::new_int(suspended_task_bytes(the_vm));
+    list[3] = Var::new_int(0);			/* OBSOLETE: was clock ID */
+    list[4] = Var::new_int(DEFAULT_BG_TICKS);	/* OBSOLETE: was clock ticks */
+    list[5] = Var::new_obj(progr_of_cur_verb(the_vm));
+    list[6] = anonymizing_var_ref(top_activ(the_vm).vloc, progr);
+    list[7] = str_ref_to_var(top_activ(the_vm).verbname);
+    list[8] = Var::new_int(suspended_lineno_of_vm(the_vm));
+    list[9] = anonymizing_var_ref(top_activ(the_vm)._this, progr);
+    list[10] = Var::new_int(suspended_task_bytes(the_vm));
     return list;
 }
 
 static Var
 list_for_suspended_task(suspended_task st, Objid progr)
 {
-    Var list;
+    List list;
 
     list = list_for_vm(st.the_vm, progr);
-    list.v.list[2] = Var::new_int(st.start_time);
+    list[2] = Var::new_int(st.start_time);
 
     return list;
 }
@@ -2284,11 +2282,11 @@ list_for_suspended_task(suspended_task st, Objid progr)
 static Var
 list_for_reading_task(Objid player, vm the_vm, Objid progr)
 {
-    Var list;
+    List list;
 
     list = list_for_vm(the_vm, progr);
-    list.v.list[2] = Var::new_int(-1);	/* conventional value */
-    list.v.list[5] = Var::new_obj(player);
+    list[2] = Var::new_int(-1);	/* conventional value */
+    list[5] = Var::new_obj(player);
 
     return list;
 }
@@ -2308,12 +2306,12 @@ static task_enum_action
 listing_closure(vm the_vm, const char *status, void *data)
 {
     struct qcl_data *qdata = (struct qcl_data *)data;
-    Var list;
+    List list;
 
     if (qdata->show_all || qdata->progr == progr_of_cur_verb(the_vm)) {
 	list = list_for_vm(the_vm, qdata->progr);
-	list.v.list[2] = Var::new_str(status);
-	qdata->tasks.v.list[qdata->i++] = list;
+	list[2] = Var::new_str(status);
+	qdata->tasks[qdata->i++] = list;
     }
 
     return TEA_CONTINUE;
@@ -2379,39 +2377,31 @@ bf_queued_tasks(const List& arglist, Objid progr)
 
     for (tq = idle_tqueues; tq; tq = tq->next) {
 	if (tq->reading && (show_all || tq->player == progr))
-	    tasks.v.list[i++] = list_for_reading_task(tq->player,
-						      tq->reading_vm,
-						      progr);
+	    tasks[i++] = list_for_reading_task(tq->player, tq->reading_vm, progr);
     }
 
     for (tq = active_tqueues; tq; tq = tq->next) {
 	if (tq->reading && (show_all || tq->player == progr))
-	    tasks.v.list[i++] = list_for_reading_task(tq->player,
-						      tq->reading_vm,
-						      progr);
+	    tasks[i++] = list_for_reading_task(tq->player, tq->reading_vm, progr);
 
 	for (t = tq->first_bg; t; t = t->next)
 	    if (t->kind == TASK_FORKED && (show_all
 					|| t->t.forked.a.progr == progr))
-		tasks.v.list[i++] = list_for_forked_task(t->t.forked,
-						         progr);
+		tasks[i++] = list_for_forked_task(t->t.forked, progr);
 	    else if (t->kind == TASK_SUSPENDED
 		     && (show_all
 		   || progr_of_cur_verb(t->t.suspended.the_vm) == progr))
-		tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
-						            progr);
+		tasks[i++] = list_for_suspended_task(t->t.suspended, progr);
     }
 
     for (t = waiting_tasks; t; t = t->next) {
 	if (t->kind == TASK_FORKED && (show_all ||
 				       t->t.forked.a.progr == progr))
-	    tasks.v.list[i++] = list_for_forked_task(t->t.forked,
-						     progr);
+	    tasks[i++] = list_for_forked_task(t->t.forked, progr);
 	else if (t->kind == TASK_SUSPENDED
 		 && (progr_of_cur_verb(t->t.suspended.the_vm) == progr
 		     || show_all))
-	    tasks.v.list[i++] = list_for_suspended_task(t->t.suspended,
-						        progr);
+	    tasks[i++] = list_for_suspended_task(t->t.suspended, progr);
     }
 
     qdata.tasks = tasks;
@@ -2699,8 +2689,8 @@ bf_output_delimiters(const List& arglist, Objid progr)
 	    return make_error_pack(E_INVARG);
 
 	r = new_list(2);
-	r.v.list[1] = Var::new_str(tq->output_prefix ? tq->output_prefix : EMPTY);
-	r.v.list[2] = Var::new_str(tq->output_suffix ? tq->output_suffix : EMPTY);
+	r[1] = Var::new_str(tq->output_prefix ? tq->output_prefix : EMPTY);
+	r[2] = Var::new_str(tq->output_suffix ? tq->output_suffix : EMPTY);
     }
     return make_var_pack(r);
 }

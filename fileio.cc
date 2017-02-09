@@ -673,8 +673,8 @@ bf_file_readlines(const List& arglist, Objid progr)
 		  rv = new_list(linecount);		  
 		  i = 1;
 		  while(linebuf_cur != NULL) {
-			 rv.v.list[i].type = TYPE_STR;
-			 rv.v.list[i].v.str = linebuf_cur->line;
+			 rv[i].type = TYPE_STR;
+			 rv[i].v.str = linebuf_cur->line;
 			 linebuf_cur = linebuf_cur->next;
 			 i++;
 		  }
@@ -1185,14 +1185,14 @@ bf_file_stat(const List& arglist, Objid progr)
 
   if (file_stat(progr, filespec, &r, &buf)) {
 	 rv = new_list(8);
-	 rv.v.list[1] = Var::new_int(buf.st_size);
-	 rv.v.list[2] = Var::new_str(file_type_string(buf.st_mode));
-	 rv.v.list[3] = Var::new_str(file_mode_string(buf.st_mode));
-	 rv.v.list[4] = Var::new_str("");
-	 rv.v.list[5] = Var::new_str("");
-	 rv.v.list[6] = Var::new_int(buf.st_atime);
-	 rv.v.list[7] = Var::new_int(buf.st_mtime);
-	 rv.v.list[8] = Var::new_int(buf.st_ctime);
+	 rv[1] = Var::new_int(buf.st_size);
+	 rv[2] = Var::new_str(file_type_string(buf.st_mode));
+	 rv[3] = Var::new_str(file_mode_string(buf.st_mode));
+	 rv[4] = Var::new_str("");
+	 rv[5] = Var::new_str("");
+	 rv[6] = Var::new_int(buf.st_atime);
+	 rv[7] = Var::new_int(buf.st_mtime);
+	 rv[8] = Var::new_int(buf.st_ctime);
 	 r = make_var_pack(rv);
   }
   free_var(arglist);
@@ -1241,7 +1241,6 @@ bf_file_list(const List& arglist, Objid progr)
         int failed = 0;
         struct stat buf;
         List rv;
-        Var detail;
 	struct dirent *curfile;
 
 	if (!(curdir = opendir (real_pathname)))
@@ -1258,16 +1257,17 @@ bf_file_list(const List& arglist, Objid progr)
 					failed = 1;
 					break;
 				} else {
-					detail = new_list(4);
-					detail.v.list[1] = Var::new_str(curfile->d_name);
-					detail.v.list[2] = Var::new_str(file_type_string(buf.st_mode));
-					detail.v.list[3] = Var::new_str(file_mode_string(buf.st_mode));
-					detail.v.list[4] = Var::new_int(buf.st_size);
+					List detail = new_list(4);
+					detail[1] = Var::new_str(curfile->d_name);
+					detail[2] = Var::new_str(file_type_string(buf.st_mode));
+					detail[3] = Var::new_str(file_mode_string(buf.st_mode));
+					detail[4] = Var::new_int(buf.st_size);
+					rv = listappend(rv, detail);
 				}
 			} else {
-				detail = Var::new_str(curfile->d_name);
+				Var detail = Var::new_str(curfile->d_name);
+				rv = listappend(rv, detail);
 			}
-			rv = listappend(rv, detail);
 		    }
 		}
 		if(failed) {

@@ -27,7 +27,7 @@
 #include "unparse.h"
 #include "utils.h"
 
-static Var *
+static List
 aliases(Objid oid)
 {
     Var value;
@@ -36,11 +36,10 @@ aliases(Objid oid)
     static const ref_ptr<const char> ALIASES = str_dup("aliases");
 
     h = db_find_property(Var::new_obj(oid), ALIASES, &value);
-    if (!h.ptr || !value.is_list()) {
-	/* Simulate a pointer to an empty list */
-	return &zero;
-    } else
-	return value.v.list;
+    if (h.ptr && value.is_list())
+	return static_cast<List&>(value);
+    else
+	return new_list(0);
 }
 
 struct match_data {
@@ -53,11 +52,10 @@ static int
 match_proc(void *data, Objid oid)
 {
     struct match_data *d = (struct match_data *)data;
-    Var *names = aliases(oid);
-    int i;
+    List names = aliases(oid);
     const char *name;
 
-    for (i = 0; i <= names[0].v.num; i++) {
+    for (int i = 0; i <= names.length(); i++) {
 	if (i == 0)
 	    name = db_object_name(oid).expose();
 	else if (!names[i].is_str())

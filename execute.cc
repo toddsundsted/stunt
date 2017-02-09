@@ -15,6 +15,8 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <stack>
+
 #include "my-string.h"
 
 #include "collection.h"
@@ -91,7 +93,7 @@ typedef enum {			/* Reasons for executing a FINALLY handler */
  * with a powers-of-two malloc (while leaving some room for mymalloc
  * overhead, if any).
  */
-static Var *rt_stack_quick;
+static std::stack<Var*> rt_stack_quick;
 #define RT_STACK_QUICKSIZE	15
 
 static void
@@ -99,9 +101,9 @@ alloc_rt_stack(activation * a, int size)
 {
     Var *res;
 
-    if (size <= RT_STACK_QUICKSIZE && rt_stack_quick) {
-	res = rt_stack_quick;
-	rt_stack_quick = rt_stack_quick[0].v.list;
+    if (size <= RT_STACK_QUICKSIZE && !rt_stack_quick.empty()) {
+	res = rt_stack_quick.top();
+	rt_stack_quick.pop();
     } else {
 	res = (Var *)malloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var));
     }
@@ -115,8 +117,7 @@ free_rt_stack(activation * a)
     Var *stack = a->base_rt_stack;
 
     if (a->rt_stack_size <= RT_STACK_QUICKSIZE) {
-	stack[0].v.list = rt_stack_quick;
-	rt_stack_quick = stack;
+	rt_stack_quick.push(stack);
     } else
 	free(stack);
 }
@@ -222,7 +223,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
      * why==FIN_EXIT always returns false
      * why==FIN_ABORT always returns true/OUTCOME_ABORTED
      */
-    Var code = (why == FIN_RAISE ? value.v.list[1] : zero);
+    Var code = (why == FIN_RAISE ? static_cast<List&>(value)[1] : zero);
 
     for (;;) {			/* loop over activations */
 	activation *a = &(activ_stack[top_activ_stack]);
@@ -233,7 +234,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 	Var v, *goal = a->base_rt_stack;
 
 	if (why == FIN_EXIT)
-	    goal += value.v.list[1].v.num;
+	    goal += static_cast<List&>(value)[1].v.num;
 	while (a->top_rt_stack > goal) {	/* loop over rt stack */
 	    a->top_rt_stack--;
 	    v = *(a->top_rt_stack);
@@ -270,7 +271,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 		free_var(v);
 	}
 	if (why == FIN_EXIT) {
-	    a->pc = value.v.list[2].v.num;
+	    a->pc = static_cast<List&>(value)[2].v.num;
 	    free_var(value);
 	    return 0;
 	}
@@ -418,30 +419,30 @@ make_stack_list(activation * stack, int start, int end, int include_end,
     r = new_list(count);
     j = 1;
     for (i = end; i >= start; i--) {
-	Var v;
+	List v;
 
 	if (include_end || i != end) {
-	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
-	    v.v.list[1] = anonymizing_var_ref(stack[i]._this, progr);
-	    v.v.list[2] = str_ref_to_var(stack[i].verb);
-	    v.v.list[3] = Var::new_obj(stack[i].progr);
-	    v.v.list[4] = anonymizing_var_ref(stack[i].vloc, progr);
-	    v.v.list[5] = Var::new_obj(stack[i].player);
+	    r[j++] = v = new_list(line_numbers_too ? 6 : 5);
+	    v[1] = anonymizing_var_ref(stack[i]._this, progr);
+	    v[2] = str_ref_to_var(stack[i].verb);
+	    v[3] = Var::new_obj(stack[i].progr);
+	    v[4] = anonymizing_var_ref(stack[i].vloc, progr);
+	    v[5] = Var::new_obj(stack[i].player);
 	    if (line_numbers_too) {
-		v.v.list[6] = Var::new_int(find_line_number(stack[i].prog,
-						(i == 0 ? root_vector : MAIN_VECTOR),
-						stack[i].error_pc));
+		v[6] = Var::new_int(find_line_number(stack[i].prog,
+						     (i == 0 ? root_vector : MAIN_VECTOR),
+						     stack[i].error_pc));
 	    }
 	}
 	if (i != start && stack[i].bi_func_pc) {
-	    v = r.v.list[j++] = new_list(line_numbers_too ? 6 : 5);
-	    v.v.list[1] = Var::new_obj(NOTHING);
-	    v.v.list[2] = Var::new_str(name_func_by_num(stack[i].bi_func_id));
-	    v.v.list[3] = Var::new_obj(NOTHING);
-	    v.v.list[4] = Var::new_obj(NOTHING);
-	    v.v.list[5] = Var::new_obj(stack[i].player);
+	    r[j++] = v = new_list(line_numbers_too ? 6 : 5);
+	    v[1] = Var::new_obj(NOTHING);
+	    v[2] = Var::new_str(name_func_by_num(stack[i].bi_func_id));
+	    v[3] = Var::new_obj(NOTHING);
+	    v[4] = Var::new_obj(NOTHING);
+	    v[5] = Var::new_obj(stack[i].player);
 	    if (line_numbers_too) {
-		v.v.list[6] = Var::new_int(stack[i].bi_func_pc);
+		v[6] = Var::new_int(stack[i].bi_func_pc);
 	    }
 	}
     }
@@ -470,7 +471,7 @@ raise_error(package p, enum outcome *outcome)
     /* ASSERT: p.kind == package::BI_RAISE */
     int handler_activ = find_handler_activ(p.u.raise.code);
     Finally_Reason why;
-    Var value;
+    List value;
 
     if (handler_activ >= 0) {	/* handler found */
 	why = FIN_RAISE;
@@ -478,23 +479,25 @@ raise_error(package p, enum outcome *outcome)
     } else {			/* uncaught exception */
 	why = FIN_UNCAUGHT;
 	value = new_list(5);
-	value.v.list[5] = error_backtrace_list(p.u.raise.msg.expose());
+	value[5] = error_backtrace_list(p.u.raise.msg.expose());
 	handler_activ = 0;	/* get entire stack in list */
     }
-    value.v.list[1] = p.u.raise.code;
-    value.v.list[2].type = TYPE_STR;
-    value.v.list[2].v.str = p.u.raise.msg;
-    value.v.list[3] = p.u.raise.value;
-    value.v.list[4] = make_stack_list(activ_stack, handler_activ,
-				      top_activ_stack, 1,
-				      root_activ_vector, 1,
-				      NOTHING);
+    value[1] = p.u.raise.code;
+    value[2].type = TYPE_STR;
+    value[2].v.str = p.u.raise.msg;
+    value[3] = p.u.raise.value;
+    value[4] = make_stack_list(activ_stack, handler_activ,
+			       top_activ_stack, 1,
+			       root_activ_vector, 1,
+			       NOTHING);
 
     if (why == FIN_UNCAUGHT) {
 	save_handler_info(HANDLE_UNCAUGHT_ERROR, value);
-	value = zero;
+	return unwind_stack(why, zero, outcome);
     }
-    return unwind_stack(why, value, outcome);
+    else {
+	return unwind_stack(why, value, outcome);
+    }
 }
 
 static void
@@ -520,11 +523,11 @@ abort_task(enum abort_reason reason)
 
     save_hinfo:
 	value = new_list(3);
-	value.v.list[1] = Var::new_str(htag);
-	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
-					  root_activ_vector, 1,
-					  NOTHING);
-	value.v.list[3] = error_backtrace_list(msg);
+	value[1] = Var::new_str(htag);
+	value[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
+				   root_activ_vector, 1,
+				   NOTHING);
+	value[3] = error_backtrace_list(msg);
 	save_handler_info(HANDLE_TASK_TIMEOUT, value);
 	/* fall through */
 
@@ -1037,9 +1040,9 @@ do {								\
 		    free_var(list);
 		    PUSH_ERROR(E_TYPE);
 		} else if ((list.is_list()
-		       && (index.v.num < 1 || index.v.num > list.v.list[0].v.num /* size */))
+		       && (index.v.num < 1 || index.v.num > listlength(list)))
 			|| (list.is_str()
-		       && (index.v.num < 1 || index.v.num > (int) memo_strlen(list.v.str)))) {
+		       && (index.v.num < 1 || index.v.num > memo_strlen(list.v.str)))) {
 		    free_var(value);
 		    free_var(index);
 		    free_var(list);
@@ -1082,7 +1085,7 @@ do {								\
 	case OP_MAKE_SINGLETON_LIST:
 	    {
 		List list = new_list(1);
-		list.v.list[1] = POP();
+		list[1] = POP();
 		PUSH(list);
 	    }
 	    break;
@@ -1355,12 +1358,12 @@ do {								\
 			free_var(list);
 		    }
 		} else if (list.is_list()) {
-		    if (index.v.num <= 0 || index.v.num > list.v.list[0].v.num) {
+		    if (index.v.num <= 0 || index.v.num > listlength(list)) {
 			free_var(index);
 			free_var(list);
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH(var_ref(list.v.list[index.v.num]));
+			PUSH(var_ref(static_cast<const List&>(list)[index.v.num]));
 			free_var(index);
 			free_var(list);
 		    }
@@ -1419,12 +1422,12 @@ do {								\
 		} else if (list.is_list()) {
 		    if (!index.is_int()) {
 			PUSH_ERROR(E_TYPE);
-		    } else if (index.v.num <= 0 ||
-			       index.v.num > list.v.list[0].v.num) {
+		    } else if (index.v.num <= 0 || index.v.num > listlength(list)) {
 			PUSH_ERROR(E_RANGE);
 		    } else {
-			PUSH(list.v.list[index.v.num]);
-			list.v.list[index.v.num] = none;
+			List& tmp = static_cast<List&>(list);
+			PUSH(tmp[index.v.num]);
+			tmp[index.v.num] = none;
 		    }
 		} else {
 		    PUSH_ERROR(E_TYPE);
@@ -1483,12 +1486,9 @@ do {								\
 			free_var(iterfrom);
 		    }
 		} else {
-		    int len = (base.is_str()
-			       ? memo_strlen(base.v.str)
-			       : base.v.list[0].v.num);
+		    int len = base.is_str() ? memo_strlen(base.v.str) : listlength(base);
 		    if (from.v.num <= to.v.num
-			&& (from.v.num <= 0 || from.v.num > len
-			    || to.v.num <= 0 || to.v.num > len)) {
+			&& (from.v.num <= 0 || from.v.num > len || to.v.num <= 0 || to.v.num > len)) {
 			free_var(to);
 			free_var(from);
 			free_var(base);
@@ -1948,7 +1948,7 @@ do {								\
 				}
 			    }
 			} else if (base.is_list()) {
-			    if (from.v.num > base.v.list[0].v.num + 1 || to.v.num < 0) {
+			    if (from.v.num > listlength(base) + 1 || to.v.num < 0) {
 				free_var(to);
 				free_var(from);
 				free_var(base);
@@ -1997,7 +1997,7 @@ do {								\
 			    v = Var::new_int(memo_strlen(item.v.str) > 0 ? 1 : 0);
 			    PUSH(v);
 			} else if (item.is_list()) {
-			    v = Var::new_int(item.v.list[0].v.num > 0 ? 1 : 0);
+			    v = Var::new_int(listlength(item) > 0 ? 1 : 0);
 			    PUSH(v);
 			} else if (item.is_map()) {
 			    var_pair pair;
@@ -2020,7 +2020,7 @@ do {								\
 			    v = Var::new_int(memo_strlen(item.v.str));
 			    PUSH(v);
 			} else if (item.is_list()) {
-			    v = Var::new_int(item.v.list[0].v.num);
+			    v = Var::new_int(listlength(item));
 			    PUSH(v);
 			} else if (item.is_map()) {
 			    var_pair pair;
@@ -2062,8 +2062,7 @@ do {								\
 			Var top = TOP_RT_VALUE;
 			if (!top.is_list())
 			    e = E_TYPE;
-			else if ((len = top.v.list[0].v.num) < nreq
-				 || (!have_rest && len > nargs))
+			else if ((len = listlength(top)) < nreq || (!have_rest && len > nargs))
 			    e = E_ARGS;
 
 			if (e != E_NONE) {	/* skip rest of operands */
@@ -2090,13 +2089,13 @@ do {								\
 				} else if (label == 0) {	/* required */
 				    free_var(RUN_ACTIV.rt_env[id]);
 				    RUN_ACTIV.rt_env[id] =
-					var_ref(list.v.list[i + offset]);
+					var_ref(list[i + offset]);
 				} else {	/* optional */
 				    if (nopt_avail > 0) {
 					nopt_avail--;
 					free_var(RUN_ACTIV.rt_env[id]);
 					RUN_ACTIV.rt_env[id] =
-					    var_ref(list.v.list[i + offset]);
+					    var_ref(list[i + offset]);
 				    } else {
 					offset--;
 					if (where == 0 && label != 1)
@@ -2214,8 +2213,8 @@ do {								\
 		case EOP_EXIT:
 		    {
 			List v = new_list(2);
-			v.v.list[1] = Var::new_int(READ_BYTES(bv, bc.numbytes_stack));
-			v.v.list[2] = Var::new_int(READ_BYTES(bv, bc.numbytes_label));
+			v[1] = Var::new_int(READ_BYTES(bv, bc.numbytes_stack));
+			v[2] = Var::new_int(READ_BYTES(bv, bc.numbytes_label));
 			STORE_STATE_VARIABLES();
 			(void) unwind_stack(FIN_EXIT, v, 0);
 			LOAD_STATE_VARIABLES();
@@ -2238,7 +2237,7 @@ do {								\
 			} else if (BASE.is_str() || BASE.is_list()) {
 			    int len = BASE.is_str()
 				       ? memo_strlen(BASE.v.str)
-				       : BASE.v.list[0].v.num;
+				       : listlength(BASE);
 			    if (ITER.is_none()) {
 				free_var(ITER);
 				ITER = Var::new_int(1);
@@ -2251,7 +2250,7 @@ do {								\
 				free_var(RUN_ACTIV.rt_env[id]);
 				RUN_ACTIV.rt_env[id] = BASE.is_str()
 				  ? strget(static_cast<const Str&>(BASE), ITER.v.num)
-				  : var_ref(BASE.v.list[ITER.v.num]);
+				  : var_ref(static_cast<const List&>(BASE)[ITER.v.num]);
 				ITER.v.num++;	/* increment iter */
 			    }
 			} else if (BASE.is_map()) {
@@ -2297,9 +2296,7 @@ do {								\
 			    free_var(POP());
 			    JUMP(lab);
 			} else if (BASE.is_str() || BASE.is_list()) {
-			    int len = BASE.is_str()
-				       ? memo_strlen(BASE.v.str)
-				       : BASE.v.list[0].v.num;
+			    int len = BASE.is_str() ? memo_strlen(BASE.v.str) : listlength(BASE);
 			    if (ITER.is_none()) {
 				free_var(ITER);
 				ITER = Var::new_int(1);
@@ -2312,7 +2309,7 @@ do {								\
 				free_var(RUN_ACTIV.rt_env[id]);
 				RUN_ACTIV.rt_env[id] = BASE.is_str()
 				  ? strget(static_cast<const Str&>(BASE), ITER.v.num)
-				  : var_ref(BASE.v.list[ITER.v.num]);
+				  : var_ref(static_cast<const List&>(BASE)[ITER.v.num]);
 				free_var(RUN_ACTIV.rt_env[index]);
 				RUN_ACTIV.rt_env[index] = var_ref(ITER);
 				ITER.v.num++;	/* increment iter */
@@ -2646,8 +2643,7 @@ run_interpreter(char raise, enum error e,
     if (ret == OUTCOME_ABORTED && handler_verb_name) {
 	db_verb_handle h;
 	enum outcome hret;
-	Var handled, traceback;
-	int i;
+	Var handled;
 
 	h = db_find_callable_verb(Var::new_obj(SYSTEM_OBJECT), handler_verb_name);
 	if (do_db_tracebacks && h.ptr) {
@@ -2655,17 +2651,18 @@ run_interpreter(char raise, enum error e,
 				       var_ref(args), h,
 				       activ_stack[0].player, "", &handled,
 				       0/*no-traceback*/);
-	    if ((hret == OUTCOME_DONE && is_true(handled))
-		|| hret == OUTCOME_BLOCKED) {
+	    if ((hret == OUTCOME_DONE && is_true(handled)) || hret == OUTCOME_BLOCKED) {
 		/* Assume the in-DB code handled it */
 		free_var(args);
 		return OUTCOME_ABORTED;		/* original ret value */
 	    }
 	}
-	i = args.v.list[0].v.num;
-	traceback = args.v.list[i];	/* traceback is always the last argument */
-	for (i = 1; i <= traceback.v.list[0].v.num; i++)
-	    notify(activ_stack[0].player, traceback.v.list[i].v.str.expose());
+	const List& arglist = static_cast<const List&>(args);
+	int i = arglist.length();
+	assert(arglist[i].is_list());
+	const List& traceback = static_cast<const List&>(arglist[i]);	/* traceback is always the last argument */
+	for (i = 1; i <= traceback.length(); i++)
+	    notify(activ_stack[0].player, traceback[i].v.str.expose());
     }
     free_var(args);
     return ret;

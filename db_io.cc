@@ -238,14 +238,14 @@ dbio_read_var(void)
 	    Var key, value;
 	    key = dbio_read_var();
 	    value = dbio_read_var();
-	    r = mapinsert(static_cast<const Map&>(r), key, value);
+	    r = mapinsert(static_cast<Map&>(r), key, value);
 	}
 	break;
     case _TYPE_LIST:
 	l = dbio_read_num();
 	r = new_list(l);
-	for (i = 0; i < l; i++)
-	    r.v.list[i + 1] = dbio_read_var();
+	for (i = 1; i <= l; i++)
+	    static_cast<List&>(r)[i] = dbio_read_var();
 	break;
     case _TYPE_ITER:
 	r = dbio_read_var();
@@ -417,15 +417,19 @@ dbio_write_var(const Var& v)
     case TYPE_FLOAT:
 	dbio_write_float(*v.v.fnum);
 	break;
-    case TYPE_MAP:
-        dbio_write_num(maplength(static_cast<const Map&>(v)));
-        mapforeach(static_cast<const Map&>(v), dbio_write_map, NULL);
-        break;
-    case TYPE_LIST:
-	dbio_write_num(v.v.list[0].v.num);
-	for (i = 0; i < v.v.list[0].v.num; i++)
-	    dbio_write_var(v.v.list[i + 1]);
+    case TYPE_MAP: {
+	const Map& m = static_cast<const Map&>(v);
+	dbio_write_num(maplength(m));
+	mapforeach(m, dbio_write_map, NULL);
 	break;
+    }
+    case TYPE_LIST: {
+	const List& l = static_cast<const List&>(v);
+	dbio_write_num(l.length());
+	for (i = 1; i <= l.length(); i++)
+	    dbio_write_var(l[i]);
+	break;
+    }
     case TYPE_ANON:
 	db_write_anonymous(v);
 	break;

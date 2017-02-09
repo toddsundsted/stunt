@@ -230,10 +230,10 @@ db_destroy_object(Objid oid)
 	panic("DB_DESTROY_OBJECT: Invalid object!");
 
     if (o->location.v.obj != NOTHING ||
-	o->contents.v.list[0].v.num != 0 ||
+	o->contents.length() != 0 ||
 	(o->parents.is_obj() && o->parents.v.obj != NOTHING) ||
-	(o->parents.is_list() && o->parents.v.list[0].v.num != 0) ||
-	o->children.v.list[0].v.num != 0)
+	(o->parents.is_list() && listlength(o->parents) != 0) ||
+	o->children.length() != 0)
 	panic("DB_DESTROY_OBJECT: Not a barren orphan!");
 
     free_var(o->parents);
@@ -400,7 +400,7 @@ db_destroy_anonymous_object(void *obj)
     /*myfree(o, M_ANON);*/
 }
 
-int
+static int
 parents_ok(Object *o)
 {
     if (o->parents.is_list()) {
@@ -460,31 +460,31 @@ db_renumber_object(Objid old)
 	    int i1, c1, i2, c2;
 	    Var obj1, obj2;
 
-#define	    FIX(up, down)							\
-	    if (o->up.is_list()) {						\
-		FOR_EACH(obj1, o->up, i1, c1) {					\
-		    FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)		\
-			if (obj2.v.obj == old)					\
-			    break;						\
-		    objects[obj1.v.obj]->down.v.list[i2].v.obj = _new;		\
-		}								\
-	    }									\
-	    else if (o->up.is_obj() && NOTHING != o->up.v.obj) {		\
-		FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)		\
-		if (obj1.v.obj == old)						\
-		    break;							\
-		objects[o->up.v.obj]->down.v.list[i2].v.obj = _new;		\
-	    }									\
-	    FOR_EACH(obj1, o->down, i1, c1) {					\
-		if (objects[obj1.v.obj]->up.is_list()) {			\
-		    FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)		\
-			if (obj2.v.obj == old)					\
-			    break;						\
-		    objects[obj1.v.obj]->up.v.list[i2].v.obj = _new;		\
-		}								\
-		else {								\
-		    objects[obj1.v.obj]->up.v.obj = _new;			\
-		}								\
+#define	    FIX(up, down)								\
+	    if (o->up.is_list()) {							\
+		FOR_EACH(obj1, o->up, i1, c1) {						\
+		    FOR_EACH(obj2, objects[obj1.v.obj]->down, i2, c2)			\
+			if (obj2.v.obj == old)						\
+			    break;							\
+		    objects[obj1.v.obj]->down[i2].v.obj = _new;				\
+		}									\
+	    }										\
+	    else if (o->up.is_obj() && NOTHING != o->up.v.obj) {			\
+		FOR_EACH(obj1, objects[o->up.v.obj]->down, i2, c2)			\
+		if (obj1.v.obj == old)							\
+		    break;								\
+		objects[o->up.v.obj]->down[i2].v.obj = _new;				\
+	    }										\
+	    FOR_EACH(obj1, o->down, i1, c1) {						\
+		if (objects[obj1.v.obj]->up.is_list()) {				\
+		    FOR_EACH(obj2, objects[obj1.v.obj]->up, i2, c2)			\
+			if (obj2.v.obj == old)						\
+			    break;							\
+		    static_cast<List&>(objects[obj1.v.obj]->up)[i2].v.obj = _new;	\
+		}									\
+		else {									\
+		    objects[obj1.v.obj]->up.v.obj = _new;				\
+		}									\
 	    }
 
 	    FIX(parents, children);
@@ -497,8 +497,8 @@ db_renumber_object(Objid old)
 		int i;
 
 		for (i = 1; i <= all_users.length(); i++)
-		    if (all_users.v.list[i].v.obj == old) {
-			all_users.v.list[i].v.obj = _new;
+		    if (all_users[i].v.obj == old) {
+			all_users[i].v.obj = _new;
 			break;
 		    }
 	    }
@@ -618,7 +618,7 @@ db1_count_##name(Object *o)						\
 }									\
 									\
 static void								\
-db2_add_##name(Object *o, Var *plist, int *px)				\
+db2_add_##name(Object *o, List *plist, int *px)				\
 {									\
     int i, c;								\
     Var tmp, field = enlist_var(var_ref(o->field));			\
@@ -630,7 +630,7 @@ db2_add_##name(Object *o, Var *plist, int *px)				\
 	    if (bit_is_false(bit_array, oid)) {				\
 		bit_true(bit_array, oid);				\
 		++(*px);						\
-		plist->v.list[*px] = Var::new_obj(oid);			\
+		(*plist)[*px] = Var::new_obj(oid);			\
 		o2 = dbpriv_find_object(oid);				\
 		db2_add_##name(o2, plist, px);				\
 	    }								\
@@ -659,13 +659,13 @@ db_##name(const Var& obj, bool full)					\
     list = new_list(n);							\
 									\
     if (full)								\
-	list.v.list[++i] = var_ref(obj);				\
+	list[++i] = var_ref(obj);					\
 									\
     CLEAR_BIT_ARRAY();							\
 									\
     db2_add_##name(o, &list, &i);					\
 									\
-    list.v.list[0].v.num = i; /* sketchy */				\
+    list.v.list.expose()[0].v.num = i; /* sketchy */			\
 									\
     return list;							\
 }
@@ -816,7 +816,7 @@ db_for_all_children(Objid oid, int (*func) (void *, Objid), void *data)
     int i, c = db_count_children(oid);
 
     for (i = 1; i <= c; i++)
-	if (func(data, objects[oid]->children.v.list[i].v.obj))
+	if (func(data, objects[oid]->children[i].v.obj))
 	    return 1;
 
     return 0;
@@ -832,7 +832,7 @@ check_for_duplicates(const Var& list)
 
     for (i = 1; i <= c; i++)
 	for (j = i + i; j <= c; j++)
-	    if (equality(list.v.list[i], list.v.list[j], 1))
+	    if (equality(static_cast<const List&>(list)[i], static_cast<const List&>(list)[j], 1))
 		return 0;
 
     return 1;
@@ -967,7 +967,7 @@ db_for_all_contents(Objid oid, int (*func) (void *, Objid), void *data)
     int i, c = db_count_contents(oid);
 
     for (i = 1; i <= c; i++)
-	if (func(data, objects[oid]->contents.v.list[i].v.obj))
+	if (func(data, objects[oid]->contents[i].v.obj))
 	    return 1;
 
     return 0;

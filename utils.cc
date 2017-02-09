@@ -157,7 +157,7 @@ aux_free(const Var& v)
 {
     switch ((int) v.type) {
     case TYPE_LIST:
-	myfree(v.v.list, M_LIST);
+	myfree(v.v.list);
 	break;
     case TYPE_MAP:
 	myfree(v.v.tree);
@@ -184,11 +184,11 @@ complex_free_var(const Var& v)
 	    myfree(v.v.fnum);
 	break;
     case TYPE_LIST:
-	if (delref(v.v.list) == 0) {
+	if (v.v.list.dec_ref() == 0) {
 	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
-	    gc_set_color(v.v.list, GC_BLACK);
-	    if (!gc_is_buffered(v.v.list))
-		myfree(v.v.list, M_LIST);
+	    v.v.list.set_color(GC_BLACK);
+	    if (!v.v.list.is_buffered())
+		myfree(v.v.list);
 	}
 	else
 	    gc_possible_root(v);
@@ -254,7 +254,7 @@ complex_free_var(const Var& v)
 	    myfree(v.v.fnum);
 	break;
     case TYPE_LIST:
-	if (delref(v.v.list) == 0)
+	if (v.v.list.dec_ref() == 0)
 	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
 	break;
     case TYPE_MAP:
@@ -297,7 +297,7 @@ complex_var_ref(const Var& v)
 	v.v.fnum.inc_ref();
 	break;
     case TYPE_LIST:
-	addref(v.v.list);
+	v.v.list.inc_ref();
 	break;
     case TYPE_MAP:
 	v.v.tree.inc_ref();
@@ -327,7 +327,7 @@ complex_var_ref(const Var& v)
 	v.v.fnum.inc_ref();
 	break;
     case TYPE_LIST:
-	addref(v.v.list);
+	v.v.list.inc_ref();
 	break;
     case TYPE_MAP:
 	v.v.tree.inc_ref();
@@ -383,7 +383,7 @@ var_refcount(const Var& v)
 	return v.v.str.ref_count();
 	break;
     case TYPE_LIST:
-	return refcount(v.v.list);
+	return v.v.list.ref_count();
 	break;
     case TYPE_MAP:
 	return v.v.tree.ref_count();
@@ -617,7 +617,7 @@ value_bytes(const Var& v)
 	size += sizeof(double);
 	break;
     case TYPE_LIST:
-	size += list_sizeof(v.v.list);
+	size += list_sizeof(static_cast<const List&>(v));
 	break;
     case TYPE_MAP:
 	size += map_sizeof(static_cast<const Map&>(v));

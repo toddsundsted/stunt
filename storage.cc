@@ -93,6 +93,12 @@ mymalloc(size_t size)
     return ref_ptr<const char>((const char*)mymalloc(size, M_STRING));
 }
 
+template<> ref_ptr<Var>
+mymalloc(size_t size)
+{
+    return ref_ptr<Var>((Var*)mymalloc(size, M_LIST));
+}
+
 void *
 mymalloc(unsigned size, Memory_Type type)
 {
@@ -188,6 +194,12 @@ myrealloc(ref_ptr<const char> ptr, size_t size)
     return ref_ptr<const char>((const char*)myrealloc((void*)ptr.ptr, size, M_STRING));
 }
 
+template<> ref_ptr<Var>
+myrealloc(ref_ptr<Var> ptr, size_t size)
+{
+    return ref_ptr<Var>((Var*)myrealloc((void*)ptr.ptr, size, M_LIST));
+}
+
 void *
 myrealloc(void *ptr, unsigned size, Memory_Type type)
 {
@@ -231,6 +243,12 @@ template<> void
 myfree<const char>(ref_ptr<const char> ptr)
 {
     myfree((void*)ptr.ptr, M_STRING);
+}
+
+template<> void
+myfree<Var>(ref_ptr<Var> ptr)
+{
+    myfree((void*)ptr.ptr, M_LIST);
 }
 
 void

@@ -41,8 +41,7 @@ Program *
 null_program(void)
 {
     static Program *p = 0;
-    List code;
-    Var errors;
+    List code, errors;
 
     if (!p) {
 	code = new_list(0);

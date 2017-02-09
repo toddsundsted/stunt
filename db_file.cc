@@ -914,7 +914,7 @@ read_db_file(void)
 
     user_list = new_list(nusers);
     for (i = 1; i <= nusers; i++) {
-	user_list.v.list[i] = Var::new_obj(dbio_read_objid());
+	user_list[i] = Var::new_obj(dbio_read_objid());
     }
     dbpriv_set_all_users(user_list);
 

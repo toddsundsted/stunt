@@ -36,7 +36,7 @@ extern List setremove(const List& list, const Var& value);
 extern List sublist(const List& list, int lower, int upper);
 extern int listequal(const List& lhs, const List& rhs, int case_matters);
 
-extern int list_sizeof(const Var *list);
+extern int list_sizeof(const List& list);
 
 typedef int (*listfunc) (const Var& value, void *data, int first);
 extern int listforeach(const List& list, listfunc func, void *data);
@@ -55,7 +55,7 @@ extern void unparse_value(Stream *, const Var&);
 static inline int32_t
 listlength(const Var& l)
 {
-    return l.v.list[0].v.num;
+    return l.v.list.expose()[0].v.num;
 }
 
 /*
@@ -70,16 +70,16 @@ listlength(const Var& l)
  *       printf("%d of %d, item = %s\n", i, c, value_to_literal(item));
  *   }
  */
-#define FOR_EACH(val, lst, idx, cnt)				\
-for (idx = 1, cnt = lst.v.list[0].v.num;			\
-     idx <= cnt && (val = lst.v.list[idx], 1);			\
+#define FOR_EACH(val, lst, idx, cnt)					\
+for (idx = 1, cnt = static_cast<const List&>(lst).length();		\
+     idx <= cnt && (val = static_cast<const List&>(lst)[idx], 1);	\
      idx++)
 
 /*
  * Pop the first value off `stck' and put it in `tp'.
  */
-#define POP_TOP(tp, stck)					\
-tp = var_ref(stck.v.list[1]);					\
+#define POP_TOP(tp, stck)						\
+tp = var_ref(stck[1]);							\
 stck = listdelete(stck, 1);
 
 #endif

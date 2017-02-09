@@ -105,7 +105,7 @@ build_string(int argc, char *argv[])
 #define MAXWORDS		500	/* maximum number of words in a line */
 					/* This limit should be removed...   */
 
-Var
+List
 parse_into_wordlist(const char *command)
 {
     int argc, i;
@@ -117,7 +117,7 @@ parse_into_wordlist(const char *command)
     argv = parse_into_words(s, &argc);
     args = new_list(argc);
     for (i = 1; i <= argc; i++) {
-	args.v.list[i] = Var::new_str(argv[i - 1]);
+	args[i] = Var::new_str(argv[i - 1]);
     }
     free(s);
     return args;
@@ -192,7 +192,7 @@ parse_command(const char *command, Objid user)
 
     pc.args = new_list(argc - 1);
     for (i = 1; i < argc; i++) {
-	pc.args.v.list[i] = Var::new_str(argv[i]);
+	pc.args[i] = Var::new_str(argv[i]);
     }
 
     /*

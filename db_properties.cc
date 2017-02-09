@@ -98,9 +98,9 @@ property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, Object
 	    && !mystrcasecmp(props->l[i].name.expose(), pname.expose()))
 	    return 1;
 
-    Var children = o->children;
-    for (i = 1; i <= children.v.list[0].v.num; i++) {
-	Object *child = dbpriv_dereference(children.v.list[i]);
+    List children = o->children;
+    for (i = 1; i <= children.length(); i++) {
+	Object *child = dbpriv_dereference(children[i]);
 	if (property_defined_at_or_below(pname, phash, child))
 	    return 1;
     }
@@ -378,22 +378,6 @@ db_for_all_propvals(const Var& obj, int (*func) (void *, const Var&), void *data
     for (i = 0; i < len; i++)
 	if (func(data, o->propval[i].var))
 	    return 1;
-
-    return 0;
-}
-
-struct contents_data {
-    Var r;
-    int i;
-};
-
-static int
-add_to_list(void *data, Objid c)
-{
-    struct contents_data *d = (struct contents_data *)data;
-
-    d->i++;
-    d->r.v.list[d->i] = Var::new_obj(c);
 
     return 0;
 }
@@ -973,8 +957,8 @@ dbpriv_fix_properties_after_chparent(const Var& obj, const List& old_ancestors, 
 	Object *oc = dbpriv_dereference(child);
 	List _new = new_list(1);
 	List old = new_list(1);
-	_new.v.list[1] = var_ref(child);
-	old.v.list[1] = var_ref(child);
+	_new[1] = var_ref(child);
+	old[1] = var_ref(child);
 	if (oc->parents.is_list()) {
 	    FOR_EACH(parent, oc->parents, i5, c5) {
 		Object *op = dbpriv_find_object(parent.v.obj);

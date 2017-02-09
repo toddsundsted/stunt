@@ -426,13 +426,13 @@ db_verb_cache_stats(void)
     }
 
     l = new_list(5);
-    l.v.list[1] = Var::new_int(verbcache_hit);
-    l.v.list[2] = Var::new_int(verbcache_neg_hit);
-    l.v.list[3] = Var::new_int(verbcache_miss);
-    l.v.list[4] = Var::new_int(db_verb_generation);
-    l.v.list[5] = (v = new_list(VC_CACHE_STATS_MAX + 1));
+    l[1] = Var::new_int(verbcache_hit);
+    l[2] = Var::new_int(verbcache_neg_hit);
+    l[3] = Var::new_int(verbcache_miss);
+    l[4] = Var::new_int(db_verb_generation);
+    l[5] = (v = new_list(VC_CACHE_STATS_MAX + 1));
     for (i = 0; i < VC_CACHE_STATS_MAX + 1; i++) {
-	v.v.list[i + 1] = Var::new_int(histogram[i]);
+	v[i + 1] = Var::new_int(histogram[i]);
     }
     return l;
 }

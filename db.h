@@ -30,8 +30,10 @@ is_list_of_objs(const Var& v)
     if (!v.is_list())
 	return false;
 
-    for (i = 1; i <= v.v.list[0].v.num; i++)
-	if (!v.v.list[i].is_obj())
+    const List& l = static_cast<const List&>(v);
+
+    for (i = 1; i <= l.length(); i++)
+	if (!l[i].is_obj())
 	    return false;
 
     return true;
