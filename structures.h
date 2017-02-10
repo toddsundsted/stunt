@@ -132,7 +132,7 @@ struct Var {
 	ref_ptr<rbtree> tree;		/* MAP */
 	ref_ptr<rbtrav> trav;		/* ITER */
 	ref_ptr<double> fnum;		/* FLOAT */
-	Object *anon;			/* ANON */
+	ref_ptr<Object> anon;		/* ANON */
 	v() {}
     } v;
     var_type type;

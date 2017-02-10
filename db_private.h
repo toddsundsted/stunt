@@ -137,7 +137,7 @@ extern void db_write_anonymous(const Var&);
 
 extern void dbpriv_assign_nonce(Object *);
 
-extern Objid dbpriv_object_owner(Object *);
+extern Objid dbpriv_object_owner(const Object *);
 extern void dbpriv_set_object_owner(Object *, Objid owner);
 
 extern ref_ptr<const char> dbpriv_object_name(Object *);
@@ -148,12 +148,12 @@ extern void dbpriv_set_object_name(Object *, const ref_ptr<const char>&);
 				 * reference is to be persistent.
 				 */
 
-extern int dbpriv_object_has_flag(Object *, db_object_flag);
-extern void dbpriv_set_object_flag(Object *, db_object_flag);
-extern void dbpriv_clear_object_flag(Object *, db_object_flag);
+extern int dbpriv_object_has_flag(const Object*, db_object_flag);
+extern void dbpriv_set_object_flag(Object*, db_object_flag);
+extern void dbpriv_clear_object_flag(Object*, db_object_flag);
 
-extern Var dbpriv_object_parents(Object *);
-extern Var dbpriv_object_children(Object *);
+extern Var dbpriv_object_parents(const Object *);
+extern Var dbpriv_object_children(const Object *);
 extern Var dbpriv_object_location(Object *);
 extern Var dbpriv_object_contents(Object *);
 				/* These functions do not change the reference
@@ -205,10 +205,10 @@ extern int dbpriv_check_properties_for_chparent(const Var& obj,
 				 * ancestors.
 				 */
 
-extern void dbpriv_fix_properties_after_chparent(const Var& obj,
+extern void dbpriv_fix_properties_after_chparent(Var& obj,
 						 const List& old_ancestors,
 						 const List& new_ancestors);
-extern void dbpriv_fix_properties_after_chparent(const Var& obj,
+extern void dbpriv_fix_properties_after_chparent(Var& obj,
 						 const List& old_ancestors,
 						 const List& new_ancestors,
 						 const List& anon_kids);
@@ -251,10 +251,18 @@ extern void dbpriv_set_dbio_output(FILE *);
 
 /****/
 
-static inline Object *
+static inline const Object*
 dbpriv_dereference(const Var& v)
 {
     return v.is_obj()
            ? dbpriv_find_object(v.v.obj)
-           : v.v.anon;
+           : v.v.anon.expose();
+}
+
+static inline Object*
+dbpriv_dereference(Var& v)
+{
+    return v.is_obj()
+           ? dbpriv_find_object(v.v.obj)
+           : v.v.anon.expose();
 }

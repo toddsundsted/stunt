@@ -199,7 +199,7 @@ db_unparse_prep(db_prep_spec prep)
 #define PERMMASK   0xF
 
 int
-db_add_verb(const Var& obj, const ref_ptr<const char>& vnames, Objid owner, unsigned flags,
+db_add_verb(Var& obj, const ref_ptr<const char>& vnames, Objid owner, unsigned flags,
 	    db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
     Object *o = dbpriv_dereference(obj);
@@ -242,7 +242,7 @@ int
 db_count_verbs(const Var& obj)
 {
     int count = 0;
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
@@ -256,7 +256,7 @@ db_for_all_verbs(const Var& obj,
 		 int (*func) (void *data, const ref_ptr<const char>& vname),
 		 void *data)
 {
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
@@ -666,7 +666,7 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 db_verb_handle
 db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow_numbers)
 {
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     Verbdef *v;
     char *p;
     int num, i;
@@ -682,7 +682,7 @@ db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow
 	    break;
 
     if (v) {
-	h.definer = o;
+	h.definer = const_cast<Object*>(o);
 	h.verbdef = v;
 	vh.ptr = &h;
 
@@ -696,7 +696,7 @@ db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow
 db_verb_handle
 db_find_indexed_verb(const Var& obj, unsigned index)
 {
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     Verbdef *v;
     unsigned i;
     static handle h;
@@ -704,7 +704,7 @@ db_find_indexed_verb(const Var& obj, unsigned index)
 
     for (v = o->verbdefs, i = 0; v; v = v->next)
 	if (++i == index) {
-	    h.definer = o;
+	    h.definer = const_cast<Object*>(o);
 	    h.verbdef = v;
 	    vh.ptr = &h;
 
@@ -728,7 +728,7 @@ db_verb_definer(db_verb_handle vh)
 	}
 	else {
 	    r.type = TYPE_ANON;
-	    r.v.anon = h->definer;
+	    r.v.anon.impose(h->definer);
 	}
 	return r;
     }

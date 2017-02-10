@@ -356,7 +356,7 @@ collect_white(const Var& v)
 	gc_set_color(VOID_PTR(v), GC_BLACK);
 	for_all_children(v, &cb_collect_white);
 	if (v.is_anon()) {
-	    assert(refcount(v.v.anon) != 0);
+	    assert(v.v.anon.ref_count() != 0);
 	    queue_anonymous_object(v);
 	}
     }

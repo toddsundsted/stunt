@@ -148,7 +148,7 @@ validate_prop_info(const List& v, Objid * owner, unsigned *flags, ref_ptr<const 
 }
 
 static enum error
-set_prop_info(const Var& obj, const ref_ptr<const char>& pname, const List& info, Objid progr)
+set_prop_info(Var& obj, const ref_ptr<const char>& pname, const List& info, Objid progr)
 {
     Objid new_owner;
     unsigned new_flags;

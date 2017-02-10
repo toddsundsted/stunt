@@ -127,12 +127,12 @@ extern void db_destroy_object(Objid);
 				 * must == #-1.
 				 */
 
-extern void db_destroy_anonymous_object(void *);
+extern void db_destroy_anonymous_object(ref_ptr<Object>&);
 				/* Destroys object, freeing all associated
 				 * storage.
 				 */
 
-extern Object *db_make_anonymous(Objid, Objid);
+extern ref_ptr<Object> db_make_anonymous(Objid, Objid);
 				/* Makes the specified object anonymous by
 				 * removing it from the collection of numbered
 				 * objects.  Resets the high-water mark to the
@@ -224,8 +224,8 @@ extern int db_for_all_children(Objid,
 				 *      db_change_parent()
 				 */
 
-extern int db_change_parents(const Var& obj, const Var& parents);
-extern int db_change_parents(const Var& obj, const Var& parents, const List& anon_kids);
+extern int db_change_parents(Var& obj, const Var& parents);
+extern int db_change_parents(Var& obj, const Var& parents, const List& anon_kids);
 				/* db_change_parents() returns true (and
 				 * actually changes the parent of OBJ) iff
 				 * neither OBJ nor any of its descendents
@@ -278,8 +278,8 @@ typedef enum {
 } db_object_flag;
 
 extern int db_object_has_flag2(const Var&, db_object_flag);
-extern void db_set_object_flag2(const Var&, db_object_flag);
-extern void db_clear_object_flag2(const Var&, db_object_flag);
+extern void db_set_object_flag2(Var&, db_object_flag);
+extern void db_clear_object_flag2(Var&, db_object_flag);
 
 extern int db_object_has_flag(Objid, db_object_flag);
 extern void db_set_object_flag(Objid, db_object_flag);
@@ -316,7 +316,7 @@ typedef enum {
     PF_CHOWN = 04
 } db_prop_flag;
 
-extern int db_add_propdef(const Var& obj,
+extern int db_add_propdef(Var& obj,
 			  const ref_ptr<const char>& pname,
 			  const Var& value, Objid owner,
 			  unsigned flags);
@@ -332,7 +332,7 @@ extern int db_add_propdef(const Var& obj,
 				 * zero or more elements of `db_prop_flag'.
 				 */
 
-extern int db_rename_propdef(const Var& obj,
+extern int db_rename_propdef(Var& obj,
 			     const ref_ptr<const char>& old_name,
 			     const ref_ptr<const char>& new_name);
 				/* Returns true (and actually renames the
@@ -345,7 +345,7 @@ extern int db_rename_propdef(const Var& obj,
 				 * this is a no-op that returns true.
 				 */
 
-extern int db_delete_propdef(const Var&, const ref_ptr<const char>&);
+extern int db_delete_propdef(Var&, const ref_ptr<const char>&);
 				/* Returns true iff a propdef with the given
 				 * name existed on the object (i.e., was there
 				 * to be deleted).
@@ -537,7 +537,7 @@ extern const char *db_unparse_prep(db_prep_spec);
 				 * persistent.
 				 */
 
-extern int  db_add_verb(const Var& obj, const ref_ptr<const char>& vnames,
+extern int  db_add_verb(Var& obj, const ref_ptr<const char>& vnames,
 			Objid owner, unsigned flags,
 			db_arg_spec dobj, db_prep_spec prep,
 			db_arg_spec iobj);

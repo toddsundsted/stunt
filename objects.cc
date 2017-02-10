@@ -377,7 +377,8 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 
 	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
 
-	    if (!db_change_parents(Var::new_obj(oid), arglist[1])) {
+	    Var tmp = Var::new_obj(oid);
+	    if (!db_change_parents(tmp, arglist[1])) {
 		db_destroy_object(oid);
 		db_set_last_used_objid(last);
 		free_var(value);
@@ -738,10 +739,11 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 
 	    /* do the same thing for the inheritance hierarchy */
 	    while ((c = get_first(oid, db_for_all_children)) != NOTHING) {
+		Var tmp = Var::new_obj(c);
 		Var cp = db_object_parents(c);
 		Var op = db_object_parents(oid);
 		if (cp.is_obj()) {
-		    db_change_parents(Var::new_obj(c), op);
+		    db_change_parents(tmp, op);
 		}
 		else {
 		    int i = 1;
@@ -768,7 +770,7 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 			_new = setadd(_new, var_ref(_cp[i]));
 			i++;
 		    }
-		    db_change_parents(Var::new_obj(c), _new);
+		    db_change_parents(tmp, _new);
 		    free_var(_new);
 		}
 	    }

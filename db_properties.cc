@@ -109,7 +109,7 @@ property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, Object
 }
 
 static void
-insert_prop2(const Var& obj, int pos, Pval pval)
+insert_prop2(Var& obj, int pos, Pval pval)
 {
     Object *o = dbpriv_dereference(obj);
     Pval *new_propval;
@@ -139,7 +139,8 @@ insert_prop2(const Var& obj, int pos, Pval pval)
 static void
 insert_prop(Objid oid, int pos, Pval pval)
 {
-    insert_prop2(Var::new_obj(oid), pos, pval);
+    Var obj = Var::new_obj(oid);
+    insert_prop2(obj, pos, pval);
 }
 
 static void
@@ -168,7 +169,7 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
 }
 
 int
-db_add_propdef(const Var& obj, const ref_ptr<const char>& name, const Var& value, Objid owner,
+db_add_propdef(Var& obj, const ref_ptr<const char>& name, const Var& value, Objid owner,
 	       unsigned flags)
 {
     Object *o;
@@ -212,7 +213,7 @@ db_add_propdef(const Var& obj, const ref_ptr<const char>& name, const Var& value
 }
 
 int
-db_rename_propdef(const Var& obj, const ref_ptr<const char>& old, const ref_ptr<const char>& _new)
+db_rename_propdef(Var& obj, const ref_ptr<const char>& old, const ref_ptr<const char>& _new)
 {
     Object *o = dbpriv_dereference(obj);
     Proplist *props = &(o->propdefs);
@@ -243,7 +244,7 @@ db_rename_propdef(const Var& obj, const ref_ptr<const char>& old, const ref_ptr<
 }
 
 static void
-remove_prop2(const Var& obj, int pos)
+remove_prop2(Var& obj, int pos)
 {
     Object *o = dbpriv_dereference(obj);
     Pval *new_propval;
@@ -272,7 +273,8 @@ remove_prop2(const Var& obj, int pos)
 static void
 remove_prop(Objid oid, int pos)
 {
-    remove_prop2(Var::new_obj(oid), pos);
+    Var obj = Var::new_obj(oid);
+    remove_prop2(obj, pos);
 }
 
 static void
@@ -298,7 +300,7 @@ remove_prop_recursively(Objid root, int prop_pos)
 }
 
 int
-db_delete_propdef(const Var& obj, const ref_ptr<const char>& pname)
+db_delete_propdef(Var& obj, const ref_ptr<const char>& pname)
 {
     Object *o = dbpriv_dereference(obj);
     Proplist *props = &(o->propdefs);
@@ -358,7 +360,7 @@ int
 db_for_all_propdefs(const Var& obj, int (*func) (void *, const ref_ptr<const char>&), void *data)
 {
     int i;
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     int len = o->propdefs.cur_length;
 
     for (i = 0; i < len; i++)
@@ -372,7 +374,7 @@ int
 db_for_all_propvals(const Var& obj, int (*func) (void *, const Var&), void *data)
 {
     int i;
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     int len = o->nval;
 
     for (i = 0; i < len; i++)
@@ -427,7 +429,7 @@ get_bi_value(db_prop_handle h, Var * value)
 db_prop_handle
 db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 {
-    Object *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
     int hash = str_hash(name.expose());
 
     static struct {
@@ -455,7 +457,7 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !mystrcasecmp(name.expose(), ptable[i].name)) {
 	    h.built_in = ptable[i].prop;
-	    h.ptr = o;
+	    h.ptr = const_cast<Object*>(o);
 	    if (value)
 		get_bi_value(h, value);
 	    return h;
@@ -466,7 +468,7 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 
     Var ancestor, ancestors = db_ancestors(obj, false);
 
-    Proplist *props = &(o->propdefs);
+    const Proplist *props = &(o->propdefs);
     Propdef *defs = props->l;
     int length = props->cur_length;
 
@@ -474,7 +476,7 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 
     for (i = 0; i < length; i++, n++) {
 	if (defs[i].hash == hash && !mystrcasecmp(name.expose(), defs[i].name.expose())) {
-		h.definer = o;
+		h.definer = const_cast<Object*>(o);
 		h.ptr = o->propval + n;
 		goto done;
 	    }
@@ -719,7 +721,8 @@ dbpriv_check_properties_for_chparent(const Var& obj, const Var& parents, const L
     free_var(stack);
 
     int has_kids = (anon_kids.is_list() && listlength(anon_kids) > 0);
-    Object *o2, *o3, *o = dbpriv_dereference(obj);
+    const Object *o = dbpriv_dereference(obj);
+    Object *o2, *o3;
     Proplist *props;
     Var ancestor;
     int i, c, x;
@@ -734,7 +737,7 @@ dbpriv_check_properties_for_chparent(const Var& obj, const Var& parents, const L
 	for (x = 0; x < props->cur_length; x++) {
 	    if (property_defined_at_or_below(props->l[x].name,
 					     props->l[x].hash,
-					     o)) {
+					     const_cast<Object*>(o))) {
 		free_var(ancestors);
 		return 0;
 	    }
@@ -838,13 +841,13 @@ dbpriv_check_properties_for_chparent(const Var& obj, const Var& parents, const L
  * preserve information about those properties.
  */
 void
-dbpriv_fix_properties_after_chparent(const Var& obj, const List& old_ancestors, const List& new_ancestors)
+dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const List& new_ancestors)
 {
     return dbpriv_fix_properties_after_chparent(obj, old_ancestors, new_ancestors, new_list(0));
 }
 
 void
-dbpriv_fix_properties_after_chparent(const Var& obj, const List& old_ancestors, const List& new_ancestors, const List& anon_kids)
+dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const List& new_ancestors, const List& anon_kids)
 {
     Object *o;
     Var ancestor;

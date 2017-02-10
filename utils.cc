@@ -164,7 +164,7 @@ aux_free(const Var& v)
 	break;
     case TYPE_ANON:
 	assert(db_object_has_flag2(v, FLAG_INVALID));
-	myfree(v.v.anon, M_ANON);
+	myfree(v.v.anon);
 	break;
     }
 }
@@ -216,18 +216,18 @@ complex_free_var(const Var& v)
 	 * the recycled flag and (eventually) the invalid flag.
 	 */
 	if (v.v.anon) {
-	    if (delref(v.v.anon) == 0) {
+	    if (v.v.anon.dec_ref() == 0) {
 		if (db_object_has_flag2(v, FLAG_RECYCLED)) {
-		    gc_set_color(v.v.anon, GC_BLACK);
-		    if (!gc_is_buffered(v.v.anon))
-			myfree(v.v.anon, M_ANON);
+		    v.v.anon.set_color(GC_BLACK);
+		    if (!v.v.anon.is_buffered())
+			myfree(v.v.anon);
 		}
 		else if (db_object_has_flag2(v, FLAG_INVALID)) {
 		    incr_quota(db_object_owner2(v));
-		    db_destroy_anonymous_object(v.v.anon);
-		    gc_set_color(v.v.anon, GC_BLACK);
-		    if (!gc_is_buffered(v.v.anon))
-			myfree(v.v.anon, M_ANON);
+		    db_destroy_anonymous_object(const_cast<ref_ptr<Object>&>(v.v.anon));
+		    v.v.anon.set_color(GC_BLACK);
+		    if (!v.v.anon.is_buffered())
+			myfree(v.v.anon);
 		}
 		else {
 		    queue_anonymous_object(v);
@@ -266,14 +266,14 @@ complex_free_var(const Var& v)
 	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
 	break;
     case TYPE_ANON:
-	if (v.v.anon && delref(v.v.anon) == 0) {
+	if (v.v.anon && v.v.anon.dec_ref() == 0) {
 	    if (db_object_has_flag2(v, FLAG_RECYCLED)) {
-		myfree(v.v.anon, M_ANON);
+		myfree(v.v.anon);
 	    }
 	    else if (db_object_has_flag2(v, FLAG_INVALID)) {
 		incr_quota(db_object_owner2(v));
-		db_destroy_anonymous_object(v.v.anon);
-		myfree(v.v.anon, M_ANON);
+		db_destroy_anonymous_object(const_cast<ref_ptr<Object>&>(v.v.anon));
+		myfree(v.v.anon);
 	    }
 	    else {
 		queue_anonymous_object(v);
@@ -307,9 +307,9 @@ complex_var_ref(const Var& v)
 	break;
     case TYPE_ANON:
 	if (v.v.anon) {
-	    addref(v.v.anon);
-	    if (gc_get_color(v.v.anon) != GC_BLACK)
-		gc_set_color(v.v.anon, GC_BLACK);
+	    v.v.anon.inc_ref();
+	    if (v.v.anon.color() != GC_BLACK)
+		v.v.anon.set_color(GC_BLACK);
 	}
 	break;
     }
@@ -337,7 +337,7 @@ complex_var_ref(const Var& v)
 	break;
     case TYPE_ANON:
 	if (v.v.anon)
-	    addref(v.v.anon);
+	    v.v.anon.inc_ref();
 	break;
     }
     return v;
@@ -396,7 +396,7 @@ var_refcount(const Var& v)
 	break;
     case TYPE_ANON:
 	if (v.v.anon)
-	    return refcount(v.v.anon);
+	    return v.v.anon.ref_count();
 	break;
     }
     return 1;
@@ -741,7 +741,7 @@ anonymizing_var_ref(const Var& v, Objid progr)
 	return var_ref(v);
 
     r.type = TYPE_ANON;
-    r.v.anon = NULL;
+    r.v.anon = ref_ptr<Object>::empty;
 
     return r;
 }

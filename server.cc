@@ -623,7 +623,7 @@ main_loop(void)
 	/* in practice this will be an anonymous object... */
 	assert(v.is_anon());
 
-	if (v.v.anon != NULL)
+	if (v.v.anon)
 	    queue_anonymous_object(var_ref(v));
     }
     free_var(pending_list);
@@ -865,7 +865,8 @@ emergency_mode()
 	    if (!is_wizard(wizard)) {
 		if (first_valid < 0) {
 		    first_valid = db_create_object();
-		    db_change_parents(Var::new_obj(first_valid), new_list(0));
+		    Var tmp = Var::new_obj(first_valid);
+		    db_change_parents(tmp, new_list(0));
 		    printf("** No objects in database; created #%d.\n",
 			   first_valid);
 		}
