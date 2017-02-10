@@ -497,11 +497,11 @@ expr:
 			Arg_List       *a = alloc_arg_list(ARG_NORMAL, fname);
 
 			fname->e.var.v.str = str_dup($1);
-			dealloc_string($1);
 			a->next = $3;
 			warning("Unknown built-in function: ", $1);
 			$$->e.call.func = number_func_by_name("call_function");
 			$$->e.call.args = a;
+			dealloc_string($1);
 		    } else {
 			$$->e.call.func = f_no;
 			$$->e.call.args = $3;
