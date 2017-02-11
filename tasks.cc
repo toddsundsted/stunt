@@ -120,7 +120,7 @@ struct http_parsing_state {
     Var header_field_under_constr;
     Var header_value_under_constr;
     Var body;
-    Var result;
+    Map result;
 };
 
 typedef struct tqueue {
@@ -334,7 +334,7 @@ init_http_parsing_state(struct http_parsing_state *state)
     state->header_value_under_constr = none;
     state->headers = new_map();
     state->body = none;
-    state->result = none;
+    state->result = new_map();
 }
 
 static void
@@ -1414,8 +1414,6 @@ create_or_extend(const Var& in, const char *_new, int newlen)
 static int
 on_message_begin_callback(http_parser *parser)
 {
-    struct http_parsing_state *state = (struct http_parsing_state *)parser;
-    state->result = new_map();
     return 0;
 }
 
@@ -1503,22 +1501,19 @@ on_message_complete_callback(http_parser *parser)
 
     struct http_parsing_state *state = (struct http_parsing_state *)parser;
 
-    if (parser->type == HTTP_REQUEST && state->result.is_map()) {
+    if (parser->type == HTTP_REQUEST) {
 	Var method = Var::new_str(http_method_str((http_method)state->parser.method));
-	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(METHOD), method);
-    } else if (parser->type == HTTP_RESPONSE && state->result.is_map()) {
+	state->result = mapinsert(state->result, var_ref(METHOD), method);
+    } else if (parser->type == HTTP_RESPONSE) {
 	Var status = Var::new_int(parser->status_code);
-	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(STATUS), status);
+	state->result = mapinsert(state->result, var_ref(STATUS), status);
     }
-
-    if (state->uri.is_str() && state->result.is_map())
-	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(URI), var_dup(state->uri));
-
-    if (state->headers.is_map() && state->result.is_map())
-	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(HEADERS), var_dup(state->headers));
-
-    if (state->body.is_str() && state->result.is_map())
-	state->result = mapinsert(static_cast<const Map&>(state->result), var_dup(BODY), var_dup(state->body));
+    if (state->uri.is_str())
+	state->result = mapinsert(state->result, var_ref(URI), var_ref(state->uri));
+    if (state->headers.is_map())
+	state->result = mapinsert(state->result, var_ref(HEADERS), var_ref(state->headers));
+    if (state->body.is_str())
+	state->result = mapinsert(state->result, var_ref(BODY), var_ref(state->body));
 
     state->status = DONE;
 
@@ -1527,11 +1522,14 @@ on_message_complete_callback(http_parser *parser)
 
 static http_parser_settings settings = {on_message_begin_callback,
 					on_url_callback,
+					0,
 					on_header_field_callback,
 					on_header_value_callback,
 					on_headers_complete_callback,
 					on_body_callback,
-					on_message_complete_callback
+					on_message_complete_callback,
+					0,
+					0
 };
 
 /* There is surprisingness in how tasks actually get created in
@@ -1624,32 +1622,33 @@ run_ready_tasks(void)
 			     * `on_message_begin_callback()' is
 			     * called.
 			     */
-			    if (tq->parsing_state->status == PARSING)
-				free_var(tq->parsing_state->result);
-			    tq->parsing_state->result = var_ref(zero);
 			    done = 1;
 			}
 			else {
 			    http_parser_execute(&tq->parsing_state->parser, &settings, binary, len);
-			    if (tq->parsing_state->parser.http_errno != HPE_OK && tq->parsing_state->result.is_map()) {
+			    if (tq->parsing_state->parser.http_errno != HPE_OK) {
 				Var key = Var::new_str("error");
 				List value = new_list(2);
-				value[1] = Var::new_str(http_errno_name((http_errno)tq->parsing_state->parser.http_errno));
-				value[2] = Var::new_str(http_errno_description((http_errno)tq->parsing_state->parser.http_errno));
-				tq->parsing_state->result = mapinsert(static_cast<const Map&>(tq->parsing_state->result), key, value);
+				http_errno errno = (http_errno)tq->parsing_state->parser.http_errno;
+				value[1] = Var::new_str(http_errno_name(errno) + 4);
+				value[2] = Var::new_str(http_errno_description(errno));
+				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
 				done = 1;
 			    }
-			    else if (tq->parsing_state->parser.upgrade && tq->parsing_state->result.is_map()) {
+			    else if (tq->parsing_state->parser.upgrade) {
 				Var key;
 				key = Var::new_str("upgrade");
-				tq->parsing_state->result = mapinsert(static_cast<const Map&>(tq->parsing_state->result), key, Var::new_int(1));
+				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, Var::new_int(1));
 				done = 1;
 			    }
-			    else if (tq->parsing_state->status == DONE)
+			    else if (tq->parsing_state->status == DONE) {
 				done = 1;
+			    }
 			}
 			if (done) {
-			    Var v = var_ref(tq->parsing_state->result);
+			    Var v = tq->parsing_state->result.length() > 0
+				? var_ref(tq->parsing_state->result)
+				: Var::new_int(0);
 			    tq->reading = 0;
 			    tq->parsing = 0;
 			    free_http_parsing_state(tq->parsing_state);
