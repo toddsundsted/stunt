@@ -935,6 +935,13 @@ clear_node_value(const rbnode *node)
     ((rbnode *)node)->value = none;
 }
 
+/* declared in structures.h */
+
+int32_t
+Map::length() const {
+    return this->v.tree->size;
+}
+
 /**** built in functions ****/
 
 static package

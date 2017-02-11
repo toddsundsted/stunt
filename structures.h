@@ -310,6 +310,9 @@ struct Map : public Var {
 	v.tree = tree;
     }
 
+    int32_t
+    length() const;
+
 #ifdef MEMO_VALUE_BYTES
     void
     reset_memoized_size(void) const {
