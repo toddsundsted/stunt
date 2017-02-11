@@ -52,7 +52,7 @@ class TestHttp < Test::Unit::TestCase
       result = parse(:request) do |message|
         message << "GET /~FFbad HTTP/1.1~0D~0A"
       end
-      assert_equal 'INVALID_PATH', result['error'][0]
+      assert_equal 'INVALID_URL', result['error'][0]
       result = parse(:request) do |message|
         message << "GET /bad HTTP/1.1~0D~0A"
         message << 'foo~00bar~0D~0A'
@@ -140,24 +140,29 @@ class TestHttp < Test::Unit::TestCase
         message << "."
         message << "1"
         message << "~0D~0A"
+        message << "C"
+        message << "o"
+        message << "n"
+        message << "t"
+        message << "e"
+        message << "n"
+        message << "t"
+        message << "-"
+        message << "L"
+        message << "e"
+        message << "n"
+        message << "g"
+        message << "t"
         message << "h"
-        message << "e"
-        message << "a"
-        message << "d"
-        message << "e"
-        message << "r"
         message << ":"
         message << " "
-        message << "t"
-        message << "e"
-        message << "s"
-        message << "t"
+        message << "0"
         message << "~0D~0A"
         message << "~0D~0A"
       end
       assert_equal 'GET', result['method']
       assert_equal '/test', result['uri']
-      assert_equal({'header' => 'test'}, result['headers'])
+      assert_equal({'Content-Length' => '0'}, result['headers'])
     end
   end
 
@@ -180,23 +185,28 @@ class TestHttp < Test::Unit::TestCase
         message << "O"
         message << "K"
         message << "~0D~0A"
+        message << "C"
+        message << "o"
+        message << "n"
+        message << "t"
+        message << "e"
+        message << "n"
+        message << "t"
+        message << "-"
+        message << "L"
+        message << "e"
+        message << "n"
+        message << "g"
+        message << "t"
         message << "h"
-        message << "e"
-        message << "a"
-        message << "d"
-        message << "e"
-        message << "r"
         message << ":"
         message << " "
-        message << "t"
-        message << "e"
-        message << "s"
-        message << "t"
+        message << "0"
         message << "~0D~0A"
         message << "~0D~0A"
       end
       assert_equal 200, result['status']
-      assert_equal({'header' => 'test'}, result['headers'])
+      assert_equal({'Content-Length' => '0'}, result['headers'])
     end
   end
 
@@ -308,13 +318,13 @@ class TestHttp < Test::Unit::TestCase
         message << " ghi~0D~0A"
         message << "~09~09jkl~0D~0A"
         message << "  mno ~0D~0A"
-        message << "~09 ~09qrs~0D~0A"
+        message << "~09 ~09qrs~09~0D~0A"
         message << "Line2: ~09 line2~09~0D~0A"
         message << "~0D~0A"
       end
       assert_equal 'GET', result['method']
       assert_equal '/', result['uri']
-      assert_equal({"Line1" => "abcdefghijklmno qrs", "Line2" => "line2~09"}, result['headers'])
+      assert_equal({"Line1" => "abc~09def ghi~09~09jkl  mno ~09 ~09qrs~09", "Line2" => "line2~09"}, result['headers'])
       assert_equal nil, result['body']
     end
   end
