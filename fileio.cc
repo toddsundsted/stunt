@@ -16,7 +16,6 @@
 
 #include "my-unistd.h"
 
-#include "my-ctype.h"
 #include "my-string.h"
 #include "structures.h"
 #include "bf_register.h"

@@ -18,7 +18,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "my-ctype.h"
 #include "my-string.h"
 
 #include "bf_register.h"

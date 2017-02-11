@@ -19,7 +19,7 @@
 
 /* Multi-user networking protocol implementation for TCP/IP on BSD UNIX */
 
-#include "my-inet.h"		/* inet_addr() */
+#include <arpa/inet.h>		/* inet_addr() */
 #include <errno.h>		/* EMFILE, EADDRNOTAVAIL, ECONNREFUSED,
 				   * ENETUNREACH, ETIMEOUT */
 #include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htons(),

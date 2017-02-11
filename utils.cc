@@ -17,7 +17,6 @@
 
 #include <assert.h>
 
-#include "my-ctype.h"
 #include "my-stdio.h"
 #include "my-string.h"
 

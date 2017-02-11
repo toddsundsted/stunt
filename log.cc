@@ -16,7 +16,6 @@
  *****************************************************************************/
 
 #include <errno.h>
-#include "my-stdarg.h"
 #include "my-stdio.h"
 #include "my-string.h"
 #include "my-time.h"

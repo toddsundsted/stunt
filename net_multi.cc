@@ -15,10 +15,9 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "my-ctype.h"
 #include <errno.h>
 #include "my-fcntl.h"
-#include "my-ioctl.h"
+#include <sys/ioctl.h>
 #include "my-signal.h"
 #include "my-stdio.h"
 #include "my-stdlib.h"

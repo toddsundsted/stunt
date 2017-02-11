@@ -33,12 +33,12 @@
 
 #include <stdexcept>
 
-#include "my-inet.h"		/* inet_addr() */
+#include <arpa/inet.h>		/* inet_addr() */
 #include <errno.h>		/* EMFILE */
 #include "my-fcntl.h"		/* O_RDWR */
 #include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htonl(),
 				   * htons(), ntohl(), struct in_addr */
-#include "my-ioctl.h"		/* ioctl() */
+#include <sys/ioctl.h>		/* ioctl() */
 #include "my-socket.h"		/* AF_INET */
 #include "my-stdlib.h"		/* strtoul() */
 #include "my-string.h"		/* memcpy() */

@@ -47,8 +47,6 @@ extern int rename(const char *, const char *);
 #endif
 
 #if NDECL_VFPRINTF
-#include "my-stdarg.h"
-
 extern int vfprintf(FILE *, const char *, va_list);
 extern int vfscanf(FILE *, const char *, va_list);
 #endif

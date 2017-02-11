@@ -15,8 +15,6 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
-#include "my-stdarg.h"
-
 #include "bf_register.h"
 #include "config.h"
 #include "db_io.h"

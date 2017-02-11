@@ -28,12 +28,12 @@
 #include "my-signal.h"
 #include "my-stdlib.h"
 #include "my-unistd.h"
-#include "my-inet.h"		/* inet_addr() */
+#include <arpa/inet.h>		/* inet_addr() */
 #include "my-in.h"		/* struct sockaddr_in, INADDR_ANY, htons(),
 				   * htonl(), ntohl(), struct in_addr */
 #include <netdb.h>		/* struct hostent, gethostbyaddr() */
 #include "my-socket.h"		/* AF_INET */
-#include "my-wait.h"
+#include <sys/wait.h>
 #include "my-string.h"
 #include <errno.h>
 
