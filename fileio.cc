@@ -48,8 +48,8 @@ struct fileio_file_type {
     const char* (*out_filter) (const char* data, int* buflen);
 };
 
-file_type file_type_binary = NULL;
-file_type file_type_text = NULL;
+static file_type file_type_binary = NULL;
+static file_type file_type_text = NULL;
 
 #define FILE_O_READ  1
 #define FILE_O_WRITE 2
@@ -199,8 +199,7 @@ file_handle_set_file(const Var& fhandle, FILE* f)
  */
 
 const char*
-file_modestr_to_mode(const ref_ptr<const char>& str, file_type* type,
-		     file_mode* mode)
+file_modestr_to_mode(const ref_ptr<const char>& str, file_type* type, file_mode* mode)
 {
     const char* s = str.expose();
     static char buffer[4] = { 0, 0, 0, 0 };
@@ -209,10 +208,8 @@ file_modestr_to_mode(const ref_ptr<const char>& str, file_type* type,
     file_mode m = 0;
 
     if (!file_type_binary) {
-	file_type_binary =
-	    (struct fileio_file_type*)mymalloc(sizeof(struct fileio_file_type), M_STRING);
-	file_type_text =
-	    (struct fileio_file_type*)mymalloc(sizeof(struct fileio_file_type), M_STRING);
+	file_type_binary = (struct fileio_file_type*)malloc(sizeof(struct fileio_file_type));
+	file_type_text = (struct fileio_file_type*)malloc(sizeof(struct fileio_file_type));
 	file_type_binary->in_filter = raw_bytes_to_binary;
 	file_type_binary->out_filter = binary_to_raw_bytes;
 	file_type_text->in_filter = raw_bytes_to_clean;
