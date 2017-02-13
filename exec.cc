@@ -101,14 +101,14 @@ struct task_waiting_on_exec {
     }
 
     ~task_waiting_on_exec() {
-	delete cmd;
+	delete[] cmd;
 	for (int i = 0; i < count; i++) {
 	    if (args[i]) {
-		delete args[i];
+		delete[] args[i];
 	    }
 	}
-	delete args;
-	delete in;
+	delete[] args;
+	delete[] in;
 	close(fout);
 	close(ferr);
 	network_unregister_fd(fout);
