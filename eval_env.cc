@@ -25,8 +25,8 @@
 #include "utils.h"
 
 /*
- * Keep a pool of rt_envs big enough to hold NUM_READY_VARS variables to
- * avoid lots of malloc/free.
+ * Keep a pool of rt_envs big enough to hold NUM_READY_VARS variables
+ * to avoid lots of new/delete.
  */
 static std::stack<Var*> ready_size_rt_envs;
 
@@ -39,8 +39,9 @@ new_rt_env(unsigned size)
     if (size <= NUM_READY_VARS && !ready_size_rt_envs.empty()) {
 	ret = ready_size_rt_envs.top();
         ready_size_rt_envs.pop();
-    } else
-	ret = (Var *)malloc(MAX(size, NUM_READY_VARS) * sizeof(Var));
+    } else {
+	ret = new Var[MAX(size, NUM_READY_VARS)];
+    }
 
     for (i = 0; i < size; i++)
 	ret[i] = none;
@@ -58,8 +59,9 @@ free_rt_env(Var* rt_env, unsigned size)
 
     if (size <= NUM_READY_VARS) {
 	ready_size_rt_envs.push(rt_env);
-    } else
-	free(rt_env);
+    } else {
+	delete[] rt_env;
+    }
 }
 
 Var*

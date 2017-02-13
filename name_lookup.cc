@@ -109,9 +109,9 @@ ensure_buffer(char **buffer, int *buflen, int len)
 {
     if (len > *buflen) {
 	if (*buffer)
-	    free(*buffer);
+	    delete[] *buffer;
 	*buflen = len;
-	*buffer = (char*)malloc(len);
+	*buffer = new char[len];
     }
 }
 

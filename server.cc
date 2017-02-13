@@ -133,13 +133,13 @@ free_shandle(shandle * h)
 
     free_task_queue(h->tasks);
 
-    free(h);
+    delete h;
 }
 
-static slistener *
+static slistener*
 new_slistener(Objid oid, const Var& desc, int print_messages, enum error *ee)
 {
-    slistener *l = (slistener *)malloc(sizeof(slistener));
+    slistener* l = new slistener();
     server_listener sl;
     enum error e;
     const char *name;
@@ -151,7 +151,7 @@ new_slistener(Objid oid, const Var& desc, int print_messages, enum error *ee)
 	*ee = e;
 
     if (e != E_NONE) {
-	free(l);
+	delete l;
 	return 0;
     }
     l->oid = oid;
@@ -192,7 +192,7 @@ free_slistener(slistener * l)
     free_var(l->desc);
     free((void*)l->name);
 
-    free(l);
+    delete l;
 }
 
 static void
@@ -500,7 +500,7 @@ queue_anonymous_object(const Var& v)
     assert(!queue_includes(v));
 
     if (!pending_free) {
-	pending_free = (struct pending_recycle *)malloc(sizeof(struct pending_recycle));
+	pending_free = new struct pending_recycle;
 	pending_free->next = NULL;
     }
 
@@ -1266,8 +1266,8 @@ static Objid next_unconnected_player = NOTHING - 1;
 server_handle
 server_new_connection(server_listener sl, network_handle nh, int outbound)
 {
-    slistener *l = (slistener *)sl.ptr;
-    shandle *h = (shandle *)malloc(sizeof(shandle));
+    slistener* l = (slistener*)sl.ptr;
+    shandle* h = new shandle();
     server_handle result;
 
     h->next = all_shandles;

@@ -441,13 +441,13 @@ add_line(const char *line, void *data)
 
     if (d->used >= d->max) {
 	int new_max = (d->max == 0 ? 20 : d->max * 2);
-	ref_ptr<const char>* _new = (ref_ptr<const char>*)malloc(sizeof(ref_ptr<const char>*) * new_max);
+	ref_ptr<const char>* _new = new ref_ptr<const char>[new_max];
 	int i;
 
 	for (i = 0; i < d->used; i++)
 	    _new[i] = d->lines[i];
 	if (d->lines)
-	    free(d->lines);
+	    delete[] d->lines;
 	d->lines = _new;
 	d->max = new_max;
     }
@@ -490,7 +490,7 @@ bf_disassemble(const List& arglist, Objid progr)
 	r[i].v.str = data.lines[i - 1];
     }
     if (data.lines)
-	free(data.lines);
+	delete[] data.lines;
     return make_var_pack(r);
 }
 

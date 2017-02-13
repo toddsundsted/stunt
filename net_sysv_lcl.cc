@@ -160,10 +160,10 @@ proto_make_listener(const Var& desc, int *fd, Var * canon, const char **name)
 	log_perror("Setting listening FIFO non-blocking");
 	return E_QUOTA;
     }
-    l = (listener *)malloc(sizeof(listener));
+    l = new listener();
     l->next = all_listeners;
     all_listeners = l;
-    l->filename = str_dup(connect_file);
+    l->filename = strdup(connect_file);
     l->fifo = fifo;
     l->pseudo_client = pseudo_client;
     l->state = GetC2S;
@@ -346,7 +346,7 @@ proto_close_listener(int fd)
 
 	    *ll = l->next;
 	    free_str(l->filename);
-	    free(l);
+	    delete l;
 	    return;
 	}
     errlog("Can't find fd in PROTO_CLOSE_LISTENER!\n");

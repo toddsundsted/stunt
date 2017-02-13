@@ -86,7 +86,7 @@ struct stack_item {
 static void
 push(struct stack_item **top, const Var& v)
 {
-    struct stack_item *item = (struct stack_item *)malloc(sizeof(struct stack_item));
+    struct stack_item *item = new struct stack_item;
     item->prev = *top;
     item->v = v;
     *top = item;
@@ -98,7 +98,7 @@ pop(struct stack_item **top)
     struct stack_item *item = *top;
     *top = item->prev;
     Var v = item->v;
-    free(item);
+    delete item;
     return v;
 }
 

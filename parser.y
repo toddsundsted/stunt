@@ -1262,7 +1262,7 @@ parse_program(DB_Version version, Parser_Client c, void *data)
 	prog->num_var_names = local_names->size;
 	prog->var_names = local_names->names;
 
-	free(local_names);
+	delete local_names;
 	free_stmt(prog_start);
 
 	return prog;

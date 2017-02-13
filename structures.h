@@ -305,6 +305,11 @@ struct List : public Var {
 
 struct Map : public Var {
 
+    Map() {
+	type = TYPE_MAP;
+	v.tree = ref_ptr<rbtree>::empty;
+    }
+
     Map(const ref_ptr<rbtree> tree) {
 	type = TYPE_MAP;
 	v.tree = tree;

@@ -30,6 +30,7 @@
 #endif
 
 typedef struct Timer_Entry Timer_Entry;
+
 struct Timer_Entry {
     Timer_Entry *next;
     time_t when;
@@ -48,11 +49,10 @@ allocate_timer(void)
 {
     if (free_timers) {
 	Timer_Entry *_this = free_timers;
-
 	free_timers = _this->next;
 	return _this;
     } else
-	return (Timer_Entry *) malloc(sizeof(Timer_Entry));
+	return new Timer_Entry();
 }
 
 static void

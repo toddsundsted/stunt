@@ -28,47 +28,42 @@
 #include "utils.h"
 
 struct entry {
-    void *ptr;
+    void* ptr;
 };
 
 static int pool_size, next_pool_slot;
-static struct entry *pool;
+static struct entry* pool;
 
 void
 begin_code_allocation()
 {
     pool_size = 10;
     next_pool_slot = 0;
-    pool = (struct entry *)malloc(pool_size * sizeof(struct entry));
+    pool = new struct entry[pool_size];
 }
 
 void
 end_code_allocation(int aborted)
 {
     if (aborted) {
-	int i;
-
-	for (i = 0; i < next_pool_slot; i++) {
+	for (int i = 0; i < next_pool_slot; i++) {
 	    if (pool[i].ptr != 0)
 		free(pool[i].ptr);
 	}
     }
-    free(pool);
+    delete[] pool;
 }
 
-static void *
+static void*
 allocate(int size)
 {
     if (next_pool_slot >= pool_size) {	/* enlarge the pool */
-	struct entry *new_pool;
-	int i;
-
 	pool_size *= 2;
-	new_pool = (struct entry *)malloc(pool_size * sizeof(struct entry));
-	for (i = 0; i < next_pool_slot; i++) {
+	struct entry* new_pool = new struct entry[pool_size];
+	for (int i = 0; i < next_pool_slot; i++) {
 	    new_pool[i] = pool[i];
 	}
-	free(pool);
+	delete[] pool;
 	pool = new_pool;
     }
     return pool[next_pool_slot++].ptr = malloc(size);

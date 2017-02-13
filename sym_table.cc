@@ -139,8 +139,8 @@ find_or_add_name(Names ** names, const char *str)
 	for (i = 0; i < old_max; i++)
 	    _new->names[i] = (*names)->names[i];
 	_new->size = old_max;
-	free((*names)->names);
-	free(*names);
+	delete[] (*names)->names;
+	delete *names;
 	*names = _new;
     }
     (*names)->names[(*names)->size] = str_dup(str);
@@ -152,6 +152,6 @@ free_names(Names * names)
 {
     for (unsigned i = 0; i < names->size; i++)
 	free_str(names->names[i]);
-    delete names->names;
+    delete[] names->names;
     delete names;
 }

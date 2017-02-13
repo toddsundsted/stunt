@@ -85,16 +85,16 @@ dbv4_ensure_new_object(void)
 {
     if (max_objects == 0) {
 	max_objects = 100;
-	objects = (Object4 **)malloc(max_objects * sizeof(Object4 *));
+	objects = new Object4*[max_objects];
     }
     if (num_objects >= max_objects) {
 	int i;
 	Object4 **_new;
 
-	_new = (Object4 **)malloc(max_objects * 2 * sizeof(Object4 *));
+	_new = new Object4*[max_objects * 2];
 	for (i = 0; i < max_objects; i++)
 	    _new[i] = objects[i];
-	free(objects);
+	delete[] objects;
 	objects = _new;
 	max_objects *= 2;
     }
@@ -106,7 +106,7 @@ dbv4_new_object(void)
     Object4 *o;
 
     dbv4_ensure_new_object();
-    o = objects[num_objects] = (Object4 *)malloc(sizeof(Object4));
+    o = objects[num_objects] = new Object4();
     o->id = num_objects;
     num_objects++;
 
@@ -173,7 +173,7 @@ dbv4_count_properties(Objid oid)
 /*********** Verb and property I/O ***********/
 
 static void
-read_verbdef(Verbdef * v)
+read_verbdef(Verbdef* v)
 {
     v->name = dbio_read_string_intern();
     v->owner = dbio_read_objid();
@@ -184,7 +184,7 @@ read_verbdef(Verbdef * v)
 }
 
 static void
-write_verbdef(Verbdef * v)
+write_verbdef(Verbdef* v)
 {
     dbio_write_string(v->name.expose());
     dbio_write_objid(v->owner);
@@ -262,7 +262,7 @@ v4_read_object(void)
     o->verbdefs = 0;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
-	v = (Verbdef *)malloc(sizeof(Verbdef));
+	v = new Verbdef();
 	read_verbdef(v);
 	*prevv = v;
 	prevv = &(v->next);
@@ -286,7 +286,7 @@ v4_read_object(void)
 
     nprops = dbio_read_num();
     if (nprops)
-	o->propval = (Pval *)malloc(nprops * sizeof(Pval));
+	o->propval = new Pval[nprops];
     else
 	o->propval = 0;
 
@@ -354,7 +354,7 @@ ng_read_object(int anonymous)
     o->verbdefs = 0;
     prevv = &(o->verbdefs);
     for (i = dbio_read_num(); i > 0; i--) {
-	v = (Verbdef *)malloc(sizeof(Verbdef));
+	v = new Verbdef();
 	read_verbdef(v);
 	*prevv = v;
 	prevv = &(v->next);
@@ -378,7 +378,7 @@ ng_read_object(int anonymous)
 
     o->nval = nprops = dbio_read_num();
     if (nprops)
-	o->propval = (Pval *)malloc(nprops * sizeof(Pval));
+	o->propval = new Pval[nprops];
     else
 	o->propval = 0;
 
@@ -845,14 +845,14 @@ v4_upgrade_objects()
 
     for (oid = 0; oid < size; oid++) {
 	if (objects[oid]) {
-	    free(objects[oid]);
+	    delete objects[oid];
 	    objects[oid] = 0;
 	}
     }
 
     num_objects = 0;
     max_objects = 0;
-    free(objects);
+    delete[] objects;
 
     oklog("UPGRADING objects to new structure ... finished.\n");
     return 1;

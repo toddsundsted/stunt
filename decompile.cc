@@ -917,18 +917,16 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
     sum = program->main_vector.max_stack;
     for (i = 0; i < program->fork_vectors_size; i++)
 	sum += program->fork_vectors[i].max_stack;
-    expr_stack = (Expr **)malloc(sum * sizeof(Expr *));
+    expr_stack = new Expr*[sum];
     top_expr_stack = 0;
 
-    bc = (vector == MAIN_VECTOR
-	  ? program->main_vector
-	  : program->fork_vectors[vector]);
+    bc = (vector == MAIN_VECTOR) ? program->main_vector : program->fork_vectors[vector];
 
     begin_code_allocation();
     decompile(bc, bc.vector, bc.vector + bc.size, &result, 0);
     end_code_allocation(0);
 
-    free(expr_stack);
+    delete[] expr_stack;
 
     return result;
 }

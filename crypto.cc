@@ -529,7 +529,7 @@ bf_string_hmac(const List& arglist, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char* key_new = (char*)malloc(key_length);
+	    char* key_new = new char[key_length];
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
@@ -547,7 +547,7 @@ bf_string_hmac(const List& arglist, Objid progr)
 
 #undef CASE
 
-	    free((void*)key_new);
+	    delete[] key_new;
 	}
     }
     catch (stream_too_big& exception) {
@@ -581,7 +581,7 @@ bf_binary_hmac(const List& arglist, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char* bytes_new = (char*)malloc(bytes_length);
+	    char* bytes_new = new char[bytes_length];
 	    memcpy(bytes_new, bytes, bytes_length);
 	    bytes = bytes_new;
 
@@ -589,11 +589,11 @@ bf_binary_hmac(const List& arglist, Objid progr)
 	    const char *key = binary_to_raw_bytes(arglist[2].v.str.expose(), &key_length);
 
 	    if (!key) {
-		free((void*)bytes_new);
+		delete[] bytes_new;
 		p = make_error_pack(E_INVARG);
 	    }
 	    else {
-		char* key_new = (char*)malloc(key_length);
+		char* key_new = new char [key_length];
 		memcpy(key_new, key, key_length);
 		key = key_new;
 
@@ -611,8 +611,8 @@ bf_binary_hmac(const List& arglist, Objid progr)
 
 #undef CASE
 
-		free((void*)bytes_new);
-		free((void*)key_new);
+		delete[] bytes_new;
+		delete[] key_new;
 	    }
 	}
     }
@@ -652,7 +652,7 @@ bf_value_hmac(const List& arglist, Objid progr)
 	    p = make_error_pack(E_INVARG);
 	}
 	else {
-	    char* key_new = (char*)malloc(key_length);
+	    char* key_new = new char [key_length];
 	    memcpy(key_new, key, key_length);
 	    key = key_new;
 
@@ -671,7 +671,7 @@ bf_value_hmac(const List& arglist, Objid progr)
 #undef CASE
 
 	    free_str(lit);
-	    free((void*)key_new);
+	    delete[] key_new;
 	}
     }
     catch (stream_too_big& exception) {

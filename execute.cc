@@ -105,7 +105,7 @@ alloc_rt_stack(activation * a, int size)
 	res = rt_stack_quick.top();
 	rt_stack_quick.pop();
     } else {
-	res = (Var *)malloc(MAX(size, RT_STACK_QUICKSIZE) * sizeof(Var));
+	res = new Var[MAX(size, RT_STACK_QUICKSIZE)];
     }
     a->base_rt_stack = a->top_rt_stack = res;
     a->rt_stack_size = size;
@@ -118,8 +118,9 @@ free_rt_stack(activation * a)
 
     if (a->rt_stack_size <= RT_STACK_QUICKSIZE) {
 	rt_stack_quick.push(stack);
-    } else
-	free(stack);
+    } else {
+	delete[] stack;
+    }
 }
 
 void
@@ -567,7 +568,7 @@ free_activation(activation * ap, char data_too)
     free_program(ap->prog);
 
     if (data_too && ap->bi_func_pc && ap->bi_func_data)
-	free_data(ap->bi_func_data);
+	delete ap->bi_func_data;
     /* else bi_func_state will be later freed by bi_function */
 }
 
@@ -2678,9 +2679,8 @@ check_activ_stack_size(int max)
 {
     if (max_stack_size != max) {
 	if (activ_stack)
-	    free(activ_stack);
-
-	activ_stack = (activation *)malloc(sizeof(activation) * max);
+	    delete[] activ_stack;
+	activ_stack = new activation[max];
 	max_stack_size = max;
     }
 }
@@ -2921,11 +2921,11 @@ bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
 	s = (struct cf_state *)vdata;
 	fnum = s->fnum;
 	p = call_bi_func(fnum, value, next, progr, s->data);
-	free_data(s);
+	delete s;
     }
 
     if (p.kind == package::BI_CALL) {
-	s = (struct cf_state *)alloc_data(sizeof(struct cf_state));
+	s = new struct cf_state;
 	s->fnum = fnum;
 	s->data = p.u.call.data;
 	p.u.call.data = s;
@@ -2946,7 +2946,7 @@ bf_call_function_write(void *data)
 static void *
 bf_call_function_read(void)
 {
-    struct cf_state *s = (struct cf_state *)alloc_data(sizeof(struct cf_state));
+    struct cf_state *s = new struct cf_state;
     const char *line = dbio_read_string();
     const char *hdr = "bf_call_function data: fname = ";
     int hlen = strlen(hdr);

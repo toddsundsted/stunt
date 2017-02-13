@@ -117,7 +117,7 @@ static void
 gc_add_root(const Var& v)
 {
     if (!pending_free) {
-	pending_free = (struct pending_recycle *)malloc(sizeof(struct pending_recycle));
+	pending_free = new struct pending_recycle;
 	pending_free->next = NULL;
     }
 

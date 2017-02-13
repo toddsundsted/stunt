@@ -24,16 +24,17 @@
 #include "structures.h"
 #include "utils.h"
 
-Program *
+Program*
 new_program(void)
 {
-    Program *p = (Program *)malloc(sizeof(Program));
+    Program* p = new Program();
 
     p->ref_count = 1;
     p->first_lineno = 1;
     p->cached_lineno = 1;
     p->cached_lineno_pc = 0;
     p->cached_lineno_vec = MAIN_VECTOR;
+
     return p;
 }
 
@@ -85,7 +86,7 @@ program_bytes(Program * p)
 }
 
 void
-free_program(Program * p)
+free_program(Program* p)
 {
     unsigned i;
 
@@ -93,22 +94,21 @@ free_program(Program * p)
     if (p->ref_count == 0) {
 
 	for (i = 0; i < p->num_literals; i++)
-	    /* can't be a list--strings and floats need to be freed, though. */
 	    free_var(p->literals[i]);
 	if (p->literals)
-	    free(p->literals);
+	    delete[] p->literals;
 
 	for (i = 0; i < p->fork_vectors_size; i++)
-	    free(p->fork_vectors[i].vector);
+	    delete[] p->fork_vectors[i].vector;
 	if (p->fork_vectors_size)
-	    free(p->fork_vectors);
+	    delete[] p->fork_vectors;
 
 	for (i = 0; i < p->num_var_names; i++)
 	    free_str(p->var_names[i]);
-	free(p->var_names);
+	delete[] p->var_names;
 
-	free(p->main_vector.vector);
+	delete[] p->main_vector.vector;
 
-	free(p);
+	delete p;
     }
 }

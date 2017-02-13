@@ -76,9 +76,6 @@ typedef struct {
 
 typedef vmstruct *vm;
 
-#define alloc_data(size) malloc(size)
-#define free_data(ptr) free(ptr)
-
 /* call_verb will only return E_MAXREC, E_INVIND, E_VERBNF,
    or E_NONE.  the vm will only be changed if E_NONE is returned */
 extern enum error call_verb(Objid obj, const char *vname,

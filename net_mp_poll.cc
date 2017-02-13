@@ -47,14 +47,14 @@ add_common(int fd, unsigned dir)
 {
     if (fd >= num_ports) {	/* Grow ports array */
 	int new_num = (fd + 9) / 10 * 10 + 1;
-	Port *new_ports = (Port *)malloc(new_num * sizeof(Port));
+	Port *new_ports = new Port[new_num];
 	int i;
 
 	for (i = 0; i < num_ports; i++)
 	    new_ports[i] = ports[i];
 
 	if (ports != 0)
-	    free(ports);
+	    delete[] ports;
 
 	ports = new_ports;
 	num_ports = new_num;

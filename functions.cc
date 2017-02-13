@@ -129,8 +129,7 @@ register_common(const char *name, int minargs, int maxargs, va_list args)
     bf_table[top_bf_table]._protected = 0;
 
     if (num_arg_types > 0)
-	bf_table[top_bf_table].prototype =
-	    (var_type *)malloc(num_arg_types * sizeof(var_type));
+	bf_table[top_bf_table].prototype = new var_type[num_arg_types];
     else
 	bf_table[top_bf_table].prototype = 0;
     for (va_index = 0; va_index < num_arg_types; va_index++)

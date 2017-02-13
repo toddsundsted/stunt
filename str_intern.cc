@@ -37,10 +37,10 @@ new_intern_entry_hunk(int size)
 {
     struct intern_entry_hunk *_new;
     
-    _new = (struct intern_entry_hunk *)malloc(sizeof(struct intern_entry_hunk));
+    _new = new struct intern_entry_hunk;
     _new->size = size;
     _new->handout = 0;
-    _new->contents = (struct intern_entry *)malloc(sizeof(struct intern_entry) * size);
+    _new->contents = new struct intern_entry[size];
     _new->next = NULL;
     
     return _new;
@@ -80,8 +80,8 @@ free_intern_entry_hunks(void)
     
     for (h = intern_alloc; h; h = next) {
         next = h->next;
-        free(h->contents);
-        free(h);
+        delete[] h->contents;
+        delete h;
     }
     
     intern_alloc = NULL;
@@ -103,7 +103,7 @@ make_intern_table(int size) {
     struct intern_entry **table;
     int i;
 
-    table = (intern_entry **)malloc(sizeof(struct intern_entry *) * size);
+    table = new intern_entry*[size];
     for (i = 0; i < size; i++) {
         table[i] = NULL;
     }
@@ -111,8 +111,7 @@ make_intern_table(int size) {
     return table;
 }
 
-
-void 
+void
 str_intern_open(int table_size)
 {
     if (table_size == 0) {
@@ -138,7 +137,7 @@ str_intern_close(void)
         }
     }
     
-    free(intern_table);
+    delete[] intern_table;
     intern_table = NULL;
     
     free_intern_entry_hunks();
@@ -208,7 +207,7 @@ intern_rehash(int new_size) {
     
     intern_table_size = new_size;
 
-    free(intern_table);
+    delete[] intern_table;
     intern_table = new_table;
 }
 

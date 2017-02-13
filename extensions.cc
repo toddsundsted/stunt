@@ -66,7 +66,7 @@ stdin_enumerator(task_closure closure, void *data)
 
 	if (tea == TEA_KILL) {
 	    *ww = w->next;
-	    free(w);
+	    delete w;
 	    if (!waiters)
 		network_unregister_fd(0);
 	}
@@ -130,7 +130,7 @@ stdin_suspender(vm the_vm, void *data)
 static package
 bf_read_stdin(const List& arglist, Objid progr)
 {
-    stdin_waiter *w = malloc(sizeof(stdin_waiter));
+    stdin_waiter* w = new stdin_waiter();
 
     return make_suspend_pack(stdin_suspender, w);
 }

@@ -47,8 +47,8 @@ struct fileio_file_type {
     const char* (*out_filter) (const char* data, int* buflen);
 };
 
-static file_type file_type_binary = NULL;
-static file_type file_type_text = NULL;
+static fileio_file_type file_type_binary = {raw_bytes_to_binary, binary_to_raw_bytes};
+static fileio_file_type file_type_text = {raw_bytes_to_clean, clean_to_raw_bytes};
 
 #define FILE_O_READ  1
 #define FILE_O_WRITE 2
@@ -206,15 +206,6 @@ file_modestr_to_mode(const ref_ptr<const char>& str, file_type* type, file_mode*
     file_type t;
     file_mode m = 0;
 
-    if (!file_type_binary) {
-	file_type_binary = (struct fileio_file_type*)malloc(sizeof(struct fileio_file_type));
-	file_type_text = (struct fileio_file_type*)malloc(sizeof(struct fileio_file_type));
-	file_type_binary->in_filter = raw_bytes_to_binary;
-	file_type_binary->out_filter = binary_to_raw_bytes;
-	file_type_text->in_filter = raw_bytes_to_clean;
-	file_type_text->out_filter = clean_to_raw_bytes;
-    }
-
     if (strlen(s) != 4)
 	return 0;
 
@@ -237,9 +228,9 @@ file_modestr_to_mode(const ref_ptr<const char>& str, file_type* type, file_mode*
     }
 
     if (s[2] == 't')
-	t = file_type_text;
+	t = &file_type_text;
     else if (s[2] == 'b') {
-	t = file_type_binary;
+	t = &file_type_binary;
 	buffer[p++] = 'b';
     } else
 	return NULL;
@@ -516,7 +507,7 @@ bf_file_openmode(const List& arglist, Objid progr)
 	    buffer[1] = '+';
 	else
 	    buffer[1] = '-';
-	if (type == file_type_binary)
+	if (type == &file_type_binary)
 	    buffer[2] = 'b';
 	else
 	    buffer[2] = 't';
@@ -610,13 +601,13 @@ free_line_buffer(line_buffer* head, int strings_too)
     line_buffer* next;
     if (head) {
 	next = head->next;
-	free(head);
+	delete head;
 	head = next;
 	while (head != NULL) {
 	    next = head->next;
 	    if (strings_too)
 		free_str(head->line);
-	    free(head);
+	    delete head;
 	    head = next;
 	}
     }
@@ -625,7 +616,7 @@ free_line_buffer(line_buffer* head, int strings_too)
 line_buffer*
 new_line_buffer(const ref_ptr<const char>& line)
 {
-    line_buffer* p = (line_buffer*) malloc(sizeof(line_buffer));
+    line_buffer* p = new line_buffer();
     p->line = line;
     p->next = NULL;
     return p;

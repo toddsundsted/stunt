@@ -74,7 +74,7 @@ typedef struct suspended_task {
     Var value;
 } suspended_task;
 
-typedef struct {
+typedef struct input_task {
     ref_ptr<const char> string;
     int length;
     struct task *next_itail;	/* see tqueue.first_itail */ 
@@ -83,10 +83,11 @@ typedef struct {
 typedef struct task {
     struct task *next;
     task_kind kind;
-    union {
+    union t {
 	input_task input;
 	forked_task forked;
 	suspended_task suspended;
+	t() {}
     } t;
 } task;
 
@@ -462,7 +463,7 @@ free_tqueue(tqueue * tq)
 	free_vm(tq->reading_vm, 1);
     if (tq->parsing_state) {
 	free_http_parsing_state(tq->parsing_state);
-	free(tq->parsing_state);
+	delete tq->parsing_state;
     }
 
     *(tq->prev) = tq->next;
@@ -596,7 +597,7 @@ free_task(task * t, int strong)
 	    free_vm(t->t.suspended.the_vm, 1);
 	break;
     }
-    free(t);
+    delete t;
 }
 
 static int
@@ -1020,9 +1021,9 @@ static void
 enqueue_input_task(tqueue * tq, const ref_ptr<const char>& input, int at_front, int binary)
 {
     static char oob_prefix[] = OUT_OF_BAND_PREFIX;
-    task *t;
 
-    t = (task *)malloc(sizeof(task));
+    task* t  = new task();
+
     if (binary)
 	t->kind = TASK_BINARY;
     else if (oob_quote_prefix_length > 0
@@ -1154,7 +1155,7 @@ static void
 enqueue_forked(Program * program, activation a, Var * rt_env,
 	   int f_index, time_t start_time, int id)
 {
-    task *t = (task *)malloc(sizeof(task));
+    task* t = new task();
 
     t->kind = TASK_FORKED;
     t->t.forked.program = program;
@@ -1243,10 +1244,10 @@ enqueue_suspended_task(vm the_vm, void *data)
     int after_seconds = *((int *) data);
     int now = time(0);
     int when;
-    task *t;
+    task* t;
 
     if (check_user_task_limit(progr_of_cur_verb(the_vm))) {
-	t = (task *)malloc(sizeof(task));
+	t = new task();
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.the_vm = the_vm;
 	if (now + after_seconds < now)
@@ -1266,7 +1267,8 @@ enqueue_suspended_task(vm the_vm, void *data)
 void
 resume_task(vm the_vm, const Var& value)
 {
-    task *t = (task *)malloc(sizeof(task));
+    task* t = new task();
+
     Objid progr = progr_of_cur_verb(the_vm);
     tqueue *tq = find_tqueue(progr, 1);
 
@@ -1294,7 +1296,7 @@ read_input_now(Objid connection)
 	// yes, literally steal the reference and discard the task
 	r.type = TYPE_STR;
 	r.v.str = t->t.input.string;
-	free(t);
+	delete t;
     }
 
     return r;
@@ -1334,8 +1336,7 @@ make_http_task(vm the_vm, Objid player, int request)
 	tq->parsing = 1;
 	tq->reading_vm = the_vm;
 	if (tq->parsing_state == NULL) {
-	    tq->parsing_state =
-		(http_parsing_state *)malloc(sizeof(struct http_parsing_state));
+	    tq->parsing_state = new http_parsing_state();
 	    init_http_parsing_state(tq->parsing_state);
 	}
 	tq->parsing_state->status = PARSING;
@@ -1819,7 +1820,7 @@ run_server_program_task(Objid _this, const char *verb, const Var& args, Objid vl
 void
 register_task_queue(task_enumerator enumerator)
 {
-    ext_queue *eq = (ext_queue *)malloc(sizeof(ext_queue));
+    ext_queue* eq = new ext_queue();
 
     eq->enumerator = enumerator;
     eq->next = external_queues;
@@ -2001,7 +2002,7 @@ read_task_queue(void)
 	return 0;
     }
     for (; suspended_count > 0; suspended_count--) {
-	task *t = (task *)malloc(sizeof(task));
+	task* t = new task();
 	int task_id, start_time;
 	char c;
 
@@ -2063,7 +2064,7 @@ read_task_queue(void)
 	    return 0;
 	}
 
-	task *t = (task *)malloc(sizeof(task));
+	task* t = new task();
 	t->kind = TASK_SUSPENDED;
 	t->t.suspended.start_time = 0;
 	t->t.suspended.value = Var::new_err(E_INTRPT);

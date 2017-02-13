@@ -101,7 +101,7 @@ proto_make_listener(const Var& desc, int *fd, Var * canon, const char **name)
 	close(s);
 	return e;
     }
-    l = (listener *)malloc(sizeof(listener));
+    l = new listener();
     l->next = all_listeners;
     all_listeners = l;
     l->filename = str_dup(connect_file);
@@ -162,7 +162,7 @@ proto_close_listener(int fd)
 
 	    *ll = l->next;
 	    free_str(l->filename);
-	    free(l);
+	    delete l;
 	    return;
 	}
     errlog("Can't find fd in PROTO_CLOSE_LISTENER!\n");

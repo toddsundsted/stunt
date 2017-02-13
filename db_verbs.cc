@@ -105,7 +105,7 @@ dbpriv_build_prep_table(void)
 	     */
 	    words = parse_into_words(cprep, &nwords);
 
-	    current_alias = (struct pt_entry *)malloc(sizeof(struct pt_entry));
+	    current_alias = new struct pt_entry;
 	    current_alias->nwords = nwords;
 	    current_alias->next = 0;
 	    for (j = 0; j < nwords; j++)
@@ -157,14 +157,14 @@ db_match_prep(const char *prepname)
     char **argv;
     char *s, first;
 
-    s = (char*)malloc(strlen(prepname) + 1);
+    s = new char[strlen(prepname) + 1];
     strcpy(s, prepname);
     first = s[0];
     if (first == '#')
 	first = (++s)[0];
     prep = (db_prep_spec)strtol(s, &ptr, 10);
     if (*ptr == '\0') {
-	free(s);
+	delete[] s;
 	if (!isdigit(first) || prep >= NPREPS)
 	    return PREP_NONE;
 	else
@@ -175,7 +175,7 @@ db_match_prep(const char *prepname)
 
     argv = parse_into_words(s, &argc);
     prep = db_find_prep(argc, argv, 0, 0);
-    free(s);
+    delete[] s;
     return prep;
 }
 
@@ -208,7 +208,7 @@ db_add_verb(Var& obj, const ref_ptr<const char>& vnames, Objid owner, unsigned f
 
     db_priv_affected_callable_verb_lookup();
 
-    newv = (Verbdef *)malloc(sizeof(Verbdef));
+    newv = new Verbdef();
     newv->name = vnames;
     newv->owner = owner;
     newv->perms = flags | (dobj << DOBJSHIFT) | (iobj << IOBJSHIFT);
@@ -297,7 +297,7 @@ db_delete_verb(db_verb_handle vh)
 	free_program(v->program);
     if (v->name)
 	free_str(v->name);
-    free(v);
+    delete v;
 }
 
 db_verb_handle
@@ -384,7 +384,7 @@ db_priv_affected_callable_verb_lookup(void)
 	while (vc) {
 	    vc_next = vc->next;
 	    free_str(vc->verbname);
-	    free(vc);
+	    delete vc;
 	    vc = vc_next;
 	}
 	vc_table[i] = NULL;
@@ -397,7 +397,7 @@ make_vc_table(int size)
     int i;
 
     vc_size = size;
-    vc_table = (vc_entry **)malloc(size * sizeof(vc_entry *));
+    vc_table = new vc_entry*[size];
     for (i = 0; i < size; i++) {
 	vc_table[i] = NULL;
     }
@@ -621,8 +621,7 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 	 * so that repeated failures hit the cache instead of going
 	 * through a lookup.
 	 */
-	new_vc = (vc_entry *)malloc(sizeof(vc_entry));
-
+	new_vc = new vc_entry();
 	new_vc->hash = hash;
 	new_vc->object = o;
 	new_vc->verbname = str_ref(verb);

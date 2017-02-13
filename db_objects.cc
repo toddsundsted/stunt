@@ -94,15 +94,15 @@ extend(unsigned int new_objects)
 	;
 
     if (max_objects == 0) {
-	objects = (Object **)malloc(size * sizeof(Object *));
-	memset(objects, 0, size * sizeof(Object *));
+	objects = new Object*[size];
+	memset(objects, 0, size * sizeof(Object*));
 	max_objects = size;
     }
     if (size > max_objects) {
-	Object **_new = (Object **)malloc(size * sizeof(Object *));
-	memcpy(_new, objects, max_objects * sizeof(Object *));
-	memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object *));
-	free(objects);
+	Object** _new = new Object*[size];
+	memcpy(_new, objects, max_objects * sizeof(Object*));
+	memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object*));
+	delete[] objects;
 	objects = _new;
 	max_objects = size;
     }
@@ -156,7 +156,7 @@ dbpriv_new_object(void)
     Object *o;
 
     ensure_new_object();
-    o = objects[num_objects] = (Object *)malloc(sizeof(Object));
+    o = objects[num_objects] = new Object();
     o->id = num_objects;
     num_objects++;
 
@@ -255,9 +255,9 @@ db_destroy_object(Objid oid)
 	free_var(o->propval[i].var);
     }
     if (o->propdefs.l)
-	free(o->propdefs.l);
+	delete[] o->propdefs.l;
     if (o->propval)
-	free(o->propval);
+	delete[] o->propval;
     o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
@@ -265,10 +265,10 @@ db_destroy_object(Objid oid)
 	    free_program(v->program);
 	free_str(v->name);
 	w = v->next;
-	free(v);
+	delete v;
     }
 
-    free(objects[oid]);
+    delete objects[oid];
     objects[oid] = 0;
 }
 
@@ -355,7 +355,7 @@ db_make_anonymous(Objid oid, Objid last)
      */
     ref_ptr<Object> t = mymalloc<Object>(sizeof(Object));
     memcpy(t.expose(), o, sizeof(Object));
-    free(o);
+    delete o;
 
     return t;
 }
@@ -375,11 +375,11 @@ db_destroy_anonymous_object(ref_ptr<Object>& obj)
     for (i = 0; i < o->propdefs.cur_length; i++)
 	free_str(o->propdefs.l[i].name);
     if (o->propdefs.l)
-	free(o->propdefs.l);
+	delete[] o->propdefs.l;
     for (i = 0; i < o->nval; i++)
 	free_var(o->propval[i].var);
     if (o->propval)
-	free(o->propval);
+	delete[] o->propval;
     o->nval = 0;
 
     for (v = o->verbdefs; v; v = w) {
@@ -387,7 +387,7 @@ db_destroy_anonymous_object(ref_ptr<Object>& obj)
 	    free_program(v->program);
 	free_str(v->name);
 	w = v->next;
-	free(v);
+	delete v;
     }
 
     dbpriv_set_object_flag(obj.expose(), FLAG_INVALID);

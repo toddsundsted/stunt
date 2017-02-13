@@ -206,7 +206,7 @@ bf_move(const Var& value, Objid progr, Byte next, void *vdata)
     if (next == 1) {
 	assert(value.is_list());
 	const List& arglist = static_cast<const List&>(value);
-	data = (bf_move_data *)alloc_data(sizeof(*data));
+	data = new bf_move_data();
 	data->what = arglist[1].v.obj;
 	data->where = arglist[2].v.obj;
     }
@@ -214,7 +214,7 @@ bf_move(const Var& value, Objid progr, Byte next, void *vdata)
     free_var(value);
 
     if (p.kind != package::BI_CALL)
-	free_data(data);
+	delete data;
 
     return p;
 }
@@ -231,7 +231,7 @@ bf_move_write(void *vdata)
 static void *
 bf_move_read()
 {
-    struct bf_move_data *data = (bf_move_data *)alloc_data(sizeof(*data));
+    struct bf_move_data *data = new bf_move_data();
 
     if (dbio_scanf("bf_move data: what = %d, where = %d\n",
 		   &data->what, &data->where) == 2)
@@ -397,7 +397,7 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 		r.v.obj = oid;
 	    }
 
-	    data = (Var *)alloc_data(sizeof(Var));
+	    data = new Var();
 	    *data = var_ref(r);
 
 	    /* pass in initializer args, if present */
@@ -414,7 +414,8 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 	    }
 
 	    free_var(*data);
-	    free_data(data);
+	    delete data;
+
 	    free_var(args);
 
 	    if (e == E_MAXREC) {
@@ -426,7 +427,7 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
     } else {			/* next == 2, returns from initialize verb_call */
 	r = var_ref(*data);
 	free_var(*data);
-	free_data(data);
+	delete data;
 	return make_var_pack(r);
     }
 }
@@ -440,7 +441,7 @@ bf_create_write(void *vdata)
 static void *
 bf_create_read(void)
 {
-    Objid *data = (Objid *)alloc_data(sizeof(Objid));
+    Objid *data = new Objid();
 
     if (dbio_scanf("bf_create data: oid = %d\n", data) == 1)
 	return data;
@@ -694,8 +695,9 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 	 * reference to itself, at least).
 	 */
 
-	data = (Var *)alloc_data(sizeof(Var));
+	data = new Var();
 	*data = var_ref(obj);
+
 	args = new_list(0);
 	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
 	/* e != E_INVIND */
@@ -719,7 +721,7 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 	if (!is_valid(obj)) {
 	    free_var(obj);
 	    free_var(*data);
-	    free_data(data);
+	    delete data;
 	    return no_var_pack();
 	}
 
@@ -783,7 +785,7 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 
 	    free_var(obj);
 	    free_var(*data);
-	    free_data(data);
+	    delete data;
 	    return no_var_pack();
 	}
 	else if (obj.is_anon()) {
@@ -800,7 +802,7 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 
 	    free_var(obj);
 	    free_var(*data);
-	    free_data(data);
+	    delete data;
 	    return no_var_pack();
 	}
     }
@@ -820,7 +822,7 @@ bf_recycle_write(void *vdata)
 static void *
 bf_recycle_read(void)
 {
-    Objid *data = (Objid *)alloc_data(sizeof(*data));
+    Objid *data = new Objid();
     int dummy;
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'

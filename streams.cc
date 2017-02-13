@@ -26,15 +26,15 @@
 #include "storage.h"
 #include "streams.h"
 
-Stream *
+Stream*
 new_stream(int size)
 {
-    Stream *s = (Stream *)malloc(sizeof(Stream));
+    Stream* s = new Stream();
 
     if (size < 1)
 	size = 1;
 
-    s->buffer = (char *)malloc(size);
+    s->buffer = new char[size];
     s->buflen = size;
     s->current = 0;
 
@@ -70,9 +70,9 @@ grow(Stream * s, int newlen, int need)
 		throw stream_too_big();
 	}
     }
-    newbuf = (char *)malloc(newlen);
+    newbuf = new char[newlen];
     memcpy(newbuf, s->buffer, s->current);
-    free(s->buffer);
+    delete[] s->buffer;
     s->buffer = newbuf;
     s->buflen = newlen;
 }
@@ -237,8 +237,8 @@ stream_printf(Stream * s, const char *fmt,...)
 void
 free_stream(Stream * s)
 {
-    free(s->buffer);
-    free(s);
+    delete[] s->buffer;
+    delete s;
 }
 
 char *
