@@ -2082,20 +2082,19 @@ db_verb_handle
 find_verb_for_programming(Objid player, const ref_ptr<const char>& verbref,
 			  const char **message, const char **vname)
 {
-    const char *obj;
-    const char *copy = verbref.expose();
-    char *colon = strchr(copy, ':');
+    char* copy = strdup(verbref.expose());
+    char* colon = strchr(copy, ':');
+    const char* obj;
     Objid oid;
     db_verb_handle h;
-    static Stream *str = 0;
 
-    if (!str)
-	str = new_stream(100);
+    static Stream* str = new_stream(100);
 
     h.ptr = 0;
 
     if (!colon || colon[1] == '\0') {
 	*message = "You must specify a verb; use the format object:verb.";
+	free(copy);
 	return h;
     }
     *colon = '\0';
@@ -2120,6 +2119,7 @@ find_verb_for_programming(Objid player, const ref_ptr<const char>& verbref,
 	    break;
 	}
 	*message = reset_stream(str);
+	free(copy);
 	return h;
     }
 
@@ -2139,6 +2139,8 @@ find_verb_for_programming(Objid player, const ref_ptr<const char>& verbref,
 		      db_object_name(oid), db_verb_names(h));
 	*message = reset_stream(str);
     }
+
+    free(copy);
 
     return h;
 }
