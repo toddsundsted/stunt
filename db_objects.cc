@@ -19,6 +19,8 @@
  * Routines for manipulating DB objects
  *****************************************************************************/
 
+#include <vector>
+
 #include <assert.h>
 
 #include "my-string.h"
@@ -33,7 +35,6 @@
 #include "server.h"
 #include "storage.h"
 #include "utils.h"
-#include "xtrapbits.h"
 
 static Object **objects;
 static int num_objects = 0;
@@ -42,10 +43,6 @@ static int max_objects = 0;
 static unsigned int nonce = 0;
 
 static List all_users;
-
-/* used in graph traversals */
-static unsigned char *bit_array;
-static size_t array_size = 0;
 
 
 /*********** Objects qua objects ***********/
@@ -105,19 +102,6 @@ extend(unsigned int new_objects)
 	delete[] objects;
 	objects = _new;
 	max_objects = size;
-    }
-
-    for (size = 4096; size <= new_objects; size *= 2)
-	;
-
-    if (array_size == 0) {
-	bit_array = (unsigned char *)malloc((size / 8) * sizeof(unsigned char));
-	array_size = size;
-    }
-    if (size > array_size) {
-	free(bit_array);
-	bit_array = (unsigned char *)malloc((size / 8) * sizeof(unsigned char));
-	array_size = size;
     }
 }
 
@@ -581,7 +565,7 @@ db_object_bytes(const Var& obj)
 /* Traverse the tree/graph twice.  First to count the maximal number
  * of members, and then to copy the members.  Use the bit array to
  * mark objects that have been copied, to prevent double copies.
- * Note: the final step forcibly sets the length of the list, which
+ * NOTE: the final step forcibly sets the length of the list, which
  * may be less than the allocated length.  It's possible to calculate
  * the correct length, but that would require one more round of bit
  * array bookkeeping.
@@ -593,8 +577,8 @@ db_object_bytes(const Var& obj)
  * we don't set a bit for the root object (which may not have an id).
  */
 
-#define ARRAY_SIZE_IN_BYTES (array_size / 8)
-#define CLEAR_BIT_ARRAY() memset(bit_array, 0, ARRAY_SIZE_IN_BYTES)
+/* used in graph traversals */
+static std::vector<bool> bit_array;
 
 #define DEFUNC(name, field)						\
 									\
@@ -608,8 +592,8 @@ db1_count_##name(const Object *o)					\
 									\
     FOR_EACH(tmp, field, i, c) {					\
 	if (valid(oid = tmp.v.obj)) {					\
-	    if (bit_is_false(bit_array, oid)) {				\
-		bit_true(bit_array, oid);				\
+	    if (!bit_array[oid]) {					\
+		bit_array[oid] = true;					\
 		o2 = dbpriv_find_object(oid);				\
 		n += db1_count_##name(o2) + 1;				\
 	    }								\
@@ -631,8 +615,8 @@ db2_add_##name(const Object *o, List *plist, int *px)			\
 									\
     FOR_EACH(tmp, field, i, c) {					\
 	if (valid(oid = tmp.v.obj)) {					\
-	    if (bit_is_false(bit_array, oid)) {				\
-		bit_true(bit_array, oid);				\
+	    if (!bit_array[oid]) {					\
+		bit_array[oid] = true;					\
 		++(*px);						\
 		(*plist)[*px] = Var::new_obj(oid);			\
 		o2 = dbpriv_find_object(oid);				\
@@ -656,7 +640,8 @@ db_##name(const Var& obj, bool full)					\
 	(o->field.is_list() && listlength(o->field) == 0))		\
 	return full ? enlist_var(var_ref(obj)) : new_list(0);		\
 									\
-    CLEAR_BIT_ARRAY();							\
+    bit_array.clear();							\
+    bit_array.resize(num_objects);					\
 									\
     n = db1_count_##name(o) + (full ? 1 : 0);				\
 									\
@@ -665,7 +650,8 @@ db_##name(const Var& obj, bool full)					\
     if (full)								\
 	list[++i] = var_ref(obj);					\
 									\
-    CLEAR_BIT_ARRAY();							\
+    bit_array.clear();							\
+    bit_array.resize(num_objects);					\
 									\
     db2_add_##name(o, &list, &i);					\
 									\

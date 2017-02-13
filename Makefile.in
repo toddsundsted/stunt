@@ -393,7 +393,7 @@ db_io.o: db_io.cc config.h my-stdio.h my-stdlib.h db.h program.h \
 db_objects.o: db_objects.cc my-string.h config.h db.h program.h \
  structures.h my-stdio.h version.h db_io.h db_private.h collection.h \
  list.h streams.h server.h network.h options.h storage.h utils.h \
- execute.h opcode.h parse_cmd.h xtrapbits.h
+ execute.h opcode.h parse_cmd.h
 db_properties.o: db_properties.cc collection.h structures.h my-stdio.h \
  config.h db.h program.h version.h db_private.h list.h streams.h \
  server.h network.h options.h storage.h my-string.h utils.h execute.h \
