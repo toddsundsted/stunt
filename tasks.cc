@@ -15,6 +15,7 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <stdarg.h>
 #include <stdlib.h>
 
 #include "my-string.h"
