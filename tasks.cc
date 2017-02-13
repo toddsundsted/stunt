@@ -1630,9 +1630,9 @@ run_ready_tasks(void)
 			    if (tq->parsing_state->parser.http_errno != HPE_OK) {
 				Var key = Var::new_str("error");
 				List value = new_list(2);
-				http_errno errno = (http_errno)tq->parsing_state->parser.http_errno;
-				value[1] = Var::new_str(http_errno_name(errno) + 4);
-				value[2] = Var::new_str(http_errno_description(errno));
+				http_errno e = (http_errno)tq->parsing_state->parser.http_errno;
+				value[1] = Var::new_str(http_errno_name(e) + 4);
+				value[2] = Var::new_str(http_errno_description(e));
 				tq->parsing_state->result = mapinsert(tq->parsing_state->result, key, value);
 				done = 1;
 			    }
