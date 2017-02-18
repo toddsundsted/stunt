@@ -22,7 +22,9 @@ class TestCannedDbs < Test::Unit::TestCase
     _, diff, _, wait = Open3.popen3 %[diff #{first} #{second}]
     wait.value
 
-    diff.readlines.map(&:chomp)
+    diff.readlines.map(&:chomp).tap do |diff|
+      puts diff if options['verbose']
+    end
   end
 
   def log_and_diff(original, backup)
@@ -32,7 +34,10 @@ class TestCannedDbs < Test::Unit::TestCase
     _, diff, _, wait = Open3.popen3 %[diff #{original} #{backup}]
     wait.value
 
-    [log.readlines.map(&:chomp), diff.readlines.map(&:chomp)]
+    [log.readlines.map(&:chomp), diff.readlines.map(&:chomp)].tap do |log, diff|
+      puts log if options['verbose']
+      puts diff if options['verbose']
+    end
   end
 
   public
