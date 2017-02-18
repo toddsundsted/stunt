@@ -63,6 +63,10 @@ refcount_overhead(Memory_Type type)
     }
 }
 
+void *mymalloc(unsigned size, Memory_Type type);
+void *myrealloc(void *where, unsigned size, Memory_Type type);
+void myfree(void *where, Memory_Type type);
+
 template<typename T> ref_ptr<T>
 mymalloc(size_t size)
 {

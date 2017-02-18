@@ -205,10 +205,6 @@ void myfree(ref_ptr<double>);
 template<>
 void myfree(ref_ptr<const char>);
 
-extern void *mymalloc(unsigned size, Memory_Type type);
-extern void *myrealloc(void *where, unsigned size, Memory_Type type);
-extern void myfree(void *where, Memory_Type type);
-
 extern ref_ptr<const char> str_ref(const ref_ptr<const char>&);
 extern ref_ptr<const char> str_dup(const char*);
 
