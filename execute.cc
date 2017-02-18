@@ -1551,7 +1551,7 @@ do {								\
 		    free_var(propname);
 		    free_var(obj);
 
-		    if (!h.ptr)
+		    if (!h.found)
 			PUSH_ERROR(E_PROPNF);
 		    else if (built_in
 			 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
@@ -1581,7 +1581,7 @@ do {								\
 
 		    h = db_find_property(obj, propname.v.str, &prop);
 		    built_in = db_is_property_built_in(h);
-		    if (!h.ptr)
+		    if (!h.found)
 			PUSH_ERROR(E_PROPNF);
 		    else if (built_in
 			 ? bi_prop_protected(built_in, RUN_ACTIV.progr)
@@ -1620,7 +1620,7 @@ do {								\
 
 		    h = db_find_property(obj, propname.v.str, 0);
 		    built_in = db_is_property_built_in(h);
-		    if (!h.ptr)
+		    if (!h.found)
 			err = E_PROPNF;
 		    else {
 			switch (built_in) {
@@ -1762,7 +1762,7 @@ do {								\
 #define		    MATCH_TYPE(t1)						\
 			else if (obj.is_##t1()) {				\
 			    h = db_find_property(system, t1##_proto, &p);	\
-			    if (h.ptr && p.is_obj() && valid(p.v.obj))		\
+			    if (h.found && p.is_obj() && valid(p.v.obj))	\
 				recv = p.v.obj;					\
 			}
 		    if (obj.is_anon())

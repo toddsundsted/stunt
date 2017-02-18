@@ -430,12 +430,12 @@ get_server_option(Objid oid, const char *name, Var * r)
     ref_ptr<const char> prop_name = str_dup(name);
 
     if (((valid(oid) &&
-	  db_find_property(Var::new_obj(oid), SERVER_OPTIONS, r).ptr)
+	  db_find_property(Var::new_obj(oid), SERVER_OPTIONS, r).found)
 	 || (valid(SYSTEM_OBJECT) &&
-	     db_find_property(Var::new_obj(SYSTEM_OBJECT), SERVER_OPTIONS, r).ptr))
+	     db_find_property(Var::new_obj(SYSTEM_OBJECT), SERVER_OPTIONS, r).found))
 	&& r->is_obj()
 	&& valid(r->v.obj)
-	&& db_find_property(*r, prop_name, r).ptr) {
+	&& db_find_property(*r, prop_name, r).found) {
 	free_str(prop_name);
 	return 1;
     } else {

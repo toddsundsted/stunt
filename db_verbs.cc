@@ -202,7 +202,7 @@ int
 db_add_verb(Var& obj, const ref_ptr<const char>& vnames, Objid owner, unsigned flags,
 	    db_arg_spec dobj, db_prep_spec prep, db_arg_spec iobj)
 {
-    Object *o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
     Verbdef *v, *newv;
     int count;
 
@@ -226,7 +226,7 @@ db_add_verb(Var& obj, const ref_ptr<const char>& vnames, Objid owner, unsigned f
 }
 
 static Verbdef *
-find_verbdef_by_name(Object * o, const ref_ptr<const char>& vname, int check_x_bit)
+find_verbdef_by_name(const ref_ptr<Object>& o, const ref_ptr<const char>& vname, int check_x_bit)
 {
     Verbdef *v;
 
@@ -241,13 +241,12 @@ find_verbdef_by_name(Object * o, const ref_ptr<const char>& vname, int check_x_b
 int
 db_count_verbs(const Var& obj)
 {
-    int count = 0;
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     Verbdef *v;
 
+    int count = 0;
     for (v = o->verbdefs; v; v = v->next)
 	count++;
-
     return count;
 }
 
@@ -256,7 +255,7 @@ db_for_all_verbs(const Var& obj,
 		 int (*func) (void *data, const ref_ptr<const char>& vname),
 		 void *data)
 {
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     Verbdef *v;
 
     for (v = o->verbdefs; v; v = v->next)
@@ -270,15 +269,15 @@ db_for_all_verbs(const Var& obj,
  * work.  See `db_verb_definer' for the consequence of this decision.
  */
 typedef struct {		/* non-null db_verb_handles point to these */
-    Object *definer;
-    Verbdef *verbdef;
+    ref_ptr<Object> definer;
+    Verbdef* verbdef;
 } handle;
 
 void
 db_delete_verb(db_verb_handle vh)
 {
     handle *h = (handle *)vh.ptr;
-    Object *o = h->definer;
+    ref_ptr<Object>& o = h->definer;
     Verbdef *v = h->verbdef;
     Verbdef *vv;
 
@@ -304,7 +303,6 @@ db_verb_handle
 db_find_command_verb(Objid oid, const ref_ptr<const char>& verb,
 		     db_arg_spec dobj, unsigned prep, db_arg_spec iobj)
 {
-    Object *o;
     Verbdef *v;
     static handle h;
     db_verb_handle vh;
@@ -316,7 +314,7 @@ db_find_command_verb(Objid oid, const ref_ptr<const char>& verb,
     ancestors = db_ancestors(Var::new_obj(oid), true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
-	o = dbpriv_find_object(ancestor.v.obj);
+	ref_ptr <Object>& o = dbpriv_find_object(ancestor.v.obj);
 	for (v = o->verbdefs; v; v = v->next) {
 	    db_arg_spec vdobj = (db_arg_spec)((v->perms >> DOBJSHIFT) & OBJMASK);
 	    db_arg_spec viobj = (db_arg_spec)((v->perms >> IOBJSHIFT) & OBJMASK);
@@ -357,10 +355,10 @@ struct vc_entry {
 #ifdef RONG
     int generation;
 #endif
-    Object *object;
+    ref_ptr<Object> object;
     ref_ptr<const char> verbname;
     handle h;
-    struct vc_entry *next;
+    struct vc_entry* next;
 };
 
 static vc_entry **vc_table = NULL;
@@ -472,19 +470,19 @@ db_log_cache_stats(void)
  * for a matching verbdef.
  */
 struct verbdef_definer_data {
-    Object *o;
-    Verbdef *v;
+    ref_ptr<Object>* o;
+    Verbdef* v;
 };
 
 static struct verbdef_definer_data
-find_callable_verbdef(Object *start, const ref_ptr<const char>& verb)
+find_callable_verbdef(const ref_ptr<Object>& start, const ref_ptr<const char>& verb)
 {
-    Object *o = NULL;
-    Verbdef *v = NULL;
+    ref_ptr<Object>* o = nullptr;
+    Verbdef* v = nullptr;
 
     if ((v = find_verbdef_by_name(start, verb, 1)) != NULL) {
 	struct verbdef_definer_data data;
-	data.o = start;
+	data.o = &const_cast<ref_ptr<Object>&>(start);
 	data.v = v;
 	return data;
     }
@@ -496,19 +494,19 @@ find_callable_verbdef(Object *start, const ref_ptr<const char>& verb)
 
 	POP_TOP(top, stack);
 
-	o = dbpriv_find_object(top.v.obj);
+	o = top.v.obj > -1 ? &dbpriv_find_object(top.v.obj) : nullptr;
 	free_var(top);
 
 	if (!o) /* if it's invalid, AKA $nothing */
 	    continue;
 
-	if ((v = find_verbdef_by_name(o, verb, 1)) != NULL)
+	if ((v = find_verbdef_by_name(*o, verb, 1)) != NULL)
 	    break;
 
-	if (o->parents.is_list())
-	    stack = listconcat(var_ref(static_cast<const List&>(o->parents)), stack);
+	if ((*o)->parents.is_list())
+          stack = listconcat(var_ref(static_cast<const List&>((*o)->parents)), stack);
 	else
-	    stack = listinsert(stack, var_ref(o->parents), 1);
+          stack = listinsert(stack, var_ref((*o)->parents), 1);
     }
 
     free_var(stack);
@@ -526,9 +524,9 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
     if (!recv.is_object())
 	panic("DB_FIND_CALLABLE_VERB: Not an object!");
 
-    Object *o;
+    ref_ptr<Object>* o;
 #ifdef VERB_CACHE
-    vc_entry *new_vc;
+    vc_entry* new_vc;
 #else
     static handle h;
 #endif
@@ -553,12 +551,12 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 	POP_TOP(top, stack);
 
 	if (top.is_object() && is_valid(top)) {
-	    o = dbpriv_dereference(top);
-	    if (o->verbdefs == NULL) {
+	    o = &dbpriv_dereference(top);
+	    if ((*o)->verbdefs == NULL) {
 		/* keep looking */
-		stack = o->parents.is_list()
-		        ? listconcat(var_ref(static_cast<const List&>(o->parents)), stack)
-		        : listinsert(stack, var_ref(o->parents), 1);
+		stack = (*o)->parents.is_list()
+		        ? listconcat(var_ref(static_cast<const List&>((*o)->parents)), stack)
+		        : listinsert(stack, var_ref((*o)->parents), 1);
 		free_var(top);
 		continue;
 	    }
@@ -573,7 +571,7 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 
 	assert(o != NULL);
 
-	unsigned long first_parent_with_verbs = (unsigned long)o;
+	unsigned long first_parent_with_verbs = (unsigned long)o->expose();
 
 	/* found something with verbdefs, now check the cache */
 	unsigned int hash, bucket;
@@ -587,7 +585,7 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 
 	for (vc = vc_table[bucket]; vc; vc = vc->next) {
 	    if (hash == vc->hash
-		&& o == vc->object && !mystrcasecmp(verb.expose(), vc->verbname.expose())) {
+		&& o->expose() == vc->object.expose() && !mystrcasecmp(verb.expose(), vc->verbname.expose())) {
 		/* we haaave a winnaaah */
 		if (vc->h.verbdef) {
 		    verbcache_hit++;
@@ -623,20 +621,21 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 	 */
 	new_vc = new vc_entry();
 	new_vc->hash = hash;
-	new_vc->object = o;
+	new_vc->object = *o;
 	new_vc->verbname = str_ref(verb);
+	new_vc->h.definer = ref_ptr<Object>::empty;
 	new_vc->h.verbdef = NULL;
 	new_vc->next = vc_table[bucket];
 	vc_table[bucket] = new_vc;
 #endif
 
-	struct verbdef_definer_data data = find_callable_verbdef(o, verb);
+	struct verbdef_definer_data data = find_callable_verbdef(*o, verb);
 	if (data.o != NULL && data.v != NULL) {
 
 #ifdef VERB_CACHE
 	    free_var(stack);
 
-	    new_vc->h.definer = data.o;
+	    new_vc->h.definer = *data.o;
 	    new_vc->h.verbdef = data.v;
 	    vh.ptr = &new_vc->h;
 #else
@@ -665,7 +664,7 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 db_verb_handle
 db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow_numbers)
 {
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     Verbdef *v;
     char *p;
     int num, i;
@@ -681,7 +680,7 @@ db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow
 	    break;
 
     if (v) {
-	h.definer = const_cast<Object*>(o);
+	h.definer = const_cast<ref_ptr<Object>&>(o);
 	h.verbdef = v;
 	vh.ptr = &h;
 
@@ -695,7 +694,7 @@ db_find_defined_verb(const Var& obj, const ref_ptr<const char>& vname, int allow
 db_verb_handle
 db_find_indexed_verb(const Var& obj, unsigned index)
 {
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     Verbdef *v;
     unsigned i;
     static handle h;
@@ -703,7 +702,7 @@ db_find_indexed_verb(const Var& obj, unsigned index)
 
     for (v = o->verbdefs, i = 0; v; v = v->next)
 	if (++i == index) {
-	    h.definer = const_cast<Object*>(o);
+	    h.definer = const_cast<ref_ptr<Object>&>(o);
 	    h.verbdef = v;
 	    vh.ptr = &h;
 
@@ -727,7 +726,7 @@ db_verb_definer(db_verb_handle vh)
 	}
 	else {
 	    r.type = TYPE_ANON;
-	    r.v.anon.impose(h->definer);
+	    r.v.anon = h->definer;
 	}
 	return r;
     }

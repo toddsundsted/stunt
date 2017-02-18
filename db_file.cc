@@ -298,10 +298,9 @@ v4_read_object(void)
 }
 
 static int
-ng_read_object(int anonymous)
+ng_read_object(bool anonymous)
 {
     Objid oid;
-    Object *o;
     char s[20];
     int i;
     Verbdef *v, **prevv;
@@ -312,23 +311,21 @@ ng_read_object(int anonymous)
     dbio_read_line(s, sizeof(s));
 
     if (strcmp(s, " recycled\n") == 0) {
-	dbpriv_new_recycled_object();
+	dbpriv_new_recycled_object(oid);
 	return 1;
     } else if (strcmp(s, "\n") != 0)
 	return 0;
 
-    /* At the point at which we're reading anonymous objects, we know
-     * we've already created all of the anonymous objects (they were
-     * created from references in tasks, other objects or the list
-     * of values pending finalization).
+    /* NOTE: At the point at which we're reading anonymous objects, we
+     * know we've already created all of the anonymous objects (they
+     * were created from references in tasks, other objects or the
+     * list of values pending finalization).
      */
-    if (anonymous) {
-	o = dbpriv_find_object(oid);
-    }
-    else {
-	o = dbpriv_new_object();
-	dbpriv_assign_nonce(o);
-    }
+    ref_ptr<Object>& o = anonymous
+	? dbpriv_find_object(oid)
+	: dbpriv_new_object(oid);
+
+    dbpriv_assign_nonce(o);
 
     o->name = dbio_read_string_intern();
     o->flags = dbio_read_num();
@@ -439,7 +436,6 @@ v4_write_object(Objid oid)
 static void
 ng_write_object(Objid oid)
 {
-    Object *o;
     Verbdef *v;
     int i;
     int nverbdefs, nprops;
@@ -448,7 +444,7 @@ ng_write_object(Objid oid)
 	dbio_printf("#%d recycled\n", oid);
 	return;
     }
-    o = dbpriv_find_object(oid);
+    const ref_ptr<Object>& o = dbpriv_find_object(oid);
 
     dbio_printf("#%d\n", oid);
     dbio_write_string(o->name.expose());
@@ -632,10 +628,9 @@ v4_validate_hierarchies()
 }
 
 static int
-ng_validate_hierarchies()
+ng_validate_hierarchies(Objid size)
 {
     Objid oid, log_oid;
-    Objid size = db_last_used_objid() + 1;
     int i, c;
     int broken = 0;
 
@@ -652,7 +647,8 @@ ng_validate_hierarchies()
 
     oklog("VALIDATE: Phase 1: Check for invalid objects ...\n");
     for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
+	ref_ptr<Object>& o = dbpriv_find_object(oid);
+
 	MAYBE_LOG_PROGRESS;
 	if (o) {
 	    if (!is_obj_or_list_of_objs(o->parents)) {
@@ -679,19 +675,20 @@ ng_validate_hierarchies()
 	    {								\
 		if (o->field.is_list()) {				\
 		    Var tmp;						\
+		    List list = var_ref(static_cast<List&>(o->field));	\
 		    FOR_EACH(tmp, o->field, i, c) {			\
-			if (tmp.v.obj != NOTHING			\
-			    && !dbpriv_find_object(tmp.v.obj)) {	\
-			    errlog("VALIDATE: #%d.%s = #%d <invalid> ... removed.\n", \
+			if (tmp.v.obj != NOTHING && !valid(tmp.v.obj)) {		\
+			    errlog("VALIDATE: #%d.%s = #%d <invalid> ... removed.\n",	\
 			           oid, name, tmp.v.obj);		\
-			    o->field = setremove(static_cast<const List&>(o->field), tmp); \
+			    list = setremove(list, tmp);		\
 			}						\
 		    }							\
+		    free_var(o->field);					\
+		    o->field = list;					\
 		}							\
 		else {							\
-		    if (o->field.v.obj != NOTHING			\
-		        && !dbpriv_find_object(o->field.v.obj)) {	\
-			errlog("VALIDATE: #%d.%s = #%d <invalid> ... fixed.\n", \
+		    if (o->field.v.obj != NOTHING && !valid(o->field.v.obj)) {		\
+			errlog("VALIDATE: #%d.%s = #%d <invalid> ... fixed.\n",		\
 			       oid, name, o->field.v.obj);		\
 			o->field.v.obj = NOTHING;			\
 		    }							\
@@ -714,7 +711,7 @@ ng_validate_hierarchies()
 
     oklog("VALIDATE: Phase 2: Check for cycles ...\n");
     for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
+	const ref_ptr<Object>& o = dbpriv_find_object(oid);
 	MAYBE_LOG_PROGRESS;
 	if (o) {
 #           define CHECK(start, func, name)				\
@@ -740,7 +737,7 @@ ng_validate_hierarchies()
 
     oklog("VALIDATE: Phase 3: Check for inconsistencies ...\n");
     for (oid = 0, log_oid = PROGRESS_INTERVAL; oid < size; oid++) {
-	Object *o = dbpriv_find_object(oid);
+	const ref_ptr<Object>& o = dbpriv_find_object(oid);
 	MAYBE_LOG_PROGRESS;
 	if (o) {
 #	    define CHECK(up, up_name, down, down_name)			\
@@ -750,7 +747,7 @@ ng_validate_hierarchies()
 		t1 = enlist_var(var_ref(o->up));			\
 		FOR_EACH(tmp, t1, i, c) {				\
 		    if (tmp.v.obj != NOTHING) {				\
-			Object *otmp = dbpriv_find_object(tmp.v.obj);	\
+			const ref_ptr<Object>& otmp = dbpriv_find_object(tmp.v.obj); \
 			t2 = enlist_var(var_ref(otmp->down));		\
 			if (ismember(obj, t2, 1)) {			\
 			    free_var(t2);				\
@@ -806,7 +803,7 @@ v4_upgrade_objects()
 
 	MAYBE_LOG_PROGRESS;
 	if (o) {
-	    Object *_new = dbpriv_new_object();
+	    ref_ptr<Object>& _new = dbpriv_new_object(oid);
 
 	    dbpriv_assign_nonce(_new);
 
@@ -836,7 +833,7 @@ v4_upgrade_objects()
 	    _new->propdefs = o->propdefs;
 	}
 	else {
-	    dbpriv_new_recycled_object();
+	    dbpriv_new_recycled_object(oid);
 	}
     }
 
@@ -950,6 +947,11 @@ read_db_file(void)
 	}
     }
 
+    /* Remember the number of permanent objects. It's used to limit
+     * later operations to only permanent objects.
+     */
+    int nperm = nobjs;
+
     oklog("LOADING: Reading %d objects ...\n", nobjs);
     for (i = 1; i <= nobjs; i++) {
 	if (DBV_NextGen > dbio_input_version) {
@@ -959,7 +961,7 @@ read_db_file(void)
 	    }
 	}
 	else {
-	    if (!ng_read_object(0)) {
+	    if (!ng_read_object(false)) {
 		errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
 		return 0;
 	    }
@@ -978,7 +980,7 @@ read_db_file(void)
 		break;
 	    oklog("LOADING: Reading %d objects ...\n", nobjs);
 	    for (i = 1; i <= nobjs; i++) {
-		if (!ng_read_object(1)) {
+		if (!ng_read_object(true)) {
 		    errlog("READ_DB_FILE: Bad object #%d.\n", i - 1);
 		    return 0;
 		}
@@ -995,7 +997,7 @@ read_db_file(void)
 	}
     }
     else {
-	if (!ng_validate_hierarchies()) {
+	if (!ng_validate_hierarchies(nperm)) {
 	    errlog("READ_DB_FILE: Errors in object hierarchies.\n");
 	    return 0;
 	}
@@ -1055,7 +1057,7 @@ read_db_file(void)
     }
 
     /* see db_objects.c */
-    dbpriv_after_load();
+    dbpriv_after_load(nperm);
 
     return 1;
 }

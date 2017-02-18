@@ -135,27 +135,27 @@ extern void db_priv_affected_callable_verb_lookup(void);
 extern Var db_read_anonymous();
 extern void db_write_anonymous(const Var&);
 
-extern void dbpriv_assign_nonce(Object *);
+extern void dbpriv_assign_nonce(ref_ptr<Object>&);
 
-extern Objid dbpriv_object_owner(const Object *);
-extern void dbpriv_set_object_owner(Object *, Objid owner);
+extern Objid dbpriv_object_owner(const ref_ptr<Object>&);
+extern void dbpriv_set_object_owner(ref_ptr<Object>&, Objid);
 
-extern ref_ptr<const char> dbpriv_object_name(Object *);
-extern void dbpriv_set_object_name(Object *, const ref_ptr<const char>&);
+extern const ref_ptr<const char>& dbpriv_object_name(const ref_ptr<Object>&);
+extern void dbpriv_set_object_name(ref_ptr<Object>&, const ref_ptr<const char>&);
 				/* These functions do not change the reference
 				 * count of the name they accept/return.  Thus,
 				 * the caller should str_ref() the name if the
 				 * reference is to be persistent.
 				 */
 
-extern int dbpriv_object_has_flag(const Object*, db_object_flag);
-extern void dbpriv_set_object_flag(Object*, db_object_flag);
-extern void dbpriv_clear_object_flag(Object*, db_object_flag);
+extern int dbpriv_object_has_flag(const ref_ptr<Object>&, db_object_flag);
+extern void dbpriv_set_object_flag(ref_ptr<Object>&, db_object_flag);
+extern void dbpriv_clear_object_flag(ref_ptr<Object>&, db_object_flag);
 
-extern Var dbpriv_object_parents(const Object *);
-extern Var dbpriv_object_children(const Object *);
-extern Var dbpriv_object_location(Object *);
-extern Var dbpriv_object_contents(Object *);
+extern Var dbpriv_object_parents(const ref_ptr<Object>&);
+extern Var dbpriv_object_children(const ref_ptr<Object>&);
+extern Var dbpriv_object_location(const ref_ptr<Object>&);
+extern Var dbpriv_object_contents(const ref_ptr<Object>&);
 				/* These functions do not change the reference
 				 * count of the list they return.  Thus, the
 				 * caller should var_ref() the value if the
@@ -167,27 +167,24 @@ extern void dbpriv_set_all_users(const List&);
 				 * db_all_users().
 				 */
 
-extern Object *dbpriv_new_object(void);
-extern Object *dbpriv_new_anonymous_object(void);
+extern ref_ptr<Object>& dbpriv_new_object(Objid);
+extern ref_ptr<Object>& dbpriv_new_anonymous_object(Objid);
 				/* Creates a new object, assigning it a number,
 				 * but doesn't fill in any of the fields other
 				 * than `id'.
 				 */
-extern void db_init_object(Object *);
-				/* Initializes a new object.
-				 */
 
-extern void dbpriv_new_recycled_object(void);
+extern void dbpriv_new_recycled_object(Objid);
 				/* Does the equivalent of creating and
 				 * destroying an object, with the net effect of
-				 * using up the next available object number.
+				 * using up the specified object number.
 				 */
 
-extern Object *dbpriv_find_object(Objid);
-				/* Returns 0 if given object is not valid.
+extern ref_ptr<Object>& dbpriv_find_object(Objid);
+				/* Returns empty if given object is not valid.
 				 */
 
-extern void dbpriv_after_load(void);
+extern void dbpriv_after_load(int);
 
 /*********** Properties ***********/
 
@@ -251,18 +248,18 @@ extern void dbpriv_set_dbio_output(FILE *);
 
 /****/
 
-static inline const Object*
+static inline const ref_ptr<Object>&
 dbpriv_dereference(const Var& v)
 {
     return v.is_obj()
            ? dbpriv_find_object(v.v.obj)
-           : v.v.anon.expose();
+           : v.v.anon;
 }
 
-static inline Object*
+static inline ref_ptr<Object>&
 dbpriv_dereference(Var& v)
 {
     return v.is_obj()
            ? dbpriv_find_object(v.v.obj)
-           : v.v.anon.expose();
+           : v.v.anon;
 }

@@ -194,7 +194,7 @@ extern Var db_object_children2(const Var&);
 extern Objid db_object_owner(Objid);
 extern void db_set_object_owner(Objid oid, Objid owner);
 
-extern ref_ptr<const char> db_object_name(Objid);
+extern const ref_ptr<const char>& db_object_name(Objid);
 extern void db_set_object_name(Objid oid, const ref_ptr<const char>& name);
 				/* These functions do not change the reference
 				 * count of the name they accept/return.  Thus,
@@ -394,10 +394,25 @@ enum bi_prop {
 /* Use the accessors `db_is_property_built_in' and `db_is_property_defined_on'
  * to read the fields `built_in' and `definer'.
  */
+
+enum ph_type {
+    PH_NONE,
+    PH_BUILT_IN,
+    PH_DEFINED
+};
+
 typedef struct {
-    enum bi_prop built_in;	/* true iff property is a built-in one */
-    void *definer;		/* null iff property is a built-in one */
-    void *ptr;			/* null iff property not found */
+    union {
+	struct {
+	    enum bi_prop built_in;
+	    ref_ptr<Object>* target;
+	} b;
+	struct {
+	    struct Pval* prop;
+	    ref_ptr<Object>* definer;
+	} d;
+    } h;
+    enum ph_type found;
 } db_prop_handle;
 
 extern db_prop_handle db_find_property(const Var& obj,
@@ -469,14 +484,14 @@ extern int db_property_allows(db_prop_handle, Objid,
 				 * properties.
 				 */
 
-extern int db_is_property_defined_on(db_prop_handle, const Var&);
+extern bool db_is_property_defined_on(db_prop_handle, const Var&);
 				/* Returns true iff the property is defined on
 				 * the specified object.  The object value must
 				 * be either an object number or an anonymous
 				 * object.
 				 */
 
-extern int db_is_property_built_in(db_prop_handle);
+extern enum bi_prop db_is_property_built_in(db_prop_handle);
 				/* Returns true iff the property is a built-in
 				 * property.
 				 */

@@ -36,7 +36,7 @@ aliases(Objid oid)
     static const ref_ptr<const char> ALIASES = str_dup("aliases");
 
     h = db_find_property(Var::new_obj(oid), ALIASES, &value);
-    if (h.ptr && value.is_list())
+    if (h.found && value.is_list())
 	return static_cast<List&>(value);
     else
 	return new_list(0);

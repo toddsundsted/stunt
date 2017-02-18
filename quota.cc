@@ -32,7 +32,7 @@ decr_quota(Objid player)
 	return 1;
 
     h = db_find_property(Var::new_obj(player), OWNERSHIP_QUOTA, &v);
-    if (!h.ptr)
+    if (!h.found)
 	return 1;
 
     if (!v.is_int())
@@ -56,7 +56,7 @@ incr_quota(Objid player)
 	return;
 
     h = db_find_property(Var::new_obj(player), OWNERSHIP_QUOTA, &v);
-    if (!h.ptr)
+    if (!h.found)
 	return;
 
     if (!v.is_int())

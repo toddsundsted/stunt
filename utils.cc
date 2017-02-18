@@ -583,7 +583,7 @@ get_system_property(const char *name)
     ref_ptr<const char> prop_name = str_dup(name);
     h = db_find_property(Var::new_obj(SYSTEM_OBJECT), prop_name, &value);
     free_str(prop_name);
-    if (!h.ptr) {
+    if (!h.found) {
 	value = Var::new_err(E_PROPNF);
     } else if (!db_is_property_built_in(h))	/* make two cases the same */
 	value = var_ref(value);

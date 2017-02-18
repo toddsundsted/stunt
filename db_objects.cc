@@ -36,9 +36,12 @@
 #include "storage.h"
 #include "utils.h"
 
-static Object **objects;
-static int num_objects = 0;
-static int max_objects = 0;
+/**
+ * Holds a list of all permanent objects. During load/dump also used
+ * used to temporarily hold anonymous objects (which need a temporary
+ * object number).
+ */
+static std::vector<ref_ptr<Object>> objects;
 
 static unsigned int nonce = 0;
 
@@ -47,128 +50,97 @@ static List all_users;
 
 /*********** Objects qua objects ***********/
 
-Object *
+ref_ptr<Object>&
 dbpriv_find_object(Objid oid)
 {
-    if (oid < 0 || oid >= max_objects)
-	return 0;
-    else
-	return objects[oid];
+    assert(oid >= 0 && oid < objects.size());
+    return objects[oid];
 }
 
 int
 valid(Objid oid)
 {
-    return dbpriv_find_object(oid) != 0;
+    return (oid >= 0 && oid < objects.size()) && dbpriv_find_object(oid);
 }
 
 Objid
 db_last_used_objid(void)
 {
-    return num_objects - 1;
+    return objects.size() - 1;
 }
 
 void
 db_reset_last_used_objid(void)
 {
-    while (!objects[num_objects - 1])
-	num_objects--;
+    while (!objects.back())
+	objects.pop_back();
 }
 
 void
 db_set_last_used_objid(Objid oid)
 {
-    while (!objects[num_objects - 1] && num_objects > oid)
-	num_objects--;
-}
-
-static void
-extend(unsigned int new_objects)
-{
-    int size;
-
-    for (size = 128; size <= new_objects; size *= 2)
-	;
-
-    if (max_objects == 0) {
-	objects = new Object*[size];
-	memset(objects, 0, size * sizeof(Object*));
-	max_objects = size;
-    }
-    if (size > max_objects) {
-	Object** _new = new Object*[size];
-	memcpy(_new, objects, max_objects * sizeof(Object*));
-	memset(_new + max_objects, 0, (size - max_objects) * sizeof(Object*));
-	delete[] objects;
-	objects = _new;
-	max_objects = size;
-    }
-}
-
-static void
-ensure_new_object(void)
-{
-    extend(num_objects + 1);
+    while (!objects.back() && objects.size() > oid)
+	objects.pop_back();
 }
 
 void
-dbpriv_assign_nonce(Object *o)
+dbpriv_assign_nonce(ref_ptr<Object>& o)
 {
     o->nonce = nonce++;
 }
 
 void
-dbpriv_after_load(void)
+dbpriv_after_load(int num_objects)
 {
-    int i;
-
-    for (i = num_objects; i < max_objects; i++) {
+    for (int i = num_objects; i < objects.size(); i++) {
 	if (objects[i]) {
 	    dbpriv_assign_nonce(objects[i]);
-	    objects[i] = NULL;
 	}
     }
+    objects.resize(num_objects);
 }
 
 /* Both `dbpriv_new_object()' and `dbpriv_new_anonymous_object()'
  * allocate space for an `Object' and put the object into the array of
- * Objects.  The difference is the storage type used.
+ * Objects.  `dbpriv_new_recycled_object()' merely writes an empty
+ * value to the appropriate slot.
  */
-Object *
-dbpriv_new_object(void)
+
+static void
+ensure_new_object(Objid oid)
 {
-    Object *o;
-
-    ensure_new_object();
-    o = objects[num_objects] = new Object();
-    o->id = num_objects;
-    num_objects++;
-
-    return o;
+    if (oid >= objects.size()) {
+	objects.resize(oid + 1, ref_ptr<Object>::empty);
+    }
 }
 
-Object *
-dbpriv_new_anonymous_object(void)
+ref_ptr<Object>&
+dbpriv_new_object(Objid oid)
 {
-    Object *o;
-
-    ensure_new_object();
-    o = objects[num_objects] = mymalloc<Object>(sizeof(Object)).expose();
-    o->id = NOTHING;
-    num_objects++;
-
-    return o;
+    ensure_new_object(oid);
+    objects[oid] = mymalloc<Object>(sizeof(Object));
+    objects[oid]->id = oid;
+    return objects[oid];
 }
 
-void
-dbpriv_new_recycled_object(void)
+ref_ptr<Object>&
+dbpriv_new_anonymous_object(Objid oid)
 {
-    ensure_new_object();
-    num_objects++;
+    ensure_new_object(oid);
+    objects[oid] = mymalloc<Object>(sizeof(Object));
+    objects[oid]->id = NOTHING;
+    return objects[oid];
 }
 
 void
-db_init_object(Object *o)
+dbpriv_new_recycled_object(Objid oid)
+{
+    ensure_new_object(oid);
+    objects[oid] = ref_ptr<Object>::empty;
+}
+
+static void
+db_init_object(ref_ptr<Object>& o)
 {
     o->name = str_dup("");
     o->flags = 0;
@@ -192,18 +164,16 @@ db_init_object(Object *o)
 Objid
 db_create_object(void)
 {
-    Object *o;
-
-    o = dbpriv_new_object();
+    Objid oid = objects.size();
+    ref_ptr<Object>& o = dbpriv_new_object(oid);
     db_init_object(o);
-
     return o->id;
 }
 
 void
 db_destroy_object(Objid oid)
 {
-    Object *o = dbpriv_find_object(oid);
+    ref_ptr<Object>& o = dbpriv_find_object(oid);
     Verbdef *v, *w;
     int i;
 
@@ -252,8 +222,8 @@ db_destroy_object(Objid oid)
 	delete v;
     }
 
-    delete objects[oid];
-    objects[oid] = 0;
+    myfree(objects[oid]);
+    objects[oid] = ref_ptr<Object>::empty;
 }
 
 Var
@@ -265,24 +235,14 @@ db_read_anonymous()
     if ((oid = dbio_read_num()) == NOTHING) {
 	r.type = TYPE_ANON;
 	r.v.anon = ref_ptr<Object>::empty;
-    } else if (max_objects && (oid < max_objects && objects[oid])) {
+    } else if (oid < objects.size()) {
 	r.type = TYPE_ANON;
-	r.v.anon.impose(objects[oid]);
+	r.v.anon = objects[oid];
 	r.v.anon.inc_ref();
-    }
-    else {
-	/* Back up the permanent object count, temporarily store the
-	 * database id of this anonymous object as the new count, and
-	 * allocate a new object -- this will force the new anonymous
-	 * object to be allocated at that position -- restore the
-	 * count when finished.
-	 */
-	int sav_objects = num_objects;
-	num_objects = oid;
-	dbpriv_new_anonymous_object();
-	num_objects = sav_objects;
+    } else {
+	dbpriv_new_anonymous_object(oid);
 	r.type = TYPE_ANON;
-	r.v.anon.impose(objects[oid]);
+	r.v.anon = objects[oid];
     }
 
     return r;
@@ -292,17 +252,17 @@ void
 db_write_anonymous(const Var& v)
 {
     Objid oid;
-    Object *o = (Object *)v.v.anon.expose();
+    ref_ptr<Object>& o = const_cast<ref_ptr<Object>&>(v.v.anon);
 
     if (!is_valid(v))
 	oid = NOTHING;
     else if (o->id != NOTHING)
 	oid = o->id;
     else {
-	ensure_new_object();
-	objects[num_objects] = o;
-	oid = o->id = num_objects;
-	num_objects++;
+	o.inc_ref();
+	o->id = objects.size();
+	objects.push_back(o);
+	oid = o->id;
     }
 
     dbio_write_num(oid);
@@ -311,7 +271,7 @@ db_write_anonymous(const Var& v)
 ref_ptr<Object>
 db_make_anonymous(Objid oid, Objid last)
 {
-    Object *o = objects[oid];
+    ref_ptr<Object> o = objects[oid];
     Var old_parents = o->parents;
     Var me = Var::new_obj(oid);
 
@@ -325,7 +285,7 @@ db_make_anonymous(Objid oid, Objid last)
 	FOR_EACH(parent, old_parents, i, c)
 	    objects[parent.v.obj]->children = setremove(objects[parent.v.obj]->children, me);
 
-    objects[oid] = 0;
+    objects[oid] = ref_ptr<Object>::empty;
     db_set_last_used_objid(last);
 
     o->id = NOTHING;
@@ -334,20 +294,12 @@ db_make_anonymous(Objid oid, Objid last)
     free_var(o->location);
     free_var(o->contents);
 
-    /* Last step, reallocate the memory and copy -- anonymous objects
-     * require space for reference counting.
-     */
-    ref_ptr<Object> t = mymalloc<Object>(sizeof(Object));
-    memcpy(t.expose(), o, sizeof(Object));
-    delete o;
-
-    return t;
+    return o;
 }
 
 void
-db_destroy_anonymous_object(ref_ptr<Object>& obj)
+db_destroy_anonymous_object(ref_ptr<Object>& o)
 {
-    Object *o = obj.expose();
     Verbdef *v, *w;
     int i;
 
@@ -374,7 +326,7 @@ db_destroy_anonymous_object(ref_ptr<Object>& obj)
 	delete v;
     }
 
-    dbpriv_set_object_flag(obj.expose(), FLAG_INVALID);
+    dbpriv_set_object_flag(o, FLAG_INVALID);
 
     /* Since this object could possibly be the root of a cycle, final
      * destruction is handled in the garbage collector if garbage
@@ -389,7 +341,7 @@ parents_ok(const ref_ptr<Object>& obj)
     // NOTE: cast away `const` because this function may mutate the
     // object by flagging the object as invalid if its parents have
     // changed.
-    Object* o = const_cast<Object*>(obj.expose());
+    ref_ptr<Object>& o = const_cast<ref_ptr<Object>&>(obj);
 
     if (o->parents.is_list()) {
 	Var parent;
@@ -417,7 +369,7 @@ static int
 anon_valid(const ref_ptr<Object>& obj)
 {
     return obj
-           && !dbpriv_object_has_flag(obj.expose(), FLAG_INVALID)
+           && !dbpriv_object_has_flag(obj, FLAG_INVALID)
            && parents_ok(obj);
 }
 
@@ -433,13 +385,12 @@ Objid
 db_renumber_object(Objid old)
 {
     Objid _new;
-    Object *o;
 
     for (_new = 0; _new < old; _new++) {
-	if (objects[_new] == NULL) {
+	if (!objects[_new]) {
 	    /* Change the identity of the object. */
-	    o = objects[_new] = objects[old];
-	    objects[old] = 0;
+	    ref_ptr<Object>& o = objects[_new] = objects[old];
+	    objects[old] = ref_ptr<Object>::empty;
 	    objects[_new]->id = _new;
 
 	    /* Fix up the parents/children hierarchy and the
@@ -494,8 +445,8 @@ db_renumber_object(Objid old)
 	    {
 		Objid oid;
 
-		for (oid = 0; oid < num_objects; oid++) {
-		    Object *o = objects[oid];
+		for (oid = 0; oid < objects.size(); oid++) {
+		    ref_ptr<Object>& o = objects[oid];
 		    Verbdef *v;
 		    Pval *p;
 		    int i, count;
@@ -535,11 +486,11 @@ db_renumber_object(Objid old)
 int
 db_object_bytes(const Var& obj)
 {
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     int i, len, count;
     Verbdef *v;
 
-    count = sizeof(Object) + sizeof(Object *);
+    count = sizeof(Object) + sizeof(ref_ptr<Object>);
     count += memo_strlen(o->name) + 1;
 
     for (v = o->verbdefs; v; v = v->next) {
@@ -583,18 +534,17 @@ static std::vector<bool> bit_array;
 #define DEFUNC(name, field)						\
 									\
 static int								\
-db1_count_##name(const Object *o)					\
+db1_count_##name(const ref_ptr<Object>& o)				\
 {									\
     int i, c, n = 0;							\
     Var tmp, field = enlist_var(var_ref(o->field));			\
-    Object *o2;								\
     Objid oid;								\
 									\
     FOR_EACH(tmp, field, i, c) {					\
 	if (valid(oid = tmp.v.obj)) {					\
 	    if (!bit_array[oid]) {					\
 		bit_array[oid] = true;					\
-		o2 = dbpriv_find_object(oid);				\
+		const ref_ptr<Object>& o2 = dbpriv_find_object(oid);	\
 		n += db1_count_##name(o2) + 1;				\
 	    }								\
 	}								\
@@ -606,11 +556,10 @@ db1_count_##name(const Object *o)					\
 }									\
 									\
 static void								\
-db2_add_##name(const Object *o, List *plist, int *px)			\
+db2_add_##name(const ref_ptr<Object>& o, List *plist, int *px)		\
 {									\
     int i, c;								\
     Var tmp, field = enlist_var(var_ref(o->field));			\
-    Object *o2;								\
     Objid oid;								\
 									\
     FOR_EACH(tmp, field, i, c) {					\
@@ -619,7 +568,7 @@ db2_add_##name(const Object *o, List *plist, int *px)			\
 		bit_array[oid] = true;					\
 		++(*px);						\
 		(*plist)[*px] = Var::new_obj(oid);			\
-		o2 = dbpriv_find_object(oid);				\
+		const ref_ptr<Object>& o2 = dbpriv_find_object(oid);	\
 		db2_add_##name(o2, plist, px);				\
 	    }								\
 	}								\
@@ -631,14 +580,15 @@ db2_add_##name(const Object *o, List *plist, int *px)			\
 List									\
 db_##name(const Var& obj, bool full)					\
 {									\
-    const Object *o;								\
     int n, i = 0;							\
     List list;								\
 									\
-    o = dbpriv_dereference(obj);					\
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);			\
     if ((o->field.is_obj() && o->field.v.obj == NOTHING) ||		\
 	(o->field.is_list() && listlength(o->field) == 0))		\
 	return full ? enlist_var(var_ref(obj)) : new_list(0);		\
+									\
+    auto num_objects = objects.size();					\
 									\
     bit_array.clear();							\
     bit_array.resize(num_objects);					\
@@ -655,7 +605,7 @@ db_##name(const Var& obj, bool full)					\
 									\
     db2_add_##name(o, &list, &i);					\
 									\
-    list.v.list.expose()[0].v.num = i; /* sketchy */			\
+    list.v.list.expose()[0].v.num = i; /* NOTE: sketchy */		\
 									\
     return list;							\
 }
@@ -676,58 +626,58 @@ Objid
 db_object_owner2(const Var& obj)
 {
     return obj.is_anon() ?
-           dbpriv_object_owner(obj.v.anon.expose()) :
-           db_object_owner(obj.v.obj);
+	dbpriv_object_owner(obj.v.anon) :
+	db_object_owner(obj.v.obj);
 }
 
 Var
 db_object_parents2(const Var& obj)
 {
     return obj.is_anon() ?
-           dbpriv_object_parents(obj.v.anon.expose()) :
-           db_object_parents(obj.v.obj);
+	dbpriv_object_parents(obj.v.anon) :
+	db_object_parents(obj.v.obj);
 }
 
 Var
 db_object_children2(const Var& obj)
 {
     return obj.is_anon() ?
-           dbpriv_object_children(obj.v.anon.expose()) :
-           db_object_children(obj.v.obj);
+	dbpriv_object_children(obj.v.anon) :
+	db_object_children(obj.v.obj);
 }
 
 int
 db_object_has_flag2(const Var& obj, db_object_flag f)
 {
     return obj.is_anon() ?
-            dbpriv_object_has_flag(obj.v.anon.expose(), f) :
-            db_object_has_flag(obj.v.obj, f);
+	dbpriv_object_has_flag(obj.v.anon, f) :
+	db_object_has_flag(obj.v.obj, f);
 }
 
 void
 db_set_object_flag2(Var& obj, db_object_flag f)
 {
     obj.is_anon() ?
-      dbpriv_set_object_flag(obj.v.anon.expose(), f) :
-      db_set_object_flag(obj.v.obj, f);
+	dbpriv_set_object_flag(obj.v.anon, f) :
+	db_set_object_flag(obj.v.obj, f);
 }
 
 void
 db_clear_object_flag2(Var& obj, db_object_flag f)
 {
     obj.is_anon() ?
-      dbpriv_clear_object_flag(obj.v.anon.expose(), f) :
-      db_clear_object_flag(obj.v.obj, f);
+	dbpriv_clear_object_flag(obj.v.anon, f) :
+	db_clear_object_flag(obj.v.obj, f);
 }
 
 Objid
-dbpriv_object_owner(const Object *o)
+dbpriv_object_owner(const ref_ptr<Object>& o)
 {
     return o->owner;
 }
 
 void
-dbpriv_set_object_owner(Object *o, Objid owner)
+dbpriv_set_object_owner(ref_ptr<Object>& o, Objid owner)
 {
     o->owner = owner;
 }
@@ -744,21 +694,21 @@ db_set_object_owner(Objid oid, Objid owner)
     dbpriv_set_object_owner(objects[oid], owner);
 }
 
-ref_ptr<const char>
-dbpriv_object_name(Object *o)
+const ref_ptr<const char>&
+dbpriv_object_name(const ref_ptr<Object>& o)
 {
     return o->name;
 }
 
 void
-dbpriv_set_object_name(Object *o, const ref_ptr<const char>& name)
+dbpriv_set_object_name(ref_ptr<Object>& o, const ref_ptr<const char>& name)
 {
     if (o->name)
 	free_str(o->name);
     o->name = name;
 }
 
-ref_ptr<const char>
+const ref_ptr<const char>&
 db_object_name(Objid oid)
 {
     return dbpriv_object_name(objects[oid]);
@@ -771,13 +721,13 @@ db_set_object_name(Objid oid, const ref_ptr<const char>& name)
 }
 
 Var
-dbpriv_object_parents(const Object *o)
+dbpriv_object_parents(const ref_ptr<Object>& o)
 {
     return o->parents;
 }
 
 Var
-dbpriv_object_children(const Object *o)
+dbpriv_object_children(const ref_ptr<Object>& o)
 {
     return o->children;
 }
@@ -866,7 +816,7 @@ db_change_parents(Var& obj, const Var& new_parents, const List& anon_kids)
     if (!dbpriv_check_properties_for_chparent(obj, new_parents, anon_kids))
 	return 0;
 
-    Object *o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
 
     if (o->verbdefs == NULL
         && o->children.length() == 0
@@ -928,7 +878,7 @@ db_change_parents(Var& obj, const Var& new_parents, const List& anon_kids)
 }
 
 Var
-dbpriv_object_location(Object *o)
+dbpriv_object_location(const ref_ptr<Object>& o)
 {
     return o->location;
 }
@@ -940,7 +890,7 @@ db_object_location(Objid oid)
 }
 
 Var
-dbpriv_object_contents(Object *o)
+dbpriv_object_contents(const ref_ptr<Object>& o)
 {
     return o->contents;
 }
@@ -982,19 +932,19 @@ db_change_location(Objid oid, Objid new_location)
 }
 
 int
-dbpriv_object_has_flag(const Object *o, db_object_flag f)
+dbpriv_object_has_flag(const ref_ptr<Object>& o, db_object_flag f)
 {
     return (o->flags & (1 << f)) != 0;
 }
 
 void
-dbpriv_set_object_flag(Object *o, db_object_flag f)
+dbpriv_set_object_flag(ref_ptr<Object>& o, db_object_flag f)
 {
     o->flags |= (1 << f);
 }
 
 void
-dbpriv_clear_object_flag(Object *o, db_object_flag f)
+dbpriv_clear_object_flag(ref_ptr<Object>& o, db_object_flag f)
 {
     o->flags &= ~(1 << f);
 }
@@ -1066,9 +1016,9 @@ db_object_isa(const Var& object, const Var& parent)
     if (equality(object, parent, 0))
 	return 1;
 
-    const Object* o = object.is_obj() ?
+    const ref_ptr<Object>& o = object.is_obj() ?
 	dbpriv_find_object(object.v.obj) :
-	object.v.anon.expose();
+	object.v.anon;
 
     List ancestors = enlist_var(var_ref(o->parents));
     Var ancestor;
@@ -1084,7 +1034,7 @@ db_object_isa(const Var& object, const Var& parent)
 	    return 1;
 	}
 
-	Object* t = dbpriv_find_object(ancestor.v.obj);
+	const ref_ptr<Object>& t = dbpriv_find_object(ancestor.v.obj);
 
 	ancestors = listconcat(ancestors, enlist_var(var_ref(t->parents)));
     }

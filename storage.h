@@ -148,10 +148,6 @@ class ref_ptr {
 	return ptr;
     }
 
-    void impose(T* ptr) {
-	this->ptr = ptr;
-    }
-
     const T* expose() const {
 	return ptr;
     }

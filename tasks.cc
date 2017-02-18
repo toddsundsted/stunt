@@ -1188,7 +1188,7 @@ check_user_task_limit(Objid user)
     static const ref_ptr<const char> QUEUED_TASK_LIMIT = str_intern("queued_task_limit");
 
     if (valid(user)
-	&& db_find_property(Var::new_obj(user), QUEUED_TASK_LIMIT, &v).ptr
+	&& db_find_property(Var::new_obj(user), QUEUED_TASK_LIMIT, &v).found
 	&& v.is_int())
 	limit = v.v.num;
 

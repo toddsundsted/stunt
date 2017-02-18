@@ -49,14 +49,13 @@ properties_offset(const Var& target, const Var& _this)
 {
     Var ancestor, ancestors;
     int i, c, offset = 0;
-    Object *o;
 
     ancestors = db_ancestors(_this, true);
 
     FOR_EACH(ancestor, ancestors, i, c) {
 	if (equality(target, ancestor, 0))
 	    break;
-	o = dbpriv_dereference(ancestor);
+	const ref_ptr<Object>& o = dbpriv_dereference(ancestor);
 	offset += o->propdefs.cur_length;
     }
 
@@ -69,9 +68,9 @@ properties_offset(const Var& target, const Var& _this)
  * Returns true iff `o' defines a property named `pname'.
  */
 static int
-property_defined_at(const ref_ptr<const char>& pname, int phash, Object *o)
+property_defined_at(const ref_ptr<const char>& pname, int phash, const ref_ptr<Object>& o)
 {
-    Proplist *props = &(o->propdefs);
+    const Proplist* props = &(o->propdefs);
     int length = props->cur_length;
     int i;
 
@@ -87,9 +86,9 @@ property_defined_at(const ref_ptr<const char>& pname, int phash, Object *o)
  * Return true iff some descendant of `o' defines a property named `pname'.
  */
 static int
-property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, Object *o)
+property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, const ref_ptr<Object>& o)
 {
-    Proplist *props = &(o->propdefs);
+    const Proplist* props = &(o->propdefs);
     int length = props->cur_length;
     int i;
 
@@ -100,7 +99,7 @@ property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, Object
 
     List children = o->children;
     for (i = 1; i <= children.length(); i++) {
-	Object *child = dbpriv_dereference(children[i]);
+	const ref_ptr<Object>& child = dbpriv_dereference(children[i]);
 	if (property_defined_at_or_below(pname, phash, child))
 	    return 1;
     }
@@ -111,7 +110,7 @@ property_defined_at_or_below(const ref_ptr<const char>& pname, int phash, Object
 static void
 insert_prop2(Var& obj, int pos, Pval pval)
 {
-    Object *o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
     Pval *new_propval;
     int i, nprops;
 
@@ -172,16 +171,15 @@ int
 db_add_propdef(Var& obj, const ref_ptr<const char>& name, const Var& value, Objid owner,
 	       unsigned flags)
 {
-    Object *o;
     Pval pval;
     int i;
     db_prop_handle h;
 
-    o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
 
     h = db_find_property(obj, name, 0);
 
-    if (h.ptr || property_defined_at_or_below(name, str_hash(name.expose()), o))
+    if (h.found || property_defined_at_or_below(name, str_hash(name.expose()), o))
 	return 0;
 
     if (o->propdefs.cur_length == o->propdefs.max_length) {
@@ -215,7 +213,7 @@ db_add_propdef(Var& obj, const ref_ptr<const char>& name, const Var& value, Obji
 int
 db_rename_propdef(Var& obj, const ref_ptr<const char>& old, const ref_ptr<const char>& _new)
 {
-    Object *o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
     Proplist *props = &(o->propdefs);
     int hash = str_hash(old.expose());
     int count = props->cur_length;
@@ -229,7 +227,7 @@ db_rename_propdef(Var& obj, const ref_ptr<const char>& old, const ref_ptr<const 
 	if (p.hash == hash && !mystrcasecmp(p.name.expose(), old.expose())) {
 	    if (mystrcasecmp(old.expose(), _new.expose()) != 0) {	/* not changing just the case */
 		h = db_find_property(obj, _new, 0);
-		if (h.ptr || property_defined_at_or_below(_new, str_hash(_new.expose()), o))
+		if (h.found || property_defined_at_or_below(_new, str_hash(_new.expose()), o))
 		    return 0;
 	    }
 	    free_str(props->l[i].name);
@@ -246,7 +244,7 @@ db_rename_propdef(Var& obj, const ref_ptr<const char>& old, const ref_ptr<const 
 static void
 remove_prop2(Var& obj, int pos)
 {
-    Object *o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
     Pval *new_propval;
     int i, nprops;
 
@@ -302,7 +300,7 @@ remove_prop_recursively(Objid root, int prop_pos)
 int
 db_delete_propdef(Var& obj, const ref_ptr<const char>& pname)
 {
-    Object *o = dbpriv_dereference(obj);
+    ref_ptr<Object>& o = dbpriv_dereference(obj);
     Proplist *props = &(o->propdefs);
     int hash = str_hash(pname.expose());
     int count = props->cur_length;
@@ -359,11 +357,10 @@ db_count_propdefs(const Var& obj)
 int
 db_for_all_propdefs(const Var& obj, int (*func) (void *, const ref_ptr<const char>&), void *data)
 {
-    int i;
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     int len = o->propdefs.cur_length;
 
-    for (i = 0; i < len; i++)
+    for (int i = 0; i < len; i++)
 	if (func(data, o->propdefs.l[i].name))
 	    return 1;
 
@@ -373,11 +370,10 @@ db_for_all_propdefs(const Var& obj, int (*func) (void *, const ref_ptr<const cha
 int
 db_for_all_propvals(const Var& obj, int (*func) (void *, const Var&), void *data)
 {
-    int i;
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     int len = o->nval;
 
-    for (i = 0; i < len; i++)
+    for (int i = 0; i < len; i++)
 	if (func(data, o->propval[i].var))
 	    return 1;
 
@@ -387,9 +383,9 @@ db_for_all_propvals(const Var& obj, int (*func) (void *, const Var&), void *data
 static void
 get_bi_value(db_prop_handle h, Var * value)
 {
-    Object *o = (Object *)h.ptr;
+    const ref_ptr<Object>& o = *h.h.b.target;
 
-    switch (h.built_in) {
+    switch (h.h.b.built_in) {
     case BP_NAME:
 	*value = str_ref_to_var(dbpriv_object_name(o));
 	break;
@@ -429,7 +425,7 @@ get_bi_value(db_prop_handle h, Var * value)
 db_prop_handle
 db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 {
-    const Object *o = dbpriv_dereference(obj);
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     int hash = str_hash(name.expose());
 
     static struct {
@@ -442,7 +438,7 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 #undef _ENTRY
     };
     static int ptable_init = 0;
-    db_prop_handle h;
+    db_prop_handle h = { .found = PH_NONE };
     int i, n;
 
     if (!ptable_init) {
@@ -451,20 +447,16 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 	ptable_init = 1;
     }
 
-    h.definer = 0;
-    h.ptr = 0;
-
     for (i = 0; i < Arraysize(ptable); i++) {
 	if (ptable[i].hash == hash && !mystrcasecmp(name.expose(), ptable[i].name)) {
-	    h.built_in = ptable[i].prop;
-	    h.ptr = const_cast<Object*>(o);
+	    h.h.b.built_in = ptable[i].prop;
+	    h.h.b.target = &const_cast<ref_ptr<Object>&>(o);
+	    h.found = PH_BUILT_IN;
 	    if (value)
 		get_bi_value(h, value);
 	    return h;
 	}
     }
-
-    h.built_in = BP_NONE;
 
     Var ancestor, ancestors = db_ancestors(obj, false);
 
@@ -476,20 +468,20 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 
     for (i = 0; i < length; i++, n++) {
 	if (defs[i].hash == hash && !mystrcasecmp(name.expose(), defs[i].name.expose())) {
-		h.definer = const_cast<Object*>(o);
-		h.ptr = o->propval + n;
+		h.h.d.prop = o->propval + n;
+		h.h.d.definer = &const_cast<ref_ptr<Object>&>(o);
+		h.found = PH_DEFINED;
 		goto done;
 	    }
 	}
 
-    Object *t;
     int ai, ac;
 
     FOR_EACH(ancestor, ancestors, ai, ac) {
 	if (!is_valid(ancestor))
 	    continue;
 
-	t = dbpriv_dereference(ancestor);
+	ref_ptr<Object>& t = dbpriv_dereference(ancestor);
 
 	props = &(t->propdefs);
 	defs = props->l;
@@ -497,8 +489,9 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 
 	for (i = 0; i < length; i++, n++) {
 	    if (defs[i].hash == hash && !mystrcasecmp(name.expose(), defs[i].name.expose())) {
-		h.definer = t;
-		h.ptr = o->propval + n;
+		h.h.d.prop = o->propval + n;
+		h.h.d.definer = &const_cast<ref_ptr<Object>&>(t);
+		h.found = PH_DEFINED;
 		goto done;
 	    }
 	}
@@ -508,11 +501,13 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 
     free_var(ancestors);
 
-    if (!h.ptr)
+    if (!h.found)
 	return h;
 
     if (value) {
-	Pval *prop = (Pval *)h.ptr;
+	Pval* prop = h.h.d.prop;
+	const ref_ptr<Object>* definer = h.h.d.definer;
+	const ref_ptr<Object>* t = &o;
 
 	while (prop->var.is_clear()) {
 	    /* We take a few liberties at this point.  If a property
@@ -521,19 +516,19 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
 	     * anonymous objects can't currently be parents of other
 	     * objects.  Thus `new_obj()' below is okay.
 	     */
-	    if (o->parents.is_list()) {
-		Var parent, parents = o->parents;
+	    if ((*t)->parents.is_list()) {
+		Var parent, parents = (*t)->parents;
 		int i2, c2, offset = 0;
 		FOR_EACH(parent, parents, i2, c2)
-		    if ((offset = properties_offset(Var::new_obj(((Object *)h.definer)->id), parent)) > -1)
+		    if ((offset = properties_offset(Var::new_obj((*definer)->id), parent)) > -1)
 			break;
-		o = dbpriv_find_object(parent.v.obj);
-		prop = o->propval + offset + i;
+		t = &dbpriv_find_object(parent.v.obj);
+		prop = (*t)->propval + offset + i;
 	    }
-	    else if (o->parents.is_obj() && NOTHING != o->parents.v.obj) {
-		int offset = properties_offset(Var::new_obj(((Object *)h.definer)->id), o->parents);
-		o = dbpriv_find_object(o->parents.v.obj);
-		prop = o->propval + offset + i;
+	    else if ((*t)->parents.is_obj() && NOTHING != (*t)->parents.v.obj) {
+		int offset = properties_offset(Var::new_obj((*definer)->id), (*t)->parents);
+		t = &dbpriv_find_object((*t)->parents.v.obj);
+		prop = (*t)->propval + offset + i;
 	    }
 	}
 	*value = prop->var;
@@ -542,16 +537,20 @@ db_find_property(const Var& obj, const ref_ptr<const char>& name, Var *value)
     return h;
 }
 
-int
+bool
 db_is_property_defined_on(db_prop_handle h, const Var& obj)
 {
-    return (dbpriv_dereference(obj) == h.definer);
+    return h.found == PH_DEFINED
+	? dbpriv_dereference(obj) == *h.h.d.definer
+	: false;
 }
 
-int
+enum bi_prop
 db_is_property_built_in(db_prop_handle h)
 {
-    return h.built_in;
+    return h.found == PH_BUILT_IN
+	? h.h.b.built_in
+	: BP_NONE;
 }
 
 Var
@@ -559,11 +558,10 @@ db_property_value(db_prop_handle h)
 {
     Var value;
 
-    if (h.built_in)
+    if (h.found == PH_BUILT_IN)
 	get_bi_value(h, &value);
     else {
-	Pval *prop = (Pval *)h.ptr;
-
+	Pval *prop = h.h.d.prop;
 	value = prop->var;
     }
 
@@ -573,16 +571,14 @@ db_property_value(db_prop_handle h)
 void
 db_set_property_value(db_prop_handle h, const Var& value)
 {
-    if (!h.built_in) {
-	Pval *prop = (Pval *)h.ptr;
-
+    if (h.found != PH_BUILT_IN) {
+	Pval *prop = h.h.d.prop;
 	free_var(prop->var);
 	prop->var = value;
     } else {
-	Object *o = (Object *)h.ptr;
+	ref_ptr<Object>& o = *h.h.b.target;
 	db_object_flag flag;
-
-	switch (h.built_in) {
+	switch (h.h.b.built_in) {
 	case BP_NAME:
 	    if (!value.is_str())
 		goto complain;
@@ -631,12 +627,11 @@ db_set_property_value(db_prop_handle h, const Var& value)
 Objid
 db_property_owner(db_prop_handle h)
 {
-    if (h.built_in) {
+    if (h.found == PH_BUILT_IN) {
 	panic("Built-in property in DB_PROPERTY_OWNER!");
 	return NOTHING;
     } else {
-	Pval *prop = (Pval *)h.ptr;
-
+	Pval* prop = h.h.d.prop;
 	return prop->owner;
     }
 }
@@ -644,11 +639,10 @@ db_property_owner(db_prop_handle h)
 void
 db_set_property_owner(db_prop_handle h, Objid oid)
 {
-    if (h.built_in)
+    if (h.found == PH_BUILT_IN)
 	panic("Built-in property in DB_SET_PROPERTY_OWNER!");
     else {
-	Pval *prop = (Pval *)h.ptr;
-
+	Pval* prop = h.h.d.prop;
 	prop->owner = oid;
     }
 }
@@ -656,12 +650,11 @@ db_set_property_owner(db_prop_handle h, Objid oid)
 unsigned
 db_property_flags(db_prop_handle h)
 {
-    if (h.built_in) {
+    if (h.found == PH_BUILT_IN) {
 	panic("Built-in property in DB_PROPERTY_FLAGS!");
 	return 0;
     } else {
-	Pval *prop = (Pval *)h.ptr;
-
+	Pval* prop = h.h.d.prop;
 	return prop->perms;
     }
 }
@@ -669,11 +662,10 @@ db_property_flags(db_prop_handle h)
 void
 db_set_property_flags(db_prop_handle h, unsigned flags)
 {
-    if (h.built_in)
+    if (h.found == PH_BUILT_IN)
 	panic("Built-in property in DB_SET_PROPERTY_FLAGS!");
     else {
-	Pval *prop = (Pval *)h.ptr;
-
+	Pval* prop = h.h.d.prop;
 	prop->perms = flags;
     }
 }
@@ -721,31 +713,29 @@ dbpriv_check_properties_for_chparent(const Var& obj, const Var& parents, const L
     free_var(stack);
 
     int has_kids = (anon_kids.is_list() && listlength(anon_kids) > 0);
-    const Object *o = dbpriv_dereference(obj);
-    Object *o2, *o3;
-    Proplist *props;
+    const ref_ptr<Object>& o = dbpriv_dereference(obj);
     Var ancestor;
     int i, c, x;
-    int i2, c2;
 
     /* check props in descendants & anonymous children */
 
     FOR_EACH(ancestor, ancestors, i, c) {
-	o2 = dbpriv_dereference(ancestor);
-	props = &o2->propdefs;
+	const ref_ptr<Object>& o2 = dbpriv_dereference(ancestor);
+	const Proplist* props = &(o2->propdefs);
 
 	for (x = 0; x < props->cur_length; x++) {
 	    if (property_defined_at_or_below(props->l[x].name,
 					     props->l[x].hash,
-					     const_cast<Object*>(o))) {
+					     o)) {
 		free_var(ancestors);
 		return 0;
 	    }
 
 	    if (has_kids) {
 		Var kid;
+		int i2, c2;
 		FOR_EACH(kid, anon_kids, i2, c2) {
-		    o3 = dbpriv_dereference(kid);
+		    const ref_ptr<Object>& o3 = dbpriv_dereference(kid);
 		    if (property_defined_at(props->l[x].name,
 					    props->l[x].hash,
 					    o3)) {
@@ -760,13 +750,14 @@ dbpriv_check_properties_for_chparent(const Var& obj, const Var& parents, const L
     /* check props in parents */
 
     FOR_EACH(ancestor, ancestors, i, c) {
-	o2 = dbpriv_dereference(ancestor);
-	props = &o2->propdefs;
+	const ref_ptr<Object>& o2 = dbpriv_dereference(ancestor);
+	const Proplist* props = &(o2->propdefs);
 	Var other;
+	int i2, c2;
 	FOR_EACH(other, ancestors, i2, c2) {
 	    if (equality(other, ancestor, 0))
 		continue;
-	    o3 = dbpriv_dereference(other);
+	    const ref_ptr<Object>& o3 = dbpriv_dereference(other);
 	    for (x = 0; x < props->cur_length; x++) {
 		if (property_defined_at(props->l[x].name,
 					props->l[x].hash,
@@ -849,7 +840,6 @@ dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const 
 void
 dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const List& new_ancestors, const List& anon_kids)
 {
-    Object *o;
     Var ancestor;
 
     /*
@@ -866,7 +856,7 @@ dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const 
 
     offset = 0;
     FOR_EACH(ancestor, old_ancestors, i1, c1) {
-	o = dbpriv_dereference(ancestor);
+	const ref_ptr<Object>& o = dbpriv_dereference(ancestor);
 	old_offsets[i1 - 1] = offset;
 	offset += o->propdefs.cur_length;
     }
@@ -874,7 +864,7 @@ dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const 
 
     offset = 0;
     FOR_EACH(ancestor, new_ancestors, i1, c1) {
-	o = dbpriv_dereference(ancestor);
+	const ref_ptr<Object>& o = dbpriv_dereference(ancestor);
 	new_offsets[i1 - 1] = offset;
 	offset += o->propdefs.cur_length;
     }
@@ -886,7 +876,7 @@ dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const 
      * Otherwise, add new clear property values and delete any
      * remaining property values.
      */
-    Object *me = dbpriv_dereference(obj);
+    ref_ptr<Object>& me = dbpriv_dereference(obj);
     Pval *new_propval = NULL;
 
     assert(old_count == me->nval);
@@ -957,14 +947,14 @@ dbpriv_fix_properties_after_chparent(Var& obj, const List& old_ancestors, const 
 	children = var_ref(me->children);
 
     FOR_EACH(child, children, i4, c4) {
-	Object *oc = dbpriv_dereference(child);
+	const ref_ptr<Object>& oc = dbpriv_dereference(child);
 	List _new = new_list(1);
 	List old = new_list(1);
 	_new[1] = var_ref(child);
 	old[1] = var_ref(child);
 	if (oc->parents.is_list()) {
 	    FOR_EACH(parent, oc->parents, i5, c5) {
-		Object *op = dbpriv_find_object(parent.v.obj);
+		const ref_ptr<Object>& op = dbpriv_find_object(parent.v.obj);
 		if (op->id == obj.v.obj) {
 		    Var tmp;
 		    FOR_EACH(tmp, old_ancestors, i6, c6)

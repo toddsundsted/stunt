@@ -83,7 +83,7 @@ bf_prop_info(const List& arglist, Objid progr)
     h = db_find_property(obj, pname, 0);
     free_var(arglist);
 
-    if (!h.ptr || db_is_property_built_in(h))
+    if (!h.found || db_is_property_built_in(h))
 	return make_error_pack(E_PROPNF);
     else if (!db_property_allows(h, progr, PF_READ))
 	return make_error_pack(E_PERM);
@@ -168,7 +168,7 @@ set_prop_info(Var& obj, const ref_ptr<const char>& pname, const List& info, Obji
 
     h = db_find_property(obj, pname, 0);
 
-    if (!h.ptr || db_is_property_built_in(h))
+    if (!h.found || db_is_property_built_in(h))
 	return E_PROPNF;
     else if (!db_property_allows(h, progr, PF_WRITE)
 	     || (!is_wizard(progr) && db_property_owner(h) != new_owner))
@@ -278,7 +278,7 @@ bf_clear_prop(const List& arglist, Objid progr)
 	e = E_INVARG;
     else {
 	h = db_find_property(obj, pname, 0);
-	if (!h.ptr)
+	if (!h.found)
 	    e = E_PROPNF;
 	else if (db_is_property_built_in(h) || !db_property_allows(h, progr, PF_WRITE))
 	    e = E_PERM;
@@ -313,7 +313,7 @@ bf_is_clear_prop(const List& arglist, Objid progr)
 	e = E_INVARG;
     else {
 	h = db_find_property(obj, pname, 0);
-	if (!h.ptr)
+	if (!h.found)
 	    e = E_PROPNF;
 	else if (!db_is_property_built_in(h) && !db_property_allows(h, progr, PF_READ))
 	    e = E_PERM;
