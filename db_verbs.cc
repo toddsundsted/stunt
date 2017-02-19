@@ -341,7 +341,6 @@ db_find_command_verb(Objid oid, const ref_ptr<const char>& verb,
     return vh;
 }
 
-#ifdef VERB_CACHE
 int db_verb_generation = 0;
 
 int verbcache_hit = 0;
@@ -352,9 +351,6 @@ typedef struct vc_entry vc_entry;
 
 struct vc_entry {
     unsigned int hash;
-#ifdef RONG
-    int generation;
-#endif
     ref_ptr<Object> object;
     ref_ptr<const char> verbname;
     handle h;
@@ -462,8 +458,6 @@ db_log_cache_stats(void)
     oklog("---\n");
 }
 
-#endif
-
 /*
  * Used by `db_find_callable_verb' once a suitable starting point
  * is found.  The function iterates through all ancestors looking
@@ -525,14 +519,9 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 	panic("DB_FIND_CALLABLE_VERB: Not an object!");
 
     ref_ptr<Object>* o;
-#ifdef VERB_CACHE
     vc_entry* new_vc;
-#else
-    static handle h;
-#endif
     db_verb_handle vh;
 
-#ifdef VERB_CACHE
     /*
      * First, find the `first_parent_with_verbs'.  This is the first
      * ancestor of a parent that actually defines a verb.  If I define
@@ -605,14 +594,6 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 	/* a swing and a miss */
 	verbcache_miss++;
 
-#else
-	if (recv.is_object() && is_valid(recv))
-	    o = dbpriv_dereference(recv);
-	else
-	    o = NULL;
-#endif
-
-#ifdef VERB_CACHE
 	/*
 	 * Add the entry to the verbcache whether we find it or not.  This
 	 * means we do "negative caching", keeping track of failed lookups
@@ -627,30 +608,18 @@ db_find_callable_verb(const Var& recv, const ref_ptr<const char>& verb)
 	new_vc->h.verbdef = NULL;
 	new_vc->next = vc_table[bucket];
 	vc_table[bucket] = new_vc;
-#endif
 
 	struct verbdef_definer_data data = find_callable_verbdef(*o, verb);
 	if (data.o != NULL && data.v != NULL) {
-
-#ifdef VERB_CACHE
 	    free_var(stack);
-
 	    new_vc->h.definer = *data.o;
 	    new_vc->h.verbdef = data.v;
 	    vh.ptr = &new_vc->h;
-#else
-	    h.definer = data.o;
-	    h.verbdef = data.v;
-	    vh.ptr = &h;
-#endif
 	    return vh;
 	}
-
-#ifdef VERB_CACHE
     }
 
     free_var(stack);
-#endif
 
     /*
      * note that the verbcache has cleared h.verbdef, so it defaults to a

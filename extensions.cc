@@ -30,11 +30,12 @@
  * link in your extensions.
  */
 
-#define EXAMPLE 0
-
+#include "db_tune.h"
 #include "bf_register.h"
 #include "functions.h"
-#include "db_tune.h"
+#include "utils.h"
+
+#define EXAMPLE 0
 
 #if EXAMPLE
 
@@ -136,10 +137,6 @@ bf_read_stdin(const List& arglist, Objid progr)
 }
 #endif				/* EXAMPLE */
 
-#define STUPID_VERB_CACHE 1
-#ifdef STUPID_VERB_CACHE
-#include "utils.h"
-
 static package
 bf_verb_cache_stats(const List& arglist, Objid progr)
 {
@@ -167,8 +164,6 @@ bf_log_cache_stats(const List& arglist, Objid progr)
 
     return no_var_pack();
 }
-#endif
-
 
 void
 register_extensions()
@@ -177,8 +172,6 @@ register_extensions()
     register_task_queue(stdin_enumerator);
     register_function("read_stdin", 0, 0, bf_read_stdin);
 #endif
-#ifdef STUPID_VERB_CACHE
     register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
     register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
-#endif
 }

@@ -110,25 +110,11 @@ enlist_var(const Var& v)
 
 /*********** Verb cache support ***********/
 
-#define VERB_CACHE 1
-
-#ifdef VERB_CACHE
-
 /* Whenever anything is modified that could influence callable verb
  * lookup, this function must be called.
  */
 
-#ifdef RONG
-#define db_priv_affected_callable_verb_lookup() (db_verb_generation++)
-                                 /* The choice of a new generation. */
-extern unsigned int db_verb_generation;
-#endif
-
 extern void db_priv_affected_callable_verb_lookup(void);
-
-#else /* no cache */
-#define db_priv_affected_callable_verb_lookup()
-#endif
 
 /*********** Objects ***********/
 
