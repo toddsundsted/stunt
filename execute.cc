@@ -840,7 +840,9 @@ do {								\
 		return OUTCOME_ABORTED;
 	    }
 	}
-	switch (op) {
+	// cast to `int` here to silence warnings about the
+	// synthetic/calculated cases (`OP_PUSH + N` and kin).
+	switch ((int)op) {
 
 	case OP_IF_QUES:
 	case OP_IF:
