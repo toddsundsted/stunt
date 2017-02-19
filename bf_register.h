@@ -15,6 +15,9 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#ifndef BF_Register_h
+#define BF_Register_h 1
+
 extern void register_gc(void);
 extern void register_collection(void);
 extern void register_disassemble(void);
@@ -36,3 +39,5 @@ extern void register_fileio(void);
 extern void register_system(void);
 extern void register_exec(void);
 extern void register_crypto(void);
+
+#endif
