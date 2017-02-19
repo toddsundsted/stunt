@@ -15,6 +15,10 @@
     Pavel@Xerox.Com
  *****************************************************************************/
 
+#include <string>
+#include <sstream>
+#include <vector>
+
 #include <stdarg.h>
 
 #include "bf_register.h"
@@ -26,7 +30,6 @@
 #include "map.h"
 #include "server.h"
 #include "storage.h"
-#include "streams.h"
 #include "structures.h"
 #include "unparse.h"
 #include "utils.h"
@@ -73,7 +76,7 @@ void
 register_bi_functions()
 {
     int loop, num_registries =
-    sizeof(bi_function_registries) / sizeof(bi_function_registries[0]);
+	sizeof(bi_function_registries) / sizeof(bi_function_registries[0]);
 
     for (loop = 0; loop < num_registries; loop++)
 	(void) (*(bi_function_registries[loop])) ();
@@ -91,7 +94,7 @@ struct bft_entry {
     ref_ptr<const char> verb_str;
     int minargs;
     int maxargs;
-    var_type *prototype;
+    std::vector<var_type> prototype;
     enum bft_func_type type;
     union {
 	bf_simple simple;
@@ -99,107 +102,171 @@ struct bft_entry {
     } func;
     bf_read_type read;
     bf_write_type write;
-    int _protected;
+    bool is_protected;
+
+    bft_entry(const char *name, int minargs, int maxargs) {
+	this->name = str_dup(name);
+	std::stringstream s1;
+	s1 << "protect_" << name;
+	this->protect_str = str_dup(s1.str().c_str());
+	std::stringstream s2;
+	s2 << "bf_" << name;
+	this->verb_str = str_dup(s2.str().c_str());
+	this->minargs = minargs;
+	this->maxargs = maxargs;
+	this->is_protected = false;
+    }
+
+    bft_entry(const char *name, int minargs, int maxargs, bf_simple func,
+	      const std::vector<var_type>& prototype)
+	: bft_entry(name, minargs, maxargs)
+    {
+	this->prototype = prototype;
+	this->type = SIMPLE;
+	this->func.simple = func;
+	this->read = 0;
+	this->write = 0;
+    }
+
+    bft_entry(const char *name, int minargs, int maxargs, bf_complex func,
+	      const std::vector<var_type>& prototype)
+	: bft_entry(name, minargs, maxargs)
+    {
+	this->prototype = prototype;
+	this->type = COMPLEX;
+	this->func.complex = func;
+	this->read = 0;
+	this->write = 0;
+    }
+
+    bft_entry(const char *name, int minargs, int maxargs, bf_simple func,
+	      const std::vector<var_type>& prototype,
+	      bf_read_type read, bf_write_type write)
+	: bft_entry(name, minargs, maxargs, func, prototype)
+    {
+	this->read = read;
+	this->write = write;
+    }
+
+    bft_entry(const char *name, int minargs, int maxargs, bf_complex func,
+	      const std::vector<var_type>& prototype,
+	      bf_read_type read, bf_write_type write)
+	: bft_entry(name, minargs, maxargs, func, prototype)
+    {
+	this->read = read;
+	this->write = write;
+    }
+
+    bft_entry(bft_entry&& that) {
+	std::swap(this->name, that.name);
+	std::swap(this->protect_str, that.protect_str);
+	std::swap(this->verb_str, that.verb_str);
+	this->minargs = that.minargs;
+	this->maxargs = that.maxargs;
+	std::swap(this->prototype, that.prototype);
+	this->type = that.type;
+	this->func = that.func;
+	this->read = that.read;
+	this->write = that.write;
+	this->is_protected = that.is_protected;
+    }
+
+    ~bft_entry() {
+	if (this->name)
+	    free_str(this->name);
+	if (this->protect_str)
+	    free_str(this->protect_str);
+	if (this->verb_str)
+	    free_str(this->verb_str);
+    }
 };
 
-static struct bft_entry bf_table[MAX_FUNC];
-static unsigned top_bf_table = 0;
+static std::vector<bft_entry> bf_table;
 
-static void
-register_common(const char *name, int minargs, int maxargs, va_list args)
+static std::vector<var_type>
+make_prototype(int minargs, int maxargs, va_list args)
 {
-    int va_index;
-    int num_arg_types = maxargs == -1 ? minargs : maxargs;
-    static Stream *s = 0;
-
-    if (!s)
-	s = new_stream(30);
-
-    if (top_bf_table == MAX_FUNC) {
-	errlog("too many functions.  %s cannot be registered.\n", name);
-	return;
+    // while we're here...
+    if (bf_table.size() == MAX_FUNC) {
+	panic("too many functions.\n");
     }
-    bf_table[top_bf_table].name = str_dup(name);
-    stream_printf(s, "protect_%s", name);
-    bf_table[top_bf_table].protect_str = str_dup(reset_stream(s));
-    stream_printf(s, "bf_%s", name);
-    bf_table[top_bf_table].verb_str = str_dup(reset_stream(s));
-    bf_table[top_bf_table].minargs = minargs;
-    bf_table[top_bf_table].maxargs = maxargs;
-    bf_table[top_bf_table]._protected = 0;
 
-    if (num_arg_types > 0)
-	bf_table[top_bf_table].prototype = new var_type[num_arg_types];
-    else
-	bf_table[top_bf_table].prototype = 0;
-    for (va_index = 0; va_index < num_arg_types; va_index++)
-	bf_table[top_bf_table].prototype[va_index] = (var_type)va_arg(args, int);
+    std::vector<var_type> prototype;
+
+    int num_arg_types = maxargs == -1 ? minargs : maxargs;
+
+    for (int va_index = 0; va_index < num_arg_types; va_index++)
+	prototype.push_back((var_type)va_arg(args, int));
+
+    return prototype;
 }
 
 unsigned
 register_function(const char *name, int minargs, int maxargs,
-		  bf_simple func,...)
+		  bf_simple func, ...)
 {
     va_list args;
 
     va_start(args, func);
-    register_common(name, minargs, maxargs, args);
-    bf_table[top_bf_table].type = SIMPLE;
-    bf_table[top_bf_table].func.simple = func;
-    bf_table[top_bf_table].read = 0;
-    bf_table[top_bf_table].write = 0;
+    auto prototype = make_prototype(minargs, maxargs, args);
     va_end(args);
-    return top_bf_table++;
+
+    bf_table.emplace_back(name, minargs, maxargs, func,
+			  prototype);
+
+
+    return bf_table.size() - 1;
 }
 
 unsigned
 register_function(const char *name, int minargs, int maxargs,
-		  bf_complex func,...)
+		  bf_complex func, ...)
 {
     va_list args;
 
     va_start(args, func);
-    register_common(name, minargs, maxargs, args);
-    bf_table[top_bf_table].type = COMPLEX;
-    bf_table[top_bf_table].func.complex = func;
-    bf_table[top_bf_table].read = 0;
-    bf_table[top_bf_table].write = 0;
+    auto prototype = make_prototype(minargs, maxargs, args);
     va_end(args);
-    return top_bf_table++;
+
+    bf_table.emplace_back(name, minargs, maxargs, func,
+			  prototype);
+
+
+    return bf_table.size() - 1;
 }
 
 unsigned
 register_function_with_read_write(const char *name, int minargs, int maxargs,
 				  bf_simple func, bf_read_type read,
-				  bf_write_type write,...)
+				  bf_write_type write, ...)
 {
     va_list args;
 
     va_start(args, write);
-    register_common(name, minargs, maxargs, args);
-    bf_table[top_bf_table].type = SIMPLE;
-    bf_table[top_bf_table].func.simple = func;
-    bf_table[top_bf_table].read = read;
-    bf_table[top_bf_table].write = write;
+    auto prototype = make_prototype(minargs, maxargs, args);
     va_end(args);
-    return top_bf_table++;
+
+    bf_table.emplace_back(name, minargs, maxargs, func,
+			  prototype, read, write);
+
+    return bf_table.size() - 1;
 }
 
 unsigned
 register_function_with_read_write(const char *name, int minargs, int maxargs,
 				  bf_complex func, bf_read_type read,
-				  bf_write_type write,...)
+				  bf_write_type write, ...)
 {
     va_list args;
 
     va_start(args, write);
-    register_common(name, minargs, maxargs, args);
-    bf_table[top_bf_table].type = COMPLEX;
-    bf_table[top_bf_table].func.complex = func;
-    bf_table[top_bf_table].read = read;
-    bf_table[top_bf_table].write = write;
+    auto prototype = make_prototype(minargs, maxargs, args);
     va_end(args);
-    return top_bf_table++;
+
+    bf_table.emplace_back(name, minargs, maxargs, func,
+			  prototype, read, write);
+
+    return bf_table.size() - 1;
 }
 
 /*** looking up functions -- by name or num ***/
@@ -209,7 +276,7 @@ static const ref_ptr<const char> NO_SUCH_FUNCTION = str_dup("no such function");
 const ref_ptr<const char>&
 name_func_by_num(unsigned n)
 {
-    if (n >= top_bf_table)
+    if (n >= bf_table.size())
 	return NO_SUCH_FUNCTION;
     else
 	return bf_table[n].name;
@@ -220,7 +287,7 @@ number_func_by_name(const char* name)
 {
     unsigned i;
 
-    for (i = 0; i < top_bf_table; i++)
+    for (i = 0; i < bf_table.size(); i++)
 	if (!mystrcasecmp(name, bf_table[i].name.expose()))
 	    return i;
 
@@ -236,12 +303,12 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
 {
     struct bft_entry *f;
 
-    if (n >= top_bf_table) {
+    if (n >= bf_table.size()) {
 	errlog("CALL_BI_FUNC: Unknown function number: %d\n", n);
 	free_var(value);
 	return no_var_pack();
     }
-    f = bf_table + n;
+    f = &bf_table[n];
 
     if (func_pc == 1) {		/* check arg types and count *ONLY* for first entry */
 	int k, max;
@@ -250,7 +317,7 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
 	/*
 	 * Check permissions, if protected
 	 */
-	if ((!caller().is_obj() || caller().v.obj != SYSTEM_OBJECT) && f->_protected) {
+	if ((!caller().is_obj() || caller().v.obj != SYSTEM_OBJECT) && f->is_protected) {
 	    /* Try calling #0:bf_FUNCNAME(@ARGS) instead */
 	    enum error e = call_verb2(SYSTEM_OBJECT, f->verb_str, Var::new_obj(SYSTEM_OBJECT), value, 0);
 
@@ -312,7 +379,7 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
 void
 write_bi_func_data(void *vdata, Byte f_id)
 {
-    if (f_id >= top_bf_table)
+    if (f_id >= bf_table.size())
 	errlog("WRITE_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
     else if (bf_table[f_id].write)
 	(*(bf_table[f_id].write)) (vdata);
@@ -331,7 +398,7 @@ read_bi_func_data(Byte f_id, void **bi_func_state, Byte * bi_func_pc)
 {
     pc_for_bi_func_data_being_read = bi_func_pc;
 
-    if (f_id >= top_bf_table) {
+    if (f_id >= bf_table.size()) {
 	errlog("READ_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
 	*bi_func_state = 0;
 	return 0;
@@ -438,11 +505,10 @@ make_suspend_pack(enum error(*proc) (vm, void *), void *data)
 static List
 function_description(int i)
 {
-    struct bft_entry entry;
     List l, v;
     int j, nargs;
 
-    entry = bf_table[i];
+    const struct bft_entry& entry = bf_table[i];
     l = new_list(4);
     l[1] = str_ref_to_var(entry.name);
     l[2] = Var::new_int(entry.minargs);
@@ -472,8 +538,8 @@ bf_function_info(const List& arglist, Objid progr)
 	free_var(arglist);
 	return make_var_pack(r);
     } else {
-	List l = new_list(top_bf_table);
-	for (i = 0; i < top_bf_table; i++)
+	List l = new_list(bf_table.size());
+	for (i = 0; i < bf_table.size(); i++)
 	    l[i + 1] = function_description(i);
 	free_var(arglist);
 	return make_var_pack(l);
@@ -485,8 +551,8 @@ load_server_protect_function_flags(void)
 {
     unsigned int i;
 
-    for (i = 0; i < top_bf_table; i++) {
-	bf_table[i]._protected
+    for (i = 0; i < bf_table.size(); i++) {
+	bf_table[i].is_protected
 	    = server_flag_option(bf_table[i].protect_str.expose(), 0);
     }
     oklog("Loaded protect cache for %d builtin functions\n", i);
