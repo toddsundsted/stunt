@@ -25,6 +25,10 @@
 #include "structures.h"
 #include "utils.h"
 
+typedef enum {
+    M_NONE, M_STRING, M_LIST, M_TREE, M_TRAV, M_FLOAT, M_ANON
+} Memory_Type;
+
 static inline int
 refcount_overhead(Memory_Type type)
 {

@@ -90,15 +90,6 @@ gc_get_color(const void *ptr)
     return ((reference_overhead *)ptr)[-1].color;
 }
 
-typedef enum Memory_Type {
-    M_NONE,
-
-    M_STRING, M_LIST, M_TREE, M_TRAV, M_FLOAT, M_ANON,
-
-    Sizeof_Memory_Type
-
-} Memory_Type;
-
 /* A simple wrapper for pointers with hidden allocations (reference
  * counts, memoized values...). Construction is intentionally private
  * and, once instantiated, access to the underlying pointer is
