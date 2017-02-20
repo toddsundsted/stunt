@@ -84,10 +84,6 @@ register_bi_functions()
 
 /*** register ***/
 
-enum bft_func_type {
-    SIMPLE, COMPLEX
-};
-
 struct bft_entry {
     ref_ptr<const char> name;
     ref_ptr<const char> protect_str;
@@ -95,7 +91,9 @@ struct bft_entry {
     int minargs;
     int maxargs;
     std::vector<var_type> prototype;
-    enum bft_func_type type;
+    enum bft_func_type {
+	SIMPLE, COMPLEX
+    } type;
     union {
 	bf_simple simple;
 	bf_complex complex;
@@ -365,9 +363,9 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
      * do the function
      * f->func is responsible for freeing/using up value.
      */
-    if (SIMPLE == f->type && value.is_list()) {
+    if (bft_entry::SIMPLE == f->type && value.is_list()) {
 	return (*(f->func.simple)) (static_cast<const List&>(value), progr);
-    } else if (COMPLEX == f->type) {
+    } else if (bft_entry::COMPLEX == f->type) {
 	return (*(f->func.complex)) (value, progr, func_pc, vdata);
     } else {
 	panic("Error in call_bi_func()");
