@@ -60,7 +60,7 @@ typedef enum {
 				 */
 } task_waiting_status;
 
-struct task_waiting_on_exec {
+struct task_waiting_on_exec : bf_susp_data {
     char *cmd;
     int count;
     char **args;
@@ -291,9 +291,9 @@ set_nonblocking(int fd)
 }
 
 static enum error
-exec_waiter_suspender(vm the_vm, void *data)
+exec_waiter_suspender(vm the_vm, bf_susp_data* data)
 {
-    task_waiting_on_exec *tw = (task_waiting_on_exec *)data;
+    task_waiting_on_exec *tw = dynamic_cast<task_waiting_on_exec*>(data);
     enum error error = E_QUOTA;
 
     BLOCK_SIGCHLD;

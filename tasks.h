@@ -20,11 +20,20 @@
 
 #include "config.h"
 #include "execute.h"
+#include "functions.h"
 #include "structures.h"
 
 typedef struct {
     void *ptr;
 } task_queue;
+
+struct bf_suspend_data : public bf_susp_data {
+    int seconds;
+};
+
+struct bf_connection_data : public bf_susp_data {
+    Objid connection;
+};
 
 extern task_queue new_task_queue(Objid player, Objid handler);
 extern void free_task_queue(task_queue q);
@@ -37,13 +46,13 @@ extern void new_input_task(task_queue, const char *, int);
 extern void task_suspend_input(task_queue);
 extern enum error enqueue_forked_task2(activation a, int f_index,
 			       unsigned after_seconds, int vid);
-extern enum error enqueue_suspended_task(vm the_vm, void *data);
+extern enum error enqueue_suspended_task(vm the_vm, struct bf_susp_data* data);
 				/* data == &(int after_seconds) */
-extern enum error make_reading_task(vm the_vm, void *data);
+extern enum error make_reading_task(vm the_vm, struct bf_susp_data* data);
 				/* data == &(Objid connection) */
-extern enum error make_parsing_http_request_task(vm the_vm, void *data);
+extern enum error make_parsing_http_request_task(vm the_vm, struct bf_susp_data* data);
 				/* data == &(Objid connection) */
-extern enum error make_parsing_http_response_task(vm the_vm, void *data);
+extern enum error make_parsing_http_response_task(vm the_vm, struct bf_susp_data* data);
 				/* data == &(Objid connection) */
 extern void resume_task(vm the_vm, const Var& value);
 				/* Make THE_VM (a suspended task) runnable on

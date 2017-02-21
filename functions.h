@@ -35,6 +35,13 @@ struct bf_call_data {
     virtual ~bf_call_data() {};
 };
 
+/**
+ * Packages state passed from builtin to suspended task.
+ */
+struct bf_susp_data {
+    virtual ~bf_susp_data() {};
+};
+
 typedef struct {
     enum {
 	BI_RETURN,		/* Normal function return */
@@ -55,8 +62,8 @@ typedef struct {
 	    bf_call_data* data;
 	} call;
 	struct {
-	    enum error (*proc) (vm, void *);
-	    void *data;
+	    enum error (*proc) (vm, bf_susp_data*);
+	    bf_susp_data* data;
 	} susp;
 	u() {}
     } u;
@@ -77,7 +84,7 @@ package make_var_pack(const Var& v);
 package no_var_pack(void);
 package make_call_pack(Byte pc, bf_call_data* data);
 package tail_call_pack(void);
-package make_suspend_pack(enum error (*)(vm, void *), void *);
+package make_suspend_pack(enum error (*) (vm, bf_susp_data*), bf_susp_data*);
 
 typedef package(*bf_simple) (const List&, Objid);
 typedef package(*bf_complex) (const Var&, Objid, Byte, void *);

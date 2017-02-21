@@ -2987,64 +2987,70 @@ bf_raise(const List& arglist, Objid progr)
 static package
 bf_suspend(const List& arglist, Objid progr)
 {
-    static int seconds;
+    static bf_suspend_data data;
+
     int nargs = arglist.length();
 
     if (nargs >= 1)
-	seconds = arglist[1].v.num;
+	data.seconds = arglist[1].v.num;
     else
-	seconds = -1;
+	data.seconds = -1;
+
     free_var(arglist);
 
-    if (nargs >= 1 && seconds < 0)
+    if (nargs >= 1 && data.seconds < 0)
 	return make_error_pack(E_INVARG);
     else
-	return make_suspend_pack(enqueue_suspended_task, &seconds);
+	return make_suspend_pack(enqueue_suspended_task, &data);
 }
 
 static package
 bf_read(const List& arglist, Objid progr)
 {				/* ([object [, non_blocking]]) */
+    static bf_connection_data data;
+
     int argc = arglist.length();
-    static Objid connection;
+
     int non_blocking = (argc >= 2
 			&& is_true(arglist[2]));
 
     if (argc >= 1)
-	connection = arglist[1].v.obj;
+	data.connection = arglist[1].v.obj;
     else
-	connection = activ_stack[0].player;
+	data.connection = activ_stack[0].player;
+
     free_var(arglist);
 
     /* Permissions checking */
     if (argc >= 1) {
 	if (!is_wizard(progr)
-	    && (!valid(connection)
-		|| progr != db_object_owner(connection)))
+	    && (!valid(data.connection)
+		|| progr != db_object_owner(data.connection)))
 	    return make_error_pack(E_PERM);
     } else {
 	if (!is_wizard(progr)
-	    || last_input_task_id(connection) != current_task_id)
+	    || last_input_task_id(data.connection) != current_task_id)
 	    return make_error_pack(E_PERM);
     }
 
     if (non_blocking) {
 	Var r;
 
-	r = read_input_now(connection);
+	r = read_input_now(data.connection);
 	if (r.is_err())
 	    return make_error_pack(r.v.err);
 	else
 	    return make_var_pack(r);
     }
-    return make_suspend_pack(make_reading_task, &connection);
+    return make_suspend_pack(make_reading_task, &data);
 }
 
 static package
 bf_read_http(const List& arglist, Objid progr)
 {				/* ("request" | "response" [, object]) */
+    static bf_connection_data data;
+
     int argc = arglist.length();
-    static Objid connection;
     int request;
 
     if (!mystrcasecmp(arglist[1].v.str.expose(), "request"))
@@ -3057,27 +3063,28 @@ bf_read_http(const List& arglist, Objid progr)
     }
 
     if (argc > 1)
-	connection = arglist[2].v.obj;
+	data.connection = arglist[2].v.obj;
     else
-	connection = activ_stack[0].player;
+	data.connection = activ_stack[0].player;
 
     free_var(arglist);
 
     /* Permissions checking */
     if (argc > 1) {
 	if (!is_wizard(progr)
-	    && (!valid(connection)
-		|| progr != db_object_owner(connection)))
+	    && (!valid(data.connection)
+		|| progr != db_object_owner(data.connection)))
 	    return make_error_pack(E_PERM);
     } else {
 	if (!is_wizard(progr)
-	    || last_input_task_id(connection) != current_task_id)
+	    || last_input_task_id(data.connection) != current_task_id)
 	    return make_error_pack(E_PERM);
     }
 
-    return make_suspend_pack(request ? make_parsing_http_request_task
+    return make_suspend_pack(request
+			     ? make_parsing_http_request_task
 			     : make_parsing_http_response_task,
-			     &connection);
+			     &data);
 }
 
 static package

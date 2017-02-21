@@ -1239,9 +1239,9 @@ enqueue_forked_task2(activation a, int f_index, unsigned after_seconds, int vid)
 }
 
 enum error
-enqueue_suspended_task(vm the_vm, void *data)
+enqueue_suspended_task(vm the_vm, bf_susp_data* data)
 {
-    int after_seconds = *((int *) data);
+    int after_seconds = dynamic_cast<bf_suspend_data*>(data)->seconds;
     int now = time(0);
     int when;
     task* t;
@@ -1303,9 +1303,9 @@ read_input_now(Objid connection)
 }
 
 enum error
-make_reading_task(vm the_vm, void *data)
+make_reading_task(vm the_vm, bf_susp_data* data)
 {
-    Objid player = *((Objid *) data);
+    Objid player = dynamic_cast<bf_connection_data*>(data)->connection;
     tqueue *tq = find_tqueue(player, 0);
 
     if (!tq || tq->reading || is_out_of_input(tq))
@@ -1350,16 +1350,16 @@ make_http_task(vm the_vm, Objid player, int request)
 }
 
 enum error
-make_parsing_http_request_task(vm the_vm, void *data)
+make_parsing_http_request_task(vm the_vm, bf_susp_data* data)
 {
-    Objid player = *((Objid *) data);
+    Objid player = dynamic_cast<bf_connection_data*>(data)->connection;
     return make_http_task(the_vm, player, 1);
 }
 
 enum error
-make_parsing_http_response_task(vm the_vm, void *data)
+make_parsing_http_response_task(vm the_vm, bf_susp_data* data)
 {
-    Objid player = *((Objid *) data);
+    Objid player = dynamic_cast<bf_connection_data*>(data)->connection;
     return make_http_task(the_vm, player, 0);
 }
 
