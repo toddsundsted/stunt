@@ -228,7 +228,7 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 
     for (;;) {			/* loop over activations */
 	activation *a = &(activ_stack[top_activ_stack]);
-	void *bi_func_data = 0;
+	bf_call_data *bi_func_data = nullptr;
 	int bi_func_pc;
 	unsigned bi_func_id = 0;
 	Objid player;
@@ -1841,7 +1841,7 @@ do {								\
 		    package p;
 
 		    STORE_STATE_VARIABLES();
-		    p = call_bi_func(func_id, args, 1, RUN_ACTIV.progr, 0);
+		    p = call_bi_func(func_id, args, 1, RUN_ACTIV.progr, nullptr);
 		    LOAD_STATE_VARIABLES();
 
 		    switch (p.kind) {
@@ -2895,9 +2895,9 @@ setup_activ_for_eval(Program * prog)
 
 /**** built in functions ****/
 
-struct cf_state {
+struct cf_state : public bf_call_data {
     unsigned fnum;
-    void *data;
+    bf_call_data* data;
 };
 
 static package
@@ -2927,7 +2927,7 @@ bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
     }
 
     if (p.kind == package::BI_CALL) {
-	s = new struct cf_state;
+	s = new struct cf_state();
 	s->fnum = fnum;
 	s->data = p.u.call.data;
 	p.u.call.data = s;
@@ -2936,16 +2936,16 @@ bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
 }
 
 static void
-bf_call_function_write(void *data)
+bf_call_function_write(bf_call_data* data)
 {
-    struct cf_state *s = (struct cf_state *)data;
+    struct cf_state* s = dynamic_cast<struct cf_state*>(data);
 
     dbio_printf("bf_call_function data: fname = %s\n",
 		name_func_by_num(s->fnum));
     write_bi_func_data(s->data, s->fnum);
 }
 
-static void *
+static bf_call_data*
 bf_call_function_read(void)
 {
     struct cf_state *s = new struct cf_state;

@@ -375,7 +375,7 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
 }
 
 void
-write_bi_func_data(void *vdata, Byte f_id)
+write_bi_func_data(bf_call_data* vdata, Byte f_id)
 {
     if (f_id >= bf_table.size())
 	errlog("WRITE_BI_FUNC_DATA: Unknown function number: %d\n", f_id);
@@ -392,7 +392,7 @@ pc_for_bi_func_data(void)
 }
 
 int
-read_bi_func_data(Byte f_id, void **bi_func_state, Byte * bi_func_pc)
+read_bi_func_data(Byte f_id, bf_call_data** bi_func_state, Byte* bi_func_pc)
 {
     pc_for_bi_func_data_being_read = bi_func_pc;
 
@@ -471,7 +471,7 @@ no_var_pack(void)
 }
 
 package
-make_call_pack(Byte pc, void *data)
+make_call_pack(Byte pc, bf_call_data* data)
 {
     package p;
 

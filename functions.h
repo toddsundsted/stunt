@@ -25,6 +25,16 @@
 #include "program.h"
 #include "structures.h"
 
+/**
+ * Holds state used by builtins so that the operation can
+ * continue/complete across server restarts. The destructor is virtual
+ * because `delete` is called on the base class at one point in the
+ * code.
+ */
+struct bf_call_data {
+    virtual ~bf_call_data() {};
+};
+
 typedef struct {
     enum {
 	BI_RETURN,		/* Normal function return */
@@ -42,7 +52,7 @@ typedef struct {
 	} raise;
 	struct {
 	    Byte pc;
-	    void *data;
+	    bf_call_data* data;
 	} call;
 	struct {
 	    enum error (*proc) (vm, void *);
@@ -65,14 +75,14 @@ package make_error_pack(enum error err);
 package make_raise_pack(enum error err, const char *msg, const Var& value);
 package make_var_pack(const Var& v);
 package no_var_pack(void);
-package make_call_pack(Byte pc, void *data);
+package make_call_pack(Byte pc, bf_call_data* data);
 package tail_call_pack(void);
 package make_suspend_pack(enum error (*)(vm, void *), void *);
 
 typedef package(*bf_simple) (const List&, Objid);
 typedef package(*bf_complex) (const Var&, Objid, Byte, void *);
-typedef void (*bf_write_type) (void *vdata);
-typedef void *(*bf_read_type) (void);
+typedef void (*bf_write_type) (bf_call_data* vdata);
+typedef bf_call_data* (*bf_read_type) (void);
 
 #define MAX_FUNC         256
 #define FUNC_NOT_FOUND   MAX_FUNC
@@ -97,9 +107,9 @@ extern unsigned register_function_with_read_write(const char *, int, int,
 extern package call_bi_func(unsigned, const Var&, Byte, Objid, void *);
 /* will free or use Var arglist */
 
-extern void write_bi_func_data(void *vdata, Byte f_id);
-extern int read_bi_func_data(Byte f_id, void **bi_func_state,
-			     Byte * bi_func_pc);
+extern void write_bi_func_data(bf_call_data* vdata, Byte f_id);
+extern int read_bi_func_data(Byte f_id, bf_call_data** bi_func_state,
+			     Byte* bi_func_pc);
 extern Byte *pc_for_bi_func_data(void);
 
 extern void load_server_options(void);

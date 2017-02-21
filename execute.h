@@ -42,7 +42,7 @@ typedef struct {
 				   fed to the bi_func (as specified in bi_func_id) 
 				   together with the next code. */
     Byte bi_func_id;
-    void *bi_func_data;
+    struct bf_call_data *bi_func_data;
     Var temp;			/* VM's temp register */
 
     /* `this' is the value on which the verb was invoked and 'vloc' is

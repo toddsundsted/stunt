@@ -102,7 +102,7 @@ any_are_descendants(const Var& these, const Var& obj)
     return false;
 }
 
-struct bf_move_data {
+struct bf_move_data : public bf_call_data {
     Objid what, where;
 };
 
@@ -200,7 +200,7 @@ do_move(const Var& value, Objid progr, Byte next, struct bf_move_data *data)
 static package
 bf_move(const Var& value, Objid progr, Byte next, void *vdata)
 {
-    struct bf_move_data *data = (bf_move_data *)vdata;
+    struct bf_move_data *data = (bf_move_data*)vdata;
     package p;
 
     if (next == 1) {
@@ -220,18 +220,18 @@ bf_move(const Var& value, Objid progr, Byte next, void *vdata)
 }
 
 static void
-bf_move_write(void *vdata)
+bf_move_write(bf_call_data* vdata)
 {
-    struct bf_move_data *data = (bf_move_data *)vdata;
+    struct bf_move_data* data = dynamic_cast<bf_move_data*>(vdata);
 
     dbio_printf("bf_move data: what = %d, where = %d\n",
 		data->what, data->where);
 }
 
-static void *
+static bf_call_data*
 bf_move_read()
 {
-    struct bf_move_data *data = new bf_move_data();
+    struct bf_move_data* data = new bf_move_data();
 
     if (dbio_scanf("bf_move data: what = %d, where = %d\n",
 		   &data->what, &data->where) == 2)
@@ -291,10 +291,26 @@ bf_max_object(const List& arglist, Objid progr)
     return make_var_pack(r);
 }
 
+struct bf_create_data : public bf_call_data {
+    Var obj;
+
+    bf_create_data() {
+	this->obj = none;
+    }
+
+    bf_create_data(Var obj) {
+	this->obj = var_ref(obj);
+    }
+
+    ~bf_create_data() {
+	free_var(obj);
+    }
+};
+
 static package
 bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 {			/* (OBJ|LIST parent(s) [, OBJ owner] [, INT anonymous] [, LIST args]) */
-    Var *data = (Var *)vdata;
+    struct bf_create_data* data = (bf_create_data*)vdata;
     Var r;
 
     if (next == 1) {
@@ -397,8 +413,7 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 		r.v.obj = oid;
 	    }
 
-	    data = new Var();
-	    *data = var_ref(r);
+	    data = new bf_create_data(r);
 
 	    /* pass in initializer args, if present */
 	    args = init > 0 ? var_ref(arglist[init]) : new_list(0);
@@ -413,7 +428,6 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 		return make_call_pack(2, data);
 	    }
 
-	    free_var(*data);
 	    delete data;
 
 	    free_var(args);
@@ -425,25 +439,28 @@ bf_create(const Var& value, Objid progr, Byte next, void *vdata)
 		return make_var_pack(r);
 	}
     } else {			/* next == 2, returns from initialize verb_call */
-	r = var_ref(*data);
-	free_var(*data);
+	r = var_ref(data->obj);
 	delete data;
 	return make_var_pack(r);
     }
 }
 
 static void
-bf_create_write(void *vdata)
+bf_create_write(bf_call_data* vdata)
 {
-    dbio_printf("bf_create data: oid = %d\n", *((Objid *) vdata));
+    struct bf_create_data* data = dynamic_cast<bf_create_data*>(vdata);
+
+    assert(data->obj.is_obj());
+
+    dbio_printf("bf_create data: oid = %d\n", data->obj.v.obj);
 }
 
-static void *
+static bf_call_data*
 bf_create_read(void)
 {
-    Objid *data = new Objid();
+    struct bf_create_data* data = new bf_create_data();
 
-    if (dbio_scanf("bf_create data: oid = %d\n", data) == 1)
+    if (dbio_scanf("bf_create data: oid = %d\n", &data->obj) == 1)
 	return data;
     else
 	return 0;
@@ -658,10 +675,26 @@ get_first(Objid oid, int (*for_all) (Objid, int (*)(void *, Objid), void *))
     return result;
 }
 
+struct bf_recycle_data : public bf_call_data {
+    Var obj;
+
+    bf_recycle_data() {
+	this->obj = none;
+    }
+
+    bf_recycle_data(Var obj) {
+	this->obj = var_ref(obj);
+    }
+
+    ~bf_recycle_data() {
+	free_var(obj);
+    }
+};
+
 static package
 bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 {				/* (OBJ|ANON object) */
-    Var *data = (Var *)vdata;
+    struct bf_recycle_data* data = (bf_recycle_data*)vdata;
     enum error e;
     Var obj;
     Var args;
@@ -695,8 +728,7 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 	 * reference to itself, at least).
 	 */
 
-	data = new Var();
-	*data = var_ref(obj);
+	data = new bf_recycle_data(obj);
 
 	args = new_list(0);
 	e = call_verb(obj.is_obj() ? obj.v.obj : NOTHING, "recycle", obj, args, 0);
@@ -713,14 +745,13 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 	goto moving_contents;
 
     case 2:
-	obj = var_ref(*data);
+	obj = var_ref(data->obj);
 	free_var(value);
 
       moving_contents:
 
 	if (!is_valid(obj)) {
 	    free_var(obj);
-	    free_var(*data);
 	    delete data;
 	    return no_var_pack();
 	}
@@ -784,7 +815,6 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 	    db_destroy_object(oid);
 
 	    free_var(obj);
-	    free_var(*data);
 	    delete data;
 	    return no_var_pack();
 	}
@@ -801,7 +831,6 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 	    db_destroy_anonymous_object(obj.v.anon);
 
 	    free_var(obj);
-	    free_var(*data);
 	    delete data;
 	    return no_var_pack();
 	}
@@ -812,17 +841,19 @@ bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
 }
 
 static void
-bf_recycle_write(void *vdata)
+bf_recycle_write(bf_call_data* vdata)
 {
-    Objid *data = (Objid *)vdata;
+    struct bf_recycle_data* data = dynamic_cast<bf_recycle_data*>(vdata);
 
-    dbio_printf("bf_recycle data: oid = %d, cont = 0\n", *data);
+    assert(data->obj.is_obj());
+
+    dbio_printf("bf_recycle data: oid = %d, cont = 0\n", data->obj.v.obj);
 }
 
-static void *
+static bf_call_data*
 bf_recycle_read(void)
 {
-    Objid *data = new Objid();
+    struct bf_recycle_data* data = new bf_recycle_data();
     int dummy;
 
     /* I use a `dummy' variable here and elsewhere instead of the `*'
@@ -831,8 +862,7 @@ bf_recycle_read(void)
      * suppressed assignments are not counted in determining the returned value
      * of `scanf'...
      */
-    if (dbio_scanf("bf_recycle data: oid = %d, cont = %d\n",
-		   data, &dummy) == 2)
+    if (dbio_scanf("bf_recycle data: oid = %d, cont = %d\n", &data->obj, &dummy) == 2)
 	return data;
     else
 	return 0;
