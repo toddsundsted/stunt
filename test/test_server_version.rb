@@ -10,7 +10,7 @@ class TestServerVersion < Test::Unit::TestCase
 
   def test_that_server_version_without_arguments_returns_the_version_string
     run_test_as('programmer') do
-      assert_match /^([0-9]+\.[0-9]+\.[0-9]+)(\+[a-z]+)?$/, server_version()
+      assert_match SERVER_VERSION, server_version()
     end
   end
 

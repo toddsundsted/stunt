@@ -49,6 +49,8 @@ module MooSupport
   TYPE_OBJ = 1
   TYPE_ANON = 12
 
+  SERVER_VERSION = /^([0-9]+\.[0-9]+\.[0-9]+)(\+[a-z]+)?$/
+
   @@options =
     if File.exists?('./test.yml')
       YAML.load(File.open('./test.yml'))
