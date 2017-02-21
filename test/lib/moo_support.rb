@@ -24,6 +24,7 @@ module MooSupport
   SYSTEM = MooObj.new('#0')
   OBJECT = MooObj.new('#1')
   ANONYMOUS = MooObj.new('#5')
+  SERVER_OPTIONS = MooObj.new('#6')
 
   E_NONE = MooErr.new('E_NONE')
   E_TYPE = MooErr.new('E_TYPE')
@@ -629,6 +630,10 @@ module MooSupport
   end
 
   ## Administrative Operations
+
+  def load_server_options
+    simplify command %|; return load_server_options();|
+  end
 
   def reset_max_object
     simplify command %|; return reset_max_object();|
