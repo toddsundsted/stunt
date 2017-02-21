@@ -24,7 +24,7 @@
 #include "structures.h"
 
 typedef struct {
-    void *ptr;
+    struct tqueue* ptr;
 } task_queue;
 
 struct bf_suspend_data : public bf_susp_data {
