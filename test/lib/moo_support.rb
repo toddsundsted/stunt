@@ -580,6 +580,10 @@ module MooSupport
 
   ## MOO-Code Evaluation and Task Manipulation
 
+  def call_function(*args)
+    simplify command %Q|; return call_function(#{ args.map{ |a| value_ref(a) }.join(', ') });|
+  end
+
   def function_info(name = nil)
     if (name)
       simplify command %Q|; return function_info("#{name}");|
