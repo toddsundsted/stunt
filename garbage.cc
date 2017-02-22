@@ -205,21 +205,14 @@ for_all_children(const Var& v, gc_func *fp)
 
 /* corresponds to `MarkGray' in Bacon and Rajan */
 static void
-mark_gray(const Var&);
-
-static void
-cb_mark_gray(const Var& v)
-{
-    delref(VOID_PTR(v));
-    mark_gray(v);
-}
-
-static void
 mark_gray(const Var& v)
 {
     if (gc_get_color(VOID_PTR(v)) != GC_GRAY) {
 	gc_set_color(VOID_PTR(v), GC_GRAY);
-	for_all_children(v, &cb_mark_gray);
+	for_all_children(v, [] (const Var& c) {
+	    delref(VOID_PTR(c));
+	    mark_gray(c);
+	});
     }
 }
 
@@ -248,33 +241,17 @@ mark_roots(void)
 
 /* corresponds to `ScanBlack' in Bacon and Rajan */
 static void
-scan_black(const Var&);
-
-static void
-cb_scan_black(const Var& v)
-{
-    addref(VOID_PTR(v));
-    if (gc_get_color(VOID_PTR(v)) != GC_BLACK)
-	scan_black(v);
-}
-
-static void
 scan_black(const Var& v)
 {
     gc_set_color(VOID_PTR(v), GC_BLACK);
-    for_all_children(v, &cb_scan_black);
+    for_all_children(v, [] (const Var& c) {
+	addref(VOID_PTR(c));
+	if (gc_get_color(VOID_PTR(c)) != GC_BLACK)
+	    scan_black(c);
+    });
 }
 
 /* corresponds to `Scan' in Bacon and Rajan */
-static void
-scan(const Var&);
-
-static void
-cb_scan(const Var& v)
-{
-    scan(v);
-}
-
 static void
 scan(const Var& v)
 {
@@ -283,7 +260,7 @@ scan(const Var& v)
 	    scan_black(v);
 	else {
 	    gc_set_color(VOID_PTR(v), GC_WHITE);
-	    for_all_children(v, &cb_scan);
+	    for_all_children(v, &scan);
 	}
     }
 }
@@ -305,21 +282,14 @@ scan_roots()
 
 /* no correspondence in Bacon and Rajan */
 static void
-scan_white(const Var&);
-
-static void
-cb_scan_white(const Var& v)
-{
-    addref(VOID_PTR(v));
-    if (gc_get_color(VOID_PTR(v)) != GC_PINK)
-	scan_white(v);
-}
-
-static void
 scan_white(const Var& v)
 {
     gc_set_color(VOID_PTR(v), GC_PINK);
-    for_all_children(v, &cb_scan_white);
+    for_all_children(v, [] (const Var& c) {
+	addref(VOID_PTR(c));
+	if (gc_get_color(VOID_PTR(c)) != GC_PINK)
+	    scan_white(c);
+    });
 }
 
 /* no correspondence in Bacon and Rajan */
@@ -341,20 +311,11 @@ restore_white()
 
 /* replaces `CollectWhite' in Bacon and Rajan */
 static void
-collect_white(const Var&);
-
-static void
-cb_collect_white(const Var& v)
-{
-    collect_white(v);
-}
-
-static void
 collect_white(const Var& v)
 {
     if (gc_get_color(VOID_PTR(v)) == GC_PINK && !gc_is_buffered(VOID_PTR(v))) {
 	gc_set_color(VOID_PTR(v), GC_BLACK);
-	for_all_children(v, &cb_collect_white);
+	for_all_children(v, &collect_white);
 	if (v.is_anon()) {
 	    assert(v.v.anon.ref_count() != 0);
 	    queue_anonymous_object(v);
