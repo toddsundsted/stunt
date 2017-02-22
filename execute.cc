@@ -2901,7 +2901,7 @@ struct cf_state : public bf_call_data {
 };
 
 static package
-bf_call_function(const Var& value, Objid progr, Byte next, void *vdata)
+bf_call_function(const Var& value, Objid progr, Byte next, bf_call_data* vdata)
 {
     package p;
     unsigned fnum;

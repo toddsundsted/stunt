@@ -198,9 +198,9 @@ do_move(const Var& value, Objid progr, Byte next, struct bf_move_data *data)
 }
 
 static package
-bf_move(const Var& value, Objid progr, Byte next, void *vdata)
+bf_move(const Var& value, Objid progr, Byte next, bf_call_data* vdata)
 {
-    struct bf_move_data *data = (bf_move_data*)vdata;
+    struct bf_move_data *data = dynamic_cast<bf_move_data*>(vdata);
     package p;
 
     if (next == 1) {
@@ -308,9 +308,9 @@ struct bf_create_data : public bf_call_data {
 };
 
 static package
-bf_create(const Var& value, Objid progr, Byte next, void *vdata)
+bf_create(const Var& value, Objid progr, Byte next, bf_call_data* vdata)
 {			/* (OBJ|LIST parent(s) [, OBJ owner] [, INT anonymous] [, LIST args]) */
-    struct bf_create_data* data = (bf_create_data*)vdata;
+    struct bf_create_data* data = dynamic_cast<bf_create_data*>(vdata);
     Var r;
 
     if (next == 1) {
@@ -692,9 +692,9 @@ struct bf_recycle_data : public bf_call_data {
 };
 
 static package
-bf_recycle(const Var& value, Objid progr, Byte func_pc, void *vdata)
+bf_recycle(const Var& value, Objid progr, Byte func_pc, bf_call_data* vdata)
 {				/* (OBJ|ANON object) */
-    struct bf_recycle_data* data = (bf_recycle_data*)vdata;
+    struct bf_recycle_data* data = dynamic_cast<bf_recycle_data*>(vdata);
     enum error e;
     Var obj;
     Var args;

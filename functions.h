@@ -87,7 +87,7 @@ package tail_call_pack(void);
 package make_suspend_pack(enum error (*) (vm, bf_susp_data*), bf_susp_data*);
 
 typedef package(*bf_simple) (const List&, Objid);
-typedef package(*bf_complex) (const Var&, Objid, Byte, void *);
+typedef package(*bf_complex) (const Var&, Objid, Byte, bf_call_data*);
 typedef void (*bf_write_type) (bf_call_data* vdata);
 typedef bf_call_data* (*bf_read_type) (void);
 
@@ -111,7 +111,7 @@ extern unsigned register_function_with_read_write(const char *, int, int,
 						  bf_complex, bf_read_type,
 						  bf_write_type, ...);
 
-extern package call_bi_func(unsigned, const Var&, Byte, Objid, void *);
+extern package call_bi_func(unsigned, const Var&, Byte, Objid, bf_call_data*);
 /* will free or use Var arglist */
 
 extern void write_bi_func_data(bf_call_data* vdata, Byte f_id);

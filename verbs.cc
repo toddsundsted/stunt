@@ -587,7 +587,7 @@ all_strings(const Var& arglist)
 }
 
 static package
-bf_eval(const Var& value, Objid progr, Byte next, void *vdata)
+bf_eval(const Var& value, Objid progr, Byte next, bf_call_data* vdata)
 {
     package p;
     if (next == 1) {

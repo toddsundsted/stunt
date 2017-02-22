@@ -296,7 +296,7 @@ number_func_by_name(const char* name)
 
 package
 call_bi_func(unsigned n, const Var& value, Byte func_pc,
-	     Objid progr, void *vdata)
+	     Objid progr, bf_call_data* vdata)
      /* call_bi_func will free value */
 {
     struct bft_entry *f;
