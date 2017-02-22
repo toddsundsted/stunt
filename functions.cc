@@ -353,12 +353,8 @@ call_bi_func(unsigned n, const Var& value, Byte func_pc,
 		return make_error_pack(E_TYPE);
 	    }
 	}
-    } else if (func_pc == 2 && vdata == &call_bi_func) {
-	/* This is a return from calling #0:bf_FUNCNAME(@ARGS); return what
-	 * it returned.  If it errored, what we do will be ignored.
-	 */
-	return make_var_pack(value);
     }
+
     /*
      * do the function
      * f->func is responsible for freeing/using up value.
