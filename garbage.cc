@@ -102,6 +102,7 @@ gc_stats(int color[])
 	color[gc_get_color(VOID_PTR(v))]++;
 }
 
+#ifdef LOG_GC_STATS
 static void
 gc_debug(const char *name)
 {
@@ -112,6 +113,7 @@ gc_debug(const char *name)
     oklog("GC: %s (green %d, yellow %d, black %d, gray %d, white %d, purple %d, pink %d)\n",
           name, color[0], color[1], color[2], color[3], color[4], color[5], color[6]);
 }
+#endif
 
 static void
 gc_add_root(const Var& v)
