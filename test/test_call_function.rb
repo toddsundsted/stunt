@@ -64,6 +64,7 @@ class TestCallFunction < Test::Unit::TestCase
       ensure
         recycle(o)
         recycle(p)
+        load_server_options
       end
     end
   end
