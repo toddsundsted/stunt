@@ -42,54 +42,6 @@ typedef struct reference_overhead {
     GC_Color color:3;
 } reference_overhead;
 
-static inline int
-addref(const void *ptr)
-{
-    return ++((reference_overhead *)ptr)[-1].count;
-}
-
-static inline int
-delref(const void *ptr)
-{
-    return --((reference_overhead *)ptr)[-1].count;
-}
-
-static inline int
-refcount(const void *ptr)
-{
-    return ((reference_overhead *)ptr)[-1].count;
-}
-
-static inline void
-gc_set_buffered(const void *ptr)
-{
-    ((reference_overhead *)ptr)[-1].buffered = 1;
-}
-
-static inline void
-gc_clear_buffered(const void *ptr)
-{
-    ((reference_overhead *)ptr)[-1].buffered = 0;
-}
-
-static inline int
-gc_is_buffered(const void *ptr)
-{
-    return ((reference_overhead *)ptr)[-1].buffered;
-}
-
-static inline void
-gc_set_color(const void *ptr, GC_Color color)
-{
-    ((reference_overhead *)ptr)[-1].color = color;
-}
-
-static inline GC_Color
-gc_get_color(const void *ptr)
-{
-    return ((reference_overhead *)ptr)[-1].color;
-}
-
 /**
  * A simple wrapper for pointers with hidden allocations (reference
  * counts, memoized values...).
@@ -111,16 +63,18 @@ class wrapper {
     // and `set_color()' should not be `const' in the following
     // definitions.
 
-    int inc_ref() const { return addref(ptr); }
-    int dec_ref() const { return delref(ptr); }
-    int ref_count() const { return refcount(ptr); }
+    int inc_ref() const { return ++((reference_overhead*)ptr)[-1].count; }
+    int dec_ref() const { return --((reference_overhead*)ptr)[-1].count; }
+    int ref_count() const { return ((reference_overhead*)ptr)[-1].count; }
 
-    void set_buffered() const { gc_set_buffered(ptr); }
-    void clear_buffered() const { gc_clear_buffered(ptr); }
-    bool is_buffered() const { return gc_is_buffered(ptr); }
+    void set_buffered() const { ((reference_overhead*)ptr)[-1].buffered = 1; }
+    void clear_buffered() const { ((reference_overhead*)ptr)[-1].buffered = 0; }
+    bool is_buffered() const { return ((reference_overhead*)ptr)[-1].buffered; }
 
-    void set_color(GC_Color color) const { gc_set_color(ptr, color); }
-    GC_Color color() const { return gc_get_color(ptr); }
+    void set_color(GC_Color color) const { ((reference_overhead*)ptr)[-1].color = color; }
+    GC_Color color() const { return ((reference_overhead*)ptr)[-1].color; }
+
+    operator bool () const { return ptr != nullptr; }
 };
 
 /**
@@ -179,8 +133,6 @@ class ref_ptr : public wrapper {
     T* expose() {
 	return (T*)ptr;
     }
-
-    operator bool () const { return this->ptr != nullptr; }
 
     bool operator == (const ref_ptr<T>& that) const { return this->ptr == that.ptr; }
     bool operator != (const ref_ptr<T>& that) const { return this->ptr != that.ptr; }

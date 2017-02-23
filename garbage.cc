@@ -86,11 +86,11 @@ static struct pending_recycle *pending_tail = 0;
     } while (0)
 
 /* I'm sure there's a better way to do this.  Values are a union of
- * several _different_ kinds of pointers (see structures.h).  The
- * specific type isn't important to the garbage collector, so this
- * macro picks a flavor and casts the pointer to a pointer to a void.
+ * several _different_ kinds of `ref_ptr` (see structures.h/storage.h).
+ * The specific type isn't important to the garbage collector, so this
+ * macro picks a flavor and casts the `ref_ptr` to the base class.
  */
-#define VOID_PTR(var) (*((void**)(&var)))
+#define WRAPPER(var) ((wrapper*)(&var.v.anon))
 
 static void
 gc_stats(int color[])
@@ -99,7 +99,7 @@ gc_stats(int color[])
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last)
-	color[gc_get_color(VOID_PTR(v))]++;
+	color[WRAPPER(v)->color()]++;
 }
 
 #ifdef LOG_GC_STATS
@@ -149,10 +149,10 @@ gc_possible_root(const Var& v)
 
     assert(v.is_collection());
 
-    if ((color = gc_get_color(VOID_PTR(v))) != GC_PURPLE && color != GC_GREEN && color != GC_YELLOW) {
-	gc_set_color(VOID_PTR(v), GC_PURPLE);
-	if (!gc_is_buffered(VOID_PTR(v))) {
-	    gc_set_buffered(VOID_PTR(v));
+    if ((color = WRAPPER(v)->color()) != GC_PURPLE && color != GC_GREEN && color != GC_YELLOW) {
+	WRAPPER(v)->set_color(GC_PURPLE);
+	if (!WRAPPER(v)->is_buffered()) {
+	    WRAPPER(v)->set_buffered();
 	    gc_add_root(v);
 	}
     }
@@ -161,8 +161,8 @@ gc_possible_root(const Var& v)
 static inline int
 is_not_green(const Var& v)
 {
-    void *p = VOID_PTR(v);
-    return p && gc_get_color(p) != GC_GREEN;
+    const wrapper* p = WRAPPER(v);
+    return *p && p->color() != GC_GREEN;
 }
 
 typedef void (gc_func)(const Var&);
@@ -209,10 +209,10 @@ for_all_children(const Var& v, gc_func *fp)
 static void
 mark_gray(const Var& v)
 {
-    if (gc_get_color(VOID_PTR(v)) != GC_GRAY) {
-	gc_set_color(VOID_PTR(v), GC_GRAY);
+    if (WRAPPER(v)->color() != GC_GRAY) {
+	WRAPPER(v)->set_color(GC_GRAY);
 	for_all_children(v, [] (const Var& c) {
-	    delref(VOID_PTR(c));
+	    WRAPPER(c)->dec_ref();
 	    mark_gray(c);
 	});
     }
@@ -230,12 +230,12 @@ mark_roots(void)
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last) {
-	if (gc_get_color(VOID_PTR(v)) == GC_PURPLE)
+	if (WRAPPER(v)->color() == GC_PURPLE)
 	    mark_gray(v);
 	else {
 	    REMOVE_ROOT(head, last);
-	    gc_clear_buffered(VOID_PTR(v));
-	    if (gc_get_color(VOID_PTR(v)) == GC_BLACK && refcount(VOID_PTR(v)) == 0)
+	    WRAPPER(v)->clear_buffered();
+	    if (WRAPPER(v)->color() == GC_BLACK && WRAPPER(v)->ref_count() == 0)
 		aux_free(v);
 	}
     }
@@ -245,10 +245,10 @@ mark_roots(void)
 static void
 scan_black(const Var& v)
 {
-    gc_set_color(VOID_PTR(v), GC_BLACK);
+    WRAPPER(v)->set_color(GC_BLACK);
     for_all_children(v, [] (const Var& c) {
-	addref(VOID_PTR(c));
-	if (gc_get_color(VOID_PTR(c)) != GC_BLACK)
+	WRAPPER(c)->inc_ref();
+	if (WRAPPER(c)->color() != GC_BLACK)
 	    scan_black(c);
     });
 }
@@ -257,11 +257,11 @@ scan_black(const Var& v)
 static void
 scan(const Var& v)
 {
-    if (gc_get_color(VOID_PTR(v)) == GC_GRAY) {
-	if (refcount(VOID_PTR(v)) > 0)
+    if (WRAPPER(v)->color() == GC_GRAY) {
+	if (WRAPPER(v)->ref_count() > 0)
 	    scan_black(v);
 	else {
-	    gc_set_color(VOID_PTR(v), GC_WHITE);
+	    WRAPPER(v)->set_color(GC_WHITE);
 	    for_all_children(v, &scan);
 	}
     }
@@ -286,10 +286,10 @@ scan_roots()
 static void
 scan_white(const Var& v)
 {
-    gc_set_color(VOID_PTR(v), GC_PINK);
+    WRAPPER(v)->set_color(GC_PINK);
     for_all_children(v, [] (const Var& c) {
-	addref(VOID_PTR(c));
-	if (gc_get_color(VOID_PTR(c)) != GC_PINK)
+	WRAPPER(c)->inc_ref();
+	if (WRAPPER(c)->color() != GC_PINK)
 	    scan_white(c);
     });
 }
@@ -306,7 +306,7 @@ restore_white()
     struct pending_recycle *head, *last;
 
     FOR_EACH_ROOT (v, head, last) {
-	if (gc_get_color(VOID_PTR(v)) == GC_WHITE)
+	if (WRAPPER(v)->color() == GC_WHITE)
 	    scan_white(v);
     }
 }
@@ -315,8 +315,8 @@ restore_white()
 static void
 collect_white(const Var& v)
 {
-    if (gc_get_color(VOID_PTR(v)) == GC_PINK && !gc_is_buffered(VOID_PTR(v))) {
-	gc_set_color(VOID_PTR(v), GC_BLACK);
+    if (WRAPPER(v)->color() == GC_PINK && !WRAPPER(v)->is_buffered()) {
+	WRAPPER(v)->set_color(GC_BLACK);
 	for_all_children(v, &collect_white);
 	if (v.is_anon()) {
 	    assert(v.v.anon.ref_count() != 0);
@@ -338,7 +338,7 @@ collect_roots()
 
     FOR_EACH_ROOT (v, head, last) {
 	REMOVE_ROOT(head, last);
-	gc_clear_buffered(VOID_PTR(v));
+	WRAPPER(v)->clear_buffered();
 	collect_white(v);
     }
 }
