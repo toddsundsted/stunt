@@ -138,10 +138,10 @@ print_error_backtrace(const char* msg, void (*output)(const char*))
 
 	if (activ_stack[t].vloc.is_obj())
 	    stream_printf(str, "#%d:%s", activ_stack[t].vloc.v.obj,
-		          activ_stack[t].verbname);
+		          activ_stack[t].verbname.expose());
 	else
 	    stream_printf(str, "*anonymous*:%s",
-		          activ_stack[t].verbname);
+		          activ_stack[t].verbname.expose());
 
 	if (equality(activ_stack[t].vloc, activ_stack[t]._this, 0)) {
 	    stream_add_string(str, " (this == ");
@@ -159,7 +159,7 @@ print_error_backtrace(const char* msg, void (*output)(const char*))
 	output(reset_stream(str));
 	if (t > 0 && activ_stack[t].bi_func_pc) {
 	    stream_printf(str, "... called from built-in function %s()",
-			  name_func_by_num(activ_stack[t].bi_func_id));
+			  name_func_by_num(activ_stack[t].bi_func_id).expose());
 	    output(reset_stream(str));
 	}
     }
@@ -2941,7 +2941,7 @@ bf_call_function_write(bf_call_data* data)
     struct cf_state* s = dynamic_cast<struct cf_state*>(data);
 
     dbio_printf("bf_call_function data: fname = %s\n",
-		name_func_by_num(s->fnum));
+		name_func_by_num(s->fnum).expose());
     write_bi_func_data(s->data, s->fnum);
 }
 

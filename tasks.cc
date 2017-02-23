@@ -2137,7 +2137,7 @@ find_verb_for_programming(Objid player, const ref_ptr<const char>& verbref,
 	h.ptr = 0;
     } else {
 	stream_printf(str, "Now programming %s:%s.  Use \".\" to end.",
-		      db_object_name(oid), db_verb_names(h));
+		      db_object_name(oid).expose(), db_verb_names(h).expose());
 	*message = reset_stream(str);
     }
 

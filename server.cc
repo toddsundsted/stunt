@@ -408,7 +408,7 @@ object_name(Objid oid)
 	s = new_stream(30);
 
     if (valid(oid))
-	stream_printf(s, "%s (#%d)", db_object_name(oid), oid);
+	stream_printf(s, "%s (#%d)", db_object_name(oid).expose(), oid);
     else
 	stream_printf(s, "#%d", oid);
 

@@ -400,7 +400,7 @@ read_bi_func_data(Byte f_id, bf_call_data** bi_func_state, Byte* bi_func_pc)
 	*bi_func_state = (*(bf_table[f_id].read)) ();
 	if (*bi_func_state == 0) {
 	    errlog("READ_BI_FUNC_DATA: Can't read data for %s()\n",
-		   bf_table[f_id].name);
+		   bf_table[f_id].name.expose());
 	    return 0;
 	}
     } else {
@@ -411,7 +411,7 @@ read_bi_func_data(Byte f_id, bf_call_data** bi_func_state, Byte* bi_func_pc)
 	if (*bi_func_pc == 2 && dbio_input_version == DBV_Float
 	    && strcmp(bf_table[f_id].name.expose(), "eval") != 0) {
 	    oklog("LOADING: Warning: patching bogus return to `%s()'\n",
-		  bf_table[f_id].name);
+		  bf_table[f_id].name.expose());
 	    oklog("         (See 1.8.0p4 ChangeLog.txt entry for details.)\n");
 	    *bi_func_pc = 0;
 	}

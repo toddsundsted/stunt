@@ -865,7 +865,7 @@ fmt_verb_name(void *data)
 	s = new_stream(40);
 
     unparse_value(s, db_verb_definer(*h));
-    stream_printf(s, ":%s", db_verb_names(*h));
+    stream_printf(s, ":%s", db_verb_names(*h).expose());
 
     return reset_stream(s);
 }

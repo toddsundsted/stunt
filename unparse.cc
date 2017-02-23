@@ -380,9 +380,12 @@ static void
 unparse_stmt_list(Stream * str, struct Stmt_List list, int indent)
 {
     if (list.index > -1)
-	stream_printf(str, "for %s, %s in (", prog->var_names[list.id], prog->var_names[list.index]);
+	stream_printf(str, "for %s, %s in (",
+		      prog->var_names[list.id].expose(),
+		      prog->var_names[list.index].expose());
     else
-	stream_printf(str, "for %s in (", prog->var_names[list.id]);
+	stream_printf(str, "for %s in (",
+		      prog->var_names[list.id].expose());
     unparse_expr(str, list.expr);
     stream_add_char(str, ')');
     output(str);
@@ -395,7 +398,8 @@ unparse_stmt_list(Stream * str, struct Stmt_List list, int indent)
 static void
 unparse_stmt_range(Stream * str, struct Stmt_Range range, int indent)
 {
-    stream_printf(str, "for %s in [", prog->var_names[range.id]);
+    stream_printf(str, "for %s in [",
+		  prog->var_names[range.id].expose());
     unparse_expr(str, range.from);
     stream_add_string(str, "..");
     unparse_expr(str, range.to);
@@ -411,7 +415,8 @@ static void
 unparse_stmt_fork(Stream * str, struct Stmt_Fork fork_stmt, int indent)
 {
     if (fork_stmt.id >= 0)
-	stream_printf(str, "fork %s (", prog->var_names[fork_stmt.id]);
+	stream_printf(str, "fork %s (",
+		      prog->var_names[fork_stmt.id].expose());
     else
 	stream_add_string(str, "fork (");
     unparse_expr(str, fork_stmt.time);
@@ -435,7 +440,8 @@ unparse_stmt_catch(Stream * str, struct Stmt_Catch _catch, int indent)
 	indent_stmt(str, indent);
 	stream_add_string(str, "except ");
 	if (ex->id >= 0)
-	    stream_printf(str, "%s ", prog->var_names[ex->id]);
+	    stream_printf(str, "%s ",
+			  prog->var_names[ex->id].expose());
 	stream_add_char(str, '(');
 	if (ex->codes)
 	    unparse_arglist(str, ex->codes);
@@ -480,7 +486,7 @@ unparse_stmt(Stmt * stmt, int indent)
 		stream_add_string(str, "while (");
 	    else
 		stream_printf(str, "while %s (",
-			      prog->var_names[stmt->s.loop.id]);
+			      prog->var_names[stmt->s.loop.id].expose());
 	    unparse_expr(str, stmt->s.loop.condition);
 	    stream_add_char(str, ')');
 	    output(str);
@@ -523,7 +529,7 @@ unparse_stmt(Stmt * stmt, int indent)
 		    stream_printf(str, "%s;", kwd);
 		else
 		    stream_printf(str, "%s %s;", kwd,
-				  prog->var_names[stmt->s.exit]);
+				  prog->var_names[stmt->s.exit].expose());
 		output(str);
 	    }
 	    break;
@@ -795,7 +801,8 @@ unparse_scatter(Stream * str, Scatter * sc)
 	    stream_add_string(str, prog->var_names[sc->id].expose());
 	    break;
 	case SCAT_OPTIONAL:
-	    stream_printf(str, "?%s", prog->var_names[sc->id]);
+	    stream_printf(str, "?%s",
+			  prog->var_names[sc->id].expose());
 	    if (sc->expr) {
 		stream_add_string(str, " = ");
 		unparse_expr(str, sc->expr);

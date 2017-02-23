@@ -395,7 +395,7 @@ disassemble(Program * prog, Printer p, void *data)
 		    }
 		    break;
 		case OP_BI_FUNC_CALL:
-		    stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(1)));
+		    stream_printf(insn, " %s", name_func_by_num(ADD_BYTES(1)).expose());
 		default:
 		    break;
 		}
