@@ -575,9 +575,7 @@ new_map(void)
     assert(map.v.tree.color() == GC_GREEN);
 #endif
 
-    map.v.tree.inc_ref();
-
-    return map;
+    return var_ref(map);
 }
 
 /* called from utils.c */

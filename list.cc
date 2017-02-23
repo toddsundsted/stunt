@@ -50,8 +50,7 @@ new_list(int size)
 #ifdef ENABLE_GC
 	assert(emptylist.v.list.color() == GC_GREEN);
 #endif
-	emptylist.v.list.inc_ref();
-	return emptylist;
+	return var_ref(emptylist);
     }
 
     List list;
