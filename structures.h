@@ -134,6 +134,7 @@ struct Var {
 	ref_ptr<double> fnum;		/* FLOAT */
 	ref_ptr<Object> anon;		/* ANON */
 	v() {}
+	~v() {}
     } v;
     var_type type;
 

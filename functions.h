@@ -66,6 +66,7 @@ typedef struct {
 	    bf_susp_data* data;
 	} susp;
 	u() {}
+	~u() {}
     } u;
 } package;
 

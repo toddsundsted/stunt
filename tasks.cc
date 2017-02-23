@@ -88,6 +88,7 @@ typedef struct task {
 	forked_task forked;
 	suspended_task suspended;
 	t() {}
+	~t() {}
     } t;
 } task;
 
