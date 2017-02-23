@@ -90,8 +90,41 @@ gc_get_color(const void *ptr)
     return ((reference_overhead *)ptr)[-1].color;
 }
 
-/* A simple wrapper for pointers with hidden allocations (reference
- * counts, memoized values...). Construction is intentionally private
+/**
+ * A simple wrapper for pointers with hidden allocations (reference
+ * counts, memoized values...).
+ */
+
+class wrapper {
+
+ protected:
+
+    void* ptr;
+
+    explicit wrapper(void* ptr) : ptr(ptr) {}
+
+    explicit wrapper() : ptr(nullptr) {}
+
+ public:
+
+    // `inc_ref()', `dec_ref()', `set_buffered()', `clear_buffered()'
+    // and `set_color()' should not be `const' in the following
+    // definitions.
+
+    int inc_ref() const { return addref(ptr); }
+    int dec_ref() const { return delref(ptr); }
+    int ref_count() const { return refcount(ptr); }
+
+    void set_buffered() const { gc_set_buffered(ptr); }
+    void clear_buffered() const { gc_clear_buffered(ptr); }
+    bool is_buffered() const { return gc_is_buffered(ptr); }
+
+    void set_color(GC_Color color) const { gc_set_color(ptr, color); }
+    GC_Color color() const { return gc_get_color(ptr); }
+};
+
+/**
+ * Type-safe accessor class. Construction is intentionally restricted
  * and, once instantiated, access to the underlying pointer is
  * restricted/explicit.
  */
@@ -111,61 +144,46 @@ template<typename T>
 extern void myfree(ref_ptr<T>);
 
 template<typename T>
-class ref_ptr {
+class ref_ptr : public wrapper {
 
-    T* ptr;
+ private:
 
-    explicit ref_ptr(T* t) : ptr(t) {}
+    explicit ref_ptr(T* t) : wrapper((void*)t) {}
 
  public:
 
     static const ref_ptr<T> empty;
 
-    explicit ref_ptr() : ptr(nullptr) {}
+    explicit ref_ptr() : wrapper() {}
 
     const T& operator * () const {
-	return *ptr;
+	return *(T*)ptr;
     }
 
     T& operator * () {
-	return *ptr;
+	return *(T*)ptr;
     }
 
     const T* operator -> () const {
-	return ptr;
+      return (T*)ptr;
     }
 
     T* operator -> () {
-	return ptr;
+	return (T*)ptr;
     }
 
     const T* expose() const {
-	return ptr;
+	return (T*)ptr;
     }
 
     T* expose() {
-	return ptr;
+	return (T*)ptr;
     }
 
     operator bool () const { return this->ptr != nullptr; }
 
     bool operator == (const ref_ptr<T>& that) const { return this->ptr == that.ptr; }
     bool operator != (const ref_ptr<T>& that) const { return this->ptr != that.ptr; }
-
-    // `inc_ref()', `dec_ref()', `set_buffered()', `clear_buffered()'
-    // and `set_color()' should not be `const' in the following
-    // definitions.
-
-    int inc_ref() const { return addref(ptr); }
-    int dec_ref() const { return delref(ptr); }
-    int ref_count() const { return refcount(ptr); }
-
-    void set_buffered() const { gc_set_buffered(ptr); }
-    void clear_buffered() const { gc_clear_buffered(ptr); }
-    bool is_buffered() const { return gc_is_buffered(ptr); }
-
-    void set_color(GC_Color color) const { gc_set_color(ptr, color); }
-    GC_Color color() const { return gc_get_color(ptr); }
 
     friend ref_ptr<T> mymalloc<>(size_t);
     friend ref_ptr<T> myrealloc<>(ref_ptr<T>, size_t);
