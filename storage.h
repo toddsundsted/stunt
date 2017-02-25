@@ -92,10 +92,10 @@ template<typename T>
 extern ref_ptr<T> mymalloc(size_t);
 
 template<typename T>
-extern ref_ptr<T> myrealloc(ref_ptr<T>, size_t);
+extern ref_ptr<T> myrealloc(ref_ptr<T>&, size_t);
 
 template<typename T>
-extern void myfree(ref_ptr<T>);
+extern void myfree(ref_ptr<T>&);
 
 template<typename T>
 class ref_ptr : public wrapper {
@@ -138,8 +138,8 @@ class ref_ptr : public wrapper {
     bool operator != (const ref_ptr<T>& that) const { return this->ptr != that.ptr; }
 
     friend ref_ptr<T> mymalloc<>(size_t);
-    friend ref_ptr<T> myrealloc<>(ref_ptr<T>, size_t);
-    friend void myfree<>(ref_ptr<T>);
+    friend ref_ptr<T> myrealloc<>(ref_ptr<T>&, size_t);
+    friend void myfree<>(ref_ptr<T>&);
 };
 
 template<typename T>
@@ -152,19 +152,19 @@ template<>
 ref_ptr<double> mymalloc(size_t);
 
 template<typename T>
-extern ref_ptr<T> myrealloc(ref_ptr<T>, size_t);
+extern ref_ptr<T> myrealloc(ref_ptr<T>&, size_t);
 
 template<>
-ref_ptr<double> myrealloc(ref_ptr<double>, size_t);
+ref_ptr<double> myrealloc(ref_ptr<double>&, size_t);
 
 template<typename T>
-extern void myfree(ref_ptr<T>);
+extern void myfree(ref_ptr<T>&);
 
 template<>
-void myfree(ref_ptr<double>);
+void myfree(ref_ptr<double>&);
 
 template<>
-void myfree(ref_ptr<const char>);
+void myfree(ref_ptr<const char>&);
 
 extern ref_ptr<const char> str_ref(const ref_ptr<const char>&);
 extern ref_ptr<const char> str_dup(const char*);
@@ -177,7 +177,7 @@ free_str(ref_ptr<const char>& s)
 }
 
 static inline int
-memo_strlen(ref_ptr<const char> s)
+memo_strlen(const ref_ptr<const char>& s)
 {
 #ifdef MEMO_STRLEN
     return ((int*)s.expose())[-2];

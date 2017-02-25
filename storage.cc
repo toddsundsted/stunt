@@ -67,9 +67,9 @@ refcount_overhead(Memory_Type type)
     }
 }
 
-void *mymalloc(unsigned size, Memory_Type type);
-void *myrealloc(void *where, unsigned size, Memory_Type type);
-void myfree(void *where, Memory_Type type);
+void* mymalloc(unsigned size, Memory_Type type);
+void* myrealloc(void* where, unsigned size, Memory_Type type);
+void myfree(void* where, Memory_Type type);
 
 template<typename T> ref_ptr<T>
 mymalloc(size_t size)
@@ -179,54 +179,54 @@ str_dup(const char* s)
 }
 
 template<typename T> ref_ptr<T>
-myrealloc(ref_ptr<T> ptr, size_t size)
+myrealloc(ref_ptr<T>& ptr, size_t size)
 {
     return ref_ptr<T>((T*)myrealloc(ptr, size, M_NONE));
 }
 
 template<> ref_ptr<double>
-myrealloc(ref_ptr<double> ptr, size_t size)
+myrealloc(ref_ptr<double>& ptr, size_t size)
 {
     return ref_ptr<double>((double*)myrealloc(ptr.ptr, size, M_FLOAT));
 }
 
 template<> ref_ptr<rbtree>
-myrealloc(ref_ptr<rbtree> ptr, size_t size)
+myrealloc(ref_ptr<rbtree>& ptr, size_t size)
 {
     return ref_ptr<rbtree>((rbtree*)myrealloc(ptr.ptr, size, M_TREE));
 }
 
 template<> ref_ptr<rbtrav>
-myrealloc(ref_ptr<rbtrav> ptr, size_t size)
+myrealloc(ref_ptr<rbtrav>& ptr, size_t size)
 {
     return ref_ptr<rbtrav>((rbtrav*)myrealloc(ptr.ptr, size, M_TRAV));
 }
 
 template<> ref_ptr<const char>
-myrealloc(ref_ptr<const char> ptr, size_t size)
+myrealloc(ref_ptr<const char>& ptr, size_t size)
 {
     return ref_ptr<const char>((const char*)myrealloc((void*)ptr.ptr, size, M_STRING));
 }
 
 template<> ref_ptr<Var>
-myrealloc(ref_ptr<Var> ptr, size_t size)
+myrealloc(ref_ptr<Var>& ptr, size_t size)
 {
     return ref_ptr<Var>((Var*)myrealloc((void*)ptr.ptr, size, M_LIST));
 }
 
 template<> ref_ptr<Object>
-myrealloc(ref_ptr<Object> ptr, size_t size)
+myrealloc(ref_ptr<Object>& ptr, size_t size)
 {
     return ref_ptr<Object>((Object*)myrealloc((void*)ptr.ptr, size, M_ANON));
 }
 
-void *
-myrealloc(void *ptr, unsigned size, Memory_Type type)
+void*
+myrealloc(void* ptr, unsigned size, Memory_Type type)
 {
     int offs = refcount_overhead(type);
     static char msg[100];
 
-    ptr = realloc((char *) ptr - offs, size + offs);
+    ptr = realloc((char*) ptr - offs, size + offs);
     if (!ptr) {
 	sprintf(msg, "memory re-allocation (size %u) failed!", size);
 	panic(msg);
@@ -236,49 +236,49 @@ myrealloc(void *ptr, unsigned size, Memory_Type type)
 }
 
 template<typename T> void
-myfree(ref_ptr<T> ptr)
+myfree(ref_ptr<T>& ptr)
 {
     myfree((void*)ptr.ptr, M_NONE);
 }
 
 template<> void
-myfree<double>(ref_ptr<double> ptr)
+myfree<double>(ref_ptr<double>& ptr)
 {
     myfree(ptr.ptr, M_FLOAT);
 }
 
 template<> void
-myfree<rbtree>(ref_ptr<rbtree> ptr)
+myfree<rbtree>(ref_ptr<rbtree>& ptr)
 {
     myfree(ptr.ptr, M_TREE);
 }
 
 template<> void
-myfree<rbtrav>(ref_ptr<rbtrav> ptr)
+myfree<rbtrav>(ref_ptr<rbtrav>& ptr)
 {
     myfree(ptr.ptr, M_TRAV);
 }
 
 template<> void
-myfree<const char>(ref_ptr<const char> ptr)
+myfree<const char>(ref_ptr<const char>& ptr)
 {
     myfree((void*)ptr.ptr, M_STRING);
 }
 
 template<> void
-myfree<Var>(ref_ptr<Var> ptr)
+myfree<Var>(ref_ptr<Var>& ptr)
 {
     myfree((void*)ptr.ptr, M_LIST);
 }
 
 template<> void
-myfree<Object>(ref_ptr<Object> ptr)
+myfree<Object>(ref_ptr<Object>& ptr)
 {
     myfree((void*)ptr.ptr, M_ANON);
 }
 
 void
-myfree(void *ptr, Memory_Type type)
+myfree(void* ptr, Memory_Type type)
 {
-    free((char *) ptr - refcount_overhead(type));
+    free((char*) ptr - refcount_overhead(type));
 }

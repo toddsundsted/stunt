@@ -46,7 +46,7 @@ extern Var complex_var_ref(const Var&);
 extern Var complex_var_dup(const Var&);
 extern int var_refcount(const Var&);
 
-extern void aux_free(const Var&);
+extern void aux_free(Var&);
 
 static inline void
 free_var(const Var& var)

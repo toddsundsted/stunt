@@ -152,7 +152,7 @@ str_hash(const char *s)
  * drop to zero.  Roughly corresponds to `Free' in Bacon and Rajan.
  */
 void
-aux_free(const Var& v)
+aux_free(Var& v)
 {
     switch ((int) v.type) {
     case TYPE_LIST:
@@ -171,12 +171,14 @@ aux_free(const Var& v)
 #ifdef ENABLE_GC
 /* Corresponds to `Decrement' and `Release' in Bacon and Rajan. */
 void
-complex_free_var(const Var& v)
+complex_free_var(const Var& var)
 {
+    Var& v = const_cast<Var&>(var);
+
     switch ((int) v.type) {
     case TYPE_STR:
 	if (v.v.str)
-	    free_str(const_cast<ref_ptr<const char>&>(v.v.str));
+	    free_str(v.v.str);
 	break;
     case TYPE_FLOAT:
 	if (v.v.fnum.dec_ref() == 0)
@@ -184,7 +186,7 @@ complex_free_var(const Var& v)
 	break;
     case TYPE_LIST:
 	if (v.v.list.dec_ref() == 0) {
-	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
+	    destroy_list(static_cast<List&>(v));
 	    v.v.list.set_color(GC_BLACK);
 	    if (!v.v.list.is_buffered())
 		myfree(v.v.list);
@@ -194,7 +196,7 @@ complex_free_var(const Var& v)
 	break;
     case TYPE_MAP:
 	if (v.v.tree.dec_ref() == 0) {
-	    destroy_map(static_cast<Map&>(const_cast<Var&>(v)));
+	    destroy_map(static_cast<Map&>(v));
 	    v.v.tree.set_color(GC_BLACK);
 	    if (!v.v.tree.is_buffered())
 		myfree(v.v.tree);
@@ -204,7 +206,7 @@ complex_free_var(const Var& v)
 	break;
     case TYPE_ITER:
 	if (v.v.trav.dec_ref() == 0)
-	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
+	    destroy_iter(static_cast<Iter&>(v));
 	break;
     case TYPE_ANON:
 	/* The first time an anonymous object's reference count drops
@@ -223,7 +225,7 @@ complex_free_var(const Var& v)
 		}
 		else if (db_object_has_flag2(v, FLAG_INVALID)) {
 		    incr_quota(db_object_owner2(v));
-		    db_destroy_anonymous_object(const_cast<ref_ptr<Object>&>(v.v.anon));
+		    db_destroy_anonymous_object(v.v.anon);
 		    v.v.anon.set_color(GC_BLACK);
 		    if (!v.v.anon.is_buffered())
 			myfree(v.v.anon);
@@ -241,12 +243,14 @@ complex_free_var(const Var& v)
 }
 #else
 void
-complex_free_var(const Var& v)
+complex_free_var(const Var& var)
 {
+    Var& v = const_cast<Var&>(var);
+
     switch ((int) v.type) {
     case TYPE_STR:
 	if (v.v.str)
-	    free_str(const_cast<ref_ptr<const char>&>(v.v.str));
+	    free_str(v.v.str);
 	break;
     case TYPE_FLOAT:
 	if (v.v.fnum.dec_ref() == 0)
@@ -254,15 +258,15 @@ complex_free_var(const Var& v)
 	break;
     case TYPE_LIST:
 	if (v.v.list.dec_ref() == 0)
-	    destroy_list(static_cast<List&>(const_cast<Var&>(v)));
+	    destroy_list(static_cast<List&>(v));
 	break;
     case TYPE_MAP:
 	if (v.v.tree.dec_ref() == 0)
-	    destroy_map(static_cast<Map&>(const_cast<Var&>(v)));
+	    destroy_map(static_cast<Map&>(v));
 	break;
     case TYPE_ITER:
 	if (v.v.trav.dec_ref() == 0)
-	    destroy_iter(static_cast<Iter&>(const_cast<Var&>(v)));
+	    destroy_iter(static_cast<Iter&>(v));
 	break;
     case TYPE_ANON:
 	if (v.v.anon && v.v.anon.dec_ref() == 0) {
@@ -271,7 +275,7 @@ complex_free_var(const Var& v)
 	    }
 	    else if (db_object_has_flag2(v, FLAG_INVALID)) {
 		incr_quota(db_object_owner2(v));
-		db_destroy_anonymous_object(const_cast<ref_ptr<Object>&>(v.v.anon));
+		db_destroy_anonymous_object(v.v.anon);
 		myfree(v.v.anon);
 	    }
 	    else {
