@@ -202,10 +202,8 @@ disassemble(Program * prog, Printer p, void *data)
     Bytecodes bc;
     const char *ptr;
     const char **names = prog->var_names;
-    unsigned tmp, num_names = prog->num_var_names;
-#   define NAMES(i)	(tmp = i,					\
-			 tmp < num_names ? names[tmp]			\
-					 : "*** Unknown variable ***")
+    int num_names = prog->num_var_names;
+#   define NAMES(i)	(i < num_names ? names[i] : "*** Unknown variable ***")
     Var *literals = prog->literals;
 
     initialize_tables();
@@ -216,7 +214,7 @@ disassemble(Program * prog, Printer p, void *data)
     stream_printf(s, "First line number: %d", prog->first_lineno);
     output(s);
 
-    for (i = -1; i < 0 || i < prog->fork_vectors_size; i++) {
+    for (i = -1; i < 0 || i < (int)prog->fork_vectors_size; i++) {
 	output(s);
 	if (i == -1) {
 	    stream_printf(s, "Main code vector:");
@@ -247,11 +245,11 @@ disassemble(Program * prog, Printer p, void *data)
 
 	for (pc = 0; pc < bc.size;) {
 	    Byte b;
-	    unsigned arg;
+	    int arg;
 #	    define ADD_BYTES(n)	(arg = add_bytes(s, bc.vector, pc, n),	\
 				 pc += n,				\
 				 arg)
-	    unsigned a1, a2, a3;
+	    int a1, a2, a3;
 
 	    new_insn(s, pc);
 	    b = add_bytes(s, bc.vector, pc++, 1);
