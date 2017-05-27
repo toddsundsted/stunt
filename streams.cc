@@ -62,8 +62,8 @@ grow(Stream * s, int newlen, int need)
     char *newbuf;
 
     if (allow_stream_exceptions > 0) {
-	if (newlen > stream_alloc_maximum) {
-	    if (s->current + need < stream_alloc_maximum)
+	if (newlen > (int)stream_alloc_maximum) {
+	    if (s->current + need < (int)stream_alloc_maximum)
 		newlen = stream_alloc_maximum;
 	    else
 		throw stream_too_big();
