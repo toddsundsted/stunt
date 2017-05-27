@@ -92,6 +92,7 @@ static struct pending_recycle *pending_tail = 0;
  */
 #define VOID_PTR(var) ((void *)((var).v.str))
 
+#ifdef LOG_GC_STATS
 static void
 gc_stats(int color[])
 {
@@ -101,6 +102,7 @@ gc_stats(int color[])
     FOR_EACH_ROOT (v, head, last)
 	color[gc_get_color(VOID_PTR(v))]++;
 }
+#endif
 
 static void
 gc_debug(const char *name)

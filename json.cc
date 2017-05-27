@@ -481,9 +481,9 @@ generate(yajl_gen g, Var v, void *ctx)
 	    yajl_gen_array_close(g);
 	    return yajl_gen_status_ok;
 	}
+    default:
+	    return (yajl_gen_status)-1;
     }
-
-    return (yajl_gen_status)-1;
 }
 
 static yajl_callbacks callbacks = {

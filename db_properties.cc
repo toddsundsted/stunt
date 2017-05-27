@@ -174,7 +174,7 @@ db_add_propdef(Var obj, const char *pname, Var value, Objid owner,
 {
     Object *o;
     Pval pval;
-    int i;
+    unsigned i;
     db_prop_handle h;
 
     o = dbpriv_dereference(obj);
@@ -305,7 +305,7 @@ db_delete_propdef(Var obj, const char *pname)
     Proplist *props = &(o->propdefs);
     int hash = str_hash(pname);
     int count = props->cur_length;
-    int max = props->max_length;
+    unsigned max = props->max_length;
     int i, j;
 
     for (i = 0; i < count; i++) {
@@ -388,6 +388,7 @@ struct contents_data {
     int i;
 };
 
+#if 0
 static int
 add_to_list(void *data, Objid c)
 {
@@ -399,6 +400,7 @@ add_to_list(void *data, Objid c)
 
     return 0;
 }
+#endif
 
 static void
 get_bi_value(db_prop_handle h, Var * value)
@@ -743,8 +745,8 @@ dbpriv_check_properties_for_chparent(Var obj, Var parents, Var anon_kids)
     Object *o2, *o3, *o = dbpriv_dereference(obj);
     Proplist *props;
     Var ancestor;
-    int i, c, x;
-    int i2, c2;
+    int i, c, i2, c2;
+    unsigned x;
 
     /* check props in descendants & anonymous children */
 
@@ -900,7 +902,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
     Object *me = dbpriv_dereference(obj);
     Pval *new_propval = NULL;
 
-    assert(old_count == me->nval);
+    assert(old_count == (int)me->nval);
 
     if (new_count != 0) {
 	new_propval = (Pval *)mymalloc(new_count * sizeof(Pval), M_PVAL);

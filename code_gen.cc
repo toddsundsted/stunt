@@ -1214,7 +1214,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
     Bytecodes bc;
     int old_i, new_i, fix_i;
 #ifdef BYTECODE_REDUCE_REF
-    int *bbd, n_bbd;		/* basic block delimiters */
+    int *bbd, n_bbd;	/* basic block delimiters */
     unsigned varbits;		/* variables we've seen */
 #if NUM_READY_VARS > 32
 #error assumed NUM_READY_VARS was 32
