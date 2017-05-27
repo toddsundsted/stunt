@@ -45,7 +45,7 @@
 
 /* the following globals are the guts of the virtual machine: */
 static activation *activ_stack = 0;
-static int max_stack_size = 0;
+static unsigned max_stack_size = 0;
 static unsigned top_activ_stack;	/* points to top-of-stack
 					   (last-occupied-slot),
 					   not next-empty-slot */
@@ -70,7 +70,7 @@ static Var temp_vars = new_list(0);
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
-
+
 /**** error handling ****/
 
 typedef enum {			/* Reasons for executing a FINALLY handler */
@@ -120,7 +120,7 @@ free_rt_stack(activation * a)
 void
 print_error_backtrace(const char *msg, void (*output) (const char *))
 {
-    int t;
+    unsigned t;
     Stream *str;
 
     if (!interpreter_is_running)
@@ -228,7 +228,6 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 	void *bi_func_data = 0;
 	int bi_func_pc;
 	unsigned bi_func_id = 0;
-	Objid player;
 	Var v, *goal = a->base_rt_stack;
 
 	if (why == FIN_EXIT)
@@ -280,7 +279,6 @@ unwind_stack(Finally_Reason why, Var value, enum outcome *outcome)
 	    bi_func_id = a->bi_func_id;
 	    bi_func_data = a->bi_func_data;
 	}
-	player = a->player;
 	free_activation(a, 0);	/* 0 == don't free bi_func_data */
 
 	if (top_activ_stack == 0) {	/* done */
@@ -543,7 +541,7 @@ abort_task(enum abort_reason reason)
 	(void) unwind_stack(FIN_ABORT, zero, 0);
     }
 }
-
+
 /**** activation manipulation ****/
 
 static int
@@ -578,7 +576,6 @@ free_activation(activation * ap, char data_too)
 	free_data(ap->bi_func_data);
     /* else bi_func_state will be later freed by bi_function */
 }
-
 
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
@@ -725,7 +722,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 #else
 #define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_flag_option_cached(prop))
 #endif				/* IGNORE_PROP_PROTECTED */
-
+
 /** 
   the main interpreter -- run()
   everything is just an entry point to it
@@ -955,7 +952,6 @@ do {								\
 	case OP_MAP_INSERT:
 	    {
 		Var r, map, key, value;
-		enum error e = E_NONE;
 		key = POP(); /* any except list or map */
 		value = POP(); /* any */
 		map = POP(); /* should be map */
@@ -1913,7 +1909,6 @@ do {								\
 		case EOP_RANGESET:
 		    {
 			Var base, from, to, value;
-			enum error e;
 
 			value = POP();
 			to = POP();
@@ -2429,7 +2424,7 @@ do {								\
 			    ans.v.num = lhs.v.num;
 			} else {
 
-#define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * CHAR_BIT - (n)))
+#define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * (CHAR_BIT - (n))))
 #define SHIFTR(n, m) ((Num)((UNum)n >> m) & MASK(m))
 
 			    ans.type = TYPE_INT;
@@ -2630,7 +2625,6 @@ do {								\
 	}
     }
 }
-
 
 /**** manipulating data of task ****/
 
@@ -2713,7 +2707,6 @@ run_interpreter(char raise, enum error e,
     free_var(args);
     return ret;
 }
-
 
 Var
 caller()
@@ -2722,7 +2715,7 @@ caller()
 }
 
 static void
-check_activ_stack_size(int max)
+check_activ_stack_size(unsigned max)
 {
     if (max_stack_size != max) {
 	if (activ_stack)
@@ -2733,10 +2726,10 @@ check_activ_stack_size(int max)
     }
 }
 
-static int
+static unsigned
 current_max_stack_size(void)
 {
-    int max = server_int_option("max_stack_depth", DEFAULT_MAX_STACK_DEPTH);
+    unsigned max = server_int_option("max_stack_depth", DEFAULT_MAX_STACK_DEPTH);
 
     if (max < DEFAULT_MAX_STACK_DEPTH)
 	max = DEFAULT_MAX_STACK_DEPTH;
@@ -2797,7 +2790,6 @@ resume_from_previous_vm(vm the_vm, Var v)
 	return run_interpreter(0, E_NONE, 0, 0/*bg*/, 1/*traceback*/);
     }
 }
-
 
 /*** external functions ***/
 
@@ -3249,7 +3241,6 @@ register_execute(void)
     register_function("callers", 0, 1, bf_callers, TYPE_ANY);
     register_function("task_stack", 1, 2, bf_task_stack, TYPE_INT, TYPE_ANY);
 }
-
 
 /**** storing to/loading from database ****/
 
@@ -3361,7 +3352,7 @@ read_rt_env(const char ***old_names, Var ** rt_env, int *old_size)
 
 Var *
 reorder_rt_env(Var * old_rt_env, const char **old_names,
-	       int old_size, Program * prog)
+	       unsigned old_size, Program * prog)
 {
     /* reorder old_rt_env, which is aligned according to old_names,
        to align to prog->var_names -- return the new rt_env
@@ -3370,13 +3361,11 @@ reorder_rt_env(Var * old_rt_env, const char **old_names,
        reference yet unloaded anonymous objects.  defer freeing these until
        loading is complete. see `free_reordered_rt_env_values()' */
 
-    unsigned size = prog->num_var_names;
+    unsigned i, size = prog->num_var_names;
     Var *rt_env = new_rt_env(size);
 
-    unsigned i;
-
     for (i = 0; i < size; i++) {
-	int slot;
+	unsigned slot;
 
 	for (slot = 0; slot < old_size; slot++) {
 	    if (mystrcasecmp(old_names[slot], prog->var_names[i]) == 0)
@@ -3452,8 +3441,7 @@ read_activ(activation * a, int which_vector)
     DB_Version version;
     Var *old_rt_env;
     const char **old_names;
-    int old_size, stack_in_use;
-    unsigned i;
+    unsigned i, stack_in_use, old_size;
     const char *func_name;
     int max_stack;
     char c;
