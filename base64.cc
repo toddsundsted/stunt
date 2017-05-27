@@ -71,7 +71,7 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 	return pack;
     }
 
-    if ((len / 3) * 4 > stream_alloc_maximum) {
+    if (((unsigned)len / 3) * 4 > stream_alloc_maximum) {
 	const package pack = make_space_pack();
 	free_var(arglist);
 	return pack;
@@ -169,7 +169,7 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     in = arglist.v.list[1].v.str;
     len = memo_strlen(in);
 
-    int i, pad = 0;
+    unsigned int i, pad = 0;
 
     for (i = 0; i < len; i++) {
 	const unsigned char tmp = (unsigned char)in[i];
