@@ -127,7 +127,7 @@ void write_rt_env(const char **var_names, Var * rt_env,
 int read_rt_env(const char ***old_names, Var ** rt_env,
 		unsigned *old_size);
 Var *reorder_rt_env(Var * old_rt_env, const char **old_names,
-		    int old_size, Program * prog);
+		    unsigned old_size, Program * prog);
 extern void free_reordered_rt_env_values(void);
 extern void write_activ(activation a);
 extern int read_activ(activation * a, int which_vector);
