@@ -298,8 +298,8 @@ bf_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 }
 
 static package
-bf_create(Var arglist, Byte next, void *vdata, Objid progr)
-{			/* (OBJ|LIST parent(s) [, OBJ owner] [, INT anonymous] [, LIST args]) */
+bf_create_anonymous(Var arglist, Byte next, void *vdata, Objid progr)
+{			/* (OBJ|LIST parent(s) [, OBJ owner] [, LIST args]) */
     Var *data = (Var *)vdata;
     Var r;
 
@@ -313,13 +313,10 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 
 	int nargs = arglist.v.list[0].v.num;
 	Objid owner = progr;
-	int anon = 0; // position of the anonymous flag argument
 	int init = 0; // position of the initializer argument
 
 	if (1 < nargs && TYPE_OBJ == arglist.v.list[2].type)
 	    owner = arglist.v.list[2].v.obj;
-	else if (1 < nargs && TYPE_INT == arglist.v.list[2].type)
-	    anon = 2;
 	else if (1 < nargs && TYPE_LIST == arglist.v.list[2].type)
 	    init = 2;
 	else if (1 < nargs) {
@@ -327,28 +324,14 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	    return make_error_pack(E_TYPE);
 	}
 
-	if (2 < nargs && TYPE_INT == arglist.v.list[3].type && !anon)
-	    anon = 3;
-	else if (2 < nargs && TYPE_LIST == arglist.v.list[3].type && !init)
+	if (2 < nargs && TYPE_LIST == arglist.v.list[3].type && !init)
 	    init = 3;
 	else if (2 < nargs) {
 	    free_var(arglist);
 	    return make_error_pack(E_TYPE);
 	}
 
-	if (3 < nargs && TYPE_INT == arglist.v.list[4].type && !anon)
-	    anon = 4;
-	else if (3 < nargs && TYPE_LIST == arglist.v.list[4].type && !init)
-	    init = 4;
-	else if (3 < nargs) {
-	    free_var(arglist);
-	    return make_error_pack(E_TYPE);
-	}
-
-	bool anonymous = anon > 0 ? arglist.v.list[anon].v.num : false;
-
-	if ((anonymous && owner == NOTHING)
-	    || (!valid(owner) && owner != NOTHING)
+	if ((!valid(owner) && owner != NOTHING)
 	    || (arglist.v.list[1].type == TYPE_OBJ
 		&& !valid(arglist.v.list[1].v.obj)
 		&& arglist.v.list[1].v.obj != NOTHING)
@@ -360,11 +343,118 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 	else if ((progr != owner && !is_wizard(progr))
 		 || (arglist.v.list[1].type == TYPE_OBJ
 		     && valid(arglist.v.list[1].v.obj)
-		     && !db_object_allows(arglist.v.list[1], progr,
-		                          anonymous ? FLAG_ANONYMOUS : FLAG_FERTILE))
+		     && !db_object_allows(arglist.v.list[1], progr, FLAG_ANONYMOUS))
 		 || (arglist.v.list[1].type == TYPE_LIST
-		     && !all_allowed(arglist.v.list[1], progr,
-		                     anonymous ? FLAG_ANONYMOUS : FLAG_FERTILE))) {
+		     && !all_allowed(arglist.v.list[1], progr, FLAG_ANONYMOUS))) {
+	    free_var(arglist);
+	    return make_error_pack(E_PERM);
+	}
+
+	if (valid(owner) && !decr_quota(owner)) {
+	    free_var(arglist);
+	    return make_error_pack(E_QUOTA);
+	}
+	else {
+	    enum error e;
+	    Objid last = db_last_used_objid();
+	    Objid oid = db_create_object();
+	    Var args;
+
+	    db_set_object_owner(oid, !valid(owner) ? oid : owner);
+
+	    if (!db_change_parents(new_obj(oid), arglist.v.list[1], none)) {
+		db_destroy_object(oid);
+		db_set_last_used_objid(last);
+		free_var(arglist);
+		return make_error_pack(E_INVARG);
+	    }
+
+	    r.type = TYPE_ANON;
+	    r.v.anon = db_make_anonymous(oid, last);
+
+	    data = (Var *)alloc_data(sizeof(Var));
+	    *data = var_ref(r);
+
+	    /* pass in initializer args, if present */
+	    args = init > 0 ? var_ref(arglist.v.list[init]) : new_list(0);
+
+	    free_var(arglist);
+
+	    e = call_verb(oid, "initialize", r, args, 0);
+	    /* e will not be E_INVIND */
+
+	    if (e == E_NONE) {
+		free_var(r);
+		return make_call_pack(2, data);
+	    }
+
+	    free_var(*data);
+	    free_data(data);
+	    free_var(args);
+
+	    if (e == E_MAXREC) {
+		free_var(r);
+		return make_error_pack(e);
+	    } else		/* (e == E_VERBNF) do nothing */
+		return make_var_pack(r);
+	}
+    } else {			/* next == 2, returns from initialize verb_call */
+	r = var_ref(*data);
+	free_var(*data);
+	free_data(data);
+	return make_var_pack(r);
+    }
+}
+
+static package
+bf_create(Var arglist, Byte next, void *vdata, Objid progr)
+{			/* (OBJ|LIST parent(s) [, OBJ owner] [, LIST args]) */
+    Var *data = (Var *)vdata;
+    Var r;
+
+    if (next == 1) {
+	// there must be at least one argument, and
+	// it must be an object or list of objects
+	if (!is_obj_or_list_of_objs(arglist.v.list[1])) {
+	    free_var(arglist);
+	    return make_error_pack(E_TYPE);
+	}
+
+	int nargs = arglist.v.list[0].v.num;
+	Objid owner = progr;
+	int init = 0; // position of the initializer argument
+
+	if (1 < nargs && TYPE_OBJ == arglist.v.list[2].type)
+	    owner = arglist.v.list[2].v.obj;
+	else if (1 < nargs && TYPE_LIST == arglist.v.list[2].type)
+	    init = 2;
+	else if (1 < nargs) {
+	    free_var(arglist);
+	    return make_error_pack(E_TYPE);
+	}
+
+	if (2 < nargs && TYPE_LIST == arglist.v.list[3].type && !init)
+	    init = 3;
+	else if (2 < nargs) {
+	    free_var(arglist);
+	    return make_error_pack(E_TYPE);
+	}
+
+	if ((!valid(owner) && owner != NOTHING)
+	    || (arglist.v.list[1].type == TYPE_OBJ
+		&& !valid(arglist.v.list[1].v.obj)
+		&& arglist.v.list[1].v.obj != NOTHING)
+	    || (arglist.v.list[1].type == TYPE_LIST
+		&& !all_valid(arglist.v.list[1]))) {
+	    free_var(arglist);
+	    return make_error_pack(E_INVARG);
+	}
+	else if ((progr != owner && !is_wizard(progr))
+		 || (arglist.v.list[1].type == TYPE_OBJ
+		     && valid(arglist.v.list[1].v.obj)
+		     && !db_object_allows(arglist.v.list[1], progr, FLAG_FERTILE))
+		 || (arglist.v.list[1].type == TYPE_LIST
+		     && !all_allowed(arglist.v.list[1], progr, FLAG_FERTILE))) {
 	    free_var(arglist);
 	    return make_error_pack(E_PERM);
 	}
@@ -388,17 +478,8 @@ bf_create(Var arglist, Byte next, void *vdata, Objid progr)
 		return make_error_pack(E_INVARG);
 	    }
 
-	    /*
-	     * If anonymous, clean up the object used to create the
-	     * anonymous object; `oid' is invalid after that.
-	     */
-	    if (anonymous) {
-		r.type = TYPE_ANON;
-		r.v.anon = db_make_anonymous(oid, last);
-	    } else {
-		r.type = TYPE_OBJ;
-		r.v.obj = oid;
-	    }
+	    r.type = TYPE_OBJ;
+	    r.v.obj = oid;
 
 	    data = (Var *)alloc_data(sizeof(Var));
 	    *data = var_ref(r);
@@ -844,18 +925,19 @@ bf_players(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_is_player(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (object) */
-    Var r;
+{                               /* (object) */
     Objid oid = arglist.v.list[1].v.obj;
+    int valid = is_object(arglist.v.list[1]) && is_valid(arglist.v.list[1]);
 
     free_var(arglist);
-
-    if (!valid(oid))
-	return make_error_pack(E_INVARG);
-
-    r.type = TYPE_INT;
-    r.v.num = is_user(oid);
-    return make_var_pack(r);
+    if (!valid) {
+        return make_error_pack(E_INVARG);
+    } else {
+        Var r;
+        r.type = TYPE_INT;
+        r.v.num = is_user(oid);
+        return make_var_pack(r);
+    }
 }
 
 static package
@@ -947,9 +1029,12 @@ register_objects(void)
 
     register_function("toobj", 1, 1, bf_toobj, TYPE_ANY);
     register_function("typeof", 1, 1, bf_typeof, TYPE_ANY);
-    register_function_with_read_write("create", 1, 4, bf_create,
+    register_function_with_read_write("create", 1, 3, bf_create,
 				      bf_create_read, bf_create_write,
-				      TYPE_ANY, TYPE_ANY, TYPE_ANY, TYPE_ANY);
+				      TYPE_ANY, TYPE_ANY, TYPE_ANY);
+    register_function_with_read_write("create_anonymous", 1, 3, bf_create_anonymous,
+				      bf_create_read, bf_create_write,
+				      TYPE_ANY, TYPE_ANY, TYPE_ANY);
     register_function_with_read_write("recycle", 1, 1, bf_recycle,
 				      bf_recycle_read, bf_recycle_write,
 				      TYPE_ANY);
@@ -968,7 +1053,7 @@ register_objects(void)
 		      TYPE_ANY, TYPE_ANY);
     register_function("max_object", 0, 0, bf_max_object);
     register_function("players", 0, 0, bf_players);
-    register_function("is_player", 1, 1, bf_is_player, TYPE_OBJ);
+    register_function("is_player", 1, 1, bf_is_player, TYPE_ANY);
     register_function("set_player_flag", 2, 2, bf_set_player_flag,
 		      TYPE_OBJ, TYPE_ANY);
     register_function_with_read_write("move", 2, 2, bf_move,

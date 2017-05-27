@@ -394,6 +394,23 @@ unparse_stmt_list(Stream * str, struct Stmt_List list, int indent)
 }
 
 static void
+unparse_stmt_scatfor(Stream * str, struct Stmt_ScatFor sfor, int indent)
+{
+    stream_add_string(str, "for {");
+    unparse_scatter(str, sfor.scat);
+    stream_add_string(str, "} in (");
+    unparse_expr(str, sfor.expr);
+    stream_add_char(str, ')');
+
+    output(str);
+
+    unparse_stmt(sfor.body, indent + 2);
+    indent_stmt(str, indent);
+    stream_add_string(str, "endfor");
+    output(str);
+}
+
+static void
 unparse_stmt_range(Stream * str, struct Stmt_Range range, int indent)
 {
     stream_printf(str, "for %s in [", prog->var_names[range.id]);
@@ -467,6 +484,9 @@ unparse_stmt(Stmt * stmt, int indent)
 	    break;
 	case STMT_RANGE:
 	    unparse_stmt_range(str, stmt->s.range, indent);
+	    break;
+	case STMT_SCATFOR:
+	    unparse_stmt_scatfor(str, stmt->s.scatfor, indent);
 	    break;
 	case STMT_FORK:
 	    unparse_stmt_fork(str, stmt->s.fork, indent);

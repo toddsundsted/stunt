@@ -481,15 +481,25 @@ raise_error(package p, enum outcome *outcome)
     int handler_activ = find_handler_activ(p.u.raise.code);
     Finally_Reason why;
     Var value;
-
+    
     if (handler_activ >= 0) {	/* handler found */
 	why = FIN_RAISE;
 	value = new_list(4);
     } else {			/* uncaught exception */
+	Stream *s = new_stream(25);
+
 	why = FIN_UNCAUGHT;
-	value = new_list(5);
+	value = new_list(6);
 	value.v.list[5] = error_backtrace_list(p.u.raise.msg);
+	value.v.list[6].type = TYPE_STR;
+	stream_add_string(s, activ_stack[0].verb);
+	if (strcmp(activ_stack[0].rt_env[SLOT_ARGSTR].v.str, "") != 0) {
+	    stream_add_char(s, ' ');
+	    stream_add_string(s, activ_stack[0].rt_env[SLOT_ARGSTR].v.str);
+	}
+	value.v.list[6].v.str = str_dup(stream_contents(s));
 	handler_activ = 0;	/* get entire stack in list */
+	free_stream(s);
     }
     value.v.list[1] = p.u.raise.code;
     value.v.list[2].type = TYPE_STR;
@@ -513,6 +523,7 @@ abort_task(enum abort_reason reason)
     Var value;
     const char *msg;
     const char *htag;
+    Stream *s = new_stream(25);
 
     switch(reason) {
     default:
@@ -529,13 +540,22 @@ abort_task(enum abort_reason reason)
 	htag = "seconds";
 
     save_hinfo:
-	value = new_list(3);
+	value = new_list(4);
 	value.v.list[1].type = TYPE_STR;
 	value.v.list[1].v.str = str_dup(htag);
 	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
 					  root_activ_vector, 1,
 					  NOTHING);
 	value.v.list[3] = error_backtrace_list(msg);
+	value.v.list[4].type = TYPE_STR;
+	stream_add_string(s, activ_stack[0].verb);
+	if (strcmp(activ_stack[0].rt_env[SLOT_ARGSTR].v.str, "") != 0) {
+	    stream_add_char(s, ' ');
+	    stream_add_string(s, activ_stack[0].rt_env[SLOT_ARGSTR].v.str);
+	}
+
+	value.v.list[4].v.str = str_dup(stream_contents(s));
+	free_stream(s);
 	save_handler_info("handle_task_timeout", value);
 	/* fall through */
 
@@ -1731,21 +1751,24 @@ do {								\
 	    {
 		Var time;
 		unsigned id = 0, f_index;
+		double when;
 
 		time = POP();
 		f_index = READ_BYTES(bv, bc.numbytes_fork);
 		if (op == OP_FORK_WITH_ID)
 		    id = READ_BYTES(bv, bc.numbytes_var_name);
-		if (time.type != TYPE_INT) {
+		if (time.type != TYPE_INT && time.type != TYPE_FLOAT) {
 		    free_var(time);
 		    RAISE_ERROR(E_TYPE);
-		} else if (time.v.num < 0) {
-		    free_var(time);
+		}
+		when = time.type == TYPE_INT ? time.v.num : *time.v.fnum;
+		free_var(time);
+		if (when < 0) {
 		    RAISE_ERROR(E_INVARG);
 		} else {
 		    enum error e;
 
-		    e = enqueue_forked_task2(RUN_ACTIV, f_index, time.v.num,
+		    e = enqueue_forked_task2(RUN_ACTIV, f_index, when,
 					op == OP_FORK_WITH_ID ? id : -1);
 		    if (e != E_NONE)
 			RAISE_ERROR(e);
@@ -2069,6 +2092,88 @@ do {								\
 			    PUSH_ERROR(ans.v.err);
 			else
 			    PUSH(ans);
+		    }
+		    break;
+
+		case EOP_FOR_SCATTER:
+		    {
+			unsigned lab = READ_BYTES(bv, bc.numbytes_label);
+			Var count, list;
+			count = TOP_RT_VALUE;	/* will be a integer */
+			list = NEXT_TOP_RT_VALUE;	/* should be a list */
+			if (list.type != TYPE_LIST) {
+			    RAISE_ERROR(E_TYPE);
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			    break;
+			} else if (count.v.num > list.v.list[0].v.num /* size */ ) {
+			    free_var(POP());
+			    free_var(POP());
+			    JUMP(lab);
+			    break;
+			}
+
+			{
+			    int nargs = READ_BYTES(bv, 1);
+			    int nreq = READ_BYTES(bv, 1);
+			    int rest = READ_BYTES(bv, 1);
+			    int have_rest = (rest > nargs ? 0 : 1);
+			    Var list;
+			    int len = 0, nopt_avail, nrest, i, offset;
+			    int done, where = 0;
+			    enum error e = E_NONE;
+
+			    /* Get list item AND increment index */
+
+			    list = NEXT_TOP_RT_VALUE.v.list[TOP_RT_VALUE.v.num++];
+
+			    if (list.type != TYPE_LIST)
+				e = E_TYPE;
+			    else if ((len = list.v.list[0].v.num) < nreq || (!have_rest && len > nargs))
+				e = E_ARGS;
+
+			    if (e != E_NONE) {	/* skip rest of operands */
+				free_var(POP());	/* replace list with error code */
+				PUSH_ERROR(e);
+				for (i = 1; i <= nargs; i++) {
+				    READ_BYTES(bv, bc.numbytes_var_name);
+				    READ_BYTES(bv, bc.numbytes_label);
+				}
+			    } else {
+				nopt_avail = len - nreq;
+				nrest = (have_rest && len >= nargs ? len - nargs + 1 : 0);
+				for (offset = 0, i = 1; i <= nargs; i++) {
+				    int id = READ_BYTES(bv, bc.numbytes_var_name);
+				    int label = READ_BYTES(bv, bc.numbytes_label);
+
+				    if (i == rest) {	/* rest */
+					free_var(RUN_ACTIV.rt_env[id]);
+					RUN_ACTIV.rt_env[id] = sublist(var_ref(list), i, i + nrest - 1);
+					offset += nrest - 1;
+				    } else if (label == 0) {	/* required */
+					free_var(RUN_ACTIV.rt_env[id]);
+					RUN_ACTIV.rt_env[id] = var_ref(list.v.list[i + offset]);
+				    } else {	/* optional */
+					if (nopt_avail > 0) {
+					    nopt_avail--;
+					    free_var(RUN_ACTIV.rt_env[id]);
+					    RUN_ACTIV.rt_env[id] = var_ref(list.v.list[i + offset]);
+					} else {
+					    offset--;
+					    if (where == 0 && label != 1)
+						where = label;
+					}
+				    }
+				}
+			    }
+
+			    done = READ_BYTES(bv, bc.numbytes_label);
+			    if (where == 0)
+				JUMP(done);
+			    else
+				JUMP(where);
+			}
 		    }
 		    break;
 
@@ -2706,7 +2811,7 @@ run_interpreter(char raise, enum error e,
 	    }
 	}
 	i = args.v.list[0].v.num;
-	traceback = args.v.list[i];	/* traceback is always the last argument */
+	traceback = args.v.list[i - 1];	/* traceback is the second-last argument */
 	for (i = 1; i <= traceback.v.list[0].v.num; i++)
 	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
     }
@@ -3029,19 +3134,23 @@ bf_raise(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_suspend(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    static int seconds;
+    static double seconds, *secondsp = NULL;
     int nargs = arglist.v.list[0].v.num;
 
-    if (nargs >= 1)
-	seconds = arglist.v.list[1].v.num;
-    else
-	seconds = -1;
+    if (nargs >= 1) {
+	seconds = arglist.v.list[1].type == TYPE_INT ?
+				arglist.v.list[1].v.num :
+				*arglist.v.list[1].v.fnum;
+	secondsp = &seconds;
+    } else {
+	secondsp = NULL;
+    }
     free_var(arglist);
 
     if (nargs >= 1 && seconds < 0)
 	return make_error_pack(E_INVARG);
     else
-	return make_suspend_pack(enqueue_suspended_task, &seconds);
+	return make_suspend_pack(enqueue_suspended_task, secondsp);
 }
 
 static package
@@ -3236,7 +3345,7 @@ register_execute(void)
 				      bf_call_function_write,
 				      TYPE_STR);
     register_function("raise", 1, 3, bf_raise, TYPE_ANY, TYPE_STR, TYPE_ANY);
-    register_function("suspend", 0, 1, bf_suspend, TYPE_INT);
+    register_function("suspend", 0, 1, bf_suspend, TYPE_NUMERIC);
     register_function("read", 0, 2, bf_read, TYPE_OBJ, TYPE_ANY);
     register_function("read_http", 1, 2, bf_read_http, TYPE_STR, TYPE_OBJ);
 

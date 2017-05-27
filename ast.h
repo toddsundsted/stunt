@@ -159,6 +159,12 @@ struct Stmt_Range {
     Stmt *body;
 };
 
+struct Stmt_ScatFor {
+    Scatter *scat;
+    Expr *expr;
+    Stmt *body;
+};
+
 struct Stmt_Loop {
     int id;
     Expr *condition;
@@ -183,7 +189,8 @@ struct Stmt_Finally {
 
 enum Stmt_Kind {
     STMT_COND, STMT_LIST, STMT_RANGE, STMT_WHILE, STMT_FORK, STMT_EXPR,
-    STMT_RETURN, STMT_TRY_EXCEPT, STMT_TRY_FINALLY, STMT_BREAK, STMT_CONTINUE
+    STMT_RETURN, STMT_TRY_EXCEPT, STMT_TRY_FINALLY, STMT_BREAK, STMT_CONTINUE,
+    STMT_SCATFOR
 };
 
 union Stmt_Data {
@@ -194,6 +201,7 @@ union Stmt_Data {
     struct Stmt_Fork fork;
     struct Stmt_Catch _catch;
     struct Stmt_Finally finally;
+    struct Stmt_ScatFor scatfor;
     Expr *expr;
     int exit;
 };

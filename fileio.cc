@@ -86,7 +86,7 @@ struct line_buffer {
  ***************************************************************/
 
 char file_package_name[]    = "FIO";
-char file_package_version[] = "1.5p4";
+char file_package_version[] = "1.5p5";
 
 
 /***************************************************************
@@ -97,9 +97,10 @@ char file_package_version[] = "1.5p4";
 file_handle file_table[FILE_IO_MAX_FILES];
 
 char file_handle_valid(Var fhandle) {
-  int32 i = fhandle.v.num;
   if(fhandle.type != TYPE_INT)
 	 return 0;
+
+  int32 i = fhandle.v.num;
   if((i < 0) || (i >= FILE_IO_MAX_FILES))
 	 return 0;
   return file_table[i].valid;

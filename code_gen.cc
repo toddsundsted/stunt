@@ -606,6 +606,47 @@ generate_codes(Arg_List * codes, State * state)
 }
 
 static void
+generate_scatter_data(Scatter * scat, State * state)
+{
+    int nargs = 0, nreq = 0, rest = -1;
+    unsigned done;
+    Scatter *sc;
+
+    for (sc = scat; sc; sc = sc->next) {
+	nargs++;
+	if (sc->kind == SCAT_REQUIRED)
+	    nreq++;
+	else if (sc->kind == SCAT_REST)
+	    rest = nargs;
+    }
+
+    if (rest == -1)
+	rest = nargs + 1;
+    emit_byte(nargs, state);
+    emit_byte(nreq, state);
+    emit_byte(rest, state);
+    for (sc = scat; sc; sc = sc->next) {
+	add_var_ref(sc->id, state);
+	if (sc->kind != SCAT_OPTIONAL)
+	    add_pseudo_label(0, state);
+	else if (!sc->expr)
+	    add_pseudo_label(1, state);
+	else
+	    sc->label = add_label(state);
+    }
+    done = add_label(state);
+    for (sc = scat; sc; sc = sc->next)
+	if (sc->kind == SCAT_OPTIONAL && sc->expr) {
+	    define_label(sc->label, state);
+	    generate_expr(sc->expr, state);
+	    emit_var_op(OP_PUT, sc->id, state);
+	    emit_byte(OP_POP, state);
+	    pop_stack(1, state);
+	}
+    define_label(done, state);
+}
+
+static void
 generate_expr(Expr * expr, State * state)
 {
     switch (expr->kind) {
@@ -1010,6 +1051,32 @@ generate_stmt(Stmt * stmt, State * state)
 		enter_loop(stmt->s.list.id, stmt->s.list.index, loop_top, state->cur_stack,
 			   end_label, state->cur_stack - 2, state);
 		generate_stmt(stmt->s.list.body, state);
+		end_label = exit_loop(state);
+		emit_byte(OP_JUMP, state);
+		add_known_label(loop_top, state);
+		define_label(end_label, state);
+		pop_stack(2, state);
+	    }
+	    break;
+	case STMT_SCATFOR:
+	    {
+		Fixup loop_top;
+		int end_label;
+
+		generate_expr(stmt->s.scatfor.expr, state);
+		emit_byte(OPTIM_NUM_TO_OPCODE(1), state);	/* loop list index */
+		push_stack(1, state);
+		loop_top = capture_label(state);
+
+		emit_extended_byte(EOP_FOR_SCATTER, state);
+
+		end_label = add_label(state);
+		enter_loop(stmt->s.scatfor.scat->id, 0, loop_top,
+			   state->cur_stack, end_label,
+			   state->cur_stack - 2, state);
+		generate_scatter_data(stmt->s.scatfor.scat, state);
+
+		generate_stmt(stmt->s.scatfor.body, state);
 		end_label = exit_loop(state);
 		emit_byte(OP_JUMP, state);
 		add_known_label(loop_top, state);

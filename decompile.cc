@@ -786,6 +786,95 @@ decompile(Bytecodes bc, Byte * start, Byte * end, Stmt ** stmt_sink,
 		    s = alloc_stmt(STMT_WHILE);
 		    s->s.loop.id = READ_ID();
 		    goto finish_while;
+		case EOP_FOR_SCATTER:
+		    {
+			unsigned top = (ptr - 2) - bc.vector;	/* 2 for EOP, 1 for OP */
+			unsigned done = READ_LABEL();
+			Expr *one = pop_expr();
+			Expr *list = pop_expr();
+			int jump_hot;
+
+			if (one->kind != EXPR_VAR
+			    || one->e.var.type != TYPE_INT
+			    || one->e.var.v.num != 1)
+			    panic("Not a literal one in DECOMPILE!");
+			else
+			    dealloc_node(one);
+
+			{   /* +- From scatter code (Some minor changes) */
+			    Scatter **scp, *sc;
+			    int nargs = *ptr++;
+			    int rest = (ptr++, *ptr++);	/* skip nreq */
+			    int *next_label = 0;
+			    int i, done, is_hot = op_hot;
+
+			    for (i = 1, scp = &sc; i <= nargs;
+				 i++, scp = &((*scp)->next)) {
+				int id = READ_ID();
+				int label = READ_LABEL();
+
+				*scp =
+				    alloc_scatter(i ==
+						  rest ? SCAT_REST : label
+						  ==
+						  0 ? SCAT_REQUIRED :
+						  SCAT_OPTIONAL, id, 0);
+				if (label > 1) {
+				    (*scp)->label = label;
+				    if (next_label)
+					*next_label = label;
+				    next_label = &((*scp)->next_label);
+				} else
+				    (*scp)->label = 0;
+			    }
+			    done = READ_LABEL();
+			    if (next_label)
+				*next_label = done;
+
+			    s = alloc_stmt(STMT_SCATFOR);
+			    s->s.scatfor.expr = list;
+			    s->s.scatfor.scat = sc;
+
+			    for ( /*sc = s->s.scatfor.scat */ ; sc;
+				 sc = sc->next) if (sc->label) {
+				    Expr *defallt;
+
+				    if (ptr != bc.vector + sc->label)
+					panic
+					    ("Misplaced default in DECOMPILE!");
+				    DECOMPILE(bc, ptr,
+					      bc.vector + sc->next_label -
+					      1, 0, 0);
+				    defallt = pop_expr();
+				    HOT1(is_hot, defallt, 0 /* was e */ );
+				    if (defallt->kind != EXPR_ASGN
+					|| defallt->e.bin.lhs->kind !=
+					EXPR_ID
+					|| defallt->e.bin.lhs->e.id !=
+					sc->
+					id)
+					panic
+					("Wrong variable in DECOMPILE!");
+				    sc->expr = defallt->e.bin.rhs;
+				    dealloc_node(defallt->e.bin.lhs);
+				    dealloc_node(defallt);
+				    is_hot = (is_hot || ptr == hot_byte);
+				    if (*ptr++ != OP_POP)
+					panic
+					    ("Missing default POP in DECOMPILE!");
+				}
+			}
+
+			DECOMPILE(bc, ptr, bc.vector + done - jump_len,
+				  &(s->s.scatfor.body), 0);
+			if (top != READ_JUMP(jump_hot))
+			    panic
+				("EOP_FOR_SCATTER jumps to wrong place in DECOMPILE!");
+
+			HOT_BOTTOM(jump_hot, s);
+			ADD_STMT((Stmt *)HOT_OP2(one, list, s));
+		    }
+		    break;
 		case EOP_EXIT:
 		case EOP_EXIT_ID:
 		    s = alloc_stmt(STMT_BREAK);
@@ -1036,6 +1125,11 @@ find_hot_node(Stmt * stmt)
 		return 1;
 	    lineno++;		/* Skip `finally' line */
 	    if (find_hot_node(stmt->s.finally.handler))
+		return 1;
+	    break;
+	case STMT_SCATFOR:
+	    lineno++;		/* Skip (scattered) `for' line */
+	    if (find_hot_node(stmt->s.scatfor.body))
 		return 1;
 	    break;
 	default:
