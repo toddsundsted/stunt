@@ -1212,9 +1212,9 @@ stmt_to_code(Stmt * stmt, GState * gstate)
 {
     State state;
     Bytecodes bc;
-    int old_i, new_i, fix_i;
+    unsigned old_i, new_i, fix_i;
 #ifdef BYTECODE_REDUCE_REF
-    int *bbd, n_bbd;		/* basic block delimiters */
+    unsigned *bbd, n_bbd;	/* basic block delimiters */
     unsigned varbits;		/* variables we've seen */
 #if NUM_READY_VARS > 32
 #error assumed NUM_READY_VARS was 32
@@ -1273,7 +1273,7 @@ stmt_to_code(Stmt * stmt, GState * gstate)
      * the bottom you had to have started at the top", include the
      * *destinations* of the jumps (hence the qsort).
      */
-    bbd = (int *)mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
+    bbd = (unsigned *)mymalloc(sizeof(*bbd) * (state.num_fixups + 2), M_CODE_GEN);
     n_bbd = 0;
     bbd[n_bbd++] = 0;
     bbd[n_bbd++] = state.num_bytes;
