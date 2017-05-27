@@ -47,7 +47,6 @@ static const char *header_format_string
   = "** LambdaMOO Database, Format Version %u **\n";
 
 DB_Version dbio_input_version;
-
 
 /*********** Format version 4 support ***********/
 
@@ -127,11 +126,13 @@ dbv4_find_object(Objid oid)
 	return objects[oid];
 }
 
+#if 0
 static int
 dbv4_valid(Objid oid)
 {
     return dbv4_find_object(oid) != 0;
 }
+#endif
 
 static Objid
 dbv4_last_used_objid(void)
@@ -218,7 +219,6 @@ write_propval(Pval * p)
     dbio_write_objid(p->owner);
     dbio_write_num(p->perms);
 }
-
 
 /*********** Object I/O ***********/
 
@@ -377,6 +377,7 @@ ng_read_object(int anonymous)
     return 1;
 }
 
+#if 0
 static void
 v4_write_object(Objid oid)
 {
@@ -423,6 +424,7 @@ v4_write_object(Objid oid)
     for (i = 0; i < nprops; i++)
 	write_propval(o->propval + i);
 }
+#endif
 
 static void
 ng_write_object(Objid oid)
@@ -466,7 +468,6 @@ ng_write_object(Objid oid)
     for (i = 0; i < nprops; i++)
 	write_propval(o->propval + i);
 }
-
 
 /*********** File-level Input ***********/
 
@@ -1049,7 +1050,6 @@ read_db_file(void)
 
     return 1;
 }
-
 
 /*********** File-level Output ***********/
 
@@ -1225,7 +1225,6 @@ dump_database(Dump_Reason reason)
 
     return success;
 }
-
 
 /*********** External interface ***********/
 
