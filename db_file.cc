@@ -144,7 +144,7 @@ static int
 dbv4_count_properties(Objid oid)
 {
     Object4 *o;
-    int nprops = 0;
+    unsigned nprops = 0;
 
     for (o = dbv4_find_object(oid); o; o = dbv4_find_object(o->parent))
 	nprops += o->propdefs.cur_length;
@@ -228,9 +228,8 @@ v4_read_object(void)
     Objid oid;
     Object4 *o;
     char s[20];
-    int i;
+    unsigned i, nprops;
     Verbdef *v, **prevv;
-    int nprops;
 
     if (dbio_scanf("#%d", &oid) != 1 || oid != dbv4_last_used_objid() + 1)
 	return 0;
@@ -301,9 +300,8 @@ ng_read_object(int anonymous)
     Objid oid;
     Object *o;
     char s[20];
-    int i;
+    unsigned i, nprops;
     Verbdef *v, **prevv;
-    int nprops;
 
     if (dbio_scanf("#%d", &oid) != 1)
 	return 0;
@@ -383,8 +381,8 @@ v4_write_object(Objid oid)
 {
     Object4 *o;
     Verbdef *v;
-    int i;
-    int nverbdefs, nprops;
+    unsigned i, nprops;
+    int nverbdefs;
 
     if (!dbv4_valid(oid)) {
 	dbio_printf("#%d recycled\n", oid);
@@ -431,8 +429,8 @@ ng_write_object(Objid oid)
 {
     Object *o;
     Verbdef *v;
-    int i;
-    int nverbdefs, nprops;
+    unsigned i, nprops;
+    int nverbdefs;
 
     if (!valid(oid)) {
 	dbio_printf("#%d recycled\n", oid);
