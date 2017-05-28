@@ -57,7 +57,7 @@ disable_stream_exceptions()
 }
 
 static void
-grow(Stream * s, int newlen, int need)
+grow(Stream * s, size_t newlen, size_t need)
 {
     char *newbuf;
 
@@ -95,10 +95,10 @@ stream_delete_char(Stream * s)
 void
 stream_add_string(Stream * s, const char *string)
 {
-    int len = strlen(string);
+    size_t len = strlen(string);
 
     if (s->current + len >= s->buflen) {
-	int newlen = s->buflen * 2;
+	size_t newlen = s->buflen * 2;
 
 	if (newlen <= s->current + len)
 	    newlen = s->current + len + 1;

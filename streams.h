@@ -24,8 +24,8 @@
 
 typedef struct {
     char *buffer;
-    int buflen;
-    int current;
+    size_t buflen;
+    size_t current;
 } Stream;
 
 extern Stream *new_stream(int size);

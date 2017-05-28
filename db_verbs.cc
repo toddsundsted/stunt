@@ -36,7 +36,6 @@
 #include "server.h"
 #include "storage.h"
 #include "utils.h"
-
 
 /*********** Prepositions ***********/
 
@@ -188,7 +187,6 @@ db_unparse_prep(db_prep_spec prep)
     else
 	return prep_list[prep];
 }
-
 
 /*********** Verbs ***********/
 
@@ -322,7 +320,7 @@ db_find_command_verb(Objid oid, const char *verb,
 
 	    if (verbcasecmp(v->name, verb)
 		&& (vdobj == ASPEC_ANY || vdobj == dobj)
-		&& (v->prep == PREP_ANY || v->prep == prep)
+		&& (v->prep == PREP_ANY || v->prep == (int)prep)
 		&& (viobj == ASPEC_ANY || viobj == iobj)) {
 		h.definer = o;
 		h.verbdef = v;

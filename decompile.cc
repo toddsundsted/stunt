@@ -901,7 +901,8 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
 {
     Stmt *result;
     Bytecodes bc;
-    int i, sum;
+    int sum;
+    unsigned i;
 
     program = prog;
     bc = (pc_vector == MAIN_VECTOR
@@ -910,13 +911,13 @@ program_to_tree(Program * prog, int vector, int pc_vector, int pc)
 
     if (pc < 0)
 	hot_byte = 0;
-    else if (pc < bc.size)
+    else if (pc < (int)bc.size)
 	hot_byte = bc.vector + pc;
     else
 	panic("Illegal PC in FIND_LINE_NUMBER!");
 
     hot_node = 0;
-    hot_position = (pc == bc.size - 1 ? DONE : TOP);
+    hot_position = (pc == (int)bc.size - 1 ? DONE : TOP);
 
     sum = program->main_vector.max_stack;
     for (i = 0; i < program->fork_vectors_size; i++)

@@ -1019,7 +1019,7 @@ xorbuf(const unsigned char *in1, const unsigned char *in2,
 	unum32 *s1, *s2, *d;
 	size_t tl;
 
-	if (!(((unsigned)in1 | (unsigned)in2 | (unsigned)out) & 0x03)) {
+	if (!(((uintptr_t)in1 | (uintptr_t)in2 | (uintptr_t)out) & 0x03)) {
 		s1 = (unum32 *)in1;
 		s2 = (unum32 *)in2;
 		d = (unum32 *)out;

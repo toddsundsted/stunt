@@ -29,7 +29,7 @@
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 
-#define Arraysize(x) (sizeof(x) / sizeof(*x))
+#define Arraysize(x) ((int)sizeof(x) / (int)sizeof(*x))
 
 extern int mystrcasecmp(const char *, const char *);
 extern int mystrncasecmp(const char *, const char *, int);
