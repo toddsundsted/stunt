@@ -844,18 +844,19 @@ bf_players(Var arglist, Byte next, void *vdata, Objid progr)
 
 static package
 bf_is_player(Var arglist, Byte next, void *vdata, Objid progr)
-{				/* (object) */
-    Var r;
+{                               /* (object) */
     Objid oid = arglist.v.list[1].v.obj;
+    int valid = is_object(arglist.v.list[1]) && is_valid(arglist.v.list[1]);
 
     free_var(arglist);
-
-    if (!valid(oid))
-	return make_error_pack(E_INVARG);
-
-    r.type = TYPE_INT;
-    r.v.num = is_user(oid);
-    return make_var_pack(r);
+    if (!valid) {
+        return make_error_pack(E_INVARG);
+    } else {
+        Var r;
+        r.type = TYPE_INT;
+        r.v.num = is_user(oid);
+        return make_var_pack(r);
+    }
 }
 
 static package
@@ -968,7 +969,7 @@ register_objects(void)
 		      TYPE_ANY, TYPE_ANY);
     register_function("max_object", 0, 0, bf_max_object);
     register_function("players", 0, 0, bf_players);
-    register_function("is_player", 1, 1, bf_is_player, TYPE_OBJ);
+    register_function("is_player", 1, 1, bf_is_player, TYPE_ANY);
     register_function("set_player_flag", 2, 2, bf_set_player_flag,
 		      TYPE_OBJ, TYPE_ANY);
     register_function_with_read_write("move", 2, 2, bf_move,
