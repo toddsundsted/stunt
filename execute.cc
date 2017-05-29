@@ -70,7 +70,7 @@ static Var temp_vars = new_list(0);
 /* macros to ease indexing into activation stack */
 #define RUN_ACTIV     activ_stack[top_activ_stack]
 #define CALLER_ACTIV  activ_stack[top_activ_stack - 1]
-
+
 /**** error handling ****/
 
 typedef enum {			/* Reasons for executing a FINALLY handler */
@@ -486,9 +486,19 @@ raise_error(package p, enum outcome *outcome)
 	why = FIN_RAISE;
 	value = new_list(4);
     } else {			/* uncaught exception */
+	Stream *s = new_stream(25);
+
 	why = FIN_UNCAUGHT;
-	value = new_list(5);
+	value = new_list(6);
 	value.v.list[5] = error_backtrace_list(p.u.raise.msg);
+	value.v.list[6].type = TYPE_STR;
+	stream_add_string(s, activ_stack[0].verb);
+	if (strcmp(activ_stack[0].rt_env[SLOT_ARGSTR].v.str, "") != 0) {
+	    stream_add_char(s, ' ');
+	    stream_add_string(s, activ_stack[0].rt_env[SLOT_ARGSTR].v.str);
+	}
+	value.v.list[6].v.str = str_dup(reset_stream(s));
+	free_stream(s);
 	handler_activ = 0;	/* get entire stack in list */
     }
     value.v.list[1] = p.u.raise.code;
@@ -513,6 +523,7 @@ abort_task(enum abort_reason reason)
     Var value;
     const char *msg;
     const char *htag;
+    Stream *s = new_stream(25);
 
     switch(reason) {
     default:
@@ -529,13 +540,22 @@ abort_task(enum abort_reason reason)
 	htag = "seconds";
 
     save_hinfo:
-	value = new_list(3);
+	value = new_list(4);
 	value.v.list[1].type = TYPE_STR;
 	value.v.list[1].v.str = str_dup(htag);
 	value.v.list[2] = make_stack_list(activ_stack, 0, top_activ_stack, 1,
 					  root_activ_vector, 1,
 					  NOTHING);
 	value.v.list[3] = error_backtrace_list(msg);
+	value.v.list[4].type = TYPE_STR;
+	stream_add_string(s, activ_stack[0].verb);
+	if (strcmp(activ_stack[0].rt_env[SLOT_ARGSTR].v.str, "") != 0) {
+	    stream_add_char(s, ' ');
+	    stream_add_string(s, activ_stack[0].rt_env[SLOT_ARGSTR].v.str);
+	}
+
+	value.v.list[4].v.str = str_dup(reset_stream(s));
+	free_stream(s);
 	save_handler_info("handle_task_timeout", value);
 	/* fall through */
 
@@ -543,7 +563,7 @@ abort_task(enum abort_reason reason)
 	(void) unwind_stack(FIN_ABORT, zero, 0);
     }
 }
-
+
 /**** activation manipulation ****/
 
 static int
@@ -578,7 +598,6 @@ free_activation(activation * ap, char data_too)
 	free_data(ap->bi_func_data);
     /* else bi_func_state will be later freed by bi_function */
 }
-
 
 /** Set up another activation for calling a verb
   does not change the vm in case of any error **/
@@ -725,7 +744,7 @@ call_verb2(Objid recv, const char *vname, Var _this, Var args, int do_pass)
 #else
 #define bi_prop_protected(prop, progr) ((!is_wizard(progr)) && server_flag_option_cached(prop))
 #endif				/* IGNORE_PROP_PROTECTED */
-
+
 /** 
   the main interpreter -- run()
   everything is just an entry point to it
@@ -2630,7 +2649,6 @@ do {								\
 	}
     }
 }
-
 
 /**** manipulating data of task ****/
 
@@ -2706,14 +2724,13 @@ run_interpreter(char raise, enum error e,
 	    }
 	}
 	i = args.v.list[0].v.num;
-	traceback = args.v.list[i];	/* traceback is always the last argument */
+	traceback = args.v.list[i - 1];	/* traceback is the second-last argument */
 	for (i = 1; i <= traceback.v.list[0].v.num; i++)
 	    notify(activ_stack[0].player, traceback.v.list[i].v.str);
     }
     free_var(args);
     return ret;
 }
-
 
 Var
 caller()
@@ -2797,7 +2814,6 @@ resume_from_previous_vm(vm the_vm, Var v)
 	return run_interpreter(0, E_NONE, 0, 0/*bg*/, 1/*traceback*/);
     }
 }
-
 
 /*** external functions ***/
 
@@ -3249,7 +3265,6 @@ register_execute(void)
     register_function("callers", 0, 1, bf_callers, TYPE_ANY);
     register_function("task_stack", 1, 2, bf_task_stack, TYPE_INT, TYPE_ANY);
 }
-
 
 /**** storing to/loading from database ****/
 
