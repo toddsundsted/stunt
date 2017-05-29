@@ -30,157 +30,97 @@
  * link in your extensions.
  */
 
-#define EXAMPLE 0
+#include "my-stdlib.h"
+#include "my-sys-time.h"
 
-#include "bf_register.h"
 #include "functions.h"
-#include "db_tune.h"
-
-#if EXAMPLE
-
-#include "my-unistd.h"
-
-#include "log.h"
-#include "net_multi.h"
+#include "numbers.h"
+#include "server.h"
 #include "storage.h"
-#include "tasks.h"
-
-typedef struct stdin_waiter {
-    struct stdin_waiter *next;
-    vm the_vm;
-} stdin_waiter;
-
-static stdin_waiter *waiters = 0;
-
-static task_enum_action
-stdin_enumerator(task_closure closure, void *data)
-{
-    stdin_waiter **ww;
-
-    for (ww = &waiters; *ww; ww = &((*ww)->next)) {
-	stdin_waiter *w = *ww;
-	const char *status = (w->the_vm->task_id & 1
-			      ? "stdin-waiting"
-			      : "stdin-weighting");
-	task_enum_action tea = (*closure) (w->the_vm, status, data);
-
-	if (tea == TEA_KILL) {
-	    *ww = w->next;
-	    myfree(w, M_TASK);
-	    if (!waiters)
-		network_unregister_fd(0);
-	}
-	if (tea != TEA_CONTINUE)
-	    return tea;
-    }
-
-    return TEA_CONTINUE;
-}
-
-static void
-stdin_readable(int fd, void *data)
-{
-    char buffer[1000];
-    int n;
-    Var v;
-    stdin_waiter *w;
-
-    if (data != &waiters)
-	panic("STDIN_READABLE: Bad data!");
-
-    if (!waiters) {
-	errlog("STDIN_READABLE: Nobody cares!\n");
-	return;
-    }
-    n = read(0, buffer, sizeof(buffer));
-    buffer[n] = '\0';
-    while (n)
-	if (buffer[--n] == '\n')
-	    buffer[n] = 'X';
-
-    if (buffer[0] == 'a') {
-	v.type = TYPE_ERR;
-	v.v.err = E_NACC;
-    } else {
-	v.type = TYPE_STR;
-	v.v.str = str_dup(buffer);
-    }
-
-    resume_task(waiters->the_vm, v);
-    w = waiters->next;
-    myfree(waiters, M_TASK);
-    waiters = w;
-    if (!waiters)
-	network_unregister_fd(0);
-}
-
-static enum error
-stdin_suspender(vm the_vm, void *data)
-{
-    stdin_waiter *w = data;
-
-    if (!waiters)
-	network_register_fd(0, stdin_readable, 0, &waiters);
-
-    w->the_vm = the_vm;
-    w->next = waiters;
-    waiters = w;
-
-    return E_NONE;
-}
-
-static package
-bf_read_stdin(Var arglist, Byte next, void *vdata, Objid progr)
-{
-    stdin_waiter *w = mymalloc(sizeof(stdin_waiter), M_TASK);
-
-    return make_suspend_pack(stdin_suspender, w);
-}
-#endif				/* EXAMPLE */
-
-#define STUPID_VERB_CACHE 1
-#ifdef STUPID_VERB_CACHE
 #include "utils.h"
 
+/* us_time - return a float of time() with microseconds */
 static package
-bf_verb_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+bf_us_time(Var arglist, Byte next, void *vdata, Objid progr)
 {
     Var r;
+    struct timeval *tv = (struct timeval *)malloc(sizeof(struct timeval));
+    struct timezone *tz = 0;
 
+    gettimeofday(tv,tz);
+
+    r = new_float( ( (double)tv->tv_sec) + ( (double)tv->tv_usec / 1000000 ) );
+
+    free(tv);
     free_var(arglist);
-
-    if (!is_wizard(progr)) {
-	return make_error_pack(E_PERM);
-    }
-    r = db_verb_cache_stats();
-
     return make_var_pack(r);
 }
 
+/* Panic - panic the server with the given message. */
 static package
-bf_log_cache_stats(Var arglist, Byte next, void *vdata, Objid progr)
+bf_panic(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    free_var(arglist);
+    const char *msg;
 
-    if (!is_wizard(progr)) {
-	return make_error_pack(E_PERM);
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    if (arglist.v.list[0].v.num) {
+        msg = str_dup(arglist.v.list[1].v.str);
+    } else {
+        msg = "Intentional Server Panic";
     }
-    db_log_cache_stats();
 
-    return no_var_pack();
+    free_var(arglist);
+    panic(msg);
+
+    return make_error_pack(E_NONE);
 }
-#endif
+
+static package
+bf_chr (Var arglist, Byte next, void *vdata, Objid progr)
+{
+    Var r;
+    char str[2];
+
+    if (!is_wizard(progr))
+        return make_error_pack(E_PERM);
+
+    switch (arglist.v.list[1].type) {
+        case TYPE_INT:
+            if ((arglist.v.list[1].v.num < 1) || (arglist.v.list[1].v.num > 255)) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            }
+
+            str[0] = (char) arglist.v.list[1].v.num;
+            str[1] = '\0';
+            r.type = TYPE_STR;
+            r.v.str = str_dup(str);
+            break;
+        case TYPE_STR:
+            if (!(r.v.num = (int) arglist.v.list[1].v.str[0])) {
+                free_var(arglist);
+                return make_error_pack(E_INVARG);
+            }
+
+            r.type = TYPE_INT;
+            break;
+        default:
+            free_var(arglist);
+            return make_error_pack(E_TYPE);
+            break;
+    }
+
+    free_var(arglist);
+    return make_var_pack(r);
+}
 
 
 void
 register_extensions()
 {
-#if EXAMPLE
-    register_task_queue(stdin_enumerator);
-    register_function("read_stdin", 0, 0, bf_read_stdin);
-#endif
-#ifdef STUPID_VERB_CACHE
-    register_function("log_cache_stats", 0, 0, bf_log_cache_stats);
-    register_function("verb_cache_stats", 0, 0, bf_verb_cache_stats);
-#endif
+    register_function("us_time", 0, 0, bf_us_time);
+    register_function("panic", 0, 1, bf_panic, TYPE_STR);
+    register_function("chr", 1, 1, bf_chr, TYPE_ANY);
 }
