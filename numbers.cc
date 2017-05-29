@@ -228,7 +228,6 @@ matherr(struct exception *x)
     }
 }
 #endif
-
 
 /**** opcode implementations ****/
 
@@ -441,7 +440,7 @@ do_power(Var lhs, Var rhs)
     ans.v.err = E_TYPE;
     return ans;
 }
-
+
 /**** built in functions ****/
 
 static package
@@ -480,61 +479,101 @@ bf_tofloat(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_min(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    int i, nargs = arglist.v.list[0].v.num;
-    int bad_types = 0;
+    Var r = arglist.v.list[1];
+    int i, nargs = arglist.v.list[0].v.num, bad_types = 0;
 
-    r = arglist.v.list[1];
-    if (r.type == TYPE_INT) {	/* integers */
-	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_INT)
+    switch (r.type) {
+    case TYPE_INT:      /* integers */
+    case TYPE_OBJ:      /* objects */
+    case TYPE_ERR:      /* errors */
+	for (i = 2; i <= nargs; i++) {
+	    if (arglist.v.list[i].type != r.type) {
 		bad_types = 1;
-	    else if (arglist.v.list[i].v.num < r.v.num)
+		break;
+	    } else if (arglist.v.list[i].v.num < r.v.num)
 		r = arglist.v.list[i];
-    } else {			/* floats */
-	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_FLOAT)
+	}
+	break;
+    case TYPE_FLOAT:    /* floats */
+	for (i = 2; i <= nargs; i++) {
+	    if (arglist.v.list[i].type != TYPE_FLOAT) {
 		bad_types = 1;
-	    else if (*arglist.v.list[i].v.fnum < *r.v.fnum)
+		break;
+	    } else if (*arglist.v.list[i].v.fnum < *r.v.fnum)
 		r = arglist.v.list[i];
+	}
+	break;
+    case TYPE_STR:	/* strings */
+	for (i = 2; i <= nargs; i++) {
+	    if (arglist.v.list[i].type != TYPE_STR) {
+		bad_types = 1;
+		break;
+	    } else if (mystrcasecmp(arglist.v.list[i].v.str, r.v.str) < 0)
+		r = arglist.v.list[i];
+	}
+	if (!bad_types)
+	    r.v.str = str_ref(r.v.str);
+	break;
+    default:
+	bad_types = 1;
     }
 
     r = var_ref(r);
     free_var(arglist);
     if (bad_types)
-	return make_error_pack(E_TYPE);
+        return make_error_pack(E_TYPE);
     else
-	return make_var_pack(r);
+        return make_var_pack(r);
 }
 
 static package
 bf_max(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    int i, nargs = arglist.v.list[0].v.num;
-    int bad_types = 0;
+    Var r = arglist.v.list[1];
+    int i, nargs = arglist.v.list[0].v.num, bad_types = 0;
 
-    r = arglist.v.list[1];
-    if (r.type == TYPE_INT) {	/* integers */
-	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_INT)
-		bad_types = 1;
-	    else if (arglist.v.list[i].v.num > r.v.num)
-		r = arglist.v.list[i];
-    } else {			/* floats */
-	for (i = 2; i <= nargs; i++)
-	    if (arglist.v.list[i].type != TYPE_FLOAT)
-		bad_types = 1;
-	    else if (*arglist.v.list[i].v.fnum > *r.v.fnum)
-		r = arglist.v.list[i];
+    switch (r.type) {
+    case TYPE_INT:      /* integers */
+    case TYPE_OBJ:      /* objects */
+    case TYPE_ERR:      /* errors */
+        for (i = 2; i <= nargs; i++) {
+            if (arglist.v.list[i].type != r.type) {
+                bad_types = 1;
+                break;
+            } else if (arglist.v.list[i].v.num > r.v.num)
+                r = arglist.v.list[i];
+        }
+        break;
+    case TYPE_FLOAT:    /* floats */
+        for (i = 2; i <= nargs; i++) {
+            if (arglist.v.list[i].type != TYPE_FLOAT) {
+                bad_types = 1;
+                break;
+            } else if (*arglist.v.list[i].v.fnum > *r.v.fnum)
+                r = arglist.v.list[i];
+        }
+        break;
+    case TYPE_STR:	/* strings */
+        for (i = 2; i <= nargs; i++) {
+            if (arglist.v.list[i].type != TYPE_STR) {
+                bad_types = 1;
+                break;
+            } else if (mystrcasecmp(arglist.v.list[i].v.str, r.v.str) > 0)
+                r = arglist.v.list[i];
+        }
+        if (!bad_types)
+            r.v.str = str_ref(r.v.str);
+        break;
+    default:
+        bad_types = 1;
     }
 
     r = var_ref(r);
     free_var(arglist);
     if (bad_types)
-	return make_error_pack(E_TYPE);
+        return make_error_pack(E_TYPE);
     else
-	return make_var_pack(r);
+        return make_var_pack(r);
 }
 
 static package
@@ -988,8 +1027,8 @@ register_numbers(void)
     register_function("toint", 1, 1, bf_toint, TYPE_ANY);
     register_function("tonum", 1, 1, bf_toint, TYPE_ANY);
     register_function("tofloat", 1, 1, bf_tofloat, TYPE_ANY);
-    register_function("min", 1, -1, bf_min, TYPE_NUMERIC);
-    register_function("max", 1, -1, bf_max, TYPE_NUMERIC);
+    register_function("min", 1, -1, bf_min, TYPE_ANY);
+    register_function("max", 1, -1, bf_max, TYPE_ANY);
     register_function("abs", 1, 1, bf_abs, TYPE_NUMERIC);
     register_function("random", 0, 1, bf_random, TYPE_INT);
     register_function("random_bytes", 1, 1, bf_random_bytes, TYPE_INT);
