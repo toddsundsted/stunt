@@ -120,14 +120,14 @@ free_rt_stack(activation * a)
 void
 print_error_backtrace(const char *msg, void (*output) (const char *))
 {
-    unsigned t;
+    int t;
     Stream *str;
 
     if (!interpreter_is_running)
 	return;
     str = new_stream(100);
     for (t = top_activ_stack; t >= 0; t--) {
-	if (t != top_activ_stack)
+	if (t != (int)top_activ_stack)
 	    stream_printf(str, "... called from ");
 
 	if (TYPE_OBJ == activ_stack[t].vloc.type)
@@ -148,7 +148,7 @@ print_error_backtrace(const char *msg, void (*output) (const char *))
 				       (t == 0 ? root_activ_vector
 					: MAIN_VECTOR),
 				       activ_stack[t].error_pc));
-	if (t == top_activ_stack)
+	if (t == (int)top_activ_stack)
 	    stream_printf(str, ":  %s", msg);
 	output(reset_stream(str));
 	if (t > 0 && activ_stack[t].bi_func_pc) {
