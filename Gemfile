@@ -6,4 +6,6 @@ ruby '2.3.1'
 
 group :test do
   gem 'parslet', '~> 1.6.0'
+  gem 'minitest'
+  gem 'test-unit'
 end
