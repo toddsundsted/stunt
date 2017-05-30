@@ -2423,7 +2423,7 @@ do {								\
 			    ans.v.num = lhs.v.num;
 			} else {
 
-#define MASK(n) (~(Num)(~(UNum)0 << sizeof(Num) * (CHAR_BIT - (n))))
+#define MASK(n) (~(Num)(~(UNum)0 << ((sizeof(Num) * CHAR_BIT) - (n))))
 #define SHIFTR(n, m) ((Num)((UNum)n >> m) & MASK(m))
 
 			    ans.type = TYPE_INT;
