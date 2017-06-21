@@ -643,7 +643,7 @@ network_set_client_echo(network_handle nh, int is_on)
 #define TN_ECHO	1
 
     static char telnet_cmd[4] =
-	{TN_IAC, 0, TN_ECHO, 0};
+	{(char)TN_IAC, (char)0, (char)TN_ECHO, (char)0};
 
     h->client_echo = is_on;
     if (is_on)
