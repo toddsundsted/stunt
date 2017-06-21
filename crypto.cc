@@ -340,7 +340,7 @@ bf_crypt(Var arglist, Byte next, void *vdata, Objid progr)
     if (!is_wizard(progr) &&
         ((BCRYPT == format && count != 5) ||
          (BCRYPT != format && count))) {
-	p = make_raise_pack(E_PERM, "Cannot specify non-default strength", new_int(count));
+	p = make_raise_pack(E_PERM, "Cannot specify non-default strength", Var::new_int(count));
 	free_var(arglist);
 	return p;
     }

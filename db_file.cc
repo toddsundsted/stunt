@@ -653,7 +653,7 @@ ng_validate_hierarchies()
 		       oid);
 		broken = 1;
 	    }
-	    if (!is_obj(o->location)) {
+	    if (!o->location.is_obj()) {
 		errlog("VALIDATE: #%d.location is not an object.\n",
 		       oid);
 		broken = 1;
@@ -716,8 +716,8 @@ ng_validate_hierarchies()
 		free_var(all);						\
 	    }
 
-	    CHECK(new_obj(oid), db_ancestors, "parent");
-	    CHECK(new_obj(oid), db_all_locations, "location");
+	    CHECK(Var::new_obj(oid), db_ancestors, "parent");
+	    CHECK(Var::new_obj(oid), db_all_locations, "location");
 
 #	    undef CHECK
 	}
@@ -806,17 +806,17 @@ v4_upgrade_objects()
 
 	    Objid iter;
 
-	    _new->parents = var_dup(new_obj(o->parent));
+	    _new->parents = var_dup(Var::new_obj(o->parent));
 
 	    _new->children = new_list(0);
 	    for (iter = o->child; iter != NOTHING; iter = objects[iter]->sibling)
-		_new->children = listappend(_new->children, var_dup(new_obj(iter)));
+		_new->children = listappend(_new->children, var_dup(Var::new_obj(iter)));
 
-	    _new->location = var_dup(new_obj(o->location));
+	    _new->location = var_dup(Var::new_obj(o->location));
 
 	    _new->contents = new_list(0);
 	    for (iter = o->contents; iter != NOTHING; iter = objects[iter]->next)
-		_new->contents = listappend(_new->contents, var_dup(new_obj(iter)));
+		_new->contents = listappend(_new->contents, var_dup(Var::new_obj(iter)));
 
 	    _new->propval = o->propval;
 	    _new->nval = dbv4_count_properties(oid);
@@ -1015,7 +1015,7 @@ read_db_file(void)
 	    errlog("READ_DB_FILE: Verb for non-existant object: #%d:%d.\n", oid, vnum);
 	    return 0;
 	}
-	h = db_find_indexed_verb(new_obj(oid), vnum + 1);	/* DB file is 0-based. */
+	h = db_find_indexed_verb(Var::new_obj(oid), vnum + 1);	/* DB file is 0-based. */
 	if (!h.ptr) {
 	    errlog("READ_DB_FILE: Unknown verb index: #%d:%d.\n", oid, vnum);
 	    return 0;

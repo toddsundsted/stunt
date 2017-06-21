@@ -42,7 +42,7 @@ is_list_of_objs(Var v)
 static inline bool
 is_obj_or_list_of_objs(Var v)
 {
-    return is_obj(v) || is_list_of_objs(v);
+    return v.is_obj() || is_list_of_objs(v);
 }
 
 /**** file system ****/

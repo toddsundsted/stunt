@@ -20,6 +20,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <string>
+#include <sstream>
+#include <fstream>
+
 #include "my-types.h"		/* must be first on some systems */
 #include "my-signal.h"
 #include "my-stdarg.h"
@@ -61,10 +65,13 @@ extern "C" {
 }
 
 static pid_t parent_pid;
-int in_child = 0;
+static bool in_child = false;
 
-static const char *shutdown_message = 0;	/* shut down if non-zero */
-static int in_emergency_mode = 0;
+static std::stringstream shutdown_message;
+static bool shutdown_triggered = false;
+
+static bool in_emergency_mode = false;
+
 static Var checkpointed_connections;
 
 typedef enum {
@@ -187,17 +194,15 @@ free_slistener(slistener * l)
 }
 
 static void
-send_shutdown_message(const char *msg)
+send_shutdown_message(const char *message)
 {
     shandle *h;
-    Stream *s = new_stream(100);
-    char *message;
+    std::stringstream s;
 
-    stream_printf(s, "*** Shutting down: %s ***", msg);
-    message = stream_contents(s);
+    s << "*** Shutting down: " << message << " ***";
+
     for (h = all_shandles; h; h = h->next)
-	network_send_line(h->nhandle, message, 1);
-    free_stream(s);
+	network_send_line(h->nhandle, s.str().c_str(), 1);
 }
 
 static void
@@ -257,21 +262,20 @@ enum Fork_Result
 fork_server(const char *subtask_name)
 {
     pid_t pid;
-    Stream *s = new_stream(100);
+    std::stringstream s;
 
-    stream_printf(s, "Forking %s", subtask_name);
+    s << "Forking " << subtask_name;
+
     pid = fork();
     if (pid < 0) {
-	log_perror(stream_contents(s));
-	free_stream(s);
+	log_perror(s.str().c_str());
 	return FORK_ERROR;
-    }
-    free_stream(s);
-    if (pid == 0) {
-	in_child = 1;
+    } else if (pid == 0) {
+	in_child = true;
 	return FORK_CHILD;
-    } else
+    } else {
 	return FORK_PARENT;
+    }
 }
 
 static void
@@ -286,7 +290,8 @@ panic_signal(int sig)
 static void
 shutdown_signal(int sig)
 {
-    shutdown_message = "shutdown signal received";
+    shutdown_triggered = true;
+    shutdown_message << "shutdown signal received";
 }
 
 static void
@@ -305,7 +310,7 @@ call_checkpoint_notifier(int successful)
     args = new_list(1);
     args.v.list[1].type = TYPE_INT;
     args.v.list[1].v.num = successful;
-    run_server_task(-1, new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
+    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_finished", args, "", 0);
 }
 
 static void
@@ -419,16 +424,16 @@ call_notifier(Objid player, Objid handler, const char *verb_name)
     args = new_list(1);
     args.v.list[1].type = TYPE_OBJ;
     args.v.list[1].v.obj = player;
-    run_server_task(player, new_obj(handler), verb_name, args, "", 0);
+    run_server_task(player, Var::new_obj(handler), verb_name, args, "", 0);
 }
 
 int
 get_server_option(Objid oid, const char *name, Var * r)
 {
     if (((valid(oid) &&
-	  db_find_property(new_obj(oid), "server_options", r).ptr)
+	  db_find_property(Var::new_obj(oid), "server_options", r).ptr)
 	 || (valid(SYSTEM_OBJECT) &&
-	     db_find_property(new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
+	     db_find_property(Var::new_obj(SYSTEM_OBJECT), "server_options", r).ptr))
 	&& r->type == TYPE_OBJ
 	&& valid(r->v.obj)
 	&& db_find_property(*r, name, r).ptr)
@@ -632,11 +637,11 @@ main_loop(void)
     free_var(checkpointed_connections);
 
     /* Third, run #0:server_started() */
-    run_server_task(-1, new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
+    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "server_started", new_list(0), "", 0);
     set_checkpoint_timer(1);
 
     /* Now, we enter the main server loop */
-    while (shutdown_message == 0) {
+    while (!shutdown_triggered) {
 	/* Check how long we have until the next task will be ready to run.
 	 * We only care about three cases (== 0, == 1, and > 1), so we can
 	 * map a `never' result from the task subsystem into 2.
@@ -655,7 +660,7 @@ main_loop(void)
 	    if (checkpoint_requested == CHKPT_SIGNAL)
 		oklog("CHECKPOINTING due to remote request signal.\n");
 	    checkpoint_requested = CHKPT_OFF;
-	    run_server_task(-1, new_obj(SYSTEM_OBJECT), "checkpoint_started",
+	    run_server_task(-1, Var::new_obj(SYSTEM_OBJECT), "checkpoint_started",
 			    new_list(0), "", 0);
 	    network_process_io(0);
 #ifdef UNFORKED_CHECKPOINTS
@@ -734,8 +739,8 @@ main_loop(void)
 	}
     }
 
-    applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message);
-    send_shutdown_message(shutdown_message);
+    applog(LOG_WARNING, "SHUTDOWN: %s\n", shutdown_message.str().c_str());
+    send_shutdown_message(shutdown_message.str().c_str());
 }
 
 static shandle *
@@ -837,7 +842,7 @@ emergency_mode()
     int start_ok = -1;
 
     oklog("EMERGENCY_MODE: Entering mode...\n");
-    in_emergency_mode = 1;
+    in_emergency_mode = true;
 
     printf("\nLambdaMOO Emergency Holographic Wizard Mode\n");
     printf("-------------------------------------------\n");
@@ -861,7 +866,7 @@ emergency_mode()
 	    if (!is_wizard(wizard)) {
 		if (first_valid < 0) {
 		    first_valid = db_create_object();
-		    db_change_parents(new_obj(first_valid), new_list(0), none);
+		    db_change_parents(Var::new_obj(first_valid), new_list(0), none);
 		    printf("** No objects in database; created #%d.\n",
 			   first_valid);
 		}
@@ -1071,7 +1076,7 @@ emergency_mode()
 #endif
 
     free_stream(s);
-    in_emergency_mode = 0;
+    in_emergency_mode = false;
     oklog("EMERGENCY_MODE: Leaving mode; %s continue...\n",
 	  start_ok ? "will" : "won't");
     return start_ok;
@@ -1084,7 +1089,7 @@ run_do_start_script(Var code)
     Var result;
 
     switch (run_server_task(NOTHING,
-			    new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
+			    Var::new_obj(SYSTEM_OBJECT), "do_start_script", code, "",
 			    &result)) {
     case OUTCOME_DONE:
 	unparse_value(s, result);
@@ -1117,35 +1122,21 @@ do_script_line(const char *line)
 static void
 do_script_file(const char *path)
 {
-    struct stat buf;
-    FILE *f;
-    static Stream *s = 0;
-    int c;
     Var str;
     Var code = new_list(0);
+    std::ifstream file(path);
+    std::string line;
 
-    if (stat(path, &buf) != 0)
+    if (!file.is_open()) {
 	panic(strerror(errno));
-    else if (S_ISDIR(buf.st_mode))
-      panic(strerror(EISDIR));
-    else if ((f = fopen(path, "r")) == NULL)
-	panic(strerror(errno));
-
-    if (s == 0)
-	s = new_stream(1024);
-
-    do {
-	while((c = fgetc(f)) != EOF && c != '\n')
-	    stream_add_char(s, c);
-
-	str = str_dup_to_var(raw_bytes_to_clean(stream_contents(s),
-						stream_length(s)));
-
+    }
+    while (std::getline(file, line)) {
+	str = str_dup_to_var(raw_bytes_to_clean(line.c_str(), line.size()));
 	code = listappend(code, str);
-
-	reset_stream(s);
-
-    } while (c != EOF);
+    }
+    if (errno) {
+	panic(strerror(errno));
+    }
 
     run_do_start_script(code);
 }
@@ -1776,33 +1767,28 @@ bf_reset_max_object(Var arglist, Byte next, void *vdata, Objid progr)
 static package
 bf_memory_usage(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    Var r;
-    r = memory_usage();
+    Var r = new_list(0);
+
     free_var(arglist);
+
     return make_var_pack(r);
 }
 
 static package
 bf_shutdown(Var arglist, Byte next, void *vdata, Objid progr)
 {
-    /*
-     * The stream 's' and its contents will leak, but we're shutting down,
-     * so it doesn't really matter.
-     */
-
-    Stream *s;
     int nargs = arglist.v.list[0].v.num;
-    const char *msg = (nargs >= 1 ? arglist.v.list[1].v.str : 0);
+    const char *message = (nargs >= 1 ? arglist.v.list[1].v.str : 0);
 
     if (!is_wizard(progr)) {
 	free_var(arglist);
 	return make_error_pack(E_PERM);
     }
-    s = new_stream(100);
-    stream_printf(s, "shutdown() called by %s", object_name(progr));
-    if (msg)
-	stream_printf(s, ": %s", msg);
-    shutdown_message = stream_contents(s);
+
+    shutdown_triggered = true;
+    shutdown_message << "shutdown() called by " << object_name(progr);
+    if (message)
+	shutdown_message << ": " << message;
 
     free_var(arglist);
     return no_var_pack();
@@ -2215,6 +2201,18 @@ bf_buffered_output_length(Var arglist, Byte next, void *vdata, Objid progr)
     return make_var_pack(r);
 }
 
+static package
+bf_process_id(Var arglist, Byte next, void *vdata, Objid progr)
+{
+    free_var(arglist);
+
+    Var taskid;
+    taskid.type = TYPE_INT;
+    taskid.v.num = getpid();
+
+    return make_var_pack(taskid);
+}
+
 void
 register_server(void)
 {
@@ -2222,6 +2220,7 @@ register_server(void)
     register_function("renumber", 1, 1, bf_renumber, TYPE_OBJ);
     register_function("reset_max_object", 0, 0, bf_reset_max_object);
     register_function("memory_usage", 0, 0, bf_memory_usage);
+    register_function("process_id", 0, 0, bf_process_id);
     register_function("shutdown", 0, 1, bf_shutdown, TYPE_STR);
     register_function("dump_database", 0, 0, bf_dump_database);
     register_function("db_disk_size", 0, 0, bf_db_disk_size);

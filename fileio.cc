@@ -437,7 +437,7 @@ bf_file_close(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr))
 	 r = file_raise_notokcall("file_close", progr);
   else if ((f = file_handle_file_safe(fhandle)) == NULL)
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   else {
 	 fclose(f);
 	 file_handle_destroy(fhandle);
@@ -462,7 +462,7 @@ bf_file_name(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_name", progr);
   } else if ((name = file_handle_name_safe(fhandle)) == NULL) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 rv.type = TYPE_STR;
 	 rv.v.str = str_dup(name);
@@ -485,7 +485,7 @@ bf_file_openmode(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_name", progr);
   } else if (!file_handle_valid(fhandle)) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 type = file_handle_type(fhandle);
 	 mode = file_handle_mode(fhandle);
@@ -572,9 +572,9 @@ bf_file_readline(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_readline", progr);
   } else if (!file_handle_valid(fhandle)) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
-	 r = make_raise_pack(E_INVARG, "File is open write-only", fhandle);
+	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
 	 if((line = file_read_line(fhandle, &len)) == NULL)
@@ -639,9 +639,9 @@ bf_file_readlines(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_readlines", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
-	 r = make_raise_pack(E_INVARG, "File is open write-only", fhandle);
+	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 
 	 /* Back to the beginning ... */
@@ -719,13 +719,13 @@ bf_file_writeline(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_writeline", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_WRITE)
-	 r = make_raise_pack(E_INVARG, "File is open read-only", fhandle);
+	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
 	 if((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
-		r = make_raise_pack(E_INVARG, "Invalid binary string", fhandle);
+		r = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(fhandle));
 	 else if((fputs(rawbuffer, f) == EOF) || (fputc('\n', f) != '\n'))
 		r = file_raise_errno(file_handle_name(fhandle));
 	 else {
@@ -777,9 +777,9 @@ bf_file_read(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_read", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_READ)
-	 r = make_raise_pack(E_INVARG, "File is open write-only", fhandle);
+	 r = make_raise_pack(E_INVARG, "File is open write-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
 
@@ -834,7 +834,7 @@ bf_file_flush(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_flush", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else {
 	 if(fflush(f))
 		r = file_raise_errno("flushing");
@@ -868,13 +868,13 @@ bf_file_write(Var arglist, Byte next, void *vdata, Objid progr)
   if(!file_verify_caller(progr)) {
 	 r = file_raise_notokcall("file_write", progr);
   } else if ((f = file_handle_file_safe(fhandle)) == NULL) {
-	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", fhandle);
+	 r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(fhandle));
   } else if (!(mode = file_handle_mode(fhandle)) & FILE_O_WRITE)
-	 r = make_raise_pack(E_INVARG, "File is open read-only", fhandle);
+	 r = make_raise_pack(E_INVARG, "File is open read-only", var_ref(fhandle));
   else {
 	 type = file_handle_type(fhandle);
 	 if((rawbuffer = (type->out_filter)(buffer, &len)) == NULL)
-		r = make_raise_pack(E_INVARG, "Invalid binary string", fhandle);
+		r = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(fhandle));
 	 else if(!(written = fwrite(rawbuffer, sizeof(char), len, f)))
 		r = file_raise_errno(file_handle_name(fhandle));
 	 else {
@@ -1021,7 +1021,7 @@ int file_stat(Objid progr, Var filespec, package *r, struct stat *buf) {
   } else {
 	 FILE *f;
 	 if((f = file_handle_file_safe(filespec)) == NULL)
-		*r = make_raise_pack(E_INVARG, "Invalid FHANDLE", filespec);
+		*r = make_raise_pack(E_INVARG, "Invalid FHANDLE", var_ref(filespec));
 	 else {
 		if(fstat(fileno(f), buf) != 0)
 		  *r = file_raise_errno(file_handle_name(filespec));

@@ -140,7 +140,7 @@ insert_prop2(Var obj, int pos, Pval pval)
 static void
 insert_prop(Objid oid, int pos, Pval pval)
 {
-    insert_prop2(new_obj(oid), pos, pval);
+    insert_prop2(Var::new_obj(oid), pos, pval);
 }
 
 static void
@@ -151,12 +151,12 @@ insert_prop_recursively(Objid root, int prop_pos, Pval pv)
     pv.var.type = TYPE_CLEAR;	/* do after initial insert_prop so only
 				   children will be TYPE_CLEAR */
 
-    Var descendant, descendants = db_descendants(new_obj(root), false);
+    Var descendant, descendants = db_descendants(Var::new_obj(root), false);
     int i, c, offset = 0;
     int offsets[listlength(descendants)];
 
     FOR_EACH(descendant, descendants, i, c) {
-	offset = properties_offset(new_obj(root), descendant);
+	offset = properties_offset(Var::new_obj(root), descendant);
 	offsets[i - 1] = offset;
     }
 
@@ -273,7 +273,7 @@ remove_prop2(Var obj, int pos)
 static void
 remove_prop(Objid oid, int pos)
 {
-    remove_prop2(new_obj(oid), pos);
+    remove_prop2(Var::new_obj(oid), pos);
 }
 
 static void
@@ -281,12 +281,12 @@ remove_prop_recursively(Objid root, int prop_pos)
 {
     remove_prop(root, prop_pos);
 
-    Var descendant, descendants = db_descendants(new_obj(root), false);
+    Var descendant, descendants = db_descendants(Var::new_obj(root), false);
     int i, c, offset = 0;
     int offsets[listlength(descendants)];
 
     FOR_EACH(descendant, descendants, i, c) {
-	offset = properties_offset(new_obj(root), descendant);
+	offset = properties_offset(Var::new_obj(root), descendant);
 	offsets[i - 1] = offset;
     }
 
@@ -549,13 +549,13 @@ db_find_property(Var obj, const char *name, Var *value)
 		Var parent, parents = o->parents;
 		int i2, c2, offset = 0;
 		FOR_EACH(parent, parents, i2, c2)
-		    if ((offset = properties_offset(new_obj(((Object *)h.definer)->id), parent)) > -1)
+		    if ((offset = properties_offset(Var::new_obj(((Object *)h.definer)->id), parent)) > -1)
 			break;
 		o = dbpriv_find_object(parent.v.obj);
 		prop = o->propval + offset + i;
 	    }
 	    else if (TYPE_OBJ == o->parents.type && NOTHING != o->parents.v.obj) {
-		int offset = properties_offset(new_obj(((Object *)h.definer)->id), o->parents);
+		int offset = properties_offset(Var::new_obj(((Object *)h.definer)->id), o->parents);
 		o = dbpriv_find_object(o->parents.v.obj);
 		prop = o->propval + offset + i;
 	    }
@@ -984,7 +984,7 @@ dbpriv_fix_properties_after_chparent(Var obj, Var old_ancestors, Var new_ancesto
 			_new = setadd(_new, var_ref(tmp));
 		}
 		else {
-		    Var tmp, all = db_ancestors(new_obj(op->id), true);
+		    Var tmp, all = db_ancestors(Var::new_obj(op->id), true);
 		    FOR_EACH(tmp, all, i6, c6) {
 			old = setadd(old, var_ref(tmp));
 			_new = setadd(_new, var_ref(tmp));

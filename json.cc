@@ -43,9 +43,9 @@
 #include "streams.h"
 #include "unparse.h"
 #include "utils.h"
-#include "yajl_gen.h"
-#include "yajl_lex.h"
-#include "yajl_parse.h"
+#include "yajl/yajl_gen.h"
+#include "yajl/yajl_lex.h"
+#include "yajl/yajl_parse.h"
 
 /*
   Handle many modes of mapping between JSON and internal MOO types.
@@ -223,7 +223,7 @@ handle_number(void *ctx, const char *numberVal, unsigned int numberLen, yajl_tok
 	i = strtol(numberVal, NULL, 10);
 
 	if (0 == errno && (i >= MININT && i <= MAXINT)) {
-	    v = new_int(i);
+	    v = Var::new_int(i);
 	    PUSH(pctx->top, v);
 	    return 1;
         }
@@ -268,7 +268,7 @@ handle_string(void *ctx, const unsigned char *stringVal, unsigned int stringLen)
 	case TYPE_INT:
 	    {
 		char *p;
-		v = new_int(strtol(val, &p, 10));
+		v = Var::new_int(strtol(val, &p, 10));
 		break;
 	    }
 	case TYPE_FLOAT:
