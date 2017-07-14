@@ -400,7 +400,8 @@ accept_new_connection(nlistener * l)
 {
     network_handle nh;
     nhandle *h;
-    int rfd, wfd, i;
+    int rfd, wfd;
+    unsigned i;
     const char *host_name;
 
     switch (proto_accept_connection(l->fd, &rfd, &wfd, &host_name)) {
@@ -637,10 +638,10 @@ network_set_client_echo(network_handle nh, int is_on)
     nhandle *h = (nhandle *)nh.ptr;
 
     /* These values taken from RFC 854 and RFC 857. */
-#define TN_IAC	255		/* Interpret As Command */
-#define TN_WILL	251
-#define TN_WONT	252
-#define TN_ECHO	1
+#define TN_IAC	(char)255		/* Interpret As Command */
+#define TN_WILL	(char)251
+#define TN_WONT	(char)252
+#define TN_ECHO	(char)1
 
     static char telnet_cmd[4] =
 	{(char)TN_IAC, (char)0, (char)TN_ECHO, (char)0};

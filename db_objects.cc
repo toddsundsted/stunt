@@ -34,8 +34,8 @@
 #include "xtrapbits.h"
 
 static Object **objects;
-static int num_objects = 0;
-static int max_objects = 0;
+static unsigned num_objects = 0;
+static unsigned max_objects = 0;
 
 static unsigned int nonce = 0;
 
@@ -44,14 +44,13 @@ static Var all_users;
 /* used in graph traversals */
 static unsigned char *bit_array;
 static size_t array_size = 0;
-
 
 /*********** Objects qua objects ***********/
 
 Object *
 dbpriv_find_object(Objid oid)
 {
-    if (oid < 0 || oid >= max_objects)
+    if (oid < 0 || oid >= (int)max_objects)
 	return 0;
     else
 	return objects[oid];
@@ -79,14 +78,14 @@ db_reset_last_used_objid(void)
 void
 db_set_last_used_objid(Objid oid)
 {
-    while (!objects[num_objects - 1] && num_objects > oid)
+    while (!objects[num_objects - 1] && (int)num_objects > oid)
 	num_objects--;
 }
 
 static void
 extend(unsigned int new_objects)
 {
-    int size;
+    unsigned size;
 
     for (size = 128; size <= new_objects; size *= 2)
 	;
@@ -134,7 +133,7 @@ dbpriv_assign_nonce(Object *o)
 void
 dbpriv_after_load(void)
 {
-    int i;
+    unsigned i;
 
     for (i = num_objects; i < max_objects; i++) {
 	if (objects[i]) {
@@ -220,7 +219,7 @@ db_destroy_object(Objid oid)
 {
     Object *o = dbpriv_find_object(oid);
     Verbdef *v, *w;
-    int i;
+    unsigned i;
 
     db_priv_affected_callable_verb_lookup();
 
@@ -283,7 +282,7 @@ db_read_anonymous()
     if ((oid = dbio_read_num()) == NOTHING) {
 	r.type = TYPE_ANON;
 	r.v.anon = NULL;
-    } else if (max_objects && (oid < max_objects && objects[oid])) {
+    } else if (max_objects && (oid < (int)max_objects && objects[oid])) {
 	r.type = TYPE_ANON;
 	r.v.anon = objects[oid];
 	addref(r.v.anon);
@@ -367,7 +366,7 @@ db_destroy_anonymous_object(void *obj)
 {
     Object *o = (Object *)obj;
     Verbdef *v, *w;
-    int i;
+    unsigned i;
 
     free_str(o->name);
     o->name = NULL;
@@ -507,7 +506,7 @@ db_renumber_object(Objid old)
 	    {
 		Objid oid;
 
-		for (oid = 0; oid < num_objects; oid++) {
+		for (oid = 0; oid < (int)num_objects; oid++) {
 		    Object *o = objects[oid];
 		    Verbdef *v;
 		    Pval *p;
@@ -549,7 +548,8 @@ int
 db_object_bytes(Var obj)
 {
     Object *o = dbpriv_dereference(obj);
-    int i, len, count;
+    int count;
+    unsigned i, len;
     Verbdef *v;
 
     count = sizeof(Object) + sizeof(Object *);
@@ -573,7 +573,6 @@ db_object_bytes(Var obj)
 
     return count;
 }
-
 
 /* Traverse the tree/graph twice.  First to count the maximal number
  * of members, and then to copy the members.  Use the bit array to
@@ -680,7 +679,6 @@ DEFUNC(all_locations, location);
 DEFUNC(all_contents, contents);
 
 #undef DEFUNC
-
 
 /*********** Object attributes ***********/
 

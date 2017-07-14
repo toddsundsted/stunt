@@ -60,10 +60,10 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 
     /* check input */
 
-    int len;
+    int l;
     const char *in;
 
-    in = binary_to_raw_bytes(arglist.v.list[1].v.str, &len);
+    in = binary_to_raw_bytes(arglist.v.list[1].v.str, &l);
 
     if (!in) {
 	const package pack = make_raise_pack(E_INVARG, "Invalid binary string", var_ref(arglist.v.list[1]));
@@ -71,6 +71,7 @@ bf_encode_base64(Var arglist, Byte next, void *vdata, Objid progr)
 	return pack;
     }
 
+    unsigned len = (unsigned)l;
     if ((len / 3) * 4 > stream_alloc_maximum) {
 	const package pack = make_space_pack();
 	free_var(arglist);
@@ -169,7 +170,7 @@ bf_decode_base64(Var arglist, Byte next, void *vdata, Objid progr)
     in = arglist.v.list[1].v.str;
     len = memo_strlen(in);
 
-    int i, pad = 0;
+    unsigned i, pad = 0;
 
     for (i = 0; i < len; i++) {
 	const unsigned char tmp = (unsigned char)in[i];

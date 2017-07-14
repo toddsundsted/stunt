@@ -47,7 +47,6 @@ static const char *header_format_string
   = "** LambdaMOO Database, Format Version %u **\n";
 
 DB_Version dbio_input_version;
-
 
 /*********** Format version 4 support ***********/
 
@@ -127,11 +126,13 @@ dbv4_find_object(Objid oid)
 	return objects[oid];
 }
 
+#if 0
 static int
 dbv4_valid(Objid oid)
 {
     return dbv4_find_object(oid) != 0;
 }
+#endif
 
 static Objid
 dbv4_last_used_objid(void)
@@ -143,7 +144,7 @@ static int
 dbv4_count_properties(Objid oid)
 {
     Object4 *o;
-    int nprops = 0;
+    unsigned nprops = 0;
 
     for (o = dbv4_find_object(oid); o; o = dbv4_find_object(o->parent))
 	nprops += o->propdefs.cur_length;
@@ -218,7 +219,6 @@ write_propval(Pval * p)
     dbio_write_objid(p->owner);
     dbio_write_num(p->perms);
 }
-
 
 /*********** Object I/O ***********/
 
@@ -228,9 +228,8 @@ v4_read_object(void)
     Objid oid;
     Object4 *o;
     char s[20];
-    int i;
     Verbdef *v, **prevv;
-    int nprops;
+    unsigned i, nprops;
 
     if (dbio_scanf("#%d", &oid) != 1 || oid != dbv4_last_used_objid() + 1)
 	return 0;
@@ -301,9 +300,8 @@ ng_read_object(int anonymous)
     Objid oid;
     Object *o;
     char s[20];
-    int i;
     Verbdef *v, **prevv;
-    int nprops;
+    unsigned i, nprops;
 
     if (dbio_scanf("#%d", &oid) != 1)
 	return 0;
@@ -377,13 +375,14 @@ ng_read_object(int anonymous)
     return 1;
 }
 
+#if 0
 static void
 v4_write_object(Objid oid)
 {
     Object4 *o;
     Verbdef *v;
-    int i;
-    int nverbdefs, nprops;
+    unsigned i, nprops;
+    int nverbdefs;
 
     if (!dbv4_valid(oid)) {
 	dbio_printf("#%d recycled\n", oid);
@@ -423,14 +422,15 @@ v4_write_object(Objid oid)
     for (i = 0; i < nprops; i++)
 	write_propval(o->propval + i);
 }
+#endif
 
 static void
 ng_write_object(Objid oid)
 {
     Object *o;
     Verbdef *v;
-    int i;
-    int nverbdefs, nprops;
+    unsigned i, nprops;
+    int nverbdefs;
 
     if (!valid(oid)) {
 	dbio_printf("#%d recycled\n", oid);
@@ -466,7 +466,6 @@ ng_write_object(Objid oid)
     for (i = 0; i < nprops; i++)
 	write_propval(o->propval + i);
 }
-
 
 /*********** File-level Input ***********/
 
@@ -1049,7 +1048,6 @@ read_db_file(void)
 
     return 1;
 }
-
 
 /*********** File-level Output ***********/
 
@@ -1225,7 +1223,6 @@ dump_database(Dump_Reason reason)
 
     return success;
 }
-
 
 /*********** External interface ***********/
 

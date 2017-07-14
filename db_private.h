@@ -45,8 +45,8 @@ struct Propdef {
 };
 
 struct Proplist {
-    int max_length;
-    int cur_length;
+    unsigned max_length;
+    unsigned cur_length;
     Propdef *l;
 };
 

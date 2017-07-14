@@ -543,6 +543,7 @@ rbtfirst(rbtrav *trav, rbtree *tree)
     return rbstart(trav, tree, 0);	/* Min value */
 }
 
+#if 0
 /*
  * Initializes a traversal object to the largest valued node.
  */
@@ -551,6 +552,7 @@ rbtlast(rbtrav *trav, rbtree *tree)
 {
     return rbstart(trav, tree, 1);	/* Max value */
 }
+#endif
 
 /*
  * Traverses to the next value in ascending order.
@@ -561,6 +563,7 @@ rbtnext(rbtrav *trav)
     return rbmove(trav, 1);	/* Toward larger items */
 }
 
+#if 0
 /*
  * Traverses to the next value in descending order.
  */
@@ -569,6 +572,7 @@ rbtprev(rbtrav *trav)
 {
     return rbmove(trav, 0);	/* Toward smaller items */
 }
+#endif
 
 /********/
 
