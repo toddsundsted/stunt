@@ -241,10 +241,11 @@ call_bi_func(unsigned n, Var arglist, Byte func_pc,
 	    var_type proto = f->prototype[k];
 	    var_type arg = args[k + 1].type;
 
-	    if (!(proto == TYPE_ANY
-		  || (proto == TYPE_NUMERIC && (arg == TYPE_INT
-						|| arg == TYPE_FLOAT))
-		  || proto == arg)) {
+	    if (!(proto == arg || proto == TYPE_ANY
+ 		  || (proto == TYPE_NUMERIC
+ 		      && (arg == TYPE_INT || arg == TYPE_FLOAT))
+ 		  || (proto == TYPE_INSTANCE
+		      && (arg == TYPE_OBJ || arg == TYPE_ANON)))) {
 		free_var(arglist);
 		return make_error_pack(E_TYPE);
 	    }

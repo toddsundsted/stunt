@@ -94,6 +94,7 @@ typedef enum {
 
 #define TYPE_ANY ((var_type) -1)	/* wildcard for use in declaring built-ins */
 #define TYPE_NUMERIC ((var_type) -2)	/* wildcard for (integer or float) */
+#define TYPE_INSTANCE ((var_type) -3)	/* wildcard for (object or anonymous) */
 
 typedef struct Var Var;
 
