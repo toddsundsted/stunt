@@ -169,7 +169,8 @@ db_match_prep(const char *prepname)
 	else
 	    return prep;
     }
-    if ((ptr = strchr(s, '/')) != '\0')
+    ptr = strchr(s, '/');
+    if (ptr != NULL)
 	*ptr = '\0';
 
     argv = parse_into_words(s, &argc);
