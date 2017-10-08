@@ -3477,7 +3477,7 @@ index("Foobar", "foo", 1)       @result{}   0
 @end example
 @end deftypefun
 
-@deftypefun int strtr (str @var{source}, str @var{str1}, str @var{str2} [, @var{case-matters}])
+@deftypefun str strtr (str @var{source}, str @var{str1}, str @var{str2} [, @var{case-matters}])
 Transforms the string @var{source} by replacing the characters specified by
 @var{str1} with the corresponding characters specified by @var{str2}.  All
 other characters are not transformed.  If @var{str2} has fewer characters
